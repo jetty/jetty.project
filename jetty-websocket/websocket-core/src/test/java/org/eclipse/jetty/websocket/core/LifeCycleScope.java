@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.util.function.Supplier;
-
 import org.eclipse.jetty.util.component.LifeCycle;
+
+import java.util.function.Supplier;
 
 /**
  * Simple {@link AutoCloseable} to allow Jetty {@link LifeCycle} components to

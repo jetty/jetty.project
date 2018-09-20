@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-
-import java.io.IOException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+
+import java.io.IOException;
 
 public interface WebSocketNegotiator
 {

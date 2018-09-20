@@ -18,33 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -63,127 +41,45 @@ import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.Socket;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Tests of a core server with a fake client
  *
  */
-public class WebSocketCloseTest
+public class WebSocketCloseTest extends WebSocketTester
 {
     @Rule
     public TestTracker tracker = new TestTracker();
     
     private static Logger LOG = Log.getLogger(WebSocketCloseTest.class);
-    private static String NON_RANDOM_KEY = new String(B64Code.encode("0123456701234567".getBytes()));
-   
+
     private WebSocketServer server;
     private Socket client;
-    private ByteBufferPool bufferPool;
-    private Parser parser;
 
     enum State {OPEN, ICLOSED, OCLOSED}
 
-    @Before
-    public void before() throws Exception
-    {
-        bufferPool = new ArrayByteBufferPool();
-        parser = new Parser(bufferPool);
-    }
-    
     @After
     public void after() throws Exception
     {
         if (server!=null)
             server.stop();
     }
-
-    protected Socket newClient() throws IOException
-    {
-        @SuppressWarnings("resource")
-        Socket client = new Socket("127.0.0.1",server.getLocalPort());
-    
-        HttpFields fields = new HttpFields();
-        fields.add(HttpHeader.HOST, "127.0.0.1");
-        fields.add(HttpHeader.UPGRADE, "websocket");
-        fields.add(HttpHeader.CONNECTION, "Upgrade");
-        fields.add(HttpHeader.SEC_WEBSOCKET_KEY, NON_RANDOM_KEY);
-        fields.add(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
-        fields.add(HttpHeader.PRAGMA, "no-cache");
-        fields.add(HttpHeader.CACHE_CONTROL, "no-cache");
-        fields.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,"test");
-
-        client.getOutputStream().write(("GET / HTTP/1.1\r\n" + fields.toString()).getBytes(StandardCharsets.ISO_8859_1));
-        
-        InputStream in = client.getInputStream();
-        
-        int state = 0;
-        StringBuilder buffer = new StringBuilder();
-        while(state<4)
-        {
-            int i = in.read();
-            if (i<0)
-                throw new EOFException();
-            int b = (byte)(i&0xff);
-            buffer.append((char)b);
-            switch(state)
-            {
-                case 0:
-                    state = (b=='\r')?1:0;
-                    break;
-                case 1:
-                    state = (b=='\n')?2:0;
-                    break;
-                case 2:
-                    state = (b=='\r')?3:0;
-                    break;
-                case 3:
-                    state = (b=='\n')?4:0;
-                    break;
-                default:
-                    state = 0;
-            }
-        }
-        
-        String response = buffer.toString();
-        assertThat(response,startsWith("HTTP/1.1 101 Switching Protocols"));
-        assertThat(response,containsString("Sec-WebSocket-Protocol: test"));
-        assertThat(response,containsString("Sec-WebSocket-Accept: +WahVcVmeMLKQUMm0fvPrjSjwzI="));
-              
-        client.setSoTimeout(10000);
-        return client;
-    }
-
-    private Parser.ParsedFrame receiveFrame(InputStream in) throws IOException
-    {
-        ByteBuffer buffer = bufferPool.acquire(4096,false);
-        while(true)
-        {
-            int p = BufferUtil.flipToFill(buffer);
-            int len = in.read(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
-            if (len<0)
-                return null;
-            buffer.position(buffer.position()+len);
-            BufferUtil.flipToFlush(buffer,p);
-            
-            Parser.ParsedFrame frame = parser.parse(buffer);
-            if (frame!=null)
-                return frame;
-        }
-    }
-
-
 
     public void setup(State state) throws Exception
     {
@@ -194,7 +90,7 @@ public class WebSocketCloseTest
                 TestFrameHandler serverHandler = new TestFrameHandler();
                 server = new WebSocketServer(0, serverHandler);
                 server.start();
-                client = newClient();
+                client = newClient(server.getLocalPort());
 
                 assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
 
@@ -209,7 +105,7 @@ public class WebSocketCloseTest
 
                 server = new WebSocketServer(0, serverHandler);
                 server.start();
-                client = newClient();
+                client = newClient(server.getLocalPort());
 
                 assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
 
@@ -230,7 +126,7 @@ public class WebSocketCloseTest
 
                 server = new WebSocketServer(0, serverHandler);
                 server.start();
-                client = newClient();
+                client = newClient(server.getLocalPort());
 
                 assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
 
@@ -512,6 +408,15 @@ public class WebSocketCloseTest
         {
             return true;
         }
+
+        public void sendText(String text)
+        {
+            Frame frame = new Frame(OpCode.TEXT);
+            frame.setFin(true);
+            frame.setPayload(text);
+
+            getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+        }
     }
 
     static class WebSocketServer extends AbstractLifeCycle
@@ -575,11 +480,7 @@ public class WebSocketCloseTest
         public void sendText(String line)
         {
             LOG.info("sending {}...", line);
-            Frame frame = new Frame(OpCode.TEXT);
-            frame.setFin(true);
-            frame.setPayload(line);
-
-            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.sendText(line);
         }
 
         public BlockingQueue<Frame> getFrames()

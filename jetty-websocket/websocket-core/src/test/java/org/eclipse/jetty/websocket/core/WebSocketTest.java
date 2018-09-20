@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.net.URI;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -50,9 +45,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import java.net.URI;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.*;
 
 
 /**
@@ -217,11 +215,7 @@ public class WebSocketTest
         public void sendText(String line)
         {
             LOG.info("sending {}...", line);
-            Frame frame = new Frame(OpCode.TEXT);
-            frame.setFin(true);
-            frame.setPayload(line);
-
-            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.sendText(line);
         }
 
         public BlockingQueue<Frame> getFrames()
@@ -289,11 +283,7 @@ public class WebSocketTest
         public void sendText(String line)
         {
             LOG.info("sending {}...", line);
-            Frame frame = new Frame(OpCode.TEXT);
-            frame.setFin(true);
-            frame.setPayload(line);
-
-            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.sendText(line);
         }
 
         public BlockingQueue<Frame> getFrames()

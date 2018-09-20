@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.eclipse.jetty.server.Request;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class HandshakerFactory
 {

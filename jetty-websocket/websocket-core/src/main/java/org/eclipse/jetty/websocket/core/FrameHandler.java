@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.frames.Frame;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.

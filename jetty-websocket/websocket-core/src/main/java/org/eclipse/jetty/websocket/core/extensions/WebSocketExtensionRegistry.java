@@ -18,17 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+
+import java.util.*;
 
 public class WebSocketExtensionRegistry implements Iterable<Class<? extends Extension>>
 {

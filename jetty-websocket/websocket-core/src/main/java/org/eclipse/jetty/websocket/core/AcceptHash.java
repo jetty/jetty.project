@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.util.B64Code;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-
-import org.eclipse.jetty.util.B64Code;
 
 /**
  * Logic for working with the {@code Sec-WebSocket-Key} and <code>Sec-WebSocket-Accept</code> headers.

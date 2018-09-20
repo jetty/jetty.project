@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.core.extensions.compress;
 
-import java.util.zip.DataFormatException;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+
+import java.util.zip.DataFormatException;
 
 /**
  * Implementation of the

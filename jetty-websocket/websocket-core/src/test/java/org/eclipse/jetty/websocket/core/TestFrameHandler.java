@@ -18,15 +18,17 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
 public class TestFrameHandler implements FrameHandler
 {
@@ -73,5 +75,14 @@ public class TestFrameHandler implements FrameHandler
     public void onError(Throwable cause) throws Exception
     {
         LOG.info("onError {} ",cause==null?null:cause.toString());
+    }
+
+    public void sendText(String text)
+    {
+        Frame frame = new Frame(OpCode.TEXT);
+        frame.setFin(true);
+        frame.setPayload(text);
+
+        getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
     }
 }

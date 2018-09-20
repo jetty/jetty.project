@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.hamcrest.Matchers.is;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.junit.Assert;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.junit.Assert;
+import static org.hamcrest.Matchers.is;
 
 public class RawFrameBuilder
 {

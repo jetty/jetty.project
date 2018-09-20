@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
@@ -25,12 +31,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Utf8Appendable;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
  * Representation of a WebSocket Close (status code &amp; reason)

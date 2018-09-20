@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.core.io;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.IncomingFrames;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class IncomingFramesCapture implements IncomingFrames
 {

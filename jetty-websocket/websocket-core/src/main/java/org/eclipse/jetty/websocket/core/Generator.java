@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.frames.Frame;
+
+import java.nio.ByteBuffer;
 
 /**
  * Generating a frame in WebSocket land.

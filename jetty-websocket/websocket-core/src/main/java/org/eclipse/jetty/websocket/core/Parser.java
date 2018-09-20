@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.Closeable;
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -28,6 +25,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+
+import java.io.Closeable;
+import java.nio.ByteBuffer;
 
 /**
  * Parsing of a frames in WebSocket land.

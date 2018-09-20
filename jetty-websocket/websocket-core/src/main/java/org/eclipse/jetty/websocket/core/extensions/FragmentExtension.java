@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Queue;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -32,6 +27,10 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 /**
  * Fragment Extension

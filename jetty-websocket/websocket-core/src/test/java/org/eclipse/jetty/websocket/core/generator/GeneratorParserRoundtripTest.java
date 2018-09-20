@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.generator;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -36,6 +32,10 @@ import org.eclipse.jetty.websocket.core.parser.ParserCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.is;
 

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -35,6 +31,10 @@ import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 public class WebSocketCoreClient extends ContainerLifeCycle
 {

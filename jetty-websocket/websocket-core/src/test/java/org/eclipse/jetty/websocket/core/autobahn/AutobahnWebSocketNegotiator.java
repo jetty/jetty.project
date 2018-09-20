@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -29,6 +26,9 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+
+import java.io.IOException;
+import java.util.List;
 
 class AutobahnWebSocketNegotiator implements WebSocketNegotiator
 {

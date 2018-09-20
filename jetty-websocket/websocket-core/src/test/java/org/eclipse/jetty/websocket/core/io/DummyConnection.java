@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.io;
 
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -28,6 +26,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+
+import java.util.concurrent.Executor;
 
 public class DummyConnection extends WebSocketConnection
 {
