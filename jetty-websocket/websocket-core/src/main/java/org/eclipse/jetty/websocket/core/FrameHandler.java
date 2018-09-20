@@ -55,7 +55,7 @@ public interface FrameHandler extends IncomingFrames
      * Receiver of all Frames.
      * This method will never be called in parallel for the same session and will be called 
      * sequentially to satisfy all outstanding demand signaled by calls to 
-     * {@link CoreSession#demand(int)}. 
+     * {@link CoreSession#demand(long)}.
      * Control and Data frames are passed to this method. 
      * Control frames that require a response (eg PING and CLOSE) may be responded to by the 
      * the handler, but if an appropriate response is not sent once the callback is succeeded, 
@@ -89,7 +89,7 @@ public interface FrameHandler extends IncomingFrames
 
     /**
      * Does the FrameHandler manage it's own demand?
-     * @return true iff the FrameHandler will manage its own flow control by calling {@link CoreSession#demand(int)} when it 
+     * @return true iff the FrameHandler will manage its own flow control by calling {@link CoreSession#demand(long)} when it
      * is willing to receive new Frames.  Otherwise the demand will be managed by an automatic call to demand(1) after every
      * succeeded callback passed to {@link #onReceiveFrame(Frame, Callback)}.
      */

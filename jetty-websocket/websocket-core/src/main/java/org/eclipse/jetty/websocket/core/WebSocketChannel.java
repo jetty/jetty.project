@@ -114,7 +114,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         assertValid(frame);
 
-        int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining(); // TODO is this accurately getting length of payload
+        int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining();
 
         // Sane Payload Length
         if (payloadLength > policy.getMaxAllowedFrameSize())
@@ -156,6 +156,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     new CloseStatus(frame.getPayload());
             }
         }
+        else
+        {
+            // TODO should we validate UTF-8 for text frames
+            if (frame.getOpCode() == OpCode.TEXT)
+            {
+            }
+        }
 
         /*
          * RFC 6455 Section 5.2
@@ -163,6 +170,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
          * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
          * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
          */
+        //TODO save these values to not iterate through extensions every frame
         List<? extends Extension > exts = getExtensionStack().getExtensions();
 
         boolean isRsv1InUse = false;
@@ -353,7 +361,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     {
         CloseStatus closeStatus;
 
-        //TODO review everything below (at the moment we have no non terminal error handling)
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
             closeStatus = new CloseStatus(WebSocketConstants.BAD_PAYLOAD, cause.getMessage());
@@ -375,24 +382,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         else if (cause instanceof CloseException)
         {
             CloseException ce = (CloseException) cause;
-            Callback callback = Callback.NOOP;
-
-            // Force disconnect for protocol breaking status codes
-            switch (ce.getStatusCode())
-            {
-                case WebSocketConstants.PROTOCOL:
-                case WebSocketConstants.BAD_DATA:
-                case WebSocketConstants.BAD_PAYLOAD:
-                case WebSocketConstants.MESSAGE_TOO_LARGE:
-                case WebSocketConstants.POLICY_VIOLATION:
-                case WebSocketConstants.SERVER_ERROR:
-                {
-                    callback = Callback.NOOP; // TODO remove?
-                }
-            }
-
             closeStatus = new CloseStatus(ce.getStatusCode(), ce.getMessage());
-
         }
         else if (cause instanceof WebSocketTimeoutException)
         {
@@ -406,16 +396,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             // Fast-fail & close connection with reason.
             int statusCode = WebSocketConstants.SERVER_ERROR;
             if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
-            {
                 statusCode = WebSocketConstants.POLICY_VIOLATION;
-            }
 
             closeStatus = new CloseStatus(statusCode, cause.getMessage());
         }
 
-        // TODO can we avoid the illegal state exception in outClosed
         try
         {
+            // TODO can we avoid the illegal state exception in outClosed
             close(closeStatus, Callback.NOOP, BatchMode.OFF);
         }
         catch(IllegalStateException e)
@@ -502,11 +490,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             callback.failed(ce);
         }
 
-        if (frame.getOpCode() == OpCode.PING)
-        {
-            // TODO remember we have received this ping and need to send a pong
-        }
-
         extensionStack.onReceiveFrame(frame, callback);
     }
 
@@ -514,15 +497,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode) 
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendFrame({}, {}, {})", frame, callback, batchMode);
-        }
-
-        if (frame.getOpCode() == OpCode.PONG)
-        {
-            // TODO try to mark one of our ping frames as responded to if payload matches
-        }
-        // TODO do we also need to verify that outgoing ping frames are responded too
 
         try
         {
@@ -536,7 +511,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            //todo CloseStatus throws if invalid payload, will this be handled properly
             close(new CloseStatus(frame.getPayload()), callback, batchMode);
         }
         else

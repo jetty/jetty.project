@@ -211,7 +211,7 @@ public class WebSocketCloseTest
                 server.start();
                 client = newClient();
 
-                Thread.sleep(100);
+                assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
 
                 server.handler.getCoreSession().demand(1);
                 client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.NORMAL), true));
@@ -231,9 +231,10 @@ public class WebSocketCloseTest
                 server = new WebSocketServer(0, serverHandler);
                 server.start();
                 client = newClient();
-                Thread.sleep(100); // todo need to wait until onOpen is called
-                server.sendFrame(CloseStatus.toFrame(CloseStatus.NORMAL));
 
+                assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
+
+                server.sendFrame(CloseStatus.toFrame(CloseStatus.NORMAL));
                 Frame frame = receiveFrame(client.getInputStream());
                 assertNotNull(frame);
                 assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
