@@ -92,9 +92,8 @@ public class ObjectMBeanUtilTest
     public void setUp()
     {
         derivedExtended = new DerivedExtended();
-        objectMBean = new ObjectMBean(derivedExtended);
         container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        objectMBean.setMBeanContainer(container);
+        objectMBean = (ObjectMBean) container.mbeanFor(derivedExtended);
         objectMBeanInfo = objectMBean.getMBeanInfo();
     }
 

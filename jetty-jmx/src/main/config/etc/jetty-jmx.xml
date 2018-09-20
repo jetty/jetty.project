@@ -15,9 +15,8 @@
   <Call name="addBean">
     <Arg>
       <New id="MBeanContainer" class="org.eclipse.jetty.jmx.MBeanContainer">
-        <Arg>
-          <Ref refid="MBeanServer" />
-        </Arg>
+        <Arg><Ref refid="MBeanServer" /></Arg>
+        <Arg><Property name="jetty.jmx.cacheOtherClassLoaders=false" default="false"/></Arg>
       </New>
     </Arg>
   </Call>

@@ -20,15 +20,12 @@ package org.eclipse.jetty.jmx;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -38,17 +35,13 @@ import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanConstructorInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
-import javax.management.MBeanNotificationInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
-import javax.management.modelmbean.ModelMBean;
 
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -395,17 +388,17 @@ public class ObjectMBean implements DynamicMBean
     /**
      * <p>Defines an attribute for the managed object using the annotation attributes.</p>
      *
-     * @param method the method on the managed objec
      * @param attributeAnnotation the annotation with the attribute metadata
+     * @param getter the method on the managed objec
      * @return an MBeanAttributeInfo with the attribute metadata
      */
-    MBeanAttributeInfo defineAttribute(Method method, ManagedAttribute attributeAnnotation)
+    MBeanAttributeInfo defineAttribute(ManagedAttribute attributeAnnotation, Method getter)
     {
         // determine the name of the managed attribute
         String name = attributeAnnotation.name();
 
         if ("".equals(name))
-            name = toVariableName(method.getName());
+            name = toVariableName(getter.getName());
 
         if (_attributes.contains(name))
             return null; // we have an attribute named this already
@@ -415,7 +408,7 @@ public class ObjectMBean implements DynamicMBean
         boolean onMBean = attributeAnnotation.proxied();
 
         // determine if we should convert
-        Class<?> return_type = method.getReturnType();
+        Class<?> return_type = getter.getReturnType();
 
         // get the component type
         Class<?> component_type = return_type;
@@ -496,7 +489,7 @@ public class ObjectMBean implements DynamicMBean
         try
         {
             // Remember the methods
-            _getters.put(name, method);
+            _getters.put(name, getter);
             _setters.put(name, setter);
 
             MBeanAttributeInfo info;
@@ -508,11 +501,11 @@ public class ObjectMBean implements DynamicMBean
                         description,
                         true,
                         setter != null,
-                        method.getName().startsWith("is"));
+                        getter.getName().startsWith("is"));
             }
             else
             {
-                info = new MBeanAttributeInfo(name, description, method, setter);
+                info = new MBeanAttributeInfo(name, description, getter, setter);
             }
 
             _attributes.add(name);
@@ -529,11 +522,11 @@ public class ObjectMBean implements DynamicMBean
     /**
      * <p>Defines an operation for the managed object using the annotation attributes.</p>
      *
-     * @param method the method on the managed object
      * @param methodAnnotation the annotation with the operation metadata
+     * @param method the method on the managed object
      * @return an MBeanOperationInfo with the operation metadata
      */
-    MBeanOperationInfo defineOperation(Method method, ManagedOperation methodAnnotation)
+    MBeanOperationInfo defineOperation(ManagedOperation methodAnnotation, Method method)
     {
         String description = methodAnnotation.value();
         boolean onMBean = methodAnnotation.proxied();
