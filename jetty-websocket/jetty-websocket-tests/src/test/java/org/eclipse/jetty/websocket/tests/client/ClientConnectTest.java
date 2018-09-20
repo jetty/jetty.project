@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -52,6 +44,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Various connect condition testing
@@ -179,8 +179,8 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("Not a 101 Switching Protocols Response: 404 Not Found"));
+            assertExecutionException(e, instanceOf(UpgradeException.class),
+                    containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code: 404 Not Found"));
         }
     }
 
@@ -206,8 +206,8 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("Not a 101 Switching Protocols Response: 200 OK"));
+            assertExecutionException(e, instanceOf(UpgradeException.class),
+                    containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code: 200 OK"));
         }
     }
 
@@ -236,8 +236,8 @@ public class ClientConnectTest
         catch (ExecutionException e)
         {
             // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("Not a 101 Switching Protocols Response: 200 OK"));
+            assertExecutionException(e, instanceOf(UpgradeException.class),
+                    containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code: 200 OK"));
 
         }
     }

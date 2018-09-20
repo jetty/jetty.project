@@ -18,13 +18,16 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.util.Map;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.*;
-
-import java.util.Map;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class ValidationExtension extends AbstractExtension
 {
@@ -54,9 +57,9 @@ public class ValidationExtension extends AbstractExtension
 
             nextIncomingFrame(frame, callback);
         }
-        catch (CloseException e)
+        catch (Throwable t)
         {
-            callback.failed(e);
+            callback.failed(t);
         }
     }
 
@@ -73,9 +76,9 @@ public class ValidationExtension extends AbstractExtension
 
             nextOutgoingFrame(frame, callback, batchMode);
         }
-        catch (CloseException e)
+        catch (Throwable t)
         {
-            callback.failed(e);
+            callback.failed(t);
         }
     }
 

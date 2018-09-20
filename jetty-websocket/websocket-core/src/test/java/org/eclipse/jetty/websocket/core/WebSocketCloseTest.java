@@ -18,9 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -33,7 +39,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -41,19 +46,13 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.Socket;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests of a core server with a fake client
@@ -454,19 +453,8 @@ public class WebSocketCloseTest extends WebSocketTester
             server.setHandler(context);
             WebSocketNegotiator negotiator =  new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool(), frameHandler);
 
-            WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
+            WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);
-            upgradeHandler.setHandler(new AbstractHandler()
-            {
-                @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-                {
-                    response.setStatus(200);
-                    response.setContentType("text/plain");
-                    response.getOutputStream().println("Hello World!");
-                    baseRequest.setHandled(true);
-                }
-            });
         }
 
         public void sendFrame(Frame frame)
@@ -493,56 +481,6 @@ public class WebSocketCloseTest extends WebSocketTester
         public boolean isOpen()
         {
             return handler.getCoreSession().isOpen();
-        }
-    }
-
-    static class TestWebSocketNegotiator implements WebSocketNegotiator
-    {
-        final DecoratedObjectFactory objectFactory;
-        final WebSocketExtensionRegistry extensionRegistry;
-        final ByteBufferPool bufferPool;
-        private final FrameHandler frameHandler;
-
-        public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool, FrameHandler frameHandler)
-        {
-            this.objectFactory = objectFactory;
-            this.extensionRegistry = extensionRegistry;
-            this.bufferPool = bufferPool;
-            this.frameHandler = frameHandler;
-        }
-
-        @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
-        {
-            List<String> offeredSubprotocols = negotiation.getOfferedSubprotocols();
-            if (!offeredSubprotocols.contains("test"))
-                return null;
-            negotiation.setSubprotocol("test");
-            return frameHandler;
-        }
-
-        @Override
-        public WebSocketPolicy getCandidatePolicy()
-        {
-            return null;
-        }
-
-        @Override
-        public WebSocketExtensionRegistry getExtensionRegistry()
-        {
-            return extensionRegistry;
-        }
-
-        @Override
-        public DecoratedObjectFactory getObjectFactory()
-        {
-            return objectFactory;
-        }
-
-        @Override
-        public ByteBufferPool getByteBufferPool()
-        {
-            return bufferPool;
         }
     }
 }

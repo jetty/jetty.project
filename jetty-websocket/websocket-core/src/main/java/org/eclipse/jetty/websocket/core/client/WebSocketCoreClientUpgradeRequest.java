@@ -18,23 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
-import org.eclipse.jetty.client.*;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionUpgrader;
-import org.eclipse.jetty.http.*;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.*;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +27,38 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpConversation;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpConnectionUpgrader;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.AcceptHash;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.UpgradeException;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 
 public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
@@ -215,7 +230,6 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            //handleException(new HttpResponseException("Not a 101 Switching Protocols Response: " + responseLine, response));
             handleException(new UpgradeException(requestURI,responseStatusCode,"Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
