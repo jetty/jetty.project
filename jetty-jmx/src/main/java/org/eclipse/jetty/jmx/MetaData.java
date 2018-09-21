@@ -217,7 +217,7 @@ class MetaData
             klass = klass.getComponentType();
         if (klass.isPrimitive())
             return false;
-        while (klass != Object.class)
+        while (klass != null)
         {
             if (klass.isAnnotationPresent(ManagedObject.class))
                 return true;
