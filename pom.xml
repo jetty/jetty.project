@@ -50,7 +50,7 @@
 
 
     <!-- testing -->
-    <jetty.test.version>5.1-SNAPSHOT</jetty.test.version>
+    <jetty.test.version>5.1</jetty.test.version>
   </properties>
 
   <licenses>
