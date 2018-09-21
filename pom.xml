@@ -37,6 +37,7 @@
     <weld.version>2.4.5.Final</weld.version>
     <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
     <unix.socket.tmp></unix.socket.tmp>
+    <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
 
     <!-- some maven plugins versions -->
