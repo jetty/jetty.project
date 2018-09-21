@@ -139,7 +139,7 @@ public class ObjectMBean implements DynamicMBean
     }
 
     @Override
-    public Object getAttribute(String name) throws AttributeNotFoundException, ReflectionException
+    public Object getAttribute(String name) throws AttributeNotFoundException, ReflectionException, MBeanException
     {
         ClassLoader prevLoader = Thread.currentThread().getContextClassLoader();
         try
@@ -164,14 +164,15 @@ public class ObjectMBean implements DynamicMBean
             }
             catch (Throwable x)
             {
-                LOG.info(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
             }
         }
         return results;
     }
 
     @Override
-    public void setAttribute(Attribute attribute) throws AttributeNotFoundException, ReflectionException
+    public void setAttribute(Attribute attribute) throws AttributeNotFoundException, ReflectionException, MBeanException
     {
         ClassLoader prevLoader = Thread.currentThread().getContextClassLoader();
         try
@@ -197,7 +198,8 @@ public class ObjectMBean implements DynamicMBean
             }
             catch (Throwable x)
             {
-                LOG.info(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
             }
         }
         return results;
@@ -227,7 +229,7 @@ public class ObjectMBean implements DynamicMBean
         return _mbeanContainer.findBean(objectName);
     }
 
-    private MetaData metaData()
+    MetaData metaData()
     {
         if (_metaData == null)
             _metaData = MBeanContainer.findMetaData(_mbeanContainer, _managed.getClass());

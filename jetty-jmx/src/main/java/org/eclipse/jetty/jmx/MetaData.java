@@ -45,7 +45,6 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
 
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -59,21 +58,24 @@ class MetaData
 
     private final Map<String, AttributeInfo> _attributes = new HashMap<>();
     private final Map<String, OperationInfo> _operations = new HashMap<>();
+    private final Class<?> _klass;
     private final MetaData _parent;
     private final List<MetaData> _interfaces;
     private final Constructor<?> _constructor;
     private final MBeanInfo _info;
 
-    MetaData(Class<?> klass, MetaData parent, List<MetaData> interfaces)
+    MetaData(Class<?> klass, Constructor<?> constructor, MetaData parent, List<MetaData> interfaces)
     {
+        _klass = klass;
         _parent = parent;
         _interfaces = interfaces;
-        _constructor = findConstructor(klass);
+        _constructor = constructor;
         if (_constructor != null)
             parseMethods(klass, _constructor.getDeclaringClass());
         else
             parseMethods(klass);
         _info = buildMBeanInfo(klass);
+
     }
 
     Object newInstance(Object bean)
@@ -93,7 +95,7 @@ class MetaData
         return _info;
     }
 
-    Object getAttribute(String name, ObjectMBean mbean) throws AttributeNotFoundException, ReflectionException
+    Object getAttribute(String name, ObjectMBean mbean) throws AttributeNotFoundException, ReflectionException, MBeanException
     {
         AttributeInfo info = findAttribute(name);
         if (info == null)
@@ -101,7 +103,7 @@ class MetaData
         return info.getAttribute(mbean);
     }
 
-    void setAttribute(Attribute attribute, ObjectMBean mbean) throws AttributeNotFoundException, ReflectionException
+    void setAttribute(Attribute attribute, ObjectMBean mbean) throws AttributeNotFoundException, ReflectionException, MBeanException
     {
         if (attribute == null)
             return;
@@ -114,6 +116,8 @@ class MetaData
 
     private AttributeInfo findAttribute(String name)
     {
+        if (name == null)
+            return null;
         AttributeInfo result = _attributes.get(name);
         if (result != null)
             return result;
@@ -153,24 +157,6 @@ class MetaData
         return null;
     }
 
-    private static Constructor<?> findConstructor(Class<?> klass)
-    {
-        try
-        {
-            String pName = klass.getPackage().getName();
-            String cName = klass.getName().substring(pName.length() + 1);
-            String mName = pName + ".jmx." + cName + "MBean";
-            Class<?> mbeanClass = Loader.loadClass(mName);
-            return ModelMBean.class.isAssignableFrom(mbeanClass)
-                    ? mbeanClass.getConstructor()
-                    : mbeanClass.getConstructor(Object.class);
-        }
-        catch (Throwable x)
-        {
-            return null;
-        }
-    }
-
     private static Object newInstance(Constructor<?> constructor, Object bean)
     {
         try
@@ -190,6 +176,7 @@ class MetaData
     {
         for (Class<?> klass : classes)
         {
+            // Only work on the public method of the class, not of the hierarchy.
             for (Method method : klass.getDeclaredMethods())
             {
                 if (!Modifier.isPublic(method.getModifiers()))
@@ -198,12 +185,16 @@ class MetaData
                 if (attribute != null)
                 {
                     AttributeInfo info = new AttributeInfo(attribute, method);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Found attribute for {}: {}", klass.getName(), info);
                     _attributes.put(info._name, info);
                 }
                 ManagedOperation operation = method.getAnnotation(ManagedOperation.class);
                 if (operation != null)
                 {
                     OperationInfo info = new OperationInfo(operation, method);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Found operation for {}: {}", klass.getName(), info);
                     _operations.put(info._name, info);
                 }
             }
@@ -284,6 +275,21 @@ class MetaData
             _parent.collectMBeanOperationInfos(operationInfos);
     }
 
+    private static MBeanException toMBeanException(InvocationTargetException x)
+    {
+        Throwable cause = x.getCause();
+        if (cause instanceof Exception)
+            return new MBeanException((Exception)cause);
+        else
+            return new MBeanException(x);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _klass.getName());
+    }
+
     private static class AttributeInfo
     {
         private final String _name;
@@ -318,7 +324,7 @@ class MetaData
                             _setter != null, getter.getName().startsWith("is"));
         }
 
-        Object getAttribute(ObjectMBean mbean) throws ReflectionException
+        Object getAttribute(ObjectMBean mbean) throws ReflectionException, MBeanException
         {
             try
             {
@@ -338,13 +344,17 @@ class MetaData
                     names[i] = mbean.findObjectName(Array.get(result, i));
                 return names;
             }
+            catch (InvocationTargetException x)
+            {
+                throw toMBeanException(x);
+            }
             catch (Exception x)
             {
                 throw new ReflectionException(x);
             }
         }
 
-        void setAttribute(Object value, ObjectMBean mbean) throws ReflectionException
+        void setAttribute(Object value, ObjectMBean mbean) throws ReflectionException, MBeanException
         {
             try
             {
@@ -369,6 +379,10 @@ class MetaData
                 for (int i = 0; i < names.length; ++i)
                     Array.set(result, i, mbean.findBean(names[i]));
                 _setter.invoke(target, result);
+            }
+            catch (InvocationTargetException x)
+            {
+                throw toMBeanException(x);
             }
             catch (Exception x)
             {
@@ -403,6 +417,13 @@ class MetaData
             }
 
             return setter;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s,proxied=%b,convert=%b]", getClass().getSimpleName(), hashCode(),
+                    _name, _proxied, _convert);
         }
     }
 
@@ -464,11 +485,7 @@ class MetaData
             }
             catch (InvocationTargetException x)
             {
-                Throwable cause = x.getCause();
-                if (cause instanceof Exception)
-                    throw new MBeanException((Exception)cause);
-                else
-                    throw new MBeanException(new RuntimeException(cause));
+                throw toMBeanException(x);
             }
             catch (Exception x)
             {
@@ -497,6 +514,13 @@ class MetaData
                     result[i] = new MBeanParameterInfo("p" + i, typeName, "");
             }
             return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s,proxied=%b,convert=%b]", getClass().getSimpleName(), hashCode(),
+                    _name, _proxied, _convert);
         }
     }
 }

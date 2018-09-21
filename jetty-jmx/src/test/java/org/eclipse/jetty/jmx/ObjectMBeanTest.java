@@ -26,202 +26,126 @@ import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 
 import com.acme.Derived;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import com.acme.Managed;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ObjectMBeanTest
 {
-    private static final Logger LOG = Log.getLogger(ObjectMBeanTest.class);
-
-    private static MBeanContainer container;
+    private MBeanContainer container;
 
     @BeforeEach
-    public void before() throws Exception
+    public void before()
     {
         container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
     }
 
     @AfterEach
-    public void after() throws Exception
+    public void after()
     {
         container.destroy();
         container = null;
     }
 
-    /*
-     * this test uses the com.acme.Derived test classes
-     */
+    @Test
+    public void testMetaDataCaching()
+    {
+        Derived derived = new Derived();
+        ObjectMBean derivedMBean = (ObjectMBean)container.mbeanFor(derived);
+        ObjectMBean derivedMBean2 = (ObjectMBean)container.mbeanFor(derived);
+        assertNotSame(derivedMBean, derivedMBean2);
+        assertSame(derivedMBean.metaData(), derivedMBean2.metaData());
+    }
+
     @Test
     public void testDerivedAttributes() throws Exception
     {
         Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
+        Managed managed = derived.getManagedInstance();
+        ObjectMBean derivedMBean = (ObjectMBean)container.mbeanFor(derived);
+        ObjectMBean managedMBean = (ObjectMBean)container.mbeanFor(managed);
 
-        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
-        mbean.setMBeanContainer(container);
-        managed.setMBeanContainer(container);
+        container.beanAdded(null, derived);
+        container.beanAdded(null, managed);
 
-        container.beanAdded(null,derived);
-        container.beanAdded(null,derived.getManagedInstance());
+        MBeanInfo derivedInfo = derivedMBean.getMBeanInfo();
+        assertNotNull(derivedInfo);
+        MBeanInfo managedInfo = managedMBean.getMBeanInfo();
+        assertNotNull(managedInfo);
 
-        MBeanInfo toss = managed.getMBeanInfo();
+        assertEquals("com.acme.Derived", derivedInfo.getClassName(), "name does not match");
+        assertEquals("Test the mbean stuff", derivedInfo.getDescription(), "description does not match");
+        assertEquals(6, derivedInfo.getAttributes().length, "attribute count does not match");
+        assertEquals("Full Name", derivedMBean.getAttribute("fname"), "attribute values does not match");
 
-        assertNotNull(mbean.getMBeanInfo());
-
-        MBeanInfo info = mbean.getMBeanInfo();
-
-        assertEquals("com.acme.Derived", info.getClassName(), "name does not match");
-        assertEquals("Test the mbean stuff", info.getDescription(), "description does not match");
-
-        // for ( MBeanAttributeInfo i : info.getAttributes())
-        // {
-        // LOG.debug(i.toString());
-        // }
-
-        /*
-         * 2 attributes from lifecycle and 2 from Derived and 1 from MBean
-         */
-        assertEquals(6, info.getAttributes().length, "attribute count does not match");
-
-        assertEquals("Full Name", mbean.getAttribute("fname"), "attribute values does not match");
-
-        mbean.setAttribute(new Attribute("fname","Fuller Name"));
-
-        assertEquals("Fuller Name", mbean.getAttribute("fname"), "set attribute value does not match");
-
-        assertEquals("goop", mbean.getAttribute("goop"), "proxy attribute values do not match");
-
-        // Thread.sleep(100000);
+        derivedMBean.setAttribute(new Attribute("fname", "Fuller Name"));
+        assertEquals("Fuller Name", derivedMBean.getAttribute("fname"), "set attribute value does not match");
+        assertEquals("goop", derivedMBean.getAttribute("goop"), "proxy attribute values do not match");
     }
 
     @Test
     public void testDerivedOperations() throws Exception
     {
         Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
+        ObjectMBean mbean = (ObjectMBean)container.mbeanFor(derived);
 
-        mbean.setMBeanContainer(container);
-
-        container.beanAdded(null,derived);
+        container.beanAdded(null, derived);
 
         MBeanInfo info = mbean.getMBeanInfo();
-
         assertEquals(5, info.getOperations().length, "operation count does not match");
 
-        MBeanOperationInfo[] opinfos = info.getOperations();
+        MBeanOperationInfo[] operationInfos = info.getOperations();
         boolean publish = false;
         boolean doodle = false;
         boolean good = false;
-        for (int i = 0; i < opinfos.length; ++i)
+        for (MBeanOperationInfo operationInfo : operationInfos)
         {
-            MBeanOperationInfo opinfo = opinfos[i];
-
-            if ("publish".equals(opinfo.getName()))
+            if ("publish".equals(operationInfo.getName()))
             {
                 publish = true;
-                assertEquals("publish something", opinfo.getDescription(), "description doesn't match");
+                assertEquals("publish something", operationInfo.getDescription(), "description doesn't match");
             }
 
-            if ("doodle".equals(opinfo.getName()))
+            if ("doodle".equals(operationInfo.getName()))
             {
                 doodle = true;
-                assertEquals("Doodle something", opinfo.getDescription(), "description doesn't match");
-
-                MBeanParameterInfo[] pinfos = opinfo.getSignature();
-
-                assertEquals("A description of the argument", pinfos[0].getDescription(), "parameter description doesn't match");
-                assertEquals("doodle", pinfos[0].getName(), "parameter name doesn't match");
+                assertEquals("Doodle something", operationInfo.getDescription(), "description doesn't match");
+                MBeanParameterInfo[] parameterInfos = operationInfo.getSignature();
+                assertEquals("A description of the argument", parameterInfos[0].getDescription(), "parameter description doesn't match");
+                assertEquals("doodle", parameterInfos[0].getName(), "parameter name doesn't match");
             }
 
-            // This is a proxied operation on the JMX wrapper
-            if ("good".equals(opinfo.getName()))
+            // This is a proxied operation on the MBean wrapper.
+            if ("good".equals(operationInfo.getName()))
             {
                 good = true;
-
-                assertEquals("test of proxy operations", opinfo.getDescription(), "description does not match");
-                assertEquals("not bad",mbean.invoke("good",new Object[] {}, new String[] {}), "execution contexts wrong");
+                assertEquals("test of proxy operations", operationInfo.getDescription(), "description does not match");
+                assertEquals("not bad", mbean.invoke("good", new Object[]{}, new String[]{}), "execution contexts wrong");
             }
         }
 
         assertTrue(publish, "publish operation was not not found");
         assertTrue(doodle, "doodle operation was not not found");
         assertTrue(good, "good operation was not not found");
-
     }
 
     @Test
-    public void testDerivedObjectAttributes() throws Exception
+    public void testMethodNameMining()
     {
-        Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
-
-        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
-        mbean.setMBeanContainer(container);
-        managed.setMBeanContainer(container);
-
-        assertNotNull(mbean.getMBeanInfo());
-
-        container.beanAdded(null,derived);
-        container.beanAdded(null,derived.getManagedInstance());
-        container.beanAdded(null,mbean);
-        container.beanAdded(null,managed);
-
-        // Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
-        // assertNotNull(managedInstance);
-        // assertEquals("foo", managedInstance.getManaged(), "managed instance returning nonsense");
-
+        assertEquals("fullName", MetaData.toAttributeName("getFullName"));
+        assertEquals("fullName", MetaData.toAttributeName("getfullName"));
+        assertEquals("fullName", MetaData.toAttributeName("isFullName"));
+        assertEquals("fullName", MetaData.toAttributeName("isfullName"));
+        assertEquals("fullName", MetaData.toAttributeName("setFullName"));
+        assertEquals("fullName", MetaData.toAttributeName("setfullName"));
+        assertEquals("fullName", MetaData.toAttributeName("FullName"));
+        assertEquals("fullName", MetaData.toAttributeName("fullName"));
     }
-
-    @Test
-    @Disabled("ignore, used in testing jconsole atm")
-    public void testThreadPool() throws Exception
-    {
-
-        Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
-
-        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
-        mbean.setMBeanContainer(container);
-        managed.setMBeanContainer(container);
-
-        QueuedThreadPool qtp = new QueuedThreadPool();
-
-        ObjectMBean bqtp = (ObjectMBean)ObjectMBean.mbeanFor(qtp);
-
-        bqtp.getMBeanInfo();
-
-        container.beanAdded(null,derived);
-        container.beanAdded(null,derived.getManagedInstance());
-        container.beanAdded(null,mbean);
-        container.beanAdded(null,managed);
-        container.beanAdded(null,qtp);
-
-        Thread.sleep(10000000);
-
-    }
-
-    @Test
-    public void testMethodNameMining() throws Exception
-    {
-        ObjectMBean mbean = new ObjectMBean(new Derived());
-
-        assertEquals("fullName",MetaData.toAttributeName("getFullName"));
-        assertEquals("fullName",MetaData.toAttributeName("getfullName"));
-        assertEquals("fullName",MetaData.toAttributeName("isFullName"));
-        assertEquals("fullName",MetaData.toAttributeName("isfullName"));
-        assertEquals("fullName",MetaData.toAttributeName("setFullName"));
-        assertEquals("fullName",MetaData.toAttributeName("setfullName"));
-        assertEquals("fullName",MetaData.toAttributeName("FullName"));
-        assertEquals("fullName",MetaData.toAttributeName("fullName"));
-    }
-
 }

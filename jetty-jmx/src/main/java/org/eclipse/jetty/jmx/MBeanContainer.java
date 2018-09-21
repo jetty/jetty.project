@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jmx;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,9 @@ import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.management.modelmbean.ModelMBean;
 
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
@@ -151,7 +154,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         if (mbean instanceof ObjectMBean)
             ((ObjectMBean)mbean).setMBeanContainer(container);
         if (LOG.isDebugEnabled())
-            LOG.debug("mbeanFor {} is {}", o, mbean);
+            LOG.debug("MBean for {} is {}", o, mbean);
         return mbean;
     }
 
@@ -161,7 +164,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             return null;
         MetaData metaData = getMetaData(container, klass);
         if (metaData != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Found cached {}", metaData);
             return metaData;
+        }
         return newMetaData(container, klass);
     }
 
@@ -175,12 +182,12 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         if (klass == null)
             return null;
         if (klass == Object.class)
-            return new MetaData(klass, null, Collections.emptyList());
+            return new MetaData(klass, null, null, Collections.emptyList());
 
         List<MetaData> interfaces = Arrays.stream(klass.getInterfaces())
-                .map(iClass -> findMetaData(container, iClass))
+                .map(intf -> findMetaData(container, intf))
                 .collect(Collectors.toList());
-        MetaData metaData = new MetaData(klass, findMetaData(container, klass.getSuperclass()), interfaces);
+        MetaData metaData = new MetaData(klass, findConstructor(klass), findMetaData(container, klass.getSuperclass()), interfaces);
 
         if (container != null)
         {
@@ -193,6 +200,29 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
 
         return metaData;
+    }
+
+    private static Constructor<?> findConstructor(Class<?> klass)
+    {
+        String pName = klass.getPackage().getName();
+        String cName = klass.getName().substring(pName.length() + 1);
+        String mName = pName + ".jmx." + cName + "MBean";
+        try
+        {
+            Class<?> mbeanClass = Loader.loadClass(mName);
+            Constructor<?> constructor = ModelMBean.class.isAssignableFrom(mbeanClass)
+                    ? mbeanClass.getConstructor()
+                    : mbeanClass.getConstructor(Object.class);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Found MBean wrapper: {} for {}", mName, klass.getName());
+            return constructor;
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("MBean wrapper not found: {} for {}", mName, klass.getName());
+            return null;
+        }
     }
 
     /**
