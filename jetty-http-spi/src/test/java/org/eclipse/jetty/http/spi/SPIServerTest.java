@@ -18,8 +18,16 @@
 
 package org.eclipse.jetty.http.spi;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import com.sun.net.httpserver.BasicAuthenticator;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,19 +39,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import javax.net.ssl.HttpsURLConnection;
-
-import org.eclipse.jetty.util.IO;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.sun.net.httpserver.BasicAuthenticator;
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SPIServerTest
 {
@@ -51,7 +48,7 @@ public class SPIServerTest
     HttpServer server;
     int port;
     
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         server = new JettyHttpServerProvider().createHttpServer(new InetSocketAddress(host,0),10);
@@ -61,7 +58,7 @@ public class SPIServerTest
         System.err.println(port);
     }
     
-    @After 
+    @AfterEach
     public void after() throws Exception
     {
         server.stop(0);
