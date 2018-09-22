@@ -19,14 +19,12 @@
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import javax.servlet.http.Cookie;
 
-import org.eclipse.jetty.http.CookieCompliance;
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CookiesTest
 {

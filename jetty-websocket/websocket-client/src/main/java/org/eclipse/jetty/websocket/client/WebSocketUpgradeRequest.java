@@ -624,7 +624,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         // Now swap out the connection
         endp.upgrade(connection);
     }
-    
+
     public EndPoint configure(EndPoint endp)
     {
         return endp;
