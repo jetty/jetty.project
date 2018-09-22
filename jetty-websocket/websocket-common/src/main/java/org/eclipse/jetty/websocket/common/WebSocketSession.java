@@ -845,7 +845,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     endpointFunctions.getLog().warn("Error during OPEN", t);
                     onError(new CloseException(StatusCode.SERVER_ERROR, t));
                 }
-
                 /* Perform fillInterested outside of onConnected / onOpen.
                  *
                  * This is to allow for 2 specific scenarios.

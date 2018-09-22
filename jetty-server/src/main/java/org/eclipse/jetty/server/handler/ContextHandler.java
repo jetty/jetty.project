@@ -21,12 +21,12 @@ package org.eclipse.jetty.server.handler;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2610,35 +2610,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             // no security manager just return the classloader
             if (!_usingSecurityManager)
+            {
                 return _classLoader;
+            }
             else
             {
                 // check to see if the classloader of the caller is the same as the context
-                // classloader, or a parent of it
-                try
+                // classloader, or a parent of it, as required by the javadoc specification.
+
+                // Wrap in a PrivilegedAction so that only Jetty code will require the
+                // "createSecurityManager" permission, not also application code that calls this method.
+                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
+                ClassLoader callerLoader = caller.getCallerClassLoader(2);
+                while (callerLoader != null)
                 {
-                    Class<?> reflect = Loader.loadClass("sun.reflect.Reflection");
-                    Method getCallerClass = reflect.getMethod("getCallerClass",Integer.TYPE);
-                    Class<?> caller = (Class<?>)getCallerClass.invoke(null,2);
-
-                    boolean ok = false;
-                    ClassLoader callerLoader = caller.getClassLoader();
-                    while (!ok && callerLoader != null)
-                    {
-                        if (callerLoader == _classLoader)
-                            ok = true;
-                        else
-                            callerLoader = callerLoader.getParent();
-                    }
-
-                    if (ok)
+                    if (callerLoader == _classLoader)
                         return _classLoader;
+                    else
+                        callerLoader = callerLoader.getParent();
                 }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to check classloader of caller",e);
-                }
-
                 AccessController.checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
             }
@@ -3160,5 +3150,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          *            A request that is applicable to the scope, or null
          */
         void exitScope(Context context, Request request);
+    }
+
+    private static class Caller extends SecurityManager
+    {
+        public ClassLoader getCallerClassLoader(int depth)
+        {
+            if (depth < 0)
+                return null;
+            Class<?>[] classContext = getClassContext();
+            if (classContext.length <= depth)
+                return null;
+            return classContext[depth].getClassLoader();
+        }
     }
 }

@@ -27,7 +27,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -38,7 +37,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CustomResourcesMonitorTest
 {
@@ -111,28 +111,14 @@ public class CustomResourcesMonitorTest
                 InputStream input1 = socket1.getInputStream();
 
                 assertTrue(_fileOnDirectoryMonitor.isLowOnResources());
-                try
-                {
-                    input1.read();
-                    fail();
-                }
-                catch (SocketTimeoutException expected)
-                {
-                }
+                assertThrows(SocketTimeoutException.class, () -> input1.read());
 
                 // Wait a couple of lowResources idleTimeouts.
                 Thread.sleep(2 * lowResourcesIdleTimeout);
 
                 // Verify the new socket is still open.
                 assertTrue(_fileOnDirectoryMonitor.isLowOnResources());
-                try
-                {
-                    input1.read();
-                    fail();
-                }
-                catch (SocketTimeoutException expected)
-                {
-                }
+                assertThrows(SocketTimeoutException.class, () -> input1.read());
 
                 Files.delete( tmpFile );
 

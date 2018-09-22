@@ -411,9 +411,9 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             throw new IllegalStateException("Unable to start WebSocketClient", e);
         }
-        
         this.localEndpoint = localEndpoint;
         this.fut = new CompletableFuture<>();
+
     }
 
     private final String genRandomKey()
@@ -503,6 +503,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             }
 
             Throwable failure = result.getFailure();
+
             if ( (failure instanceof java.net.SocketException) ||
                  (failure instanceof java.io.InterruptedIOException) ||
                  (failure instanceof HttpResponseException) ||

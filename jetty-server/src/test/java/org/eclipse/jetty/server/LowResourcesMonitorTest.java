@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,6 @@ import java.util.concurrent.CountDownLatch;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LowResourcesMonitorTest
@@ -248,28 +248,15 @@ public class LowResourcesMonitorTest
                 InputStream input1 = socket1.getInputStream();
 
                 assertTrue(_lowResourcesMonitor.isLowOnResources());
-                try
-                {
-                    input1.read();
-                    fail();
-                }
-                catch (SocketTimeoutException expected)
-                {
-                }
+                assertThrows( SocketTimeoutException.class, () -> input1.read());
 
                 // Wait a couple of lowResources idleTimeouts.
                 Thread.sleep(2 * lowResourcesIdleTimeout);
 
                 // Verify the new socket is still open.
                 assertTrue(_lowResourcesMonitor.isLowOnResources());
-                try
-                {
-                    input1.read();
-                    fail();
-                }
-                catch (SocketTimeoutException expected)
-                {
-                }
+                assertThrows( SocketTimeoutException.class, () -> input1.read());
+
                 // Let the maxLowResourcesTime elapse.
                 Thread.sleep(maxLowResourcesTime);
 
