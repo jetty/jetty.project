@@ -26,11 +26,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.management.Attribute;
@@ -56,6 +54,10 @@ import org.eclipse.jetty.util.log.Logger;
 class MetaData
 {
     private static final Logger LOG = Log.getLogger(MetaData.class);
+    private static final MBeanAttributeInfo[] NO_ATTRIBUTES = new MBeanAttributeInfo[0];
+    private static final MBeanConstructorInfo[] NO_CONSTRUCTORS = new MBeanConstructorInfo[0];
+    private static final MBeanOperationInfo[] NO_OPERATIONS = new MBeanOperationInfo[0];
+    private static final MBeanNotificationInfo[] NO_NOTIFICATIONS = new MBeanNotificationInfo[0];
 
     private final Map<String, AttributeInfo> _attributes = new HashMap<>();
     private final Map<String, OperationInfo> _operations = new HashMap<>();
@@ -244,45 +246,51 @@ class MetaData
         ManagedObject managedObject = klass.getAnnotation(ManagedObject.class);
         String description = managedObject == null ? "" : managedObject.value();
 
-        Set<MBeanAttributeInfo> attributeInfos = new HashSet<>();
+        Map<String, MBeanAttributeInfo> attributeInfos = new HashMap<>();
         collectMBeanAttributeInfos(attributeInfos);
 
-        Set<MBeanOperationInfo> operationInfos = new HashSet<>();
+        Map<String, MBeanOperationInfo> operationInfos = new HashMap<>();
         collectMBeanOperationInfos(operationInfos);
 
-        MBeanAttributeInfo[] attributes = attributeInfos.toArray(new MBeanAttributeInfo[0]);
-        MBeanOperationInfo[] operations = operationInfos.toArray(new MBeanOperationInfo[0]);
-        return new MBeanInfo(klass.getName(), description, attributes, new MBeanConstructorInfo[0], operations, new MBeanNotificationInfo[0]);
+        MBeanInfo mbeanInfo = _parent == null ? null : _parent.getMBeanInfo();
+        MBeanAttributeInfo[] attributes = attributeInfos.values().toArray(NO_ATTRIBUTES);
+        MBeanConstructorInfo[] constructors = mbeanInfo == null ? NO_CONSTRUCTORS : mbeanInfo.getConstructors();
+        MBeanOperationInfo[] operations = operationInfos.values().toArray(NO_OPERATIONS);
+        MBeanNotificationInfo[] notifications = mbeanInfo == null ? NO_NOTIFICATIONS : mbeanInfo.getNotifications();
+        return new MBeanInfo(klass.getName(), description, attributes, constructors, operations, notifications);
     }
 
-    private void collectMBeanAttributeInfos(Set<MBeanAttributeInfo> attributeInfos)
+    private void collectMBeanAttributeInfos(Map<String, MBeanAttributeInfo> attributeInfos)
     {
-        // Priority to local attributes, then to interfaces then to superClass.
-        _attributes.values().stream()
-                .map(info -> info._info)
-                .collect(Collectors.toCollection(() -> attributeInfos));
+        // Start with interfaces, overwrite with superClass, then overwrite with local attributes.
         for (MetaData intf : _interfaces)
             intf.collectMBeanAttributeInfos(attributeInfos);
         if (_parent != null)
         {
-            MBeanInfo parentInfo = _parent.getMBeanInfo();
-            attributeInfos.addAll(Arrays.asList(parentInfo.getAttributes()));
+            MBeanAttributeInfo[] parentAttributes = _parent.getMBeanInfo().getAttributes();
+            for (MBeanAttributeInfo parentAttribute : parentAttributes)
+                attributeInfos.put(parentAttribute.getName(), parentAttribute);
         }
+        for (Map.Entry<String, AttributeInfo> entry : _attributes.entrySet())
+            attributeInfos.put(entry.getKey(), entry.getValue()._info);
     }
 
-    private void collectMBeanOperationInfos(Set<MBeanOperationInfo> operationInfos)
+    private void collectMBeanOperationInfos(Map<String, MBeanOperationInfo> operationInfos)
     {
-        // Priority to local operations, then to interfaces then to superClass.
-        _operations.values().stream()
-                .map(info -> info._info)
-                .collect(Collectors.toCollection(() -> operationInfos));
+        // Start with interfaces, overwrite with superClass, then overwrite with local operations.
         for (MetaData intf : _interfaces)
             intf.collectMBeanOperationInfos(operationInfos);
         if (_parent != null)
         {
-            MBeanInfo parentInfo = _parent.getMBeanInfo();
-            operationInfos.addAll(Arrays.asList(parentInfo.getOperations()));
+            MBeanOperationInfo[] parentOperations = _parent.getMBeanInfo().getOperations();
+            for (MBeanOperationInfo parentOperation : parentOperations)
+            {
+                String signature = signature(parentOperation.getName(), Arrays.stream(parentOperation.getSignature()).map(MBeanParameterInfo::getType).toArray(String[]::new));
+                operationInfos.put(signature, parentOperation);
+            }
         }
+        for (Map.Entry<String, OperationInfo> entry : _operations.entrySet())
+            operationInfos.put(entry.getKey(), entry.getValue()._info);
     }
 
     private static MBeanException toMBeanException(InvocationTargetException x)
@@ -297,7 +305,8 @@ class MetaData
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _klass.getName());
+        return String.format("%s@%x[%s, attrs=%s, opers=%s]", getClass().getSimpleName(), hashCode(),
+                _klass.getName(), _attributes.keySet(), _operations.keySet());
     }
 
     private static class AttributeInfo

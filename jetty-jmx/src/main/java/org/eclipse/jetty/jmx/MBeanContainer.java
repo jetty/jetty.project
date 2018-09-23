@@ -196,6 +196,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
                 MetaData existing = container._metaData.putIfAbsent(klass, metaData);
                 if (existing != null)
                     metaData = existing;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Cached {}", metaData);
             }
         }
 
