@@ -43,6 +43,7 @@
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
             <contentCheck>Bean Validation Webapp example</contentCheck>
           </systemPropertyVariables>
           <dependenciesToScan>
