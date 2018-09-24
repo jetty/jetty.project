@@ -120,18 +120,27 @@ class MetaData
     {
         if (name == null)
             return null;
-        AttributeInfo result = _attributes.get(name);
-        if (result != null)
-            return result;
+
+        AttributeInfo result = null;
         for (MetaData intf : _interfaces)
         {
-            result = intf.findAttribute(name);
-            if (result != null)
-                return result;
+            AttributeInfo r = intf.findAttribute(name);
+            if (r != null)
+                result = r;
         }
+
         if (_parent != null)
-            return _parent.findAttribute(name);
-        return null;
+        {
+            AttributeInfo r = _parent.findAttribute(name);
+            if (r != null)
+                result = r;
+        }
+
+        AttributeInfo r = _attributes.get(name);
+        if (r != null)
+            result = r;
+
+        return result;
     }
 
     Object invoke(String name, String[] params, Object[] args, ObjectMBean mbean) throws ReflectionException, MBeanException
