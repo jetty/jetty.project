@@ -33,7 +33,7 @@ public class TestFrameHandler implements FrameHandler
 
     private CoreSession session;
 
-    protected BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+    public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
     public CountDownLatch closed = new CountDownLatch(1);
 
     public CoreSession getCoreSession()
