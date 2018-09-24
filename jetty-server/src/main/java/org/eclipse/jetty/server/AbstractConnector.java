@@ -226,7 +226,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
-    @ManagedAttribute("Idle timeout")
+    @ManagedAttribute
     public long getIdleTimeout()
     {
         return _idleTimeout;

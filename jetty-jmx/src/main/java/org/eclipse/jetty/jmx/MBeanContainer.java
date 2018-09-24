@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.management.InstanceNotFoundException;
+import javax.management.MBeanInfo;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -154,7 +155,18 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         if (mbean instanceof ObjectMBean)
             ((ObjectMBean)mbean).setMBeanContainer(container);
         if (LOG.isDebugEnabled())
+        {
             LOG.debug("MBean for {} is {}", o, mbean);
+            if (mbean instanceof ObjectMBean)
+            {
+                MBeanInfo info =((ObjectMBean)mbean).getMBeanInfo();
+                for (Object a :info.getAttributes())
+                    LOG.debug("    {}", a);
+                for (Object a :info.getOperations())
+                    LOG.debug("    {}", a);
+
+            }
+        }
         return mbean;
     }
 

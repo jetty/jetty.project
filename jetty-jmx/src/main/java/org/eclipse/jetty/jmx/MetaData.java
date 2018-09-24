@@ -188,7 +188,7 @@ class MetaData
                 {
                     AttributeInfo info = new AttributeInfo(attribute, method);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Found attribute for {}: {}", klass.getName(), info);
+                        LOG.debug("Found attribute {} for {}: {}", info._name, klass.getName(), info);
                     _attributes.put(info._name, info);
                 }
                 ManagedOperation operation = method.getAnnotation(ManagedOperation.class);
@@ -196,7 +196,7 @@ class MetaData
                 {
                     OperationInfo info = new OperationInfo(operation, method);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Found operation for {}: {}", klass.getName(), info);
+                        LOG.debug("Found operation {} for {}: {}", info._name, klass.getName(), info);
                     _operations.put(info._name, info);
                 }
             }
@@ -375,6 +375,8 @@ class MetaData
 
         void setAttribute(Object value, ObjectMBean mbean) throws ReflectionException, MBeanException
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("setAttribute {}.{}={} {}",mbean,_info.getName(), value, _info);
             try
             {
                 if (_setter == null)
@@ -441,8 +443,8 @@ class MetaData
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,proxied=%b,convert=%b]", getClass().getSimpleName(), hashCode(),
-                    _name, _proxied, _convert);
+            return String.format("%s@%x[%s,proxied=%b,convert=%b,info=%s]", getClass().getSimpleName(), hashCode(),
+                    _name, _proxied, _convert, _info);
         }
     }
 
@@ -484,6 +486,8 @@ class MetaData
 
         public Object invoke(Object[] args, ObjectMBean mbean) throws ReflectionException, MBeanException
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("invoke {}.{}({}) {}",mbean,_info.getName(), Arrays.asList(args), _info);
             try
             {
                 Object target = mbean.getManagedObject();
