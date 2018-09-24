@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.Future;
@@ -31,17 +32,16 @@ import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class FirefoxTest
 {
     private static BlockheadClient client;
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startContainers() throws Exception
     {
         server = new SimpleServletServer(new MyEchoServlet());
@@ -51,7 +51,7 @@ public class FirefoxTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopContainers() throws Exception
     {
         client.stop();
@@ -77,7 +77,7 @@ public class FirefoxTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = conn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
+            assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }
     }
 }

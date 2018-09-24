@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.InputStreamReader;
@@ -26,21 +30,15 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.thread.ShutdownThread;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class ShutdownMonitorTest
 {
-    @After
+    @AfterEach
     public void dispose()
     {
         ShutdownMonitor.reset();
@@ -71,19 +69,19 @@ public class ShutdownMonitorTest
                 String reply = input.readLine();
                 assertEquals("OK", reply);
                 // Socket must be closed afterwards.
-                Assert.assertNull(input.readLine());
+                assertNull(input.readLine());
             }
         }
     }
 
-    @Ignore("Issue #2626")
+    @Disabled("Issue #2626")
     @Test
     public void testStartStopDifferentPortDifferentKey() throws Exception
     {
         testStartStop(false);
     }
 
-    @Ignore("Issue #2626")
+    @Disabled("Issue #2626")
     @Test
     public void testStartStopSamePortDifferentKey() throws Exception
     {

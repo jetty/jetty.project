@@ -19,13 +19,13 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * InfinispanSessionDataStoreTest
@@ -37,14 +37,14 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     
     public InfinispanTestSupport __testSupport;
     
-    @Before
+    @BeforeEach
     public void setup () throws Exception
     {
         __testSupport = new InfinispanTestSupport();
         __testSupport.setup();
     }
     
-    @After
+    @AfterEach
     public void teardown () throws Exception
     {
         __testSupport.teardown();

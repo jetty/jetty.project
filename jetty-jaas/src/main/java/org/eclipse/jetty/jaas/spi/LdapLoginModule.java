@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -40,6 +41,7 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
@@ -273,16 +275,9 @@ public class LdapLoginModule extends AbstractLoginModule
      */
     private Attributes getUserAttributes(String username) throws LoginException
     {
-        try
-        {
-            SearchResult result = findUser(username);
-            Attributes attributes = result.getAttributes();
-            return attributes;
-        }
-        catch (NamingException e)
-        {
-            throw new LoginException("Root context binding failure.");
-        }
+        SearchResult result = findUser(username);
+        Attributes attributes = result.getAttributes();
+        return attributes;
     }
 
     private String getUserCredentials(Attributes attributes) throws LoginException
@@ -334,12 +329,19 @@ public class LdapLoginModule extends AbstractLoginModule
             }
         }
 
-        String userDn = _userRdnAttribute + "=" + rdnValue + "," + _userBaseDn;
+        String filter = "({0}={1})";
 
-        return getUserRolesByDn(dirContext, userDn);
+        Object[] filterArguments = new Object[]{
+                _userRdnAttribute,
+                rdnValue
+        };
+
+        SearchResult searchResult = findUser(dirContext, filter, filterArguments);
+
+        return getUserRolesByDn(dirContext, searchResult.getNameInNamespace());
     }
 
-    private List<String> getUserRolesByDn(DirContext dirContext, String userDn) throws LoginException, NamingException
+    private List<String> getUserRolesByDn(DirContext dirContext, String userDn) throws NamingException
     {
         List<String> roleList = new ArrayList<>();
 
@@ -463,13 +465,23 @@ public class LdapLoginModule extends AbstractLoginModule
             }
             throw new LoginException("IO Error performing login.");
         }
-        catch (Exception e)
+        catch ( AuthenticationException e )
         {
             if (_debug)
             {
                 LOG.info( e );
             }
-            throw new LoginException("Error obtaining user info.");
+            return false;
+        }
+        catch (LoginException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            if (_debug)
+                LOG.info(e);
+            throw new LoginException ("Error obtaining user info");
         }
     }
 
@@ -496,9 +508,8 @@ public class LdapLoginModule extends AbstractLoginModule
      * @param password the password
      * @return true always
      * @throws LoginException  if unable to bind the login
-     * @throws NamingException if failure to bind login
      */
-    public boolean bindingLogin(String username, Object password) throws LoginException, NamingException
+    public boolean bindingLogin(String username, Object password) throws LoginException
     {
         SearchResult searchResult = findUser(username);
 
@@ -510,33 +521,39 @@ public class LdapLoginModule extends AbstractLoginModule
 
         if (userDn == null || "".equals(userDn))
         {
-            throw new NamingException("username may not be empty");
+            throw new FailedLoginException("username may not be empty");
         }
         environment.put(Context.SECURITY_PRINCIPAL, userDn);
         // RFC 4513 section 6.3.1, protect against ldap server implementations that allow successful binding on empty passwords
         if (password == null || "".equals(password))
         {
-            throw new NamingException("password may not be empty");
+            throw new FailedLoginException("password may not be empty");
         }
         environment.put(Context.SECURITY_CREDENTIALS, password);
 
-        DirContext dirContext = new InitialDirContext(environment);
-        List<String> roles = getUserRolesByDn(dirContext, userDn);
+        try
+        {
+            DirContext dirContext = new InitialDirContext(environment);
+            List<String> roles = getUserRolesByDn(dirContext, userDn);
 
-        UserInfo userInfo = new UserInfo(username, null, roles);
-        setCurrentUser(new JAASUserInfo(userInfo));
-        setAuthenticated(true);
+            UserInfo userInfo = new UserInfo(username, null, roles);
+            setCurrentUser(new JAASUserInfo(userInfo));
+            setAuthenticated(true);
 
-        return true;
+            return true;
+        }
+        catch (javax.naming.AuthenticationException e)
+        {
+            throw new FailedLoginException(e.getMessage());
+        }
+        catch (NamingException e)
+        {
+            throw new FailedLoginException (e.getMessage());
+        }
     }
 
-    private SearchResult findUser(String username) throws NamingException, LoginException
+    private SearchResult findUser(String username) throws LoginException
     {
-        SearchControls ctls = new SearchControls();
-        ctls.setCountLimit(1);
-        ctls.setDerefLinkFlag(true);
-        ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-
         String filter = "(&(objectClass={0})({1}={2}))";
 
         if (LOG.isDebugEnabled())
@@ -547,17 +564,37 @@ public class LdapLoginModule extends AbstractLoginModule
                 _userIdAttribute,
                 username
         };
-        NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
+
+        return findUser(_rootContext, filter, filterArguments);
+    }
+
+    private SearchResult findUser(DirContext dirContext, String filter, Object[] filterArguments) throws LoginException
+    {
+        SearchControls ctls = new SearchControls();
+        ctls.setDerefLinkFlag(true);
+        ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+
+        NamingEnumeration<SearchResult> results;
+        try
+        {
+            results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
+        }
+        catch (NamingException ne)
+        {
+            throw new FailedLoginException(ne.getMessage());
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("Found user?: " + results.hasMoreElements());
 
         if (!results.hasMoreElements())
-        {
-            throw new LoginException("User not found.");
-        }
+            throw new FailedLoginException("User not found.");
 
-        return results.nextElement();
+        SearchResult searchResult = (SearchResult)results.nextElement();
+        if (results.hasMoreElements())
+            throw new FailedLoginException("Search result contains ambiguous entries");
+
+        return searchResult;
     }
 
 

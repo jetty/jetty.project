@@ -21,10 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,22 +34,18 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class WebSocketRemoteEndpointTest
 {
-    @Rule
-    public TestName testname = new TestName();
-
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @Test
-    public void testTextBinaryText() throws IOException
+    public void testTextBinaryText(TestInfo testinfo) throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
+        String id = testinfo.getDisplayName();
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
         conn.connect();
@@ -61,28 +54,23 @@ public class WebSocketRemoteEndpointTest
         // Start text message
         remote.sendPartialString("Hello ",false);
 
-        try
-        {
+        IllegalStateException e = assertThrows(IllegalStateException.class, ()->{
             // Attempt to start Binary Message
             ByteBuffer bytes = ByteBuffer.wrap(new byte[]
                     { 0, 1, 2 });
             remote.sendPartialBytes(bytes,false);
-            fail("Expected " + IllegalStateException.class.getName());
-        }
-        catch (IllegalStateException e)
-        {
-            // Expected path
-            Assert.assertThat("Exception",e.getMessage(),containsString("Cannot send"));
-        }
+        });
+        assertThat("Exception",e.getMessage(),containsString("Cannot send"));
 
         // End text message
         remote.sendPartialString("World!",true);
     }
 
     @Test
-    public void testTextPingText() throws IOException
+    public void testTextPingText(TestInfo testinfo) throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
+        String id = testinfo.getDisplayName();
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
         conn.connect();
@@ -105,9 +93,9 @@ public class WebSocketRemoteEndpointTest
      * @see <a href="https://github.com/eclipse/jetty.project/issues/2491">eclipse/jetty.project#2491</a>
      */
     @Test
-    public void testLargeSmallText() throws ExecutionException, InterruptedException
+    public void testLargeSmallText(TestInfo testInfo) throws ExecutionException, InterruptedException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname, bufferPool);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testInfo.getDisplayName(), bufferPool);
         OutgoingFrames orderingAssert = new SaneFrameOrderingAssertion();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn, orderingAssert);
         conn.connect();

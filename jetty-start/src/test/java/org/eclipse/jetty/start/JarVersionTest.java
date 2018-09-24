@@ -18,20 +18,21 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 import java.io.File;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class JarVersionTest
 {
     private void assertJarVersion(String jarname, String expectedVersion)
     {
         File jarfile = MavenTestingUtils.getTestResourceFile(jarname);
-        Assert.assertThat("Jar: " + jarname,JarVersion.getVersion(jarfile),containsString(expectedVersion));
+        assertThat("Jar: " + jarname,JarVersion.getVersion(jarfile),containsString(expectedVersion));
     }
 
     @Test

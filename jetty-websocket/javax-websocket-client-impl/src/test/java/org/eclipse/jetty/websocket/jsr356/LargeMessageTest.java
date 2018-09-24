@@ -37,10 +37,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class LargeMessageTest
 {
@@ -53,7 +52,7 @@ public class LargeMessageTest
         LARGER_THAN_DEFAULT_SIZE = defaultPolicy.getMaxTextMessageSize() * 3;
     }
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new Server();
@@ -72,7 +71,7 @@ public class LargeMessageTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
@@ -88,7 +87,7 @@ public class LargeMessageTest
         container.setDefaultMaxTextMessageBufferSize(LARGER_THAN_DEFAULT_SIZE);
 
         EndpointEchoClient echoer = new EndpointEchoClient();
-        Assert.assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
 
         URI wsUri = WSURI.toWebsocket(server.getURI()).resolve("/");
 

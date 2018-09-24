@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
@@ -29,12 +29,12 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -46,28 +46,19 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class IPAccessHandlerTest
 {
     private static Server _server;
     private static NetworkConnector _connector;
     private static IPAccessHandler _handler;
 
-    private String _white;
-    private String _black;
-    private String _host;
-    private String _uri;
-    private String _code;
-    private boolean _byPath;
-
-    @BeforeClass
+    @BeforeAll
     public static void setUp()
         throws Exception
     {
@@ -90,7 +81,7 @@ public class IPAccessHandlerTest
     }
 
     /* ------------------------------------------------------------ */
-    @AfterClass
+    @AfterAll
     public static void tearDown()
         throws Exception
     {
@@ -98,26 +89,16 @@ public class IPAccessHandlerTest
     }
 
     /* ------------------------------------------------------------ */
-    public IPAccessHandlerTest(String white, String black, String host, String uri, String code, boolean byPath)
-    {
-        _white = white;
-        _black = black;
-        _host  = host;
-        _uri   = uri;
-        _code  = code;
-        _byPath = byPath;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Test
-    public void testHandler()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testHandler(String white, String black, String host, String uri, String code, boolean byPath)
         throws Exception
     {
-        _handler.setWhite(_white.split(";",-1));
-        _handler.setBlack(_black.split(";",-1));
-        _handler.setWhiteListByPath(_byPath);
+        _handler.setWhite(white.split(";",-1));
+        _handler.setBlack(black.split(";",-1));
+        _handler.setWhiteListByPath(byPath);
 
-        String request = "GET " + _uri + " HTTP/1.1\n" + "Host: "+ _host + "\n\n";
+        String request = "GET " + uri + " HTTP/1.1\n" + "Host: "+ host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
         try
@@ -130,9 +111,9 @@ public class IPAccessHandlerTest
 
             Response response = readResponse(input);
             Object[] params = new Object[]{
-                    "Request WBHUC", _white, _black, _host, _uri, _code,
+                    "Request WBHUC", white, black, host, uri, code,
                     "Response", response.getCode()};
-            assertEquals(Arrays.deepToString(params), _code, response.getCode());
+            assertEquals(code, response.getCode(), Arrays.deepToString(params));
         }
         finally
         {
@@ -152,7 +133,7 @@ public class IPAccessHandlerTest
         assertTrue(responseLine.lookingAt());
         String code = responseLine.group(1);
 
-        Map<String, String> headers = new LinkedHashMap<String, String>();
+        Map<String, String> headers = new LinkedHashMap<>();
         while ((line = reader.readLine()) != null)
         {
             if (line.trim().length() == 0)
@@ -248,8 +229,7 @@ public class IPAccessHandlerTest
     }
 
    /* ------------------------------------------------------------ */
-    @Parameters
-    public static Collection<Object[]> data() {
+    public static Stream<Arguments> data() {
         Object[][] data = new Object[][] {
             // Empty lists
             {"", "", "127.0.0.1", "/",          "200", false},
@@ -560,6 +540,6 @@ public class IPAccessHandlerTest
             {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
             {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dump/info", "200", true},
         };
-        return Arrays.asList(data);
-    };
+        return Arrays.asList(data).stream().map(Arguments::of);
+    }
 }

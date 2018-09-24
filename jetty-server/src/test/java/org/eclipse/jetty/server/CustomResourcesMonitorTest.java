@@ -19,15 +19,13 @@
 package org.eclipse.jetty.server;
 
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,9 +37,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(AdvancedRunner.class)
 public class CustomResourcesMonitorTest
 {
     Server _server;
@@ -50,7 +48,7 @@ public class CustomResourcesMonitorTest
     Path _monitoredPath;
     LowResourceMonitor _lowResourceMonitor;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         _server = new Server();
@@ -72,7 +70,7 @@ public class CustomResourcesMonitorTest
         _server.start();
     }
     
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         _server.stop();
@@ -113,28 +111,14 @@ public class CustomResourcesMonitorTest
                 InputStream input1 = socket1.getInputStream();
 
                 assertTrue(_fileOnDirectoryMonitor.isLowOnResources());
-                try
-                {
-                    input1.read();
-                    fail();
-                }
-                catch (SocketTimeoutException expected)
-                {
-                }
+                assertThrows(SocketTimeoutException.class, () -> input1.read());
 
                 // Wait a couple of lowResources idleTimeouts.
                 Thread.sleep(2 * lowResourcesIdleTimeout);
 
                 // Verify the new socket is still open.
                 assertTrue(_fileOnDirectoryMonitor.isLowOnResources());
-                try
-                {
-                    input1.read();
-                    fail();
-                }
-                catch (SocketTimeoutException expected)
-                {
-                }
+                assertThrows(SocketTimeoutException.class, () -> input1.read());
 
                 Files.delete( tmpFile );
 

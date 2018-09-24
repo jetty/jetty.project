@@ -40,18 +40,18 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@Ignore
+@Disabled
 public class JmxIT
 {
     private Server _server;
@@ -60,7 +60,7 @@ public class JmxIT
     private int _httpPort;
     private JMXServiceURL _jmxURL;
 
-    @Before
+    @BeforeEach
     public void connectToMBeanServer() throws Exception
     {
         startJetty();
@@ -71,7 +71,7 @@ public class JmxIT
         _mbsc = _jmxc.getMBeanServerConnection();
     }
 
-    @After
+    @AfterEach
     public void disconnectFromMBeanServer() throws Exception
     {
         _jmxc.close();

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -26,17 +29,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class Socks4ProxyTest
 {
     private ServerSocketChannel server;
     private HttpClient client;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception
     {
         server = ServerSocketChannel.open();
@@ -46,7 +49,7 @@ public class Socks4ProxyTest
         client.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         client.stop();
@@ -84,24 +87,24 @@ public class Socks4ProxyTest
             int socks4MessageLength = 9;
             ByteBuffer buffer = ByteBuffer.allocate(socks4MessageLength);
             int read = channel.read(buffer);
-            Assert.assertEquals(socks4MessageLength, read);
-            Assert.assertEquals(4, buffer.get(0) & 0xFF);
-            Assert.assertEquals(1, buffer.get(1) & 0xFF);
-            Assert.assertEquals(serverPort, buffer.getShort(2) & 0xFFFF);
-            Assert.assertEquals(ip1, buffer.get(4) & 0xFF);
-            Assert.assertEquals(ip2, buffer.get(5) & 0xFF);
-            Assert.assertEquals(ip3, buffer.get(6) & 0xFF);
-            Assert.assertEquals(ip4, buffer.get(7) & 0xFF);
-            Assert.assertEquals(0, buffer.get(8) & 0xFF);
+            assertEquals(socks4MessageLength, read);
+            assertEquals(4, buffer.get(0) & 0xFF);
+            assertEquals(1, buffer.get(1) & 0xFF);
+            assertEquals(serverPort, buffer.getShort(2) & 0xFFFF);
+            assertEquals(ip1, buffer.get(4) & 0xFF);
+            assertEquals(ip2, buffer.get(5) & 0xFF);
+            assertEquals(ip3, buffer.get(6) & 0xFF);
+            assertEquals(ip4, buffer.get(7) & 0xFF);
+            assertEquals(0, buffer.get(8) & 0xFF);
 
             // Socks4 response.
             channel.write(ByteBuffer.wrap(new byte[]{0, 0x5A, 0, 0, 0, 0, 0, 0}));
 
             buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
             read = channel.read(buffer);
-            Assert.assertEquals(buffer.capacity(), read);
+            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            Assert.assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
 
             // Response
             String response = "" +
@@ -111,7 +114,7 @@ public class Socks4ProxyTest
                     "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -143,7 +146,7 @@ public class Socks4ProxyTest
             int socks4MessageLength = 9;
             ByteBuffer buffer = ByteBuffer.allocate(socks4MessageLength);
             int read = channel.read(buffer);
-            Assert.assertEquals(socks4MessageLength, read);
+            assertEquals(socks4MessageLength, read);
 
             // Socks4 response, with split bytes.
             byte[] chunk1 = new byte[]{0, 0x5A, 0};
@@ -157,9 +160,9 @@ public class Socks4ProxyTest
 
             buffer = ByteBuffer.allocate(method.length());
             read = channel.read(buffer);
-            Assert.assertEquals(buffer.capacity(), read);
+            assertEquals(buffer.capacity(), read);
             buffer.flip();
-            Assert.assertEquals(method, StandardCharsets.UTF_8.decode(buffer).toString());
+            assertEquals(method, StandardCharsets.UTF_8.decode(buffer).toString());
 
             // Response
             String response = "" +
@@ -169,7 +172,7 @@ public class Socks4ProxyTest
                     "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 }

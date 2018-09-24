@@ -18,6 +18,21 @@
 
 package org.eclipse.jetty.server;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,28 +55,19 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
     protected static final Logger LOG = Log.getLogger(ConnectorTimeoutTest.class);
 
-    @Rule
-    public TestTracker tracker = new TestTracker();
-    
     protected static final int MAX_IDLE_TIME=2000;
     private int sleepTime = MAX_IDLE_TIME + MAX_IDLE_TIME/5;
     private int minimumTestRuntime = MAX_IDLE_TIME-MAX_IDLE_TIME/5;
@@ -72,7 +78,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         System.setProperty("org.eclipse.jetty.io.nio.IDLE_TICK","500");
     }
 
-    @Before
+    @BeforeEach
     @Override
     public void before()
     {
@@ -86,7 +92,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleWithRequest10() throws Exception
     {
         configureServer(new HelloWorldHandler());
@@ -94,62 +100,68 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        os.write((
-                "GET / HTTP/1.0\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "connection: keep-alive\r\n"+
-        "\r\n").getBytes("utf-8"));
-        os.flush();
 
-        IO.toString(is);
+        assertTimeoutPreemptively(ofSeconds(10), ()->{
+            os.write((
+                    "GET / HTTP/1.0\r\n"+
+                            "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                            "connection: keep-alive\r\n"+
+                            "\r\n").getBytes("utf-8"));
+            os.flush();
 
-        Thread.sleep(sleepTime);
-        Assert.assertEquals(-1, is.read());
+            IO.toString(is);
 
-        Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start > minimumTestRuntime);
-        Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
+            Thread.sleep(sleepTime);
+            assertEquals(-1, is.read());
+        });
+
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start > minimumTestRuntime);
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleWithRequest11() throws Exception
     {
         configureServer(new EchoHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        String content="Wibble";
-        byte[] contentB=content.getBytes("utf-8");
-        os.write((
-                "POST /echo HTTP/1.1\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "content-type: text/plain; charset=utf-8\r\n"+
-                "content-length: "+contentB.length+"\r\n"+
-        "\r\n").getBytes("utf-8"));
-        os.write(contentB);
-        os.flush();
 
-        IO.toString(is);
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            String content = "Wibble";
+            byte[] contentB = content.getBytes("utf-8");
+            os.write((
+                    "POST /echo HTTP/1.1\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                            "content-type: text/plain; charset=utf-8\r\n" +
+                            "content-length: " + contentB.length + "\r\n" +
+                            "\r\n").getBytes("utf-8"));
+            os.write(contentB);
+            os.flush();
 
-        Thread.sleep(sleepTime);
-        Assert.assertEquals(-1, is.read());
+            IO.toString(is);
 
-        Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start > minimumTestRuntime);
-        Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
+            Thread.sleep(sleepTime);
+            assertEquals(-1, is.read());
+        });
+
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start > minimumTestRuntime);
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleWithRequest10NoClientClose() throws Exception
     {
         final Exchanger<EndPoint> exchanger = new Exchanger<>();
@@ -174,42 +186,42 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
 
         os.write((
-                "GET / HTTP/1.0\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "connection: close\r\n"+
-        "\r\n").getBytes("utf-8"));
+                "GET / HTTP/1.0\r\n" +
+                        "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                        "connection: close\r\n" +
+                        "\r\n").getBytes("utf-8"));
         os.flush();
 
         // Get the server side endpoint
-        EndPoint endPoint = exchanger.exchange(null,10,TimeUnit.SECONDS);
+        EndPoint endPoint = exchanger.exchange(null, 10, TimeUnit.SECONDS);
         if (endPoint instanceof SslConnection.DecryptedEndPoint)
             endPoint = ((SslConnection.DecryptedEndPoint)endPoint).getSslConnection().getEndPoint();
 
         // read the response
         String result=IO.toString(is);
-        Assert.assertThat(result, Matchers.containsString("200 OK"));
+        assertThat("OK",result, containsString("200 OK"));
 
         // check client reads EOF
-        Assert.assertEquals(-1, is.read());
-        Assert.assertTrue(endPoint.isOutputShutdown());
+        assertEquals(-1, is.read());
+        assertTrue(endPoint.isOutputShutdown());
 
         // wait for idle timeout
         TimeUnit.MILLISECONDS.sleep(2 * MAX_IDLE_TIME);
 
         // check the server side is closed
-        Assert.assertFalse(endPoint.isOpen());
+        assertFalse(endPoint.isOpen());
         Object transport = endPoint.getTransport();
         if (transport instanceof Channel)
-            Assert.assertFalse(((Channel)transport).isOpen());
+            assertFalse(((Channel)transport).isOpen());
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleWithRequest11NoClientClose() throws Exception
     {
         final Exchanger<EndPoint> exchanger = new Exchanger<>();
@@ -234,7 +246,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -260,21 +272,22 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         IO.toString(is);
 
         // check client reads EOF
-        Assert.assertEquals(-1, is.read());
-        Assert.assertTrue(endPoint.isOutputShutdown());
+        assertEquals(-1, is.read());
+        assertTrue(endPoint.isOutputShutdown());
 
         // The server has shutdown the output, the client does not close,
         // the server should idle timeout and close the connection.
         TimeUnit.MILLISECONDS.sleep(2 * MAX_IDLE_TIME);
 
-        Assert.assertFalse(endPoint.isOpen());
+        assertFalse(endPoint.isOpen());
         Object transport = endPoint.getTransport();
         if (transport instanceof Channel)
-            Assert.assertFalse(((Channel)transport).isOpen());
+            assertFalse(((Channel)transport).isOpen());
     }
 
-    @Test(timeout=60000)
-    @Ignore // TODO make more stable
+    @Test
+    @Tag("Unstable")
+    @Disabled // TODO make more stable
     public void testNoBlockingTimeoutRead() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(-1L);
@@ -283,7 +296,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         
@@ -324,17 +337,19 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             e.printStackTrace();
         }
         long duration=TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-        Assert.assertThat(duration,Matchers.greaterThan(500L));
+        assertThat(duration,greaterThan(500L));
 
-        // read the response
-        String response = IO.toString(is);
-        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
-        Assert.assertThat(response,Matchers.containsString("LMNOP0123456789ABCDEF"));
-
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            // read the response
+            String response = IO.toString(is);
+            assertThat(response, startsWith("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("LMNOP0123456789ABCDEF"));
+        });
     }
     
-    @Test(timeout=60000)
-    @Ignore // TODO make more stable
+    @Test
+    @Tag("Unstable")
+    @Disabled // TODO make more stable
     public void testBlockingTimeoutRead() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(750L);
@@ -343,7 +358,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
 
@@ -383,14 +398,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
         }
         long duration=TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-        Assert.assertThat(duration,Matchers.greaterThan(500L));
+        assertThat(duration,greaterThan(500L));
         
         try
         {
             // read the response
             String response = IO.toString(is);
-            Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 "));
-            Assert.assertThat(response,Matchers.containsString("InterruptedIOException"));
+            assertThat(response,startsWith("HTTP/1.1 500 "));
+            assertThat(response,containsString("InterruptedIOException"));
         }
         catch(SSLException e)
         {
@@ -398,15 +413,16 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     }
 
-    @Test(timeout=60000)
-    @Ignore // TODO make more stable
+    @Test
+    @Tag("Unstable")
+    @Disabled // TODO make more stable
     public void testNoBlockingTimeoutWrite() throws Exception
     {
         configureServer(new HugeResponseHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         BufferedReader is=new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.ISO_8859_1),2048);
@@ -421,7 +437,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         
         // read the header
         String line=is.readLine();
-        Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
+        assertThat(line,startsWith("HTTP/1.1 200 OK"));
         while(line.length()!=0)
             line=is.readLine();
         
@@ -433,13 +449,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 // System.err.println("read "+TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
             }
             line=is.readLine();
-            Assert.assertThat(line,Matchers.notNullValue());
-            Assert.assertEquals(1022,line.length());
+            assertThat(line,notNullValue());
+            assertEquals(1022,line.length());
         }
     }
 
-    @Test(timeout=60000)
-    @Ignore // TODO make more stable
+    @Test
+    @Tag("Unstable")
+    @Disabled // TODO make more stable
     public void testBlockingTimeoutWrite() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(750L);
@@ -447,7 +464,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         BufferedReader is=new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.ISO_8859_1),2048);
@@ -462,7 +479,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         
         // read the header
         String line=is.readLine();
-        Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
+        assertThat(line,startsWith("HTTP/1.1 200 OK"));
         while(line.length()!=0)
             line=is.readLine();
 
@@ -485,17 +502,17 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {}
         long end=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         long duration = end-start;
-        Assert.assertThat(duration,Matchers.lessThan(20L*128L));
+        assertThat(duration,lessThan(20L*128L));
     }
     
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleNoRequest() throws Exception
     {
         configureServer(new EchoHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -503,31 +520,23 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         os.flush();
 
         Thread.sleep(sleepTime);
-        try
-        {
-            String response = IO.toString(is);
-            Assert.assertThat(response,Matchers.is(""));
-            Assert.assertEquals(-1, is.read());
-        }
-        catch(SSLException e)
-        {
-            if(LOG.isDebugEnabled())
-                LOG.debug(e);
-            else
-                LOG.info(e.getMessage());
-        }
-        catch(Exception e)
-        {
-            if(LOG.isDebugEnabled())
-                LOG.debug(e);
-            else
-                LOG.info(e.getMessage());
-        }
-        Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            try
+            {
+                String response = IO.toString(is);
+                assertThat(response, is(""));
+                assertEquals(-1, is.read());
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e.getMessage());
+            }
+        });
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
 
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleNothingSent() throws Exception
     {
         configureServer(new EchoHandler());
@@ -535,41 +544,33 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         Thread.sleep(sleepTime);
-        try
-        {
-            String response = IO.toString(is);
-            Assert.assertThat(response,Matchers.is(""));
-            Assert.assertEquals(-1, is.read());
-        }
-        catch(SSLException e)
-        {
-            if(LOG.isDebugEnabled())
-                LOG.debug(e);
-            else
-                LOG.info(e.getMessage());
-        }
-        catch(Exception e)
-        {
-            if(LOG.isDebugEnabled())
-                LOG.debug(e);
-            else
-                LOG.info(e.getMessage());
-        }
-        Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            try
+            {
+                String response = IO.toString(is);
+                assertThat(response, is(""));
+                assertEquals(-1, is.read());
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        });
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
 
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleDelayedDispatch() throws Exception
     {
         configureServer(new EchoHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         
         OutputStream os=client.getOutputStream();
@@ -584,33 +585,31 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             "\r\n").getBytes("utf-8"));
         os.flush();
 
-        try
-        {
-            String response = IO.toString(is);
-            Assert.assertThat(response,Matchers.containsString("500"));
-            Assert.assertEquals(-1, is.read());
-        }
-        catch(SSLException e)
-        {
-            e.printStackTrace();
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            try
+            {
+                String response = IO.toString(is);
+                assertThat(response, containsString("500"));
+                assertEquals(-1, is.read());
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
         int duration = (int)(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start);
-        Assert.assertThat(duration,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME));
-        Assert.assertThat(duration,Matchers.lessThan(maximumTestRuntime));
+        assertThat(duration,greaterThanOrEqualTo(MAX_IDLE_TIME));
+        assertThat(duration,lessThan(maximumTestRuntime));
     }
     
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleDispatch() throws Exception
     {
         configureServer(new EchoHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -625,34 +624,32 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             "1234567890").getBytes("utf-8"));
         os.flush();
 
-        try
-        {
-            String response = IO.toString(is);
-            Assert.assertThat(response,Matchers.containsString("500"));
-            Assert.assertEquals(-1, is.read());
-        }
-        catch(SSLException e)
-        {
-            e.printStackTrace();
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            try
+            {
+                String response = IO.toString(is);
+                assertThat(response, containsString("500"));
+                assertEquals(-1, is.read());
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
         int duration = (int)(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start);
-        Assert.assertThat(duration+100,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME));
-        Assert.assertThat(duration-100,Matchers.lessThan(maximumTestRuntime));
+        assertThat(duration+100,greaterThanOrEqualTo(MAX_IDLE_TIME));
+        assertThat(duration-100,lessThan(maximumTestRuntime));
     }
     
     
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleWithSlowRequest() throws Exception
     {
         configureServer(new EchoHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -669,30 +666,32 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         "\r\n").getBytes("utf-8"));
         os.flush();
 
-        for (int i =0;i<20;i++)
-        {
-            Thread.sleep(50);
-            os.write(contentB);
-            os.flush();
-        }
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            for (int i = 0; i < 20; i++)
+            {
+                Thread.sleep(50);
+                os.write(contentB);
+                os.flush();
+            }
 
-        String in = IO.toString(is);
-        int offset=0;
-        for (int i =0;i<20;i++)
-        {
-            offset=in.indexOf("Wibble",offset+1);
-            Assert.assertTrue("" + i, offset > 0);
-        }
+            String in = IO.toString(is);
+            int offset = 0;
+            for (int i = 0; i < 20; i++)
+            {
+                offset = in.indexOf("Wibble", offset + 1);
+                assertTrue(offset > 0, "" + i);
+            }
+        });
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleWithSlowResponse() throws Exception
     {
         configureServer(new SlowResponseHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -705,23 +704,25 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         "\r\n").getBytes("utf-8"));
         os.flush();
 
-        String in = IO.toString(is);
-        int offset=0;
-        for (int i =0;i<20;i++)
-        {
-            offset=in.indexOf("Hello World",offset+1);
-            Assert.assertTrue("" + i, offset > 0);
-        }
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            String in = IO.toString(is);
+            int offset = 0;
+            for (int i = 0; i < 20; i++)
+            {
+                offset = in.indexOf("Hello World", offset + 1);
+                assertTrue(offset > 0, "" + i);
+            }
+        });
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testMaxIdleWithWait() throws Exception
     {
         configureServer(new WaitHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -734,9 +735,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         "\r\n").getBytes("utf-8"));
         os.flush();
 
-        String in = IO.toString(is);
-        int offset=in.indexOf("Hello World");
-        Assert.assertTrue(offset > 0);
+        assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            String in = IO.toString(is);
+            assertThat(in, containsString("Hello World"));
+        });
     }
 
     protected static class SlowResponseHandler extends AbstractHandler

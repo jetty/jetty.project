@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -41,8 +44,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class AsyncIOTest extends AbstractTest
 {
@@ -97,7 +100,7 @@ public class AsyncIOTest extends AbstractTest
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -151,7 +154,7 @@ public class AsyncIOTest extends AbstractTest
         Thread.sleep(1000);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -211,9 +214,9 @@ public class AsyncIOTest extends AbstractTest
         Thread.sleep(1000);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         // Make sure onDataAvailable() has been called twice
-        Assert.assertEquals(2, count.get());
+        assertEquals(2, count.get());
     }
 
     private static void sleep(long ms) throws InterruptedIOException

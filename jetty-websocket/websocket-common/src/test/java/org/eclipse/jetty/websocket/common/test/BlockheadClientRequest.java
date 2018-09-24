@@ -64,6 +64,7 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
         super(client, new HttpConversation(), uri);
         this.client = client;
         this.fut = new CompletableFuture<>();
+        getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
     }
 
     public void setInitialBytes(ByteBuffer initialBytes)

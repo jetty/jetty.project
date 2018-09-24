@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -39,9 +39,9 @@ import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.IdleTimeoutContextListener;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutSocket;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class IdleTimeoutTest
 {
@@ -49,7 +49,7 @@ public class IdleTimeoutTest
 
     private static WSServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void setupServer() throws Exception
     {
         server = new WSServer(MavenTestingUtils.getTargetTestingDir(IdleTimeoutTest.class.getName()),"app");
@@ -68,7 +68,7 @@ public class IdleTimeoutTest
         // wsb.dump();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();

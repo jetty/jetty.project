@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http.client;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -43,71 +46,76 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-public class HttpChannelAssociationTest extends AbstractTest
+public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
 {
-    public HttpChannelAssociationTest(Transport transport)
+    @Override
+    public void init(Transport transport) throws IOException
     {
-        super(transport);
+        setScenario(new TransportScenario(transport));
     }
 
-    @Test
-    public void testAssociationFailedAbortsRequest() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testAssociationFailedAbortsRequest(Transport transport) throws Exception
     {
-        startServer(new EmptyServerHandler());
+        init(transport);
+        scenario.startServer(new EmptyServerHandler());
 
-        client = new HttpClient(newHttpClientTransport(transport, exchange -> false), sslContextFactory);
+        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false), scenario.sslContextFactory);
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client.setExecutor(clientThreads);
-        client.start();
+        scenario.client.setExecutor(clientThreads);
+        scenario.client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI())
+        scenario.client.newRequest(scenario.newURI())
                 .send(result ->
                 {
                     if (result.isFailed())
                         latch.countDown();
                 });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testIdleTimeoutJustBeforeAssociation() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testIdleTimeoutJustBeforeAssociation(Transport transport) throws Exception
     {
-        startServer(new EmptyServerHandler());
+        init(transport);
+        scenario.startServer(new EmptyServerHandler());
 
         long idleTimeout = 1000;
-        client = new HttpClient(newHttpClientTransport(transport, exchange ->
+        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange ->
         {
             // We idle timeout just before the association,
             // we must be able to send the request successfully.
             sleep(2 * idleTimeout);
             return true;
-        }), sslContextFactory);
+        }), scenario.sslContextFactory);
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client.setExecutor(clientThreads);
-        client.setIdleTimeout(idleTimeout);
-        client.start();
+        scenario.client.setExecutor(clientThreads);
+        scenario.client.setIdleTimeout(idleTimeout);
+        scenario.client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI())
+        scenario.client.newRequest(scenario.newURI())
                 .send(result ->
                 {
                     if (result.isSucceeded())
                         latch.countDown();
                 });
 
-        Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    private HttpClientTransport newHttpClientTransport(Transport transport, Predicate<HttpExchange> code)
+    private HttpClientTransport newHttpClientTransport(TransportScenario scenario, Predicate<HttpExchange> code)
     {
-        switch (transport)
+        switch (scenario.transport)
         {
             case HTTP:
             case HTTPS:
@@ -190,7 +198,7 @@ public class HttpChannelAssociationTest extends AbstractTest
             }
             case UNIX_SOCKET:
             {
-                return new HttpClientTransportOverUnixSockets( sockFile.toString() ){
+                return new HttpClientTransportOverUnixSockets( scenario.sockFile.toString() ){
                     @Override
                     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
                     {

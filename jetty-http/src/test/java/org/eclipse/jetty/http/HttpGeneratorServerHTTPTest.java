@@ -18,41 +18,36 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.stream.Stream;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 public class HttpGeneratorServerHTTPTest
 {
-    @Parameter(value = 0)
-    public Run run;
     private String _content;
     private String _reason;
 
-    @Test
-    public void testHTTP() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testHTTP(Run run) throws Exception
     {
         Handler handler = new Handler();
 
         HttpGenerator gen = new HttpGenerator();
 
-        String t = run.toString();
+        String msg = run.toString();
 
         run.result.getHttpFields().clear();
 
@@ -64,19 +59,20 @@ public class HttpGeneratorServerHTTPTest
         parser.parseNext(BufferUtil.toBuffer(response));
 
         if (run.result._body != null)
-            assertEquals(t, run.result._body, this._content);
+            assertEquals(run.result._body, this._content, msg);
 
+        // TODO: Break down rationale more clearly, these should be separate checks and/or assertions
         if (run.httpVersion == 10)
-            assertTrue(t, gen.isPersistent() || run.result._contentLength >= 0 || EnumSet.of(ConnectionType.CLOSE, ConnectionType.KEEP_ALIVE, ConnectionType.NONE).contains(run.connection));
+            assertTrue(gen.isPersistent() || run.result._contentLength >= 0 || EnumSet.of(ConnectionType.CLOSE, ConnectionType.KEEP_ALIVE, ConnectionType.NONE).contains(run.connection), msg);
         else
-            assertTrue(t, gen.isPersistent() || EnumSet.of(ConnectionType.CLOSE, ConnectionType.TE_CLOSE).contains(run.connection));
+            assertTrue(gen.isPersistent() || EnumSet.of(ConnectionType.CLOSE, ConnectionType.TE_CLOSE).contains(run.connection), msg);
 
         assertEquals("OK??Test", _reason);
 
         if (_content == null)
-            assertTrue(t, run.result._body == null);
+            assertTrue(run.result._body == null, msg);
         else
-            assertThat(t, run.result._contentLength, either(equalTo(_content.length())).or(equalTo(-1)));
+            assertThat(msg, run.result._contentLength, either(equalTo(_content.length())).or(equalTo(-1)));
     }
 
     private static class Result
@@ -276,20 +272,18 @@ public class HttpGeneratorServerHTTPTest
 
     private static class Run
     {
-        public static Run[] as(Result result, int ver, int chunks, ConnectionType connection)
-        {
-            Run run = new Run();
-            run.result = result;
-            run.httpVersion = ver;
-            run.chunks = chunks;
-            run.connection = connection;
-            return new Run[]{run};
-        }
-
         private Result result;
         private ConnectionType connection;
         private int httpVersion;
         private int chunks;
+
+        public Run(Result result, int ver, int chunks, ConnectionType connection)
+        {
+            this.result = result;
+            this.httpVersion = ver;
+            this.chunks = chunks;
+            this.connection = connection;
+        }
 
         @Override
         public String toString()
@@ -327,8 +321,8 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-    @Parameters(name = "{0}")
-    public static Collection<Run[]> data()
+
+    public static Stream<Arguments> data()
     {
         Result[] results = {
                 new Result(200, null, -1, null, false),
@@ -341,7 +335,7 @@ public class HttpGeneratorServerHTTPTest
                 new Result(200, "text/html", CONTENT.length(), CONTENT, false)
         };
 
-        List<Run[]> data = new ArrayList<>();
+        ArrayList<Arguments> data = new ArrayList<>();
 
         // For each test result
         for (Result result : results)
@@ -357,12 +351,13 @@ public class HttpGeneratorServerHTTPTest
                     {
                         if (connection.isSupportedByHttp(v))
                         {
-                            data.add(Run.as(result, v, chunks, connection));
+                            data.add(Arguments.of(new Run(result, v, chunks, connection)));
                         }
                     }
                 }
             }
         }
-        return data;
+
+        return data.stream();
     }
 }

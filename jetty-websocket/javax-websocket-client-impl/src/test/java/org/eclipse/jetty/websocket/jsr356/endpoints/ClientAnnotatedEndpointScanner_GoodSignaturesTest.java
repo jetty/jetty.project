@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -54,47 +56,20 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseReasonSes
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseReasonSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseSessionReasonSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseSocket;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test {@link AnnotatedEndpointScanner} against various valid, simple, 1 method {@link ClientEndpoint} annotated classes with valid signatures.
  */
-@RunWith(Parameterized.class)
 public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
 {
-    public static class Case
-    {
-        public static void add(List<Case[]> data, Class<?> pojo, Field metadataField, Class<?>... expectedParams)
-        {
-            data.add(new Case[]
-            { new Case(pojo,metadataField,expectedParams) });
-        }
-
-        // The websocket pojo to test against
-        Class<?> pojo;
-        // The JsrAnnotatedMetadata field that should be populated
-        Field metadataField;
-        // The expected parameters for the Callable found by the scanner
-        Class<?> expectedParameters[];
-
-        public Case(Class<?> pojo, Field metadataField, Class<?>... expectedParams)
-        {
-            this.pojo = pojo;
-            this.metadataField = metadataField;
-            this.expectedParameters = expectedParams;
-        }
-    }
 
     private static ClientContainer container = new ClientContainer();
 
-    @Parameters
-    public static Collection<Case[]> data() throws Exception
+    public static Stream<Arguments> scenarios() throws Exception
     {
-        List<Case[]> data = new ArrayList<>();
         Field fOpen = findFieldRef(AnnotatedEndpointMetadata.class,"onOpen");
         Field fClose = findFieldRef(AnnotatedEndpointMetadata.class,"onClose");
         Field fError = findFieldRef(AnnotatedEndpointMetadata.class,"onError");
@@ -103,35 +78,35 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
         Field fBinaryStream = findFieldRef(AnnotatedEndpointMetadata.class,"onBinaryStream");
         Field fPong = findFieldRef(AnnotatedEndpointMetadata.class,"onPong");
 
-        // @formatter:off
+        List<Scenario> data = new ArrayList<>();
+
         // -- Open Events
-        Case.add(data, BasicOpenSocket.class, fOpen);
-        Case.add(data, BasicOpenSessionSocket.class, fOpen, Session.class);
+        data.add(new Scenario(BasicOpenSocket.class, fOpen));
+        data.add(new Scenario(BasicOpenSessionSocket.class, fOpen, Session.class));
         // -- Close Events
-        Case.add(data, CloseSocket.class, fClose);
-        Case.add(data, CloseReasonSocket.class, fClose, CloseReason.class);
-        Case.add(data, CloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class);
-        Case.add(data, CloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class);
+        data.add(new Scenario(CloseSocket.class, fClose));
+        data.add(new Scenario(CloseReasonSocket.class, fClose, CloseReason.class));
+        data.add(new Scenario(CloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class));
+        data.add(new Scenario(CloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class));
         // -- Error Events
-        Case.add(data, BasicErrorSocket.class, fError);
-        Case.add(data, BasicErrorSessionSocket.class, fError, Session.class);
-        Case.add(data, BasicErrorSessionThrowableSocket.class, fError, Session.class, Throwable.class);
-        Case.add(data, BasicErrorThrowableSocket.class, fError, Throwable.class);
-        Case.add(data, BasicErrorThrowableSessionSocket.class, fError, Throwable.class, Session.class);
+        data.add(new Scenario(BasicErrorSocket.class, fError));
+        data.add(new Scenario(BasicErrorSessionSocket.class, fError, Session.class));
+        data.add(new Scenario(BasicErrorSessionThrowableSocket.class, fError, Session.class, Throwable.class));
+        data.add(new Scenario(BasicErrorThrowableSocket.class, fError, Throwable.class));
+        data.add(new Scenario(BasicErrorThrowableSessionSocket.class, fError, Throwable.class, Session.class));
         // -- Text Events
-        Case.add(data, BasicTextMessageStringSocket.class, fText, String.class);
+        data.add(new Scenario(BasicTextMessageStringSocket.class, fText, String.class));
         // -- Binary Events
-        Case.add(data, BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class);
+        data.add(new Scenario(BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class));
         // -- Pong Events
-        Case.add(data, BasicPongMessageSocket.class, fPong, PongMessage.class);
+        data.add(new Scenario(BasicPongMessageSocket.class, fPong, PongMessage.class));
         // -- InputStream Events
-        Case.add(data, BasicInputStreamSocket.class, fBinaryStream, InputStream.class);
-        Case.add(data, BasicInputStreamWithThrowableSocket.class, fBinaryStream, InputStream.class);
-        // @formatter:on
+        data.add(new Scenario(BasicInputStreamSocket.class, fBinaryStream, InputStream.class));
+        data.add(new Scenario(BasicInputStreamWithThrowableSocket.class, fBinaryStream, InputStream.class));
 
         // TODO: validate return types
 
-        return data;
+        return data.stream().map(Arguments::of);
     }
 
     private static Field findFieldRef(Class<?> clazz, String fldName) throws Exception
@@ -139,31 +114,48 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
         return clazz.getField(fldName);
     }
 
-    private Case testcase;
-
-    public ClientAnnotatedEndpointScanner_GoodSignaturesTest(Case testcase)
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testScan_Basic(Scenario scenario) throws Exception
     {
-        this.testcase = testcase;
-    }
-
-    @Test
-    public void testScan_Basic() throws Exception
-    {
-        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,testcase.pojo);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,scenario.pojo);
         AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
-        Assert.assertThat("Metadata",metadata,notNullValue());
+        assertThat("Metadata",metadata,notNullValue());
 
-        JsrCallable cm = (JsrCallable)testcase.metadataField.get(metadata);
-        Assert.assertThat(testcase.metadataField.toString(),cm,notNullValue());
-        int len = testcase.expectedParameters.length;
+        JsrCallable cm = (JsrCallable)scenario.metadataField.get(metadata);
+        assertThat(scenario.metadataField.toString(),cm,notNullValue());
+        int len = scenario.expectedParameters.length;
         for (int i = 0; i < len; i++)
         {
-            Class<?> expectedParam = testcase.expectedParameters[i];
+            Class<?> expectedParam = scenario.expectedParameters[i];
             Class<?> actualParam = cm.getParamTypes()[i];
 
-            Assert.assertTrue("Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]",actualParam.equals(expectedParam));
+            assertTrue(actualParam.equals(expectedParam),"Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]");
+        }
+    }
+
+    public static class Scenario
+    {
+        // The websocket pojo to test against
+        Class<?> pojo;
+        // The JsrAnnotatedMetadata field that should be populated
+        Field metadataField;
+        // The expected parameters for the Callable found by the scanner
+        Class<?> expectedParameters[];
+
+        public Scenario(Class<?> pojo, Field metadataField, Class<?>... expectedParams)
+        {
+            this.pojo = pojo;
+            this.metadataField = metadataField;
+            this.expectedParameters = expectedParams;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.pojo.getSimpleName();
         }
     }
 }

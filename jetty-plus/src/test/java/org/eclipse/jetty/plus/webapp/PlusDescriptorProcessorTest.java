@@ -19,10 +19,15 @@
 package org.eclipse.jetty.plus.webapp;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
@@ -36,9 +41,9 @@ import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * PlusDescriptorProcessorTest
@@ -52,7 +57,7 @@ public class PlusDescriptorProcessorTest
     protected FragmentDescriptor fragDescriptor4;
     protected WebAppContext context;
     
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         context = new WebAppContext();
@@ -84,7 +89,7 @@ public class PlusDescriptorProcessorTest
         fragDescriptor4.parse();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
@@ -102,23 +107,16 @@ public class PlusDescriptorProcessorTest
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
 
-        try
-        {
+        InvocationTargetException x = assertThrows(InvocationTargetException.class, ()->{
             PlusDescriptorProcessor pdp = new PlusDescriptorProcessor();
             pdp.process(context, fragDescriptor4);
             fail("Expected missing resource declaration");
-        }
-        catch (InvocationTargetException ex)
-        {
-            Throwable cause = ex.getCause();
-            assertNotNull(cause);
-            assertNotNull(cause.getMessage());
-            assertTrue(cause.getMessage().contains("jdbc/mymissingdatasource"));
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(oldLoader);
-        }
+        });
+        Thread.currentThread().setContextClassLoader(oldLoader);
+
+        assertThat(x.getCause(), is(notNullValue()));
+        assertThat(x.getCause().getMessage(), containsString("jdbc/mymissingdatasource"));
+
     }
 
     @Test

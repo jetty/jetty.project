@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -31,11 +32,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.eclipse.jetty.http.MultiPartParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MultiPartParserTest
 {
-    
+
     @Test
     public void testEmptyPreamble()
     {
@@ -47,7 +48,7 @@ public class MultiPartParserTest
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.PREAMBLE));
     }
-    
+
     @Test
     public void testNoPreamble()
     {
@@ -94,7 +95,7 @@ public class MultiPartParserTest
         assertThat(parser.getState(), is(State.PREAMBLE));
         assertThat(data.remaining(), is(0));
     }
-    
+
     @Test
     public void testPreambleCompleteBoundary()
     {
@@ -115,7 +116,7 @@ public class MultiPartParserTest
         {
         }, "BOUNDARY");
         ByteBuffer data = BufferUtil.toBuffer("This is not part of a part\r\n");
-        
+
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.PREAMBLE));
         assertThat(data.remaining(), is(0));
@@ -144,7 +145,7 @@ public class MultiPartParserTest
         assertThat(parser.getState(), is(State.BODY_PART));
         assertThat(data.remaining(), is(0));
     }
-    
+
     @Test
     public void testFirstPartNoFields()
     {
@@ -179,7 +180,7 @@ public class MultiPartParserTest
                 + " 2\r\n"
                 + "\r\n"
                 + "Content");
-        
+
         parser.parse(data, false);
         assertThat(parser.getState(), is(State.FIRST_OCTETS));
         assertThat(data.remaining(), is(7));
@@ -221,7 +222,7 @@ public class MultiPartParserTest
         assertThat(handler.content, Matchers.contains("<<LAST>>"));
         
     }
-    
+
     @Test
     public void testFirstPartContentLookingLikeNoCRLF()
     {
@@ -242,7 +243,7 @@ public class MultiPartParserTest
         assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
         assertThat(handler.content, Matchers.contains("-", "Content!"));
     }
-    
+
     @Test
     public void testFirstPartPartialContent()
     {
@@ -258,7 +259,7 @@ public class MultiPartParserTest
         assertThat(data.remaining(), is(0));
         assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
         assertThat(handler.content, Matchers.contains("Hello"));
-        
+
         data = BufferUtil.toBuffer(
                 "Now is the time for all good ment to come to the aid of the party.\r\n"
                         + "How now brown cow.\r\n"
@@ -273,7 +274,7 @@ public class MultiPartParserTest
                 + "The quick brown fox jumped over the lazy dog.\r\n"
                 + "this is not a --BOUNDARY"));
     }
-    
+
     @Test
     public void testFirstPartShortContent()
     {
@@ -292,7 +293,7 @@ public class MultiPartParserTest
         assertThat(handler.content, Matchers.contains("Hello", "<<LAST>>"));
     }
     
-    
+
     @Test
     public void testFirstPartLongContent()
     {
@@ -321,7 +322,7 @@ public class MultiPartParserTest
     {
         TestHandler handler = new TestHandler();
         MultiPartParser parser = new MultiPartParser(handler, "BOUNDARY");
-        
+
         //boundary still requires carriage return
         ByteBuffer data = BufferUtil.toBuffer("--BOUNDARY\n"
                 + "name: value\n"
@@ -339,7 +340,7 @@ public class MultiPartParserTest
                 + "How now brown cow.\n"
                 + "The quick brown fox jumped over the lazy dog.\n", "<<LAST>>"));
     }
-    
+
     
     @Test
     public void testBinaryPart()
@@ -442,7 +443,7 @@ public class MultiPartParserTest
         assertThat(data.remaining(), is(0));
     }
     
-    
+
     @Test
     public void testCrAsLineTermination()
     {
@@ -453,7 +454,7 @@ public class MultiPartParserTest
             {
                 return true;
             }
-            
+
             @Override
             public boolean content(ByteBuffer buffer, boolean last)
             {
@@ -463,47 +464,41 @@ public class MultiPartParserTest
         };
         MultiPartParser parser = new MultiPartParser(handler, "AaB03x");
         
-        ByteBuffer data = BufferUtil.toBuffer(
-                "--AaB03x\r\n" +
-                        "content-disposition: form-data; name=\"field1\"\r\n" +
-                        "\r" +
-                        "Joe Blow\r\n" +
-                        "--AaB03x--\r\n");
-        
-        try
-        {
-            parser.parse(data, true);
-            fail("Invalid End of Line");
-        }
-        catch (BadMessageException e)
-        {
-            assertTrue(e.getMessage().contains("Bad EOL"));
-        }
+        ByteBuffer data =  BufferUtil.toBuffer(
+                "--AaB03x\r\n"+
+                "content-disposition: form-data; name=\"field1\"\r\n"+
+                "\r"+
+                "Joe Blow\r\n"+
+                "--AaB03x--\r\n");
+
+        BadMessageException x = assertThrows(BadMessageException.class,
+                ()-> parser.parse(data,true),
+                "Invalid EOL");
+        assertThat(x.getMessage(), containsString("Bad EOL"));
     }
-    
-    
-    @Test
+
+    @Test // TODO: Parameterize
     public void testBadHeaderNames() throws Exception
     {
         String[] bad = new String[]
-        {
-                "Foo\\Bar: value\r\n",
-                "Foo@Bar: value\r\n",
-                "Foo,Bar: value\r\n",
-                "Foo}Bar: value\r\n",
-                "Foo{Bar: value\r\n",
-                "Foo=Bar: value\r\n",
-                "Foo>Bar: value\r\n",
-                "Foo<Bar: value\r\n",
-                "Foo)Bar: value\r\n",
-                "Foo(Bar: value\r\n",
-                "Foo?Bar: value\r\n",
-                "Foo\"Bar: value\r\n",
-                "Foo/Bar: value\r\n",
-                "Foo]Bar: value\r\n",
-                "Foo[Bar: value\r\n",
-                "\u0192\u00f8\u00f8\u00df\u00e5\u00ae: value\r\n"
-        };
+                {
+                        "Foo\\Bar: value\r\n",
+                        "Foo@Bar: value\r\n",
+                        "Foo,Bar: value\r\n",
+                        "Foo}Bar: value\r\n",
+                        "Foo{Bar: value\r\n",
+                        "Foo=Bar: value\r\n",
+                        "Foo>Bar: value\r\n",
+                        "Foo<Bar: value\r\n",
+                        "Foo)Bar: value\r\n",
+                        "Foo(Bar: value\r\n",
+                        "Foo?Bar: value\r\n",
+                        "Foo\"Bar: value\r\n",
+                        "Foo/Bar: value\r\n",
+                        "Foo]Bar: value\r\n",
+                        "Foo[Bar: value\r\n",
+                        "\u0192\u00f8\u00f8\u00df\u00e5\u00ae: value\r\n"
+                };
 
         for (int i=0; i<bad.length; i++)
         {
@@ -524,7 +519,6 @@ public class MultiPartParserTest
         }
     }
 
-
     @Test
     public void splitTest()
     {
@@ -535,7 +529,7 @@ public class MultiPartParserTest
             {
                 return true;
             }
-            
+
             @Override
             public boolean content(ByteBuffer buffer, boolean last)
             {
@@ -603,7 +597,7 @@ public class MultiPartParserTest
                 "\r\n" +
                 "-----------------------------9051914041544843365972754266--" +
                 "===== ajlkfja;lkdj;lakjd;lkjf ==== epilogue here  ==== kajflajdfl;kjafl;kjl;dkfja ====\n\r\n\r\r\r\n\n\n");
-        
+
         
         int length = data.remaining();
         for (int i = 0; i < length - 1; i++)
@@ -613,19 +607,19 @@ public class MultiPartParserTest
             dataSeg.position(0);
             dataSeg.limit(i);
             assertThat("First " + i, parser.parse(dataSeg, false), is(false));
-            
+
             //partition i
             dataSeg = data.slice();
             dataSeg.position(i);
             dataSeg.limit(i + 1);
             assertThat("Second " + i, parser.parse(dataSeg, false), is(false));
-            
+
             //partition i to length
             dataSeg = data.slice();
             dataSeg.position(i + 1);
             dataSeg.limit(length);
             assertThat("Third " + i, parser.parse(dataSeg, true), is(true));
-            
+
             assertThat(handler.fields, Matchers.contains("Content-Disposition: form-data; name=\"text\"", "<<COMPLETE>>"
                     , "Content-Disposition: form-data; name=\"file1\"; filename=\"a.txt\""
                     , "Content-Type: text/plain", "<<COMPLETE>>"
@@ -635,8 +629,8 @@ public class MultiPartParserTest
                     , "Field4: value4", "Field5: value5", "Field6: value6"
                     , "Field7: value7", "Field8: value8", "Field9: value 9", "<<COMPLETE>>"
                     , "Field1: value1", "<<COMPLETE>>"));
-            
-            
+
+
             assertThat(handler.contentString(), is("text default" + "<<LAST>>"
                     + "Content of a.txt.\n" + "<<LAST>>"
                     + "<!DOCTYPE html><title>Content of a.html.</title>\n" + "<<LAST>>"
@@ -653,13 +647,13 @@ public class MultiPartParserTest
                     "due to their formerly liquid state, showed at a glance\n" +
                     "how far the hard, rocky beds had once extended into\n" +
                     "the open ocean.\n" + "<<LAST>>"));
-            
+
             handler.clear();
             parser.reset();
         }
     }
     
-    
+
     @Test
     public void testGeneratedForm()
     {
@@ -670,7 +664,7 @@ public class MultiPartParserTest
             {
                 return true;
             }
-            
+
             @Override
             public boolean content(ByteBuffer buffer, boolean last)
             {
@@ -698,11 +692,11 @@ public class MultiPartParserTest
                 "\r\n" +
                 "&ﾳﾺ￙￹ￖￃO\r\n" +
                 "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--");
-        
+
         parser.parse(data, true);
         assertThat(parser.getState(), is(State.END));
         assertThat(handler.fields.size(), is(2));
-        
+
     }
     
     
@@ -710,13 +704,13 @@ public class MultiPartParserTest
     {
         List<String> fields = new ArrayList<>();
         List<String> content = new ArrayList<>();
-        
+
         @Override
         public void parsedField(String name, String value)
         {
             fields.add(name + ": " + value);
         }
-        
+
         public String contentString()
         {
             StringBuilder sb = new StringBuilder();
@@ -724,14 +718,14 @@ public class MultiPartParserTest
                 sb.append(s);
             return sb.toString();
         }
-        
+
         @Override
         public boolean headerComplete()
         {
             fields.add("<<COMPLETE>>");
             return false;
         }
-        
+
         @Override
         public boolean content(ByteBuffer buffer, boolean last)
         {

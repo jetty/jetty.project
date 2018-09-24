@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -26,8 +28,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Assert;
 
+/**
+ * @deprecated use {@link org.eclipse.jetty.toolchain.test.ExtraMatchers#ordered(List)} instead
+ */
+@Deprecated
 public class CollectionAssert
 {
     public static void assertContainsUnordered(String msg, Collection<String> expectedSet, Collection<String> actualSet)
@@ -74,7 +79,7 @@ public class CollectionAssert
                 err.printf("%s| %s%n",indicator,expected);
             }
             err.flush();
-            Assert.fail(message.toString());
+            fail(message.toString());
         }
     }
     
@@ -131,7 +136,7 @@ public class CollectionAssert
                 err.printf("%s[%d] %s%n",indicator,i,expected);
             }
             err.flush();
-            Assert.fail(message.toString());
+            fail(message.toString());
         }
     }
 }

@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.server;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,20 +42,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 {
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         ServerConnector connector = new ServerConnector(_server,1,1);
@@ -55,14 +58,16 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         startServer(connector);
     }
     
-    @Test(timeout=60000)
+    @Test
     public void testStartStopStart() throws Exception
     {
-        _server.stop();
-        _server.start();
+        assertTimeoutPreemptively(ofSeconds(10),()->{
+            _server.stop();
+            _server.start();
+        });
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testIdleTimeoutAfterSuspend() throws Exception
     {
         _server.stop();
@@ -74,10 +79,13 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setResumeAfter(25);
-        Assert.assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("RESUMED"));
+        assertTimeoutPreemptively(ofSeconds(10),()-> {
+            String process = process(null).toUpperCase(Locale.ENGLISH);
+            assertThat(process, containsString("RESUMED"));
+        });
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testIdleTimeoutAfterTimeout() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
@@ -88,10 +96,13 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         _server.start();
 
         _handler.setSuspendFor(50);
-        Assert.assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("TIMEOUT"));
+        assertTimeoutPreemptively(ofSeconds(10),()-> {
+            String process = process(null).toUpperCase(Locale.ENGLISH);
+            assertThat(process, containsString("TIMEOUT"));
+        });
     }
 
-    @Test(timeout=60000)
+    @Test
     public void testIdleTimeoutAfterComplete() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
@@ -103,7 +114,10 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setCompleteAfter(25);
-        Assert.assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("COMPLETED"));
+        assertTimeoutPreemptively(ofSeconds(10),()-> {
+            String process = process(null).toUpperCase(Locale.ENGLISH);
+            assertThat(process, containsString("COMPLETED"));
+        });
     }
 
     private synchronized String process(String content) throws IOException, InterruptedException
@@ -127,7 +141,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String response = IO.toString(inputStream);
             long timeElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-            Assert.assertThat(timeElapsed,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME-100L));
+            assertThat(timeElapsed,greaterThanOrEqualTo(MAX_IDLE_TIME-100L));
             return response;
         }
     }
@@ -148,7 +162,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
     
-        Assert.assertFalse(client.isClosed());
+        assertFalse(client.isClosed());
     
         final OutputStream os = client.getOutputStream();
         final InputStream is = client.getInputStream();
@@ -196,13 +210,13 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             }
         });
     
-        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
             requestFuture.get(2, TimeUnit.SECONDS);
             responseFuture.get(3, TimeUnit.SECONDS);
-        
-            Assert.assertThat(response.toString(), Matchers.containsString(" 500 "));
-            Assert.assertThat(response.toString(), Matchers.not(Matchers.containsString("=========")));
+
+            assertThat(response.toString(), containsString(" 500 "));
+            assertThat(response.toString(), not(containsString("=========")));
         }
     }
 }

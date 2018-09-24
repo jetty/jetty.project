@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Big frame/message tests

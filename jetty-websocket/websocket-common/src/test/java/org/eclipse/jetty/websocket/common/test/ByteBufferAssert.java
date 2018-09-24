@@ -20,12 +20,15 @@ package org.eclipse.jetty.websocket.common.test;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
+/**
+ * @deprecated use {@link org.eclipse.jetty.toolchain.test.ByteBufferAssert} instead
+ */
 public class ByteBufferAssert
 {
     public static void assertEquals(String message, byte[] expected, byte[] actual)
@@ -36,6 +39,11 @@ public class ByteBufferAssert
         {
             assertThat(message + " byte[" + i + "]",actual[i],is(expected[i]));
         }
+    }
+
+    public static void assertEquals(ByteBuffer expectedBuffer, ByteBuffer actualBuffer, String message)
+    {
+        assertEquals(message, expectedBuffer, actualBuffer);
     }
 
     public static void assertEquals(String message, ByteBuffer expectedBuffer, ByteBuffer actualBuffer)

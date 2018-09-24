@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -38,67 +40,39 @@ import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.common.util.Sha1Sum;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class PerMessageDeflateExtensionTest
 {
-    private static enum TestCaseMessageSize
+    public static Stream<Arguments> modes()
     {
-        TINY(10),
-        SMALL(1024),
-        MEDIUM(10*1024),
-        LARGE(100*1024),
-        HUGE(1024*1024);
+        List<Scenario> modes = new ArrayList<>();
 
-        private int size;
-
-        private TestCaseMessageSize(int size)
+        for(Sizes size: Sizes.values())
         {
-            this.size = size;
-        }
-    }
-
-    @Parameters(name = "{0} ({3}) (Input Buffer Size: {4} bytes)")
-    public static List<Object[]> modes()
-    {
-        List<Object[]> modes = new ArrayList<>();
-
-        for(TestCaseMessageSize size: TestCaseMessageSize.values())
-        {
-            modes.add(new Object[] { "Normal HTTP/WS", false, "ws", size, -1 });
-            modes.add(new Object[] { "Encrypted HTTPS/WSS", true, "wss", size, -1 });
+            modes.add(new Scenario("Normal HTTP/WS", false, "ws", size, -1 ));
+            modes.add(new Scenario( "Encrypted HTTPS/WSS", true, "wss", size, -1 ));
             int altInputBufSize = 15*1024;
-            modes.add(new Object[] { "Normal HTTP/WS", false, "ws", size, altInputBufSize });
-            modes.add(new Object[] { "Encrypted HTTPS/WSS", true, "wss", size, altInputBufSize });
+            modes.add(new Scenario( "Normal HTTP/WS", false, "ws", size, altInputBufSize ));
+            modes.add(new Scenario( "Encrypted HTTPS/WSS", true, "wss", size, altInputBufSize ));
         }
 
-        return modes;
+        return modes.stream().map(Arguments::of);
     }
 
     private SimpleServletServer server;
-    private String scheme;
-    private int msgSize;
-    private int inputBufferSize;
 
-    public PerMessageDeflateExtensionTest(String mode, boolean sslMode, String scheme, TestCaseMessageSize msgSize, int bufferSize) throws Exception
+    private void startServer(Scenario scenario) throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
-        server.enableSsl(sslMode);
+        server.enableSsl(scenario.sslMode);
         server.start();
-
-        this.scheme = scheme;
-        this.msgSize = msgSize.size;
-        this.inputBufferSize = bufferSize;
     }
 
-    @After
+    @AfterEach
     public void stopServer()
     {
         server.stop();
@@ -108,22 +82,25 @@ public class PerMessageDeflateExtensionTest
      * Default configuration for permessage-deflate
      * @throws Exception on test failure
      */
-    @Test
-    public void testPerMessageDeflateDefault() throws Exception
+    @ParameterizedTest
+    @MethodSource("modes")
+    public void testPerMessageDeflateDefault(Scenario scenario) throws Exception
     {
-        Assume.assumeTrue("Server has permessage-deflate registered",
-                server.getWebSocketServletFactory().getExtensionFactory().isAvailable("permessage-deflate"));
+        startServer(scenario);
 
-        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is(scheme));
+        assumeTrue(server.getWebSocketServletFactory().getExtensionFactory().isAvailable("permessage-deflate"),
+                "Server has permessage-deflate registered");
 
-        int binBufferSize = (int) (msgSize * 1.5);
+        assertThat("server scheme",server.getServerUri().getScheme(),is(scenario.scheme));
+
+        int binBufferSize = (int) (scenario.msgSize.size * 1.5);
 
         WebSocketPolicy serverPolicy = server.getWebSocketServletFactory().getPolicy();
 
         // Ensure binBufferSize is sane (not smaller then other buffers)
         binBufferSize = Math.max(binBufferSize,serverPolicy.getMaxBinaryMessageSize());
         binBufferSize = Math.max(binBufferSize,serverPolicy.getMaxBinaryMessageBufferSize());
-        binBufferSize = Math.max(binBufferSize,this.inputBufferSize);
+        binBufferSize = Math.max(binBufferSize,scenario.inputBufferSize);
 
         serverPolicy.setMaxBinaryMessageSize(binBufferSize);
         serverPolicy.setMaxBinaryMessageBufferSize(binBufferSize);
@@ -132,9 +109,9 @@ public class PerMessageDeflateExtensionTest
         WebSocketPolicy clientPolicy = client.getPolicy();
         clientPolicy.setMaxBinaryMessageSize(binBufferSize);
         clientPolicy.setMaxBinaryMessageBufferSize(binBufferSize);
-        if (inputBufferSize > 0)
+        if (scenario.inputBufferSize > 0)
         {
-            clientPolicy.setInputBufferSize(inputBufferSize);
+            clientPolicy.setInputBufferSize(scenario.inputBufferSize);
         }
 
         try
@@ -156,7 +133,7 @@ public class PerMessageDeflateExtensionTest
             assertThat("Response.extensions",getNegotiatedExtensionList(session),containsString("permessage-deflate"));
 
             // Create message
-            byte msg[] = new byte[msgSize];
+            byte msg[] = new byte[scenario.msgSize.size];
             Random rand = new Random();
             rand.setSeed(8080);
             rand.nextBytes(msg);
@@ -168,7 +145,7 @@ public class PerMessageDeflateExtensionTest
             session.getRemote().sendBytes(ByteBuffer.wrap(msg));
 
             String echoMsg = clientSocket.messages.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Echo'd Message",echoMsg,is("binary[sha1="+sha1+"]"));
+            assertThat("Echo'd Message",echoMsg,is("binary[sha1="+sha1+"]"));
         }
         finally
         {
@@ -192,5 +169,45 @@ public class PerMessageDeflateExtensionTest
         actual.append(']');
 
         return actual.toString();
+    }
+
+    public enum Sizes
+    {
+        TINY(10),
+        SMALL(1024),
+        MEDIUM(10*1024),
+        LARGE(100*1024),
+        HUGE(1024*1024);
+
+        private int size;
+
+        Sizes(int size)
+        {
+            this.size = size;
+        }
+    }
+
+    public static class Scenario
+    {
+        public final String mode;
+        public final boolean sslMode;
+        public final String scheme;
+        public final Sizes msgSize;
+        public final int inputBufferSize;
+
+        public Scenario(String mode, boolean sslMode, String scheme, Sizes msgSize, int bufferSize)
+        {
+            this.mode = mode;
+            this.sslMode = sslMode;
+            this.scheme = scheme;
+            this.msgSize = msgSize;
+            this.inputBufferSize = bufferSize;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s (%s) (Input Buffer Size: %,d bytes)", mode, scheme, msgSize.size);
+        }
     }
 }

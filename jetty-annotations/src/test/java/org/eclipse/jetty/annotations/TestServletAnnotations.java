@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.annotations;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,14 +38,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
 
 /**
  * TestServletAnnotations
@@ -132,7 +134,7 @@ public class TestServletAnnotations
         resultMappings[0].getServletName().equals("DServlet");
         for (String s:resultMappings[0].getPathSpecs())
         {
-            assertTrue (s.equals("/") || s.equals("/bah/*"));
+            assertThat(s, anyOf(is("/"), is("/bah/*")));
         }
     }
 
@@ -185,7 +187,7 @@ public class TestServletAnnotations
                }
            }
            else
-               fail("Unexpected servlet mapping");
+               fail("Unexpected servlet mapping: " + r);
         }
 
     }
@@ -222,7 +224,7 @@ public class TestServletAnnotations
                 assertEquals(1, r.getPathSpecs().length);
             }
             else
-                fail("Unexpected servlet name");
+                fail("Unexpected servlet name: " + r);
         }
     }
 
@@ -258,7 +260,7 @@ public class TestServletAnnotations
         {
             assertEquals(1, r.getPathSpecs().length);
             if (!r.getPathSpecs()[0].equals("/default") && !r.getPathSpecs()[0].equals("/other"))
-                fail("Unexpected path in mapping");
+                fail("Unexpected path in mapping: " + r);
         }
 
     }
@@ -282,8 +284,7 @@ public class TestServletAnnotations
         assertEquals(2, resultMappings[0].getPathSpecs().length);
         for (String s:resultMappings[0].getPathSpecs())
         {
-            if (!s.equals("/") && !s.equals("/bah/*"))
-                fail("Unexpected path mapping");
+            assertThat(s, anyOf(is("/"), is("/bah/*")));
         }
     }
 
@@ -299,8 +300,6 @@ public class TestServletAnnotations
         sh.setRoles(new HashSet<String>(Arrays.asList(new String[]{"humpty", "dumpty"})));
         DeclareRolesAnnotationHandler handler = new DeclareRolesAnnotationHandler(wac);
         handler.doHandle(ServletC.class);
-        assertTrue(sh.getRoles().contains("alice"));
-        assertTrue(sh.getRoles().contains("humpty"));
-        assertTrue(sh.getRoles().contains("dumpty"));
+        assertThat(sh.getRoles(), containsInAnyOrder("humpty", "alice", "dumpty"));
     }
 }

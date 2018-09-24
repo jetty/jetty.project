@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,24 +56,21 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Rule
-    public TestName testname = new TestName();
+    public WorkDir workDir;
 
     private StacklessLogging stacklessLogging;
     private Server server;
@@ -97,7 +95,7 @@ public class DeploymentErrorTest
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
-        Path docroots = MavenTestingUtils.getTargetTestingPath(DeploymentErrorTest.class, testname.getMethodName());
+        Path docroots = workDir.getPath();
         FS.ensureEmpty(docroots);
 
         if (docrootSetupConsumer != null)
@@ -137,7 +135,7 @@ public class DeploymentErrorTest
         return docroots;
     }
 
-    @After
+    @AfterEach
     public void tearDownServer() throws Exception
     {
         if (stacklessLogging != null)
@@ -168,10 +166,11 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=true;}.
      */
     @Test
-    public void testInitial_BadApp_UnavailableTrue() throws Exception
+    public void testInitial_BadApp_UnavailableTrue()
     {
-        expectedException.expect(NoClassDefFoundError.class);
-        startServer(docroots -> copyBadApp("badapp.xml", docroots));
+        assertThrows(NoClassDefFoundError.class, ()-> {
+            startServer(docroots -> copyBadApp("badapp.xml", docroots));
+        });
 
         // The above should have prevented the server from starting.
         assertThat("server.isRunning", server.isRunning(), is(false));

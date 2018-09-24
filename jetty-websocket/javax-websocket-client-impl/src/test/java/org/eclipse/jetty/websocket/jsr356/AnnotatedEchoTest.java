@@ -28,9 +28,9 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class AnnotatedEchoTest
 {
@@ -39,7 +39,7 @@ public class AnnotatedEchoTest
     private static URI serverUri;
 
     @SuppressWarnings("Duplicates")
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -65,7 +65,7 @@ public class AnnotatedEchoTest
         serverUri = new URI(String.format("ws://%s:%d/",host,port));
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         try

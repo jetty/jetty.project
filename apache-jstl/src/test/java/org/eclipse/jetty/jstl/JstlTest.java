@@ -21,7 +21,7 @@ package org.eclipse.jetty.jstl;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,17 +40,16 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class JstlTest
 {
     private static Server server;
     private static URI baseUri;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         // Setup Server
@@ -99,7 +98,7 @@ public class JstlTest
         baseUri = new URI(String.format("http://%s:%d/",host,port));
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         if (server != null)

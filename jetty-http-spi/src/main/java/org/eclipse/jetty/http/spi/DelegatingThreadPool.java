@@ -25,19 +25,18 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.TryExecutor;
 
-public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool
-{
-    private static final Logger LOG = Log.getLogger(DelegatingThreadPool.class);
-    
+public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool, TryExecutor
+{    
     private Executor _executor; // memory barrier provided by start/stop semantics
+    private TryExecutor _tryExecutor;
 
     public DelegatingThreadPool(Executor executor)
     {
         _executor=executor;
+        _tryExecutor=TryExecutor.asTryExecutor(executor);
         addBean(_executor);
     }
 
@@ -54,6 +53,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
             throw new IllegalStateException(getState());
         updateBean(_executor,executor);
         _executor=executor;
+        _tryExecutor=TryExecutor.asTryExecutor(executor);
     }
     
     /* ------------------------------------------------------------ */
@@ -61,6 +61,13 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
     public void execute(Runnable job)
     {
         _executor.execute(job);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean tryExecute(Runnable task)
+    {
+        return _tryExecutor.tryExecute(task);
     }
 
     /* ------------------------------------------------------------ */

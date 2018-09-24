@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -42,9 +42,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class EncodedURITest
 {
@@ -54,7 +54,7 @@ public class EncodedURITest
     private ServletContextHandler _context0;
     private ServletContextHandler _context1;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
@@ -80,7 +80,7 @@ public class EncodedURITest
         _server.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         _server.stop();

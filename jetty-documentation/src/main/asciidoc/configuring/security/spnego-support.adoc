@@ -17,17 +17,17 @@
 //
 
 [[spnego-support]]
-=== Spnego Support
+=== SPNEGO Support
 
-Simple and Protected GSSAPI Negotiation Mechanism (Spnego) is a way for users to be seamlessly authenticated when running on a Windows or Active Directory based network.
+Simple and Protected GSSAPI Negotiation Mechanism (SPNEGO) is a way for users to be seamlessly authenticated when running on a Windows or Active Directory based network.
 Jetty supports this type of authentication and authorization through the JDK (which has been enabled since the later versions of Java 6 and 7).
 Also important to note is that this is an _incredibly_ fragile setup where everything needs to be configured just right for things to work, otherwise it can fail in fun and exciting, not to mention obscure, ways.
 
 There is a substantial amount of configuration and testing required to enable this feature as well as knowledge and access to central systems on a Windows network such as the Active Domain Controller and the ability to create and maintain service users.
 
-==== Configuring Jetty and Spnego
+==== Configuring Jetty and SPNEGO
 
-To run with Spengo enabled the following command line options are required:
+To run with SPNEGO enabled the following command line options are required:
 
 [source,screen, subs="{sub-order}"]
 ----
@@ -36,7 +36,7 @@ To run with Spengo enabled the following command line options are required:
 -Djavax.security.auth.useSubjectCredsOnly=false
 ----
 
-For debugging the Spengo authentication the following options are very helpful:
+For debugging the SPNEGO authentication the following options are very helpful:
 
 [source,screen, subs="{sub-order}"]
 ----
@@ -44,7 +44,7 @@ For debugging the Spengo authentication the following options are very helpful:
 -Dsun.security.spnego.debug=all
 ----
 
-Spengo Authentication must be enabled in the webapp in the following way.
+SPNEGO Authentication must be enabled in the webapp in the following way.
 The name of the role will be different for your network.
 
 [source, xml, subs="{sub-order}"]
@@ -65,7 +65,7 @@ The name of the role will be different for your network.
    <realm-name>Test Realm</realm-name>
    <!-- optionally to add custom error page -->
    <spnego-login-config>
-     <spengo-error-page>/loginError.html?param=foo</spnego-error-page>
+     <spnego-error-page>/loginError.html?param=foo</spnego-error-page>
    </spnego-login-config>
  </login-config>
 
@@ -119,7 +119,7 @@ krb5.ini::
 spnego.conf::
   configures the glue between gssapi and kerberos
 
-It is important to note that the keytab file referenced in the `krb5.ini` and the `spengo.conf` files needs to contain the keytab for the `targetName` for the http server.
+It is important to note that the keytab file referenced in the `krb5.ini` and the `spnego.conf` files needs to contain the keytab for the `targetName` for the http server.
 To do this use a process similar to this:
 
 On the Windows Active Domain Controller run:
@@ -159,12 +159,12 @@ The follows steps have been required to inform Internet Explorer that it should 
 5.  Tools -> Options -> Advanced -> Security (in the checkbox list)
 6.  Locate and select `Enable Integrated Windows Authentication`
 7.  Tools -> Options -> Advanced -> Security -> Ok
-8.  Close IE then reopen and browse to your Spengo protected resource
+8.  Close IE then reopen and browse to your SPNEGO protected resource
 
 
 You *must* use hostname and not the IP.
 If you use the IP it will default to NTLM authentication.
-The following conditions must be true for Spnego authentication to work:
+The following conditions must be true for SPNEGO authentication to work:
 
 * You must be within the Intranet Zone of the network
 * Access the server using a Hostname rather than IP

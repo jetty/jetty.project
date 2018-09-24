@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
@@ -37,10 +41,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Assert;
+
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.osgi.framework.Bundle;
@@ -56,7 +60,7 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
     {
-        File etc = new File(OS.separators("src/test/config/etc"));
+        File etc = new File(FS.separators("src/test/config/etc"));
         
         List<Option> options = new ArrayList<>();
         StringBuffer xmlConfigs = new StringBuffer();
@@ -183,7 +187,7 @@ public class TestOSGiUtil
             + b.getHeaders().get("Bundle-Version")
             + " and "
             + prevBundle.getHeaders().get("Bundle-Version") : "";
-            Assert.assertNull(err, prevBundle);
+            assertNull(err, prevBundle);
         }
         return _bundles.get(symbolicName);
     }
@@ -191,16 +195,16 @@ public class TestOSGiUtil
     protected static void assertActiveBundle(BundleContext bundleContext, String symbolicName) throws Exception
     {
         Bundle b = getBundle(bundleContext, symbolicName);
-        Assert.assertNotNull(b);
-        Assert.assertEquals(b.getSymbolicName() + " must be active.", Bundle.ACTIVE, b.getState());
+        assertNotNull(b);
+        assertEquals(b.getSymbolicName() + " must be active.", Bundle.ACTIVE, b.getState());
     }
 
     protected static void assertActiveOrResolvedBundle(BundleContext bundleContext, String symbolicName) throws Exception
     {
         Bundle b = getBundle(bundleContext, symbolicName);
-        Assert.assertNotNull(b);
+        assertNotNull(b);
         if (b.getHeaders().get("Fragment-Host") == null) diagnoseNonActiveOrNonResolvedBundle(b);
-        Assert.assertTrue(b.getSymbolicName() + " must be active or resolved. It was " + b.getState(),
+        assertTrue(b.getSymbolicName() + " must be active or resolved. It was " + b.getState(),
                           b.getState() == Bundle.ACTIVE || b.getState() == Bundle.RESOLVED);
     }
 
@@ -212,7 +216,7 @@ public class TestOSGiUtil
             {
                 diagnoseNonActiveOrNonResolvedBundle(b);
             }
-            Assert.assertTrue("Bundle: " + b
+            assertTrue("Bundle: " + b
                               + " (state should be "
                               + "ACTIVE["
                               + Bundle.ACTIVE
@@ -285,7 +289,7 @@ public class TestOSGiUtil
         // here we purposely want to make sure that the httpService is actually
         // ready.
         ServiceReference<?> sr = bundleContext.getServiceReference(HttpService.class.getName());
-        Assert.assertNotNull("The httpServiceOSGiBundle is started and should " + "have deployed a service reference for HttpService", sr);
+        assertNotNull("The httpServiceOSGiBundle is started and should " + "have deployed a service reference for HttpService", sr);
         HttpService http = (HttpService) bundleContext.getService(sr);
         http.registerServlet("/greetings", new HttpServlet()
         {
@@ -304,10 +308,10 @@ public class TestOSGiUtil
         {
             client.start();
             ContentResponse response = client.GET(protocol + "://127.0.0.1:" + port + "/greetings");
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
-            Assert.assertEquals("Hello", content);
+            assertEquals("Hello", content);
         }
         finally
         {

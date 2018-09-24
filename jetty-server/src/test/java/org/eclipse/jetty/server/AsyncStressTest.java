@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,19 +39,18 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.PropertyFlag;
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
+@Disabled
+@Tag("stress")
 public class AsyncStressTest
 {
     private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
@@ -73,7 +72,7 @@ public class AsyncStressTest
         {"/path?suspend=60000&complete=<PERIOD>","COMPLETED"},
     };
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _server.manage(_threads);
@@ -87,7 +86,7 @@ public class AsyncStressTest
         _addr=InetAddress.getLocalHost();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         _server.stop();
@@ -95,17 +94,9 @@ public class AsyncStressTest
     }
 
     @Test
-    @Stress("High connection count")
     public void testAsync() throws Throwable
     {
-        if (PropertyFlag.isEnabled("test.stress"))
-        {
-            doConnections(1600,240);
-        }
-        else
-        {
-            doConnections(80,80);
-        }
+        doConnections(1600,240);
     }
 
     private void doConnections(int connections,final int loops) throws Throwable

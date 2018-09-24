@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -45,12 +45,12 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Ignore("Unstable - see Issue #1815")
+@Disabled("Unstable - see Issue #1815")
 public class DecoratorsLegacyTest
 {
 
@@ -135,7 +135,7 @@ public class DecoratorsLegacyTest
     private static SimpleServletServer server;
     private static DecoratorsCreator decoratorsCreator;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         decoratorsCreator = new DecoratorsCreator();
@@ -153,13 +153,13 @@ public class DecoratorsLegacyTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -167,7 +167,7 @@ public class DecoratorsLegacyTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();

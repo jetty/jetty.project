@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.jmx;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -32,10 +36,9 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * Running the tests of this class in the same JVM results often in
@@ -49,13 +52,13 @@ import org.junit.Test;
  * Running each test method in a forked JVM makes these tests all pass,
  * therefore the issue is likely caused by use of stale stubs cached by the JDK.
  */
-@Ignore
+@Disabled
 public class ConnectorServerTest
 {
     private String objectName = "org.eclipse.jetty:name=rmiconnectorserver";
     private ConnectorServer connectorServer;
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (connectorServer != null)
@@ -69,7 +72,7 @@ public class ConnectorServerTest
         connectorServer.start();
 
         JMXServiceURL address = connectorServer.getAddress();
-        Assert.assertTrue(address.toString().matches("service:jmx:rmi://[^:]+:\\d+/jndi/rmi://[^:]+:\\d+/jmxrmi"));
+        assertTrue(address.toString().matches("service:jmx:rmi://[^:]+:\\d+/jndi/rmi://[^:]+:\\d+/jmxrmi"));
     }
 
     @Test
@@ -80,16 +83,10 @@ public class ConnectorServerTest
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), 1099).close();
-        try
-        {
+        assertThrows(ConnectException.class, ()->{
             // Verify that I cannot connect to the RMI registry using the loopback address.
             new Socket(InetAddress.getLoopbackAddress(), 1099).close();
-            Assert.fail();
-        }
-        catch (ConnectException ignored)
-        {
-            // Ignored.
-        }
+        });
     }
 
     @Test
@@ -103,16 +100,10 @@ public class ConnectorServerTest
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), registryPort).close();
-        try
-        {
+        assertThrows(ConnectException.class, ()->{
             // Verify that I cannot connect to the RMI registry using the loopback address.
             new Socket(InetAddress.getLoopbackAddress(), registryPort).close();
-            Assert.fail();
-        }
-        catch (ConnectException ignored)
-        {
-            // Ignored.
-        }
+        });
     }
 
     @Test
@@ -139,16 +130,10 @@ public class ConnectorServerTest
         InetAddress localHost = InetAddress.getLocalHost();
         if (!localHost.isLoopbackAddress())
         {
-            try
-            {
+            assertThrows(ConnectException.class, ()->{
                 // Verify that I cannot connect to the RMIRegistry using a non-loopback address.
                 new Socket(localHost, 1099);
-                Assert.fail();
-            }
-            catch (ConnectException ignored)
-            {
-                // Ignored.
-            }
+            });
         }
 
         InetAddress loopback = InetAddress.getLoopbackAddress();
@@ -163,16 +148,10 @@ public class ConnectorServerTest
 
         // Verify that I can connect to the RMI server using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
-        try
-        {
+        assertThrows(ConnectException.class, ()->{
             // Verify that I cannot connect to the RMI server using the loopback address.
             new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
-            Assert.fail();
-        }
-        catch (ConnectException ignored)
-        {
-            // Ignored.
-        }
+        });
     }
 
     @Test
@@ -197,16 +176,10 @@ public class ConnectorServerTest
         InetAddress localHost = InetAddress.getLocalHost();
         if (!localHost.isLoopbackAddress())
         {
-            try
-            {
+            assertThrows(ConnectException.class, ()->{
                 // Verify that I cannot connect to the RMIRegistry using a non-loopback address.
                 new Socket(localHost, address.getPort());
-                Assert.fail();
-            }
-            catch (ConnectException ignored)
-            {
-                // Ignored.
-            }
+            });
         }
 
         InetAddress loopback = InetAddress.getLoopbackAddress();
@@ -224,7 +197,7 @@ public class ConnectorServerTest
         connectorServer.start();
 
         JMXServiceURL address = connectorServer.getAddress();
-        Assert.assertEquals(port, address.getPort());
+        assertEquals(port, address.getPort());
 
         InetAddress loopback = InetAddress.getLoopbackAddress();
         new Socket(loopback, port).close();
@@ -248,7 +221,7 @@ public class ConnectorServerTest
         connectorServer.start();
 
         JMXServiceURL address = connectorServer.getAddress();
-        Assert.assertEquals(port, address.getPort());
+        assertEquals(port, address.getPort());
     }
 
     @Test

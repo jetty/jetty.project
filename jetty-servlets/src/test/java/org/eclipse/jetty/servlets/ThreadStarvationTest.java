@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,22 +60,18 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 public class ThreadStarvationTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
     private Server _server;
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         if (_server != null)
@@ -80,7 +79,7 @@ public class ThreadStarvationTest
     }
 
     @Test
-    @Slow
+    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testDefaultServletSuccess() throws Exception
     {
         int maxThreads = 10;
@@ -146,7 +145,7 @@ public class ThreadStarvationTest
         }
 
         // Wait for a the servlet to block.
-        Assert.assertTrue(writePending.await(5, TimeUnit.SECONDS));
+        assertTrue(writePending.await(5, TimeUnit.SECONDS));
 
         long expected = Files.size(resourcePath);
         byte[] buffer = new byte[48 * 1024];
@@ -231,7 +230,7 @@ public class ThreadStarvationTest
         for (Exchanger<Long> x : totals)
         {
             Long total = x.exchange(-1L,10000,TimeUnit.SECONDS);
-            Assert.assertEquals(expected,total.longValue());
+            assertEquals(expected,total.longValue());
         }
         
         // We could read everything, good.
@@ -394,7 +393,7 @@ public class ThreadStarvationTest
             for (Exchanger<Integer> x : totals)
             {
                 Integer read = x.exchange(-1,10,TimeUnit.SECONDS);
-                Assert.assertEquals(-1,read.intValue());
+                assertEquals(-1,read.intValue());
             }
 
             // We could read everything, good.

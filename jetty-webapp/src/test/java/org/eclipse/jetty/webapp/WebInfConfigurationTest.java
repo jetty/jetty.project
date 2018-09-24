@@ -19,14 +19,21 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 /**
  * WebInfConfigurationTest
@@ -43,19 +50,20 @@ public class WebInfConfigurationTest
      * @throws Exception
      */
     @Test
+    @EnabledOnJre(JRE.JAVA_8)
     public void testFindAndFilterContainerPaths()
     throws Exception
     {
-        Assume.assumeTrue(JavaVersion.VERSION.getMajor() < 9);
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/");
+
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
         assertEquals(1, containerResources.size());
-        assertTrue(containerResources.get(0).toString().contains("jetty-util"));
+        assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
     
     /**
@@ -64,11 +72,11 @@ public class WebInfConfigurationTest
      * @throws Exception
      */
     @Test
+    @DisabledOnJre(JRE.JAVA_8)
+    @EnabledIfSystemProperty(named="jdk.module.path", matches=".*")
     public void testFindAndFilterContainerPathsJDK9()
     throws Exception
     {
-        Assume.assumeTrue(JavaVersion.VERSION.getMajor() >= 9);
-        Assume.assumeTrue(System.getProperty("jdk.module.path") != null);
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
@@ -80,7 +88,7 @@ public class WebInfConfigurationTest
         for (Resource r:containerResources)
         {
             String s = r.toString();
-            assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("jetty-util"));
+            assertThat(s, anyOf(endsWith("foo-bar-janb.jar"), containsString("jetty-util")));
         }
     }
     
@@ -93,11 +101,11 @@ public class WebInfConfigurationTest
      * @throws Exception
      */
     @Test
+    @DisabledOnJre(JRE.JAVA_8)
+    @EnabledIfSystemProperty(named="jdk.module.path", matches=".*")
     public void testFindAndFilterContainerPathsTarget8()
     throws Exception
     {
-        Assume.assumeTrue(JavaVersion.VERSION.getMajor() >= 9);
-        Assume.assumeTrue(System.getProperty("jdk.module.path") != null);
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(JavaVersion.JAVA_TARGET_PLATFORM, "8");
@@ -107,7 +115,7 @@ public class WebInfConfigurationTest
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
         assertEquals(1, containerResources.size());
-        assertTrue(containerResources.get(0).toString().contains("jetty-util"));
+        assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
 
 }
