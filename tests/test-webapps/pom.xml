@@ -39,5 +39,6 @@
     <module>test-jaas-webapp</module>
     <module>test-jndi-webapp</module>
     <module>test-http2-webapp</module>
+    <module>test-simple-webapp</module>
   </modules>
 </project>
