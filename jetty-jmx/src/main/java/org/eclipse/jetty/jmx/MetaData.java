@@ -154,18 +154,26 @@ class MetaData
 
     private OperationInfo findOperation(String signature)
     {
-        OperationInfo result = _operations.get(signature);
-        if (result != null)
-            return result;
+        OperationInfo result = null;
         for (MetaData intf : _interfaces)
         {
-            result = intf.findOperation(signature);
-            if (result != null)
-                return result;
+            OperationInfo r = intf.findOperation(signature);
+            if (r != null)
+                result = r;
         }
+
         if (_parent != null)
-            return _parent.findOperation(signature);
-        return null;
+        {
+            OperationInfo r = _parent.findOperation(signature);
+            if (r != null)
+                result = r;
+        }
+
+        OperationInfo r = _operations.get(signature);
+        if (r != null)
+            result = r;
+
+        return result;
     }
 
     private static Object newInstance(Constructor<?> constructor, Object bean)
@@ -385,7 +393,7 @@ class MetaData
         void setAttribute(Object value, ObjectMBean mbean) throws ReflectionException, MBeanException
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("setAttribute {}.{}={} {}",mbean,_info.getName(), value, _info);
+                LOG.debug("setAttribute {}.{}={} {}", mbean, _info.getName(), value, _info);
             try
             {
                 if (_setter == null)
@@ -496,7 +504,7 @@ class MetaData
         public Object invoke(Object[] args, ObjectMBean mbean) throws ReflectionException, MBeanException
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("invoke {}.{}({}) {}",mbean,_info.getName(), Arrays.asList(args), _info);
+                LOG.debug("invoke {}.{}({}) {}", mbean, _info.getName(), Arrays.asList(args), _info);
             try
             {
                 Object target = mbean.getManagedObject();

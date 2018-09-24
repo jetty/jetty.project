@@ -159,12 +159,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             LOG.debug("MBean for {} is {}", o, mbean);
             if (mbean instanceof ObjectMBean)
             {
-                MBeanInfo info =((ObjectMBean)mbean).getMBeanInfo();
-                for (Object a :info.getAttributes())
-                    LOG.debug("    {}", a);
-                for (Object a :info.getOperations())
-                    LOG.debug("    {}", a);
-
+                MBeanInfo info = ((ObjectMBean)mbean).getMBeanInfo();
+                for (Object a : info.getAttributes())
+                    LOG.debug("  {}", a);
+                for (Object a : info.getOperations())
+                    LOG.debug("  {}", a);
             }
         }
         return mbean;
