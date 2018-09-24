@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Assert;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.Assert;
 
 import static org.hamcrest.Matchers.is;
 
@@ -108,10 +108,20 @@ public class RawFrameBuilder
 
     public static byte[] buildFrame(byte opcode, String message, boolean masked)
     {
+        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
+        return buildFrame(opcode, bytes, masked);
+    }
+
+    public static byte[] buildFrame(byte opcode, byte[] bytes, boolean masked)
+    {
+        return buildFrame(opcode, bytes, masked, true);
+    }
+
+    public static byte[] buildFrame(byte opcode, byte[] bytes, boolean masked, boolean fin)
+    {
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
-        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
-        RawFrameBuilder.putOpFin(buffer,opcode,true);
+        RawFrameBuilder.putOpFin(buffer,opcode,fin);
         putLength(buffer,bytes.length,masked);
         if (masked)
         {

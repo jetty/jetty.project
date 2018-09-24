@@ -145,6 +145,7 @@ public final class OpCode
     
     public static class Sequence
     {
+        // TODO should we be able to get a non fin frame then get a close frame without error
         private byte state=UNDEFINED;
         
         public void check(byte opcode, boolean fin) throws ProtocolException

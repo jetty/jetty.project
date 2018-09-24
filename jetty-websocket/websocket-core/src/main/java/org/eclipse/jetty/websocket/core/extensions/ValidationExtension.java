@@ -22,12 +22,19 @@ import java.util.Map;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+
+import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
+import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
+import static org.eclipse.jetty.websocket.core.OpCode.UNDEFINED;
 
 public class ValidationExtension extends AbstractExtension
 {
@@ -37,6 +44,10 @@ public class ValidationExtension extends AbstractExtension
     private OpCode.Sequence outgoingSequence = null;
     private boolean incomingFrameValidation = false;
     private boolean outgoingFrameValidation = false;
+    private NullAppendable incomingUtf8Validation = null;
+    private NullAppendable outgoingUtf8Validation = null;
+    private byte continuedOutOpCode = UNDEFINED;
+    private byte continuedInOpCode = UNDEFINED;
 
     @Override
     public String getName()
@@ -55,6 +66,10 @@ public class ValidationExtension extends AbstractExtension
             if (incomingFrameValidation)
                 getWebSocketChannel().assertValidIncoming(frame);
 
+            if (incomingUtf8Validation != null)
+                validateUTF8(frame, incomingUtf8Validation, continuedInOpCode);
+
+            continuedInOpCode = recordLastOpCode(frame, continuedInOpCode);
             nextIncomingFrame(frame, callback);
         }
         catch (Throwable t)
@@ -74,6 +89,10 @@ public class ValidationExtension extends AbstractExtension
             if (outgoingFrameValidation)
                 getWebSocketChannel().assertValidOutgoing(frame);
 
+            if (outgoingUtf8Validation != null)
+                validateUTF8(frame, outgoingUtf8Validation, continuedOutOpCode);
+
+            continuedOutOpCode = recordLastOpCode(frame, continuedOutOpCode);
             nextOutgoingFrame(frame, callback, batchMode);
         }
         catch (Throwable t)
@@ -100,5 +119,67 @@ public class ValidationExtension extends AbstractExtension
 
         if (parameters.containsKey("outgoing-frame"))
             outgoingFrameValidation = true;
+
+        if (parameters.containsKey("incoming-utf8"))
+            incomingUtf8Validation = new NullAppendable();
+
+        if (parameters.containsKey("outgoing-utf8"))
+            outgoingUtf8Validation = new NullAppendable();
+    }
+
+
+    private void validateUTF8(Frame frame, NullAppendable appendable, byte continuedOpCode)
+    {
+        //TODO this relies on sequencing being set
+
+        if (frame.isControlFrame())
+        {
+            //todo validate utf8 of control frames
+
+        }
+        else
+        {
+            if (frame.getOpCode() == TEXT || continuedOpCode == TEXT)
+            {
+                appendable.append(frame.getPayload().slice());
+
+                if (frame.isFin())
+                    appendable.checkState();
+            }
+        }
+    }
+
+    public byte recordLastOpCode(Frame frame, byte prevOpcode) throws ProtocolException
+    {
+        byte opcode = prevOpcode;
+        boolean fin = frame.isFin();
+
+        if (fin)
+            opcode = UNDEFINED;
+        else if (opcode != CONTINUATION)
+            opcode = frame.getOpCode();
+
+        return opcode;
+    }
+
+
+    private class NullAppendable extends Utf8Appendable
+    {
+        public NullAppendable()
+        {
+            super(IO.getNullWriter());
+        }
+
+        @Override
+        public int length()
+        {
+            return 0;
+        }
+
+        @Override
+        public String getPartialString()
+        {
+            return null;
+        }
     }
 }

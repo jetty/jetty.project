@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 
 public class TestFrameHandler implements FrameHandler
 {
@@ -56,7 +56,7 @@ public class TestFrameHandler implements FrameHandler
     @Override
     public void onReceiveFrame(Frame frame, Callback callback)
     {
-        LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+        LOG.info("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
         receivedFrames.offer(Frame.copy(frame));
         callback.succeeded();
     }

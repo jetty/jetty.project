@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -41,14 +47,14 @@ import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests of a core server with a fake client
@@ -251,6 +257,100 @@ public class WebSocketServerTest extends WebSocketTester
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));
             assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.PROTOCOL));
+        }
+    }
+
+
+    @Test
+    public void testNonUtf8BinaryPayload() throws Exception
+    {
+        TestFrameHandler serverHandler = new TestFrameHandler();
+
+        server = new WebSocketServer(0, serverHandler);
+        server.start();
+
+        byte[] nonUtf8Payload = {0x7F,(byte)0xFF,(byte)0xFF};
+
+        try (Socket client = newClient(server.getLocalPort()))
+        {
+            client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.BINARY, nonUtf8Payload, true));
+            Frame frame = server.handler.receivedFrames.poll(5, TimeUnit.SECONDS);
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.BINARY));
+            assertThat(frame.getPayload().array(), is(nonUtf8Payload));
+
+
+            //close normally
+            client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
+            assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+            frame = receiveFrame(client.getInputStream());
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
+        }
+    }
+
+    @Test
+    public void testValidContinuationOnNonUtf8Boundary() throws Exception
+    {
+        TestFrameHandler serverHandler = new TestFrameHandler();
+
+        server = new WebSocketServer(0, serverHandler);
+        server.start();
+
+        // Testing with 4 byte UTF8 character "\uD842\uDF9F"
+        byte[] initialPayload = new byte[]{(byte)0xF0,(byte)0xA0};
+        byte[] continuationPayload = new byte[]{(byte)0xAE,(byte)0x9F};
+
+        try (Socket client = newClient(server.getLocalPort()))
+        {
+            client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.TEXT, initialPayload, true, false));
+            Frame frame = server.handler.receivedFrames.poll(5, TimeUnit.SECONDS);
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.TEXT));
+            assertThat(frame.getPayload().array(), is(initialPayload));
+
+            client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, continuationPayload, true));
+            frame = server.handler.receivedFrames.poll(5, TimeUnit.SECONDS);
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat(frame.getPayload().array(), is(continuationPayload));
+
+            //close normally
+            client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
+            assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+            frame = receiveFrame(client.getInputStream());
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
+        }
+    }
+
+    @Test
+    public void testInvalidContinuationOnNonUtf8Boundary() throws Exception
+    {
+        TestFrameHandler serverHandler = new TestFrameHandler();
+
+        server = new WebSocketServer(0, serverHandler);
+        server.start();
+
+        // Testing with 4 byte UTF8 character "\uD842\uDF9F"
+        byte[] initialPayload = new byte[]{(byte)0xF0,(byte)0xA0};
+        byte[] incompleteContinuationPayload = new byte[]{(byte)0xAE};
+
+        try (Socket client = newClient(server.getLocalPort()))
+        {
+            client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.TEXT, initialPayload, true, false));
+            Frame frame = server.handler.receivedFrames.poll(5, TimeUnit.SECONDS);
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.TEXT));
+            assertThat(frame.getPayload().array(), is(initialPayload));
+
+            client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, incompleteContinuationPayload, true));
+            frame = receiveFrame(client.getInputStream());
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.BAD_PAYLOAD));
         }
     }
 

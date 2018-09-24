@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-
-import java.io.IOException;
-import java.util.List;
 
 public class TestWebSocketNegotiator implements WebSocketNegotiator
 {
@@ -50,7 +50,7 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
         if (!offeredSubprotocols.contains("test"))
             return null;
         negotiation.setSubprotocol("test");
-        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame");
+        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8");
         return frameHandler;
     }
 
