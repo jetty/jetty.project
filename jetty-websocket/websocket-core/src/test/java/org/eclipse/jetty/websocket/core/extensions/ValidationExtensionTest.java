@@ -57,9 +57,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Tests of a core server with a fake client
- */
 public class ValidationExtensionTest extends WebSocketTester
 {
     private static Logger LOG = Log.getLogger(WebSocketServerTest.class);
