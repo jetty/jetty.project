@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -32,8 +41,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -41,13 +48,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -58,23 +65,15 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @SuppressWarnings("Duplicates")
-@RunWith(Parameterized.class)
 public class SocketChannelEndPointTest
 {
     private static final Logger LOG = Log.getLogger(SocketChannelEndPoint.class);
@@ -88,22 +87,15 @@ public class SocketChannelEndPointTest
         boolean supportsHalfCloses();
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Object[]> data() throws Exception
+    public static Stream<Arguments> scenarios() throws Exception
     {
-        List<Object[]> ret = new ArrayList<>();
-
         NormalScenario normalScenario = new NormalScenario();
-        ret.add(new Object[]{normalScenario});
-        ret.add(new Object[]{new SslScenario(normalScenario)});
+        SslScenario sslScenario = new SslScenario(normalScenario);
 
-        return ret;
+        return Stream.of(normalScenario, sslScenario).map(Arguments::of);
     }
 
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
-    private final Scenario _scenario;
+    private Scenario _scenario;
 
     private ServerSocketChannel _connector;
     private QueuedThreadPool _threadPool;
@@ -116,7 +108,7 @@ public class SocketChannelEndPointTest
     private AtomicInteger _blockAt = new AtomicInteger(0);
     private AtomicInteger _writeCount = new AtomicInteger(1);
 
-    public SocketChannelEndPointTest(Scenario scenario) throws Exception
+    public void init(Scenario scenario) throws Exception
     {
         _scenario = scenario;
         _threadPool = new QueuedThreadPool();
@@ -131,7 +123,7 @@ public class SocketChannelEndPointTest
         _manager.start();
     }
 
-    @After
+    @AfterEach
     public void stopManager() throws Exception
     {
         _scheduler.stop();
@@ -140,9 +132,11 @@ public class SocketChannelEndPointTest
         _connector.close();
     }
 
-    @Test
-    public void testEcho() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testEcho(Scenario scenario) throws Exception
     {
+        init(scenario);
         try (Socket client = _scenario.newClient(_connector))
         {
             client.setSoTimeout(60000);
@@ -165,16 +159,9 @@ public class SocketChannelEndPointTest
                 // wait for read timeout
                 client.setSoTimeout(500);
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                try
-                {
-                    client.getInputStream().read();
-                    Assert.fail();
-                }
-                catch (SocketTimeoutException e)
-                {
-                    long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-                    Assert.assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
-                }
+                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
+                assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
 
                 // write then shutdown
                 client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
@@ -183,8 +170,8 @@ public class SocketChannelEndPointTest
                 for (char c : "Goodbye Cruel TLS".toCharArray())
                 {
                     int b = client.getInputStream().read();
-                    Assert.assertThat("expect valid char integer", b, greaterThan(0));
-                    assertEquals("expect characters to be same", c, (char)b);
+                    assertThat("expect valid char integer", b, greaterThan(0));
+                    assertEquals(c, (char) b, "expect characters to be same");
                 }
                 client.close();
 
@@ -203,7 +190,8 @@ public class SocketChannelEndPointTest
     @Test
     public void testShutdown() throws Exception
     {
-        assumeTrue("Scenario supports half-close", _scenario.supportsHalfCloses());
+        // We don't test SSL as JVM SSL doesn't support half-close
+        init(new NormalScenario());
 
         try (Socket client = _scenario.newClient(_connector))
         {
@@ -226,15 +214,8 @@ public class SocketChannelEndPointTest
 
                 // wait for read timeout
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                try
-                {
-                    client.getInputStream().read();
-                    Assert.fail();
-                }
-                catch (SocketTimeoutException e)
-                {
-                    assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
-                }
+                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
 
                 // write then shutdown
                 client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
@@ -254,9 +235,11 @@ public class SocketChannelEndPointTest
         }
     }
 
-    @Test
-    public void testReadBlocked() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testReadBlocked(Scenario scenario) throws Exception
     {
+        init(scenario);
         try (Socket client = _scenario.newClient(_connector);
              SocketChannel server = _connector.accept())
         {
@@ -274,21 +257,14 @@ public class SocketChannelEndPointTest
             clientOutputStream.write("12345678".getBytes(StandardCharsets.UTF_8));
             clientOutputStream.flush();
 
-            Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+            assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
             _lastEndPoint.setIdleTimeout(10 * specifiedTimeout);
             Thread.sleep((11 * specifiedTimeout) / 10);
 
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            try
-            {
-                int b = clientInputStream.read();
-                Assert.fail("Should have timed out waiting for a response, but read " + b);
-            }
-            catch (SocketTimeoutException e)
-            {
-                int elapsed = Long.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start).intValue();
-                Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
-            }
+            assertThrows(SocketTimeoutException.class, ()-> clientInputStream.read());
+            int elapsed = Long.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start).intValue();
+            assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
 
             // write remaining characters
             clientOutputStream.write("90ABCDEF".getBytes(StandardCharsets.UTF_8));
@@ -304,9 +280,11 @@ public class SocketChannelEndPointTest
         }
     }
 
-    @Test
-    public void testStress() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testStress(Scenario scenario) throws Exception
     {
+        init(scenario);
         try (Socket client = _scenario.newClient(_connector))
         {
             client.setSoTimeout(30000);
@@ -326,7 +304,7 @@ public class SocketChannelEndPointTest
                 out.write(count);
                 out.flush();
 
-                Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+                assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
                 _lastEndPoint.setIdleTimeout(5000);
 
                 new Thread(() ->
@@ -342,7 +320,7 @@ public class SocketChannelEndPointTest
                             for (byte b0 : bytes)
                             {
                                 int b = in.read();
-                                Assert.assertThat(b, greaterThan(0));
+                                assertThat(b, greaterThan(0));
                                 assertEquals(0xff & b0, b);
                             }
 
@@ -396,7 +374,7 @@ public class SocketChannelEndPointTest
                 {
                     //System.err.println(latch.getCount());
                     if (latch.getCount() == last)
-                        Assert.fail();
+                        fail("Latch failure");
                     last = latch.getCount();
                 }
 
@@ -405,9 +383,11 @@ public class SocketChannelEndPointTest
         }
     }
 
-    @Test
-    public void testWriteBlocked() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testWriteBlocked(Scenario scenario) throws Exception
     {
+        init(scenario);
         try (Socket client = _scenario.newClient(_connector))
         {
             client.setSoTimeout(10000);
@@ -437,7 +417,7 @@ public class SocketChannelEndPointTest
                             int b = in.read();
                             byteNum++;
                             assertTrue(b > 0);
-                            assertEquals("test-" + i + "/" + j, c, (char)b);
+                            assertEquals(c, (char) b, "test-" + i + "/" + j);
                         }
 
                         if (i == 0)
@@ -467,11 +447,13 @@ public class SocketChannelEndPointTest
     }
 
 
-    // TODO make this test reliable
-    @Test
-    @Ignore
-    public void testRejectedExecution() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    @Tag("Unstable")
+    @Disabled
+    public void testRejectedExecution(Scenario scenario) throws Exception
     {
+        init(scenario);
         _manager.stop();
         _threadPool.stop();
 
@@ -557,13 +539,13 @@ public class SocketChannelEndPointTest
         closed.await();
 
         // assert some clients must have been rejected
-        Assert.assertThat(rejections.get(), Matchers.greaterThan(0));
+        assertThat(rejections.get(), Matchers.greaterThan(0));
         // but not all of them
-        Assert.assertThat(rejections.get(), Matchers.lessThan(20));
+        assertThat(rejections.get(), Matchers.lessThan(20));
         // none should have timed out
-        Assert.assertThat(timeout.get(), Matchers.equalTo(0));
+        assertThat(timeout.get(), Matchers.equalTo(0));
         // and the rest should have worked
-        Assert.assertThat(echoed.get(), Matchers.equalTo(20 - rejections.get()));
+        assertThat(echoed.get(), Matchers.equalTo(20 - rejections.get()));
 
         // and the selector is still working for new requests
         try (Socket client = _scenario.newClient(_connector))

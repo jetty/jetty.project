@@ -79,8 +79,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
-
-    // TODO reduce the about of debug
+    private static final String TLS_1_3 = "TLSv1.3";
     
     private enum Handshake
     {
@@ -597,9 +596,8 @@ public class SslConnection extends AbstractConnection
                                 {
                                     if (unwrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
-
-                                    // Check whether re-negotiation is allowed
-                                    if (!allowRenegotiate(_sslEngine.getHandshakeStatus()))
+                                        
+                                    if (isRenegotiating() && !allowRenegotiate())
                                         return filled = -1;
 
                                     // If bytes were produced, don't bother with the handshake status;
@@ -911,7 +909,7 @@ public class SslConnection extends AbstractConnection
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
 
-                                    if (!allowRenegotiate(_sslEngine.getHandshakeStatus()))
+                                    if (isRenegotiating() && !allowRenegotiate())
                                     {
                                         getEndPoint().shutdownOutput();
                                         if (allConsumed && BufferUtil.isEmpty(_encryptedOutput))
@@ -1053,28 +1051,25 @@ public class SslConnection extends AbstractConnection
         {
             try
             {
+                boolean close;
                 boolean flush = false;
-                boolean close = false;
                 synchronized(_decryptedEndPoint)
                 {
-                    boolean ishut = isInputShutdown();
-                    boolean oshut = isOutputShutdown();
+                    boolean ishut = getEndPoint().isInputShutdown();
+                    boolean oshut = getEndPoint().isOutputShutdown();
                     if (LOG.isDebugEnabled())
                         LOG.debug("shutdownOutput: {} oshut={}, ishut={} {}", SslConnection.this, oshut, ishut);
 
-                    if (oshut)
-                        return;
+                    closeOutbound();
 
                     if (!_closedOutbound)
                     {
-                        _closedOutbound=true; // Only attempt this once
-                        closeOutbound();
-                        flush = true;
+                        _closedOutbound = true;
+                        // Flush only once.
+                        flush = !oshut;
                     }
 
-                    // TODO review close logic here
-                    if (ishut)
-                        close = true;
+                    close = ishut;
                 }
 
                 if (flush)
@@ -1199,17 +1194,19 @@ public class SslConnection extends AbstractConnection
             }
         }
 
-        @Override
-        public String toString()
+        private boolean isRenegotiating()
         {
-            return super.toEndPointString();
+            if (_handshake.get() == Handshake.INITIAL)
+                return false;
+            if (isTLS13())
+                return false;
+            if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING)
+                return false;
+            return true;
         }
 
-        private boolean allowRenegotiate(HandshakeStatus handshakeStatus)
-        {   
-            if (_handshake.get() == Handshake.INITIAL || handshakeStatus == HandshakeStatus.NOT_HANDSHAKING)
-                return true;
-        
+        private boolean allowRenegotiate()
+        {
             if (!isRenegotiationAllowed())
             {
                 if (LOG.isDebugEnabled())
@@ -1217,7 +1214,7 @@ public class SslConnection extends AbstractConnection
                 terminateInput();
                 return false;
             }
-            
+
             if (getRenegotiationLimit()==0)
             {
                 if (LOG.isDebugEnabled())
@@ -1225,8 +1222,20 @@ public class SslConnection extends AbstractConnection
                 terminateInput();
                 return false;
             }
-            
+
             return true;
+        }
+
+        private boolean isTLS13()
+        {
+            String protocol = _sslEngine.getSession().getProtocol();
+            return TLS_1_3.equals(protocol);
+        }
+
+        @Override
+        public String toString()
+        {
+            return super.toEndPointString();
         }
 
         private final class IncompleteWriteCallback implements Callback, Invocable

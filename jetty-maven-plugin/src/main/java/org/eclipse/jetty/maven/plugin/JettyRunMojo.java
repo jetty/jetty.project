@@ -532,9 +532,14 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             // Include runtime and compile time libraries, and possibly test libs too
             if(artifact.getType().equals("war"))
-            {
                 continue;
-            }
+
+            if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+                continue; //never add dependencies of scope=provided to the webapp's classpath (see also <useProvidedScope> param)
+
+            if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
+                continue; //only add dependencies of scope=test if explicitly required
+
             MavenProject mavenProject = getProjectReference( artifact, project );
             if (mavenProject != null)
             {
@@ -543,12 +548,6 @@ public class JettyRunMojo extends AbstractJettyMojo
                 dependencyFiles.add( projectPath );
                 continue;
             }
-
-            if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
-                continue; //never add dependencies of scope=provided to the webapp's classpath (see also <useProvidedScope> param)
-
-            if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
-                continue; //only add dependencies of scope=test if explicitly required
 
             dependencyFiles.add(artifact.getFile());
             getLog().debug( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );   

@@ -88,7 +88,7 @@ Instead, you could redefine the DefaultServlet in your web.xml file, making sure
 <web-app ...>
  ...
  <servlet>
-     <servlet-name>Default</servlet-name>
+     <servlet-name>default</servlet-name>
      <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
      <init-param>
        <param-name>useFileMappedBuffer</param-name>
@@ -97,9 +97,7 @@ Instead, you could redefine the DefaultServlet in your web.xml file, making sure
      <load-on-startup>0</load-on-startup>
    </servlet>
  ...
- </web-app>
- 
-    
+ </web-app>    
 ----
 
 ==== Alternate Remedy
@@ -117,7 +115,6 @@ Configure this in an xml file like so:
   .
   .
 </New>
-    
 ----
 
 ____

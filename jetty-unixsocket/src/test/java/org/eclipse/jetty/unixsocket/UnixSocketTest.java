@@ -18,28 +18,14 @@
 
 package org.eclipse.jetty.unixsocket;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -48,8 +34,27 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assume.assumeFalse;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+
+@EnabledOnOs({LINUX, MAC})
 public class UnixSocketTest
 {
     private static final Logger log = Log.getLogger(UnixSocketTest.class);
@@ -58,7 +63,7 @@ public class UnixSocketTest
     private HttpClient httpClient;
     private Path sockFile;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         server = null;
@@ -70,11 +75,11 @@ public class UnixSocketTest
         } else {
             sockFile = Files.createTempFile("unix", ".sock" );
         }
-        Assert.assertTrue("temp sock file cannot be deleted", Files.deleteIfExists(sockFile));
+        assertTrue(Files.deleteIfExists(sockFile),"temp sock file cannot be deleted");
 
     }
     
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         if (httpClient!=null)
@@ -82,14 +87,12 @@ public class UnixSocketTest
         if (server!=null)
             server.stop();
         // Force delete, this will fail if UnixSocket was not closed properly in the implementation
-        FS.delete(sockFile);
+        FS.delete( sockFile);
     }
     
     @Test
     public void testUnixSocket() throws Exception
     {
-        assumeFalse(OS.IS_WINDOWS);
-
         server = new Server();
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -140,29 +143,19 @@ public class UnixSocketTest
 
         log.debug( "response from server: {}", contentResponse.getContentAsString() );
 
-        Assert.assertTrue(contentResponse.getContentAsString().contains( "Hello World" ));
+        assertThat(contentResponse.getContentAsString(), containsString( "Hello World" ));
     }
 
-    
     @Test
     public void testNotLocal() throws Exception
-    {
-        assumeFalse(OS.IS_WINDOWS);
-
+    {        
         httpClient = new HttpClient( new HttpClientTransportOverUnixSockets( sockFile.toString() ), null );
         httpClient.start();
         
-        try
-        {
+        ExecutionException e = assertThrows(ExecutionException.class, ()->{
             httpClient.newRequest( "http://google.com" ).send();
-            Assert.fail();
-        }
-        catch(ExecutionException e)
-        {
-            Throwable cause = e.getCause();
-            Assert.assertTrue(cause instanceof IOException);
-            Assert.assertThat(cause.getMessage(),Matchers.containsString("UnixSocket cannot connect to google.com"));
-        }
-
+        });
+        assertThat(e.getCause(), instanceOf(IOException.class));
+        assertThat(e.getCause().getMessage(),containsString("UnixSocket cannot connect to google.com"));
     }
 }

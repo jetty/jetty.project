@@ -21,10 +21,14 @@ package org.eclipse.jetty.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -51,21 +55,18 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
-public class GracefulStopTest 
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+
+public class GracefulStopTest
 {
     /**
      * Test of standard graceful timeout mechanism when a block request does
@@ -106,8 +107,8 @@ public class GracefulStopTest
         // No Graceful waiters
         assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),lessThan(900L));
 
-        assertThat(client.getInputStream().read(),Matchers.is(-1));
-        assertThat(handler.handling.get(),Matchers.is(false));      
+        assertThat(client.getInputStream().read(),is(-1));
+        assertThat(handler.handling.get(),is(false));
         assertThat(handler.thrown.get(),Matchers.notNullValue());
         client.close();
     }
@@ -147,21 +148,16 @@ public class GracefulStopTest
         handler.latch.await();
 
         long start = System.nanoTime();
-        try
-        {
-            server.stop();
-            Assert.fail();
-        }
-        catch(TimeoutException e)
-        {
-            long stop = System.nanoTime();
-            // No Graceful waiters
-            assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),greaterThan(900L));
-        }
 
-        assertThat(client.getInputStream().read(),Matchers.is(-1));
+        assertThrows(TimeoutException.class, ()-> server.stop());
 
-        assertThat(handler.handling.get(),Matchers.is(false));
+        long stop = System.nanoTime();
+        // No Graceful waiters
+        assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),greaterThan(900L));
+
+        assertThat(client.getInputStream().read(),is(-1));
+
+        assertThat(handler.handling.get(),is(false));
         assertThat(handler.thrown.get(),instanceOf(ClosedChannelException.class));
 
         client.close();
@@ -175,9 +171,9 @@ public class GracefulStopTest
      * @throws Exception on test failure
      */
     @Test
+    @DisabledOnOs(WINDOWS) // TODO: needs more investigation
     public void testGracefulComplete() throws Exception
     {
-        assumeTrue(!OS.IS_WINDOWS);
         Server server= new Server();
         server.setStopTimeout(10000);
 
@@ -193,7 +189,8 @@ public class GracefulStopTest
         server.start();
         final int port=connector.getLocalPort();
 
-        try(final Socket client1 = new Socket("127.0.0.1", port);final Socket client2 = new Socket("127.0.0.1", port);)
+        try(final Socket client1 = new Socket("127.0.0.1", port);
+            final Socket client2 = new Socket("127.0.0.1", port))
         {
             client1.getOutputStream().write((
                     "POST / HTTP/1.0\r\n"+
@@ -261,12 +258,12 @@ public class GracefulStopTest
 
             String response = IO.toString(client1.getInputStream());
 
-            assertThat(handler.handling.get(),Matchers.is(false));
+            assertThat(handler.handling.get(),is(false));
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("read 10/10"));
             
-            assertThat(stats.getRequests(),Matchers.is(2));
-            assertThat(stats.getResponses5xx(),Matchers.is(1));
+            assertThat(stats.getRequests(),is(2));
+            assertThat(stats.getResponses5xx(),is(1));
         }
     }
 
@@ -345,8 +342,7 @@ public class GracefulStopTest
         while(true)
         {
             String line = in.readLine();
-            if (line==null)
-                Assert.fail();
+            assertThat("Line should not be null", line, is(notNullValue()));
             if (line.length()==0)
                 break;
         }
@@ -355,11 +351,11 @@ public class GracefulStopTest
         try
         {
             server.stop();
-            Assert.assertTrue(stopTimeout==0 || stopTimeout>closeWait);  
+            assertTrue(stopTimeout==0 || stopTimeout>closeWait);
         }
         catch(Exception e)
         {
-            Assert.assertTrue(stopTimeout>0 && stopTimeout<closeWait);                
+            assertTrue(stopTimeout>0 && stopTimeout<closeWait);
         }
         long stop = System.nanoTime();
         
@@ -376,7 +372,7 @@ public class GracefulStopTest
 
         // onClose Thread interrupted or completed
         if (stopTimeout>0)
-            Assert.assertTrue(closed.await(1000,TimeUnit.MILLISECONDS));
+            assertTrue(closed.await(1000,TimeUnit.MILLISECONDS));
         
         if (!client.isClosed())
             client.close();
@@ -398,7 +394,7 @@ public class GracefulStopTest
      * @throws Exception on test failure
      */
     @Test
-    @Ignore // TODO disable while #2046 is fixed
+    @Disabled // TODO disable while #2046 is fixed
     public void testSlowCloseTinyGraceful() throws Exception
     {
         Log.getLogger(QueuedThreadPool.class).info("Expect some threads can't be stopped");
@@ -410,7 +406,7 @@ public class GracefulStopTest
      * @throws Exception on test failure
      */
     @Test
-    @Ignore // TODO disable while #2046 is fixed
+    @Disabled // TODO disable while #2046 is fixed
     public void testSlowCloseGraceful() throws Exception
     {
         testSlowClose(5000,1000,Matchers.allOf(greaterThan(750L),lessThan(4999L)));
@@ -483,7 +479,7 @@ public class GracefulStopTest
         long end = System.nanoTime()+TimeUnit.SECONDS.toNanos(1);
         while (endp.isOpen() && System.nanoTime()<end)
             Thread.sleep(10);
-        Assert.assertFalse(endp.isOpen());
+        assertFalse(endp.isOpen());
     }
     
     

@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +33,8 @@ import org.eclipse.jetty.http2.generator.PingGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class PingGenerateParseTest
 {
@@ -71,10 +75,10 @@ public class PingGenerateParseTest
             }
         }
 
-        Assert.assertEquals(1, frames.size());
+        assertEquals(1, frames.size());
         PingFrame frame = frames.get(0);
-        Assert.assertArrayEquals(payload, frame.getPayload());
-        Assert.assertTrue(frame.isReply());
+        assertArrayEquals(payload, frame.getPayload());
+        assertTrue(frame.isReply());
     }
 
     @Test
@@ -111,10 +115,10 @@ public class PingGenerateParseTest
                 }
             }
 
-            Assert.assertEquals(1, frames.size());
+            assertEquals(1, frames.size());
             PingFrame frame = frames.get(0);
-            Assert.assertArrayEquals(payload, frame.getPayload());
-            Assert.assertTrue(frame.isReply());
+            assertArrayEquals(payload, frame.getPayload());
+            assertTrue(frame.isReply());
         }
     }
 
@@ -146,9 +150,9 @@ public class PingGenerateParseTest
             }
         }
 
-        Assert.assertEquals(1, frames.size());
+        assertEquals(1, frames.size());
         PingFrame pong = frames.get(0);
-        Assert.assertEquals(ping.getPayloadAsLong(), pong.getPayloadAsLong());
-        Assert.assertTrue(pong.isReply());
+        assertEquals(ping.getPayloadAsLong(), pong.getPayloadAsLong());
+        assertTrue(pong.isReply());
     }
 }

@@ -28,7 +28,7 @@
   <properties>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build-support-version>1.4</build-support-version>
+    <build-support.version>1.4</build-support.version>
   </properties>
 
   <scm>
@@ -154,11 +154,6 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-continuation</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>

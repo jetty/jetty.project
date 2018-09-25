@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.webapp;
 
+import org.junit.jupiter.api.Test;
+
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.jetty.webapp.Configurations.getKnown;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertThat;
-
-import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConfigurationsTest
 {

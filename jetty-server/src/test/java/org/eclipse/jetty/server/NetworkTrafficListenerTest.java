@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,13 +39,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class NetworkTrafficListenerTest
 {
     private static final byte END_OF_CONTENT = '~';
@@ -65,7 +62,7 @@ public class NetworkTrafficListenerTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void destroyConnector() throws Exception
     {
         if (server != null)

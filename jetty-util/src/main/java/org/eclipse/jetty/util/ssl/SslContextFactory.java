@@ -212,7 +212,19 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         setTrustAll(trustAll);
         addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
+
+        // Exclude weak / insecure ciphers
         setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
+        // Exclude ciphers that don't support forward secrecy
+        addExcludeCipherSuites("^TLS_RSA_.*$");
+        // The following exclusions are present to cleanup known bad cipher
+        // suites that may be accidentally included via include patterns.
+        // The default enabled cipher list in Java will not include these
+        // (but they are available in the supported list).
+        addExcludeCipherSuites("^SSL_.*$");
+        addExcludeCipherSuites("^.*_NULL_.*$");
+        addExcludeCipherSuites("^.*_anon_.*$");
+
         if (keyStorePath != null)
             setKeyStorePath(keyStorePath);
     }

@@ -21,16 +21,16 @@ package org.eclipse.jetty.http;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.MultiMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HttpURITest
 {

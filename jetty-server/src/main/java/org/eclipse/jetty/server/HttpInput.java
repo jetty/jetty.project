@@ -477,7 +477,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     
     private void consume(Content content)
     {
-        if (content instanceof EofContent)
+        if (!isError() && content instanceof EofContent)
         {
             if (content == EARLY_EOF_CONTENT)
                 _state = EARLY_EOF;

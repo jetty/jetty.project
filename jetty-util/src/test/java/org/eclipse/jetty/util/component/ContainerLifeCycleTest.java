@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.util.component;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -27,11 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
+import org.junit.jupiter.api.Test;
 
 public class ContainerLifeCycleTest
 {
@@ -43,29 +46,29 @@ public class ContainerLifeCycleTest
         a0.addBean(a1);
 
         a0.start();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.start();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.stop();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.start();
-        Assert.assertEquals(2, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(2, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.stop();
-        Assert.assertEquals(2, a1.started.get());
-        Assert.assertEquals(2, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(2, a1.started.get());
+        assertEquals(2, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
     }
 
     @Test
@@ -75,50 +78,50 @@ public class ContainerLifeCycleTest
         TestContainerLifeCycle a1 = new TestContainerLifeCycle();
 
         a0.start();
-        Assert.assertEquals(0, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(0, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.addBean(a1);
-        Assert.assertEquals(0, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
-        Assert.assertFalse(a0.isManaged(a1));
+        assertEquals(0, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
+        assertFalse(a0.isManaged(a1));
 
         a0.start();
-        Assert.assertEquals(0, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(0, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a1.start();
         a0.manage(a1);
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.removeBean(a1);
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.stop();
         a0.destroy();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a1.stop();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a1.destroy();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(1, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(1, a1.destroyed.get());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testIllegalToStartAfterDestroy() throws Exception
     {
         ContainerLifeCycle container = new ContainerLifeCycle();
@@ -126,8 +129,9 @@ public class ContainerLifeCycleTest
         container.stop();
         container.destroy();
 
-        // Should throw IllegalStateException.
-        container.start();
+        assertThrows(IllegalStateException.class, ()-> {
+            container.start();
+        });
     }
 
     @Test
@@ -141,63 +145,63 @@ public class ContainerLifeCycleTest
 
         // Now add it
         a0.addBean(a1);
-        Assert.assertFalse(a0.isManaged(a1));
+        assertFalse(a0.isManaged(a1));
 
         a0.start();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.start();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.stop();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(0, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(0, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a1.stop();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.start();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.manage(a1);
-        Assert.assertTrue(a0.isManaged(a1));
+        assertTrue(a0.isManaged(a1));
 
         a0.stop();
-        Assert.assertEquals(1, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(1, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.start();
-        Assert.assertEquals(2, a1.started.get());
-        Assert.assertEquals(1, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(2, a1.started.get());
+        assertEquals(1, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.stop();
-        Assert.assertEquals(2, a1.started.get());
-        Assert.assertEquals(2, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(2, a1.started.get());
+        assertEquals(2, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a0.unmanage(a1);
-        Assert.assertFalse(a0.isManaged(a1));
+        assertFalse(a0.isManaged(a1));
 
         a0.destroy();
-        Assert.assertEquals(2, a1.started.get());
-        Assert.assertEquals(2, a1.stopped.get());
-        Assert.assertEquals(0, a1.destroyed.get());
+        assertEquals(2, a1.started.get());
+        assertEquals(2, a1.stopped.get());
+        assertEquals(0, a1.destroyed.get());
 
         a1.destroy();
-        Assert.assertEquals(2, a1.started.get());
-        Assert.assertEquals(2, a1.stopped.get());
-        Assert.assertEquals(1, a1.destroyed.get());
+        assertEquals(2, a1.started.get());
+        assertEquals(2, a1.stopped.get());
+        assertEquals(1, a1.destroyed.get());
     }
 
     @Test
@@ -396,15 +400,15 @@ public class ContainerLifeCycleTest
 
         c0.addBean(listener);
 
-        Assert.assertEquals("listener", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(c00, child.poll());
+        assertEquals("listener", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(c00, child.poll());
 
-        Assert.assertEquals("listener", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(listener, child.poll());
+        assertEquals("listener", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(listener, child.poll());
 
         Container.InheritedListener inherited = new Container.InheritedListener()
         {
@@ -436,59 +440,59 @@ public class ContainerLifeCycleTest
 
         c0.addBean(inherited);
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(c00, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(c00, child.poll());
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(listener, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(listener, child.poll());
 
-        Assert.assertEquals("listener", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(inherited, child.poll());
+        assertEquals("listener", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(inherited, child.poll());
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(inherited, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(inherited, child.poll());
 
         c0.start();
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c00, parent.poll());
-        Assert.assertEquals(b000, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c00, parent.poll());
+        assertEquals(b000, child.poll());
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("added", operation.poll());
-        Assert.assertEquals(c00, parent.poll());
-        Assert.assertEquals(inherited, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c00, parent.poll());
+        assertEquals(inherited, child.poll());
 
         c0.removeBean(c00);
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("removed", operation.poll());
-        Assert.assertEquals(c00, parent.poll());
-        Assert.assertEquals(inherited, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("removed", operation.poll());
+        assertEquals(c00, parent.poll());
+        assertEquals(inherited, child.poll());
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("removed", operation.poll());
-        Assert.assertEquals(c00, parent.poll());
-        Assert.assertEquals(b000, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("removed", operation.poll());
+        assertEquals(c00, parent.poll());
+        assertEquals(b000, child.poll());
 
-        Assert.assertEquals("listener", handled.poll());
-        Assert.assertEquals("removed", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(c00, child.poll());
+        assertEquals("listener", handled.poll());
+        assertEquals("removed", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(c00, child.poll());
 
-        Assert.assertEquals("inherited", handled.poll());
-        Assert.assertEquals("removed", operation.poll());
-        Assert.assertEquals(c0, parent.poll());
-        Assert.assertEquals(c00, child.poll());
+        assertEquals("inherited", handled.poll());
+        assertEquals("removed", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(c00, child.poll());
     }
 
     private final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
@@ -550,9 +554,9 @@ public class ContainerLifeCycleTest
         c01.start();
         c0.manage(c01);
 
-        Assert.assertTrue(c0.isManaged(inherited));
-        Assert.assertFalse(c00.isManaged(inherited));
-        Assert.assertFalse(c01.isManaged(inherited));
+        assertTrue(c0.isManaged(inherited));
+        assertFalse(c00.isManaged(inherited));
+        assertFalse(c01.isManaged(inherited));
     }
 
     String trim(String s) throws IOException
@@ -580,7 +584,8 @@ public class ContainerLifeCycleTest
             s = s.substring(0, nl);
         }
 
-        Assert.assertThat(s,Matchers.startsWith(x));
+
+        assertThat( s, Matchers.startsWith( x));
 
         return r;
     }

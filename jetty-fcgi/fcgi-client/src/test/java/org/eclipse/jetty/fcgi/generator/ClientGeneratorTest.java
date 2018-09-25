@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,8 +31,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class ClientGeneratorTest
 {
@@ -81,24 +84,24 @@ public class ClientGeneratorTest
             @Override
             public void onHeader(int request, HttpField field)
             {
-                Assert.assertEquals(id, request);
+                assertEquals(id, request);
                 switch (field.getName())
                 {
                     case shortShortName:
-                        Assert.assertEquals(shortShortValue, field.getValue());
+                        assertEquals(shortShortValue, field.getValue());
                         params.set(params.get() * primes[0]);
                         break;
                     case shortLongName:
-                        Assert.assertEquals(shortLongValue, field.getValue());
+                        assertEquals(shortLongValue, field.getValue());
                         params.set(params.get() * primes[1]);
                         break;
                     case longShortName:
-                        Assert.assertEquals(longShortValue, field.getValue());
+                        assertEquals(longShortValue, field.getValue());
                         params.set(params.get() * primes[2]);
                         break;
                     default:
-                        Assert.assertEquals(longLongName, field.getName());
-                        Assert.assertEquals(longLongValue, field.getValue());
+                        assertEquals(longLongName, field.getName());
+                        assertEquals(longLongValue, field.getValue());
                         params.set(params.get() * primes[3]);
                         break;
                 }
@@ -107,7 +110,7 @@ public class ClientGeneratorTest
             @Override
             public void onHeaders(int request)
             {
-                Assert.assertEquals(id, request);
+                assertEquals(id, request);
                 params.set(params.get() * primes[4]);
             }
         });
@@ -115,10 +118,10 @@ public class ClientGeneratorTest
         for (ByteBuffer buffer : result.getByteBuffers())
         {
             parser.parse(buffer);
-            Assert.assertFalse(buffer.hasRemaining());
+            assertFalse(buffer.hasRemaining());
         }
 
-        Assert.assertEquals(value, params.get());
+        assertEquals(value, params.get());
 
         // Parse again byte by byte
         params.set(1);
@@ -127,10 +130,10 @@ public class ClientGeneratorTest
             buffer.flip();
             while (buffer.hasRemaining())
                 parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            Assert.assertFalse(buffer.hasRemaining());
+            assertFalse(buffer.hasRemaining());
         }
 
-        Assert.assertEquals(value, params.get());
+        assertEquals(value, params.get());
     }
 
     @Test
@@ -160,7 +163,7 @@ public class ClientGeneratorTest
             @Override
             public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
-                Assert.assertEquals(id, request);
+                assertEquals(id, request);
                 totalLength.addAndGet(buffer.remaining());
                 return false;
             }
@@ -168,15 +171,15 @@ public class ClientGeneratorTest
             @Override
             public void onEnd(int request)
             {
-                Assert.assertEquals(id, request);
-                Assert.assertEquals(contentLength, totalLength.get());
+                assertEquals(id, request);
+                assertEquals(contentLength, totalLength.get());
             }
         });
 
         for (ByteBuffer buffer : result.getByteBuffers())
         {
             parser.parse(buffer);
-            Assert.assertFalse(buffer.hasRemaining());
+            assertFalse(buffer.hasRemaining());
         }
 
         // Parse again one byte at a time
@@ -185,7 +188,7 @@ public class ClientGeneratorTest
             buffer.flip();
             while (buffer.hasRemaining())
                 parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            Assert.assertFalse(buffer.hasRemaining());
+            assertFalse(buffer.hasRemaining());
         }
     }
 }

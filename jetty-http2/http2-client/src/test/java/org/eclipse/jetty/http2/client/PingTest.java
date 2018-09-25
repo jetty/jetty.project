@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,8 +29,8 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.util.Callback;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class PingTest extends AbstractTest
 {
@@ -44,8 +47,8 @@ public class PingTest extends AbstractTest
             @Override
             public void onPing(Session session, PingFrame frame)
             {
-                Assert.assertTrue(frame.isReply());
-                Assert.assertArrayEquals(payload, frame.getPayload());
+                assertTrue(frame.isReply());
+                assertArrayEquals(payload, frame.getPayload());
                 latch.countDown();
             }
         });
@@ -53,6 +56,6 @@ public class PingTest extends AbstractTest
         PingFrame frame = new PingFrame(payload, false);
         session.ping(frame, Callback.NOOP);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

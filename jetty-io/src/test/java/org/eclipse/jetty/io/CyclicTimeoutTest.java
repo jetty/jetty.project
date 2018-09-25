@@ -18,29 +18,27 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class CyclicTimeoutTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     private volatile boolean _expired;
     private ScheduledExecutorScheduler _timer = new ScheduledExecutorScheduler();
     private CyclicTimeout _timeout;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         _expired=false;
@@ -58,7 +56,7 @@ public class CyclicTimeoutTest
         _timeout.schedule(1000,TimeUnit.MILLISECONDS);
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         _timeout.destroy();
@@ -71,9 +69,9 @@ public class CyclicTimeoutTest
         for (int i=0;i<20;i++)
         {
             Thread.sleep(100);
-            Assert.assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
+            assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
         }
-        Assert.assertFalse(_expired);
+        assertFalse(_expired);
     }
 
     @Test
@@ -82,10 +80,10 @@ public class CyclicTimeoutTest
         for (int i=0;i<5;i++)
         {
             Thread.sleep(100);
-            Assert.assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
+            assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
         }
         Thread.sleep(1500);
-        Assert.assertTrue(_expired);
+        assertTrue(_expired);
     }
 
     @Test
@@ -94,11 +92,11 @@ public class CyclicTimeoutTest
         for (int i=0;i<5;i++)
         {
             Thread.sleep(100);
-            Assert.assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
+            assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
         }
         _timeout.cancel();
         Thread.sleep(1500);
-        Assert.assertFalse(_expired);
+        assertFalse(_expired);
     }
 
     @Test
@@ -107,11 +105,11 @@ public class CyclicTimeoutTest
         for (int i=0;i<5;i++)
         {
             Thread.sleep(100);
-            Assert.assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
+            assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
         }
-        Assert.assertTrue(_timeout.schedule(100,TimeUnit.MILLISECONDS));
+        assertTrue(_timeout.schedule(100,TimeUnit.MILLISECONDS));
         Thread.sleep(400);
-        Assert.assertTrue(_expired);
+        assertTrue(_expired);
     }
 
     @Test
@@ -120,30 +118,30 @@ public class CyclicTimeoutTest
         for (int i=0;i<5;i++)
         {
             Thread.sleep(100);
-            Assert.assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
+            assertTrue(_timeout.schedule(1000,TimeUnit.MILLISECONDS));
         }
-        Assert.assertTrue(_timeout.schedule(10000,TimeUnit.MILLISECONDS));
+        assertTrue(_timeout.schedule(10000,TimeUnit.MILLISECONDS));
         Thread.sleep(1500);
-        Assert.assertFalse(_expired);
+        assertFalse(_expired);
     }
 
     @Test
     public void testMultiple() throws Exception
     {
         Thread.sleep(1500);
-        Assert.assertTrue(_expired);
+        assertTrue(_expired);
         _expired=false;
-        Assert.assertFalse(_timeout.schedule(500,TimeUnit.MILLISECONDS));
+        assertFalse(_timeout.schedule(500,TimeUnit.MILLISECONDS));
         Thread.sleep(1000);
-        Assert.assertTrue(_expired);
+        assertTrue(_expired);
         _expired=false;
         _timeout.schedule(500,TimeUnit.MILLISECONDS);
         Thread.sleep(1000);
-        Assert.assertTrue(_expired);
+        assertTrue(_expired);
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testBusy() throws Exception
     {
         QueuedThreadPool pool = new QueuedThreadPool(200);
@@ -151,7 +149,7 @@ public class CyclicTimeoutTest
         
         long test_until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1500);
 
-        Assert.assertTrue(_timeout.schedule(100,TimeUnit.MILLISECONDS));
+        assertTrue(_timeout.schedule(100,TimeUnit.MILLISECONDS));
         while(System.nanoTime()<test_until)
         {
             CountDownLatch latch = new CountDownLatch(1);
@@ -163,7 +161,7 @@ public class CyclicTimeoutTest
             latch.await();
         }
 
-        Assert.assertFalse(_expired);
+        assertFalse(_expired);
         pool.stop();
     }
 }

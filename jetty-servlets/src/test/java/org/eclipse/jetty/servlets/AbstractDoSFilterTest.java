@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,13 +46,13 @@ import org.eclipse.jetty.server.session.FileSessionDataStore;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 public abstract class AbstractDoSFilterTest
 {
@@ -59,17 +61,14 @@ public abstract class AbstractDoSFilterTest
     protected int _port;
     protected long _requestMaxTime = 200;
 
-    @Rule
-    public TestingDir _testDir = new TestingDir();
-    
-    public void startServer(Class<? extends Filter> filter) throws Exception
+    public void startServer(WorkDir workDir, Class<? extends Filter> filter) throws Exception
     {
         _tester = new ServletTester("/ctx");
         
         DefaultSessionCache sessionCache = new DefaultSessionCache(_tester.getContext().getSessionHandler());
         FileSessionDataStore fileStore = new FileSessionDataStore();
        
-        Path p = _testDir.getPathFile("sessions");
+        Path p = workDir.getPathFile("sessions");
         FS.ensureEmpty(p);
         fileStore.setStoreDir(p.toFile());
         sessionCache.setSessionDataStore(fileStore);
@@ -104,7 +103,7 @@ public abstract class AbstractDoSFilterTest
         _tester.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         _tester.stop();
@@ -163,8 +162,8 @@ public abstract class AbstractDoSFilterTest
         String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request,11,300,300,last);
-        Assert.assertEquals(12,count(responses,"HTTP/1.1 200 OK"));
-        Assert.assertEquals(0,count(responses,"DoSFilter:"));
+        assertEquals(12,count(responses,"HTTP/1.1 200 OK"));
+        assertEquals(0,count(responses,"DoSFilter:"));
     }
 
     @Test
@@ -174,8 +173,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,2,1100,1100,last);
 
-        Assert.assertEquals(9,count(responses,"HTTP/1.1 200 OK"));
-        Assert.assertEquals(0,count(responses,"DoSFilter:"));
+        assertEquals(9,count(responses,"HTTP/1.1 200 OK"));
+        assertEquals(0,count(responses,"DoSFilter:"));
     }
 
     @Test
@@ -217,10 +216,10 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
         // System.out.println("responses are " + responses);
-        Assert.assertEquals("200 OK responses", 5,count(responses,"HTTP/1.1 200 OK"));
-        Assert.assertEquals("delayed responses", 1,count(responses,"DoSFilter: delayed"));
-        Assert.assertEquals("throttled responses", 1,count(responses,"DoSFilter: throttled"));
-        Assert.assertEquals("unavailable responses", 0,count(responses,"DoSFilter: unavailable"));
+        assertEquals(5,count(responses, "HTTP/1.1 200 OK"), "200 OK responses");
+        assertEquals(1,count(responses, "DoSFilter: delayed"), "delayed responses");
+        assertEquals(1,count(responses, "DoSFilter: throttled"), "throttled responses");
+        assertEquals(0,count(responses, "DoSFilter: unavailable"), "unavailable responses");
 
         other.join();
     }
@@ -255,11 +254,11 @@ public abstract class AbstractDoSFilterTest
 
         // System.err.println("RESPONSES: \n"+responses);
 
-        Assert.assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
-        Assert.assertEquals(1,count(responses,"HTTP/1.1 429"));
-        Assert.assertEquals(1,count(responses,"DoSFilter: delayed"));
-        Assert.assertEquals(1,count(responses,"DoSFilter: throttled"));
-        Assert.assertEquals(1,count(responses,"DoSFilter: unavailable"));
+        assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
+        assertEquals(1,count(responses,"HTTP/1.1 429"));
+        assertEquals(1,count(responses,"DoSFilter: delayed"));
+        assertEquals(1,count(responses,"DoSFilter: throttled"));
+        assertEquals(1,count(responses,"DoSFilter: unavailable"));
 
         other.join();
     }
@@ -277,8 +276,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nCookie: " + sessionId + "\r\n\r\n";
         String responses = doRequests(request+request+request+request+request,2,1100,1100,last);
 
-        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
-        Assert.assertEquals(2,count(responses,"DoSFilter: delayed"));
+        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        assertEquals(2,count(responses,"DoSFilter: delayed"));
     }
 
     @Test
@@ -305,16 +304,16 @@ public abstract class AbstractDoSFilterTest
 
         String responses = doRequests(request1+request2+request1+request2+request1,2,1100,1100,last);
 
-        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
-        Assert.assertEquals(0,count(responses,"DoSFilter: delayed"));
+        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        assertEquals(0,count(responses,"DoSFilter: delayed"));
 
         // alternate between sessions
         responses = doRequests(request1+request2+request1+request2+request1,2,250,250,last);
 
         // System.err.println(responses);
-        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
         int delayedRequests = count(responses,"DoSFilter: delayed");
-        Assert.assertTrue("delayedRequests: " + delayedRequests + " is not between 2 and 5",delayedRequests >= 2 && delayedRequests <= 5);
+        assertTrue(delayedRequests >= 2 && delayedRequests <= 5, "delayedRequests: " + delayedRequests + " is not between 2 and 5");
     }
 
     @Test
@@ -326,8 +325,8 @@ public abstract class AbstractDoSFilterTest
         String responses = doRequests("",0,0,0,last);
         // was expired, and stopped before reaching the end of the requests
         int responseLines = count(responses, "Line:");
-        Assert.assertThat(responseLines,Matchers.greaterThan(0));
-        Assert.assertThat(responseLines,Matchers.lessThan(numRequests));
+        assertThat(responseLines,Matchers.greaterThan(0));
+        assertThat(responseLines,Matchers.lessThan(numRequests));
     }
 
     public static class TestServlet extends HttpServlet implements Servlet

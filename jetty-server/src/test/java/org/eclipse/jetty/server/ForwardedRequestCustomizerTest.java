@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -35,15 +35,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class ForwardedRequestCustomizerTest
 {
     private Server _server;
@@ -56,7 +53,7 @@ public class ForwardedRequestCustomizerTest
     
     ForwardedRequestCustomizer _customizer;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
@@ -91,7 +88,7 @@ public class ForwardedRequestCustomizerTest
         _server.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         _server.stop();
@@ -114,7 +111,7 @@ public class ForwardedRequestCustomizerTest
         assertEquals("http",_results.poll());
         assertEquals("myhost",_results.poll());
         assertEquals("80",_results.poll());
-        assertEquals("2001:db8:cafe::17",_results.poll());
+        assertEquals("[2001:db8:cafe::17]",_results.poll());
         assertEquals("4711",_results.poll());
     }
     
@@ -186,7 +183,7 @@ public class ForwardedRequestCustomizerTest
         assertEquals("192.0.2.43",_results.poll());
         assertEquals("0",_results.poll());
     }
-    
+
     @Test
     public void testRFC7239_IPv6() throws Exception
     {
@@ -197,9 +194,9 @@ public class ForwardedRequestCustomizerTest
             "\n");
 
         assertEquals("http",_results.poll());
-        assertEquals("2001:db8:cafe::3",_results.poll());
+        assertEquals("[2001:db8:cafe::3]",_results.poll());
         assertEquals("8888",_results.poll());
-        assertEquals("2001:db8:cafe::1",_results.poll());
+        assertEquals("[2001:db8:cafe::1]",_results.poll());
         assertEquals("0",_results.poll());
     }
 

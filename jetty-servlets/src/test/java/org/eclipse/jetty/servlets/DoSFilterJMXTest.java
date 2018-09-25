@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.lang.management.ManagementFactory;
 import java.util.EnumSet;
 import java.util.Set;
@@ -33,8 +40,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class DoSFilterJMXTest
 {
@@ -62,25 +69,25 @@ public class DoSFilterJMXTest
 
         String domain = DoSFilter.class.getPackage().getName();
         Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
-        Assert.assertEquals(1, mbeanNames.size());
+        assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
 
         boolean value = (Boolean)mbeanServer.getAttribute(objectName, "enabled");
         mbeanServer.setAttribute(objectName, new Attribute("enabled", !value));
-        Assert.assertEquals(!value, filter.isEnabled());
+        assertEquals(!value, filter.isEnabled());
 
         String whitelist = (String)mbeanServer.getAttribute(objectName, "whitelist");
         String address = "127.0.0.1";
-        Assert.assertFalse(whitelist.contains(address));
+        assertFalse(whitelist.contains(address));
         boolean result = (Boolean)mbeanServer.invoke(objectName, "addWhitelistAddress", new Object[]{address}, new String[]{String.class.getName()});
-        Assert.assertTrue(result);
+        assertTrue(result);
         whitelist = (String)mbeanServer.getAttribute(objectName, "whitelist");
-        Assert.assertTrue(whitelist.contains(address));
+        assertThat(whitelist, containsString(address));
 
         result = (Boolean)mbeanServer.invoke(objectName, "removeWhitelistAddress", new Object[]{address}, new String[]{String.class.getName()});
-        Assert.assertTrue(result);
+        assertTrue(result);
         whitelist = (String)mbeanServer.getAttribute(objectName, "whitelist");
-        Assert.assertFalse(whitelist.contains(address));
+        assertThat(whitelist, not(containsString(address)));
 
         server.stop();
     }

@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import javax.servlet.AsyncContext;
@@ -35,22 +36,19 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
 
-@RunWith(AdvancedRunner.class)
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 public class LocalAsyncContextTest
 {
     protected Server _server;
     protected SuspendHandler _handler;
     protected Connector _connector;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
@@ -76,7 +74,7 @@ public class LocalAsyncContextTest
         return new LocalConnector(_server);
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         _server.stop();
@@ -225,11 +223,11 @@ public class LocalAsyncContextTest
 
     protected void check(String response, String... content)
     {
-        Assert.assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
         int i = 0;
         for (String m : content)
         {
-            Assert.assertThat(response, Matchers.containsString(m));
+            assertThat(response, Matchers.containsString(m));
             i = response.indexOf(m, i);
             i += m.length();
         }
@@ -520,6 +518,6 @@ public class LocalAsyncContextTest
             now = System.nanoTime();
         }
 
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 }

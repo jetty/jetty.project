@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.server;
 
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -34,34 +35,24 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractHttpTest
 {
     private final static Set<String> __noBodyCodes = new HashSet<>(Arrays.asList(new String[]{"100","101","102","204","304"}));
     
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     protected static Server server;
     protected static ServerConnector connector;
-    protected String httpVersion;
     private StacklessLogging stacklessChannelLogging;
 
-
-    public AbstractHttpTest(String httpVersion)
-    {
-        this.httpVersion = httpVersion;
-    }
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         server = new Server();
@@ -69,17 +60,17 @@ public abstract class AbstractHttpTest
         connector.setIdleTimeout(100000);
         
         server.addConnector(connector);
-        stacklessChannelLogging =new StacklessLogging(HttpChannel.class);
+        stacklessChannelLogging = new StacklessLogging(HttpChannel.class);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         server.stop();
         stacklessChannelLogging.close();
     }
 
-    protected HttpTester.Response executeRequest() throws URISyntaxException, IOException
+    protected HttpTester.Response executeRequest(HttpVersion httpVersion) throws URISyntaxException, IOException
     {
         try(Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
@@ -87,7 +78,7 @@ public abstract class AbstractHttpTest
             
             try(PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream())))
             {
-                writer.write("GET / " + httpVersion + "\r\n");
+                writer.write("GET / " + httpVersion.asString() + "\r\n");
                 writer.write("Host: localhost\r\n");
                 writer.write("\r\n");
                 writer.flush();
@@ -96,7 +87,7 @@ public abstract class AbstractHttpTest
                 HttpTester.Input input = HttpTester.from(socket.getInputStream());
                 HttpTester.parseResponse(input, response);
                 
-                if ("HTTP/1.1".equals(httpVersion)
+                if (httpVersion.is("HTTP/1.1")
                         && response.isComplete()
                         && response.get("content-length") == null
                         && response.get("transfer-encoding") == null
@@ -106,16 +97,6 @@ public abstract class AbstractHttpTest
                 return response;
             }
         }
-    }
-
-    protected void assertResponseBody(HttpTester.Response response, String expectedResponseBody)
-    {
-        assertThat("response body is" + expectedResponseBody, response.getContent(), is(expectedResponseBody));
-    }
-
-    protected void assertHeader(HttpTester.Response response, String headerName, String expectedValue)
-    {
-        assertThat(headerName + "=" + expectedValue, response.get(headerName), is(expectedValue));
     }
 
     protected static class TestCommitException extends IllegalStateException

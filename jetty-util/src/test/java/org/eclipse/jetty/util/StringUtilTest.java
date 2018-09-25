@@ -21,17 +21,17 @@ package org.eclipse.jetty.util;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StringUtilTest
 {
@@ -161,10 +161,10 @@ public class StringUtilTest
         byte[] sid6Bytes = StringUtil.sidStringToBytes(sid6);
         byte[] sid12Bytes = StringUtil.sidStringToBytes(sid12);
 
-        Assert.assertEquals(sid4, StringUtil.sidBytesToString(sid4Bytes));
-        Assert.assertEquals(sid5, StringUtil.sidBytesToString(sid5Bytes));
-        Assert.assertEquals(sid6, StringUtil.sidBytesToString(sid6Bytes));
-        Assert.assertEquals(sid12, StringUtil.sidBytesToString(sid12Bytes));
+        assertEquals(sid4, StringUtil.sidBytesToString(sid4Bytes));
+        assertEquals(sid5, StringUtil.sidBytesToString(sid5Bytes));
+        assertEquals(sid6, StringUtil.sidBytesToString(sid6Bytes));
+        assertEquals(sid12, StringUtil.sidBytesToString(sid12Bytes));
 
     }
 
@@ -233,33 +233,33 @@ public class StringUtilTest
     @Test
     public void testIsBlank() 
     {
-        Assert.assertTrue(StringUtil.isBlank(null));
-        Assert.assertTrue(StringUtil.isBlank(""));
-        Assert.assertTrue(StringUtil.isBlank("\r\n"));
-        Assert.assertTrue(StringUtil.isBlank("\t"));
-        Assert.assertTrue(StringUtil.isBlank("   "));
+        assertTrue(StringUtil.isBlank(null));
+        assertTrue(StringUtil.isBlank(""));
+        assertTrue(StringUtil.isBlank("\r\n"));
+        assertTrue(StringUtil.isBlank("\t"));
+        assertTrue(StringUtil.isBlank("   "));
 
-        Assert.assertFalse(StringUtil.isBlank("a"));
-        Assert.assertFalse(StringUtil.isBlank("  a"));
-        Assert.assertFalse(StringUtil.isBlank("a  "));
-        Assert.assertFalse(StringUtil.isBlank("."));
-        Assert.assertFalse(StringUtil.isBlank(";\n"));
+        assertFalse(StringUtil.isBlank("a"));
+        assertFalse(StringUtil.isBlank("  a"));
+        assertFalse(StringUtil.isBlank("a  "));
+        assertFalse(StringUtil.isBlank("."));
+        assertFalse(StringUtil.isBlank(";\n"));
     }
 
     @Test
     public void testIsNotBlank() 
     {
-        Assert.assertFalse(StringUtil.isNotBlank(null));
-        Assert.assertFalse(StringUtil.isNotBlank(""));
-        Assert.assertFalse(StringUtil.isNotBlank("\r\n"));
-        Assert.assertFalse(StringUtil.isNotBlank("\t"));
-        Assert.assertFalse(StringUtil.isNotBlank("   "));
+        assertFalse(StringUtil.isNotBlank(null));
+        assertFalse(StringUtil.isNotBlank(""));
+        assertFalse(StringUtil.isNotBlank("\r\n"));
+        assertFalse(StringUtil.isNotBlank("\t"));
+        assertFalse(StringUtil.isNotBlank("   "));
 
-        Assert.assertTrue(StringUtil.isNotBlank("a"));
-        Assert.assertTrue(StringUtil.isNotBlank("  a"));
-        Assert.assertTrue(StringUtil.isNotBlank("a  "));
-        Assert.assertTrue(StringUtil.isNotBlank("."));
-        Assert.assertTrue(StringUtil.isNotBlank(";\n"));
+        assertTrue(StringUtil.isNotBlank("a"));
+        assertTrue(StringUtil.isNotBlank("  a"));
+        assertTrue(StringUtil.isNotBlank("a  "));
+        assertTrue(StringUtil.isNotBlank("."));
+        assertTrue(StringUtil.isNotBlank(";\n"));
     }
     
     @Test

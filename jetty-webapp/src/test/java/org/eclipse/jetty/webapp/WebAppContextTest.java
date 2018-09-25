@@ -19,11 +19,13 @@
 package org.eclipse.jetty.webapp;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,8 +58,7 @@ import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class WebAppContextTest
 {
@@ -111,7 +112,8 @@ public class WebAppContextTest
         
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertThat(wac.getWebAppConfigurations().stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),Matchers.containsInAnyOrder(known_and_enabled));
+        assertThat( wac.getWebAppConfigurations().stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),
+                    Matchers.containsInAnyOrder( known_and_enabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -125,7 +127,7 @@ public class WebAppContextTest
     {
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        Assert.assertThat(wac.getWebAppConfigurations().stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
+        assertThat(wac.getWebAppConfigurations().stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
                 Matchers.contains( 
                         "org.eclipse.jetty.webapp.JmxConfiguration",
                         "org.eclipse.jetty.webapp.WebInfConfiguration",
@@ -142,14 +144,14 @@ public class WebAppContextTest
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);
-        Assert.assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
+        assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
 
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
         server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
-        Assert.assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
+        assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
     }
 
     @Test
@@ -189,12 +191,12 @@ public class WebAppContextTest
         server.start();
 
         // context A should be able to get both A and B servlet contexts
-        Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/A/s"));
-        Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/B/s"));
+        assertNotNull(contextA.getServletHandler().getServletContext().getContext("/A/s"));
+        assertNotNull(contextA.getServletHandler().getServletContext().getContext("/B/s"));
 
         // context B has a contextWhiteList set and should only be able to get ones that are approved
-        Assert.assertNull(contextB.getServletHandler().getServletContext().getContext("/A/s"));
-        Assert.assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
+        assertNull(contextB.getServletHandler().getServletContext().getContext("/A/s"));
+        assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
     }
 
 
@@ -284,7 +286,7 @@ public class WebAppContextTest
         try
         {
             server.start();
-            Assert.assertTrue(context.isAvailable());
+            assertTrue(context.isAvailable());
         }
         finally
         {
@@ -410,7 +412,7 @@ public class WebAppContextTest
             }
         }
          
-        Assert.assertThat(history,Matchers.contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
+        assertThat(history,contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
         
         server.stop();
     }

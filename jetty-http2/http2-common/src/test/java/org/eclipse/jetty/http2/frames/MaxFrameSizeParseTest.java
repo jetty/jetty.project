@@ -26,8 +26,9 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MaxFrameSizeParseTest
 {
@@ -61,6 +62,6 @@ public class MaxFrameSizeParseTest
                 parser.parse(buffer);
         }
 
-        Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
+        assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
     }
 }

@@ -1,5 +1,104 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.12.v20180830 - 30 August 2018
+ + 300 Implement Deflater / Inflater Object Pool
+ + 307 Monitor contention in AbstractNCSARequestLog
+ + 321 Remove JaspiAuthenticatorFactory.findServerName(Server, Subject)
+ + 901 Overriding SSL context KeyStoreType requires explicit override of
+   TrustStoreType
+ + 1688 Request with `Content-Encoding: gzip` should not perform parameter
+   extraction
+ + 1905 Deprecate jetty-runner now, present warnings when using it on Java 9+
+   Runtimes
+ + 2075 Deprecating MultiException
+ + 2135 Android 8.1 needs direct buffers for SSL/TLS to work
+ + 2233 JDK9 Test failure:
+   org.eclipse.jetty.server.ThreadStarvationTest.testWriteStarvation[https/ssl/tls]
+ + 2342 File Descriptor Leak: Conscrypt: "Too many open files"
+ + 2349 HTTP/2 max streams enforcement
+ + 2398 MultiPartFormInputStream parsing should default to UTF-8, but allowed
+   to be overridden by Request.setCharacterEncoding()
+ + 2468 EWYK concurrent produce can fail SSL connections
+ + 2501 Include accepting connections in connection limit.
+ + 2530 Client waits forever for cancelled large uploads
+ + 2560 Review PathResource exception handling
+ + 2565 HashLoginService silently ignores file:/ config paths from 9.3.x
+ + 2592 Failing test on Windows:
+   ServerTimeoutsTest.testAsyncWriteIdleTimeoutFires[transport: HTTP]
+ + 2597 Failing tests on windows UnixSocketTest
+ + 2631 IllegalArgumentException: Buffering capacity exceeded, from HttpClient
+   HEAD Requests to resources referencing large body contents
+ + 2648 LdapLoginModule fails with forceBinding=true under Java 9
+ + 2655 WebSocketClient not removing closed WebSocket Session's from managed
+   beans
+ + 2662 Remove unnecessary boxing conversions
+ + 2663 Guard Throwable.addSuppressed() calls
+ + 2672 Max local stream count exceeded for HttpClient with HTTP/2 transport  
+ + 2675 Demo rewrite rules prevent URL Session tracking
+ + 2677 Decode URI before matching against "/favicon.ico"
+ + 2679 HTTP/2 Spec Compliance
+ + 2681 Jetty Hot Deployment Module does not stop exploded webapps after
+   removal from webapps directory
+ + 2683 NPE in FrameFlusher toString()
+ + 2684 MimeTypes.getAssumedEncodings() does not work
+ + 2694 Bad DynamicImport-Package in Websocket Servlet
+ + 2696 GcloudDataStore dependency generation broken
+ + 2706 ResourceService may return 404 for unchanged content
+ + 2711 TLS 1.3 compliance
+ + 2717 Async requests are not considered when shutting down gracefully
+ + 2718 NPE using more than one Endpoint.publish
+ + 2719 property file passed to start.jar is not read
+ + 2720 <property> config tag can't access property values in WebAppContext
+ + 2722 Improve configurability for SETTINGS frames
+ + 2730 Limit concurrent HTTP/2 pushed resources
+ + 2737 HTTP Authentication parameters containing =
+ + 2739 AuthenticationProtocolHandler Multiple Challenge Pattern
+ + 2745 JDBCSessionDataStore schema potential performance issue
+ + 2746 Move jmh classes to a dedicated module and run those daily or weekly
+ + 2749 Graceful shutdown causes repeated 503s on keep-alive connections
+ + 2754 Don't eagerly instantiate @WebListener during annotation scan if it is
+   explicitly referenced in the webapp descriptor as well
+ + 2755 Repeatedly stopping/starting an active HttpClient can result in a stuck
+   ManagedSelector
+ + 2757 Possible double release of HTTP/2 ByteBuffers
+ + 2762 Fix typo in jetty.sh
+ + 2767 WebSocket Policy on JSR356 ClientContainer not represented correctly
+ + 2775 Make LowResourceMonitor extendable
+ + 2777 Workaround for Conscrypt's ssl == null
+ + 2778 Upgrade h2spec-maven-plugin 0.4
+ + 2787 BadMessageException wrapped as ServletException not handled
+ + 2794 Generate p2 repos for Jetty 9.3.24.v20180605 and Jetty 9.2.25.v20180606
+ + 2796 Max local stream count exceeded when request fails
+ + 2798 ThreadPoolBudget logs WARN when minThreads == maxThreads (was:
+   Reasoning behind ThreadPoolBudget warning logic change on 3/5/18)
+ + 2807 Exclude TLS_RSA_* ciphers by default
+ + 2811 SslContextFactory.dump incorrectly uses default enabled for determining
+   "jre:disabled" flag
+ + 2817 Change HttpClient and WebSocketClient default to always have SSL
+   support enabled
+ + 2821 AuthenticationProtocolHandler should not always cache
+   Authentication.Result
+ + 2824 Every call to HttpServletRequest.getParameter*() methods results in a
+   newly created Map object if both query and body content exist
+ + 2828 connectionListener of AbstractHTTP2ServerConnectionFactory cause the
+   low performance of concurrent connect of http2
+ + 2832 Wrong initialization of HTTP/2 UnknownBodyParser
+ + 2835 JarFileResource#lastModified() side effect is URL caching preventing
+   hot redeploy on Windows
+ + 2836 Sequential HTTPS requests may not reuse the same connection
+ + 2844 Clean up webdefault.xml and DefaultServlet doc
+ + 2846 add unit test for ldap module
+ + 2847 Wrap Connection.Listener invocations in try/catch
+ + 2860 Leakage of HttpDestinations in HttpClient
+ + 2871 Server reads -1 after client resets HTTP/2 stream
+
+jetty-9.3.25.v20180904 - 04 September 2018
+ + 2135 Android 8.1 needs direct buffers for SSL/TLS to work
+ + 2777 Workaround for Conscrypt's ssl == null
+ + 2787 BadMessageException wrapped as ServletException not handled
+ + 2860 Leakage of HttpDestinations in HttpClient
+ + 2871 Server reads -1 after client resets HTTP/2 stream
+
 jetty-9.4.11.v20180605 - 05 June 2018
  + 1785 Support for vhost@connectorname syntax of virtual hosts
  + 2346 Revert stack trace logging for HTTPChannel.onException
@@ -471,8 +570,8 @@ jetty-9.4.5.v20170502 - 02 May 2017
 
 jetty-9.3.20.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
- + 1108 Improve logging in SslContextFactory when there are no approved
-   cipher suites
+ + 1108 Improve logging in SslContextFactory when there are no approved cipher
+   suites
  + 1527 Jetty BOM should not depend on jetty-parent
  + 1556 A timing channel in Password.java
  + 1567 XmlConfiguration will start the same object multiple times
@@ -541,8 +640,9 @@ jetty-9.3.18.v20170406 - 06 April 2017
  + 877 Programmatic servlet mappings cannot override mappings from
    webdefault.xml using quickstart
  + 1201 X-Forwarded-For incorrectly set in jetty-http-forwarded.xml
- + 1316 Request.extract*Parameters() reports context 
- + 1322 Request.extract*Parameters() throws for bad UTF8 same as for bad ISO88591
+ + 1316 Request.extract*Parameters() reports context
+ + 1322 Request.extract*Parameters() throws for bad UTF8 same as for bad
+   ISO88591
  + 1326 Removed non-standard "%uXXXX" encoding support
  + 1417 Improve classloader dumping
  + 1439 Allow UNC paths to function as Resource bases
