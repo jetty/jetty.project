@@ -54,4 +54,32 @@ public class ManifestUtils
             return Optional.empty();
         }
     }
+
+    /**
+     * <p>Attempts to return the version of the jar/module for the given class.</p>
+     * <p>First, retrieves the {@code Implementation-Version} main attribute of the manifest;
+     * if that is missing, retrieves the JPMS module version (via reflection);
+     * if that is missing, returns an empty Optional.</p>
+     *
+     * @param klass the class of the jar/module to retrieve the version
+     * @return the jar/module version, or an empty Optional
+     */
+    public static Optional<String> getVersion(Class<?> klass)
+    {
+        Optional<String> version = getManifest(klass).map(Manifest::getMainAttributes)
+                .map(attributes -> attributes.getValue("Implementation-Version"));
+        if (version.isPresent())
+            return version;
+
+        try
+        {
+            Object module = klass.getClass().getMethod("getModule").invoke(klass);
+            Object descriptor = module.getClass().getMethod("getDescriptor").invoke(module);
+            return (Optional<String>)descriptor.getClass().getMethod("rawVersion").invoke(descriptor);
+        }
+        catch (Throwable x)
+        {
+            return Optional.empty();
+        }
+    }
 }

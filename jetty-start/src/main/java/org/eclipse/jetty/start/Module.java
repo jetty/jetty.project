@@ -89,6 +89,9 @@ public class Module implements Comparable<Module>
     
     /** List of library options for this Module */
     private final List<String> _libs=new ArrayList<>();
+
+    /** List of JPMS options for this Module */
+    private final List<String> _jpms=new ArrayList<>();
     
     /** List of files for this Module */
     private final List<String> _files=new ArrayList<>();
@@ -229,6 +232,11 @@ public class Module implements Comparable<Module>
     {
         return _xmls;
     }
+
+    public List<String> getJPMS()
+    {
+        return _jpms;
+    }
     
     public Version getVersion()
     {
@@ -349,6 +357,9 @@ public class Module implements Comparable<Module>
                             case "LIB":
                             case "LIBS":
                                 _libs.add(line);
+                                break;
+                            case "JPMS":
+                                _jpms.add(line);
                                 break;
                             case "LICENSE":
                             case "LICENSES":

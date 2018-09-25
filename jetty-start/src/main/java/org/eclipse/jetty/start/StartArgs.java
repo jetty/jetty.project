@@ -27,9 +27,12 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -37,6 +40,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
@@ -109,7 +114,8 @@ public class StartArgs
         System.setProperty("jetty.tag.version", tag);
     }
 
-    private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
+    private static final String MAIN_CLASS = "org.eclipse.jetty.xml.XmlConfiguration";
+    private static final String MODULE_MAIN_CLASS = "org.eclipse.jetty.xml/org.eclipse.jetty.xml.XmlConfiguration";
 
     private final BaseHome baseHome;
 
@@ -130,6 +136,13 @@ public class StartArgs
 
     /** List of all active [xml] sections from enabled modules */
     private List<Path> xmls = new ArrayList<>();
+
+    /** List of all active [jpms] sections for enabled modules */
+    private Set<String> jmodAdds = new LinkedHashSet<>();
+    private Map<String, Set<String>> jmodPatch = new LinkedHashMap<>();
+    private Map<String, Set<String>> jmodOpens = new LinkedHashMap<>();
+    private Map<String, Set<String>> jmodExports = new LinkedHashMap<>();
+    private Map<String, Set<String>> jmodReads = new LinkedHashMap<>();
 
     /** JVM arguments, found via command line and in all active [exec] sections from enabled modules */
     private List<String> jvmArgs = new ArrayList<>();
@@ -173,6 +186,7 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+    private boolean jpms = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
     private String mavenBaseUri;
@@ -540,6 +554,57 @@ public class StartArgs
         }
     }
 
+    void expandJPMS(List<Module> activeModules)
+    {
+        for (Module module : activeModules)
+        {
+            for (String line : module.getJPMS())
+            {
+                line = properties.expand(line);
+                String directive;
+                if (line.startsWith(directive = "add-modules:"))
+                {
+                    String[] names = line.substring(directive.length()).split(",");
+                    Arrays.stream(names).map(String::trim).collect(Collectors.toCollection(() -> jmodAdds));
+                }
+                else if (line.startsWith(directive = "patch-module:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, File.pathSeparator, jmodPatch);
+                }
+                else if (line.startsWith(directive = "add-opens:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, ",", jmodOpens);
+                }
+                else if (line.startsWith(directive = "add-exports:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, ",", jmodExports);
+                }
+                else if (line.startsWith(directive = "add-reads:"))
+                {
+                    parseJPMSKeyValue(module, line, directive, ",", jmodReads);
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
+                }
+            }
+        }
+        StartLog.debug("Expanded JPMS directives:%nadd-modules: %s%npatch-modules: %s%nadd-opens: %s%nadd-exports: %s%nadd-reads: %s",
+                jmodAdds, jmodPatch, jmodOpens, jmodExports, jmodReads);
+    }
+
+    private void parseJPMSKeyValue(Module module, String line, String directive, String delimiter, Map<String, Set<String>> output)
+    {
+        String value = line.substring(directive.length());
+        int equals = value.indexOf('=');
+        if (equals <= 0)
+            throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
+        String key = value.substring(0, equals).trim();
+        List<String> values = Arrays.asList(value.substring(equals + 1).split(delimiter));
+        values = values.stream().map(String::trim).collect(Collectors.toList());
+        output.computeIfAbsent(key, k -> new LinkedHashSet<>()).addAll(values);
+    }
+
     public List<String> getStartModules()
     {
         return startModules;
@@ -611,9 +676,76 @@ public class StartArgs
                 cmd.addEqualsArg("-D" + propKey,value);
             }
 
-            cmd.addRawArg("-cp");
-            cmd.addRawArg(classpath.toString());
-            cmd.addRawArg(getMainClassname());
+            if (isJPMS())
+            {
+                Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(classpath.spliterator(), false)
+                        .collect(Collectors.groupingBy(File::isDirectory));
+                List<File> files = dirsAndFiles.get(false);
+                if (!files.isEmpty())
+                {
+                    cmd.addRawArg("--module-path");
+                    String modules = files.stream()
+                            .map(File::getAbsolutePath)
+                            .collect(Collectors.joining(File.pathSeparator));
+                    cmd.addRawArg(modules);
+                }
+                List<File> dirs = dirsAndFiles.get(true);
+                if (!dirs.isEmpty())
+                {
+                    cmd.addRawArg("--class-path");
+                    String directories = dirs.stream()
+                            .map(File::getAbsolutePath)
+                            .collect(Collectors.joining(File.pathSeparator));
+                    cmd.addRawArg(directories);
+                }
+
+                if (!jmodAdds.isEmpty())
+                {
+                    cmd.addRawArg("--add-modules");
+                    cmd.addRawArg(String.join(",", jmodAdds));
+                }
+                if (!jmodPatch.isEmpty())
+                {
+                    for (Map.Entry<String, Set<String>> entry : jmodPatch.entrySet())
+                    {
+                        cmd.addRawArg("--patch-module");
+                        cmd.addRawArg(entry.getKey() + "=" + String.join(File.pathSeparator, entry.getValue()));
+                    }
+                }
+                if (!jmodOpens.isEmpty())
+                {
+                    for (Map.Entry<String, Set<String>> entry : jmodOpens.entrySet())
+                    {
+                        cmd.addRawArg("--add-opens");
+                        cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+                    }
+                }
+                if (!jmodExports.isEmpty())
+                {
+                    for (Map.Entry<String, Set<String>> entry : jmodExports.entrySet())
+                    {
+                        cmd.addRawArg("--add-exports");
+                        cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+                    }
+                }
+                if (!jmodReads.isEmpty())
+                {
+                    for (Map.Entry<String, Set<String>> entry : jmodReads.entrySet())
+                    {
+                        cmd.addRawArg("--add-reads");
+                        cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+                    }
+                }
+
+                cmd.addRawArg("--module");
+                cmd.addRawArg(getMainClassname());
+            }
+            else
+            {
+                cmd.addRawArg("-cp");
+                cmd.addRawArg(classpath.toString());
+                cmd.addRawArg(getMainClassname());
+            }
         }
 
        
@@ -656,8 +788,8 @@ public class StartArgs
 
     public String getMainClassname()
     {
-        String mainclass = System.getProperty("jetty.server",SERVER_MAIN);
-        return System.getProperty("main.class",mainclass);
+        String mainClass = System.getProperty("jetty.server", isJPMS() ? MODULE_MAIN_CLASS : MAIN_CLASS);
+        return System.getProperty("main.class", mainClass);
     }
 
     public String getMavenLocalRepoDir()
@@ -764,6 +896,11 @@ public class StartArgs
         return createFiles;
     }
 
+    public boolean isJPMS()
+    {
+        return jpms;
+    }
+
     public boolean isDryRun()
     {
         return dryRun;
@@ -781,7 +918,7 @@ public class StartArgs
 
     public boolean isNormalMainClass()
     {
-        return SERVER_MAIN.equals(getMainClassname());
+        return MAIN_CLASS.equals(getMainClassname());
     }
 
     public boolean isHelp()
@@ -970,6 +1107,14 @@ public class StartArgs
         {
             listConfig = true;
             run = false;
+            return;
+        }
+
+        if ("--jpms".equals(arg))
+        {
+            jpms = true;
+            // Need to fork because we cannot use JDK 9 Module APIs.
+            exec = true;
             return;
         }
 
