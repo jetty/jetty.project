@@ -116,8 +116,17 @@ public class ListenerHolder extends BaseHolder<EventListener>
 
 
     @Override
+    public void doStop() throws Exception
+    {
+        super.doStop();
+        if (!_extInstance)
+            _listener = null;
+        _initialized = false;
+    }
+
+    @Override
     public String toString()
     {
-        return super.toString()+(_listener == null?"":": "+getClassName());
+        return super.toString()+": "+getClassName();
     } 
 }
