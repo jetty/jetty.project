@@ -105,16 +105,13 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
             public void run ()
             {
 
-                
+
                 try
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Loading session {} from infinispan", id);
-                    //WebAppClassLoader.runWithServerClassAccess(()->{
-                        SessionData sd = (SessionData)_cache.get(getCacheKey(id));
-                        reference.set(sd);
-                        //return sd;
-                   // });
+                    SessionData sd = (SessionData)_cache.get(getCacheKey(id));
+                    reference.set(sd);
                 }
                 catch (Exception e)
                 {
@@ -122,10 +119,10 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                 }
             }      
         };
-        
+
         //ensure the load runs in the context classloader scope
         _context.run(load);
-        
+
         if (exception.get() != null)
             throw exception.get();
         
