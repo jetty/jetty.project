@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.infinispan.commons.api.BasicCache;
 
 /**
@@ -79,6 +80,16 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
     
     
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        if (_cache == null)
+            throw new IllegalStateException ("No cache");
+    }
+
+
+
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
      */
@@ -93,20 +104,23 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
             @Override
             public void run ()
             {
+
+                
                 try
                 {
-
                     if (LOG.isDebugEnabled())
                         LOG.debug("Loading session {} from infinispan", id);
-     
-                    SessionData sd = (SessionData)_cache.get(getCacheKey(id));
-                    reference.set(sd);
+                    //WebAppClassLoader.runWithServerClassAccess(()->{
+                        SessionData sd = (SessionData)_cache.get(getCacheKey(id));
+                        reference.set(sd);
+                        //return sd;
+                   // });
                 }
                 catch (Exception e)
                 {
                     exception.set(new UnreadableSessionDataException(id, _context, e));
                 }
-            }
+            }      
         };
         
         //ensure the load runs in the context classloader scope

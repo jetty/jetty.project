@@ -22,9 +22,18 @@ package org.eclipse.jetty.server.session.remote;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Properties;
+
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.SerializationContext;
+
+
 
 /**
  * RemoteInfinispanTestSupport
@@ -42,7 +51,19 @@ public class RemoteInfinispanTestSupport
     {
         try
         {
-            _manager = new RemoteCacheManager();
+            Properties properties = new Properties();
+
+            ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
+            clientBuilder.withProperties(properties).addServer().host("127.0.0.1").marshaller(new ProtoStreamMarshaller());
+
+            _manager = new RemoteCacheManager(clientBuilder.build());
+
+            FileDescriptorSource fds = new FileDescriptorSource();
+            fds.addProtoFiles("/session.proto");
+
+            SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_manager);
+            serCtx.registerProtoFiles(fds);
+            serCtx.registerMarshaller(new SessionDataMarshaller());
         }
         catch (Exception e)
         {
