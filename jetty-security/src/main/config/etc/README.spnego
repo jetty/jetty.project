@@ -1,7 +1,7 @@
-This setup will enable you to authenticate a user via spnego into your 
+This setup will enable you to authenticate a user via SPNEGO into your
 webapp.
 
-To run with spengo enabled the following command line options are required:
+To run with SPNEGO enabled the following command line options are required:
 
 -Djava.security.krb5.conf=/path/to/jetty/etc/krb5.ini
 -Djava.security.auth.login.config=/path/to/jetty/etc/spnego.conf 
@@ -9,13 +9,13 @@ To run with spengo enabled the following command line options are required:
 
 The easiest place to put these lines are in the start.ini file.
 
-For debugging the spengo authentication the following options are helpful:
+For debugging the SPNEGO authentication the following options are helpful:
 
 -Dorg.eclipse.jetty.LEVEL=debug
 -Dsun.security.spnego.debug=true
 
 
-Spengo Authentication is enabled in the webapp with the following setup.
+SPNEGO Authentication is enabled in the webapp with the following setup.
 
   <security-constraint>
     <web-resource-collection>
@@ -32,7 +32,7 @@ Spengo Authentication is enabled in the webapp with the following setup.
     <realm-name>Test Realm</realm-name>
     (optionally to add custom error page)
     <spnego-login-config>
-      <spengo-error-page>/loginError.html?param=foo</spnego-error-page>
+      <spnego-error-page>/loginError.html?param=foo</spnego-error-page>
     </spnego-login-config>
   </login-config>
    

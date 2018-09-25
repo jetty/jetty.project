@@ -22,9 +22,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import javax.jws.WebMethod;
 import javax.jws.WebService;
@@ -35,13 +35,13 @@ public class TestEndpointMultiplePublishProblem
 
     private static String default_impl = System.getProperty("com.sun.net.httpserver.HttpServerProvider");
 
-    @BeforeClass
+    @BeforeAll
     public static void change_Impl()
     {
         System.setProperty("com.sun.net.httpserver.HttpServerProvider", JettyHttpServerProvider.class.getName());
     }
 
-    @AfterClass
+    @AfterAll
     public static void restore_Impl()
     {
         if(default_impl != null)

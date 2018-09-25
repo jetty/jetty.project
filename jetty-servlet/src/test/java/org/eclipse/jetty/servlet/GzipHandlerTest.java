@@ -18,32 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -53,6 +27,33 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Enumeration;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("serial")
 public class GzipHandlerTest
@@ -104,6 +105,7 @@ public class GzipHandlerTest
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
         servlets.addServletWithMapping(EchoServlet.class,"/echo/*");
         servlets.addServletWithMapping(DumpServlet.class,"/dump/*");
+        servlets.addFilterWithMapping(CheckFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         
         _server.start();
     }
@@ -508,6 +510,38 @@ public class GzipHandlerTest
         assertThat(response.getContent(),is(data));
 
     }
+
+
+    @Test
+    public void testGzipRequestChunked() throws Exception
+    {
+        String data = "Hello Nice World! ";
+        for (int i = 0; i < 10; ++i)
+            data += data;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(data.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        byte[] bytes = baos.toByteArray();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/echo");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host","tester");
+        request.setHeader("Content-Type","text/plain");
+        request.setHeader("Content-Encoding","gzip");
+        request.add("Transfer-Encoding", "chunked");
+        request.setContent(bytes);
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(),is(200));
+        assertThat(response.getContent(),is(data));
+
+    }
     
 
     @Test
@@ -568,5 +602,27 @@ public class GzipHandlerTest
         assertThat(response.getStatus(),is(200));
         assertThat(response.getContentBytes().length,is(512*1024));
     }
-    
+
+    public static class CheckFilter implements Filter
+    {
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            if (request.getParameter("X-Content-Encoding")!=null)
+                assertEquals(-1,request.getContentLength());
+            else if (request.getContentLength()>=0)
+                assertThat(request.getParameter("X-Content-Encoding"),Matchers.nullValue());
+            chain.doFilter(request,response);
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+    }
 }

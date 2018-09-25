@@ -45,12 +45,15 @@
       <artifactId>pax-exam-junit4</artifactId>
       <version>${exam.version}</version>
       <scope>test</scope>
+      <!-- not anymore as others tests use junit 5 -->
+      <!--
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
         </exclusion>
       </exclusions>
+      -->
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
