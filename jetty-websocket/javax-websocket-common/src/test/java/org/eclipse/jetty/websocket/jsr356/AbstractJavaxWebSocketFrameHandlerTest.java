@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
@@ -30,31 +29,27 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractJavaxWebSocketFrameHandlerTest
 {
     protected static WebSocketPolicy clientPolicy = WebSocketPolicy.newClientPolicy();
     protected static DummyContainer container;
     
-    @BeforeClass
+    @BeforeAll
     public static void initContainer() throws Exception
     {
         container = new DummyContainer(clientPolicy);
         container.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();
     }
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+
 
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;

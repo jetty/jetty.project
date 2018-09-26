@@ -19,20 +19,19 @@
 package org.eclipse.jetty.websocket.jsr356.util;
 
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils.Arg;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class InvokerUtils_StaticParamsTest
 {

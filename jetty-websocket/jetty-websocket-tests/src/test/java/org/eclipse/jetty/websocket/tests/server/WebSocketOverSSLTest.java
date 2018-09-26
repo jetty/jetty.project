@@ -18,37 +18,32 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class WebSocketOverSSLTest
 {
     public static final int CONNECT_TIMEOUT = 15000;
     public static final int FUTURE_TIMEOUT_SEC = 30;
-    
-    @Rule
-    public TestTracker tracker = new TestTracker();
-    
+
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new SessionServlet());
@@ -56,7 +51,7 @@ public class WebSocketOverSSLTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -69,7 +64,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testEcho() throws Exception
     {
-        Assert.assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
+        assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
         client.addManaged(httpClient);
@@ -91,7 +86,7 @@ public class WebSocketOverSSLTest
 
             // Read frame (hopefully text frame)
             String captured = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            Assert.assertThat("Text Message",captured,is(msg));
+            assertThat("Text Message",captured,is(msg));
 
             // Shutdown the socket
             clientSocket.close(StatusCode.NORMAL, "Normal");
@@ -109,7 +104,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testServerSessionIsSecure() throws Exception
     {
-        Assert.assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
+        assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
         client.addManaged(httpClient);
@@ -131,7 +126,7 @@ public class WebSocketOverSSLTest
 
             // Read frame (hopefully text frame)
             String captured = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            Assert.assertThat("Server.session.isSecure",captured,is("session.isSecure=true"));
+            assertThat("Server.session.isSecure",captured,is("session.isSecure=true"));
 
             // Shutdown the socket
             clientSocket.close(StatusCode.NORMAL, "Normal");
@@ -149,7 +144,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testServerSessionRequestURI() throws Exception
     {
-        Assert.assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
+        assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
         client.addManaged(httpClient);
@@ -172,7 +167,7 @@ public class WebSocketOverSSLTest
             // Read frame (hopefully text frame)
             String captured = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             String expected = String.format("session.upgradeRequest.requestURI=%s",requestUri.toASCIIString());
-            Assert.assertThat("session.upgradeRequest.requestURI",captured,is(expected));
+            assertThat("session.upgradeRequest.requestURI",captured,is(expected));
 
             // Shutdown the socket
             clientSocket.close(StatusCode.NORMAL, "Normal");

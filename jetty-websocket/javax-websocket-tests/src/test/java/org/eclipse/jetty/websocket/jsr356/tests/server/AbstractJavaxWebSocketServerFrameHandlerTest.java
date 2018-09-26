@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -34,10 +33,8 @@ import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.servlet.MappedWebSocketServletNegotiator;
 import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
 {
@@ -45,7 +42,7 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
     protected static ServletContextHandler context;
     protected static JavaxWebSocketServerContainer container;
     
-    @BeforeClass
+    @BeforeAll
     public static void initContainer() throws Exception
     {
         server = new Server();
@@ -65,15 +62,13 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();
         server.stop();
     }
     
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;

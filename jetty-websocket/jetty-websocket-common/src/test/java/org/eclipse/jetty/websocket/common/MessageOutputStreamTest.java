@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -29,28 +26,32 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
-import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.core.TestableLeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStreamTest.class);
 
-    @Rule
-    public TestName testname = new TestName();
+    public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    @AfterEach
+    public void afterEach()
+    {
+        bufferPool.assertNoLeaks();
+    }
 
     private WebSocketPolicy policy;
     private OutgoingMessageCapture channelCapture;
 
-    @Before
+    @BeforeEach
     public void setupTest() throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
@@ -69,10 +70,10 @@ public class MessageOutputStreamTest
             stream.write("World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
+        assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
         ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
-        Assert.assertThat("Message", message, is("Hello World"));
+        assertThat("Message", message, is("Hello World"));
     }
 
     @Test
@@ -83,10 +84,10 @@ public class MessageOutputStreamTest
             stream.write("Hello World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
+        assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
         ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
-        Assert.assertThat("Message", message, is("Hello World"));
+        assertThat("Message", message, is("Hello World"));
     }
 
     @Test
@@ -103,9 +104,9 @@ public class MessageOutputStreamTest
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
+        assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
         ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
-        Assert.assertThat("Message", message, endsWith("xxxxxo"));
+        assertThat("Message", message, endsWith("xxxxxo"));
     }
 }

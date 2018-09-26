@@ -18,13 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -37,6 +33,9 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.jsr356.Defaults;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Base Abstract Class.
@@ -59,7 +58,7 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
 
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onClose event", closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS),prefix + " onClose event");
     }
 
     @Override
@@ -81,7 +80,7 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
         CloseStatus close = new CloseStatus(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
         boolean closeTracked = closeInfo.compareAndSet(null, close);
         this.closeLatch.countDown();
-        assertTrue("Close only happened once", closeTracked);
+        assertTrue(closeTracked,"Close only happened once");
     }
 
     @Override

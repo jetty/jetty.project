@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Session;
 
@@ -45,25 +44,26 @@ import org.eclipse.jetty.websocket.jsr356.tests.client.samples.CloseSessionReaso
 import org.eclipse.jetty.websocket.jsr356.tests.client.samples.CloseSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.tests.client.samples.CloseSocket;
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(Parameterized.class)
 public class OnCloseTest
 {
     private static class Case
     {
         public static Case add(List<Case[]> data, Class<?> closeClass)
         {
-            Case tcase = new Case();
-            tcase.closeClass = closeClass;
-            data.add(new Case[]
-                    {tcase});
+            Case tcase = new Case(closeClass);
+            data.add(new Case[]{tcase});
             return tcase;
+        }
+        
+        public Case(Class<?> closeClass)
+        {
+            this.closeClass = closeClass;
         }
         
         Class<?> closeClass;
@@ -83,30 +83,22 @@ public class OnCloseTest
     }
     
     private static JavaxWebSocketClientContainer container = new JavaxWebSocketClientContainer();
-    
-    @Parameters(name = "{0}")
-    public static Collection<Case[]> data() throws Exception
+
+    public static Stream<Arguments> data() throws Exception
     {
-        List<Case[]> data = new ArrayList<>();
-        
-        Case.add(data, CloseSocket.class).expect("onClose()");
-        Case.add(data, CloseReasonSocket.class).expect("onClose(CloseReason)");
-        Case.add(data, CloseSessionSocket.class).expect("onClose(Session)");
-        Case.add(data, CloseReasonSessionSocket.class).expect("onClose(CloseReason,Session)");
-        Case.add(data, CloseSessionReasonSocket.class).expect("onClose(Session,CloseReason)");
-        
-        return data;
+        return Stream.of(
+            Arguments.of(new Case(CloseSocket.class).expect("onClose()")),
+            Arguments.of(new Case(CloseReasonSocket.class).expect("onClose(CloseReason)")),
+            Arguments.of(new Case(CloseSessionSocket.class).expect("onClose(Session)")),
+            Arguments.of(new Case(CloseReasonSessionSocket.class).expect("onClose(CloseReason,Session)")),
+            Arguments.of(new Case(CloseSessionReasonSocket.class).expect("onClose(Session,CloseReason)"))
+        );
     }
     
-    private final Case testcase;
     
-    public OnCloseTest(Case testcase)
-    {
-        this.testcase = testcase;
-    }
-    
-    @Test
-    public void testOnCloseCall() throws Exception
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void testOnCloseCall(Case testcase) throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         WSEventTracker endpoint = (WSEventTracker) testcase.closeClass.newInstance();

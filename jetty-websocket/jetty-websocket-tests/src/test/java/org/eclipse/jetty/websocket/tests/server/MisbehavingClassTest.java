@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.anything;
-
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
@@ -44,13 +42,14 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.Matchers.anything;
 
 /**
  * Testing badly behaving Socket class implementations to get the best
@@ -175,7 +174,7 @@ public class MisbehavingClassTest
     private static SimpleServletServer server;
     private static BadSocketsServlet badSocketsServlet;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         badSocketsServlet = new BadSocketsServlet();
@@ -183,32 +182,29 @@ public class MisbehavingClassTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
-    @Rule
-    public TestName testname = new TestName();
-    
+
     private WebSocketClient client;
     
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
     @Test
-    public void testListenerRuntimeOnConnect() throws Exception
+    public void testListenerRuntimeOnConnect(TestInfo testInfo) throws Exception
     {
         try (StacklessLogging ignored = new StacklessLogging(ListenerRuntimeOnConnectSocket.class))
         {
@@ -218,7 +214,7 @@ public class MisbehavingClassTest
             client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(1));
             URI wsUri = server.getWsUri();
     
-            TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+            TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
             ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
             upgradeRequest.setSubProtocols("listener-runtime-connect");
             Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -233,7 +229,7 @@ public class MisbehavingClassTest
     }
     
     @Test
-    public void testAnnotatedRuntimeOnConnect() throws Exception
+    public void testAnnotatedRuntimeOnConnect(TestInfo testInfo) throws Exception
     {
         try (StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class))
         {
@@ -243,7 +239,7 @@ public class MisbehavingClassTest
             client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(1));
             URI wsUri = server.getWsUri();
     
-            TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+            TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
             ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
             upgradeRequest.setSubProtocols("annotated-runtime-connect");
             Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);

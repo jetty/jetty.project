@@ -29,9 +29,9 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
@@ -47,18 +47,18 @@ import org.eclipse.jetty.websocket.jsr356.tests.handlers.ByteArrayWholeHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.ByteBufferPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.LongMessageHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.StringWholeHandler;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerType;
 import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerTypeRegistered;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 
 public class SessionAddMessageHandlerTest
 {
@@ -71,7 +71,7 @@ public class SessionAddMessageHandlerTest
     private JavaxWebSocketFrameHandler frameHandler;
     private JavaxWebSocketSession session;
 
-    @Before
+    @BeforeEach
     public void initSession() throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
@@ -95,7 +95,7 @@ public class SessionAddMessageHandlerTest
         session.start();
     }
 
-    @After
+    @AfterEach
     public void stopSession() throws Exception
     {
         session.stop();

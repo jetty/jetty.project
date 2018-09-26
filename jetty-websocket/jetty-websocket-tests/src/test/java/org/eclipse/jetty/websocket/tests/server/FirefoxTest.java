@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class FirefoxTest extends AbstractLocalServerCase
 {

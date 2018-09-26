@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.containsString;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -28,15 +26,18 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private void assertBadSocket(Object socket, String expectedString) throws Exception
     {
-        expectedException.expect(InvalidSignatureException.class);
-        expectedException.expectMessage(containsString(expectedString));
-        newJavaxFrameHandler(socket);
+        Exception e = assertThrows(InvalidSignatureException.class, ()->newJavaxFrameHandler(socket));
+        assertThat(e.getMessage(), containsString(expectedString));
     }
 
     @SuppressWarnings("UnusedParameters")

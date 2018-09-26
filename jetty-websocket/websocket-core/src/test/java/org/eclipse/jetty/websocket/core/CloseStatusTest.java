@@ -18,25 +18,28 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
+
+@ExtendWith(TestTrackerExtension.class)
 public class CloseStatusTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-    
     /**
      * A test where no close is provided
      */

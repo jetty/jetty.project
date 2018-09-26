@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ContainerProvider;
 import javax.websocket.OnMessage;
@@ -35,9 +31,12 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AnnotatedEchoTest
 {
@@ -108,14 +107,14 @@ public class AnnotatedEchoTest
 
     private static CoreServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new CoreServer(new CoreServer.EchoNegotiator());
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

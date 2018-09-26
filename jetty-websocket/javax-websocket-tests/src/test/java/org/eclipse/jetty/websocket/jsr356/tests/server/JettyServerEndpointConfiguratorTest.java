@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.util.Iterator;
 import java.util.ServiceLoader;
-
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Test the JettyServerEndpointConfigurator impl.

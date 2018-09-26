@@ -31,14 +31,11 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 public abstract class WebSocketUpgradeFilterTest
 {
@@ -50,27 +47,20 @@ public abstract class WebSocketUpgradeFilterTest
         FS.ensureDirExists(testDir);
         return testDir;
     }
-    
-    @Rule
-    public TestName testname = new TestName();
-    
+
     private LocalServer server;
     
-    public WebSocketUpgradeFilterTest(LocalServer server) throws Exception
-    {
-        this.server = server;
-        this.server.start();
-    }
-    
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
-    
-    @Test
-    public void testNormalConfiguration() throws Exception
+
+    public void testNormalConfiguration(LocalServer server) throws Exception
     {
+        this.server = server;
+        this.server.start();
+
         try (Fuzzer session = server.newNetworkFuzzer("/info/"))
         {
             session.sendFrames(
@@ -88,10 +78,13 @@ public abstract class WebSocketUpgradeFilterTest
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
         }
     }
-    
-    @Test
-    public void testStopStartOfHandler() throws Exception
+
+
+    public void testStopStartOfHandler(LocalServer server) throws Exception
     {
+        this.server = server;
+        this.server.start();
+
         try (Fuzzer session = server.newNetworkFuzzer("/info/"))
         {
             session.sendFrames(

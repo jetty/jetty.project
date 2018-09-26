@@ -53,28 +53,26 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.HeaderUtil;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.common.HeaderUtil;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class ConfiguratorTest
 {
@@ -373,7 +371,7 @@ public class ConfiguratorTest
 
     private static LocalServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -407,25 +405,22 @@ public class ConfiguratorTest
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Rule
-    public TestName testname = new TestName();
-
     private WebSocketCoreClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketCoreClient();
         client.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();

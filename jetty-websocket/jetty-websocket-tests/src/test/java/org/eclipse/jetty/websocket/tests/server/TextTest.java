@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * UTF-8 Tests

@@ -32,14 +32,14 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * Tests a {@link javax.websocket.Decoder.TextStream} automatic decoding to a Socket onMessage parameter
@@ -65,7 +65,7 @@ public class QuotesDecoderTextStreamTest
     
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer()
@@ -80,7 +80,7 @@ public class QuotesDecoderTextStreamTest
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

@@ -18,19 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.net.HttpCookie;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.websocket.ClientEndpointConfig;
@@ -46,8 +38,15 @@ import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyEndpoint;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.StaticText;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.WholeMessageEcho;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CookiesTest
 {
@@ -59,7 +58,7 @@ public class CookiesTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();

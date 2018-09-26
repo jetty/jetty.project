@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
@@ -29,11 +26,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.DummyChannel;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {

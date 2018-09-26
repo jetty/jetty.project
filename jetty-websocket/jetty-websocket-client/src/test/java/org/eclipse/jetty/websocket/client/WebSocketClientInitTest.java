@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Test various init techniques for WebSocketClient

@@ -23,22 +23,22 @@ import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class PathParamTest
 {
     private JavaxWebSocketServerContainer container;
 
-    @Before
+    @BeforeEach
     public void startContainer() throws Exception
     {
         container = new DummyServerContainer();
         container.start();
     }
 
-    @After
+    @AfterEach
     public void stopContainer() throws Exception
     {
         container.stop();

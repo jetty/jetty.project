@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.tests.WSServer;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class WebSocketUpgradeFilterWebappTest extends WebSocketUpgradeFilterTest
 {
     private interface Case
@@ -37,45 +36,48 @@ public class WebSocketUpgradeFilterWebappTest extends WebSocketUpgradeFilterTest
         void customize(WSServer server) throws Exception;
     }
     
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Object[]> cases = new ArrayList<>();
+        return Stream.of(
         
-        // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener
-        
-        cases.add(new Object[]{
-                "From ServletContextListener",
-                (Case) (server) ->
-                {
-                    server.copyWebInf("wsuf-config-via-listener.xml");
-                    server.copyClass(InfoSocket.class);
-                    server.copyClass(InfoContextAttributeListener.class);
-                }
-        });
-        
-        // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener with WEB-INF/lib/jetty-http.jar
-        
-        cases.add(new Object[]{
-                "From ServletContextListener with jar scanning",
-                (Case) (server) ->
-                {
-                    server.copyWebInf("wsuf-config-via-listener.xml");
-                    server.copyClass(InfoSocket.class);
-                    server.copyClass(InfoContextAttributeListener.class);
-                    // Add a jetty-http.jar to ensure that the classloader constraints
-                    // and the WebAppClassloader setup is sane and correct
-                    // The odd version string is present to capture bad regex behavior in Jetty
-                    server.copyLib(org.eclipse.jetty.http.pathmap.PathSpec.class, "jetty-http-9.99.999.jar");
-                }
-        });
-        
-        return cases;
+            // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener
+
+            Arguments.of("From ServletContextListener", (Case) (server) ->
+                    {
+                        server.copyWebInf("wsuf-config-via-listener.xml");
+                        server.copyClass(InfoSocket.class);
+                        server.copyClass(InfoContextAttributeListener.class);
+                    }
+            ),
+
+            // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener with WEB-INF/lib/jetty-http.jar
+
+            Arguments.of("From ServletContextListener with jar scanning", (Case) (server) ->
+                    {
+                        server.copyWebInf("wsuf-config-via-listener.xml");
+                        server.copyClass(InfoSocket.class);
+                        server.copyClass(InfoContextAttributeListener.class);
+                        // Add a jetty-http.jar to ensure that the classloader constraints
+                        // and the WebAppClassloader setup is sane and correct
+                        // The odd version string is present to capture bad regex behavior in Jetty
+                        server.copyLib(org.eclipse.jetty.http.pathmap.PathSpec.class, "jetty-http-9.99.999.jar");
+                    }
+            )
+        );
     }
-    
-    public WebSocketUpgradeFilterWebappTest(String testid, Case testcase) throws Exception
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void testNormalConfiguration(String testid, Case testcase) throws Exception
     {
-        super(newServer(testcase));
+        super.testNormalConfiguration(newServer(testcase));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void testStopStartOfHandler(String testid, Case testcase) throws Exception
+    {
+        super.testStopStartOfHandler(newServer(testcase));
     }
     
     private static WSServer newServer(Case testcase)

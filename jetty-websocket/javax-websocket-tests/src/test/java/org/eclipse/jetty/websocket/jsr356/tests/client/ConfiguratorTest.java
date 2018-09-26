@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.HandshakeResponse;
@@ -36,9 +31,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEndpointTracker;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.core.Is.is;
 
 /**
  * Tests of {@link javax.websocket.ClientEndpointConfig.Configurator}
@@ -83,7 +82,7 @@ public class ConfiguratorTest
 
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -91,7 +90,7 @@ public class ConfiguratorTest
         server.registerWebSocket("/", (req,resp) -> new EchoSocket());
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

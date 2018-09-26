@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -30,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ContainerProvider;
 import javax.websocket.DecodeException;
@@ -42,27 +38,27 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.AbstractWholeMessageHandler;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderReaderManySmallTest
 {
-    @Rule
-    public TestName testname = new TestName();
     private CoreServer server;
     private WebSocketContainer client;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         server = new CoreServer(new CoreServer.BaseNegotiator()
@@ -86,17 +82,17 @@ public class DecoderReaderManySmallTest
         server.addBean(client, true); // allow client to stop with server
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         server.stop();
     }
 
     @Test
-    public void testManyIds() throws Exception
+    public void testManyIds(TestInfo testInfo) throws Exception
     {
         URI wsUri = server.getWsUri().resolve("/eventids");
-        EventIdSocket clientSocket = new EventIdSocket(testname.getMethodName());
+        EventIdSocket clientSocket = new EventIdSocket(testInfo.getTestMethod().toString());
         Session clientSession = client.connectToServer(clientSocket, wsUri);
 
         final int from = 1000;
@@ -110,14 +106,14 @@ public class DecoderReaderManySmallTest
         {
             // validate that ids don't repeat.
             EventId receivedId = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertFalse("Already saw ID: " + receivedId.eventId, seen.contains(receivedId.eventId));
+            assertFalse(seen.contains(receivedId.eventId), "Already saw ID: " + receivedId.eventId);
             seen.add(receivedId.eventId);
         }
 
         // validate that all expected ids have been seen (order is irrelevant here)
         for (int expected = from; expected < to; expected++)
         {
-            assertTrue("Has expected id:" + expected, seen.contains(expected));
+            assertTrue(seen.contains(expected), "Has expected id:" + expected);
         }
     }
 

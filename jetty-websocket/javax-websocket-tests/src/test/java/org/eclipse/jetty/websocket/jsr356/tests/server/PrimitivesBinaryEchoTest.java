@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
@@ -34,16 +35,15 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test various {@link javax.websocket.Decoder.Binary Decoder.Binary} / {@link javax.websocket.Encoder.Binary Encoder.Binary} echo behavior of Java Primitives
  */
-@RunWith(Parameterized.class)
 public class PrimitivesBinaryEchoTest
 {
     private static final Logger LOG = Log.getLogger(PrimitivesBinaryEchoTest.class);
@@ -84,15 +84,14 @@ public class PrimitivesBinaryEchoTest
         }
     }
     
-    private static void addCase(List<Object[]> data, Class<?> endpointClass, String sendHex, String expectHex)
+    private static void addCase(List<Arguments> data, Class<?> endpointClass, String sendHex, String expectHex)
     {
-        data.add(new Object[]{endpointClass.getSimpleName(), endpointClass, sendHex, expectHex});
+        data.add(Arguments.of(endpointClass.getSimpleName(), endpointClass, sendHex, expectHex));
     }
     
-    @Parameterized.Parameters(name = "{0}: {2}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Object[]> data = new ArrayList<>();
+        List<Arguments> data = new ArrayList<>();
         
         addCase(data, ByteBufferEchoSocket.class, "00", "FF00");
         addCase(data, ByteBufferEchoSocket.class, "001133445566778899AA", "FF001133445566778899AA");
@@ -102,12 +101,12 @@ public class PrimitivesBinaryEchoTest
         addCase(data, ByteArrayEchoSocket.class, "001133445566778899AA", "FE001133445566778899AA");
         addCase(data, ByteArrayEchoSocket.class, "11112222333344445555", "FE11112222333344445555");
         
-        return data;
+        return data.stream();
     }
     
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -116,26 +115,15 @@ public class PrimitivesBinaryEchoTest
         server.getServerContainer().addEndpoint(ByteArrayEchoSocket.class);
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Parameterized.Parameter
-    public String endpointClassname;
-    
-    @Parameterized.Parameter(1)
-    public Class<?> endpointClass;
-    
-    @Parameterized.Parameter(2)
-    public String sendHex;
-    
-    @Parameterized.Parameter(3)
-    public String expectHex;
-    
-    @Test
-    public void testPrimitiveEcho() throws Exception
+    @ParameterizedTest(name = "{0}: {2}")
+    @MethodSource("data")
+    public void testPrimitiveEcho(String endpointClassname, Class<?> endpointClass, String sendHex, String expectHex) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
         

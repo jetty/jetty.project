@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Binary message / frame tests

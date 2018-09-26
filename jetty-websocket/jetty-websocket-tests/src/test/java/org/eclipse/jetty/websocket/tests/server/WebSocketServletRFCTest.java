@@ -34,32 +34,32 @@ import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CoreUtils;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingFrameHandler;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
@@ -68,7 +68,7 @@ public class WebSocketServletRFCTest
 {
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new WebSocketServlet()
@@ -82,25 +82,22 @@ public class WebSocketServletRFCTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Rule
-    public TestName testname = new TestName();
-
     private WebSocketCoreClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketCoreClient();
         client.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
@@ -112,9 +109,9 @@ public class WebSocketServletRFCTest
      * @throws Exception on test failure
      */
     @Test
-    public void testBinaryAggregate() throws Exception
+    public void testBinaryAggregate(TestInfo testInfo) throws Exception
     {
-        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
+        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
 
         URI wsUri = server.getWsUri();
 
@@ -171,7 +168,7 @@ public class WebSocketServletRFCTest
                         ccCount++;
                         break;
                     default:
-                        Assert.fail(String.format("Encountered invalid byte 0x%02X", (byte) (0xFF & b)));
+                        fail(String.format("Encountered invalid byte 0x%02X", (byte) (0xFF & b)));
                 }
             }
 
@@ -185,14 +182,17 @@ public class WebSocketServletRFCTest
         }
     }
 
-    @Test(expected = NotUtf8Exception.class)
+    @Test
     public void testDetectBadUTF8()
     {
-        byte buf[] = new byte[]
-                {(byte) 0xC2, (byte) 0xC3};
+        assertThrows(NotUtf8Exception.class, ()->
+        {
+            byte buf[] = new byte[]
+                    {(byte)0xC2, (byte)0xC3};
 
-        Utf8StringBuilder utf = new Utf8StringBuilder();
-        utf.append(buf, 0, buf.length);
+            Utf8StringBuilder utf = new Utf8StringBuilder();
+            utf.append(buf, 0, buf.length);
+        });
     }
 
     /**
@@ -202,9 +202,9 @@ public class WebSocketServletRFCTest
      * @throws Exception on test failure
      */
     @Test
-    public void testInternalError() throws Exception
+    public void testInternalError(TestInfo testInfo) throws Exception
     {
-        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
+        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
@@ -233,9 +233,9 @@ public class WebSocketServletRFCTest
      * @throws Exception on test failure
      */
     @Test
-    public void testLowercaseUpgrade() throws Exception
+    public void testLowercaseUpgrade(TestInfo testInfo) throws Exception
     {
-        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
+        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
@@ -260,9 +260,9 @@ public class WebSocketServletRFCTest
      * @throws Exception on test failure
      */
     @Test
-    public void testUppercaseUpgrade() throws Exception
+    public void testUppercaseUpgrade(TestInfo testInfo) throws Exception
     {
-        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
+        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
@@ -299,9 +299,9 @@ public class WebSocketServletRFCTest
     }
 
     @Test
-    public void testTextNotUTF8() throws Exception
+    public void testTextNotUTF8(TestInfo testInfo) throws Exception
     {
-        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
+        TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking)

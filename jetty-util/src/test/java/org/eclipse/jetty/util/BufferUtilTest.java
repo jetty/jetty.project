@@ -19,11 +19,6 @@
 package org.eclipse.jetty.util;
 
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -31,14 +26,20 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.hamcrest.Matchers;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BufferUtilTest
 {
@@ -354,7 +355,7 @@ public class BufferUtilTest
         ByteBuffer c = BufferUtil.copy(b);
         assertEquals("Hello World",BufferUtil.toString(c));
         assertTrue(c.isDirect());
-        Assert.assertThat(b,not(sameInstance(c)));
+        assertThat(b,not(sameInstance(c)));
     }
 
     private void testWriteToWithBufferThatDoesNotExposeArray(int capacity) throws IOException

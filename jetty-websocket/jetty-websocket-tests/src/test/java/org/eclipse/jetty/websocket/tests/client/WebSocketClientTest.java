@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.Arrays;
@@ -45,33 +39,31 @@ import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebSocketClientTest
 {
-    @Rule
-    public TestName testname = new TestName();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private LocalServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new LocalServer();
@@ -97,22 +89,22 @@ public class WebSocketClientTest
         });
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
 
     @Test
-    public void testAddExtension_NotInstalled() throws Exception
+    public void testAddExtension_NotInstalled(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         client.getPolicy().setIdleTimeout(10000);
 
@@ -121,21 +113,20 @@ public class WebSocketClientTest
         request.addExtensions("x-bad"); // extension that doesn't exist
 
         // Should trigger failure on bad extension
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(containsString("x-bad"));
         URI wsUri = WSURI.toWebsocket(server.getServerUri());
-        client.connect(clientEndpoint, wsUri, request);
+        Exception e = assertThrows(IllegalArgumentException.class, ()->client.connect(clientEndpoint, wsUri, request));
+        assertThat(e.getMessage(), containsString("x-bad"));
     }
 
     @Test
-    public void testBasicEcho() throws Exception
+    public void testBasicEcho(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
         // Client connects
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
         clientUpgradeRequest.setSubProtocols("echo");
         URI wsUri = server.getWsUri();
@@ -150,7 +141,7 @@ public class WebSocketClientTest
 
         // Verify Client Session Tracking
         Collection<Session> sessions = client.getOpenSessions();
-        Assert.assertThat("client.beans[session].size", sessions.size(), is(1));
+        assertThat("client.beans[session].size", sessions.size(), is(1));
 
         // client confirms connection via echo
         clientEndpoint.awaitOpenEvent("Client");
@@ -171,10 +162,10 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_UsingCallback() throws Exception
+    public void testBasicEcho_UsingCallback(TestInfo testInfo) throws Exception
     {
         client.setMaxIdleTimeout(160000);
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("echo");
         URI wsUri = WSURI.toWebsocket(server.getServerUri());
@@ -189,9 +180,9 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testLocalRemoteAddress() throws Exception
+    public void testLocalRemoteAddress(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
         URI wsUri = WSURI.toWebsocket(server.getServerUri());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
 
@@ -200,8 +191,8 @@ public class WebSocketClientTest
         SocketAddress local = clientSession.getHandshakeRequest().getLocalSocketAddress();
         SocketAddress remote = clientSession.getHandshakeRequest().getRemoteSocketAddress();
 
-        Assert.assertThat("Local Socket Address", local, notNullValue());
-        Assert.assertThat("Remote Socket Address", remote, notNullValue());
+        assertThat("Local Socket Address", local, notNullValue());
+        assertThat("Remote Socket Address", remote, notNullValue());
     }
 
     /**
@@ -210,9 +201,9 @@ public class WebSocketClientTest
      * @throws Exception on test failure
      */
     @Test
-    public void testMaxMessageSize() throws Exception
+    public void testMaxMessageSize(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         client.getPolicy().setMaxTextMessageSize(100 * 1024);
@@ -235,9 +226,9 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testParameterMap() throws Exception
+    public void testParameterMap(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
         URI wsUri = WSURI.toWebsocket(server.getServerUri()).resolve("?snack=cashews&amount=handful&brand=off");
         assertThat("wsUri has query", wsUri.getQuery(), notNullValue());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
@@ -245,14 +236,14 @@ public class WebSocketClientTest
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
         HandshakeRequest req = clientSession.getHandshakeRequest();
-        Assert.assertThat("Upgrade Request", req, notNullValue());
+        assertThat("Upgrade Request", req, notNullValue());
 
         Map<String, List<String>> parameterMap = req.getParameterMap();
-        Assert.assertThat("Parameter Map", parameterMap, notNullValue());
+        assertThat("Parameter Map", parameterMap, notNullValue());
 
-        Assert.assertThat("Parameter[snack]", parameterMap.get("snack"), is(Arrays.asList(new String[]{"cashews"})));
-        Assert.assertThat("Parameter[amount]", parameterMap.get("amount"), is(Arrays.asList(new String[]{"handful"})));
-        Assert.assertThat("Parameter[brand]", parameterMap.get("brand"), is(Arrays.asList(new String[]{"off"})));
-        Assert.assertThat("Parameter[cost]", parameterMap.get("cost"), nullValue());
+        assertThat("Parameter[snack]", parameterMap.get("snack"), is(Arrays.asList(new String[]{"cashews"})));
+        assertThat("Parameter[amount]", parameterMap.get("amount"), is(Arrays.asList(new String[]{"handful"})));
+        assertThat("Parameter[brand]", parameterMap.get("brand"), is(Arrays.asList(new String[]{"off"})));
+        assertThat("Parameter[cost]", parameterMap.get("cost"), nullValue());
     }
 }

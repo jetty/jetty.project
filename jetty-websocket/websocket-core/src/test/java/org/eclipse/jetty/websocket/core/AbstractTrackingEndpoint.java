@@ -18,17 +18,19 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class AbstractTrackingEndpoint<T>
 {
@@ -65,32 +67,32 @@ public abstract class AbstractTrackingEndpoint<T>
     
     public void assertNoErrorEvents(String prefix)
     {
-        assertTrue(prefix + " error event should not have occurred", error.get() == null);
+        assertTrue(error.get() == null, prefix + " error event should not have occurred");
     }
     
     public void assertNotClosed(String prefix)
     {
-        assertTrue(prefix + " close event should not have occurred: got " + closeInfo.get(), closeLatch.getCount() > 0);
+        assertTrue(closeLatch.getCount() > 0, prefix + " close event should not have occurred: got " + closeInfo.get());
     }
     
     public void assertNotOpened(String prefix)
     {
-        assertTrue(prefix + " onOpen event should not have occurred", openLatch.getCount() > 0);
+        assertTrue(openLatch.getCount() > 0, prefix + " onOpen event should not have occurred");
     }
     
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onClose event should have occurred", closeLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(closeLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onClose event should have occurred");
     }
     
     public void awaitOpenEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onOpen event should have occurred", openLatch.await(Timeouts.OPEN_EVENT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(openLatch.await(Timeouts.OPEN_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onOpen event should have occurred");
     }
 
     public void awaitErrorEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onError event should have occurred", errorLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(errorLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onError event should have occurred");
     }
     
     protected void onWSOpen(T session)

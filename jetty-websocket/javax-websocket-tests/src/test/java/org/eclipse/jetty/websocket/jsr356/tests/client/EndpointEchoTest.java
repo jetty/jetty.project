@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
@@ -33,15 +29,18 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEndpointTracker;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class EndpointEchoTest
 {
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -49,7 +48,7 @@ public class EndpointEchoTest
         server.getServerContainer().addEndpoint(LocalServer.TextEchoSocket.class);
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

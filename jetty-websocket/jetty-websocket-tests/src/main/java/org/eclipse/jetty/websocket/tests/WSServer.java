@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -38,12 +34,15 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.server.WebSocketConfiguration;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
@@ -58,11 +57,6 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     private ContextHandlerCollection contexts;
     private Path webinf;
     private Path classesDir;
-    
-    public WSServer(TestingDir testdir, String contextName)
-    {
-        this(testdir.getPath(), contextName);
-    }
     
     public WSServer(File testdir, String contextName)
     {

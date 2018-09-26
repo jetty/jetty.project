@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.net.URI;
@@ -42,11 +37,14 @@ import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class CookieTest
 {
@@ -71,20 +69,17 @@ public class CookieTest
         }
     }
 
-    @Rule
-    public TestName testname = new TestName();
-
     private LocalServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new LocalServer();
@@ -92,22 +87,22 @@ public class CookieTest
         server.registerWebSocket("/cookies", (req, resp) -> new EchoCookiesSocket(req));
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
 
     @Test
-    public void testViaCookieManager() throws Exception
+    public void testViaCookieManager(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         // Setup client
         CookieManager cookieMgr = new CookieManager();
@@ -135,9 +130,9 @@ public class CookieTest
     }
 
     @Test
-    public void testViaServletUpgradeRequest() throws Exception
+    public void testViaServletUpgradeRequest(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         // Setup client
         HttpCookie cookie = new HttpCookie("hello", "world");

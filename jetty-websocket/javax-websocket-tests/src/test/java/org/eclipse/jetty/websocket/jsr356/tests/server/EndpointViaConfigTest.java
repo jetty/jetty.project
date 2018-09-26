@@ -31,29 +31,31 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * Example of an {@link javax.websocket.Endpoint} extended echo server added programmatically via the
  * {@link javax.websocket.server.ServerContainer#addEndpoint(javax.websocket.server.ServerEndpointConfig)}
  */
+@ExtendWith(WorkDirExtension.class)
 public class EndpointViaConfigTest
 {
     private static final Logger LOG = Log.getLogger(EndpointViaConfigTest.class);
@@ -105,13 +107,12 @@ public class EndpointViaConfigTest
         }
     }
 
-    @Rule
-    public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
 
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir, "app");
+        WSServer wsb = new WSServer(testdir.getPath(), "app");
         wsb.copyWebInf("basic-echo-endpoint-config-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
         wsb.copyClass(BasicEchoEndpoint.class);

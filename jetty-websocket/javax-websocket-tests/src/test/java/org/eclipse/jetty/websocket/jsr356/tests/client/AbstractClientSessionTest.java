@@ -31,15 +31,15 @@ import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyEndpoint;
 import org.eclipse.jetty.websocket.jsr356.tests.HandshakeRequestAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.HandshakeResponseAdapter;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractClientSessionTest
 {
     protected static JavaxWebSocketSession session;
     protected static JavaxWebSocketContainer container;
 
-    @BeforeClass
+    @BeforeAll
     public static void initSession() throws Exception
     {
         container = new JavaxWebSocketClientContainer();
@@ -62,7 +62,7 @@ public abstract class AbstractClientSessionTest
         container.addManaged(session);
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();

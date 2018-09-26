@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -33,23 +29,23 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
-@Ignore("Not working yet")
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@Disabled("Not working yet")
 public class SlowServerTest
 {
-    @Rule
-    public TestName testname = new TestName();
-    
     private LocalServer server;
     private WebSocketClient client;
     
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
@@ -57,29 +53,29 @@ public class SlowServerTest
         client.start();
     }
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new LocalServer();
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
     
     @Test
-    public void testServerSlowToRead() throws Exception
+    public void testServerSlowToRead(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
         client.setMaxIdleTimeout(60000);
     
         URI wsUri = server.getWsUri();
@@ -118,14 +114,14 @@ public class SlowServerTest
     
         // Close
         clientSession.close();
-        assertTrue("Client close event", clientEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(clientEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "Client close event");
         clientEndpoint.assertCloseStatus("Client", StatusCode.NORMAL, is("Done"));
     }
     
     @Test
-    public void testServerSlowToSend() throws Exception
+    public void testServerSlowToSend(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getTestMethod().toString());
         client.setMaxIdleTimeout(60000);
     
         URI wsUri = server.getWsUri();
@@ -163,7 +159,7 @@ public class SlowServerTest
     
         // Close
         clientSession.close();
-        assertTrue("Client close event", clientEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(clientEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS),"Client close event");
         clientEndpoint.assertCloseStatus("Client", StatusCode.NORMAL, is("Done"));
 
     }

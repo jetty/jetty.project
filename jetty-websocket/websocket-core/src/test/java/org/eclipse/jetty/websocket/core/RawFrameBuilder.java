@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Assert;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class RawFrameBuilder
@@ -43,7 +43,7 @@ public class RawFrameBuilder
     {
         if (mask != null)
         {
-            Assert.assertThat("Mask.length",mask.length,is(4));
+            assertThat("Mask.length",mask.length,is(4));
             putLength(buf,length,(mask != null));
             buf.put(mask);
         }
@@ -55,7 +55,7 @@ public class RawFrameBuilder
 
     public static void mask(final byte[] data, final byte mask[])
     {
-        Assert.assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length",mask.length,is(4));
         int len = data.length;
         for (int i = 0; i < len; i++)
             data[i] ^= mask[i % 4];
@@ -96,7 +96,7 @@ public class RawFrameBuilder
 
     public static void putMask(ByteBuffer buf, byte mask[])
     {
-        Assert.assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length",mask.length,is(4));
         buf.put(mask);
     }
     

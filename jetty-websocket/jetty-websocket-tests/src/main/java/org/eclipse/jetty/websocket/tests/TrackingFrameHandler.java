@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -34,10 +29,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
+
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TrackingFrameHandler implements FrameHandler
 {
@@ -73,17 +73,17 @@ public class TrackingFrameHandler implements FrameHandler
 
     public void awaitClosedEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onClosed event should have occurred", closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS),prefix + " onClosed event should have occurred");
     }
 
     public void awaitOpenEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onOpen event should have occurred", openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS),prefix + " onOpen event should have occurred");
     }
 
     public void awaitErrorEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onError event should have occurred", errorLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(errorLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS),prefix + " onError event should have occurred");
     }
 
     @Override

@@ -18,65 +18,52 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.stream.Stream;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test behavior of Parser when encountering bad / forbidden opcodes (per RFC6455)
  */
-@RunWith(Parameterized.class)
+@ExtendWith(TestTrackerExtension.class)
 public class ParserBadOpCodesTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
-    @Parameterized.Parameters(name = "opcode={0} {1}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{(byte) 3, "Autobahn Server Testcase 4.1.1"});
-        data.add(new Object[]{(byte) 4, "Autobahn Server Testcase 4.1.2"});
-        data.add(new Object[]{(byte) 5, "Autobahn Server Testcase 4.1.3"});
-        data.add(new Object[]{(byte) 6, "Autobahn Server Testcase 4.1.4"});
-        data.add(new Object[]{(byte) 7, "Autobahn Server Testcase 4.1.5"});
-        data.add(new Object[]{(byte) 11, "Autobahn Server Testcase 4.2.1"});
-        data.add(new Object[]{(byte) 12, "Autobahn Server Testcase 4.2.2"});
-        data.add(new Object[]{(byte) 13, "Autobahn Server Testcase 4.2.3"});
-        data.add(new Object[]{(byte) 14, "Autobahn Server Testcase 4.2.4"});
-        data.add(new Object[]{(byte) 15, "Autobahn Server Testcase 4.2.5"});
-
-        return data;
+        return Stream.of(
+            Arguments.of((byte) 3, "Autobahn Server Testcase 4.1.1"),
+            Arguments.of((byte) 4, "Autobahn Server Testcase 4.1.2"),
+            Arguments.of((byte) 5, "Autobahn Server Testcase 4.1.3"),
+            Arguments.of((byte) 6, "Autobahn Server Testcase 4.1.4"),
+            Arguments.of((byte) 7, "Autobahn Server Testcase 4.1.5"),
+            Arguments.of((byte) 11, "Autobahn Server Testcase 4.2.1"),
+            Arguments.of((byte) 12, "Autobahn Server Testcase 4.2.2"),
+            Arguments.of((byte) 13, "Autobahn Server Testcase 4.2.3"),
+            Arguments.of((byte) 14, "Autobahn Server Testcase 4.2.4"),
+            Arguments.of((byte) 15, "Autobahn Server Testcase 4.2.5")
+        );
     }
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Parameterized.Parameter(0)
-    public byte opcode;
-
-    @Parameterized.Parameter(1)
-    public String description;
 
     private WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
 
-    @Test
-    public void testBadOpCode()
+    @ParameterizedTest(name = "opcode={0} {1}")
+    @MethodSource("data")
+    public void testBadOpCode(byte opcode, String description)
     {
         ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
@@ -91,14 +78,14 @@ public class ParserBadOpCodesTest
         BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            expectedException.expect(ProtocolException.class);
-            expectedException.expectMessage(containsString("Unknown opcode: " + opcode));
-            capture.parse(raw);
+            Exception e = assertThrows(ProtocolException.class, ()->capture.parse(raw));
+            assertThat(e.getMessage(), containsString("Unknown opcode: " + opcode));
         }
     }
 
-    @Test
-    public void testText_BadOpCode_Ping()
+    @ParameterizedTest(name = "opcode={0} {1}")
+    @MethodSource("data")
+    public void testText_BadOpCode_Ping(byte opcode, String description)
     {
         ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
@@ -123,9 +110,8 @@ public class ParserBadOpCodesTest
         BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            expectedException.expect(ProtocolException.class);
-            expectedException.expectMessage(containsString("Unknown opcode: " + opcode));
-            capture.parse(raw);
+            Exception e = assertThrows(ProtocolException.class, ()->capture.parse(raw));
+            assertThat(e.getMessage(), containsString("Unknown opcode: " + opcode));
         }
     }
 }

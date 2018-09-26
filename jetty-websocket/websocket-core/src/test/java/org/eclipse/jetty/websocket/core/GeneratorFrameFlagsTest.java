@@ -18,73 +18,67 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.stream.Stream;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test various invalid frame situations
  */
-@RunWith(value = Parameterized.class)
+@ExtendWith(TestTrackerExtension.class)
 public class GeneratorFrameFlagsTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
-    private final WebSocketChannel channel;
+    private WebSocketChannel channel;
 
-    @Parameters
-    public static Collection<Frame[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Frame[]> data = new ArrayList<>();
-        data.add(new Frame[]{new Frame(OpCode.PING).setFin(false)});
-        data.add(new Frame[]{new Frame(OpCode.PING).setRsv1(true)});
-        data.add(new Frame[]{new Frame(OpCode.PING).setRsv2(true)});
-        data.add(new Frame[]{new Frame(OpCode.PING).setRsv3(true)});
-        data.add(new Frame[]{new Frame(OpCode.PONG).setFin(false)});
-        data.add(new Frame[]{new Frame(OpCode.PING).setRsv1(true)});
-        data.add(new Frame[]{new Frame(OpCode.PONG).setRsv2(true)});
-        data.add(new Frame[]{new Frame(OpCode.PONG).setRsv3(true)});
-        data.add(new Frame[]{new Frame(OpCode.CLOSE).setFin(false)});
-        data.add(new Frame[]{new Frame(OpCode.CLOSE).setRsv1(true)});
-        data.add(new Frame[]{new Frame(OpCode.CLOSE).setRsv2(true)});
-        data.add(new Frame[]{new Frame(OpCode.CLOSE).setRsv3(true)});
-        return data;
+        return Stream.of(
+            Arguments.of(new Frame(OpCode.PING).setFin(false)),
+            Arguments.of(new Frame(OpCode.PING).setRsv1(true)),
+            Arguments.of(new Frame(OpCode.PING).setRsv2(true)),
+            Arguments.of(new Frame(OpCode.PING).setRsv3(true)),
+            Arguments.of(new Frame(OpCode.PONG).setFin(false)),
+            Arguments.of(new Frame(OpCode.PING).setRsv1(true)),
+            Arguments.of(new Frame(OpCode.PONG).setRsv2(true)),
+            Arguments.of(new Frame(OpCode.PONG).setRsv3(true)),
+            Arguments.of(new Frame(OpCode.CLOSE).setFin(false)),
+            Arguments.of(new Frame(OpCode.CLOSE).setRsv1(true)),
+            Arguments.of(new Frame(OpCode.CLOSE).setRsv2(true)),
+            Arguments.of(new Frame(OpCode.CLOSE).setRsv3(true))
+        );
     }
     
-    private Frame invalidFrame;
-    
-    public GeneratorFrameFlagsTest(Frame invalidFrame)
-    {
-        this.invalidFrame = invalidFrame;
 
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
+    public void setup(Frame invalidFrame)
+    {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
         exStack.negotiate(new DecoratedObjectFactory(), policy, bufferPool, new LinkedList<>());
         this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), policy, exStack, "");
     }
     
-    @Test(expected = ProtocolException.class)
-    public void testGenerateInvalidControlFrame()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testGenerateInvalidControlFrame(Frame invalidFrame)
     {
+        setup(invalidFrame);
+
         ByteBuffer buffer = ByteBuffer.allocate(100);
-        channel.assertValidOutgoing(invalidFrame);
         new Generator(bufferPool).generateWholeFrame(invalidFrame, buffer);
+        assertThrows(ProtocolException.class, ()->channel.assertValidOutgoing(invalidFrame));
     }
 }

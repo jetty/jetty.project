@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test of Close Handling

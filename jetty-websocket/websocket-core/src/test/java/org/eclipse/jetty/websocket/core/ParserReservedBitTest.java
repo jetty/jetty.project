@@ -18,33 +18,29 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test various RSV violations
  */
+@ExtendWith(TestTrackerExtension.class)
 public class ParserReservedBitTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
     private boolean validatingGenerator = false;
@@ -64,9 +60,8 @@ public class ParserReservedBitTest
         // parse buffer
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            expectedException.expect(ProtocolException.class);
-            expectedException.expectMessage(containsString("RSV"));
-            parserCapture.parse(raw);
+            Exception e = assertThrows(ProtocolException.class, ()->parserCapture.parse(raw));
+            assertThat(e.getMessage(), containsString("RSV"));
         }
     }
 

@@ -18,18 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
@@ -45,9 +37,16 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.tests.coders.TimeEncoder;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AnnotatedEndpointConfigTest
 {
@@ -98,7 +97,7 @@ public class AnnotatedEndpointConfigTest
     private static Session session;
     private static AnnotatedEndpointClient clientEndpoint;
 
-    @BeforeClass
+    @BeforeAll
     public static void startEnv() throws Exception
     {
         // Server
@@ -123,7 +122,7 @@ public class AnnotatedEndpointConfigTest
         assertThat("EndpointConfig", ceconfig, notNullValue());
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopEnv()
     {
         // Disconnect client
@@ -186,7 +185,7 @@ public class AnnotatedEndpointConfigTest
             }
         }
 
-        assertTrue("Client Decoders has " + expectedClass.getName(), hasExpectedDecoder);
+        assertTrue(hasExpectedDecoder, "Client Decoders has " + expectedClass.getName());
     }
 
     @Test
@@ -205,7 +204,7 @@ public class AnnotatedEndpointConfigTest
             }
         }
 
-        assertTrue("Client AvailableEncoders has " + expectedClass.getName(), hasExpectedEncoder);
+        assertTrue(hasExpectedEncoder, "Client AvailableEncoders has " + expectedClass.getName());
     }
 
     @Test

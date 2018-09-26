@@ -16,22 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
-public class LeakTrackingBufferPoolRule extends LeakTrackingByteBufferPool implements TestRule
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+public class TestableLeakTrackingBufferPool extends LeakTrackingByteBufferPool
 {
     private final String id;
+
+    public TestableLeakTrackingBufferPool(Class<?> clazz)
+    {
+        this(clazz.getSimpleName());
+    }
     
-    public LeakTrackingBufferPoolRule(String id)
+    public TestableLeakTrackingBufferPool(String id)
     {
         super(new MappedByteBufferPool.Tagged());
         this.id = id;
@@ -42,20 +44,5 @@ public class LeakTrackingBufferPoolRule extends LeakTrackingByteBufferPool imple
         assertThat("Leaked Acquires Count for [" + id + "]", getLeakedAcquires(), is(0L));
         assertThat("Leaked Releases Count for [" + id + "]", getLeakedReleases(), is(0L));
         assertThat("Leaked Resource Count for [" + id + "]", getLeakedResources(), is(0L));
-    }
-    
-    @Override
-    public Statement apply(final Statement statement, Description description)
-    {
-        return new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                clearTracking();
-                statement.evaluate();
-                assertNoLeaks();
-            }
-        };
     }
 }

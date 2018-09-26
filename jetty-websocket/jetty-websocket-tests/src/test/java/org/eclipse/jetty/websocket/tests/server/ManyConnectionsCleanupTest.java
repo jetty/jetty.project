@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.anything;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,13 +45,16 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * Tests various close scenarios that should result in Open Session cleanup
@@ -222,32 +221,32 @@ public class ManyConnectionsCleanupTest
     private static SimpleServletServer server;
     private static AbstractCloseSocket closeSocket;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new CloseServlet());
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
+    public TestInfo testInfo;
+
     private WebSocketClient client;
     
-    @Before
-    public void startClient() throws Exception
+    @BeforeEach
+    public void startClient(TestInfo testInfo) throws Exception
     {
+        this.testInfo = testInfo;
         client = new WebSocketClient();
         client.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
@@ -275,7 +274,7 @@ public class ManyConnectionsCleanupTest
         
         URI wsUri = server.getWsUri();
         
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("container");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -302,7 +301,7 @@ public class ManyConnectionsCleanupTest
         client.setMaxIdleTimeout(1000);
         URI wsUri = server.getWsUri();
         
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("fastclose");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -320,7 +319,7 @@ public class ManyConnectionsCleanupTest
         client.setMaxIdleTimeout(1000);
         URI wsUri = server.getWsUri();
         
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("fastfail");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -339,7 +338,7 @@ public class ManyConnectionsCleanupTest
         client.setMaxIdleTimeout(1000);
         URI wsUri = server.getWsUri();
         
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("container");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);

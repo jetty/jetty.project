@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedTextSocket;
@@ -47,36 +40,35 @@ import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.hamcrest.Matcher;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class LocalEndpointMetadataTest
 {
     public static final Matcher<Object> EXISTS = notNullValue();
     public static DummyContainer container;
 
-    @BeforeClass
+    @BeforeAll
     public static void startContainer() throws Exception
     {
         container = new DummyContainer(new WebSocketPolicy(WebSocketBehavior.SERVER));
         container.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();
     }
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Rule
-    public TestName testname = new TestName();
 
     private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
 
@@ -92,9 +84,8 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateBinarySocket() throws Exception
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
-        createMetadata(BadDuplicateBinarySocket.class);
+        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadDuplicateBinarySocket.class));
+        assertThat(e.getMessage(), allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
     }
 
     /**
@@ -104,9 +95,8 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateFrameSocket() throws Exception
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(containsString("Duplicate @OnWebSocketFrame"));
-        createMetadata(BadDuplicateFrameSocket.class);
+        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadDuplicateFrameSocket.class));
+        assertThat(e.getMessage(), containsString("Duplicate @OnWebSocketFrame"));
     }
 
     /**
@@ -116,9 +106,8 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignature_NonVoidReturn() throws Exception
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(containsString("must be void"));
-        createMetadata(BadBinarySignatureSocket.class);
+        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadBinarySignatureSocket.class));
+        assertThat(e.getMessage(), containsString("must be void"));
     }
 
     /**
@@ -128,9 +117,8 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignature_Static() throws Exception
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(containsString("must not be static"));
-        createMetadata(BadTextSignatureSocket.class);
+        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadTextSignatureSocket.class));
+        assertThat(e.getMessage(), containsString("must not be static"));
     }
 
     /**

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -46,20 +47,21 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class PingPongTest
 {
@@ -147,7 +149,7 @@ public class PingPongTest
     private static WSServer server;
     private static WebSocketCoreClient client;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(PingPongTest.class.getName());
@@ -164,14 +166,14 @@ public class PingPongTest
         server.deployWebapp(webapp);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new WebSocketCoreClient();
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -203,19 +205,27 @@ public class PingPongTest
         }
     }
 
-    @Test(timeout = 6000)
+    @Test
     public void testPongEndpoint() throws Exception
     {
-        assertEcho("/app/pong", (channel) -> {
-            channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
-        }, "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
+        assertTimeout(Duration.ofMillis(6000), ()->
+        {
+            assertEcho("/app/pong", (channel) ->
+            {
+                channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
+            }, "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
+        });
     }
 
-    @Test(timeout = 6000)
+    @Test
     public void testPongSocket() throws Exception
     {
-        assertEcho("/app/pong-socket", (channel) -> {
-            channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
-        }, "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
+        assertTimeout(Duration.ofMillis(6000), ()->
+        {
+            assertEcho("/app/pong-socket", (channel) ->
+            {
+                channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
+            }, "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
+        });
     }
 }

@@ -18,11 +18,17 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
@@ -31,28 +37,17 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.concurrent.TimeUnit;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(TestTrackerExtension.class)
 public class GeneratorTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     private static final Logger LOG = Log.getLogger(Helper.class);
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     private static UnitGenerator unitGenerator = new UnitGenerator(WebSocketPolicy.newServerPolicy(), true);
     private static WebSocketChannel channel = newChannel(WebSocketBehavior.SERVER);
@@ -364,8 +359,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Close_1BytePayload()
     {
-        expectedException.expect(ProtocolException.class);
-        new CloseStatus(Hex.asByteBuffer("00"));
+        assertThrows(ProtocolException.class, ()->new CloseStatus(Hex.asByteBuffer("00")));
     }
 
     @Test
@@ -417,9 +411,8 @@ public class GeneratorTest
 
         BufferUtil.flipToFlush(bb, 0);
 
-        expectedException.expect(ProtocolException.class);
         closeFrame.setPayload(bb);
-        channel.assertValidOutgoing(closeFrame);
+        assertThrows(ProtocolException.class, ()->channel.assertValidOutgoing(closeFrame));
     }
 
     /**
@@ -658,10 +651,9 @@ public class GeneratorTest
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte) 0x00);
 
-        expectedException.expect(WebSocketException.class);
         Frame pingFrame = new Frame(OpCode.PING);
         pingFrame.setPayload(ByteBuffer.wrap(bytes));
-        channel.assertValidOutgoing(pingFrame);
+        assertThrows(WebSocketException.class, ()->channel.assertValidOutgoing(pingFrame));
     }
 
     /**
@@ -673,10 +665,9 @@ public class GeneratorTest
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte) 0x00);
 
-        expectedException.expect(WebSocketException.class);
-        Frame pingFrame = new Frame(OpCode.PONG);
-        pingFrame.setPayload(ByteBuffer.wrap(bytes));
-        channel.assertValidOutgoing(pingFrame);
+        Frame pongFrame = new Frame(OpCode.PONG);
+        pongFrame.setPayload(ByteBuffer.wrap(bytes));
+        assertThrows(WebSocketException.class, ()->channel.assertValidOutgoing(pongFrame));
     }
 
     /**

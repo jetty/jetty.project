@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
-import static org.junit.Assert.assertThat;
-
 import java.util.Iterator;
 import java.util.concurrent.LinkedBlockingDeque;
+
+import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class EventQueue extends LinkedBlockingDeque<String>
 {

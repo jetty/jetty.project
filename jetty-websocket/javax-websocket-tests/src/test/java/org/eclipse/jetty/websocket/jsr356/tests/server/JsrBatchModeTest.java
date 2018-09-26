@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
@@ -36,11 +32,13 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JsrBatchModeTest
 {
@@ -66,7 +64,7 @@ public class JsrBatchModeTest
     private LocalServer server;
     private WebSocketContainer client;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception
     {
         server = new LocalServer();
@@ -78,7 +76,7 @@ public class JsrBatchModeTest
         client = ContainerProvider.getWebSocketContainer();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         server.stop();

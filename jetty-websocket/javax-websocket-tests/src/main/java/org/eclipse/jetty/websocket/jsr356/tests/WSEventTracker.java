@@ -18,19 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
@@ -41,6 +34,12 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matcher;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("unused")
 public abstract class WSEventTracker
@@ -98,27 +97,27 @@ public abstract class WSEventTracker
 
     public void assertNoErrorEvents(String prefix)
     {
-        assertTrue(prefix + " error event should not have occurred", error.get() == null);
+        assertTrue(error.get() == null, prefix + " error event should not have occurred");
     }
 
     public void assertNotClosed(String prefix)
     {
-        assertTrue(prefix + " close event should not have occurred", closeLatch.getCount() > 0);
+        assertTrue(closeLatch.getCount() > 0, prefix + " close event should not have occurred");
     }
 
     public void assertNotOpened(String prefix)
     {
-        assertTrue(prefix + " onOpen event should not have occurred", openLatch.getCount() > 0);
+        assertTrue(openLatch.getCount() > 0, prefix + " onOpen event should not have occurred");
     }
 
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onClose event", closeLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(closeLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onClose event");
     }
 
     public void awaitOpenEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onOpen event", openLatch.await(Timeouts.OPEN_EVENT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(openLatch.await(Timeouts.OPEN_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onOpen event");
     }
 
     public void onWsOpen(Session session)
@@ -157,7 +156,7 @@ public abstract class WSEventTracker
     {
         boolean closeTracked = closeDetail.compareAndSet(null, closeReason);
         this.closeLatch.countDown();
-        assertTrue("Close only happened once", closeTracked);
+        assertTrue(closeTracked, "Close only happened once");
     }
 
     public void onWsError(Throwable cause)

@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import static org.hamcrest.CoreMatchers.anything;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
@@ -52,12 +45,18 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.CoreMatchers.anything;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests various early disconnected connection situations
@@ -216,36 +215,30 @@ public class ClientDisconnectedTest
         }
     }
 
-    @Rule
-    public TestName testname = new TestName();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private SimpleServletServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new SimpleServletServer(new EarlyCloseServlet());
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
@@ -257,20 +250,19 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
-    public void immediateDrop() throws Exception
+    public void immediateDrop(TestInfo testInfo) throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("openclose");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         URI wsUri = server.getWsUri().resolve("/");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(instanceOf(HttpResponseException.class));
-        expectedException.expectMessage(containsString("503 WebSocket Endpoint Creation Refused"));
-        clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        Exception e = assertThrows(ExecutionException.class, ()->clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertThat(e.getCause(), instanceOf(HttpResponseException.class));
+        assertThat(e.getMessage(), containsString("503 WebSocket Endpoint Creation Refused"));
     }
 
     /**
@@ -279,12 +271,12 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
-    public void remoteOpenFailure() throws Exception
+    public void remoteOpenFailure(TestInfo testInfo) throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("openfail");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         URI wsUri = server.getWsUri().resolve("/");
 
@@ -321,12 +313,12 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
-    public void messageDrop() throws Exception
+    public void messageDrop(TestInfo testInfo) throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("msgdrop");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         URI wsUri = server.getWsUri().resolve("/");
         client.setMaxIdleTimeout(3000);
@@ -362,12 +354,12 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
-    public void closeDrop() throws Exception
+    public void closeDrop(TestInfo testInfo) throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("closedrop");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         URI wsUri = server.getWsUri().resolve("/");
         client.setMaxIdleTimeout(3000);
@@ -403,12 +395,12 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
-    public void closeNoReply() throws Exception
+    public void closeNoReply(TestInfo testInfo) throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("closenoreply");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
 
         URI wsUri = server.getWsUri().resolve("/");
         client.setMaxIdleTimeout(3000);

@@ -35,9 +35,9 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test various {@link javax.websocket.Decoder.BinaryStream Decoder.BinaryStream} echo behavior of Java InputStreams
@@ -83,7 +83,7 @@ public class InputStreamEchoTest
     
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -92,7 +92,7 @@ public class InputStreamEchoTest
         server.getServerContainer().addEndpoint(InputStreamParamSocket.class);
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

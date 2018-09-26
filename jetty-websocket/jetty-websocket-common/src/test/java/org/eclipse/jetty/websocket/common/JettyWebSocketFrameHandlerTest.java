@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -41,35 +42,31 @@ import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeResponse;
 import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class JettyWebSocketFrameHandlerTest
 {
-    @Rule
-    public TestName testname = new TestName();
-
     public static DummyContainer container;
 
-    @BeforeClass
+    @BeforeAll
     public static void startContainer() throws Exception
     {
         container = new DummyContainer(new WebSocketPolicy(WebSocketBehavior.SERVER));
         container.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();
@@ -151,45 +148,51 @@ public class JettyWebSocketFrameHandlerTest
         }
     }
 
-    @Test(timeout = 1000)
+    @Test
     public void testAnnotatedStreamedText_Single() throws Exception
     {
-        // Setup
-        StreamedText socket = new StreamedText(1);
-        JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
+        assertTimeout(Duration.ofMillis(1000), ()->
+        {
+            // Setup
+            StreamedText socket = new StreamedText(1);
+            JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
-        // Trigger Events
-        localEndpoint.onOpen(channel);
-        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
-        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+            // Trigger Events
+            localEndpoint.onOpen(channel);
+            localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
+            localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
-        // Await completion (of threads)
-        socket.streamLatch.await(2, TimeUnit.SECONDS);
+            // Await completion (of threads)
+            socket.streamLatch.await(2, TimeUnit.SECONDS);
 
-        // Validate Events
-        socket.events.assertEvents("onTextStream\\(Hello Text Stream\\)");
+            // Validate Events
+            socket.events.assertEvents("onTextStream\\(Hello Text Stream\\)");
+        });
     }
 
-    @Test(timeout = 1000)
+    @Test
     public void testAnnotatedStreamedText_MultipleParts() throws Exception
     {
-        // Setup
-        StreamedText socket = new StreamedText(1);
-        JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
+        assertTimeout(Duration.ofMillis(1000), ()->
+        {
+            // Setup
+            StreamedText socket = new StreamedText(1);
+            JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
-        // Trigger Events
-        localEndpoint.onOpen(channel);
-        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hel").setFin(false), Callback.NOOP);
-        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
-        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
-        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("ld").setFin(true), Callback.NOOP);
-        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+            // Trigger Events
+            localEndpoint.onOpen(channel);
+            localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hel").setFin(false), Callback.NOOP);
+            localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
+            localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
+            localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("ld").setFin(true), Callback.NOOP);
+            localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
-        // Await completion (of threads)
-        socket.streamLatch.await(2, TimeUnit.SECONDS);
+            // Await completion (of threads)
+            socket.streamLatch.await(2, TimeUnit.SECONDS);
 
-        // Validate Events
-        socket.events.assertEvents("onTextStream\\(Hello World\\)");
+            // Validate Events
+            socket.events.assertEvents("onTextStream\\(Hello World\\)");
+        });
     }
 
     @Test

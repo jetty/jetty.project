@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.util;
 
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReflectUtilsTest
 {
@@ -133,6 +133,6 @@ public class ReflectUtilsTest
     {
         Class<?> foundClass = ReflectUtils.findGenericClassFor(baseClass,ifaceClass);
         String msg = String.format("Expecting %s<%s> found on %s",ifaceClass.getName(),expectedClass.getName(),baseClass.getName());
-        assertEquals(msg,expectedClass,foundClass);
+        assertEquals(expectedClass,foundClass, msg);
     }
 }

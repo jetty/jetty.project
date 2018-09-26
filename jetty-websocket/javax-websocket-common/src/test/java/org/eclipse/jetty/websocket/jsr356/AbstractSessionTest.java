@@ -26,15 +26,15 @@ import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractSessionTest
 {
     protected static JavaxWebSocketSession session;
     protected static JavaxWebSocketContainer container;
 
-    @BeforeClass
+    @BeforeAll
     public static void initSession() throws Exception
     {
         container = new DummyContainer(WebSocketPolicy.newClientPolicy());
@@ -57,7 +57,7 @@ public abstract class AbstractSessionTest
         container.addManaged(session);
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();

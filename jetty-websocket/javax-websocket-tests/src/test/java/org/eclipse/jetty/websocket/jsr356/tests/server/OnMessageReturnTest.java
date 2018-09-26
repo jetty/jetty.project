@@ -21,29 +21,31 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
+@ExtendWith(WorkDirExtension.class)
 public class OnMessageReturnTest
 {
     @ServerEndpoint(value = "/echoreturn")
@@ -51,7 +53,7 @@ public class OnMessageReturnTest
     {
         private javax.websocket.Session session = null;
         public CloseReason close = null;
-        public EventQueue<String> messageQueue = new EventQueue<>();
+        public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
 
         public void onClose(CloseReason close)
         {
@@ -81,13 +83,12 @@ public class OnMessageReturnTest
         }
     }
 
-    @Rule
-    public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
 
     @Test
     public void testEchoReturn() throws Exception
     {
-        WSServer wsb = new WSServer(testdir, "app");
+        WSServer wsb = new WSServer(testdir.getPath(), "app");
         wsb.copyWebInf("empty-web.xml");
         wsb.copyClass(EchoReturnEndpoint.class);
 

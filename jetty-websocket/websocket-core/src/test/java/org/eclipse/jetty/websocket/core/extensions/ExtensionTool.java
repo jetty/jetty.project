@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
@@ -25,14 +27,16 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.*;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.Parser;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.hamcrest.Matchers;
 
-import java.nio.ByteBuffer;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 public class ExtensionTool
 {

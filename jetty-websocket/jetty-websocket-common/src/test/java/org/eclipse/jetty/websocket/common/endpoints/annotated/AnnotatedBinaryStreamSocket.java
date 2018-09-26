@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.annotated;
 
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.InputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -30,6 +27,9 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 @WebSocket
 public class AnnotatedBinaryStreamSocket

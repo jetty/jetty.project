@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -35,60 +31,59 @@ import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoServlet;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ChromeTest
 {
     private static SimpleServletServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
     private WebSocketClient client;
     
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
     
     @Test
-    public void testUpgradeWithWebkitDeflateExtension() throws Exception
+    public void testUpgradeWithWebkitDeflateExtension(TestInfo testInfo) throws Exception
     {
-        Assume.assumeTrue("Server has x-webkit-deflate-frame registered",
-                server.getWebSocketServletFactory().getExtensionRegistry().isAvailable("x-webkit-deflate-frame"));
+        assumeTrue(server.getWebSocketServletFactory().getExtensionRegistry().isAvailable("x-webkit-deflate-frame"),
+                "Server has x-webkit-deflate-frame registered");
         
         URI wsUri = server.getWsUri();
         
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("x-webkit-deflate-frame");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -104,7 +99,7 @@ public class ChromeTest
         
         // Read message
         String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        Assert.assertThat("Incoming Message", incomingMsg, is(msg));
+        assertThat("Incoming Message", incomingMsg, is(msg));
         
         clientSession.close();
     }

@@ -32,11 +32,12 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
@@ -76,9 +77,8 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
     public void testAmbiguousEmptyMessage() throws Exception
     {
         MessageSocket socket = new MessageSocket();
-        expectedException.expect(InvalidSignatureException.class);
-        expectedException.expectMessage(containsString("@OnMessage public void " + MessageSocket.class.getName() + "#onMessage"));
-        onText(socket, "Hello World");
+        Exception e = assertThrows(InvalidSignatureException.class, ()->onText(socket, "Hello World"));
+        assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSocket.class.getName() + "#onMessage"));
     }
     
     @ClientEndpoint
@@ -114,10 +114,8 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
     public void testAmbiguousMessageSession() throws Exception
     {
         MessageSessionSocket socket = new MessageSessionSocket();
-
-        expectedException.expect(InvalidSignatureException.class);
-        expectedException.expectMessage(containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + "#onMessage"));
-        onText(socket, "Hello World");
+        Exception e = assertThrows(InvalidSignatureException.class, ()->onText(socket, "Hello World"));
+        assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + "#onMessage"));
     }
     
     @ClientEndpoint

@@ -31,10 +31,10 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends AbstractJavaxWebSocketFrameHandlerTest
 {

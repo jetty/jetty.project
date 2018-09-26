@@ -18,26 +18,28 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.*;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@ExtendWith(TestTrackerExtension.class)
 public class IdentityExtensionTest extends AbstractExtensionTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     /**
      * Verify that incoming frames are unmodified
      */
@@ -56,14 +58,14 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         capture.assertHasOpCount(OpCode.TEXT, 1);
         Frame actual = capture.frames.poll();
 
-        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
-        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
-        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer("hello", StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
@@ -87,14 +89,14 @@ public class IdentityExtensionTest extends AbstractExtensionTest
 
         Frame actual = capture.frames.poll();
 
-        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
-        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
-        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer("hello", StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 }

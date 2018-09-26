@@ -18,27 +18,32 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith({TestTrackerExtension.class})
 public class WebSocketFrameTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
+    public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool(WebSocketFrameTest.class);
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule(WebSocketFrameTest.class);
+    @AfterEach
+    public void afterEach()
+    {
+        bufferPool.assertNoLeaks();
+    }
 
     private Generator generator;
 
@@ -50,17 +55,34 @@ public class WebSocketFrameTest
         return buf;
     }
 
-    @Before
+    @BeforeEach
     public void initGenerator()
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         generator = new Generator(bufferPool);
     }
 
+    @AfterEach
+    public void verifyNoLeaks()
+    {
+        //TODO is this right and should it be other way around
+        bufferPool.clearTracking();
+        assertNoLeaks(bufferPool);
+    }
+
+    public void assertNoLeaks(LeakTrackingByteBufferPool pool)
+    {
+        String id = this.getClass().getName();
+
+        assertThat("Leaked Acquires Count for [" + id + "]", pool.getLeakedAcquires(), is(0L));
+        assertThat("Leaked Releases Count for [" + id + "]", pool.getLeakedReleases(), is(0L));
+        assertThat("Leaked Resource Count for [" + id + "]", pool.getLeakedResources(), is(0L));
+    }
+
     private void assertFrameHex(String message, String expectedHex, ByteBuffer actual)
     {
         String actualHex = Hex.asHex(actual);
-        Assert.assertThat("Generated Frame:" + message,actualHex,is(expectedHex));
+        assertThat("Generated Frame:" + message,actualHex,is(expectedHex));
     }
 
     @Test
@@ -141,7 +163,7 @@ public class WebSocketFrameTest
             frame.setPayload(TypeUtil.fromHexString("0000FFFF000FFFF0".substring(0,i*2)));
             frame.setMask(TypeUtil.fromHexString("FF00FF00"));
             frame.demask();
-            assertEquals("len="+i,"Ff0000FfFf0f00F0".substring(0,i*2),BufferUtil.toHexString(frame.getPayload()));
+            assertEquals("Ff0000FfFf0f00F0".substring(0,i*2),BufferUtil.toHexString(frame.getPayload()), "len="+i);
         }
     }
 }

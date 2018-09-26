@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.coders;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Test various {@link javax.websocket.Encoder.Text} scenarios

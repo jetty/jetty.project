@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.anything;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -40,14 +38,17 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class AnnotatedMaxMessageSizeTest
 {
@@ -81,7 +82,7 @@ public class AnnotatedMaxMessageSizeTest
 
     private static LocalServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -96,36 +97,33 @@ public class AnnotatedMaxMessageSizeTest
         });
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Rule
-    public TestName testname = new TestName();
-
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
     @Test
-    public void testEchoGood() throws Exception
+    public void testEchoGood(TestInfo testInfo) throws Exception
     {
         URI wsUri = server.getWsUri().resolve("/echo");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -138,32 +136,35 @@ public class AnnotatedMaxMessageSizeTest
 
         // Read message
         String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        Assert.assertThat("Incoming Message", incomingMsg, is(msg));
+        assertThat("Incoming Message", incomingMsg, is(msg));
 
         clientSession.close();
     }
 
-    @Test(timeout = 60000)
-    public void testEchoTooBig() throws Exception
+    @Test
+    public void testEchoTooBig(TestInfo testInfo) throws Exception
     {
-        URI wsUri = server.getWsUri().resolve("/echo");
+        assertTimeout(Duration.ofMillis(60000), ()->
+        {
+            URI wsUri = server.getWsUri().resolve("/echo");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("echo");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+            TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().toString());
+            ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+            upgradeRequest.setSubProtocols("echo");
+            Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-        // Big Message
-        int size = 120 * 1024;
-        byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
-        Arrays.fill(buf, (byte) 'x');
-        String msg = new String(buf, StandardCharsets.UTF_8);
-        clientSession.getRemote().sendText(msg);
+            // Big Message
+            int size = 120 * 1024;
+            byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
+            Arrays.fill(buf, (byte)'x');
+            String msg = new String(buf, StandardCharsets.UTF_8);
+            clientSession.getRemote().sendText(msg);
 
-        // Read message
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseStatus("Client", StatusCode.MESSAGE_TOO_LARGE, anything());
+            // Read message
+            clientSocket.awaitCloseEvent("Client");
+            clientSocket.assertCloseStatus("Client", StatusCode.MESSAGE_TOO_LARGE, anything());
+        });
     }
 }

@@ -18,28 +18,31 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.*;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.Matchers.is;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith(TestTrackerExtension.class)
 public class ExtensionStackTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     private static final Logger LOG = Log.getLogger(ExtensionStackTest.class);
 
     private static DecoratedObjectFactory objectFactory;
@@ -47,7 +50,7 @@ public class ExtensionStackTest
     private static ByteBufferPool bufferPool;
     private static ExtensionStack stack;
 
-    @BeforeClass
+    @BeforeAll
     public static void init()
     {
         objectFactory = new DecoratedObjectFactory();
@@ -63,7 +66,7 @@ public class ExtensionStackTest
         {
             return (T)obj;
         }
-        Assert.assertEquals("Expected " + msg + " class",clazz.getName(),obj.getClass().getName());
+        assertEquals("Expected " + msg + " class",clazz.getName(),obj.getClass().getName());
         return null;
     }
 
@@ -86,7 +89,7 @@ public class ExtensionStackTest
         // Should be no change to handlers
         Extension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
         Extension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
-        Assert.assertEquals(actualIncomingExtension,actualOutgoingExtension);
+        assertEquals(actualIncomingExtension,actualOutgoingExtension);
 
     }
 
@@ -111,8 +114,8 @@ public class ExtensionStackTest
         IdentityExtension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
         IdentityExtension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
 
-        Assert.assertThat("Incoming[identity].id",actualIncomingExtension.getParam("id"),is("A"));
-        Assert.assertThat("Outgoing[identity].id",actualOutgoingExtension.getParam("id"),is("B"));
+        assertThat("Incoming[identity].id",actualIncomingExtension.getParam("id"),is("A"));
+        assertThat("Outgoing[identity].id",actualOutgoingExtension.getParam("id"),is("B"));
 
     }
 
@@ -133,7 +136,7 @@ public class ExtensionStackTest
         List<ExtensionConfig> negotiated = stack.getNegotiatedExtensions();
         String response = ExtensionConfig.toHeaderValue(negotiated);
         
-        Assert.assertThat("Negotiated Extensions", response, is("permessage-deflate"));
+        assertThat("Negotiated Extensions", response, is("permessage-deflate"));
         LOG.debug("Shouldn't cause a NPE: {}",stack.toString());
     }
 }

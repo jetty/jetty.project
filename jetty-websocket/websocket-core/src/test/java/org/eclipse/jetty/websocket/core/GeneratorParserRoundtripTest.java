@@ -18,25 +18,24 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.is;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@ExtendWith(TestTrackerExtension.class)
 public class GeneratorParserRoundtripTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
     
     @Test
@@ -70,7 +69,7 @@ public class GeneratorParserRoundtripTest
 
         // Validate
         Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+        assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
     }
 
     @Test
@@ -110,7 +109,7 @@ public class GeneratorParserRoundtripTest
 
         // Validate
         Frame txt = (Frame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertTrue("Text.isMasked",txt.isMasked());
-        Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+        assertTrue(txt.isMasked(),"Text.isMasked");
+        assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
     }
 }

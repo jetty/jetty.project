@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -32,6 +29,9 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.core.AbstractTrackingEndpoint;
 import org.eclipse.jetty.websocket.core.Frame;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {

@@ -18,25 +18,23 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
-
+import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.tests.LocalServer;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+
 public class WebSocketUpgradeFilterEmbeddedTest extends WebSocketUpgradeFilterTest
 {
     private interface Case
@@ -44,80 +42,81 @@ public class WebSocketUpgradeFilterEmbeddedTest extends WebSocketUpgradeFilterTe
         void customize(ServletContextHandler context) throws Exception;
     }
     
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
         final WebSocketCreator infoCreator = (req, resp) -> new InfoSocket();
         
-        List<Object[]> cases = new ArrayList<>();
-        
-        // Embedded WSUF.configureContext(), directly app-ws configuration
-        
-        cases.add(new Object[]
-                {"wsuf.configureContext/Direct configure", (Case) (context) ->
-                {
-                    WebSocketUpgradeFilter wsuf = WebSocketUpgradeFilter.configureContext(context);
-                    // direct configuration via WSUF
-                    wsuf.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-                    wsuf.addMapping("/info/*", infoCreator);
-                }});
-        
-        // Embedded WSUF.configureContext(), apply app-ws configuration via attribute
-        
-        cases.add(new Object[]{
-                "wsuf.configureContext/Attribute based configure", (Case) (context) ->
-        {
-            WebSocketUpgradeFilter.configureContext(context);
-            
-            // configuration via attribute
-            NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
-            assertThat("NativeWebSocketConfiguration", configuration, notNullValue());
-            configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-            configuration.addMapping("/info/*", infoCreator);
-        }});
-        
-        // Embedded WSUF, added as filter, apply app-ws configuration via attribute
-        
-        cases.add(new Object[]{
-                "wsuf/addFilter/Attribute based configure", (Case) (context) ->
-        {
-            context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-            
-            NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
-            configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-            configuration.addMapping("/info/*", infoCreator);
-            context.setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
-        }});
-        
-        // Embedded WSUF, added as filter, apply app-ws configuration via wsuf constructor
-        
-        cases.add(new Object[]{
-                "wsuf/addFilter/WSUF Constructor configure", (Case) (context) ->
-        {
-            NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
-            configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-            configuration.addMapping("/info/*", infoCreator);
-            context.addBean(configuration, true);
-            
-            FilterHolder wsufHolder = new FilterHolder(new WebSocketUpgradeFilter(configuration));
-            context.addFilter(wsufHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
-        }});
-        
-        // Embedded WSUF, added as filter, apply app-ws configuration via ServletContextListener
-        
-        cases.add(new Object[]{
-                "wsuf.configureContext/ServletContextListener configure", (Case) (context) ->
-        {
-            context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-            context.addEventListener(new InfoContextListener());
-        }});
-        
-        return cases;
+        return Stream.of(
+            // Embedded WSUF.configureContext(), directly app-ws configuration
+
+            Arguments.of("wsuf.configureContext/Direct configure", (Case) (context) ->
+                    {
+                        WebSocketUpgradeFilter wsuf = WebSocketUpgradeFilter.configureContext(context);
+                        // direct configuration via WSUF
+                        wsuf.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+                        wsuf.addMapping("/info/*", infoCreator);
+                    }),
+
+            // Embedded WSUF.configureContext(), apply app-ws configuration via attribute
+
+            Arguments.of("wsuf.configureContext/Attribute based configure", (Case) (context) ->
+            {
+                WebSocketUpgradeFilter.configureContext(context);
+
+                // configuration via attribute
+                NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+                assertThat("NativeWebSocketConfiguration", configuration, notNullValue());
+                configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+                configuration.addMapping("/info/*", infoCreator);
+            }),
+
+            // Embedded WSUF, added as filter, apply app-ws configuration via attribute
+
+            Arguments.of("wsuf/addFilter/Attribute based configure", (Case) (context) ->
+            {
+                context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+
+                NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
+                configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+                configuration.addMapping("/info/*", infoCreator);
+                context.setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
+            }),
+
+            // Embedded WSUF, added as filter, apply app-ws configuration via wsuf constructor
+
+            Arguments.of("wsuf/addFilter/WSUF Constructor configure", (Case) (context) ->
+            {
+                NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
+                configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+                configuration.addMapping("/info/*", infoCreator);
+                context.addBean(configuration, true);
+
+                FilterHolder wsufHolder = new FilterHolder(new WebSocketUpgradeFilter(configuration));
+                context.addFilter(wsufHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            }),
+
+            // Embedded WSUF, added as filter, apply app-ws configuration via ServletContextListener
+
+            Arguments.of("wsuf.configureContext/ServletContextListener configure", (Case) (context) ->
+            {
+                context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+                context.addEventListener(new InfoContextListener());
+            })
+        );
     }
-    
-    public WebSocketUpgradeFilterEmbeddedTest(String testid, Case testcase) throws Exception
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void testNormalConfiguration(String testid, Case testcase) throws Exception
     {
-        super(newServer(testcase));
+        super.testNormalConfiguration(newServer(testcase));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void testStopStartOfHandler(String testid, Case testcase) throws Exception
+    {
+        super.testStopStartOfHandler(newServer(testcase));
     }
     
     private static LocalServer newServer(Case testcase)

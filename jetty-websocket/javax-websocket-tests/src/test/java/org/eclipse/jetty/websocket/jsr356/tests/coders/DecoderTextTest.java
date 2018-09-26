@@ -18,16 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.coders;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-
 import javax.websocket.DecodeException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class DecoderTextTest
 {

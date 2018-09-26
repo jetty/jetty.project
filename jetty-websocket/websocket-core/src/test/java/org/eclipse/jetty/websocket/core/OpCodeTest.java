@@ -18,19 +18,23 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.eclipse.jetty.websocket.core.OpCode.*;
-import static org.junit.Assert.assertThat;
+import static org.eclipse.jetty.websocket.core.OpCode.BINARY;
+import static org.eclipse.jetty.websocket.core.OpCode.CLOSE;
+import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
+import static org.eclipse.jetty.websocket.core.OpCode.PING;
+import static org.eclipse.jetty.websocket.core.OpCode.PONG;
+import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(TestTrackerExtension.class)
 public class OpCodeTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-    
     @Test
     public void testIsControl()
     {
@@ -98,27 +102,27 @@ public class OpCodeTest
         testSequence(unfin(BINARY),PING,unfin(CONTINUATION),PONG,unfin(CONTINUATION),PING,CONTINUATION,CLOSE);
     }
 
-    @Test(expected=ProtocolException.class)
+    @Test
     public void testBadContinuationAlreadyFIN()
     {
-        testSequence(TEXT,CONTINUATION,CLOSE);
+        assertThrows(ProtocolException.class, ()->testSequence(TEXT,CONTINUATION,CLOSE));
     }
 
-    @Test(expected=ProtocolException.class)
+    @Test
     public void testBadContinuationNoCont()
     {
-        testSequence(unfin(TEXT),TEXT);
+        assertThrows(ProtocolException.class, ()->testSequence(unfin(TEXT),TEXT));
     }
 
-    @Test(expected=ProtocolException.class)
+    @Test
     public void testFramesAfterClose()
     {
-        testSequence(TEXT,CLOSE,TEXT);
+        assertThrows(ProtocolException.class, ()->testSequence(TEXT,CLOSE,TEXT));
     }
 
-    @Test(expected=ProtocolException.class)
+    @Test
     public void testControlFramesAfterClose()
     {
-        testSequence(TEXT,CLOSE,PING);
+        assertThrows(ProtocolException.class, ()->testSequence(TEXT,CLOSE,PING));
     }
 }

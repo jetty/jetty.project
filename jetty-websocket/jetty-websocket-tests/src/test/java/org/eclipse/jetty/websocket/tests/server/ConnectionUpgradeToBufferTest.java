@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -28,16 +29,17 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
 import org.eclipse.jetty.websocket.tests.ParserCapture;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 /**
  * Test simulating a client that talks too quickly.
@@ -52,57 +54,61 @@ import static org.junit.Assert.assertThat;
  */
 public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
 {
-    @Test(timeout = 10000)
+    @Test
     public void testUpgradeWithSmallFrames() throws Exception
     {
-        ByteBuffer buf = ByteBuffer.allocate(4096);
-
-        // Create Upgrade Request Header
-        String upgradeRequest = UpgradeUtils.generateUpgradeRequest("/");
-        ByteBuffer upgradeRequestBytes = BufferUtil.toBuffer(upgradeRequest.toString(), StandardCharsets.UTF_8);
-        BufferUtil.put(upgradeRequestBytes, buf);
-
-        // Create A few WebSocket Frames
-        List<Frame> frames = new ArrayList<>();
-        frames.add(new Frame(OpCode.TEXT).setPayload("Hello 1"));
-        frames.add(new Frame(OpCode.TEXT).setPayload("Hello 2"));
-        frames.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
-
-        generator.generate(buf, frames);
-
-        // Send this buffer to the server
-        LocalConnector.LocalEndPoint endPoint = server.newLocalConnection();
-
-        BufferUtil.flipToFlush(buf, 0);
-        ParsedResponse response = performUpgrade(endPoint, buf);
-
-        // Parse received bytes
-        ParserCapture capture = new ParserCapture(newClientParser());
-
-        if (BufferUtil.hasContent(response.remainingBuffer))
+        assertTimeout(Duration.ofMillis(10000), ()->
         {
-            capture.parse(response.remainingBuffer);
-        }
+            ByteBuffer buf = ByteBuffer.allocate(4096);
 
-        // parse bytes seen till close
-        do
-        {
-            ByteBuffer wsIncoming = endPoint.takeOutput();
-            if(wsIncoming.hasRemaining())
+            // Create Upgrade Request Header
+            String upgradeRequest = UpgradeUtils.generateUpgradeRequest("/");
+            ByteBuffer upgradeRequestBytes = BufferUtil.toBuffer(upgradeRequest.toString(), StandardCharsets.UTF_8);
+            BufferUtil.put(upgradeRequestBytes, buf);
+
+            // Create A few WebSocket Frames
+            List<Frame> frames = new ArrayList<>();
+            frames.add(new Frame(OpCode.TEXT).setPayload("Hello 1"));
+            frames.add(new Frame(OpCode.TEXT).setPayload("Hello 2"));
+            frames.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
+
+            generator.generate(buf, frames);
+
+            // Send this buffer to the server
+            LocalConnector.LocalEndPoint endPoint = server.newLocalConnection();
+
+            BufferUtil.flipToFlush(buf, 0);
+            ParsedResponse response = performUpgrade(endPoint, buf);
+
+            // Parse received bytes
+            ParserCapture capture = new ParserCapture(newClientParser());
+
+            if (BufferUtil.hasContent(response.remainingBuffer))
             {
-                capture.parse(wsIncoming);
+                capture.parse(response.remainingBuffer);
             }
-        } while (!capture.closed);
 
-        // Validate echoed frames
-        Frame incomingFrame;
-        incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Incoming Frame[0]", incomingFrame, notNullValue());
-        assertThat("Incoming Frame[0].op", incomingFrame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Incoming Frame[0].payload", incomingFrame.getPayloadAsUTF8(), is("Hello 1"));
-        incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Incoming Frame[1]", incomingFrame, notNullValue());
-        assertThat("Incoming Frame[1].op", incomingFrame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Incoming Frame[1].payload", incomingFrame.getPayloadAsUTF8(), is("Hello 2"));
+            // parse bytes seen till close
+            do
+            {
+                ByteBuffer wsIncoming = endPoint.takeOutput();
+                if (wsIncoming.hasRemaining())
+                {
+                    capture.parse(wsIncoming);
+                }
+            }
+            while (!capture.closed);
+
+            // Validate echoed frames
+            Frame incomingFrame;
+            incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+            assertThat("Incoming Frame[0]", incomingFrame, notNullValue());
+            assertThat("Incoming Frame[0].op", incomingFrame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Incoming Frame[0].payload", incomingFrame.getPayloadAsUTF8(), is("Hello 1"));
+            incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+            assertThat("Incoming Frame[1]", incomingFrame, notNullValue());
+            assertThat("Incoming Frame[1].op", incomingFrame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Incoming Frame[1].payload", incomingFrame.getPayloadAsUTF8(), is("Hello 2"));
+        });
     }
 }

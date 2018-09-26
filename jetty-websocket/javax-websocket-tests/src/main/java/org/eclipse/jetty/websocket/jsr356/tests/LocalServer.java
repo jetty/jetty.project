@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.OnMessage;
@@ -48,13 +47,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WSURI;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.rules.TestName;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
@@ -122,23 +120,23 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
      * @param testName the test name
      * @return the {@code ws://} URI with query parameters
      */
-    public URI getWsUri(Class<?> testClazz, TestName testName)
+    public URI getWsUri(Class<?> testClazz, String testName)
     {
-        return wsUri.resolve("?testclass=" + testClazz + "&testname=" + testName.getMethodName());
+        return wsUri.resolve("?testclass=" + testClazz + "&testname=" + testName);
     }
 
     /**
-     * @deprecated use {@link #getTestWsUri(Class, TestName)} instead
+     * @deprecated use {@link #getTestWsUri(Class, String)} instead
      */
     @Deprecated
-    public URI getUntrustedWsUri(Class<?> clazz, TestName testname)
+    public URI getUntrustedWsUri(Class<?> clazz, String testName)
     {
-        return getTestWsUri(clazz, testname);
+        return getTestWsUri(clazz, testName);
     }
 
-    public URI getTestWsUri(Class<?> clazz, TestName testname)
+    public URI getTestWsUri(Class<?> clazz, String testName)
     {
-        return wsUri.resolve("/test/" + clazz.getSimpleName() + "/" + testname.getMethodName());
+        return wsUri.resolve("/test/" + clazz.getSimpleName() + "/" + testName);
     }
 
     public boolean isSslEnabled()

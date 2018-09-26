@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,9 +26,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
@@ -60,9 +56,14 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.Sha1Sum;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class StreamTest
 {
@@ -71,7 +72,7 @@ public class StreamTest
     private static File outputDir;
     private static LocalServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -88,7 +89,7 @@ public class StreamTest
         container.addEndpoint(config);
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -112,10 +113,10 @@ public class StreamTest
         upload("larger.png");
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testUploadLargest() throws Exception
     {
-        upload("largest.jpg");
+        assertTimeout(Duration.ofMillis(60000), ()->upload("largest.jpg"));
     }
 
     private void upload(String filename) throws Exception

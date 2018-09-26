@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerContainer;
@@ -33,16 +34,15 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test various {@link javax.websocket.Decoder.Text Decoder.Text} / {@link javax.websocket.Encoder.Text Encoder.Text} echo behavior of Java Primitives
  */
-@RunWith(Parameterized.class)
 public class PrimitivesTextEchoTest
 {
     private static final Logger LOG = Log.getLogger(PrimitivesTextEchoTest.class);
@@ -226,15 +226,14 @@ public class PrimitivesTextEchoTest
         }
     }
     
-    private static void addCase(List<Object[]> data, Class<?> endpointClass, String sendText, String expectText)
+    private static void addCase(List<Arguments> data, Class<?> endpointClass, String sendText, String expectText)
     {
-        data.add(new Object[]{endpointClass.getSimpleName(), endpointClass, sendText, expectText});
+        data.add(Arguments.of(endpointClass.getSimpleName(), endpointClass, sendText, expectText));
     }
     
-    @Parameterized.Parameters(name = "{0}: {2}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Object[]> data = new ArrayList<>();
+        List<Arguments> data = new ArrayList<>();
         
         addCase(data, BooleanEchoSocket.class, "true", "true");
         addCase(data, BooleanEchoSocket.class, "TRUE", "true");
@@ -337,12 +336,12 @@ public class PrimitivesTextEchoTest
         addCase(data, LongObjEchoSocket.class, Long.toString(Long.MIN_VALUE), Long.toString(Long.MIN_VALUE));
     
         addCase(data, StringEchoSocket.class, "Hello World", "Hello World");
-        return data;
+        return data.stream();
     }
     
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer();
@@ -367,26 +366,16 @@ public class PrimitivesTextEchoTest
         container.addEndpoint(StringEchoSocket.class);
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Parameterized.Parameter
-    public String endpointClassname;
-    
-    @Parameterized.Parameter(1)
-    public Class<?> endpointClass;
-    
-    @Parameterized.Parameter(2)
-    public String sendText;
-    
-    @Parameterized.Parameter(3)
-    public String expectText;
-    
-    @Test
-    public void testPrimitiveEcho() throws Exception
+
+    @ParameterizedTest(name = "{0}: {2}")
+    @MethodSource("data")
+    public void testPrimitiveEcho(String endpointClassname, Class<?> endpointClass, String sendText, String expectText) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
         

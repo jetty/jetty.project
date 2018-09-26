@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class RawFrameBuilder
 {

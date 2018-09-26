@@ -32,12 +32,13 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
@@ -72,8 +73,9 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
     @Test
     public void testInvokeMessage() throws Exception
     {
-        expectedException.expect(InvalidSignatureException.class);
-        assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"));
+        assertThrows(InvalidSignatureException.class, ()->
+            assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"))
+        );
     }
     
     @ClientEndpoint
@@ -106,12 +108,13 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
     @Test
     public void testInvokeMessageSession() throws Exception
     {
-        expectedException.expect(InvalidSignatureException.class);
+        assertThrows(InvalidSignatureException.class, ()->
         assertOnMessageInvocation(new MessageSessionSocket(),
                 allOf(
                         containsString("onMessage(JavaxWebSocketSession@"),
                         containsString(MessageSessionSocket.class.getName())
-                ));
+                ))
+        );
     }
     
     @ClientEndpoint

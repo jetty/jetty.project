@@ -20,11 +20,10 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -44,19 +43,18 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 /**
  * Test the {@link Decorator} features of the WebSocketServer
  */
-@RunWith(Parameterized.class)
 public class DecoratorsTest
 {
     private static final Logger LOG = Log.getLogger(DecoratorsTest.class);
@@ -160,41 +158,32 @@ public class DecoratorsTest
     }
     
     @SuppressWarnings("deprecation")
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Object[]> cases = new ArrayList<>();
-        
-        cases.add(new Object[] {
-                "Legacy Usage",
-                (Case) (context) -> {
-                    context.getObjectFactory().clear();
-                    // Add decorator in the legacy way
-                    context.addDecorator(new DummyLegacyDecorator());
-                },
-                DummyLegacyDecorator.class
-        });
-    
-        cases.add(new Object[] {
-                "Recommended Usage",
-                (Case) (context) -> {
-                    // Add decorator in the new util way
-                    context.getObjectFactory().clear();
-                    context.getObjectFactory().addDecorator(new DummyUtilDecorator());
-                },
-                DummyUtilDecorator.class
-        });
-        
-        return cases;
+        return Stream.of(
+            Arguments.of( "Legacy Usage", (Case) (context) -> {
+                        context.getObjectFactory().clear();
+                        // Add decorator in the legacy way
+                        context.addDecorator(new DummyLegacyDecorator());
+                    },
+                    DummyLegacyDecorator.class
+            ),
+
+            Arguments.of( "Recommended Usage", (Case) (context) -> {
+                        // Add decorator in the new util way
+                        context.getObjectFactory().clear();
+                        context.getObjectFactory().addDecorator(new DummyUtilDecorator());
+                    },
+                    DummyUtilDecorator.class
+            )
+        );
     }
 
     private SimpleServletServer server;
-    private Class<?> expectedDecoratorClass;
-    
-    public DecoratorsTest(String testId, Case testcase, Class<?> expectedDecoratorClass) throws Exception
+
+    public void setupServer(String testId, Case testcase) throws Exception
     {
         LOG.debug("Testing {}", testId);
-        this.expectedDecoratorClass = expectedDecoratorClass;
         server = new SimpleServletServer(new DecoratorsRequestServlet(new DecoratorsCreator()))
         {
             @Override
@@ -207,15 +196,18 @@ public class DecoratorsTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Test
-    public void testAccessRequestCookies() throws Exception
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void testAccessRequestCookies(String testId, Case testcase, Class<?> expectedDecoratorClass) throws Exception
     {
+        setupServer(testId, testcase);
+
         try (Fuzzer session = server.newNetworkFuzzer("/"))
         {
             session.sendFrames(
@@ -231,7 +223,7 @@ public class DecoratorsTest
             String payload = frame.getPayloadAsUTF8();
             assertThat("Text - DecoratedObjectFactory", payload, containsString("Object is a DecoratedObjectFactory"));
             assertThat("Text - decorators.size", payload, containsString("Decorators.size = [1]"));
-            assertThat("Text - decorator type", payload, containsString("decorator[] = " + this.expectedDecoratorClass.getName()));
+            assertThat("Text - decorator type", payload, containsString("decorator[] = " + expectedDecoratorClass.getName()));
         }
     }
 }

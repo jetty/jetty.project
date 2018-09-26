@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.*;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -34,13 +25,25 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@ExtendWith(TestTrackerExtension.class)
 public class FragmentExtensionTest extends AbstractExtensionTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     /**
      * Verify that incoming frames are passed thru without modification
      */
@@ -77,14 +80,14 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         {
             prefix = "Frame[" + i + "]";
 
-            Assert.assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
-            Assert.assertThat(prefix + ".fin", actual.isFin(), is(true));
-            Assert.assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
-            Assert.assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
-            Assert.assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
+            assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
+            assertThat(prefix + ".fin", actual.isFin(), is(true));
+            assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
+            assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+            assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
             ByteBuffer expected = BufferUtil.toBuffer(quote.get(i), StandardCharsets.UTF_8);
-            Assert.assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+            assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
             i++;
         }
@@ -112,14 +115,14 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         capture.assertHasOpCount(OpCode.PING, 1);
         Frame actual = capture.frames.poll();
 
-        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
-        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
@@ -179,17 +182,17 @@ public class FragmentExtensionTest extends AbstractExtensionTest
             // System.out.printf("expect: %s%n",expectedFrame);
 
             // Validate Frame
-            Assert.assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
-            Assert.assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
-            Assert.assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
-            Assert.assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
-            Assert.assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
+            assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
+            assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
+            assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
+            assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
+            assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
 
             // Validate Payload
             ByteBuffer expectedData = expectedFrame.getPayload().slice();
             ByteBuffer actualData = actualFrame.getPayload().slice();
 
-            Assert.assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
+            assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expectedData, actualData);
         }
     }
@@ -242,17 +245,17 @@ public class FragmentExtensionTest extends AbstractExtensionTest
             Frame expectedFrame = expectedFrames.get(i);
 
             // Validate Frame
-            Assert.assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
-            Assert.assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
-            Assert.assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
-            Assert.assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
-            Assert.assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
+            assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
+            assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
+            assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
+            assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
+            assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
 
             // Validate Payload
             ByteBuffer expectedData = expectedFrame.getPayload().slice();
             ByteBuffer actualData = actualFrame.getPayload().slice();
 
-            Assert.assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
+            assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expectedData, actualData);
         }
     }
@@ -281,14 +284,14 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         Frame actual = capture.frames.poll();
 
-        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
-        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 }

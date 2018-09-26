@@ -18,36 +18,37 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.is;
-
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
-import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.core.TestableLeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {
     private static final Logger LOG = Log.getLogger(MessageWriterTest.class);
 
-    @Rule
-    public TestName testname = new TestName();
+    public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    @AfterEach
+    public void afterEach()
+    {
+        bufferPool.assertNoLeaks();
+    }
 
     private WebSocketPolicy policy;
     private int bufferSize = 1024;
     private OutgoingMessageCapture remoteSocket;
 
-    @Before
+    @BeforeEach
     public void setupSession() throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
@@ -66,9 +67,9 @@ public class MessageWriterTest
             stream.write("World");
         }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
+        assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
         String msg = remoteSocket.textMessages.poll();
-        Assert.assertThat("Message",msg,is("Hello World"));
+        assertThat("Message",msg,is("Hello World"));
     }
     
     @Test
@@ -79,9 +80,9 @@ public class MessageWriterTest
             stream.append("Hello World");
         }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
+        assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
         String msg = remoteSocket.textMessages.poll();
-        Assert.assertThat("Message",msg,is("Hello World"));
+        assertThat("Message",msg,is("Hello World"));
     }
     
     @Test
@@ -99,9 +100,9 @@ public class MessageWriterTest
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
+        assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
         String msg = remoteSocket.textMessages.poll();
         String expected = new String(buf);
-        Assert.assertThat("Message",msg,is(expected));
+        assertThat("Message",msg,is(expected));
     }
 }

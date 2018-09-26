@@ -21,11 +21,11 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
@@ -41,14 +41,12 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class SessionTest
 {
     @ServerEndpoint(value = "/info/")
@@ -194,34 +192,33 @@ public class SessionTest
         }
     }
 
-    private static class Cases extends ArrayList<Case[]>
+    private static class Cases extends ArrayList<Arguments>
     {
         public void addCase(String description, Consumer<ServletContextHandler> customizer)
         {
-            this.add(new Case[]{new Case(description, customizer)});
+            this.add(Arguments.of(new Case(description, customizer)));
         }
     }
 
-    @Parameters(name="{0}")
-    public static Collection<Case[]> data()
+    public static Stream<Arguments> data()
     {
         Cases cases = new Cases();
         cases.addCase("Default ServletContextHandler", context -> { });
         cases.addCase("With DefaultServlet only", context -> context.addServlet(DefaultServlet.class, "/"));
         cases.addCase("With Servlet Mapped to '/*'", context -> context.addServlet(DefaultServlet.class, "/*"));
         cases.addCase("With Servlet Mapped to '/info/*'", context -> context.addServlet(DefaultServlet.class, "/info/*"));
-        return cases;
+        return cases.stream();
     }
     
     private LocalServer server;
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
 
-    public SessionTest(final Case testcase) throws Exception
+    public void setup(final Case testcase) throws Exception
     {
         server = new LocalServer();
         server.start();
@@ -261,110 +258,138 @@ public class SessionTest
         }
     }
 
-    @Test
-    public void testPathParams_Annotated_Empty() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    public void testPathParams_Annotated_Empty(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/info/","pathParams",
                 "pathParams[0]");
     }
 
-    @Test
-    public void testPathParams_Annotated_Single() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    public void testPathParams_Annotated_Single(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/info/apple/","pathParams",
                 "pathParams[1]: 'a'=apple");
     }
 
-    @Test
-    public void testPathParams_Annotated_Double() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    public void testPathParams_Annotated_Double(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/info/apple/pear/","pathParams",
                 "pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
-    @Test
-    public void testPathParams_Annotated_Triple() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    public void testPathParams_Annotated_Triple(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/info/apple/pear/cherry/","pathParams",
                 "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
-    @Test
-    @Ignore
-    public void testPathParams_Endpoint_Empty() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    @Disabled
+    public void testPathParams_Endpoint_Empty(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/einfo/","pathParams",
                 "pathParams[0]");
     }
 
-    @Test
-    @Ignore
-    public void testPathParams_Endpoint_Single() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    @Disabled
+    public void testPathParams_Endpoint_Single(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/einfo/apple/","pathParams",
                 "pathParams[1]: 'a'=apple");
     }
 
-    @Test
-    @Ignore
-    public void testPathParams_Endpoint_Double() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    @Disabled
+    public void testPathParams_Endpoint_Double(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/einfo/apple/pear/","pathParams",
                 "pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
-    @Test
-    @Ignore
-    public void testPathParams_Endpoint_Triple() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    @Disabled
+    public void testPathParams_Endpoint_Triple(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/einfo/apple/pear/cherry/","pathParams",
                 "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
-    @Test
-    public void testRequestUri_Annotated_Basic() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    public void testRequestUri_Annotated_Basic(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/info/","requestUri",
                 "requestUri=" + server.getWsUri().toASCIIString() + "info/");
     }
 
-    @Test
-    public void testRequestUri_Annotated_WithPathParam() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    public void testRequestUri_Annotated_WithPathParam(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/info/apple/banana/","requestUri",
                 "requestUri=" + server.getWsUri().toASCIIString() +
                         "info/apple/banana/");
     }
 
-    @Test
-    public void testRequestUri_Annotated_WithPathParam_WithQuery() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    public void testRequestUri_Annotated_WithPathParam_WithQuery(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/info/apple/banana/?fruit=fresh&store=grandmasfarm",
                 "requestUri",
                 "requestUri=" + server.getWsUri().toASCIIString() +
                         "info/apple/banana/?fruit=fresh&store=grandmasfarm");
     }
 
-    @Test
-    @Ignore
-    public void testRequestUri_Endpoint_Basic() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    @Disabled
+    public void testRequestUri_Endpoint_Basic(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/einfo/","requestUri",
                 "requestUri=" + server.getWsUri().toASCIIString() + "einfo/");
     }
 
-    @Test
-    @Ignore
-    public void testRequestUri_Endpoint_WithPathParam() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    @Disabled
+    public void testRequestUri_Endpoint_WithPathParam(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/einfo/apple/banana/","requestUri",
                 "requestUri=" + server.getWsUri().toASCIIString() + "einfo/apple/banana/");
     }
 
-    @Test
-    @Ignore
-    public void testRequestUri_Endpoint_WithPathParam_WithQuery() throws Exception
+    @ParameterizedTest(name="{0}")
+    @MethodSource("data")
+    @Disabled
+    public void testRequestUri_Endpoint_WithPathParam_WithQuery(Case testCase) throws Exception
     {
+        setup(testCase);
         assertResponse("/einfo/apple/banana/?fruit=fresh&store=grandmasfarm",
                 "requestUri",
                 "requestUri=" + server.getWsUri().toASCIIString() +

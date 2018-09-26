@@ -18,70 +18,59 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Test behavior of Parser when encountering good / valid close status codes (per RFC6455)
  */
-@RunWith(Parameterized.class)
+@ExtendWith(TestTrackerExtension.class)
 public class ParserGoodCloseStatusCodesTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
-    @Parameterized.Parameters(name = "closeCode={0} {1}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{1000, "Autobahn Server Testcase 7.7.1"});
-        data.add(new Object[]{1001, "Autobahn Server Testcase 7.7.2"});
-        data.add(new Object[]{1002, "Autobahn Server Testcase 7.7.3"});
-        data.add(new Object[]{1003, "Autobahn Server Testcase 7.7.4"});
-        data.add(new Object[]{1007, "Autobahn Server Testcase 7.7.5"});
-        data.add(new Object[]{1008, "Autobahn Server Testcase 7.7.6"});
-        data.add(new Object[]{1009, "Autobahn Server Testcase 7.7.7"});
-        data.add(new Object[]{1010, "Autobahn Server Testcase 7.7.8"});
-        data.add(new Object[]{1011, "Autobahn Server Testcase 7.7.9"});
-        // These must be allowed, and cannot result in a ProtocolException
-        data.add(new Object[]{1012, "IANA Assigned"}); // Now IANA Assigned
-        data.add(new Object[]{1013, "IANA Assigned"}); // Now IANA Assigned
-        data.add(new Object[]{1014, "IANA Assigned"}); // Now IANA Assigned
-        data.add(new Object[]{3000, "Autobahn Server Testcase 7.7.10"});
-        data.add(new Object[]{3099, "Autobahn Server Testcase 7.7.11"});
-        data.add(new Object[]{4000, "Autobahn Server Testcase 7.7.12"});
-        data.add(new Object[]{4099, "Autobahn Server Testcase 7.7.13"});
-
-        return data;
+        return Stream.of(
+            Arguments.of(1000, "Autobahn Server Testcase 7.7.1"),
+            Arguments.of(1001, "Autobahn Server Testcase 7.7.2"),
+            Arguments.of(1002, "Autobahn Server Testcase 7.7.3"),
+            Arguments.of(1003, "Autobahn Server Testcase 7.7.4"),
+            Arguments.of(1007, "Autobahn Server Testcase 7.7.5"),
+            Arguments.of(1008, "Autobahn Server Testcase 7.7.6"),
+            Arguments.of(1009, "Autobahn Server Testcase 7.7.7"),
+            Arguments.of(1010, "Autobahn Server Testcase 7.7.8"),
+            Arguments.of(1011, "Autobahn Server Testcase 7.7.9"),
+            // These must be allowed, and cannot result in a ProtocolException
+            Arguments.of(1012, "IANA Assigned"), // Now IANA Assigned
+            Arguments.of(1013, "IANA Assigned"), // Now IANA Assigned
+            Arguments.of(1014, "IANA Assigned"), // Now IANA Assigned
+            Arguments.of(3000, "Autobahn Server Testcase 7.7.10"),
+            Arguments.of(3099, "Autobahn Server Testcase 7.7.11"),
+            Arguments.of(4000, "Autobahn Server Testcase 7.7.12"),
+            Arguments.of(4099, "Autobahn Server Testcase 7.7.13")
+        );
     }
-
-    @Parameterized.Parameter(0)
-    public int closeCode;
-
-    @Parameterized.Parameter(1)
-    public String description;
 
     private WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
 
-    @Test
-    public void testGoodCloseCode() throws InterruptedException
+    @ParameterizedTest(name = "closeCode={0} {1}")
+    @MethodSource("data")
+    public void testGoodCloseCode(int closeCode, String description) throws InterruptedException
     {
         ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
@@ -103,8 +92,9 @@ public class ParserGoodCloseStatusCodesTest
         assertThat("CloseStatus.reason", closeStatus.getReason(), nullValue());
     }
 
-    @Test
-    public void testGoodCloseCode_WithReasonPhrase() throws InterruptedException
+    @ParameterizedTest(name = "closeCode={0} {1}")
+    @MethodSource("data")
+    public void testGoodCloseCode_WithReasonPhrase(int closeCode, String description) throws InterruptedException
     {
         ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 

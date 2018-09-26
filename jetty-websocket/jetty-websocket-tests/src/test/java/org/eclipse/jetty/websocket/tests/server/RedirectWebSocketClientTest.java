@@ -49,14 +49,14 @@ import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class RedirectWebSocketClientTest
@@ -66,7 +66,7 @@ public class RedirectWebSocketClientTest
     public URI serverWssUri;
     public TestFrameHandler frameHandler;
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new Server();
@@ -120,7 +120,7 @@ public class RedirectWebSocketClientTest
         connectionFactory.getHttpConfiguration().setSecurePort(sslConnector.getLocalPort());
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
