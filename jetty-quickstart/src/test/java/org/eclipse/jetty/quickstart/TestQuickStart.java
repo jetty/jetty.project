@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.File;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -69,8 +70,10 @@ public class TestQuickStart
         ServletHolder fooHolder = new ServletHolder();
         fooHolder.setServlet(new FooServlet());
         fooHolder.setName("foo");
-        quickstart.getServletHandler().addServlet(fooHolder);   
-        quickstart.addEventListener(new FooContextListener());      
+        quickstart.getServletHandler().addServlet(fooHolder);
+        ListenerHolder lholder = new ListenerHolder();
+        lholder.setListener(new FooContextListener());
+        quickstart.getServletHandler().addListener(lholder);
         server.setHandler(quickstart);
         server.start();
         server.stop();

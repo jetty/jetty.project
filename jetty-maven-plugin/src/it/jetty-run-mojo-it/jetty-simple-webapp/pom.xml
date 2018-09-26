@@ -73,6 +73,7 @@
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <pingServlet>true</pingServlet>
             <helloServlet>true</helloServlet>
+            <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
             <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
