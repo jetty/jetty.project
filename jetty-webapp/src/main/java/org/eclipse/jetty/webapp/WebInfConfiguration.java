@@ -178,8 +178,9 @@ public class WebInfConfiguration extends AbstractConfiguration
     public void findAndFilterContainerPaths (final WebAppContext context) throws Exception
     {
         //assume the target jvm is the same as that running
-        int targetPlatform = JavaVersion.VERSION.getPlatform();
+        int currentPlatform = JavaVersion.VERSION.getPlatform();
         //allow user to specify target jvm different to current runtime
+        int targetPlatform = currentPlatform;
         Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
         if (target!=null)
             targetPlatform = Integer.parseInt(target.toString());
@@ -222,7 +223,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         //if running on jvm 9 or above, we we won't be able to look at the application classloader
         //to extract urls, so we need to examine the classpath instead.
-        if (targetPlatform >= 9)
+        if (currentPlatform >= 9)
         {
             tmp = System.getProperty("java.class.path");
             if (tmp != null)
