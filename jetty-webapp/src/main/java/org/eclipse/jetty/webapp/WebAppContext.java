@@ -733,7 +733,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     public void addSystemClasspathPattern(ClasspathPattern systemClasses)
     {
-        _serverClasses.add(systemClasses.getPatterns());
+        _systemClasses.add(systemClasses.getPatterns());
     }
     
     /* ------------------------------------------------------------ */
