@@ -1913,17 +1913,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
 
                 ((WebDescriptor)descriptor).addClassName(className);
-
-                Class<? extends EventListener> listenerClass = (Class<? extends EventListener>)context.loadClass(className);
-                listener = newListenerInstance(context,listenerClass, descriptor);
-                if (!(listener instanceof EventListener))
-                {
-                    LOG.warn("Not an EventListener: " + listener);
-                    return;
-                }
-                context.addEventListener(listener);
+                
+                ListenerHolder h = context.getServletHandler().newListenerHolder(new Source (Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
+                h.setClassName(className);
+                context.getServletHandler().addListener(h);
                 context.getMetaData().setOrigin(className+".listener", descriptor);
-
             }
         }
         catch (Exception e)
@@ -2012,16 +2006,5 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         // TODO
         LOG.warn("Not implemented {}",node);
-    }
-
-
-    public EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz, Descriptor descriptor) throws Exception
-    {
-        ListenerHolder h = context.getServletHandler().newListenerHolder(new Source (Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
-        EventListener l = context.getServletContext().createInstance(clazz);
-        h.setListener(l);
-        context.getServletHandler().addListener(h);
-        return l;
-
     }
 }
