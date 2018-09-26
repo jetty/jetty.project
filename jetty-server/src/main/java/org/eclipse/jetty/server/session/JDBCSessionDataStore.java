@@ -623,71 +623,49 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
  
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(java.lang.String)
      */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
-        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-        
-        Runnable r = new Runnable()
+        try (Connection connection = _dbAdaptor.getConnection();
+                PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, id, _context);
+                ResultSet result = statement.executeQuery())
         {
-            @Override
-            public void run ()
-            {
-                try (Connection connection = _dbAdaptor.getConnection();
-                     PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, id, _context);
-                     ResultSet result = statement.executeQuery())
-                {
-                    SessionData data = null;
-                    if (result.next())
-                    {                    
-                        data = newSessionData(id,
-                                              result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
-                                              result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
-                                              result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
-                                              result.getLong(_sessionTableSchema.getMaxIntervalColumn()));
-                        data.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
-                        data.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
-                        data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
-                        data.setExpiry(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
-                        data.setContextPath(_context.getCanonicalContextPath());          
-                        data.setVhost(_context.getVhost());
+            SessionData data = null;
+            if (result.next())
+            {                    
+                data = newSessionData(id,
+                                      result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
+                                      result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
+                                      result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), 
+                                      result.getLong(_sessionTableSchema.getMaxIntervalColumn()));
+                data.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
+                data.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
+                data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
+                data.setExpiry(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
+                data.setContextPath(_context.getCanonicalContextPath());          
+                data.setVhost(_context.getVhost());
 
-                        try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
-                             ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
-                        {
-                            Object o = ois.readObject();
-                            data.putAllAttributes((Map<String,Object>)o);
-                        }
-                        catch (Exception e)
-                        {
-                            throw new UnreadableSessionDataException (id, _context, e);
-                        }
-                        
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("LOADED session {}", data);
-                    }
-                    else
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("No session {}", id);
-                    
-                    reference.set(data);
+                try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
+                        ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                {
+                    SessionData.deserializeAttributes(data, ois);
                 }
                 catch (Exception e)
                 {
-                    exception.set(e);
+                    throw new UnreadableSessionDataException (id, _context, e);
                 }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("LOADED session {}", data);
             }
-        };
+            else
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No session {}", id);
 
-        //ensure this runs with context classloader set
-        _context.run(r);
-        if (exception.get() != null)
-            throw exception.get();
-
-        return reference.get();
+            return data;
+        }
     }
 
 
@@ -764,7 +742,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(baos);
-                oos.writeObject(data.getAllAttributes());
+                SessionData.serializeAttributes(data, oos);
                 oos.flush();
                 byte[] bytes = baos.toByteArray();
 
@@ -795,7 +773,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(baos);
-                oos.writeObject(data.getAllAttributes());
+                SessionData.serializeAttributes(data, oos);
                 oos.flush();
                 byte[] bytes = baos.toByteArray();
                 ByteArrayInputStream bais = new ByteArrayInputStream(bytes);

@@ -177,14 +177,9 @@ public class FileTestHelper
 
             if (attributes != null)
             {
-                List<String> keys = new ArrayList<String>(attributes.keySet());
-                out.writeInt(keys.size());
+                SessionData tmp = new SessionData(id,contextPath, vhost, created, accessed, lastAccessed, maxIdle);
                 ObjectOutputStream oos = new ObjectOutputStream(out);
-                for (String name:keys)
-                {
-                    oos.writeUTF(name);
-                    oos.writeObject(attributes.get(name));
-                }
+                SessionData.serializeAttributes(tmp, oos);
             }
         }
     }
@@ -223,28 +218,18 @@ public class FileTestHelper
             assertEquals(data.getExpiry(), expiry);
             assertEquals(data.getMaxInactiveMs(), maxIdle);
 
-            Map<String,Object> attributes = new HashMap<>();
-            
-            int size = di.readInt();
-            if (size > 0)
-            {
-               ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(di);
-                for (int i=0; i<size;i++)
-                {
-                    String key = ois.readUTF();
-                    Object value = ois.readObject();
-                    attributes.put(key,value);
-                }
-            }
+            SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
+            ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(di);
+            SessionData.deserializeAttributes(tmp, ois);
             
             //same number of attributes
-            assertEquals(data.getAllAttributes().size(), attributes.size());
+            assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
             //same keys
-            assertTrue(data.getKeys().equals(attributes.keySet()));
+            assertTrue(data.getKeys().equals(tmp.getAllAttributes().keySet()));
             //same values
             for (String name:data.getKeys())
             {
-                assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+                assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
             }
         }
         

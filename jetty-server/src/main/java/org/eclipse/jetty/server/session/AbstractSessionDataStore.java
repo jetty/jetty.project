@@ -22,6 +22,7 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -53,6 +54,8 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      * @throws Exception if unable to store data
      */
     public abstract void doStore(String id, SessionData data, long lastSaveTime) throws Exception;
+    
+    public abstract SessionData doLoad (String id) throws Exception;
 
    
     /**
@@ -76,6 +79,37 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         _context = context;
     }
 
+    
+    
+    @Override
+    public SessionData load(String id) throws Exception
+    {
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        
+        Runnable r = new Runnable()
+        {
+            @Override
+            public void run ()
+            {
+                try
+                {
+                    reference.set(doLoad(id));
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        };
+
+        _context.run(r);
+        if (exception.get() != null)
+            throw exception.get();
+        
+        return reference.get();
+    }
+
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
      */
@@ -85,31 +119,44 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         if (data == null)
             return;
 
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
-        long lastSave = data.getLastSaved();
-        long savePeriodMs = (_savePeriodSec <=0? 0: TimeUnit.SECONDS.toMillis(_savePeriodSec));
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id,data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis()-lastSave));
-
-        //save session if attribute changed or never been saved or time between saves exceeds threshold
-        if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis()-lastSave) > savePeriodMs))
+        Runnable r = new Runnable()
         {
-            //set the last saved time to now
-            data.setLastSaved(System.currentTimeMillis());
-            try
+
+            @Override
+            public void run ()
             {
-                //call the specific store method, passing in previous save time
-                doStore(id, data, lastSave);
-                data.setDirty(false); //only undo the dirty setting if we saved it
-            }
-            catch (Exception e)
-            {
-                //reset last save time if save failed
-                data.setLastSaved(lastSave);
-                throw e;
-            }
-        }
+                long lastSave = data.getLastSaved();
+                long savePeriodMs = (_savePeriodSec <=0? 0: TimeUnit.SECONDS.toMillis(_savePeriodSec));
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id,data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis()-lastSave));
+
+                //save session if attribute changed or never been saved or time between saves exceeds threshold
+                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis()-lastSave) > savePeriodMs))
+                {
+                    //set the last saved time to now
+                    data.setLastSaved(System.currentTimeMillis());
+                    try
+                    {
+                        //call the specific store method, passing in previous save time
+                        doStore(id, data, lastSave);
+                        data.setDirty(false); //only undo the dirty setting if we saved it
+                    }
+                    catch (Exception e)
+                    {
+                        //reset last save time if save failed
+                        data.setLastSaved(lastSave);
+                        exception.set(e);
+                    }
+                }
+            };
+        };
+
+        _context.run(r);
+        if (exception.get() != null)
+            throw exception.get();
     }
     
 

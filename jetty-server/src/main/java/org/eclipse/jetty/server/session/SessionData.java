@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -77,8 +78,18 @@ public class SessionData implements Serializable
         out.writeObject(entries);
         for (Entry<String,Object> entry: data._attributes.entrySet())
         {
-            out.writeUTF(entry.getKey());
-            //TODO: write out indication of webapp or container classloader
+            out.writeUTF(entry.getKey());     
+            ClassLoader loader = entry.getValue().getClass().getClassLoader();
+            boolean isServerLoader = false;
+
+            if (loader == Thread.currentThread().getContextClassLoader()) //is it the webapp classloader?
+                isServerLoader = false;
+            else if (loader == Thread.currentThread().getContextClassLoader().getParent() || loader == SessionData.class.getClassLoader() || loader == null) // is it the container loader?
+                isServerLoader = true;
+            else
+                throw new IOException ("Unknown loader"); // we don't know what loader to use
+            
+            out.writeBoolean(isServerLoader);
             out.writeObject(entry.getValue());
         }
     }
@@ -101,19 +112,24 @@ public class SessionData implements Serializable
         Object o = in.readObject();
         if (o instanceof Integer)
         {
-            
-            //TODO verify in instanceof ClassLoadingObjectInputStream
             //new serialization was used
+            if (!(ClassLoadingObjectInputStream.class.isAssignableFrom(in.getClass())))
+                throw new IOException ("Not ClassLoadingObjectInputStream");
+
+            data._attributes = new ConcurrentHashMap<>();
             int entries = ((Integer)o).intValue();
             for (int i=0; i < entries; i++)
             {
                 String name = in.readUTF(); //attribute name
-                boolean isServerClassLoader = in.readBoolean();
-                
+                boolean isServerClassLoader = in.readBoolean(); //use server or webapp classloader to load
+
+                Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader?SessionData.class.getClassLoader():Thread.currentThread().getContextClassLoader());
+                data._attributes.put(name, value);
             }
         }
         else
         {
+            LOG.info("Legacy serialization detected for {}", data.getId());
             //legacy serialization was used, we have just deserialized the 
             //entire attribute map
             data._attributes = new ConcurrentHashMap<String, Object>();
@@ -409,7 +425,7 @@ public class SessionData implements Serializable
   
         out.writeLong(_expiry); 
         out.writeLong(_maxInactiveMs);
-        out.writeObject(_attributes);
+        serializeAttributes(this, out);
     }
     
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
@@ -425,7 +441,7 @@ public class SessionData implements Serializable
         _lastNode = in.readUTF(); //last managing node
         _expiry = in.readLong(); 
         _maxInactiveMs = in.readLong();
-        _attributes = (Map<String,Object>)in.readObject();
+        deserializeAttributes(this, in);
     }
     
     public boolean isExpiredAt (long time)

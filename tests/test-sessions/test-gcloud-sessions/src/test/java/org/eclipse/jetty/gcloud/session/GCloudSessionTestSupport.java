@@ -130,15 +130,15 @@ public class GCloudSessionTestSupport
                                       long lastAccessed, long maxIdle, long expiry,
                                       long cookieset, long lastSaved,
                                       Map<String,Object> attributes)
-    throws Exception
+                                              throws Exception
     {
         //serialize the attribute map
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         if (attributes != null)
         {
+            SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(attributes);
-            oos.flush();
+            SessionData.serializeAttributes(tmp, oos);
         }
 
         //turn a session into an entity         
@@ -183,21 +183,27 @@ public class GCloudSessionTestSupport
         assertEquals(data.getMaxInactiveMs(), entity.getLong(EntityDataModel.MAXINACTIVE));
         Blob blob = (Blob) entity.getBlob(EntityDataModel.ATTRIBUTES);
         
-        Map<String,Object> attributes = new HashMap<>();
+        SessionData tmp = new SessionData(data.getId(),entity.getString(EntityDataModel.CONTEXTPATH),
+                                          entity.getString(EntityDataModel.VHOST),
+                                          entity.getLong(EntityDataModel.CREATETIME), 
+                                          entity.getLong(EntityDataModel.ACCESSED), 
+                                          entity.getLong(EntityDataModel.LASTACCESSED), 
+                                          entity.getLong(EntityDataModel.MAXINACTIVE));
+        
         try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
         {
-            Object o = ois.readObject();
-            attributes.putAll((Map<String,Object>)o);
+            SessionData.deserializeAttributes(tmp, ois);
         }
         
+        
         //same number of attributes
-        assertEquals(data.getAllAttributes().size(), attributes.size());
+        assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(attributes.keySet()));
+        assertTrue(data.getKeys().equals(tmp.getAllAttributes().keySet()));
         //same values
         for (String name:data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+            assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
         }
         
         return true;

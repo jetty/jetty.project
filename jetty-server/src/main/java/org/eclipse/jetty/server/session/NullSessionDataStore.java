@@ -34,10 +34,10 @@ public class NullSessionDataStore extends AbstractSessionDataStore
 {
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(java.lang.String)
      */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
         return null;
     }

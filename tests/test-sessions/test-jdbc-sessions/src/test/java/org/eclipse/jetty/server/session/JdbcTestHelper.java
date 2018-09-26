@@ -210,24 +210,26 @@ public class JdbcTestHelper
             assertEquals(data.getContextPath(), result.getString(CONTEXT_COL));          
             assertEquals(data.getVhost(), result.getString("virtualHost"));
 
-            Map<String,Object> attributes = new HashMap<>();
             Blob blob = result.getBlob(MAP_COL);
 
+            SessionData tmp = new SessionData(data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
+                                              result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL),result.getLong(MAX_IDLE_COL));
+            
             try (InputStream is = blob.getBinaryStream();
                  ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
             {
-                Object o = ois.readObject();
-                attributes.putAll((Map<String,Object>)o);
+               
+                SessionData.deserializeAttributes(tmp,  ois);
             }
             
             //same number of attributes
-            assertEquals(data.getAllAttributes().size(), attributes.size());
+            assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
             //same keys
-            assertTrue(data.getKeys().equals(attributes.keySet()));
+            assertTrue(data.getKeys().equals(tmp.getAllAttributes().keySet()));
             //same values
             for (String name:data.getKeys())
             {
-                assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+                assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
             }
         }
         finally
@@ -303,15 +305,15 @@ public class JdbcTestHelper
             
             if (attributes != null)
             {
+                SessionData tmp = new SessionData (id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(baos);
-                Map<String,Object> emptyMap = Collections.emptyMap();
-                oos.writeObject(emptyMap);
+                SessionData.serializeAttributes(tmp, oos);
                 oos.flush();
                 byte[] bytes = baos.toByteArray();
 
                 ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
+                statement.setBinaryStream(12, bais, bytes.length);
             }
             else
                 statement.setBinaryStream(12, new ByteArrayInputStream("".getBytes()), 0);

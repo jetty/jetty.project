@@ -52,36 +52,24 @@ public class HazelcastSessionDataStore
     }
 
     @Override
-    public SessionData load( String id )
-        throws Exception
+    public SessionData doLoad( String id )
+            throws Exception
     {
-
-        final AtomicReference<SessionData> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-
-        //ensure the load runs in the context classloader scope
-        _context.run( () -> {
-            try
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug( "Loading session {} from hazelcast", id );
-
-                SessionData sd = sessionDataMap.get( getCacheKey( id ) );
-                reference.set(sd);
-            }
-            catch (Exception e)
-            {
-                exception.set(new UnreadableSessionDataException(id, _context, e));
-            }
-        } );
-
-        if (exception.get() != null)
+        try
         {
-            throw exception.get();
+            if (LOG.isDebugEnabled())
+                LOG.debug( "Loading session {} from hazelcast", id );
+
+            SessionData sd = sessionDataMap.get( getCacheKey( id ) );
+            return sd;
         }
-        return reference.get();
+        catch (Exception e)
+        {
+            throw new UnreadableSessionDataException(id, _context, e);
+        }
     }
 
+    
     @Override
     public boolean delete( String id )
         throws Exception

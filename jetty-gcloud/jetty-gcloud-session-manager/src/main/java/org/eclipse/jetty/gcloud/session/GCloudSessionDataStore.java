@@ -503,10 +503,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(java.lang.String)
      */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
         if (LOG.isDebugEnabled()) LOG.debug("Loading session {} from DataStore", id);
 
@@ -891,7 +891,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         //serialize the attribute map
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(session.getAllAttributes());
+        SessionData.serializeAttributes(session, oos);
         oos.flush();
         
         //turn a session into an entity         
@@ -924,74 +924,48 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         if (entity == null)
             return null;
 
-        final AtomicReference<SessionData> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-        Runnable load = new Runnable()
-        {
-            @Override
-            public void run ()
-            {
-                try
-                {
-                    //turn an Entity into a Session
-                    String id = entity.getString(_model.getId());
-                    String contextPath = entity.getString(_model.getContextPath());
-                    String vhost = entity.getString(_model.getVhost());
-                    long accessed = entity.getLong(_model.getAccessed());
-                    long lastAccessed = entity.getLong(_model.getLastAccessed());
-                    long createTime = entity.getLong(_model.getCreateTime());
-                    long cookieSet = entity.getLong(_model.getCookieSetTime());
-                    String lastNode = entity.getString(_model.getLastNode());
+        //turn an Entity into a Session
+        String id = entity.getString(_model.getId());
+        String contextPath = entity.getString(_model.getContextPath());
+        String vhost = entity.getString(_model.getVhost());
+        long accessed = entity.getLong(_model.getAccessed());
+        long lastAccessed = entity.getLong(_model.getLastAccessed());
+        long createTime = entity.getLong(_model.getCreateTime());
+        long cookieSet = entity.getLong(_model.getCookieSetTime());
+        String lastNode = entity.getString(_model.getLastNode());
 
-                    long lastSaved = 0;
-                    //for compatibility with previously saved sessions, lastSaved may not be present
-                    try
-                    {
-                        lastSaved = entity.getLong(_model.getLastSaved());
-                    }
-                    catch (DatastoreException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    long expiry = entity.getLong(_model.getExpiry());
-                    long maxInactive = entity.getLong(_model.getMaxInactive());
-                    Blob blob = (Blob) entity.getBlob(_model.getAttributes());
-
-                    SessionData session = newSessionData (id, createTime, accessed, lastAccessed, maxInactive);
-                    session.setLastNode(lastNode);
-                    session.setContextPath(contextPath);
-                    session.setVhost(vhost);
-                    session.setCookieSet(cookieSet);
-                    session.setLastNode(lastNode);
-                    session.setLastSaved(lastSaved);
-                    session.setExpiry(expiry);
-                    try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
-                    {
-                        Object o = ois.readObject();
-                        session.putAllAttributes((Map<String,Object>)o);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new UnreadableSessionDataException (id, _context, e);
-                    }
-                    reference.set(session);
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
-            }
-        };
-        
-        //ensure this runs in the context classloader
-       _context.run(load);
-    
-        if (exception.get() != null)
+        long lastSaved = 0;
+        //for compatibility with previously saved sessions, lastSaved may not be present
+        try
         {
-            throw exception.get();
+            lastSaved = entity.getLong(_model.getLastSaved());
         }
-        
-        return reference.get();
+        catch (DatastoreException e)
+        {
+            LOG.ignore(e);
+        }
+        long expiry = entity.getLong(_model.getExpiry());
+        long maxInactive = entity.getLong(_model.getMaxInactive());
+        Blob blob = (Blob) entity.getBlob(_model.getAttributes());
+
+        SessionData session = newSessionData (id, createTime, accessed, lastAccessed, maxInactive);
+        session.setLastNode(lastNode);
+        session.setContextPath(contextPath);
+        session.setVhost(vhost);
+        session.setCookieSet(cookieSet);
+        session.setLastNode(lastNode);
+        session.setLastSaved(lastSaved);
+        session.setExpiry(expiry);
+        try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
+        {
+            SessionData.deserializeAttributes(session, ois);
+        }
+        catch (Exception e)
+        {
+            throw new UnreadableSessionDataException (id, _context, e);
+        }
+        return session;
+
     }
 
     /** 

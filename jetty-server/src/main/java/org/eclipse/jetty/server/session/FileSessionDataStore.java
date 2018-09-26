@@ -278,72 +278,50 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(java.lang.String)
      */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {  
-        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-        Runnable r = new Runnable()
+        //load session info from its file
+        String idWithContext = getIdWithContext(id);
+        String filename = _sessionFileMap.get(idWithContext);
+        if (filename == null)
         {
-            @Override
-            public void run ()
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unknown file {}",idWithContext);
+            return null;
+        }
+        File file = new File (_storeDir, filename);
+        if (!file.exists())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("No such file {}",filename);
+            return null;
+        }  
+
+        try (FileInputStream in = new FileInputStream(file))
+        {
+            SessionData data = load(in, id);
+            data.setLastSaved(file.lastModified());
+            return data;
+        }
+        catch (UnreadableSessionDataException e)
+        {
+            if (isDeleteUnrestorableFiles() && file.exists() && file.getParentFile().equals(_storeDir))
             {
-                //load session info from its file
-                String idWithContext = getIdWithContext(id);
-                String filename = _sessionFileMap.get(idWithContext);
-                if (filename == null)
+                try
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Unknown file {}",idWithContext);
-                    return;
+                    delete(id);
+                    LOG.warn("Deleted unrestorable file for session {}", id);
                 }
-                File file = new File (_storeDir, filename);
-                if (!file.exists())
+                catch (Exception x)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("No such file {}",filename);
-                    return;
-                }  
-
-                try (FileInputStream in = new FileInputStream(file))
-                {
-                    SessionData data = load(in, id);
-                    data.setLastSaved(file.lastModified());
-                    reference.set(data);
-                }
-                catch (UnreadableSessionDataException e)
-                {
-                    if (isDeleteUnrestorableFiles() && file.exists() && file.getParentFile().equals(_storeDir))
-                    {
-                        try
-                        {
-                            delete(id);
-                            LOG.warn("Deleted unrestorable file for session {}", id);
-                        }
-                        catch (Exception x)
-                        {
-                            LOG.warn("Unable to delete unrestorable file {} for session {}", filename, id, x);
-                        } 
-                    }
-
-                    exception.set(e);
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
+                    LOG.warn("Unable to delete unrestorable file {} for session {}", filename, id, x);
+                } 
             }
-        };
-        
-        //ensure this runs with the context classloader set
-        _context.run(r);
-        
-        if (exception.get() != null)
-            throw exception.get();
-        
-        return reference.get();
+            throw e;
+        }
     }
     
         
@@ -371,6 +349,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             }
             catch (Exception e)
             { 
+                e.printStackTrace();
                 if (file != null) 
                     file.delete(); // No point keeping the file if we didn't save the whole session
                 throw new UnwriteableSessionDataException(id, _context,e);             
@@ -528,14 +507,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         out.writeLong(data.getExpiry());
         out.writeLong(data.getMaxInactiveMs());
         
-        List<String> keys = new ArrayList<String>(data.getKeys());
-        out.writeInt(keys.size());
         ObjectOutputStream oos = new ObjectOutputStream(out);
-        for (String name:keys)
-        {
-            oos.writeUTF(name);
-            oos.writeObject(data.getAttribute(name));
-        }
+        SessionData.serializeAttributes(data, oos);
     }
     
   
@@ -685,8 +658,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             data.setMaxInactiveMs(maxIdle);
 
             // Attributes
-            restoreAttributes(di, di.readInt(), data);
-
+            ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
+            SessionData.deserializeAttributes(data, ois);
             return data;        
         }
         catch (Exception e)
@@ -695,29 +668,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
     }
 
-    /**
-     * @param is inputstream containing session data
-     * @param size number of attributes
-     * @param data the data to restore to
-     * @throws Exception
-     */
-    protected void restoreAttributes (InputStream is, int size, SessionData data)
-            throws Exception
-    {
-        if (size>0)
-        {
-            // input stream should not be closed here
-            Map<String,Object> attributes = new HashMap<String,Object>();
-            ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
-            for (int i=0; i<size;i++)
-            {
-                String key = ois.readUTF();
-                Object value = ois.readObject();
-                attributes.put(key,value);
-            }
-            data.putAllAttributes(attributes);
-        }
-    }
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()

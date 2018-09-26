@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,6 +31,7 @@ import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
@@ -128,6 +132,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     
     public final static String __LAST_ACCESSED = "lastAccessed";
     
+    public final static String __ATTRIBUTES = "attributes";
+    
     /**
      * Time this session will expire, based on last access time and maxIdle
      */
@@ -180,100 +186,76 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
   
     
     /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
+     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(String)
      */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
-        final AtomicReference<SessionData> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-        Runnable r = new Runnable()
+        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
+
+        try
         {
-            @Override
-            public void run ()
+            if (LOG.isDebugEnabled())
+                LOG.debug("id={} loaded={}", id, sessionDocument);
+
+            if (sessionDocument == null)
+                return null;
+
+            Boolean valid = (Boolean)sessionDocument.get(__VALID);   
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("id={} valid={}", id, valid);
+            if (valid == null || !valid)
+                return null;
+
+            Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
+            Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
+            String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
+            byte[] attributes = (byte[])MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__ATTRIBUTES));
+
+            Long created = (Long)sessionDocument.get(__CREATED);
+            Long accessed = (Long)sessionDocument.get(__ACCESSED);
+            Long lastAccessed = (Long)sessionDocument.get(__LAST_ACCESSED);
+            Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
+            Long expiry = (Long)sessionDocument.get(__EXPIRY);          
+
+            NoSqlSessionData data = null;
+
+            // get the session for the context
+            DBObject sessionSubDocumentForContext = (DBObject)MongoUtils.getNestedValue(sessionDocument,getContextField());
+
+            if (LOG.isDebugEnabled()) LOG.debug("attrs {}", sessionSubDocumentForContext);
+
+            if (sessionSubDocumentForContext != null)
             {
-                try
-                {
-                    DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session {} present for context {}", id, _context);
 
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("id={} loaded={}", id, sessionDocument);
-                    
-                    if (sessionDocument == null)
-                        return;
-
-                    Boolean valid = (Boolean)sessionDocument.get(__VALID);   
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("id={} valid={}", id, valid);
-                    if (valid == null || !valid)
-                        return;
-
-                    Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
-                    Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
-                    String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
-
-                    Long created = (Long)sessionDocument.get(__CREATED);
-                    Long accessed = (Long)sessionDocument.get(__ACCESSED);
-                    Long lastAccessed = (Long)sessionDocument.get(__LAST_ACCESSED);
-                    Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
-                    Long expiry = (Long)sessionDocument.get(__EXPIRY);          
-                    
-                    NoSqlSessionData data = null;
-
-                    // get the session for the context
-                    DBObject sessionSubDocumentForContext = (DBObject)MongoUtils.getNestedValue(sessionDocument,getContextField());
-
-                    if (LOG.isDebugEnabled()) LOG.debug("attrs {}", sessionSubDocumentForContext);
-
-                    if (sessionSubDocumentForContext != null)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Session {} present for context {}", id, _context);
-
-                        //only load a session if it exists for this context
-                        data = (NoSqlSessionData)newSessionData(id, created, accessed, (lastAccessed == null? accessed:lastAccessed), maxInactive);
-                        data.setVersion(version);
-                        data.setExpiry(expiry);
-                        data.setContextPath(_context.getCanonicalContextPath());
-                        data.setVhost(_context.getVhost());
-                        data.setLastSaved(lastSaved);
-                        data.setLastNode(lastNode);
-
-                        HashMap<String, Object> attributes = new HashMap<>();
-                        for (String name : sessionSubDocumentForContext.keySet())
-                        {
-                            //skip special metadata attribute which is not one of the actual session attributes
-                            if ( __METADATA.equals(name) )
-                                continue;         
-                            String attr = MongoUtils.decodeName(name);
-                            Object value = MongoUtils.decodeValue(sessionSubDocumentForContext.get(name));
-                            attributes.put(attr,value);
-                        }
-
-                        data.putAllAttributes(attributes);
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Session  {} not present for context {}", id, _context);        
-                    }
-
-                    reference.set(data);
-                }
-                catch (Exception e)
-                {
-                    exception.set(new UnreadableSessionDataException(id, _context, e));
-                }
+                //only load a session if it exists for this context
+                data = (NoSqlSessionData)newSessionData(id, created, accessed, (lastAccessed == null? accessed:lastAccessed), maxInactive);
+                data.setVersion(version);
+                data.setExpiry(expiry);
+                data.setContextPath(_context.getCanonicalContextPath());
+                data.setVhost(_context.getVhost());
+                data.setLastSaved(lastSaved);
+                data.setLastNode(lastNode);
+                
+                ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
+                ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);
+                SessionData.deserializeAttributes(data, ois);
             }
-        };
-        
-        _context.run(r);
-        
-        if (exception.get() != null)
-            throw exception.get();
-        
-        return reference.get();
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session  {} not present for context {}", id, _context);        
+            }
+
+            return data;
+        }
+        catch (Exception e)
+        {
+            throw (new UnreadableSessionDataException(id, _context, e));
+        }
     }
 
     /** 
@@ -290,7 +272,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
          * associated with this session
          */
         BasicDBObject mongoKey = new BasicDBObject(__ID, id);
-        
+
         //DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version_1);
         DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
 
@@ -483,7 +465,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         BasicDBObject update = new BasicDBObject();
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
-        BasicDBObject unsets = new BasicDBObject();
+       
         
         Object version = ((NoSqlSessionData)data).getVersion();
         
@@ -532,29 +514,17 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         sets.put(__ACCESSED, data.getAccessed());
         sets.put(__LAST_ACCESSED, data.getLastAccessed());
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        SessionData.serializeAttributes(data, oos);
+        
+        sets.put(getContextSubfield(__ATTRIBUTES), baos.toByteArray());
 
-        Set<String> names = ((NoSqlSessionData)data).takeDirtyAttributes();
-
-        if (lastSaveTime <= 0)
-        {         
-            names.addAll(((NoSqlSessionData)data).getAllAttributeNames()); // note dirty may include removed names
-        }
-
-
-        for (String name : names)
-        {
-            Object value = data.getAttribute(name);
-            if (value == null)
-                unsets.put(getContextField() + "." + MongoUtils.encodeName(name),1);
-            else
-                sets.put(getContextField() + "." + MongoUtils.encodeName(name), MongoUtils.encodeName(value));
-        }
-
+       
         // Do the upsert
         if (!sets.isEmpty())
             update.put("$set",sets);
-        if (!unsets.isEmpty())
-            update.put("$unset",unsets);
 
         WriteResult res = _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
         if (LOG.isDebugEnabled())
