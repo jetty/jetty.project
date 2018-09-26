@@ -50,10 +50,5 @@
        <artifactId>jetty-server</artifactId>
        <version>${project.version}</version>
     </dependency>
-    <dependency>
-       <groupId>org.eclipse.jetty</groupId>
-       <artifactId>jetty-webapp</artifactId>
-       <version>${project.version}</version>
-    </dependency>
   </dependencies>
 </project>
