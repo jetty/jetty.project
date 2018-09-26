@@ -153,7 +153,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options)
     {
-        super((ContextHandler.Context)null);
+        super(parent, contextPath);
         _options=options;
         _scontext = new Context();
         _sessionHandler = sessionHandler;
@@ -163,15 +163,6 @@ public class ServletContextHandler extends ContextHandler
         _objFactory = new DecoratedObjectFactory();
         _objFactory.addDecorator(new DeprecationWarning());
 
-        if (contextPath!=null)
-            setContextPath(contextPath);
-        
-        if (parent instanceof HandlerWrapper)
-            ((HandlerWrapper)parent).setHandler(this);
-        else if (parent instanceof HandlerCollection)
-            ((HandlerCollection)parent).addHandler(this);
-        
-        
         // Link the handlers
         relinkHandlers();
         
