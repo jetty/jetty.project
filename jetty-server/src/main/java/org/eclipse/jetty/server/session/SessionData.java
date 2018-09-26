@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -56,6 +57,70 @@ public class SessionData implements Serializable
     protected Map<String,Object> _attributes;
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
+    
+    
+    /**
+     * Serialize the attribute map of the session. 
+     * 
+     * This special handling allows us to record which classloader should be used to load the value of the
+     * attribute: either the container classloader (which could be the application loader ie null, or jetty's
+     * startjar loader) or the webapp's classloader.
+     * 
+     * @param data the SessionData for which to serialize the attributes
+     * @param out the stream to which to serialize
+     * @throws IOException
+     */
+    public static void serializeAttributes (SessionData data, java.io.ObjectOutputStream out)
+    throws IOException
+    {
+        int entries = data._attributes.size();
+        out.writeObject(entries);
+        for (Entry<String,Object> entry: data._attributes.entrySet())
+        {
+            out.writeUTF(entry.getKey());
+            //TODO: write out indication of webapp or container classloader
+            out.writeObject(entry.getValue());
+        }
+    }
+    
+    /**
+     * De-serialize the attribute map of a session.
+     * 
+     * When the session was serialized, we will have recorded which classloader should be used to
+     * recover the attribute value. The classloader could be the container classloader, or the
+     * webapp classloader.
+     * 
+     * @param data the SessionData for which to deserialize the attribute map
+     * @param in the serialized stream
+     * @throws IOException
+     * @throws ClassNotFoundException 
+     */
+    public static void deserializeAttributes (SessionData data, java.io.ObjectInputStream in)
+    throws IOException, ClassNotFoundException
+    {
+        Object o = in.readObject();
+        if (o instanceof Integer)
+        {
+            
+            //TODO verify in instanceof ClassLoadingObjectInputStream
+            //new serialization was used
+            int entries = ((Integer)o).intValue();
+            for (int i=0; i < entries; i++)
+            {
+                String name = in.readUTF(); //attribute name
+                boolean isServerClassLoader = in.readBoolean();
+                
+            }
+        }
+        else
+        {
+            //legacy serialization was used, we have just deserialized the 
+            //entire attribute map
+            data._attributes = new ConcurrentHashMap<String, Object>();
+            data.putAllAttributes((Map<String,Object>)o);
+        }
+    }
+    
     
     public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
