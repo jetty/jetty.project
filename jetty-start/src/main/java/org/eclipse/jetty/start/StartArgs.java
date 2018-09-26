@@ -416,8 +416,7 @@ public class StartArgs
             return;
         }
 
-        List<String> sortedKeys = new ArrayList<>();
-        sortedKeys.addAll(systemPropertySource.keySet());
+        List<String> sortedKeys = new ArrayList<>(systemPropertySource.keySet());
         Collections.sort(sortedKeys);
 
         for (String key : sortedKeys)
@@ -459,11 +458,8 @@ public class StartArgs
 
     /**
      * Expand any command line added {@code --lib} lib references.
-     *
-     * @throws IOException
-     *             if unable to expand the libraries
      */
-    public void expandSystemProperties() throws IOException
+    public void expandSystemProperties()
     {
         StartLog.debug("Expanding System Properties");
         
@@ -480,7 +476,7 @@ public class StartArgs
     }
     
     /**
-     * Expand any command line added <code>--lib</code> lib references.
+     * Expand any command line added {@code --lib} lib references.
      *
      * @throws IOException
      *             if unable to expand the libraries
@@ -665,7 +661,7 @@ public class StartArgs
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 
-            for (String x : jvmArgs)
+            for (String x : getJvmArgs())
             {
                 if (x.startsWith("-D"))
                 {            
@@ -717,37 +713,25 @@ public class StartArgs
                     cmd.addRawArg("--add-modules");
                     cmd.addRawArg(String.join(",", jmodAdds));
                 }
-                if (!jmodPatch.isEmpty())
+                for (Map.Entry<String, Set<String>> entry : jmodPatch.entrySet())
                 {
-                    for (Map.Entry<String, Set<String>> entry : jmodPatch.entrySet())
-                    {
-                        cmd.addRawArg("--patch-module");
-                        cmd.addRawArg(entry.getKey() + "=" + String.join(File.pathSeparator, entry.getValue()));
-                    }
+                    cmd.addRawArg("--patch-module");
+                    cmd.addRawArg(entry.getKey() + "=" + String.join(File.pathSeparator, entry.getValue()));
                 }
-                if (!jmodOpens.isEmpty())
+                for (Map.Entry<String, Set<String>> entry : jmodOpens.entrySet())
                 {
-                    for (Map.Entry<String, Set<String>> entry : jmodOpens.entrySet())
-                    {
-                        cmd.addRawArg("--add-opens");
-                        cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
-                    }
+                    cmd.addRawArg("--add-opens");
+                    cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
                 }
-                if (!jmodExports.isEmpty())
+                for (Map.Entry<String, Set<String>> entry : jmodExports.entrySet())
                 {
-                    for (Map.Entry<String, Set<String>> entry : jmodExports.entrySet())
-                    {
-                        cmd.addRawArg("--add-exports");
-                        cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
-                    }
+                    cmd.addRawArg("--add-exports");
+                    cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
                 }
-                if (!jmodReads.isEmpty())
+                for (Map.Entry<String, Set<String>> entry : jmodReads.entrySet())
                 {
-                    for (Map.Entry<String, Set<String>> entry : jmodReads.entrySet())
-                    {
-                        cmd.addRawArg("--add-reads");
-                        cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
-                    }
+                    cmd.addRawArg("--add-reads");
+                    cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
                 }
 
                 cmd.addRawArg("--module");
@@ -1241,10 +1225,7 @@ public class StartArgs
         if (arg.startsWith("--skip-file-validation="))
         {
             List<String> moduleNames = Props.getValues(arg);
-            for (String moduleName : moduleNames)
-            {
-                skipFileValidationModules.add(moduleName);
-            }
+            skipFileValidationModules.addAll(moduleNames);
             return;
         }
 
@@ -1388,12 +1369,7 @@ public class StartArgs
         for (String moduleName : moduleNames)
         {
             modules.add(moduleName);
-            List<String> list = sources.get(moduleName);
-            if (list == null)
-            {
-                list = new ArrayList<>();
-                sources.put(moduleName,list);
-            }
+            List<String> list = sources.computeIfAbsent(moduleName, k -> new ArrayList<>());
             list.add(source);
         }
     }
@@ -1484,17 +1460,7 @@ public class StartArgs
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder();
-        builder.append("StartArgs [enabledModules=");
-        builder.append(modules);
-        builder.append(", xmlRefs=");
-        builder.append(xmlRefs);
-        builder.append(", properties=");
-        builder.append(properties);
-        builder.append(", jvmArgs=");
-        builder.append(jvmArgs);
-        builder.append("]");
-        return builder.toString();
+        return String.format("%s[enabledModules=%s, xmlRefs=%s, properties=%s, jvmArgs=%s]",
+                getClass().getSimpleName(), modules, xmlRefs, properties, jvmArgs);
     }
-    
 }
