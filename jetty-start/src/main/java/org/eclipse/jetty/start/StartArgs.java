@@ -554,7 +554,7 @@ public class StartArgs
         }
     }
 
-    void expandJPMS(List<Module> activeModules)
+    void expandJPMS(List<Module> activeModules) throws IOException
     {
         for (Module module : activeModules)
         {
@@ -569,19 +569,19 @@ public class StartArgs
                 }
                 else if (line.startsWith(directive = "patch-module:"))
                 {
-                    parseJPMSKeyValue(module, line, directive, File.pathSeparator, jmodPatch);
+                    parseJPMSKeyValue(module, line, directive, true, jmodPatch);
                 }
                 else if (line.startsWith(directive = "add-opens:"))
                 {
-                    parseJPMSKeyValue(module, line, directive, ",", jmodOpens);
+                    parseJPMSKeyValue(module, line, directive, false, jmodOpens);
                 }
                 else if (line.startsWith(directive = "add-exports:"))
                 {
-                    parseJPMSKeyValue(module, line, directive, ",", jmodExports);
+                    parseJPMSKeyValue(module, line, directive, false, jmodExports);
                 }
                 else if (line.startsWith(directive = "add-reads:"))
                 {
-                    parseJPMSKeyValue(module, line, directive, ",", jmodReads);
+                    parseJPMSKeyValue(module, line, directive, false, jmodReads);
                 }
                 else
                 {
@@ -593,16 +593,29 @@ public class StartArgs
                 jmodAdds, jmodPatch, jmodOpens, jmodExports, jmodReads);
     }
 
-    private void parseJPMSKeyValue(Module module, String line, String directive, String delimiter, Map<String, Set<String>> output)
+    private void parseJPMSKeyValue(Module module, String line, String directive, boolean valueIsFile, Map<String, Set<String>> output) throws IOException
     {
-        String value = line.substring(directive.length());
-        int equals = value.indexOf('=');
+        String valueString = line.substring(directive.length());
+        int equals = valueString.indexOf('=');
         if (equals <= 0)
             throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
-        String key = value.substring(0, equals).trim();
-        List<String> values = Arrays.asList(value.substring(equals + 1).split(delimiter));
-        values = values.stream().map(String::trim).collect(Collectors.toList());
-        output.computeIfAbsent(key, k -> new LinkedHashSet<>()).addAll(values);
+        String delimiter = valueIsFile ? File.pathSeparator : ",";
+        String key = valueString.substring(0, equals).trim();
+        String[] values = valueString.substring(equals + 1).split(delimiter);
+        Set<String> result = output.computeIfAbsent(key, k -> new LinkedHashSet<>());
+        for (String value : values)
+        {
+            value = value.trim();
+            if (valueIsFile)
+            {
+                List<Path> paths = baseHome.getPaths(value);
+                paths.stream().map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toCollection(() -> result));
+            }
+            else
+            {
+                result.add(value);
+            }
+        }
     }
 
     public List<String> getStartModules()
