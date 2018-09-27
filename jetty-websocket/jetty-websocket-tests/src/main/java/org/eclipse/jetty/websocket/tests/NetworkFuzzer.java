@@ -38,15 +38,15 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.UnitGenerator;
-import org.eclipse.jetty.websocket.core.WebSocketCore;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -96,7 +96,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
                     });
         }
         this.rawClient.start();
-        this.generator = new UnitGenerator(WebSocketCore.Behavior.CLIENT);
+        this.generator = new UnitGenerator(Behavior.CLIENT);
 
         CompletableFuture<FrameHandler.CoreSession> futureHandler = this.rawClient.connect(upgradeRequest);
         CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (channel, capture) -> capture);
@@ -210,7 +210,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
     }
 
-    public static class RawUpgradeRequest extends WebSocketCoreClientUpgradeRequest
+    public static class RawUpgradeRequest extends AbstractUpgradeRequest
     {
         private final CompletableFuture<FrameCapture> futureCapture;
         private EndPoint endPoint;

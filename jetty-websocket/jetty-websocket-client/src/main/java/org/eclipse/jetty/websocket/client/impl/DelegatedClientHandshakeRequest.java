@@ -38,8 +38,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpRequest}
@@ -47,11 +47,11 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
  */
 public class DelegatedClientHandshakeRequest implements HandshakeRequest
 {
-    private final WebSocketCoreClientUpgradeRequest delegate;
+    private final AbstractUpgradeRequest delegate;
     private SocketAddress localSocketAddress;
     private SocketAddress remoteSocketAddress;
 
-    public DelegatedClientHandshakeRequest(WebSocketCoreClientUpgradeRequest delegate)
+    public DelegatedClientHandshakeRequest(AbstractUpgradeRequest delegate)
     {
         this.delegate = delegate;
     }

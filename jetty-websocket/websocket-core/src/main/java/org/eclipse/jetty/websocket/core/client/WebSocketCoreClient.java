@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core.client;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -28,8 +27,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 import java.io.IOException;
 import java.net.URI;
@@ -79,17 +78,11 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
-        WebSocketCoreClientUpgradeRequest request = new WebSocketCoreClientUpgradeRequest(this, wsUri) {
-            @Override
-            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
-            {
-                return frameHandler;
-            }
-        };
+        AbstractUpgradeRequest request = new UpgradeRequest(this, wsUri, frameHandler);
         return connect(request);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> connect(WebSocketCoreClientUpgradeRequest request) throws IOException
+    public CompletableFuture<FrameHandler.CoreSession> connect(AbstractUpgradeRequest request) throws IOException
     {
         if (!isStarted())
         {

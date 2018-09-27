@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.internal.Generator;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -35,10 +36,10 @@ public class UnitGenerator extends Generator
     private static final byte[] MASK = {0x11, 0x22, 0x33, 0x44};
     private final boolean applyMask;
     
-    public UnitGenerator(WebSocketCore.Behavior behavior)
+    public UnitGenerator(Behavior behavior)
     {
         super(new MappedByteBufferPool());
-        applyMask = (behavior == WebSocketCore.Behavior.CLIENT);
+        applyMask = (behavior == Behavior.CLIENT);
     }
     
     public ByteBuffer asBuffer(List<Frame> frames)

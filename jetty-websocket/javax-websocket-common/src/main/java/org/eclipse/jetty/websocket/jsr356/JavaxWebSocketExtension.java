@@ -24,7 +24,7 @@ import java.util.Map;
 
 import javax.websocket.Extension;
 
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class JavaxWebSocketExtension implements Extension
 {

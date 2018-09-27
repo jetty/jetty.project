@@ -24,7 +24,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.Parser;
+import org.eclipse.jetty.websocket.core.internal.Parser;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

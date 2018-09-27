@@ -19,11 +19,14 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
 
 import javax.servlet.http.HttpServletRequest;
 
 public class HandshakerFactory
 {
+    private static Handshaker instance = new RFC6455Handshaker();
+
     public static Handshaker getHandshaker(HttpServletRequest request)
     {
         // FAST FAIL: Return null if not an obvious upgrade request.
@@ -54,6 +57,6 @@ public class HandshakerFactory
             }
         }
 
-        return new RFC6455Handshaker();
+        return instance;
     }
 }

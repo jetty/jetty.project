@@ -40,8 +40,8 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.core.WebSocketCore;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * Servlet specific Upgrade Request implementation.

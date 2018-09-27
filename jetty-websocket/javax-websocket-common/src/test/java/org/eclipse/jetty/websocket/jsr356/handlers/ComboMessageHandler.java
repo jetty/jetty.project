@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import javax.websocket.MessageHandler;
 
 /**
- * A particularly annoying type of MessageHandler. One defining 2 implementations.
+ * A particularly annoying type of TextMessageHandler. One defining 2 implementations.
  */
 public class ComboMessageHandler implements MessageHandler.Whole<String>, MessageHandler.Partial<ByteBuffer>
 {

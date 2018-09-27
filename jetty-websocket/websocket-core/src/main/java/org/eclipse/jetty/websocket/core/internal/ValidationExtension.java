@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions;
+package org.eclipse.jetty.websocket.core.internal;
 
 import java.util.Map;
 
@@ -28,9 +28,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.AbstractExtension;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
@@ -40,8 +41,8 @@ public class ValidationExtension extends AbstractExtension
 {
     private static final Logger LOG = Log.getLogger(ValidationExtension.class);
 
-    private OpCode.Sequence incomingSequence = null;
-    private OpCode.Sequence outgoingSequence = null;
+    private FrameSequence incomingSequence = null;
+    private FrameSequence outgoingSequence = null;
     private boolean incomingFrameValidation = false;
     private boolean outgoingFrameValidation = false;
     private NullAppendable incomingUtf8Validation = null;
@@ -109,10 +110,10 @@ public class ValidationExtension extends AbstractExtension
         Map<String, String> parameters = config.getParameters();
 
         if (parameters.containsKey("outgoing-sequence"))
-            outgoingSequence = new OpCode.Sequence();
+            outgoingSequence = new FrameSequence();
 
         if (parameters.containsKey("incoming-sequence"))
-            incomingSequence = new OpCode.Sequence();
+            incomingSequence = new FrameSequence();
 
         if (parameters.containsKey("incoming-frame"))
             incomingFrameValidation = true;

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.websocket.core.internal.FrameSequence;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +60,7 @@ public class OpCodeTest
     
     private void testSequence(byte... opcode)
     {
-        OpCode.Sequence sequence = new OpCode.Sequence(); 
+        FrameSequence sequence = new FrameSequence();
         for (int i=0; i<opcode.length; i++)
         {
             byte o = (byte)(opcode[i] & 0x0F);

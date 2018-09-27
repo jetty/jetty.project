@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -31,13 +31,33 @@ import java.util.concurrent.TimeUnit;
  * Interface for local WebSocket Endpoint Frame handling.
  *
  * <p>
- * This is the receiver of Parsed Frames.
- * TODO Document here the close/error lifecycle.  Ie when is onError called?
- * TODO will onclosed always be called? the fact that onReceivedFrame is a called
- * TODO for all frames including control frames... and that app can respond,
- * TODO but if not the core will on itsw behalf of CLOSE and PINGs
- *
+ * This is the receiver of Parsed Frames.  It is implemented by the Application (or Application API layer or Framework)
+ * as the primary API to/from the Core websocket implementation.   The instance to be used for each websocket connection
+ * is instantiated by the application, either:
+ * <ul>
+ *     <li>On the server, the application layer must provide a {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator} instance
+ *     to negotiate and accept websocket connections, which will return the FrameHandler instance to use from
+ *     {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator#negotiate(Negotiation)}.</li>
+ *     <li>On the client, the application returns the FrameHandler instance to user from the {@link org.eclipse.jetty.websocket.core.client.UpgradeRequest}
+ *     instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(AbstractUpgradeRequest)} method/</li>.
+ * </ul>
  * </p>
+ * <p>
+ * Once instantiated the FrameHandler follows is used as follows
+ * <ul>
+ *     <li>The {@link #onOpen(CoreSession)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
+ *     to obtain information about the connection and to send frames</li>
+ *     <li>Every data and control frame received is passed to {@link #onReceiveFrame(Frame, Callback)}.</li>
+ *     <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onReceiveFrame(Frame, Callback)} to give the
+ *     Application an opportunity to send the response itself. If an appropriate response has not been sent when the callback passed is completed, then a
+ *     response will be generated.</li>
+ *     <li>If an error is detected or received, then {@link #onError(Throwable)} will be called to inform the application of the cause of the problem.
+ *     The connection will then be closed or aborted and the {@link #onClosed(CloseStatus)} method called.</li>
+ *     <li>The {@link #onClosed(CloseStatus)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
+ *     will indicate the nature of the close.</li>
+ * </ul>
+ * </p>
+ *
  */
 public interface FrameHandler extends IncomingFrames
 {
@@ -106,7 +126,7 @@ public interface FrameHandler extends IncomingFrames
     /**
      * Represents the outgoing Frames.
      */
-    interface CoreSession extends OutgoingFrames, Attributes // TODO: want AutoCloseable (easier testing)
+    interface CoreSession extends OutgoingFrames
     {
         /**
          * The negotiated WebSocket Subprotocol for this channel.
@@ -115,9 +135,6 @@ public interface FrameHandler extends IncomingFrames
          */
         String getSubprotocol();
 
-        // TODO: would like a .fail(Throwable cause) to fail the channel.
-        // This should result in a FrameHandler.onError() and/or onClosed()
-        // It should be smart about the Exception type (eg: oejwc.CloseException)
 
         /**
          * The negotiated WebSocket Extension Configurations for this channel.
@@ -145,7 +162,12 @@ public interface FrameHandler extends IncomingFrames
         /**
          * @return Client or Server behaviour
          */
-        WebSocketCore.Behavior getBehavior();
+        Behavior getBehavior();
+
+        /**
+         * @return The policy of the session.
+         */
+        WebSocketPolicy getPolicy();
 
         /**
          * The Local Socket Address for the connection

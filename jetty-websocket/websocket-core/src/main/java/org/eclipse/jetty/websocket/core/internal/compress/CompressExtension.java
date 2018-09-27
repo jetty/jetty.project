@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions.compress;
+package org.eclipse.jetty.websocket.core.internal.compress;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.core.AbstractExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;

@@ -36,10 +36,9 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 
-public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
+public class ClientUpgradeRequestImpl extends AbstractUpgradeRequest
 {
     private final WebSocketClient containerContext;
     private final Object websocketPojo;

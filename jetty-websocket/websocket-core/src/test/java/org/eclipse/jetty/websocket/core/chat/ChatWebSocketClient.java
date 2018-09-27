@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -28,9 +27,9 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -99,24 +98,12 @@ public class ChatWebSocketClient implements FrameHandler
         this.client.getPolicy().setMaxTextMessageSize(20 * 1024 * 1024);
         // this.client.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
         this.client.start();
-        
-        
-        URI wsUri = baseWebsocketUri.resolve("/chat");
-        
-        WebSocketCoreClientUpgradeRequest request = new WebSocketCoreClientUpgradeRequest(client, wsUri) 
-        {
-            @Override
-            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
-            {
-                return ChatWebSocketClient.this;
-            }
-        };
-        request.setSubProtocols("chat");
-        
-        Future<FrameHandler.CoreSession> response = client.connect(request);
 
+        URI wsUri = baseWebsocketUri.resolve("/chat");
+        AbstractUpgradeRequest request = new UpgradeRequest(client, wsUri,this);
+        request.setSubProtocols("chat");
+        Future<FrameHandler.CoreSession> response = client.connect(request);
         response.get(5, TimeUnit.SECONDS);
-                
     }
 
     @Override

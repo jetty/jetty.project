@@ -1,5 +1,6 @@
 org.eclipse.jetty.websocket.core.internal.IdentityExtension
 org.eclipse.jetty.websocket.core.internal.FragmentExtension
+org.eclipse.jetty.websocket.core.internal.ValidationExtension
 org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension
 org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension
 org.eclipse.jetty.websocket.core.internal.compress.XWebkitDeflateFrameExtension

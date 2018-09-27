@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
@@ -32,16 +34,33 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
 {
     final static Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
 
+    final PathSpecSet paths = new PathSpecSet();
     final WebSocketNegotiator negotiator;
-    
-    public WebSocketUpgradeHandler(WebSocketNegotiator negotiator)
+
+    public WebSocketUpgradeHandler(WebSocketNegotiator negotiator, String... pathSpecs)
     {
         this.negotiator = negotiator;
+        addPathSpec(pathSpecs);
+    }
+
+    public void addPathSpec(String... pathSpecs)
+    {
+        if (pathSpecs!=null)
+        {
+            for (String spec : pathSpecs)
+                this.paths.add(spec);
+        }
     }
     
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        if (!paths.isEmpty() && !paths.test(target))
+        {
+            super.handle(target,baseRequest,request,response);
+            return;
+        }
+
         Handshaker handshaker = HandshakerFactory.getHandshaker(request);
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} handshaker={}",baseRequest,handshaker);

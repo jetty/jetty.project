@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * An immutable interface to the HTTP Upgrade to WebSocket Response

@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.HeaderUtil;
 
 public class HandshakeRequestAdapter implements HandshakeRequest

@@ -26,21 +26,21 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.io.SuspendToken;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketCore;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class WebSocketSessionImpl implements Session
 {
     private final WebSocketContainerContext container;
-    private final WebSocketCore.Behavior behavior;
+    private final Behavior behavior;
     private final WebSocketPolicy sessionPolicy;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final HandshakeRequest handshakeRequest;
     private final HandshakeResponse handshakeResponse;
 
     public WebSocketSessionImpl(WebSocketContainerContext container,
-                                WebSocketCore.Behavior behavior,
+                                Behavior behavior,
                                 WebSocketPolicy sessionPolicy,
                                 JettyWebSocketRemoteEndpoint remoteEndpoint,
                                 HandshakeRequest handshakeRequest,

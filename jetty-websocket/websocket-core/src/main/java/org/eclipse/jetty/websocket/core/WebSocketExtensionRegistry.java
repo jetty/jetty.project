@@ -16,13 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions;
+package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.util.HashMap;
 import java.util.Iterator;

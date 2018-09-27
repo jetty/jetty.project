@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,13 +35,13 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
-import org.eclipse.jetty.websocket.core.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.WebSocketCore;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,8 +62,6 @@ public final class RFC6455Handshaker implements Handshaker
 
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        // TODO reduce the debug from this class
-        
         Request baseRequest = Request.getBaseRequest(request);
         HttpChannel httpChannel = baseRequest.getHttpChannel();
         Connector connector = httpChannel.getConnector();
@@ -204,7 +202,7 @@ public final class RFC6455Handshaker implements Handshaker
             response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),null);
         
         // Create the Channel
-        WebSocketChannel channel = new WebSocketChannel(handler,WebSocketCore.Behavior.SERVER,policy,extensionStack,subprotocol);
+        WebSocketChannel channel = new WebSocketChannel(handler, Behavior.SERVER,policy,extensionStack,subprotocol);
         if (LOG.isDebugEnabled())
             LOG.debug("channel {}", channel);
         

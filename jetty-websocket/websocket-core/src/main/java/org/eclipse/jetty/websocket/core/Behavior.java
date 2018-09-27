@@ -16,26 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests.handlers;
-
-import java.nio.ByteBuffer;
-
-import javax.websocket.MessageHandler;
+package org.eclipse.jetty.websocket.core;
 
 /**
- * A particularly annoying type of TextMessageHandler. One defining 2 implementations.
+ * Behavior for how the WebSocket should operate.
+ * <p>
+ * This dictated by the <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a> spec in various places, where certain behavior must be performed depending on
+ * operation as a <a href="https://tools.ietf.org/html/rfc6455#section-4.1">CLIENT</a> vs a <a href="https://tools.ietf.org/html/rfc6455#section-4.2">SERVER</a>
  */
-public class ComboMessageHandler implements MessageHandler.Whole<String>, MessageHandler.Partial<ByteBuffer>
+public enum Behavior
 {
-    @Override
-    public void onMessage(ByteBuffer partialMessage, boolean last)
-    {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void onMessage(String message)
-    {
-        // TODO Auto-generated method stub
-    }
+    CLIENT,
+    SERVER
 }

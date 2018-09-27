@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * The mutable HTTP Response to Upgrade to WebSocket

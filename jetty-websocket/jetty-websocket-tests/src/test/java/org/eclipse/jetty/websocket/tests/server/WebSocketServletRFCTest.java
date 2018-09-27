@@ -38,10 +38,11 @@ import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
-import org.eclipse.jetty.websocket.core.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CoreUtils;
@@ -207,7 +208,7 @@ public class WebSocketServletRFCTest
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientTracking);
         Future<FrameHandler.CoreSession> channelFuture = client.connect(upgradeRequest);
 
         FrameHandler.CoreSession channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -238,7 +239,7 @@ public class WebSocketServletRFCTest
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientTracking);
         upgradeRequest.header("upgrade", "websocket");
         upgradeRequest.header("connection", "upgrade");
         upgradeRequest.header("sec-websocket-key", Defaults.getStaticWebSocketKey());
@@ -265,7 +266,7 @@ public class WebSocketServletRFCTest
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientTracking);
         upgradeRequest.header("UPGRADE", "WEBSOCKET");
         upgradeRequest.header("CONNECTION", "UPGRADE");
         upgradeRequest.header("SEC-WEBSOCKET-KEY", Defaults.getStaticWebSocketKey());
@@ -304,7 +305,7 @@ public class WebSocketServletRFCTest
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testInfo.getTestMethod().toString());
         URI wsUri = server.getWsUri();
 
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking)
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientTracking)
         {
             @Override
             protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)

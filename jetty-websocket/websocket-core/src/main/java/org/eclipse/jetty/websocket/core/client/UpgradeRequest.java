@@ -16,26 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests.handlers;
+package org.eclipse.jetty.websocket.core.client;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-import javax.websocket.MessageHandler;
+import java.net.URI;
 
-/**
- * A particularly annoying type of TextMessageHandler. One defining 2 implementations.
- */
-public class ComboMessageHandler implements MessageHandler.Whole<String>, MessageHandler.Partial<ByteBuffer>
+public class UpgradeRequest extends AbstractUpgradeRequest
 {
-    @Override
-    public void onMessage(ByteBuffer partialMessage, boolean last)
+    private final FrameHandler frameHandler;
+
+    public UpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
     {
-        // TODO Auto-generated method stub
+        super(webSocketClient, requestURI);
+        this.frameHandler = frameHandler;
     }
 
     @Override
-    public void onMessage(String message)
+    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
     {
-        // TODO Auto-generated method stub
+        return frameHandler;
     }
 }

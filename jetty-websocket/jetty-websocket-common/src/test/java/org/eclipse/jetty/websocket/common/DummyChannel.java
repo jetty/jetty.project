@@ -19,14 +19,13 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.net.SocketAddress;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.*;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class DummyChannel implements FrameHandler.CoreSession
 {
@@ -62,7 +61,13 @@ public class DummyChannel implements FrameHandler.CoreSession
     }
 
     @Override
-    public WebSocketCore.Behavior getBehavior()
+    public Behavior getBehavior()
+    {
+        return null;
+    }
+
+    @Override
+    public WebSocketPolicy getPolicy()
     {
         return null;
     }
@@ -102,36 +107,6 @@ public class DummyChannel implements FrameHandler.CoreSession
     @Override
     public void close(int statusCode, String reason, Callback callback)
     {
-    }
-    
-    @Override
-    public void removeAttribute(String name)
-    {
-        attributes.removeAttribute(name);
-    }
-
-    @Override
-    public void setAttribute(String name, Object attribute)
-    {
-        attributes.setAttribute(name,attribute);
-    }
-
-    @Override
-    public Object getAttribute(String name)
-    {
-        return attributes.getAttribute(name);
-    }
-
-    @Override
-    public Enumeration<String> getAttributeNames()
-    {
-        return attributes.getAttributeNames();
-    }
-
-    @Override
-    public void clearAttributes()
-    {
-        attributes.clearAttributes();
     }
 
     @Override

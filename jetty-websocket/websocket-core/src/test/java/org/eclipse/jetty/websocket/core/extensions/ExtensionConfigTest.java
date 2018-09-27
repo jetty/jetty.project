@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import javax.websocket.Extension;
 
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class JavaxWebSocketExtensionConfig extends ExtensionConfig
 {

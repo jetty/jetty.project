@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -39,10 +38,10 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.hamcrest.Matchers;
@@ -194,14 +193,7 @@ public class WebSocketClientServerTest
 
         public void start() throws Exception
         {
-            WebSocketCoreClientUpgradeRequest request = new WebSocketCoreClientUpgradeRequest(client, baseWebSocketUri.resolve("/test"))
-            {
-                @Override
-                public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
-                {
-                    return handler;
-                }
-            };
+            AbstractUpgradeRequest request = new UpgradeRequest(client, baseWebSocketUri.resolve("/test"), handler);
             request.setSubProtocols("test");
             this.client.start();
             Future<FrameHandler.CoreSession> response = client.connect(request);

@@ -355,7 +355,7 @@ public class Frame
 
     public Frame asReadOnly()
     {
-        return new ReadOnlyFrame(this);
+        return new ReadOnly(this);
     }
 
     public boolean hasRsv()
@@ -418,5 +418,98 @@ public class Frame
         if (payload!=null)
             b.append(BufferUtil.toDetailString(payload));
         return b.toString();
+    }
+
+    /**
+     * Immutable, Read-only, Frame implementation.
+     */
+    private static class ReadOnly extends Frame
+    {
+        private ReadOnly(Frame frame)
+        {
+            super(frame.finRsvOp,frame.isMasked()?frame.getMask():null,frame.getPayload());
+        }
+
+        @Override
+        public ByteBuffer getPayload()
+        {
+            ByteBuffer buffer = super.getPayload();
+            if(buffer == null)
+                return null;
+
+            return buffer.asReadOnlyBuffer();
+        }
+
+        @Override
+        protected void copyHeaders(Frame frame)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void reset()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setFin(boolean fin)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setMask(byte[] maskingKey)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        protected Frame setOpCode(byte op)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setPayload(ByteBuffer buf)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setPayload(String str)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setPayload(byte[] buf)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setRsv1(boolean rsv1)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setRsv2(boolean rsv2)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame setRsv3(boolean rsv3)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Frame asReadOnly()
+        {
+            return this;
+        }
     }
 }

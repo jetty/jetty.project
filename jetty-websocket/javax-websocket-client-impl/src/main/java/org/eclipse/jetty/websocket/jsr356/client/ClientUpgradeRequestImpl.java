@@ -29,10 +29,10 @@ import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 
-public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
+public class ClientUpgradeRequestImpl extends AbstractUpgradeRequest
 {
     private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;

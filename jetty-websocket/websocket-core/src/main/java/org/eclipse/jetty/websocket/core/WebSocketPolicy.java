@@ -107,7 +107,7 @@ public class WebSocketPolicy
     {
     }
 
-    private void assertLessThan(String name, long size, String otherName, long otherSize)
+    private static void assertLessThan(String name, long size, String otherName, long otherSize)
     {
         if (size > otherSize)
         {
@@ -115,7 +115,7 @@ public class WebSocketPolicy
         }
     }
 
-    private void assertGreaterThan(String name, long size, long minSize)
+    private static void assertGreaterThan(String name, long size, long minSize)
     {
         if (size < minSize)
         {

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -28,6 +28,14 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -122,7 +130,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
 
-        this.random = this.channel.getBehavior() == WebSocketCore.Behavior.CLIENT ? new Random(endp.hashCode()) : null;
+        this.random = this.channel.getBehavior() == Behavior.CLIENT ? new Random(endp.hashCode()) : null;
     }
 
     @Override
@@ -602,7 +610,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
-        if (channel.getBehavior()== WebSocketCore.Behavior.CLIENT)
+        if (channel.getBehavior()== Behavior.CLIENT)
         {
             Frame wsf = frame;
             byte[] mask = new byte[4];

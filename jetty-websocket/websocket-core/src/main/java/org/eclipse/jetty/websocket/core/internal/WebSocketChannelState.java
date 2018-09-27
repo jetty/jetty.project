@@ -16,7 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.internal;
+
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import java.util.concurrent.atomic.AtomicReference;
 

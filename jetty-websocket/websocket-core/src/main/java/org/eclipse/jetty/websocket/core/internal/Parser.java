@@ -16,13 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -246,7 +252,7 @@ public class Parser
 
     protected void checkFrameSize(byte opcode,int payloadLength) throws MessageTooLargeException, ProtocolException
     {
-        if (OpCode.isControlFrame(opcode) && payloadLength>Frame.MAX_CONTROL_PAYLOAD)
+        if (OpCode.isControlFrame(opcode) && payloadLength> Frame.MAX_CONTROL_PAYLOAD)
             throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
     }
     

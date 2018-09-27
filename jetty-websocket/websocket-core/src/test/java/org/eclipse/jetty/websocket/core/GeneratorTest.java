@@ -28,8 +28,10 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
+import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,10 +51,10 @@ public class GeneratorTest
 {
     private static final Logger LOG = Log.getLogger(Helper.class);
 
-    private static UnitGenerator unitGenerator = new UnitGenerator(WebSocketCore.Behavior.SERVER);
-    private static WebSocketChannel channel = newChannel(WebSocketCore.Behavior.SERVER);
+    private static UnitGenerator unitGenerator = new UnitGenerator(Behavior.SERVER);
+    private static WebSocketChannel channel = newChannel(Behavior.SERVER);
 
-    private static WebSocketChannel newChannel(WebSocketCore.Behavior behavior)
+    private static WebSocketChannel newChannel(Behavior behavior)
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         WebSocketPolicy policy = new WebSocketPolicy();
@@ -1232,7 +1234,7 @@ public class GeneratorTest
         assertThat("Generated Buffer", completeBuffer.remaining(), is(expectedSize));
 
         // Parse complete buffer.
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()), true, WebSocketCore.Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()), true, Behavior.SERVER);
 
         capture.parse(completeBuffer);
 

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

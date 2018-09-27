@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.UpgradeException;
-import org.eclipse.jetty.websocket.core.WebSocketCore;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TextMessageSocket;

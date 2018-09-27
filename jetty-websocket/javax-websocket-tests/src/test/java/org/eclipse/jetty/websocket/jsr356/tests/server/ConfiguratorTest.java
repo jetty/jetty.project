@@ -58,8 +58,9 @@ import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
@@ -432,7 +433,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/capture-request-headers");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -456,7 +457,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/no-extensions");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -480,7 +481,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/capture-request-headers");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         upgradeRequest.header("X-Dummy", "Bogus");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -505,7 +506,7 @@ public class ConfiguratorTest
 
         // First Request
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -524,7 +525,7 @@ public class ConfiguratorTest
 
         // Second request
         clientSocket = new FrameHandlerTracker();
-        upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         clientConnectFuture = client.connect(upgradeRequest);
 
         channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -552,7 +553,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/addr");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -593,7 +594,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -612,7 +613,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -631,7 +632,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         upgradeRequest.header("sec-websocket-protocol", "echo, chat, status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -650,7 +651,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         // header name is not to spec (case wise)
         upgradeRequest.header("Sec-Websocket-Protocol", "echo, chat, status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
@@ -684,7 +685,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/timedecoder");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
+        AbstractUpgradeRequest upgradeRequest = new UpgradeRequest(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("gmt");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 

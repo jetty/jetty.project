@@ -32,8 +32,8 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.*;
-import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.eclipse.jetty.websocket.core.internal.Generator;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -65,7 +65,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         ByteBuffer upgradeRequestBytes = BufferUtil.toBuffer(upgradeRequest.toString(), StandardCharsets.UTF_8);
         this.endPoint = this.provider.newLocalConnection();
         this.upgradeResponse = performUpgrade(endPoint, upgradeRequestBytes);
-        this.generator = new UnitGenerator(WebSocketCore.Behavior.CLIENT);
+        this.generator = new UnitGenerator(Behavior.CLIENT);
     }
 
     public void addInputInSegments(LocalConnector.LocalEndPoint endPoint, ByteBuffer outgoing, int segmentSize)

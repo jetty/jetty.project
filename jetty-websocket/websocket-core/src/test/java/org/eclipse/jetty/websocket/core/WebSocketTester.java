@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.io.EOFException;

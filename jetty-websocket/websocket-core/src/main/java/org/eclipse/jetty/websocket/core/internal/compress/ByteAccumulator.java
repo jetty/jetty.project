@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions.compress;
+package org.eclipse.jetty.websocket.core.internal.compress;
 
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 

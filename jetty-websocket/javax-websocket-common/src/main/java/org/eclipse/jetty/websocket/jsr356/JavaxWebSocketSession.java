@@ -50,7 +50,7 @@ import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
@@ -123,10 +123,10 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler)
     {
-        Objects.requireNonNull(handler, "MessageHandler.Partial cannot be null");
+        Objects.requireNonNull(handler, "TextMessageHandler.Partial cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Add MessageHandler.Partial: {}", handler);
+            LOG.debug("Add TextMessageHandler.Partial: {}", handler);
         }
 
         frameHandler.addMessageHandler(this, clazz, handler);
@@ -141,10 +141,10 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler)
     {
-        Objects.requireNonNull(handler, "MessageHandler.Whole cannot be null");
+        Objects.requireNonNull(handler, "TextMessageHandler.Whole cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Add MessageHandler.Whole: {}", handler);
+            LOG.debug("Add TextMessageHandler.Whole: {}", handler);
         }
 
         frameHandler.addMessageHandler(this, clazz, handler);
@@ -162,7 +162,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {
-        Objects.requireNonNull(handler, "MessageHandler cannot be null");
+        Objects.requireNonNull(handler, "TextMessageHandler cannot be null");
         Class<? extends MessageHandler> handlerClass = handler.getClass();
         boolean added = false;
 

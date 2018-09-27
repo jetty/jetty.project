@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.extensions;
+package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.ArrayTrie;

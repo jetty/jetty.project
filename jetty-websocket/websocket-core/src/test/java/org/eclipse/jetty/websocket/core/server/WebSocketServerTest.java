@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.server;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -33,10 +33,19 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.RawFrameBuilder;
+import org.eclipse.jetty.websocket.core.TestFrameHandler;
+import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketTester;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -96,7 +105,7 @@ public class WebSocketServerTest extends WebSocketTester
             assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
             frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+            MatcherAssert.assertThat(frame.getOpCode(), Matchers.is(OpCode.CLOSE));
             assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
         }
     }

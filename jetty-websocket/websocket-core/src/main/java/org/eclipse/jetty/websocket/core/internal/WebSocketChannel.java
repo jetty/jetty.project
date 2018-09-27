@@ -16,28 +16,38 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Parser.ParsedFrame;
-import org.eclipse.jetty.websocket.core.extensions.Extension;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
+import org.eclipse.jetty.websocket.core.Extension;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -51,21 +61,20 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private Logger LOG = Log.getLogger(this.getClass());
     private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
-    private final WebSocketCore.Behavior behavior;
+    private final Behavior behavior;
     private final WebSocketChannelState state = new WebSocketChannelState();
     private final WebSocketPolicy policy;
     private final FrameHandler handler;
     private final ExtensionStack extensionStack;
     private final String subprotocol;
-    private final AttributesMap attributes = new AttributesMap();
     private final boolean demanding;
-    private final OpCode.Sequence outgoingSequence = new OpCode.Sequence();
+    private final FrameSequence outgoingSequence = new FrameSequence();
 
 
     private WebSocketConnection connection;
 
     public WebSocketChannel(FrameHandler handler,
-    		WebSocketCore.Behavior behavior,
+    		Behavior behavior,
     		WebSocketPolicy policy,
     		ExtensionStack extensionStack,
     		String subprotocol)
@@ -313,9 +322,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         Frame frame = closeStatus.toFrame();
         extensionStack.sendFrame(frame,callback,batchMode);
     }
-    
+
+    @Override
     public WebSocketPolicy getPolicy()
     {
+        // TODO readonly?
         return policy;
     }
 
@@ -397,7 +408,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
             int statusCode = CloseStatus.SERVER_ERROR;
-            if (behavior == WebSocketCore.Behavior.CLIENT)
+            if (behavior == Behavior.CLIENT)
                 statusCode = CloseStatus.POLICY_VIOLATION;
 
             closeStatus = new CloseStatus(statusCode, cause.getMessage());
@@ -535,7 +546,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         connection.getEndPoint().close();
     }
     
-    private class IncomingState extends OpCode.Sequence implements IncomingFrames
+    private class IncomingState extends FrameSequence implements IncomingFrames
     {
         @Override
         public void onReceiveFrame(Frame frame, Callback callback)
@@ -634,50 +645,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         ContainerLifeCycle.dump(out,indent,Arrays.asList(subprotocol,policy,extensionStack,handler));
     }
 
-
     @Override
     public List<ExtensionConfig> getExtensionConfig()
     {
         return extensionStack.getNegotiatedExtensions();
     }
 
-
     @Override
-    public WebSocketCore.Behavior getBehavior()
+    public Behavior getBehavior()
     {
         return behavior;
     }
-    
-    @Override
-    public void removeAttribute(String name)
-    {
-        attributes.removeAttribute(name);
-    }
 
-    @Override
-    public void setAttribute(String name, Object attribute)
-    {
-        attributes.setAttribute(name,attribute);
-    }
-
-    @Override
-    public Object getAttribute(String name)
-    {
-        return attributes.getAttribute(name);
-    }
-
-    @Override
-    public Enumeration<String> getAttributeNames()
-    {
-        return attributes.getAttributeNames();
-    }
-
-    @Override
-    public void clearAttributes()
-    {
-        attributes.clearAttributes();
-    }
-    
     @Override
     public String toString()
     {

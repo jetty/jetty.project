@@ -21,8 +21,9 @@ package org.eclipse.jetty.websocket.core;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
+import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -47,10 +48,10 @@ public class ParserCapture
 
     public ParserCapture(Parser parser, boolean copy)
     {
-        this(parser, copy, WebSocketCore.Behavior.CLIENT);
+        this(parser, copy, Behavior.CLIENT);
     }
     
-    public ParserCapture(Parser parser, boolean copy, WebSocketCore.Behavior behavior)
+    public ParserCapture(Parser parser, boolean copy, Behavior behavior)
     {
         this.parser = parser;
         this.copy = copy;
