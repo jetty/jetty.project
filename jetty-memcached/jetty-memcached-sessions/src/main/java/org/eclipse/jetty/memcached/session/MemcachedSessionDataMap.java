@@ -200,7 +200,6 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     public SessionData load(String id) throws Exception
     {
         SessionData data = _client.get(id);
-        System.err.println("Got "+id+ ":"+data);
         return data;
     }
 
@@ -209,7 +208,6 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     public void store(String id, SessionData data) throws Exception
     {
         _client.set(id, _expirySec, data);
-        System.err.println("SET "+id);
     }        
 
 
