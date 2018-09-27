@@ -22,9 +22,7 @@ package org.eclipse.jetty.gcloud.session;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
@@ -324,18 +322,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             _lastSaved = lastSaved;
         }
 
-        /** 
-         * @see java.lang.Object#toString()
-         */
+
         @Override
         public String toString()
         {
             return String.format("%s==%s:%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",this.getClass().getName(),
                                  _kind,_accessed,_attributes,_contextPath,_cookieSetTime,_createTime,_expiry,_id,_lastAccessed,_lastNode,_maxInactive,_vhost);
         }
-        
-        
-        
+ 
     }
     
     
@@ -437,9 +431,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         return _maxRetries;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStart()
-     */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -466,9 +458,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         super.doStart();
     }
 
-    /** 
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
+
     @Override
     protected void doStop() throws Exception
     {
@@ -501,10 +491,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(java.lang.String)
-     */
     @Override
     public SessionData doLoad(String id) throws Exception
     {
@@ -529,9 +515,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
-     */
+
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -540,9 +524,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         return true;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
+
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -701,9 +683,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -766,6 +745,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
     }
     
+    
     /**
      * Check to see if the given time is in the past.
      * 
@@ -780,9 +760,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             return timestamp < System.currentTimeMillis(); 
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
-     */
+
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
@@ -874,6 +852,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             return false;
         }
     }
+    
+    
     /**
      * Generate a gcloud datastore Entity from SessionData
      * @param session the session data
@@ -968,9 +948,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
+
     @ManagedAttribute(value="does gcloud serialize session data", readonly=true)
     @Override
     public boolean isPassivating()
@@ -979,14 +957,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
-     */
     @Override
     public String toString()
     {
         return String.format("%s[namespace=%s,backoff=%d,maxRetries=%d,maxResults=%d,indexes=%b]",super.toString(), _namespace, _backoff, _maxRetries, _maxResults,_indexesPresent);
     }
-    
     
 }

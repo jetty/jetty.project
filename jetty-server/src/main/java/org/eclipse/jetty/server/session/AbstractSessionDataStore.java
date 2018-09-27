@@ -55,6 +55,14 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      */
     public abstract void doStore(String id, SessionData data, long lastSaveTime) throws Exception;
     
+    /**
+     * Load the session from persistent store.
+     * 
+     * @param id the id of the session to load
+     * @return the re-inflated session
+     * 
+     * @throws Exception if unable to load the session
+     */
     public abstract SessionData doLoad (String id) throws Exception;
 
    
@@ -67,10 +75,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      */
     public abstract Set<String> doGetExpired (Set<String> candidates);
 
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
     @Override
     public void initialize (SessionContext context) throws Exception
     {
@@ -110,9 +114,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         return reference.get();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
-     */
+
     @Override
     public void store(String id, SessionData data) throws Exception
     {
@@ -123,7 +125,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
 
         Runnable r = new Runnable()
         {
-
             @Override
             public void run ()
             {
@@ -160,10 +161,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     }
     
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
-     */
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
@@ -178,11 +175,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     }
 
 
-
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
-     */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
@@ -248,10 +240,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         _savePeriodSec = savePeriodSec;
     }
 
-
-    /** 
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

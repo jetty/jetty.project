@@ -39,11 +39,11 @@ import com.hazelcast.nio.serialization.StreamSerializer;
  */
 public class SessionDataSerializer implements StreamSerializer<SessionData>
 {
-
+    public static final int __TYPEID = 99;
     @Override
     public int getTypeId()
     {
-        return 99;
+        return __TYPEID;
     }
 
     @Override
@@ -54,15 +54,15 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
     @Override
     public void write(ObjectDataOutput out, SessionData data) throws IOException
     {
-        out.writeUTF(data.getId()); //session id
-        out.writeUTF(data.getContextPath()); //context path
-        out.writeUTF(data.getVhost()); //first vhost
+        out.writeUTF(data.getId());
+        out.writeUTF(data.getContextPath());
+        out.writeUTF(data.getVhost());
 
-        out.writeLong(data.getAccessed());//accessTime
-        out.writeLong(data.getLastAccessed()); //lastAccessTime
-        out.writeLong(data.getCreated()); //time created
-        out.writeLong(data.getCookieSet());//time cookie was set
-        out.writeUTF(data.getLastNode()); //name of last node managing
+        out.writeLong(data.getAccessed());
+        out.writeLong(data.getLastAccessed());
+        out.writeLong(data.getCreated());
+        out.writeLong(data.getCookieSet());
+        out.writeUTF(data.getLastNode());
   
         out.writeLong(data.getExpiry()); 
         out.writeLong(data.getMaxInactiveMs());
@@ -71,8 +71,7 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
         ObjectOutputStream oos = new ObjectOutputStream(baos);
         SessionData.serializeAttributes(data, oos);
         
-        out.writeByteArray(baos.toByteArray());
-        
+        out.writeByteArray(baos.toByteArray()); 
     }
 
     @Override
@@ -82,11 +81,11 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
         String contextPath = in.readUTF();
         String vhost = in.readUTF();
         
-        long accessed = in.readLong();//accessTime
-        long lastAccessed = in.readLong(); //lastAccessTime
-        long created = in.readLong(); //time created
-        long cookieSet = in.readLong();//time cookie was set
-        String lastNode = in.readUTF(); //last managing node
+        long accessed = in.readLong();
+        long lastAccessed = in.readLong();
+        long created = in.readLong();
+        long cookieSet = in.readLong();
+        String lastNode = in.readUTF();
         long expiry = in.readLong(); 
         long maxInactiveMs = in.readLong();
         

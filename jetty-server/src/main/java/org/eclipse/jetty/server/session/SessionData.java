@@ -426,6 +426,7 @@ public class SessionData implements Serializable
         out.writeLong(_expiry); 
         out.writeLong(_maxInactiveMs);
         serializeAttributes(this, out);
+        System.err.println("Wrote session "+_id);
     }
     
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
@@ -441,6 +442,7 @@ public class SessionData implements Serializable
         _lastNode = in.readUTF(); //last managing node
         _expiry = in.readLong(); 
         _maxInactiveMs = in.readLong();
+
         deserializeAttributes(this, in);
     }
     

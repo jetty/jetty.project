@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import com.hazelcast.core.IMap;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
@@ -28,10 +31,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import com.hazelcast.core.IMap;
 
 /**
  * Session data stored in Hazelcast

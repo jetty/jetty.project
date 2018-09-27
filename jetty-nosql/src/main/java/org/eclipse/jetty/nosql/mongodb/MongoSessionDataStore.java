@@ -24,8 +24,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
@@ -90,9 +90,9 @@ import com.mongodb.WriteResult;
  * </pre>
  * <p>
  * In MongoDB, the nesting level is indicated by "." separators for the key name. Thus to
- * interact with a session attribute, the key is composed of:
- * <code>"context".unique_context_name.attribute_name</code>
- *  Eg  <code>"context"."0_0_0_0:_testA"."A"</code>
+ * interact with session fields, the key is composed of:
+ * <code>"context".unique_context_name.field_name</code>
+ *  Eg  <code>"context"."0_0_0_0:_testA"."lastSaved"</code>
  *  
  * 
  */
@@ -184,10 +184,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
     
   
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(String)
-     */
     @Override
     public SessionData doLoad(String id) throws Exception
     {
@@ -240,9 +236,28 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 data.setLastSaved(lastSaved);
                 data.setLastNode(lastNode);
                 
-                ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
-                ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);
-                SessionData.deserializeAttributes(data, ois);
+                if (attributes == null)
+                {
+                    //legacy attribute storage format: the attributes are all fields in the document
+                    Map<String, Object> map = new HashMap<>();
+                    for (String name : sessionSubDocumentForContext.keySet())
+                    {
+                        //skip special metadata attribute which is not one of the actual session attributes
+                        if ( __METADATA.equals(name) )
+                            continue;         
+                        String attr = MongoUtils.decodeName(name);
+                        Object value = MongoUtils.decodeValue(sessionSubDocumentForContext.get(name));
+                        map.put(attr,value);
+                    }
+                    data.putAllAttributes(map);
+                }
+                else
+                {
+                    //attributes have special serialized format
+                    ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
+                    ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);
+                    SessionData.deserializeAttributes(data, ois);
+                }
             }
             else
             {
@@ -258,9 +273,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         }
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
-     */
+
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -318,9 +331,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     
     
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -353,9 +363,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -441,9 +448,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         return expiredSessions;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
+
     public void initialize (SessionContext context) throws Exception
     {
         if (isStarted())
@@ -452,9 +457,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         ensureIndexes();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long) 
-     */
+
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {   
@@ -554,9 +557,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         //TODO perhaps index on expiry time?
     }
 
-
-
-    /*------------------------------------------------------------ */
     private String getContextField ()
     {
         return __CONTEXT + "." + getCanonicalContextId();
@@ -583,9 +583,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
     
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
     @ManagedAttribute(value="does store serialize sessions", readonly=true)
     @Override
     public boolean isPassivating()
@@ -594,14 +591,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
-     */
+
     @Override
     public String toString()
     {
         return String.format("%s[collection=%s]", super.toString(),getDBCollection());
     }
 
-    
 }

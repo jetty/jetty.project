@@ -30,9 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
@@ -549,9 +547,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                     statement.executeUpdate(getCreateIndexOverSessionStatementAsString(index2));
             }
         }
-        /** 
-         * @see java.lang.Object#toString()
-         */
+
         @Override
         public String toString()
         {
@@ -621,10 +617,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
 
- 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(java.lang.String)
-     */
     @Override
     public SessionData doLoad(String id) throws Exception
     {
@@ -670,9 +662,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
-     */
     @Override
     public boolean delete(String id) throws Exception
     {   
@@ -690,10 +679,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long)
-     */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
@@ -745,7 +730,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 SessionData.serializeAttributes(data, oos);
                 oos.flush();
                 byte[] bytes = baos.toByteArray();
-
                 ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                 statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
                 statement.executeUpdate();
@@ -787,10 +771,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -918,10 +898,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
   
 
-
-   /** 
-    * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-    */
    @Override
    @ManagedAttribute(value="does this store serialize sessions", readonly=true)
    public boolean isPassivating()
@@ -932,9 +908,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
 
-   /** 
-    * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-    */
    @Override
    public boolean exists(String id)
    throws Exception
@@ -966,11 +939,3 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
        }
    }
 }
-
-
-
-
-
-
-
-

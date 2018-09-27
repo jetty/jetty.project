@@ -31,15 +31,11 @@ import java.io.OutputStream;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.MultiException;
@@ -277,9 +273,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#doLoad(java.lang.String)
-     */
+
     @Override
     public SessionData doLoad(String id) throws Exception
     {  
@@ -326,9 +320,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     
         
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
-     */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
@@ -452,10 +443,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
     
     
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
     @Override
     @ManagedAttribute(value="are sessions serialized by this store", readonly=true)
     public boolean isPassivating()
@@ -464,11 +451,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
+
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -486,8 +469,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
            return (expiry > System.currentTimeMillis()); //hasn't yet expired
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
+     * Save the session data.
+     * 
      * @param os the output stream to save to
      * @param id identity of the session
      * @param data the info of the session
@@ -623,7 +608,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     
 
     /**
-     * @param is inputstream containing session data
+     * Load the session data from a file.
+     * 
+     * @param is file input stream containing session data
      * @param expectedId the id we've been told to load
      * @return the session data
      * @throws Exception
@@ -669,15 +656,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
-     */
     @Override
     public String toString()
     {
         return String.format("%s[dir=%s,deleteUnrestorableFiles=%b]",super.toString(),_storeDir,_deleteUnrestorableFiles);
     }
-
-
-
 }

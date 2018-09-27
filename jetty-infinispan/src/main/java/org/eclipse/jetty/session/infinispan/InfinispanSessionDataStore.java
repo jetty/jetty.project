@@ -97,9 +97,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         }
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
-     */
+
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -108,9 +106,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         return (_cache.remove(getCacheKey(id)) != null);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
+
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -178,9 +174,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
        return expired;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long)
-     */
+
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
@@ -204,15 +198,10 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
     @ManagedAttribute(value="does store serialize sessions", readonly=true)
     @Override
     public boolean isPassivating()
     {
-        //TODO run in the _context to ensure classloader is set
         try 
         {
            Class<?> remoteClass = Thread.currentThread().getContextClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
@@ -230,9 +219,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     
     
     
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -294,15 +280,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
-     */
     @Override
     public String toString()
     {
         return String.format("%s[cache=%s,idleTimeoutSec=%d]",super.toString(), (_cache==null?"":_cache.getName()),_infinispanIdleTimeoutSec);
     }
-    
-    
 }
