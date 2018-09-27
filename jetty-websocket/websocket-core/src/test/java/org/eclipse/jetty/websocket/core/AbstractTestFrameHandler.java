@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.nio.ByteBuffer;
 
 /**
  * Base level implementation of local WebSocket Endpoint Frame handling.
@@ -267,8 +267,9 @@ public class AbstractTestFrameHandler implements FrameHandler
                 if (frame.hasPayload())
                 {
                     int factor = frame.isFin()?1:3;
-                    byteBuffer = BufferUtil.ensureCapacity(byteBuffer,byteBuffer.remaining()+factor*frame.getPayloadLength());
                     BufferUtil.compact(byteBuffer);
+                    if (BufferUtil.space(byteBuffer) < frame.getPayloadLength())
+                        byteBuffer = BufferUtil.ensureCapacity(byteBuffer,byteBuffer.capacity()+Math.max(byteBuffer.capacity(), frame.getPayloadLength()*factor));
                     BufferUtil.append(byteBuffer,frame.getPayload());
                 }
                     
