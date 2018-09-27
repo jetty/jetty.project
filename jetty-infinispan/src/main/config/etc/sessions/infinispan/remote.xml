@@ -18,12 +18,6 @@
           </New>
       </Arg>
     </Call>
-    <!--
-    <Call name="put">
-      <Arg><Get class="org.hibernate.search.cfg.Environment" name="MODEL_MAPPING"/></Arg>
-      <Arg><Ref refid="mapping"/></Arg>
-    </Call>
--->
   </New>
 
   <New class="org.infinispan.client.hotrod.configuration.ConfigurationBuilder">
@@ -39,7 +33,7 @@
   </New>
 
 
-    <New id="remoteCacheManager" class="org.infinispan.client.hotrod.RemoteCacheManager">
+  <New id="remoteCacheManager" class="org.infinispan.client.hotrod.RemoteCacheManager">
     <Arg><Ref refid="config"/></Arg>
   </New>
 
