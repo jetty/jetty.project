@@ -53,12 +53,12 @@ public class EchoHandler extends AbstractClientFrameHandler
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.info("onText {} {} {} {}", count++, utf8.length(),fin, getCoreSession());
+        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getCoreSession());
         if (fin)
         {
-            getCoreSession().sendFrame(new Frame(OpCode.TEXT).setPayload(utf8.toString()),
-                    callback,
-                    BatchMode.OFF);
+            Frame echo = new Frame(OpCode.TEXT).setPayload(utf8.toString());
+            LOG.debug("onText echo {}", echo);
+            getCoreSession().sendFrame(echo, callback, BatchMode.OFF);
         }
         else
         {
@@ -69,7 +69,7 @@ public class EchoHandler extends AbstractClientFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {        
-        LOG.info("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getCoreSession());
+        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getCoreSession());
         if (fin)
         {       
             Frame echo = new Frame(OpCode.BINARY);

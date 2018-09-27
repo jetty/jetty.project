@@ -39,7 +39,8 @@ public class Parser
         PAYLOAD_LEN_BYTES,
         MASK,
         MASK_BYTES,
-        PAYLOAD
+        PAYLOAD,
+        FRAGMENT
     }
 
     private static final Logger LOG = Log.getLogger(Parser.class);
@@ -52,7 +53,7 @@ public class Parser
     private int cursor;
     private byte[] mask;
     private int payloadLength;
-    private ByteBuffer partialPayload;
+    private ByteBuffer aggregate;
 
     
     public Parser(ByteBufferPool bufferPool)
@@ -72,7 +73,7 @@ public class Parser
         firstByte = 0;
         mask = null;
         cursor = 0;
-        partialPayload = null;
+        aggregate = null;
         payloadLength = -1;
     }
     
@@ -204,10 +205,13 @@ public class Parser
                     }
 
                     case PAYLOAD:
+                    case FRAGMENT:
                     {
-                        if (partialPayload==null)
+                        if (aggregate ==null)
                             checkFrameSize(OpCode.getOpCode(firstByte),payloadLength);
                         ParsedFrame frame = parsePayload(buffer);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} parsed {}",this,frame);
                         return frame;
                     }
                 }
@@ -272,7 +276,7 @@ public class Parser
         int available = buffer.remaining();
         
         
-        if (partialPayload == null)
+        if (aggregate == null)
         {
             if (available<payloadLength)
             {
@@ -297,13 +301,13 @@ public class Parser
                     buffer.position(buffer.limit());
                     mask = next_mask;
                     firstByte=(byte)(0xFF&(firstByte&0xF0 | OpCode.CONTINUATION));
-                    
+                    state = State.FRAGMENT;
                     return frame;
                 }
                     
                 // No space in the buffer, so we have to copy the partial payload
-                partialPayload = bufferPool.acquire(payloadLength,false);
-                BufferUtil.append(partialPayload,buffer);
+                aggregate = bufferPool.acquire(payloadLength,false);
+                BufferUtil.append(aggregate,buffer);
                 return null;
             }
             
@@ -330,23 +334,23 @@ public class Parser
         }
         else
         {
-            int aggregated = partialPayload.remaining();
+            int aggregated = aggregate.remaining();
             int expecting = payloadLength - aggregated;
             
 
             if (available < expecting)
             {
                 // not enough data to complete this frame, just copy it
-                BufferUtil.append(partialPayload,buffer);
+                BufferUtil.append(aggregate,buffer);
                 return null;
             }
             
             if (available == expecting)
             {
                 // All the available data is for this frame and completes it
-                BufferUtil.append(partialPayload,buffer);
+                BufferUtil.append(aggregate,buffer);
                 state = State.START;
-                return newFrame(firstByte,mask,partialPayload,true);
+                return newFrame(firstByte,mask, aggregate,true);
             }
 
 
@@ -354,10 +358,10 @@ public class Parser
             // Copy the first part of the buffer to the frame and complete it
             int limit = buffer.limit();
             buffer.limit(buffer.position() + expecting);
-            BufferUtil.append(partialPayload,buffer);
+            BufferUtil.append(aggregate,buffer);
             buffer.limit(limit);
             state = State.START;
-            return newFrame(firstByte,mask,partialPayload,true);
+            return newFrame(firstByte,mask, aggregate,true);
         }
     }
     

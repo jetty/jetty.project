@@ -213,7 +213,7 @@ public class AutobahnWebSocketClient
     public void runCaseByNumber(int caseNumber) throws IOException, InterruptedException
     {
         URI wsUri = baseWebsocketUri.resolve("/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
-        log.debug("next uri - {}", wsUri);
+        log.info("test uri: {}", wsUri);
         EchoHandler onEchoMessage = new EchoHandler(caseNumber);
 
         Future<FrameHandler.CoreSession> response = client.connect(onEchoMessage, wsUri);

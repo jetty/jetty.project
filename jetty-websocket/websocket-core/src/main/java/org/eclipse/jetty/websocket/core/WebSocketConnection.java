@@ -460,7 +460,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         if ((prefilled != null) && (prefilled.hasRemaining()))
         {
-            acquireNetworkBuffer();
+            synchronized (this)
+            {
+                networkBuffer = new ReferencedBuffer(bufferPool,prefilled.remaining());
+            }
             ByteBuffer buffer = networkBuffer.getBuffer();
             BufferUtil.clearToFill(buffer);
             BufferUtil.put(prefilled, buffer);
