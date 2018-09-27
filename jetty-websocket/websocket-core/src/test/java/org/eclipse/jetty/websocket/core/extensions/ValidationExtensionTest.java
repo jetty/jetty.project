@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -42,7 +38,6 @@ import org.eclipse.jetty.websocket.core.RawFrameBuilder;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketServerTest;
 import org.eclipse.jetty.websocket.core.WebSocketTester;
@@ -51,6 +46,10 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -188,7 +187,7 @@ public class ValidationExtensionTest extends WebSocketTester
             server.getBean(QueuedThreadPool.class).setName("WSCoreServer");
             ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
-            connector.addBean(new WebSocketPolicy(WebSocketBehavior.SERVER));
+            connector.addBean(new WebSocketPolicy());
             connector.addBean(new RFC6455Handshaker());
             connector.setPort(port);
             connector.setIdleTimeout(1000000);

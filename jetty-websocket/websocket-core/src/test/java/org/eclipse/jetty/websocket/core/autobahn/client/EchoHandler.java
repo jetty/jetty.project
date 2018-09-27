@@ -20,7 +20,11 @@ package org.eclipse.jetty.websocket.core.autobahn.client;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.*;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;

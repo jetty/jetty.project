@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -39,6 +33,12 @@ import org.eclipse.jetty.websocket.core.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.extensions.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

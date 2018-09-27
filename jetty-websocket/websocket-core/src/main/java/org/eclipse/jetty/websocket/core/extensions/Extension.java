@@ -19,7 +19,11 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.core.*;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
  * Interface for WebSocket Extensions.

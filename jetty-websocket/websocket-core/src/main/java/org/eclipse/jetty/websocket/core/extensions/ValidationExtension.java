@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import java.util.Map;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -31,6 +29,8 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+
+import java.util.Map;
 
 import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;

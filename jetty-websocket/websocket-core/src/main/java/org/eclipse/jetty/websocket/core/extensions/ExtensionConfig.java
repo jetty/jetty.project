@@ -22,7 +22,14 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.Trie;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.

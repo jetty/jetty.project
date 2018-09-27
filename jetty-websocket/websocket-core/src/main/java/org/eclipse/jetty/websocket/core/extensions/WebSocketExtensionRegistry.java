@@ -24,7 +24,11 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 public class WebSocketExtensionRegistry implements Iterable<Class<? extends Extension>>
 {

@@ -28,7 +28,11 @@ import org.eclipse.jetty.util.log.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
 
 public class FrameFlusher extends IteratingCallback
 {
