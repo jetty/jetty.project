@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
@@ -63,11 +64,13 @@ public class ErrorPageTest
         context.addServlet(FailServlet.class, "/fail/*");
         context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         context.addServlet(ErrorServlet.class, "/error/*");
+        context.addServlet(AppServlet.class, "/app/*");
         
         ErrorPageErrorHandler error = new ErrorPageErrorHandler();
         context.setErrorHandler(error);
         error.addErrorPage(599,"/error/599");
         error.addErrorPage(IllegalStateException.class.getCanonicalName(),"/error/TestException");
+        error.addErrorPage(BadMessageException.class,"/error/TestException");
         error.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE,"/error/GlobalErrorPage");
         
         _server.start();
@@ -157,6 +160,33 @@ public class ErrorPageTest
         }
     }
 
+    @Test
+    public void testBadMessage() throws Exception
+    {
+        String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 400 Unable to parse URI query"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+        assertThat(response, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AppServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
+        assertThat(response, Matchers.containsString("getParameterMap()= {}"));
+    }
+
+
+    public static class AppServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            PrintWriter writer = response.getWriter();
+            writer.println(request.getRequestURI());
+            writer.println(request.getParameterMap().toString());
+        }
+    }
+
     public static class FailServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -202,6 +232,7 @@ public class ErrorPageTest
             writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+            writer.println("getParameterMap()= " + request.getParameterMap());
         }
     }
     
