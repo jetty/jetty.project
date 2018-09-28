@@ -16,40 +16,34 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package test;
 
-/**
- * GCloudTestSuite
- *
- * Sets up the gcloud emulator once before running all tests.
- *
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-  GCloudSessionDataStoreTest.class,
-  InvalidationSessionTest.class,
-  ClusteredSessionScavengingTest.class,
-  ClusteredOrphanedSessionTest.class
-})
-public class GCloudTestSuite
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.annotation.WebListener;
+
+@WebListener
+public class ClassLoadingTestingServletContextListener
+    implements ServletContextListener
 {
-    public static GCloudSessionTestSupport __testSupport;
 
-    @BeforeAll
-    public static void setUp () throws Exception
+    @Override
+    public void contextInitialized( ServletContextEvent sce )
     {
-        __testSupport = new GCloudSessionTestSupport();
-        __testSupport.setUp();
+        try
+        {
+            Api api = new Api();
+        }
+        catch ( java.lang.Exception exception )
+        {
+            exception.printStackTrace();
+        }
+        //System.out.println("Class " + api.getClass().getName() + " is available and loaded by classloader " + api.getClass().getClassLoader().toString() + ". Expected ClassNotFoundException.");
     }
-    
-    @AfterAll
-    public static void tearDown () throws Exception
+
+    @Override
+    public void contextDestroyed( ServletContextEvent sce )
     {
-        __testSupport.tearDown();
     }
-}
+} 

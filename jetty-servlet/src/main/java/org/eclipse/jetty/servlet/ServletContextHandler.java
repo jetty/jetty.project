@@ -356,13 +356,16 @@ public class ServletContextHandler extends ContextHandler
 
         if (_servletHandler != null)
         {
-            // Call decorators on all holders, and also on any EventListeners before
-            // decorators are called on any other classes (like servlets and filters)
+            //Ensure listener instances are created, added to ContextHandler
             if(_servletHandler.getListeners() != null)
             {
                 for (ListenerHolder holder:_servletHandler.getListeners())
                 {             
-                    _objFactory.decorate(holder.getListener());
+                    holder.start();
+                    //we need to pass in the context because the ServletHandler has not
+                    //yet got a reference to the ServletContext (happens in super.startContext)
+                    holder.initialize(_scontext);
+                    addEventListener(holder.getListener());
                 }
             }
         }
