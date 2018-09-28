@@ -46,9 +46,20 @@ import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
 
-public class SpnegoLoginService2 extends ContainerLifeCycle implements LoginService
+/**
+ * <p>A configurable (as opposed to using system properties) SPNEGO LoginService.</p>
+ * <p>At startup, this LoginService will login via JAAS the service principal, composed
+ * of the {@link #getServiceName() service name} and the {@link #getHostName() host name},
+ * for example {@code HTTP/wonder.com}, using a {@code keyTab} file as the service principal
+ * credentials.</p>
+ * <p>Upon receiving a HTTP request, the server tries to authenticate the client
+ * calling {@link #login(String, Object, ServletRequest)} where the GSS APIs are used to
+ * verify client tokens and (perhaps after a few round-trips) a {@code GSSContext} is
+ * established.</p>
+ */
+public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implements LoginService
 {
-    private static final Logger LOG = Log.getLogger(SpnegoLoginService2.class);
+    private static final Logger LOG = Log.getLogger(ConfigurableSpnegoLoginService.class);
 
     private final GSSManager _gssManager = GSSManager.getInstance();
     private final String _realm;
@@ -59,43 +70,67 @@ public class SpnegoLoginService2 extends ContainerLifeCycle implements LoginServ
     private String _hostName;
     private SpnegoContext _context;
 
-    public SpnegoLoginService2(String realm, AuthorizationService authorizationService)
+    public ConfigurableSpnegoLoginService(String realm, AuthorizationService authorizationService)
     {
         _realm = realm;
         _authorizationService = authorizationService;
     }
 
+    /**
+     * @return the realm name
+     */
     @Override
     public String getName()
     {
         return _realm;
     }
 
+    /**
+     * @return the path of the keyTab file containing service credentials
+     */
     public Path getKeyTabPath()
     {
         return _keyTabPath;
     }
 
+    /**
+     * @param keyTabFile the path of the keyTab file containing service credentials
+     */
     public void setKeyTabPath(Path keyTabFile)
     {
         _keyTabPath = keyTabFile;
     }
 
+    /**
+     * @return the service name, typically "HTTP"
+     * @see #getHostName()
+     */
     public String getServiceName()
     {
         return _serviceName;
     }
 
+    /**
+     * @param serviceName the service name
+     * @see #setHostName(String)
+     */
     public void setServiceName(String serviceName)
     {
         _serviceName = serviceName;
     }
 
+    /**
+     * @return the host name of the service
+     * @see #setServiceName(String)
+     */
     public String getHostName()
     {
         return _hostName;
     }
 
+    /**
+     * @param hostName the host name of the service
+     */
     public void setHostName(String hostName)
     {
         _hostName = hostName;

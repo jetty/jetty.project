@@ -42,14 +42,22 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
-public class SpnegoAuthenticator2 extends LoginAuthenticator
+/**
+ * <p>A LoginAuthenticator that uses SPNEGO and the GSS API to authenticate requests.</p>
+ * <p>A successful authentication from a client is cached for a configurable
+ * {@link #getAuthenticationDuration() duration} using the HTTP session; this avoids
+ * that the client is asked to authenticate for every request.</p>
+ *
+ * @see org.eclipse.jetty.security.ConfigurableSpnegoLoginService
+ */
+public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = Log.getLogger(SpnegoAuthenticator2.class);
+    private static final Logger LOG = Log.getLogger(ConfigurableSpnegoAuthenticator.class);
 
     private final String _authMethod;
     private Duration _authenticationDuration = Duration.ofNanos(-1);
 
-    public SpnegoAuthenticator2()
+    public ConfigurableSpnegoAuthenticator()
     {
         this(Constraint.__SPNEGO_AUTH);
     }
@@ -59,7 +67,7 @@ public class SpnegoAuthenticator2 extends LoginAuthenticator
      *
      * @param authMethod the auth method
      */
-    public SpnegoAuthenticator2(String authMethod)
+    public ConfigurableSpnegoAuthenticator(String authMethod)
     {
         _authMethod = authMethod;
     }
@@ -70,6 +78,9 @@ public class SpnegoAuthenticator2 extends LoginAuthenticator
         return _authMethod;
     }
 
+    /**
+     * @return the authentication duration
+     */
     public Duration getAuthenticationDuration()
     {
         return _authenticationDuration;

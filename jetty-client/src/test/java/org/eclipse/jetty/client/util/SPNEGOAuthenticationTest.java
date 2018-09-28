@@ -39,12 +39,12 @@ import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.security.ConfigurableSpnegoLoginService;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.security.SpnegoLoginService2;
 import org.eclipse.jetty.security.authentication.AuthorizationService;
-import org.eclipse.jetty.security.authentication.SpnegoAuthenticator2;
+import org.eclipse.jetty.security.authentication.ConfigurableSpnegoAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
@@ -88,7 +88,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     private Path serviceKeyTabPath = testDirPath.resolve("service.keytab");
     private Path clientKeyTabPath = testDirPath.resolve("client.keytab");
     private SimpleKdcServer kdc;
-    private SpnegoAuthenticator2 authenticator;
+    private ConfigurableSpnegoAuthenticator authenticator;
 
     @BeforeEach
     public void prepare() throws Exception
@@ -123,7 +123,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         server = new Server();
         server.setSessionIdManager(new DefaultSessionIdManager(server));
         HashLoginService authorizationService = new HashLoginService(realm, realmPropsPath.toString());
-        SpnegoLoginService2 loginService = new SpnegoLoginService2(realm, AuthorizationService.from(authorizationService, ""));
+        ConfigurableSpnegoLoginService loginService = new ConfigurableSpnegoLoginService(realm, AuthorizationService.from(authorizationService, ""));
         loginService.addBean(authorizationService);
         loginService.setKeyTabPath(serviceKeyTabPath);
         loginService.setServiceName(serviceName);
@@ -138,7 +138,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         mapping.setPathSpec("/secure");
         mapping.setConstraint(constraint);
         securityHandler.addConstraintMapping(mapping);
-        authenticator = new SpnegoAuthenticator2();
+        authenticator = new ConfigurableSpnegoAuthenticator();
         securityHandler.setAuthenticator(authenticator);
         securityHandler.setLoginService(loginService);
         securityHandler.setHandler(handler);
