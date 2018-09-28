@@ -690,7 +690,7 @@ public class StartArgs
                 Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(classpath.spliterator(), false)
                         .collect(Collectors.groupingBy(File::isDirectory));
                 List<File> files = dirsAndFiles.get(false);
-                if (!files.isEmpty())
+                if (files != null && !files.isEmpty())
                 {
                     cmd.addRawArg("--module-path");
                     String modules = files.stream()
@@ -699,7 +699,7 @@ public class StartArgs
                     cmd.addRawArg(modules);
                 }
                 List<File> dirs = dirsAndFiles.get(true);
-                if (!dirs.isEmpty())
+                if (dirs != null && !dirs.isEmpty())
                 {
                     cmd.addRawArg("--class-path");
                     String directories = dirs.stream()
