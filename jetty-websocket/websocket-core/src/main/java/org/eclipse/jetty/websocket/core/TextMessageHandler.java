@@ -20,6 +20,9 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -28,12 +31,10 @@ import java.io.IOException;
 
 /**
  * A utility implementation of FrameHandler that aggregates
- * fragmented Text messages into a String before calling {@link #onText(String)}.
- * Since Strings are immutable, the message may be handled asynchronously or
- * asynchronously. Flow control is by default automatic, but an implementation
+ * fragmented Text messages into a String before calling {@link #onText(String,Callback)}.
+ * Flow control is by default automatic, but an implementation
  * may extend {@link #isDemanding()} to return true and then explicityly control
  * demand with calls to {@link org.eclipse.jetty.websocket.core.FrameHandler.CoreSession#demand(long)}
- *
  */
 public class TextMessageHandler implements FrameHandler
 {
@@ -50,7 +51,7 @@ public class TextMessageHandler implements FrameHandler
         this.coreSession = coreSession;
         final int maxSize = coreSession.getPolicy().getMaxTextMessageSize();
 
-        this.utf8 = (maxSize<0) ? new Utf8StringBuilder() : new Utf8StringBuilder()
+        this.utf8 = (maxSize < 0) ? new Utf8StringBuilder() : new Utf8StringBuilder()
         {
             @Override
             protected void appendByte(byte b) throws IOException
@@ -71,92 +72,134 @@ public class TextMessageHandler implements FrameHandler
     @Override
     public void onReceiveFrame(Frame frame, Callback callback)
     {
-        byte opcode = frame.getOpCode();
-        if (LOG.isDebugEnabled())
-            LOG.debug("{}: {}", OpCode.name(opcode), BufferUtil.toDetailString(frame.getPayload()));
-        switch (opcode)
+        try
         {
-            case OpCode.PING:
-            case OpCode.PONG:
-            case OpCode.CLOSE:
-                callback.succeeded();
-                if (isDemanding())
-                    getCoreSession().demand(1);
-                break;
-
-            case OpCode.BINARY:
-                LOG.warn("{} unhandled {}",this,frame);
-                callback.succeeded();
-                if (isDemanding())
-                    getCoreSession().demand(1);
-                break;
-
-            case OpCode.TEXT:
-                if (frame.isFin())
-                {
+            byte opcode = frame.getOpCode();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}: {}", OpCode.name(opcode), BufferUtil.toDetailString(frame.getPayload()));
+            switch (opcode)
+            {
+                case OpCode.PING:
+                case OpCode.PONG:
+                case OpCode.CLOSE:
                     if (isDemanding())
+                        getCoreSession().demand(1);
+                    callback.succeeded();
+                    break;
+
+                case OpCode.BINARY:
+                    callback.failed(new BadPayloadException("Text messages only"));
+                    break;
+
+                case OpCode.TEXT:
+                case OpCode.CONTINUATION:
+                    utf8.append(frame.getPayload());
+                    if (frame.isFin())
                     {
-                        callback.succeeded();
-                        onText(frame.getPayloadAsUTF8());
+                        String message = utf8.toString();
+                        utf8.reset();
+                        onText(message, callback);
                     }
                     else
                     {
-                        onText(frame.getPayloadAsUTF8());
+                        if (isDemanding())
+                            getCoreSession().demand(1);
                         callback.succeeded();
                     }
                     break;
-                }
 
-                utf8.reset();
-                utf8.append(frame.getPayload());
-                callback.succeeded();
-                if (isDemanding())
-                    getCoreSession().demand(1);
-                break;
-
-            case OpCode.CONTINUATION:
-                utf8.append(frame.getPayload());
-                if (frame.isFin())
-                {
-                    if (isDemanding())
-                    {
-                        callback.succeeded();
-                        onText(utf8.toString());
-                    }
-                    else
-                    {
-                        onText(utf8.toString());
-                        callback.succeeded();
-                    }
-                    break;
-                }
-
-                callback.succeeded();
-                if (isDemanding())
-                    getCoreSession().demand(1);
-
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+        catch(Utf8Appendable.NotUtf8Exception bple)
+        {
+            utf8.reset();
+            callback.failed(new BadPayloadException(bple));
+        }
+        catch(Throwable th)
+        {
+            utf8.reset();
+            callback.failed(th);
         }
     }
 
     /**
      * Method called when a complete text message is received.
+     *
      * @param message The message.
      */
-    protected void onText(String message)
+    protected void onText(String message, Callback callback)
     {
     }
+
+    /**
+     * Send a String as a single text frame.
+     * @param message The message to send
+     * @param callback The callback to call when the send is complete
+     * @param mode The batch mode to send the frames in.
+     */
+    public void sendText(String message, Callback callback, BatchMode mode)
+    {
+        getCoreSession().sendFrame(new Frame(OpCode.TEXT,true,message),callback,mode);
+    }
+
+    /**
+     * Send a sequence of Strings as a sequences for fragmented text frame.
+     * Sending a large message in fragments can reduce memory overheads as only a
+     * single fragment need be converted to bytes
+     * @param callback The callback to call when the send is complete
+     * @param mode The batch mode to send the frames in.
+     * @param parts The parts of the message.
+     */
+    public void sendText(Callback callback, BatchMode mode, final String... parts)
+    {
+        if (parts==null || parts.length==0)
+        {
+            callback.succeeded();
+            return;
+        }
+
+        if (parts.length==1)
+        {
+            sendText(parts[0],callback,mode);
+            return;
+        }
+
+        new IteratingNestedCallback(callback)
+        {
+            int i = 0;
+            @Override
+            protected Action process() throws Throwable
+            {
+                if (i+1>parts.length)
+                    return Action.SUCCEEDED;
+
+                String part = parts[i++];
+                getCoreSession().sendFrame(new Frame(
+                    i==1?OpCode.TEXT:OpCode.CONTINUATION,
+                    i==parts.length, part), this, mode);
+                return Action.SCHEDULED;
+            }
+        }.iterate();
+    }
+
+
 
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
+        if (utf8.length()>0 && closeStatus.isNormal())
+            LOG.warn("{} closed with partial message: {} chars", utf8.length());
+        utf8.reset();
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onClosed {}",this,closeStatus);
+            LOG.debug("{} onClosed {}", this, closeStatus);
     }
 
     @Override
     public void onError(Throwable cause) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(this+" onError ", cause);
+            LOG.debug(this + " onError ", cause);
     }
 }

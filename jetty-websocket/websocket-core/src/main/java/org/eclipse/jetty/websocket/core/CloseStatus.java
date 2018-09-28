@@ -313,9 +313,15 @@ public class CloseStatus
         }
     }
 
+    public boolean isNormal()
+    {
+        return code == NORMAL;
+    }
+
     @Override
     public String toString()
     {
         return String.format("{%04d=%s,%s}",code,codeString(code),reason);
     }
+
 }
