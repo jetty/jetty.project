@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -42,8 +41,6 @@ public class TextMessageHandler implements FrameHandler
 
     private CoreSession coreSession;
     private Utf8StringBuilder utf8;
-
-    // TODO add a unit test for this class
 
     @Override
     public void onOpen(CoreSession coreSession) throws Exception
@@ -184,16 +181,14 @@ public class TextMessageHandler implements FrameHandler
         }.iterate();
     }
 
-
-
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onClosed {}", this, closeStatus);
         if (utf8.length()>0 && closeStatus.isNormal())
             LOG.warn("{} closed with partial message: {} chars", utf8.length());
         utf8.reset();
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} onClosed {}", this, closeStatus);
     }
 
     @Override

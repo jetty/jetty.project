@@ -18,24 +18,22 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.TextMessageHandler;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,9 +41,85 @@ import java.util.regex.Pattern;
 /**
 
  */
-public class ChatWebSocketClient implements FrameHandler
+public class ChatWebSocketClient extends TextMessageHandler
 {
     private static Logger LOG = Log.getLogger(ChatWebSocketClient.class);
+
+
+    private URI baseWebsocketUri;
+    private WebSocketCoreClient client;
+    private String name = String.format("unknown@%x", ThreadLocalRandom.current().nextInt());
+
+    public ChatWebSocketClient(String hostname, int port) throws Exception
+    {
+        this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
+        this.client = new WebSocketCoreClient();
+        this.client.start();
+
+        URI wsUri = baseWebsocketUri.resolve("/chat");
+        AbstractUpgradeRequest request = new UpgradeRequest(client, wsUri,this);
+        request.setSubProtocols("chat");
+        Future<FrameHandler.CoreSession> response = client.connect(request);
+        response.get(5, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void onText(String message, Callback callback)
+    {
+        System.out.println(message);
+        callback.succeeded();
+    }
+
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("/([^\\s]+)\\s+([^\\s]+)", Pattern.CASE_INSENSITIVE);
+
+    private void chat(String line)
+    {
+        if(line.startsWith("/"))
+        {
+            Matcher matcher = COMMAND_PATTERN.matcher(line);
+            if (matcher.matches())
+            {
+                String command = matcher.group(1);
+                String value = matcher.group(2);
+
+                switch(command)
+                {
+                    case "name":
+                        if (value != null && value.length() > 0)
+                        {
+                            name = value;
+                            LOG.debug("name changed: " + name);
+                        }
+                        break;
+
+                    case "exit":
+                        getCoreSession().close(Callback.from(()->System.exit(0),x->{x.printStackTrace();System.exit(1);}));
+                        break;
+                }
+
+                return;
+            }
+        }
+        LOG.debug("sending {}...",line);
+
+        Callback callback = new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                LOG.debug("message sent");
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                LOG.warn(x);
+            }
+            
+        };
+
+        sendText(callback,BatchMode.AUTO,name,": ",line);
+    }
 
     public static void main(String[] args)
     {
@@ -61,18 +135,19 @@ public class ChatWebSocketClient implements FrameHandler
         ChatWebSocketClient client = null;
         try
         {
-            String userAgent = "ChatWebsocketClient/0.9";
-            client = new ChatWebSocketClient(hostname, port, userAgent);
+            client = new ChatWebSocketClient(hostname, port);
 
             BufferedReader in = new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8));
-            
+
             String line = in.readLine();
             while(line!=null)
             {
-                client.chat(line);
+                line = line.trim();
+                if (line.length()>0)
+                    client.chat(line);
                 line = in.readLine();
             }
-            
+
         }
         catch (Throwable t)
         {
@@ -83,135 +158,4 @@ public class ChatWebSocketClient implements FrameHandler
         }
     }
 
-
-    private URI baseWebsocketUri;
-    private WebSocketCoreClient client;
-    private CoreSession channel;
-    private String name;
-
-    public ChatWebSocketClient(String hostname, int port, String userAgent) throws Exception
-    {
-        this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
-        this.client = new WebSocketCoreClient();
-       
-        this.client.getPolicy().setMaxBinaryMessageSize(20 * 1024 * 1024);
-        this.client.getPolicy().setMaxTextMessageSize(20 * 1024 * 1024);
-        // this.client.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
-        this.client.start();
-
-        URI wsUri = baseWebsocketUri.resolve("/chat");
-        AbstractUpgradeRequest request = new UpgradeRequest(client, wsUri,this);
-        request.setSubProtocols("chat");
-        Future<FrameHandler.CoreSession> response = client.connect(request);
-        response.get(5, TimeUnit.SECONDS);
-    }
-
-    @Override
-    public void onOpen(CoreSession coreSession) throws Exception
-    {
-        LOG.info("onOpen {}",coreSession);
-        this.channel = coreSession;
-    }
-
-    @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
-    {
-        System.out.println(BufferUtil.toString(frame.getPayload()));
-        callback.succeeded();
-    }
-
-    @Override
-    public void onClosed(CloseStatus closeStatus)
-    {
-        Callback callback = new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                LOG.info("closed {}", closeStatus);
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                LOG.warn(x);
-            }
-
-        };
-
-        channel.close(callback);
-        this.channel = null;
-    }
-
-    @Override
-    public void onError(Throwable cause) throws Exception
-    {
-        Callback callback = new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                LOG.info("error");
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                LOG.warn(x);
-            }
-        };
-
-        channel.close(callback);
-        this.channel = null;
-    }
-
-
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("/([^\\s]+)\\s+([^\\s]+)", Pattern.CASE_INSENSITIVE);
-
-    private void chat(String line)
-    {
-        if(line.startsWith("/"))
-        {
-            Matcher matcher = COMMAND_PATTERN.matcher(line);
-            if (matcher.matches())
-            {
-                String command = matcher.group(1);
-                String value = matcher.group(2);
-
-                if ("name".equalsIgnoreCase(command))
-                {
-                    if (value != null && value.length() > 0)
-                    {
-                        name = value;
-                        LOG.info("name changed: " + name);
-                    }
-                }
-
-                return;
-            }
-        }
-
-        LOG.info("sending {}...",line);
-        Frame frame = new Frame(OpCode.TEXT);
-        frame.setFin(true);
-        frame.setPayload(name + ": " + line);
-
-        Callback callback = new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                LOG.info("message sent");
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                LOG.warn(x);
-            }
-            
-        };
-
-        channel.sendFrame(frame,callback,BatchMode.AUTO);
-    }
 }

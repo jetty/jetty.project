@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;

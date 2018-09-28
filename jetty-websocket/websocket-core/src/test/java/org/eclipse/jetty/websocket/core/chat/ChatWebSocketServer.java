@@ -18,31 +18,131 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestUpgradeHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.TextMessageHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-public class ChatWebSocketServer implements FrameHandler
+public class ChatWebSocketServer extends TextMessageHandler
 {
+    private static Logger LOG = Log.getLogger(ChatWebSocketServer.class);
+
+    private Set<TextMessageHandler> members;
+
+    public ChatWebSocketServer(Set<TextMessageHandler> members)
+    {
+        this.members = members;
+    }
+
+    @Override
+    public void onOpen(CoreSession coreSession) throws Exception
+    {
+        LOG.debug("onOpen {}",coreSession);
+        super.onOpen(coreSession);
+        this.members.add(this);
+    }
+
+    @Override
+    public void onText(String message, Callback callback)
+    {
+        for (TextMessageHandler handler : members)
+        {
+            LOG.debug("Sending Message{} to {}" ,message,  handler);
+            handler.sendText(message, Callback.NOOP, BatchMode.AUTO);
+        }
+
+        callback.succeeded();
+    }
+
+    @Override
+    public void onClosed(CloseStatus closeStatus)
+    {
+        LOG.debug("onClosed {}",closeStatus);
+        super.onClosed(closeStatus);
+        members.remove(this);
+    }
+
+    static class ChatWebSocketNegotiator implements WebSocketNegotiator
+    {
+        final DecoratedObjectFactory objectFactory;
+        final WebSocketExtensionRegistry extensionRegistry;
+        final ByteBufferPool bufferPool;
+
+        Set<TextMessageHandler> members = Collections.synchronizedSet(new HashSet());
+
+        public ChatWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool)
+        {
+            this.objectFactory = objectFactory;
+            this.extensionRegistry = extensionRegistry;
+            this.bufferPool = bufferPool;
+        }
+
+        @Override
+        public FrameHandler negotiate(Negotiation negotiation) throws IOException
+        {
+            // Finalize negotiations in API layer involves:
+            // TODO need access to real request/response????
+            //  + MAY mutate the policy
+            //  + MAY replace the policy
+            //  + MAY read request and set response headers
+            //  + MAY reject with sendError semantics
+            //  + MAY change/add/remove offered extensions
+            //  + MUST pick subprotocol
+            List<String> subprotocols = negotiation.getOfferedSubprotocols();
+            if (!subprotocols.contains("chat"))
+                return null;
+            negotiation.setSubprotocol("chat");
+            //  + MUST return the FrameHandler or null or exception?
+            return new ChatWebSocketServer(members);
+        }
+
+        @Override
+        public WebSocketPolicy getCandidatePolicy()
+        {
+            return null;
+        }
+
+        @Override
+        public WebSocketExtensionRegistry getExtensionRegistry()
+        {
+            return extensionRegistry;
+        }
+
+        @Override
+        public DecoratedObjectFactory getObjectFactory()
+        {
+            return objectFactory;
+        }
+
+        @Override
+        public ByteBufferPool getByteBufferPool()
+        {
+            return bufferPool;
+        }
+    }
+
     public static void main(String[] args) throws Exception
     {
         Server server = new Server();
@@ -65,54 +165,4 @@ public class ChatWebSocketServer implements FrameHandler
         server.join();
     }
 
-
-    private static Logger LOG = Log.getLogger(ChatWebSocketServer.class);
-
-    private CoreSession channel;
-    private Set<CoreSession> channelSet;
-
-    public ChatWebSocketServer(Set<CoreSession> channels)
-    {
-        channelSet = channels;
-    }
-
-    @Override
-    public void onOpen(CoreSession coreSession) throws Exception
-    {
-        LOG.info("onOpen {}",coreSession);
-        this.channel = coreSession;
-        this.channelSet.add(coreSession);
-    }
-
-    @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
-    {
-        String message = BufferUtil.toString(frame.getPayload());
-        for (CoreSession channel : channelSet)
-        {
-            LOG.info("Sending Message: " + message);
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(message), Callback.NOOP, BatchMode.AUTO);
-        }
-
-        callback.succeeded();
-    }
-
-
-    @Override
-    public void onClosed(CloseStatus closeStatus)
-    {
-        LOG.info("onClosed {}",closeStatus);
-        channel.close(Callback.NOOP);
-        channelSet.remove(channel);
-        channel = null;
-    }
-
-    @Override
-    public void onError(Throwable cause) throws Exception
-    {
-        LOG.warn("onError",cause);
-        channel.close(Callback.NOOP);
-        channelSet.remove(channel);
-        channel = null;
-    }
 }

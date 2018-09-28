@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -106,6 +107,24 @@ public interface Callback extends Invocable
             public InvocationType getInvocationType()
             {
                 return invocation;
+            }
+        };
+    }
+
+    static Callback from(Runnable success, Consumer<Throwable> failure)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                success.run();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                failure.accept(x);
             }
         };
     }
