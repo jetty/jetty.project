@@ -70,7 +70,7 @@ public class ChatWebSocketClient extends TextMessageHandler
         callback.succeeded();
     }
 
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("/([^\\s]+)\\s+([^\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("/([^\\s]+)(\\s+([^\\s]+))?", Pattern.CASE_INSENSITIVE);
 
     private void chat(String line)
     {
@@ -80,7 +80,7 @@ public class ChatWebSocketClient extends TextMessageHandler
             if (matcher.matches())
             {
                 String command = matcher.group(1);
-                String value = matcher.group(2);
+                String value = (matcher.groupCount()>1) ? matcher.group(2) : null;
 
                 switch(command)
                 {
@@ -139,6 +139,7 @@ public class ChatWebSocketClient extends TextMessageHandler
 
             BufferedReader in = new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8));
 
+            System.err.println("Type to chat, or:\n  /name <name> - to set member name\n  /exit - to exit\n");
             String line = in.readLine();
             while(line!=null)
             {

@@ -189,6 +189,8 @@ public class TextMessageHandler implements FrameHandler
         if (utf8.length()>0 && closeStatus.isNormal())
             LOG.warn("{} closed with partial message: {} chars", utf8.length());
         utf8.reset();
+        utf8 = null;
+        coreSession = null;
     }
 
     @Override

@@ -44,7 +44,7 @@ import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTester;
-import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTester;
-import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerTest;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;

@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.TestUpgradeHandler;
 import org.eclipse.jetty.websocket.core.TextMessageHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -69,6 +69,8 @@ public class ChatWebSocketServer extends TextMessageHandler
     {
         for (TextMessageHandler handler : members)
         {
+            if (handler==this)
+                continue;
             LOG.debug("Sending Message{} to {}" ,message,  handler);
             handler.sendText(message, Callback.NOOP, BatchMode.AUTO);
         }

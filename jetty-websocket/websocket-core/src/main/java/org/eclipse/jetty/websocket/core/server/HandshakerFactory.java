@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.websocket.core.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 import javax.servlet.http.HttpServletRequest;
 
