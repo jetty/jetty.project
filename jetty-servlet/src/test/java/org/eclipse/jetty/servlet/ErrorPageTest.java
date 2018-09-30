@@ -65,12 +65,15 @@ public class ErrorPageTest
         context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         context.addServlet(ErrorServlet.class, "/error/*");
         context.addServlet(AppServlet.class, "/app/*");
+        context.addServlet(LongerAppServlet.class, "/longer.app/*");
         
         ErrorPageErrorHandler error = new ErrorPageErrorHandler();
         context.setErrorHandler(error);
         error.addErrorPage(599,"/error/599");
+        error.addErrorPage(400,"/error/400");
+        // error.addErrorPage(500,"/error/500");
         error.addErrorPage(IllegalStateException.class.getCanonicalName(),"/error/TestException");
-        error.addErrorPage(BadMessageException.class,"/error/TestException");
+        error.addErrorPage(BadMessageException.class,"/error/BadMessageException");
         error.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE,"/error/GlobalErrorPage");
         
         _server.start();
@@ -164,8 +167,8 @@ public class ErrorPageTest
     public void testBadMessage() throws Exception
     {
         String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
-        assertThat(response, Matchers.containsString("HTTP/1.1 400 Unable to parse URI query"));
-        assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad Request"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
         assertThat(response, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
         assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
@@ -181,9 +184,17 @@ public class ErrorPageTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
+            request.getRequestDispatcher("/longer.app/").forward(request, response);
+        }
+    }
+    
+    public static class LongerAppServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
             PrintWriter writer = response.getWriter();
             writer.println(request.getRequestURI());
-            writer.println(request.getParameterMap().toString());
         }
     }
 
