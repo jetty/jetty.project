@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -110,7 +111,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
                 }
 
                 // Async write the message back.
-                member.remote.sendText(data, Callback.NOOP);
+                member.remote.sendString(data, null);
             }
         }
 
