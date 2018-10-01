@@ -31,6 +31,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -195,8 +196,24 @@ public class Dispatcher implements RequestDispatcher
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_pathInContext);
-                if (_uri.getQuery()!=null || old_uri.getQuery()!=null)
-                    baseRequest.mergeQueryParameters(old_uri.getQuery(),_uri.getQuery(), true);
+    
+                if (_uri.getQuery() != null || old_uri.getQuery() != null)
+                {
+                    try
+                    {
+                        baseRequest.mergeQueryParameters(old_uri.getQuery(), _uri.getQuery(), true);
+                    }
+                    catch (BadMessageException e)
+                    {
+                        // Only throw BME if not in Error Dispatch Mode
+                        // This allows application ErrorPageErrorHandler to handle BME messages
+                        Boolean inErrorDispatch = (Boolean) request.getAttribute(__ERROR_DISPATCH);
+                        if(inErrorDispatch == null || !inErrorDispatch)
+                        {
+                            throw e;
+                        }
+                    }
+                }
                 
                 baseRequest.setAttributes(attr);
 

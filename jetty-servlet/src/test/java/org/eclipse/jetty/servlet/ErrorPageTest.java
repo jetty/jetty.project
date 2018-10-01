@@ -167,11 +167,11 @@ public class ErrorPageTest
     public void testBadMessage() throws Exception
     {
         String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
-        assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad Request"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad query encoding"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
-        assertThat(response, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
+        assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
         assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
-        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query encoding"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
         assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AppServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
