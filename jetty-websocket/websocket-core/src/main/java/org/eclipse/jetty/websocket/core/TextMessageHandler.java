@@ -27,6 +27,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import java.io.IOException;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 /**
  * A utility implementation of FrameHandler that aggregates
@@ -37,6 +39,39 @@ import java.io.IOException;
  */
 public class TextMessageHandler implements FrameHandler
 {
+    public static TextMessageHandler from(BiFunction<String,Callback,Void> onText)
+    {
+        return new TextMessageHandler()
+        {
+            @Override
+            protected void onText(String message, Callback callback)
+            {
+                onText.apply(message,callback);
+            }
+        };
+    };
+
+
+    public static TextMessageHandler from(Consumer<String> onText)
+    {
+        return new TextMessageHandler()
+        {
+            @Override
+            protected void onText(String message, Callback callback)
+            {
+                try
+                {
+                    onText.accept(message);
+                    callback.succeeded();
+                }
+                catch (Throwable th)
+                {
+                    callback.failed(th);
+                }
+            }
+        };
+    };
+
     private Logger LOG = Log.getLogger(TextMessageHandler.class);
 
     private CoreSession coreSession;

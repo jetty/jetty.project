@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 public class Negotiation
 {
+    private final Request baseRequest;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final List<ExtensionConfig> offeredExtensions;
@@ -48,6 +49,7 @@ public class Negotiation
 
     public Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
     {
+        this.baseRequest = baseRequest;
         this.request = request;
         this.response = response;
         

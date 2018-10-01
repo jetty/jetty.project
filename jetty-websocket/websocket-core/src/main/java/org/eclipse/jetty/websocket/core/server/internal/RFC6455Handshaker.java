@@ -194,9 +194,13 @@ public final class RFC6455Handshaker implements Handshaker
             }
             offeredExtensions = applicationExtensions;
         }
-        
+
+        ByteBufferPool pool = negotiator.getByteBufferPool();
+        if (pool==null)
+            pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
+
         extensionStack = new ExtensionStack(negotiator.getExtensionRegistry());
-        extensionStack.negotiate(negotiator.getObjectFactory(), policy, negotiator.getByteBufferPool(), offeredExtensions);
+        extensionStack.negotiate(negotiator.getObjectFactory(), policy, pool, offeredExtensions);
         if (LOG.isDebugEnabled())
             LOG.debug("extensions {}", extensionStack);
         if (extensionStack.hasNegotiatedExtensions())

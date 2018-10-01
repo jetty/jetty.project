@@ -25,6 +25,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 public interface WebSocketNegotiator
 {
@@ -37,5 +38,83 @@ public interface WebSocketNegotiator
     DecoratedObjectFactory getObjectFactory();
     
     ByteBufferPool getByteBufferPool();
-    
+
+    static WebSocketNegotiator from(Function<Negotiation,FrameHandler> negotiate)
+    {
+        return new AbstractNegotiator()
+        {
+            @Override
+            public FrameHandler negotiate(Negotiation negotiation)
+            {
+                return negotiate.apply(negotiation);
+            }
+        };
+    }
+
+    static WebSocketNegotiator from(
+        Function<Negotiation,FrameHandler> negotiate,
+        WebSocketPolicy candidatePolicy,
+        WebSocketExtensionRegistry extensionRegistry,
+        DecoratedObjectFactory objectFactory,
+        ByteBufferPool bufferPool)
+    {
+        return new AbstractNegotiator(candidatePolicy,extensionRegistry,objectFactory,bufferPool)
+        {
+            @Override
+            public FrameHandler negotiate(Negotiation negotiation)
+            {
+                return negotiate.apply(negotiation);
+            }
+        };
+    }
+
+    abstract class AbstractNegotiator implements WebSocketNegotiator
+    {
+        final WebSocketPolicy candidatePolicy;
+        final WebSocketExtensionRegistry extensionRegistry;
+        final DecoratedObjectFactory objectFactory;
+        final ByteBufferPool bufferPool;
+
+
+        public AbstractNegotiator()
+        {
+            this(null,null,null,null);
+        }
+
+        public AbstractNegotiator(
+            WebSocketPolicy candidatePolicy,
+            WebSocketExtensionRegistry extensionRegistry,
+            DecoratedObjectFactory objectFactory,
+            ByteBufferPool bufferPool)
+        {
+            this.candidatePolicy = candidatePolicy==null?new WebSocketPolicy():candidatePolicy;
+            this.extensionRegistry = extensionRegistry==null?new WebSocketExtensionRegistry():extensionRegistry;
+            this.objectFactory = objectFactory==null?new DecoratedObjectFactory():objectFactory;
+            this.bufferPool = bufferPool;
+        }
+
+        @Override
+        public WebSocketPolicy getCandidatePolicy()
+        {
+            return candidatePolicy;
+        }
+
+        @Override
+        public WebSocketExtensionRegistry getExtensionRegistry()
+        {
+            return extensionRegistry;
+        }
+
+        @Override
+        public DecoratedObjectFactory getObjectFactory()
+        {
+            return objectFactory;
+        }
+
+        @Override
+        public ByteBufferPool getByteBufferPool()
+        {
+            return bufferPool;
+        }
+    }
 }

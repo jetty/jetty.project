@@ -19,15 +19,21 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.function.Function;
 
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
@@ -36,10 +42,22 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     final PathSpecSet paths = new PathSpecSet();
     final WebSocketNegotiator negotiator;
 
+    public WebSocketUpgradeHandler(
+        Function<Negotiation,FrameHandler> negotiate,
+        String... pathSpecs)
+    {
+        this(WebSocketNegotiator.from(negotiate), pathSpecs);
+    }
+
     public WebSocketUpgradeHandler(WebSocketNegotiator negotiator, String... pathSpecs)
     {
         this.negotiator = negotiator;
         addPathSpec(pathSpecs);
+    }
+
+    public WebSocketNegotiator getWebSocketNegotiator()
+    {
+        return negotiator;
     }
 
     public void addPathSpec(String... pathSpecs)

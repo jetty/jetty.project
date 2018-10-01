@@ -41,13 +41,13 @@ import java.util.regex.Pattern;
 /**
 
  */
-public class ChatWebSocketClient extends TextMessageHandler
+public class ChatWebSocketClient
 {
     private static Logger LOG = Log.getLogger(ChatWebSocketClient.class);
 
-
     private URI baseWebsocketUri;
     private WebSocketCoreClient client;
+    private TextMessageHandler handler;
     private String name = String.format("unknown@%x", ThreadLocalRandom.current().nextInt());
 
     public ChatWebSocketClient(String hostname, int port) throws Exception
@@ -57,17 +57,16 @@ public class ChatWebSocketClient extends TextMessageHandler
         this.client.start();
 
         URI wsUri = baseWebsocketUri.resolve("/chat");
-        AbstractUpgradeRequest request = new UpgradeRequest(client, wsUri,this);
+        handler = TextMessageHandler.from(this::onText);
+        AbstractUpgradeRequest request = new UpgradeRequest(client, wsUri, handler);
         request.setSubProtocols("chat");
         Future<FrameHandler.CoreSession> response = client.connect(request);
         response.get(5, TimeUnit.SECONDS);
     }
 
-    @Override
-    public void onText(String message, Callback callback)
+    public void onText(String message)
     {
         System.out.println(message);
-        callback.succeeded();
     }
 
     private static final Pattern COMMAND_PATTERN = Pattern.compile("/([^\\s]+)(\\s+([^\\s]+))?", Pattern.CASE_INSENSITIVE);
@@ -93,7 +92,7 @@ public class ChatWebSocketClient extends TextMessageHandler
                         break;
 
                     case "exit":
-                        getCoreSession().close(Callback.from(()->System.exit(0),x->{x.printStackTrace();System.exit(1);}));
+                        handler.getCoreSession().close(Callback.from(()->System.exit(0),x->{x.printStackTrace();System.exit(1);}));
                         break;
                 }
 
@@ -118,7 +117,7 @@ public class ChatWebSocketClient extends TextMessageHandler
             
         };
 
-        sendText(callback,BatchMode.AUTO,name,": ",line);
+        handler.sendText(callback,BatchMode.AUTO,name,": ",line);
     }
 
     public static void main(String[] args)
@@ -153,9 +152,6 @@ public class ChatWebSocketClient extends TextMessageHandler
         catch (Throwable t)
         {
             t.printStackTrace(System.err);
-        }
-        finally
-        {
         }
     }
 
