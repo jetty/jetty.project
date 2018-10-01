@@ -116,6 +116,10 @@ public abstract class BufferingResponseListener extends Listener.Adapter
     public void onContent(Response response, ByteBuffer content)
     {
         int length = content.remaining();
+        
+        if (length == 0)
+            return;
+        
         if (length > BufferUtil.space(buffer))
         {
             int requiredCapacity = buffer == null ? length : buffer.capacity() + length;
