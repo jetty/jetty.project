@@ -405,13 +405,11 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -426,6 +424,11 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <pluginManagement>
@@ -438,6 +441,14 @@
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             </systemPropertyVariables>
           </configuration>
+          <!-- paxexam still using junit 4 so we have to force the provider here -->
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.surefire</groupId>
+              <artifactId>surefire-junit47</artifactId>
+              <version>${maven.surefire.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
         <plugin>
