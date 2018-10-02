@@ -138,6 +138,7 @@
                 <!-- optional, skips this plugin entirely, use on the command line like -Dembedmongo.skip -->
                 <skip>false</skip>
                 <downloadPath>https://jenkins.webtide.net/userContent/</downloadPath>
+                <version>2.2.1</version>
               </configuration>
               <executions>
                 <execution>
