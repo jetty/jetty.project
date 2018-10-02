@@ -57,6 +57,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -64,6 +66,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+// Apparently only JDK 11 is able to run these tests.
+// See for example: https://bugs.openjdk.java.net/browse/JDK-8202439
+// where apparently the compiler gets the AES CPU instructions wrong.
+@DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
 public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 {
     private static final Logger LOG = Log.getLogger(SPNEGOAuthenticationTest.class);
@@ -180,7 +186,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 
         // Request without Authentication causes a 401
         Request request = client.newRequest(uri).path("/secure");
-        ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
+        ContentResponse response = request.timeout(15, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(401, response.getStatus());
 
@@ -197,7 +203,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 
         // Request with authentication causes a 401 (no previous successful authentication) + 200
         request = client.newRequest(uri).path("/secure");
-        response = request.timeout(5, TimeUnit.SECONDS).send();
+        response = request.timeout(15, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         // Authentication results for SPNEGO cannot be cached.
@@ -217,7 +223,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         // The server has infinite authentication duration, so
         // subsequent requests will be preemptively authorized.
         request = client.newRequest(uri).path("/secure");
-        response = request.timeout(5, TimeUnit.SECONDS).send();
+        response = request.timeout(15, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertEquals(1, requests.get());
@@ -259,14 +265,14 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest(uri).path("/secure");
-        Response response = request.timeout(5, TimeUnit.SECONDS).send();
+        Response response = request.timeout(15, TimeUnit.SECONDS).send();
         assertEquals(200, response.getStatus());
         // Expect 401 + 200.
         assertEquals(2, requests.get());
 
         requests.set(0);
         request = client.newRequest(uri).path("/secure");
-        response = request.timeout(5, TimeUnit.SECONDS).send();
+        response = request.timeout(15, TimeUnit.SECONDS).send();
         assertEquals(200, response.getStatus());
         // Authentication not expired on server, expect 200 only.
         assertEquals(1, requests.get());
@@ -276,7 +282,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 
         requests.set(0);
         request = client.newRequest(uri).path("/secure");
-        response = request.timeout(5, TimeUnit.SECONDS).send();
+        response = request.timeout(15, TimeUnit.SECONDS).send();
         assertEquals(200, response.getStatus());
         // Authentication expired, expect 401 + 200.
         assertEquals(2, requests.get());
@@ -287,7 +293,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         requests.set(0);
         ByteArrayInputStream input = new ByteArrayInputStream("hello_world".getBytes(StandardCharsets.UTF_8));
         request = client.newRequest(uri).method("POST").path("/secure").content(new InputStreamContentProvider(input));
-        response = request.timeout(5, TimeUnit.SECONDS).send();
+        response = request.timeout(15, TimeUnit.SECONDS).send();
         assertEquals(200, response.getStatus());
         // Authentication expired, but POSTs are allowed.
         assertEquals(1, requests.get());
