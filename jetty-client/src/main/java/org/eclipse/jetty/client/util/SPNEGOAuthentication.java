@@ -349,6 +349,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
             Map<String, Object> options = new HashMap<>();
             if (LOG.isDebugEnabled())
                 options.put("debug", "true");
+            options.put("refreshKrb5Config", "true");
             options.put("principal", getUserName());
             options.put("isInitiator", "true");
             Path keyTabPath = getUserKeyTabPath();

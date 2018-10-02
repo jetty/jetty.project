@@ -295,6 +295,7 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
             if (LOG.isDebugEnabled())
                 options.put("debug", "true");
             options.put("doNotPrompt", "true");
+            options.put("refreshKrb5Config", "true");
             options.put("principal", principal);
             options.put("useKeyTab", "true");
             Path keyTabPath = getKeyTabPath();

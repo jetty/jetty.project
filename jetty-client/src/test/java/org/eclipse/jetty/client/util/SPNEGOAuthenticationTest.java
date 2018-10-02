@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -102,13 +103,21 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         kdc.setAllowTcp(true);
         kdc.setKdcRealm(realm);
         kdc.setWorkDir(testDirPath.toFile());
-        kdc.setKdcTcpPort(8844);
         kdc.init();
 
         kdc.createAndExportPrincipals(serviceKeyTabPath.toFile(), serviceName + "/" + serviceHost);
         kdc.createPrincipal(clientName + "@" + realm, clientPassword);
         kdc.exportPrincipal(clientName, clientKeyTabPath.toFile());
         kdc.start();
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("KDC started on port {}", kdc.getKdcTcpPort());
+            String krb5 = Files.readAllLines(testDirPath.resolve("krb5.conf")).stream()
+                    .filter(line -> !line.startsWith("#"))
+                    .collect(Collectors.joining(System.lineSeparator()));
+            LOG.debug("krb5.conf{}{}", System.lineSeparator(), krb5);
+        }
     }
 
     @AfterEach
