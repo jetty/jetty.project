@@ -100,24 +100,8 @@ public class ChatWebSocketClient
             }
         }
         LOG.debug("sending {}...",line);
-
-        Callback callback = new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                LOG.debug("message sent");
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                LOG.warn(x);
-            }
-            
-        };
-
-        handler.sendText(callback,BatchMode.AUTO,name,": ",line);
+        
+        handler.sendText(Callback.from(()->LOG.debug("message sent"), LOG::warn),BatchMode.AUTO,name,": ",line);
     }
 
     public static void main(String[] args)

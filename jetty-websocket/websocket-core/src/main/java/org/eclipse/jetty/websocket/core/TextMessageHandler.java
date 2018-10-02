@@ -31,8 +31,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
- * A utility implementation of FrameHandler that aggregates
- * fragmented Text messages into a String before calling {@link #onText(String,Callback)}.
+ * A utility implementation of FrameHandler that defragments
+ * text frames into a String message before calling {@link #onText(String,Callback)}.
  * Flow control is by default automatic, but an implementation
  * may extend {@link #isDemanding()} to return true and then explicityly control
  * demand with calls to {@link org.eclipse.jetty.websocket.core.FrameHandler.CoreSession#demand(long)}
@@ -49,7 +49,7 @@ public class TextMessageHandler implements FrameHandler
                 onText.apply(message,callback);
             }
         };
-    };
+    }
 
 
     public static TextMessageHandler from(Consumer<String> onText)
@@ -70,7 +70,7 @@ public class TextMessageHandler implements FrameHandler
                 }
             }
         };
-    };
+    }
 
     private Logger LOG = Log.getLogger(TextMessageHandler.class);
 

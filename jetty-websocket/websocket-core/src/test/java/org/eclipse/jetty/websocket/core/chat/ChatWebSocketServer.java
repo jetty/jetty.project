@@ -19,8 +19,10 @@
 package org.eclipse.jetty.websocket.core.chat;
 
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -36,9 +38,13 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class ChatWebSocketServer
 {
@@ -102,8 +108,6 @@ public class ChatWebSocketServer
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
-        connector.addBean(new WebSocketPolicy());
-        connector.addBean(new RFC6455Handshaker());
         connector.setPort(8888);
         connector.setIdleTimeout(1000000);
         server.addConnector(connector);
@@ -112,9 +116,21 @@ public class ChatWebSocketServer
         server.setHandler(context);
 
         ChatWebSocketServer chat = new ChatWebSocketServer();
-        WebSocketUpgradeHandler handler = new TestUpgradeHandler(WebSocketNegotiator.from(chat::negotiate));
-        handler.getWebSocketNegotiator().getCandidatePolicy().setMaxTextMessageSize(2048);
-        context.setHandler(handler);
+        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(WebSocketNegotiator.from(chat::negotiate));
+        upgradeHandler.getWebSocketNegotiator().getCandidatePolicy().setMaxTextMessageSize(2048);
+        context.setHandler(upgradeHandler);
+
+        upgradeHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                response.getOutputStream().println("WebSocket Chat Server");
+                baseRequest.setHandled(true);
+            }
+        });
 
         server.start();
         server.join();

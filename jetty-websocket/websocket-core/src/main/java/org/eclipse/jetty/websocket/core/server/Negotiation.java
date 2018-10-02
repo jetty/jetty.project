@@ -153,11 +153,16 @@ public class Negotiation
         return policy;
     }
 
+    public Request getBaseRequest()
+    {
+        return baseRequest;
+    }
+
     public HttpServletRequest getRequest()
     {
         return request;
     }
-    
+
     public HttpServletResponse getResponse()
     {
         return response;
@@ -177,14 +182,14 @@ public class Negotiation
     {
         return errorCode>0;
     }
-    
+
     public boolean isUpgrade()
     {
         return upgrade;
     }
 
     public void sendError(int code, String reason)
-    {            
+    {
         errorCode = code;
         errorReason = reason;
     }
@@ -198,7 +203,7 @@ public class Negotiation
     {
         response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(),subprotocol);
     }
-    
+
     @Override
     public String toString()
     {
@@ -208,5 +213,4 @@ public class Negotiation
                 getOfferedExtensions(),
                 getOfferedSubprotocols());
     }
-    
 }
