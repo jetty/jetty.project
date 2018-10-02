@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -72,20 +66,31 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
+
+// This whole test is very specific to how TLS < 1.3 works.
+@EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
 public class SslBytesServerTest extends SslBytesTest
 {
     private final AtomicInteger sslFills = new AtomicInteger();
@@ -101,8 +106,6 @@ public class SslBytesServerTest extends SslBytesTest
     private SimpleProxy proxy;
     private Runnable idleHook;
 
-    // This whole test is very specific to how TLS < 1.3 works.
-    @DisabledOnJre( JRE.JAVA_11 )
     @BeforeEach
     public void init() throws Exception
     {

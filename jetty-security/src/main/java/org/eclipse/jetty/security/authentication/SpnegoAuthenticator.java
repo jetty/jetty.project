@@ -35,6 +35,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
+/**
+ * @deprecated use {@link ConfigurableSpnegoAuthenticator} instead.
+ */
+@Deprecated
 public class SpnegoAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(SpnegoAuthenticator.class);
