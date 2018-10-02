@@ -19,17 +19,17 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.net.HttpCookie;
+import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-/**
- * The mutable HTTP Request to Upgrade to WebSocket
+/**        
+ * The HTTP Upgrade to WebSocket Request
  */
-@SuppressWarnings("unused")
-public interface UpgradeRequest extends HandshakeRequest
+public interface UpgradeRequest
 {
     /**
      * Add WebSocket Extension Configuration(s) to Upgrade Request.
@@ -50,6 +50,178 @@ public interface UpgradeRequest extends HandshakeRequest
      * @param configs the configuration(s) to add
      */
     void addExtensions(String... configs);
+
+    /**
+     * Remove all headers from request.
+     * @deprecated (no longer supported, as this can undo the required upgrade request headers)
+     */
+    @Deprecated
+    void clearHeaders();
+
+    /**
+     * Get the list of Cookies on the Upgrade request
+     *
+     * @return the list of Cookies
+     */
+    List<HttpCookie> getCookies();
+
+    /**
+     * Get the list of WebSocket Extension Configurations for this Upgrade Request.
+     * <p>
+     * This is merely the list of requested Extensions to use, see {@link UpgradeResponse#getExtensions()} for what was
+     * negotiated
+     *
+     * @return the list of Extension configurations (in the order they were specified)
+     */
+    List<ExtensionConfig> getExtensions();
+
+    /**
+     * Get a specific Header value from Upgrade Request
+     *
+     * @param name the name of the header
+     * @return the value of the header (null if header does not exist)
+     */
+    String getHeader(String name);
+
+    /**
+     * Get the specific Header value, as an {@code int}, from the Upgrade Request.
+     *
+     * @param name the name of the header
+     * @return the value of the header as an {@code int} (-1 if header does not exist)
+     * @throws NumberFormatException if unable to parse value as an int.
+     */
+    int getHeaderInt(String name);
+
+    /**
+     * Get the headers as a Map of keys to value lists.
+     *
+     * @return the headers
+     */
+    Map<String, List<String>> getHeaders();
+
+    /**
+     * Get the specific header values (for multi-value headers)
+     *
+     * @param name the header name
+     * @return the value list (null if no header exists)
+     */
+    List<String> getHeaders(String name);
+
+    /**
+     * The host of the Upgrade Request URI
+     *
+     * @return host of the request URI
+     */
+    String getHost();
+
+    /**
+     * The HTTP version used for this Upgrade Request
+     * <p>
+     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always
+     * {@code HTTP/1.1}
+     *
+     * @return the HTTP Version used
+     */
+    String getHttpVersion();
+
+    /**
+     * The HTTP method for this Upgrade Request.
+     * <p>
+     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always {@code GET}
+     *
+     * @return the HTTP method used
+     */
+    String getMethod();
+
+    /**
+     * The WebSocket Origin of this Upgrade Request
+     * <p>
+     * See <a href="http://tools.ietf.org/html/rfc6455#section-10.2">RFC6455: Section 10.2</a> for details.
+     * <p>
+     * Equivalent to {@link #getHeader(String)} passed the "Origin" header.
+     *
+     * @return the Origin header
+     */
+    String getOrigin();
+
+    /**
+     * Returns a map of the query parameters of the request.
+     *
+     * @return a unmodifiable map of query parameters of the request.
+     */
+    Map<String, List<String>> getParameterMap();
+
+    /**
+     * Get the WebSocket Protocol Version
+     * <p>
+     * As of <a href="http://tools.ietf.org/html/rfc6455#section-11.6">RFC6455</a>, Jetty only supports version
+     * {@code 13}
+     *
+     * @return the WebSocket protocol version
+     */
+    String getProtocolVersion();
+
+    /**
+     * Get the Query String of the request URI.
+     *
+     * @return the request uri query string
+     */
+    String getQueryString();
+
+    /**
+     * Get the Request URI
+     *
+     * @return the request URI
+     */
+    URI getRequestURI();
+
+    /**
+     * Access the Servlet HTTP Session (if present)
+     * <p>
+     * Note: Never present on a Client UpgradeRequest.
+     *
+     * @return the Servlet HTTPSession on server side UpgradeRequests
+     */
+    Object getSession();
+
+    /**
+     * Get the list of offered WebSocket sub-protocols.
+     *
+     * @return the list of offered sub-protocols
+     */
+    List<String> getSubProtocols();
+
+    /**
+     * Get the User Principal for this request.
+     * <p>
+     * Only applicable when using UpgradeRequest from server side.
+     *
+     * @return the user principal
+     */
+    Principal getUserPrincipal();
+
+    /**
+     * Test if a specific sub-protocol is offered
+     *
+     * @param test the sub-protocol to test for
+     * @return true if sub-protocol exists on request
+     */
+    boolean hasSubProtocol(String test);
+
+    /**
+     * Test if supplied Origin is the same as the Request
+     *
+     * @param test the supplied origin
+     * @return true if the supplied origin matches the request origin
+     */
+    boolean isOrigin(String test);
+
+    /**
+     * Test if connection is secure.
+     *
+     * @return true if connection is secure.
+     */
+    boolean isSecure();
 
     /**
      * Set the list of Cookies on the request
@@ -98,6 +270,43 @@ public interface UpgradeRequest extends HandshakeRequest
     void setHeaders(Map<String, List<String>> headers);
 
     /**
+     * Set the HTTP Version to use.
+     * <p>
+     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this should always be
+     * {@code HTTP/1.1}
+     *
+     * @param httpVersion the HTTP version to use.
+     */
+    void setHttpVersion(String httpVersion);
+
+    /**
+     * Set the HTTP method to use.
+     * <p>
+     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always {@code GET}
+     *
+     * @param method the HTTP method to use.
+     */
+    void setMethod(String method);
+
+    /**
+     * Set the Request URI to use for this request.
+     * <p>
+     * Must be an absolute URI with scheme {@code 'ws'} or {@code 'wss'}
+     *
+     * @param uri the Request URI
+     */
+    void setRequestURI(URI uri);
+
+    /**
+     * Set the Session associated with this request.
+     * <p>
+     * Typically used to associate the Servlet HttpSession object.
+     *
+     * @param session the session object to associate with this request
+     */
+    void setSession(Object session);
+
+    /**
      * Set the offered WebSocket Sub-Protocol list.
      *
      * @param protocols the offered sub-protocol list
@@ -110,4 +319,5 @@ public interface UpgradeRequest extends HandshakeRequest
      * @param protocols the offered sub-protocol list
      */
     void setSubProtocols(String... protocols);
+
 }

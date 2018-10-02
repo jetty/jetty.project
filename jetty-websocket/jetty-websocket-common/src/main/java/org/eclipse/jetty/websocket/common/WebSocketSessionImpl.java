@@ -19,15 +19,16 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
-import java.net.SocketAddress;
-import java.util.Collection;
+import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.common.io.SuspendToken;
+import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class WebSocketSessionImpl implements Session
@@ -63,7 +64,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public void close(CloseStatus closeStatus)
     {
-        remoteEndpoint.close(closeStatus.getCode(), closeStatus.getReason());
+        remoteEndpoint.close(closeStatus.getCode(), closeStatus.getPhrase());
     }
 
     @Override
@@ -73,45 +74,34 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public void close(StatusCode statusCode, String reason)
-    {
-        this.close(statusCode.getCode(), reason);
-    }
-
-    @Override
-    public void abort() throws IOException
-    {
-        remoteEndpoint.getChannel().abort();
-    }
-
-    @Override
     public long getIdleTimeout()
     {
-        return remoteEndpoint.getChannel().getIdleTimeout(TimeUnit.MILLISECONDS);
+        return remoteEndpoint.getCoreSession().getIdleTimeout(TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public SocketAddress getLocalSocketAddress()
+    public org.eclipse.jetty.websocket.api.WebSocketPolicy getPolicy()
     {
-        return handshakeRequest.getLocalSocketAddress();
-    }
+        org.eclipse.jetty.websocket.api.WebSocketPolicy policy =
+        new org.eclipse.jetty.websocket.api.WebSocketPolicy(behavior==Behavior.SERVER?WebSocketBehavior.SERVER:WebSocketBehavior.CLIENT);
 
-    @Override
-    public Collection<Session> getOpenSessions()
-    {
-        return container.getBeans(Session.class);
-    }
+        policy.setInputBufferSize(sessionPolicy.getInputBufferSize());
+        policy.setOutputBufferSize(sessionPolicy.getOutputBufferSize());
+        policy.setIdleTimeout(sessionPolicy.getIdleTimeout());
+        policy.setAsyncWriteTimeout(sessionPolicy.getAsyncWriteTimeout());
+        policy.setMaxBinaryMessageSize(sessionPolicy.getMaxBinaryMessageSize());
+        policy.setMaxBinaryMessageBufferSize(sessionPolicy.getMaxBinaryMessageBufferSize());
+        policy.setMaxTextMessageSize(sessionPolicy.getMaxTextMessageSize());
+        policy.setMaxTextMessageBufferSize(sessionPolicy.getMaxTextMessageBufferSize());
+        policy.setMaxAllowedFrameSize(sessionPolicy.getMaxAllowedFrameSize());
 
-    @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return sessionPolicy;
+        return policy;
     }
 
     @Override
     public String getProtocolVersion()
     {
-        return getHandshakeRequest().getProtocolVersion();
+        return handshakeRequest.getProtocolVersion();
     }
 
     @Override
@@ -121,27 +111,9 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return handshakeRequest.getRemoteSocketAddress();
-    }
-
-    @Override
-    public HandshakeRequest getHandshakeRequest()
-    {
-        return this.handshakeRequest;
-    }
-
-    @Override
-    public HandshakeResponse getHandshakeResponse()
-    {
-        return this.handshakeResponse;
-    }
-
-    @Override
     public boolean isOpen()
     {
-        return remoteEndpoint.getChannel().isOpen();
+        return remoteEndpoint.getCoreSession().isOpen();
     }
 
     @Override
@@ -153,19 +125,48 @@ public class WebSocketSessionImpl implements Session
     @Override
     public void setIdleTimeout(long ms)
     {
-        remoteEndpoint.getChannel().setIdleTimeout(ms, TimeUnit.MILLISECONDS);
+        remoteEndpoint.getCoreSession().setIdleTimeout(ms, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void disconnect() throws IOException
+    {
+
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public UpgradeRequest getUpgradeRequest()
+    {
+        return null;
+    }
+
+    @Override
+    public UpgradeResponse getUpgradeResponse()
+    {
+        return null;
     }
 
     @Override
     public SuspendToken suspend()
     {
-        // TODO: need to implement
-        throw new UnsupportedOperationException("Not supported in websocket-core yet");
+        return null;
     }
 
     @Override
     public String toString()
     {
-        return String.format("WebSocketSessionImpl[%s,to=%,d,%s,%s]", behavior, sessionPolicy.getIdleTimeout(), getLocalSocketAddress(), getRemoteSocketAddress());
+        return String.format("WebSocketSessionImpl[%s,to=%,d,%s]", behavior, sessionPolicy.getIdleTimeout(), remoteEndpoint.getCoreSession());
     }
 }

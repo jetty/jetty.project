@@ -78,11 +78,11 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
-        AbstractUpgradeRequest request = new UpgradeRequest(this, wsUri, frameHandler);
+        UpgradeRequest request = UpgradeRequest.from(this, wsUri, frameHandler);
         return connect(request);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> connect(AbstractUpgradeRequest request) throws IOException
+    public CompletableFuture<FrameHandler.CoreSession> connect(UpgradeRequest request) throws IOException
     {
         if (!isStarted())
         {

@@ -40,11 +40,11 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketConnectionListener;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketPingPongListener;
+import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.invoke.InvokerUtils;
 import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
@@ -55,6 +55,7 @@ import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -67,12 +68,12 @@ import org.eclipse.jetty.websocket.core.Frame;
  * </p>
  * <ul>
  * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
- * <li>Extends {@link org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketConnectionListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketPingPongListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener}</li>
+ * <li>Extends {@link org.eclipse.jetty.websocket.api.WebSocketAdapter}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketConnectionListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPartialListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPingPongListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketFrameListener}</li>
  * </ul>
  */
 public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
@@ -304,7 +305,18 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
         metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
         metadata.setMaxTextMessageSize(anno.maxTextMessageSize());
         metadata.setIdleTimeout(anno.maxIdleTime());
-        metadata.setBatchMode(anno.batchMode());
+        switch(anno.batchMode())
+        {
+            case AUTO:
+                metadata.setBatchMode(BatchMode.AUTO);
+                break;
+            case ON:
+                metadata.setBatchMode(BatchMode.ON);
+                break;
+            case OFF:
+                metadata.setBatchMode(BatchMode.OFF);
+                break;
+        }
 
         Method onmethod;
 

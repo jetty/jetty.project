@@ -22,28 +22,28 @@ package org.eclipse.jetty.websocket.api;
  * The <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455 specified status codes</a> and <a
  * href="https://www.iana.org/assignments/websocket/websocket.xml#close-code-number-rules">IANA: WebSocket Close Code Number Registry</a>
  */
-public enum StatusCode
+public final class StatusCode
 {
     /**
      * 1000 indicates a normal closure, meaning that the purpose for which the connection was established has been fulfilled.
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    NORMAL(1000),
+    public final static int NORMAL = 1000;
 
     /**
      * 1001 indicates that an endpoint is "going away", such as a server going down or a browser having navigated away from a page.
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    SHUTDOWN(1001),
+    public final static int SHUTDOWN = 1001;
 
     /**
      * 1002 indicates that an endpoint is terminating the connection due to a protocol error.
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    PROTOCOL(1002),
+    public final static int PROTOCOL = 1002;
 
     /**
      * 1003 indicates that an endpoint is terminating the connection because it has received a type of data it cannot accept (e.g., an endpoint that understands
@@ -51,14 +51,14 @@ public enum StatusCode
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    BAD_DATA(1003),
+    public final static int BAD_DATA = 1003;
 
     /**
      * Reserved. The specific meaning might be defined in the future.
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    UNDEFINED(1004),
+    public final static int UNDEFINED = 1004;
 
     /**
      * 1005 is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint. It is designated for use in applications expecting
@@ -66,7 +66,7 @@ public enum StatusCode
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    NO_CODE(1005),
+    public final static int NO_CODE = 1005;
 
     /**
      * 1006 is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint. It is designated for use in applications expecting
@@ -74,13 +74,13 @@ public enum StatusCode
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    NO_CLOSE(1006),
-
+    public final static int NO_CLOSE = 1006;
+    
     /**
      * Abnormal Close is a synonym for {@link #NO_CLOSE}, used to indicate a close
      * condition where no close frame was processed from the remote side.
      */
-    ABNORMAL(1006),
+    public final static int ABNORMAL = NO_CLOSE;
 
     /**
      * 1007 indicates that an endpoint is terminating the connection because it has received data within a message that was not consistent with the type of the
@@ -88,7 +88,7 @@ public enum StatusCode
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    BAD_PAYLOAD(1007),
+    public final static int BAD_PAYLOAD = 1007;
 
     /**
      * 1008 indicates that an endpoint is terminating the connection because it has received a message that violates its policy. This is a generic status code
@@ -97,14 +97,14 @@ public enum StatusCode
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    POLICY_VIOLATION(1008),
+    public final static int POLICY_VIOLATION = 1008;
 
     /**
      * 1009 indicates that an endpoint is terminating the connection because it has received a message that is too big for it to process.
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    MESSAGE_TOO_LARGE(1009),
+    public final static int MESSAGE_TOO_LARGE = 1009;
 
     /**
      * 1010 indicates that an endpoint (client) is terminating the connection because it has expected the server to negotiate one or more extension, but the
@@ -113,21 +113,21 @@ public enum StatusCode
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    REQUIRED_EXTENSION(1010),
+    public final static int REQUIRED_EXTENSION = 1010;
 
     /**
      * 1011 indicates that a server is terminating the connection because it encountered an unexpected condition that prevented it from fulfilling the request.
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    SERVER_ERROR(1011),
+    public final static int SERVER_ERROR = 1011;
 
     /**
      * 1012 indicates that the service is restarted. a client may reconnect, and if it chooses to do, should reconnect using a randomized delay of 5 - 30s.
      * <p>
      * See <a href="https://www.ietf.org/mail-archive/web/hybi/current/msg09649.html">[hybi] Additional WebSocket Close Error Codes</a>
      */
-    SERVICE_RESTART(1012),
+    public final static int SERVICE_RESTART = 1012;
 
     /**
      * 1013 indicates that the service is experiencing overload. a client should only connect to a different IP (when there are multiple for the target) or
@@ -135,14 +135,14 @@ public enum StatusCode
      * <p>
      * See <a href="https://www.ietf.org/mail-archive/web/hybi/current/msg09649.html">[hybi] Additional WebSocket Close Error Codes</a>
      */
-    TRY_AGAIN_LATER(1013),
+    public final static int TRY_AGAIN_LATER = 1013;
 
     /**
      * 1014 indicates that a gateway or proxy received and invalid upstream response.
      * <p>
      * See <a href="https://www.ietf.org/mail-archive/web/hybi/current/msg10748.html">[hybi] WebSocket Subprotocol Close Code: Bad Gateway</a>
      */
-    INVALID_UPSTREAM_RESPONSE(1014),
+    public final static int INVALID_UPSTREAM_RESPONSE = 1014;
 
     /**
      * 1015 is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint. It is designated for use in applications expecting
@@ -150,27 +150,29 @@ public enum StatusCode
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
-    FAILED_TLS_HANDSHAKE(1015);
+    public final static int FAILED_TLS_HANDSHAKE = 1015;
 
-    private final int code;
-
-    StatusCode(int code)
+    /**
+     * Test if provided status code can be sent/received on a WebSocket close.
+     * <p>
+     *     This honors the RFC6455 rules and IANA rules.
+     * </p>
+     * @param statusCode the statusCode to test
+     * @return true if transmittable
+     */
+    public static boolean isTransmittable(int statusCode)
     {
-        this.code = code;
-    }
-
-    public static String asName(int code)
-    {
-        for (StatusCode statusCode : values())
-        {
-            if (statusCode.code == code)
-                return statusCode.name();
-        }
-        return Integer.toString(code);
-    }
-
-    public int getCode()
-    {
-        return code;
+        return (statusCode == NORMAL) ||
+                (statusCode == SHUTDOWN) ||
+                (statusCode == PROTOCOL) ||
+                (statusCode == BAD_DATA) ||
+                (statusCode == BAD_PAYLOAD) ||
+                (statusCode == POLICY_VIOLATION) ||
+                (statusCode == MESSAGE_TOO_LARGE) ||
+                (statusCode == REQUIRED_EXTENSION) ||
+                (statusCode == SERVER_ERROR) ||
+                (statusCode == SERVICE_RESTART) ||
+                (statusCode == TRY_AGAIN_LATER) ||
+                (statusCode == INVALID_UPSTREAM_RESPONSE);
     }
 }

@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketServletNegotiator} objects.
@@ -55,6 +56,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     public static final String CONFIG_ATTRIBUTE_KEY = "configAttributeKey";
 
+    private final RFC6455Handshaker handshaker = new RFC6455Handshaker();
     private ServletContextWebSocketContainer servletContextWebSocketContainer;
 
     /**
@@ -238,14 +240,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             HttpServletRequest httpreq = (HttpServletRequest) request;
             HttpServletResponse httpresp = (HttpServletResponse) response;
 
-            Handshaker handshaker = HandshakerFactory.getHandshaker(httpreq);
-
-            if (handshaker == null)
-            {
-                // Not a request that can be upgraded, skip it
-                chain.doFilter(request, response);
-                return;
-            }
 
             // Since this is a filter, we need to be smart about determining the target path.
             // We should rely on the Container for stripping path parameters and its ilk before

@@ -22,10 +22,10 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketPingPongListener;
+import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
 import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 public class ListenerPingPongSocket implements WebSocketPingPongListener
 {
@@ -34,7 +34,7 @@ public class ListenerPingPongSocket implements WebSocketPingPongListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        events.add("onWebSocketClose(%s, %s)", StatusCode.asName(statusCode), TextUtil.quote(reason));
+        events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
     }
     
     @Override

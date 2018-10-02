@@ -78,7 +78,7 @@ public class OutgoingMessageCapture extends DummyChannel implements FrameHandler
             case OpCode.CLOSE:
             {
                 CloseStatus closeStatus = new CloseStatus(frame.getPayload());
-                String event = String.format("CLOSE:%s:%s", StatusCode.asName(closeStatus.getCode()), closeStatus.getReason());
+                String event = String.format("CLOSE:%s:%s", CloseStatus.codeString(closeStatus.getCode()), closeStatus.getReason());
                 LOG.debug(event);
                 events.offer(event);
             }

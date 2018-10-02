@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 /**
  * Example EchoSocket using Listener.
@@ -59,7 +59,7 @@ public class ListenerEchoSocket implements WebSocketListener
         {
             System.out.printf("Echoing back message [%s]%n",message);
             // echo the message back
-            outbound.getRemote().sendText(message,null);
+            outbound.getRemote().sendString(message,null);
         }
     }
 }

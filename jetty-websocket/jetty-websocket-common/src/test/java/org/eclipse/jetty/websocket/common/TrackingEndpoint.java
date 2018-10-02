@@ -25,8 +25,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.core.AbstractTrackingEndpoint;
 import org.eclipse.jetty.websocket.core.Frame;
 
@@ -79,8 +79,10 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
     {
         assertThat("Session type", session, instanceOf(WebSocketSessionImpl.class));
         super.onWSOpen((WebSocketSessionImpl) session);
-        this.openUpgradeRequest = session.getHandshakeRequest();
-        this.openUpgradeResponse = session.getHandshakeResponse();
+        /* TODO
+        this.openUpgradeRequest = session.getUpgradeRequest();
+        this.openUpgradeResponse = session.getUpgradeResponse();
+        */
     }
 
     @Override
@@ -90,14 +92,16 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
     }
 
     @Override
-    public void onWebSocketFrame(Frame frame)
+    public void onWebSocketFrame(org.eclipse.jetty.websocket.api.extensions.Frame frame)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("onWSFrame({})", frame);
         }
 
+        /** TODO
         framesQueue.offer(Frame.copy(frame));
+         */
     }
 
     @Override

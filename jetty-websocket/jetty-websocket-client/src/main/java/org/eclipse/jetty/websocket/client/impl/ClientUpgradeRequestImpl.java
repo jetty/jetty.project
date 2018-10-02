@@ -29,16 +29,15 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 
-public class ClientUpgradeRequestImpl extends AbstractUpgradeRequest
+public class ClientUpgradeRequestImpl extends UpgradeRequest
 {
     private final WebSocketClient containerContext;
     private final Object websocketPojo;
@@ -46,7 +45,7 @@ public class ClientUpgradeRequestImpl extends AbstractUpgradeRequest
     private final CompletableFuture<Session> futureSession;
     private final DelegatedClientHandshakeRequest handshakeRequest;
 
-    public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request, URI requestURI, Object websocketPojo)
+    public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, org.eclipse.jetty.websocket.api.UpgradeRequest request, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
@@ -62,7 +61,7 @@ public class ClientUpgradeRequestImpl extends AbstractUpgradeRequest
         {
             // Copy request details into actual request
             HttpFields fields = getHeaders();
-            request.getHeadersMap().forEach((name, values) -> fields.put(name, values));
+            request.getHeaders().forEach((name, values) -> fields.put(name, values));
 
             // Copy manually created Cookies into place
             List<HttpCookie> cookies = request.getCookies();
@@ -80,7 +79,9 @@ public class ClientUpgradeRequestImpl extends AbstractUpgradeRequest
             setSubProtocols(request.getSubProtocols());
 
             // Copy extensions
+            /* TODO or not?
             setExtensions(request.getExtensions());
+            */
 
             // Copy method from upgradeRequest object
             if (request.getMethod() != null)

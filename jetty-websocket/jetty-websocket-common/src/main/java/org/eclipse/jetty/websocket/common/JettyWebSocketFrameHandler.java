@@ -287,7 +287,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             Frame pong = new Frame(OpCode.PONG);
             if (frame.hasPayload())
                 pong.setPayload(frame.getPayload());
-            getSession().getRemote().getChannel().sendFrame(pong, Callback.NOOP, BatchMode.OFF);
+            getSession().getRemote().getCoreSession().sendFrame(pong, Callback.NOOP, BatchMode.OFF);
         }
         callback.succeeded();
     }

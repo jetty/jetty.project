@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
@@ -81,6 +82,7 @@ public abstract class WebSocketServlet extends HttpServlet
 {
     private WebSocketServletFactory factory;
     private WebSocketServletNegotiator negotiator;
+    private final RFC6455Handshaker handshaker = new RFC6455Handshaker();
 
     public abstract void configure(WebSocketServletFactory factory);
 
@@ -141,10 +143,8 @@ public abstract class WebSocketServlet extends HttpServlet
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        Handshaker handshaker = HandshakerFactory.getHandshaker(request);
-
         // Attempt to upgrade
-        if (handshaker != null && handshaker.upgradeRequest(negotiator, request, response))
+        if (handshaker.upgradeRequest(negotiator, request, response))
         {
             // Upgrade was a success, nothing else to do.
             return;

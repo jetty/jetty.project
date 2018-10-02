@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.HeaderUtil;
 
+@Deprecated
 public class UpgradeResponseAdapter implements UpgradeResponse
 {
     public static final String SEC_WEBSOCKET_PROTOCOL = HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString();
@@ -52,11 +53,6 @@ public class UpgradeResponseAdapter implements UpgradeResponse
         headers.put(key,values);
     }
 
-    @Override
-    public void sendError(int statusCode) throws IOException
-    {
-        throw new UnsupportedOperationException("Not supported");
-    }
 
     /**
      * Get the accepted WebSocket protocol.
@@ -67,17 +63,6 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public String getAcceptedSubProtocol()
     {
         return getHeader(SEC_WEBSOCKET_PROTOCOL);
-    }
-
-    /**
-     * Get the list of extensions that should be used for the websocket.
-     * 
-     * @return the list of negotiated extensions to use.
-     */
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return extensions;
     }
 
     @Override
@@ -91,12 +76,6 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public Set<String> getHeaderNames()
     {
         return headers.keySet();
-    }
-
-    @Override
-    public Map<String, List<String>> getHeadersMap()
-    {
-        return headers;
     }
 
     @Override
@@ -142,34 +121,63 @@ public class UpgradeResponseAdapter implements UpgradeResponse
         setHeader(SEC_WEBSOCKET_PROTOCOL,protocol);
     }
 
-    /**
-     * Set the list of extensions that are approved for use with this websocket.
-     * <p>
-     * Notes:
-     * <ul>
-     * <li>Per the spec you cannot add extensions that have not been seen in the {@link org.eclipse.jetty.websocket.api.UpgradeRequest}, just remove entries you don't want to use</li>
-     * <li>If this is unused, or a null is passed, then the list negotiation will follow default behavior and use the complete list of extensions that are
-     * available in this WebSocket server implementation.</li>
-     * </ul>
-     * 
-     * @param extensions
-     *            the list of extensions to use.
-     */
-    @Override
-    public void setExtensions(List<ExtensionConfig> extensions)
-    {
-        this.extensions.clear();
-        if (extensions != null)
-        {
-            this.extensions.addAll(extensions);
-        }
-    }
-
     @Override
     public void setHeader(String name, String value)
     {
         List<String> values = new ArrayList<>();
         values.add(value);
         headers.put(name,values);
+    }
+
+    @Override
+    public List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> getExtensions()
+    {
+        // TODO
+        return null;
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        // TODO
+        return null;
+    }
+
+    @Override
+    public String getStatusReason()
+    {
+        // TODO
+        return null;
+    }
+
+    @Override
+    public boolean isSuccess()
+    {
+        // TODO
+        return false;
+    }
+
+    @Override
+    public void setExtensions(List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> extensions)
+    {
+        // TODO
+    }
+
+    @Override
+    public void setStatusCode(int statusCode)
+    {
+        // TODO
+    }
+
+    @Override
+    public void setStatusReason(String statusReason)
+    {
+        // TODO
+    }
+
+    @Override
+    public void setSuccess(boolean success)
+    {
+        // TODO
     }
 }

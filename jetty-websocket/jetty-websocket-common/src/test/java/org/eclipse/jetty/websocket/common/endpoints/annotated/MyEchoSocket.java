@@ -68,7 +68,7 @@ public class MyEchoSocket
 
         try
         {
-            remote.sendText(message);
+            remote.sendString(message);
         }
         catch (IOException e)
         {

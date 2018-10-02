@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
@@ -184,7 +184,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
     }
 
-    public static class RawUpgradeRequest extends AbstractUpgradeRequest
+    public static class RawUpgradeRequest extends UpgradeRequest
     {
         private final CompletableFuture<FrameCapture> futureCapture;
         private EndPoint endPoint;

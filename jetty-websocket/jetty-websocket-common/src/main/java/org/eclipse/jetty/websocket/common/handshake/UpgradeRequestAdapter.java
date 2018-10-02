@@ -21,19 +21,19 @@ package org.eclipse.jetty.websocket.common.handshake;
 import java.net.HttpCookie;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.HeaderUtil;
 
+@Deprecated
 public class UpgradeRequestAdapter implements UpgradeRequest
 {
     private URI requestURI;
@@ -144,12 +144,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
-    public Map<String, List<String>> getHeadersMap()
-    {
-        return headers;
-    }
-
-    @Override
     public List<String> getHeaders(String name)
     {
         return headers.get(name);
@@ -165,17 +159,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public String getHttpVersion()
     {
         return httpVersion;
-    }
-
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        return localSocketAddress;
-    }
-
-    public void setLocalSocketAddress(SocketAddress localSocketAddress)
-    {
-        this.localSocketAddress = localSocketAddress;
     }
 
     @Override
@@ -222,29 +205,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public String getQueryString()
     {
         return requestURI.getQuery();
-    }
-    
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return remoteSocketAddress;
-    }
-
-    @Override
-    public Locale getLocale()
-    {
-        return null;
-    }
-
-    @Override
-    public Enumeration<Locale> getLocales()
-    {
-        return null;
-    }
-
-    public void setRemoteSocketAddress(SocketAddress remoteSocketAddress)
-    {
-        this.remoteSocketAddress = remoteSocketAddress;
     }
 
     @Override
@@ -331,5 +291,59 @@ public class UpgradeRequestAdapter implements UpgradeRequest
         {
             this.subProtocols.addAll(subProtocols);
         }
+    }
+
+    @Override
+    public void clearHeaders()
+    {
+
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return null;
+    }
+
+    @Override
+    public Object getSession()
+    {
+        return null;
+    }
+
+    @Override
+    public Principal getUserPrincipal()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isOrigin(String test)
+    {
+        return false;
+    }
+
+    @Override
+    public void setHttpVersion(String httpVersion)
+    {
+        this.httpVersion = httpVersion;
+    }
+
+    @Override
+    public void setMethod(String method)
+    {
+        this.method = method;
+    }
+
+    @Override
+    public void setRequestURI(URI uri)
+    {
+        this.requestURI = uri;
+    }
+
+    @Override
+    public void setSession(Object session)
+    {
+        // TODO
     }
 }

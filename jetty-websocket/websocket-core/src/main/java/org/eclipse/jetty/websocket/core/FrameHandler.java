@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 import java.net.InetSocketAddress;
@@ -38,8 +38,8 @@ import java.util.concurrent.TimeUnit;
  *     <li>On the server, the application layer must provide a {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator} instance
  *     to negotiate and accept websocket connections, which will return the FrameHandler instance to use from
  *     {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator#negotiate(Negotiation)}.</li>
- *     <li>On the client, the application returns the FrameHandler instance to user from the {@link org.eclipse.jetty.websocket.core.client.UpgradeRequest}
- *     instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(AbstractUpgradeRequest)} method/</li>.
+ *     <li>On the client, the application returns the FrameHandler instance to user from the {@link UpgradeRequest}
+ *     instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(UpgradeRequest)} method/</li>.
  * </ul>
  * </p>
  * <p>

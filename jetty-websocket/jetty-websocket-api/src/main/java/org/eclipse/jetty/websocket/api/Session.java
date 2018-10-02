@@ -21,16 +21,8 @@ package org.eclipse.jetty.websocket.api;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.Collection;
 
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
-import org.eclipse.jetty.websocket.common.io.SuspendToken;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.
@@ -44,7 +36,7 @@ public interface Session extends Closeable
      * 
      * @see #close(CloseStatus)
      * @see #close(int, String)
-     * @see #abort()
+     * @see #disconnect()
      */
     @Override
     void close();
@@ -60,7 +52,7 @@ public interface Session extends Closeable
      * 
      * @see #close()
      * @see #close(int, String)
-     * @see #abort()
+     * @see #disconnect()
      */
     void close(CloseStatus closeStatus);
 
@@ -77,29 +69,12 @@ public interface Session extends Closeable
      * 
      * @see #close()
      * @see #close(CloseStatus)
-     * @see #abort()
+     * @see #disconnect()
      */
     void close(int statusCode, String reason);
 
     /**
-     * Send a websocket Close frame, with status code.
-     * <p>
-     * This will enqueue a graceful close to the remote endpoint.
-     *
-     * @param statusCode
-     *            the status code
-     * @param reason
-     *            the (optional) reason. (can be null for no reason)
-     * @see StatusCode
-     *
-     * @see #close()
-     * @see #close(CloseStatus)
-     * @see #abort()
-     */
-    void close(StatusCode statusCode, String reason);
-
-    /**
-     * Issue a harsh abort of the underlying connection.
+     * Issue a harsh disconnect of the underlying connection.
      * <p>
      * This will terminate the connection, without sending a websocket close frame.
      * <p>
@@ -110,9 +85,13 @@ public interface Session extends Closeable
      * websocket.
      * 
      * @throws IOException
-     *             if unable to abort
+     *             if unable to disconnect
+     * 
+     * @see #close()
+     * @see #close(CloseStatus)
+     * @see #close(int, String)
      */
-    void abort() throws IOException;
+    void disconnect() throws IOException;
 
     /**
      * Return the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received
@@ -124,28 +103,10 @@ public interface Session extends Closeable
 
     /**
      * Get the address of the local side.
-     * <p>
-     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
-     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-     *     without supporting {@link InetSocketAddress}
-     * </p>
-     *
+     * 
      * @return the local side address
-     * @since 10.0
      */
-    SocketAddress getLocalSocketAddress();
-
-    /**
-     * Get the collection of open Sessions being tracked by the websocket container.
-     * <p>
-     *     The list of sessions can include different WebSocket endpoints from the
-     *     endpoint this Session belongs to.
-     *     If you need to identify similar endpoints, use the information contained within the
-     *     {@link #getHandshakeRequest()} object.
-     * </p>
-     * @return the list of open Sessions.
-     */
-    Collection<Session> getOpenSessions();
+    InetSocketAddress getLocalAddress();
 
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
@@ -171,35 +132,29 @@ public interface Session extends Closeable
 
     /**
      * Get the address of the remote side.
-     * <p>
-     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
-     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-     *     without supporting {@link InetSocketAddress}
-     * </p>
-     *
+     * 
      * @return the remote side address
-     * @since 10.0
      */
-    SocketAddress getRemoteSocketAddress();
+    InetSocketAddress getRemoteAddress();
 
     /**
-     * Get the HandshakeRequest used to create this session
+     * Get the UpgradeRequest used to create this session
      * 
-     * @return the HandshakeRequest used to create this session
+     * @return the UpgradeRequest used to create this session
      */
-    HandshakeRequest getHandshakeRequest();
+    UpgradeRequest getUpgradeRequest();
 
     /**
-     * Get the HandshakeResponse used to create this session
+     * Get the UpgradeResponse used to create this session
      * 
-     * @return the HandshakeResponse used to create this session
+     * @return the UpgradeResponse used to create this session
      */
-    HandshakeResponse getHandshakeResponse();
+    UpgradeResponse getUpgradeResponse();
 
     /**
-     * Return true if and only if the underlying socket is onOpen.
+     * Return true if and only if the underlying socket is open.
      * 
-     * @return whether the session is onOpen
+     * @return whether the session is open
      */
     boolean isOpen();
 

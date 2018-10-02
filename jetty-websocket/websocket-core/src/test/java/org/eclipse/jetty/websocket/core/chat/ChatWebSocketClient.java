@@ -22,9 +22,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.TextMessageHandler;
-import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
@@ -32,7 +30,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -55,7 +52,7 @@ public class ChatWebSocketClient
 
         URI wsUri = baseWebsocketUri.resolve("/chat");
         handler = TextMessageHandler.from(this::onText);
-        AbstractUpgradeRequest request = new UpgradeRequest(client, wsUri, handler);
+        UpgradeRequest request = UpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);
     }

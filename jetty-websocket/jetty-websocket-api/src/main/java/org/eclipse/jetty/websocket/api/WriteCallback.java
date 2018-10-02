@@ -18,45 +18,31 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.util.Callback;
-
 /**
- * Left in place for backward compat reasons only.
- * @deprecated use replacement methods in RemoteEndpoint that use the standard Jetty {@link Callback}
+ * Callback for Write events.
  */
-@Deprecated
-public interface WriteCallback extends Callback
+public interface WriteCallback
 {
-    @Override
-    default void failed(Throwable x)
-    {
-        writeFailed(x);
-    }
+    /*
+     * NOTE: We don't expose org.eclipse.jetty.util.Callback here as that would complicate matters with the WebAppContext's classloader isolation.
+     */
 
     /**
      * <p>
      * Callback invoked when the write fails.
      * </p>
-     *
+     * 
      * @param x
      *            the reason for the write failure
      */
-    @Deprecated
     void writeFailed(Throwable x);
-
-    @Override
-    default void succeeded()
-    {
-        writeSuccess();
-    }
 
     /**
      * <p>
      * Callback invoked when the write completes.
      * </p>
-     *
+     * 
      * @see #writeFailed(Throwable)
      */
-    @Deprecated
     void writeSuccess();
 }

@@ -20,9 +20,10 @@ package org.eclipse.jetty.websocket.common.endpoints.listeners;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 public class ListenerBasicSocket implements WebSocketListener
 {
@@ -37,7 +38,7 @@ public class ListenerBasicSocket implements WebSocketListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        events.add("onWebSocketClose(%s, %s)", StatusCode.asName(statusCode), TextUtil.quote(reason));
+        events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
     }
     
     @Override

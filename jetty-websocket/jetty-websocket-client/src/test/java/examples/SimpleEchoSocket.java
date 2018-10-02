@@ -64,14 +64,8 @@ public class SimpleEchoSocket
         this.session = session;
         try
         {
-            FutureCallback callback = new FutureCallback();
-            session.getRemote().sendText("Hello", callback);
-            callback.get(2,TimeUnit.SECONDS); // wait for send to complete.
-
-            callback = new FutureCallback();
-            session.getRemote().sendText("Thanks for the conversation.", callback);
-            callback.get(2,TimeUnit.SECONDS); // wait for send to complete.
-
+            session.getRemote().sendString("Hello");
+            session.getRemote().sendString("Thanks for the conversation.");
             session.close(StatusCode.NORMAL,"I'm done");
         }
         catch (Throwable t)

@@ -20,10 +20,11 @@ package org.eclipse.jetty.websocket.common.endpoints.listeners;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 public class ListenerFrameSocket implements WebSocketFrameListener
 {
@@ -32,7 +33,7 @@ public class ListenerFrameSocket implements WebSocketFrameListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        events.add("onWebSocketClose(%s, %s)", StatusCode.asName(statusCode), TextUtil.quote(reason));
+        events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
     }
     
     @Override

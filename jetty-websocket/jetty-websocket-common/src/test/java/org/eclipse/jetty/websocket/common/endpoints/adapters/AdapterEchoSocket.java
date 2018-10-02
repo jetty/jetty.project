@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
  * Example EchoSocket using Adapter.
@@ -36,7 +36,7 @@ public class AdapterEchoSocket extends WebSocketAdapter
             {
                 System.out.printf("Echoing back message [%s]%n",message);
                 // echo the message back
-                getRemote().sendText(message);
+                getRemote().sendString(message);
             }
             catch (IOException e)
             {
