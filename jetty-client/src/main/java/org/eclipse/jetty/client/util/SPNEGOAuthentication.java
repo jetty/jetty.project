@@ -36,6 +36,8 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
@@ -48,6 +50,16 @@ import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
 
+/**
+ * <p>Implementation of the SPNEGO (or "Negotiate") authentication defined in RFC 4559.</p>
+ * <p>A {@link #getUserName() user} is logged in via JAAS (either via userName/password or
+ * via userName/keyTab) once only.</p>
+ * <p>For every request that needs authentication, a {@link GSSContext} is initiated and
+ * later established after reading the response from the server.</p>
+ * <p>Applications should create objects of this class and add them to the
+ * {@link AuthenticationStore} retrieved from the {@link HttpClient}
+ * via {@link HttpClient#getAuthenticationStore()}.</p>
+ */
 public class SPNEGOAuthentication extends AbstractAuthentication
 {
     private static final Logger LOG = Log.getLogger(SPNEGOAuthentication.class);
@@ -73,71 +85,117 @@ public class SPNEGOAuthentication extends AbstractAuthentication
         return NEGOTIATE;
     }
 
+    /**
+     * @return the user name of the user to login
+     */
     public String getUserName()
     {
         return userName;
     }
 
+    /**
+     * @param userName user name of the user to login
+     */
     public void setUserName(String userName)
     {
         this.userName = userName;
     }
 
+    /**
+     * @return the password of the user to login
+     */
     public String getUserPassword()
     {
         return userPassword;
     }
 
+    /**
+     * @param userPassword the password of the user to login
+     * @see #setUserKeyTabPath(Path)
+     */
     public void setUserPassword(String userPassword)
     {
         this.userPassword = userPassword;
     }
 
+    /**
+     * @return the path of the keyTab file with the user credentials
+     */
     public Path getUserKeyTabPath()
     {
         return userKeyTabPath;
     }
 
+    /**
+     * @param userKeyTabPath the path of the keyTab file with the user credentials
+     * @see #setUserPassword(String)
+     */
     public void setUserKeyTabPath(Path userKeyTabPath)
     {
         this.userKeyTabPath = userKeyTabPath;
     }
 
+    /**
+     * @return the name of the service to use
+     */
     public String getServiceName()
     {
         return serviceName;
     }
 
+    /**
+     * @param serviceName the name of the service to use
+     */
     public void setServiceName(String serviceName)
     {
         this.serviceName = serviceName;
     }
 
+    /**
+     * @return whether to use the ticket cache during login
+     */
     public boolean isUseTicketCache()
     {
         return useTicketCache;
     }
 
+    /**
+     * @param useTicketCache whether to use the ticket cache during login
+     * @see #setTicketCachePath(Path)
+     */
     public void setUseTicketCache(boolean useTicketCache)
     {
         this.useTicketCache = useTicketCache;
     }
 
+    /**
+     * @return the path of the ticket cache file
+     */
     public Path getTicketCachePath()
     {
         return ticketCachePath;
     }
 
+    /**
+     * @param ticketCachePath the path of the ticket cache file
+     * @see #setUseTicketCache(boolean)
+     */
     public void setTicketCachePath(Path ticketCachePath)
     {
         this.ticketCachePath = ticketCachePath;
     }
 
+    /**
+     * @return whether to renew the ticket granting ticket
+     */
     public boolean isRenewTGT()
     {
         return renewTGT;
     }
 
+    /**
+     * @param renewTGT whether to renew the ticket granting ticket
+     */
     public void setRenewTGT(boolean renewTGT)
     {
         this.renewTGT = renewTGT;
