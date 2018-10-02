@@ -37,7 +37,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -310,8 +309,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         @Override
         public void onSuccess(Response response)
         {
-            if (response.getStatus() == HttpStatus.OK_200)
-                client.getAuthenticationStore().addAuthenticationResult(authenticationResult);
+            client.getAuthenticationStore().addAuthenticationResult(authenticationResult);
         }
     }
 }
