@@ -108,8 +108,44 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
 
+        String header = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String spnegoToken = getSpnegoToken(header);
         HttpSession httpSession = request.getSession(false);
-        if (httpSession != null)
+
+        // We have a token from the client, so run the login.
+        if (header != null && spnegoToken != null)
+        {
+            SpnegoUserIdentity identity = (SpnegoUserIdentity)login(null, spnegoToken, request);
+            if (identity.isEstablished())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Sending final challenge");
+                SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
+                setSpnegoToken(response, principal.getEncodedToken());
+
+                Duration authnDuration = getAuthenticationDuration();
+                if (!authnDuration.isNegative())
+                {
+                    if (httpSession == null)
+                        httpSession = request.getSession(true);
+                    httpSession.setAttribute(UserIdentityHolder.ATTRIBUTE, new UserIdentityHolder(identity));
+                }
+                return new UserAuthentication(getAuthMethod(), identity);
+            }
+            else
+            {
+                if (DeferredAuthentication.isDeferred(response))
+                    return Authentication.UNAUTHENTICATED;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Sending intermediate challenge");
+                SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
+                sendChallenge(response, principal.getEncodedToken());
+                return Authentication.SEND_CONTINUE;
+            }
+        }
+        // No token from the client; check if the client has logged in
+        // successfully before and the authentication has not expired.
+        else if (httpSession != null)
         {
             UserIdentityHolder holder = (UserIdentityHolder)httpSession.getAttribute(UserIdentityHolder.ATTRIBUTE);
             if (holder != null)
@@ -126,47 +162,6 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
                         if (!expired || !HttpMethod.GET.is(request.getMethod()))
                             return new UserAuthentication(getAuthMethod(), identity);
                     }
-                }
-            }
-        }
-
-        String header = request.getHeader(HttpHeader.AUTHORIZATION.asString());
-        String spnegoToken = getSpnegoToken(header);
-
-        // The client has responded to the challenge we sent previously.
-        if (header != null && spnegoToken != null)
-        {
-            SpnegoUserIdentity identity = (SpnegoUserIdentity)login(null, spnegoToken, request);
-            if (identity != null)
-            {
-                if (identity.isEstablished())
-                {
-                    if (!DeferredAuthentication.isDeferred(response))
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Sending final challenge");
-                        SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
-                        setSpnegoToken(response, principal.getEncodedToken());
-                    }
-
-                    Duration authnDuration = getAuthenticationDuration();
-                    if (!authnDuration.isNegative())
-                    {
-                        if (httpSession == null)
-                            httpSession = request.getSession(true);
-                        httpSession.setAttribute(UserIdentityHolder.ATTRIBUTE, new UserIdentityHolder(identity));
-                    }
-                    return new UserAuthentication(getAuthMethod(), identity);
-                }
-                else
-                {
-                    if (DeferredAuthentication.isDeferred(response))
-                        return Authentication.UNAUTHENTICATED;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Sending intermediate challenge");
-                    SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
-                    sendChallenge(response, principal.getEncodedToken());
-                    return Authentication.SEND_CONTINUE;
                 }
             }
         }
