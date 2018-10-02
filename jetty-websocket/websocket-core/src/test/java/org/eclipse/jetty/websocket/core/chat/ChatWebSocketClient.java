@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.TextMessageHandler;
-import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -38,6 +28,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+<<<<<<< HEAD
+=======
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.TextMessageHandler;
+import org.eclipse.jetty.websocket.core.client.AbstractUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+
+/**
+
+ */
+>>>>>>> cleanup of websocket-common framehandlers
 public class ChatWebSocketClient
 {
     private static Logger LOG = Log.getLogger(ChatWebSocketClient.class);
@@ -96,7 +102,7 @@ public class ChatWebSocketClient
             }
         }
         LOG.debug("sending {}...",line);
-        
+
         handler.sendText(Callback.from(()->LOG.debug("message sent"), LOG::warn),BatchMode.AUTO,name,": ",line);
     }
 

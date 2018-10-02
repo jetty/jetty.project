@@ -21,11 +21,12 @@ package org.eclipse.jetty.websocket.common;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 
 /**
  * Simply breaks up the FrameHandler.onFrame() into specific frame type methods
@@ -35,6 +36,8 @@ public abstract class AbstractFrameTypeHandler implements FrameHandler
     protected CoreSession coreSession;
     protected Throwable errorCause;
     protected CloseStatus closeStatus;
+
+    protected byte dataType = OpCode.UNDEFINED;
 
     @Override
     public void onOpen(CoreSession coreSession) throws Exception
@@ -48,9 +51,11 @@ public abstract class AbstractFrameTypeHandler implements FrameHandler
         switch (frame.getOpCode())
         {
             case OpCode.TEXT:
+                dataType = OpCode.TEXT;
                 onText(frame, callback);
                 break;
             case OpCode.BINARY:
+                dataType = OpCode.BINARY;
                 onBinary(frame, callback);
                 break;
             case OpCode.CONTINUATION:
@@ -66,13 +71,29 @@ public abstract class AbstractFrameTypeHandler implements FrameHandler
                 onClose(frame, callback);
                 break;
         }
+
+        if (frame.isFin() && !frame.isControlFrame())
+            dataType = OpCode.UNDEFINED;
     }
 
     public abstract void onText(Frame frame, Callback callback);
 
     public abstract void onBinary(Frame frame, Callback callback);
 
-    public abstract void onContinuation(Frame frame, Callback callback);
+    public void onContinuation(Frame frame, Callback callback)
+    {
+        switch (dataType)
+        {
+            case OpCode.TEXT:
+                onText(frame, callback);
+                break;
+            case OpCode.BINARY:
+                onBinary(frame, callback);
+                break;
+            default:
+                throw new ProtocolException("Unable to process continuation during dataType " + dataType);
+        }
+    }
 
     public void onPing(Frame frame, Callback callback)
     {
