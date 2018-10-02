@@ -121,7 +121,7 @@
             <plugin>
               <groupId>com.github.joelittlejohn.embedmongo</groupId>
               <artifactId>embedmongo-maven-plugin</artifactId>
-              <version>0.3.5</version>
+              <version>0.4.1</version>
               <configuration>
                 <!--port>37017</port-->
                 <!-- allocates a random port and overrides embedmongo.port -->
@@ -137,6 +137,7 @@
                 <!--storageEngine>wiredTiger</storageEngine-->
                 <!-- optional, skips this plugin entirely, use on the command line like -Dembedmongo.skip -->
                 <skip>false</skip>
+                <downloadPath>https://jenkins.webtide.net/userContent/</downloadPath>
               </configuration>
               <executions>
                 <execution>
