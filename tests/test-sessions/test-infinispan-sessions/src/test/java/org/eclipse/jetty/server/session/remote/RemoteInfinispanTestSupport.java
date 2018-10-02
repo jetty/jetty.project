@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session.remote;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Properties;
 
@@ -43,7 +44,7 @@ import org.infinispan.protostream.SerializationContext;
 public class RemoteInfinispanTestSupport
 {
     public static final String DEFAULT_CACHE_NAME =  "session_test_cache";
-    public  RemoteCache _cache;
+    public  RemoteCache<String,Object> _cache;
     private String _name;
     public static  RemoteCacheManager _manager;
     
@@ -51,10 +52,11 @@ public class RemoteInfinispanTestSupport
     {
         try
         {
+            String host = System.getProperty("hotrod.host","127.0.0.1");
             Properties properties = new Properties();
 
             ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
-            clientBuilder.withProperties(properties).addServer().host("127.0.0.1").marshaller(new ProtoStreamMarshaller());
+            clientBuilder.withProperties(properties).addServer().host(host).marshaller(new ProtoStreamMarshaller());
 
             _manager = new RemoteCacheManager(clientBuilder.build());
 
@@ -67,7 +69,7 @@ public class RemoteInfinispanTestSupport
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            fail(e);
         }
     }
     
@@ -86,7 +88,7 @@ public class RemoteInfinispanTestSupport
     
  
   
-    public RemoteCache getCache ()
+    public RemoteCache<String,Object> getCache ()
     {
         return _cache;
     }
@@ -103,8 +105,7 @@ public class RemoteInfinispanTestSupport
     }
     
     
-    
-    @SuppressWarnings("unchecked")
+ 
     public void createSession (SessionData data)
     throws Exception
     {

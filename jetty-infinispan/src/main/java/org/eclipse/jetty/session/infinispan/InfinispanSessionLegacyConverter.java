@@ -19,16 +19,15 @@
 
 package org.eclipse.jetty.session.infinispan;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.session.SessionData;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
-import org.infinispan.commons.util.CloseableIteratorSet;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 
@@ -43,9 +42,9 @@ import org.infinispan.protostream.SerializationContext;
 public class InfinispanSessionLegacyConverter
 {
     RemoteCacheManager _protoManager;
-    RemoteCache _protoCache;
+    RemoteCache<String,Object> _protoCache;
     RemoteCacheManager _legacyManager;
-    RemoteCache _legacyCache;
+    RemoteCache<String,Object> _legacyCache;
 
     public InfinispanSessionLegacyConverter (String cacheName)
     throws Exception
@@ -55,10 +54,12 @@ public class InfinispanSessionLegacyConverter
         _legacyCache = _legacyManager.getCache(cacheName);
         
         
-        //new protobuf based 
+        //new protobuf based
+        String host = System.getProperty("host", "127.0.0.1");
+        
         Properties properties = new Properties();
         ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
-        clientBuilder.withProperties(properties).addServer().host("127.0.0.1").marshaller(new ProtoStreamMarshaller());
+        clientBuilder.withProperties(properties).addServer().host(host).marshaller(new ProtoStreamMarshaller());
         _protoManager = new RemoteCacheManager(clientBuilder.build());
         FileDescriptorSource fds = new FileDescriptorSource();
         fds.addProtoFiles("/session.proto");
@@ -78,11 +79,8 @@ public class InfinispanSessionLegacyConverter
     public void convert ()
     throws Exception
     {
-        List<String> keys = new ArrayList<>();
         //Get all sessions stored in the legacy format
-        @SuppressWarnings("unchecked")
-        CloseableIteratorSet<String> set = _legacyCache.keySet();
-        set.forEach((s)->keys.add(s));
+        List<String> keys = _legacyCache.keySet().stream().collect(Collectors.toList());
         
         for (String s:keys)
         {
@@ -102,6 +100,8 @@ public class InfinispanSessionLegacyConverter
             else
                 System.err.println("Unreadable legacy "+s);
         }
+        
+        System.err.println("Total sessions: "+keys.size());
     }
     
     
@@ -114,11 +114,8 @@ public class InfinispanSessionLegacyConverter
     public void checkConverted ()
     throws Exception
     {
-        List<String> keys = new ArrayList<>();
-        //Get all sessions stored in the legacy format
-        @SuppressWarnings("unchecked")
-        CloseableIteratorSet<String> set = _protoCache.keySet();
-        set.forEach((s)->keys.add(s));
+        List<String> keys = _legacyCache.keySet().stream().collect(Collectors.toList());
+        
         for (String s:keys)
         {
             SessionData converted = (SessionData)_protoCache.get(s);
@@ -130,12 +127,14 @@ public class InfinispanSessionLegacyConverter
             else
                 System.err.println("Failed: "+s);
         }
+        
+        System.err.println("Total sessions: "+keys.size());
     }
 
 
     public static final void usage ()
     {
-        System.err.println("Usage:  InfinispanSessionLegacyConverter <cache-name>");
+        System.err.println("Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] <cache-name> [check]");
     }
     
     

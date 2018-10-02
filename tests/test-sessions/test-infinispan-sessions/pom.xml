@@ -11,6 +11,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
+    <hotrod.host>127.0.0.1</hotrod.host>
   </properties>
   <build>
     <plugins>
@@ -140,6 +141,9 @@
               <includes>
                 <include>**/*.java</include>
               </includes>
+              <systemPropertyVariables>
+                <hotrod.host>${hotrod.host}</hotrod.host>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>
