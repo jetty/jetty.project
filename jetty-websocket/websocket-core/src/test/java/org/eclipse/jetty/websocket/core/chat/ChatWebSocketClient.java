@@ -22,14 +22,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-<<<<<<< HEAD
-=======
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -38,10 +34,6 @@ import org.eclipse.jetty.websocket.core.TextMessageHandler;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
-/**
-
- */
->>>>>>> cleanup of websocket-common framehandlers
 public class ChatWebSocketClient
 {
     private static Logger LOG = Log.getLogger(ChatWebSocketClient.class);
@@ -62,6 +54,7 @@ public class ChatWebSocketClient
         UpgradeRequest request = UpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);
+        handler.sendText("["+name+": has joined the room]",Callback.NOOP,BatchMode.AUTO);
     }
 
     public void onText(String message)
@@ -79,19 +72,24 @@ public class ChatWebSocketClient
             if (matcher.matches())
             {
                 String command = matcher.group(1);
-                String value = (matcher.groupCount()>1) ? matcher.group(2) : null;
+                String value = (matcher.groupCount()>2) ? matcher.group(3) : null;
 
                 switch(command)
                 {
                     case "name":
                         if (value != null && value.length() > 0)
                         {
+                            value = value.trim();
+                            handler.sendText("["+value+": changed name from "+name+"]",Callback.NOOP,BatchMode.AUTO);
                             name = value;
                             LOG.debug("name changed: " + name);
+
                         }
                         break;
 
                     case "exit":
+                        handler.sendText("["+name+": has left the "+
+                            ("elvis".equalsIgnoreCase(name)?"building!]":"room]"),Callback.NOOP,BatchMode.AUTO);
                         handler.getCoreSession().close(Callback.from(()->System.exit(0),x->{x.printStackTrace();System.exit(1);}));
                         break;
                 }
