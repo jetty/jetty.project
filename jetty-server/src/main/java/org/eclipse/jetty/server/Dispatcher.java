@@ -36,9 +36,13 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class Dispatcher implements RequestDispatcher
 {
+    private static final Logger LOG = Log.getLogger(Dispatcher.class);
+    
     public final static String __ERROR_DISPATCH="org.eclipse.jetty.server.Dispatcher.ERROR";
     
     /** Dispatch include attribute names */
@@ -207,10 +211,13 @@ public class Dispatcher implements RequestDispatcher
                     {
                         // Only throw BME if not in Error Dispatch Mode
                         // This allows application ErrorPageErrorHandler to handle BME messages
-                        Boolean inErrorDispatch = (Boolean) request.getAttribute(__ERROR_DISPATCH);
-                        if(inErrorDispatch == null || !inErrorDispatch)
+                        if (dispatch != DispatcherType.ERROR)
                         {
                             throw e;
+                        }
+                        else
+                        {
+                            LOG.warn("Ignoring Original Bad Request Query String: " + old_uri, e);
                         }
                     }
                 }

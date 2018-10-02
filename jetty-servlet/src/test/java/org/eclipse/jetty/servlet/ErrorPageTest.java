@@ -92,7 +92,6 @@ public class ErrorPageTest
     public void testSendErrorClosedResponse() throws Exception
     {
         String response = _connector.getResponse("GET /fail-closed/ HTTP/1.0\r\n\r\n");
-        System.out.println(response);
         assertThat(response,Matchers.containsString("HTTP/1.1 599 599"));
         assertThat(response,Matchers.containsString("DISPATCH: ERROR"));
         assertThat(response,Matchers.containsString("ERROR_PAGE: /599"));
@@ -166,16 +165,19 @@ public class ErrorPageTest
     @Test
     public void testBadMessage() throws Exception
     {
-        String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
-        assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad query encoding"));
-        assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
-        assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
-        assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
-        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query encoding"));
-        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AppServlet-"));
-        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
-        assertThat(response, Matchers.containsString("getParameterMap()= {}"));
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad query encoding"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
+            assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query encoding"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AppServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
+            assertThat(response, Matchers.containsString("getParameterMap()= {}"));
+        }
     }
 
 
