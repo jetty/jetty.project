@@ -118,10 +118,15 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
             SpnegoUserIdentity identity = (SpnegoUserIdentity)login(null, spnegoToken, request);
             if (identity.isEstablished())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Sending final challenge");
-                SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
-                setSpnegoToken(response, principal.getEncodedToken());
+                if (!DeferredAuthentication.isDeferred(response))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Sending final token");
+                    // Send to the client the final token so that the
+                    // client can establish the GSS context with the server.
+                    SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
+                    setSpnegoToken(response, principal.getEncodedToken());
+                }
 
                 Duration authnDuration = getAuthenticationDuration();
                 if (!authnDuration.isNegative())
