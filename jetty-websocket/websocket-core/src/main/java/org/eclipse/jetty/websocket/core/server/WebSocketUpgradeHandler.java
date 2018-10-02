@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ import java.util.function.Function;
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
     final static Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
-
+    final RFC6455Handshaker handshaker = new RFC6455Handshaker();
     final PathSpecSet paths = new PathSpecSet();
     final WebSocketNegotiator negotiator;
 
@@ -78,11 +79,9 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
             return;
         }
 
-        Handshaker handshaker = HandshakerFactory.getHandshaker(request);
-        if (LOG.isDebugEnabled())
-            LOG.debug("handle {} handshaker={}",baseRequest,handshaker);
-        if (handshaker!=null && handshaker.upgradeRequest(negotiator, request, response))
+        if (handshaker.upgradeRequest(negotiator, request, response))
             return;
+
         if (!baseRequest.isHandled())
             super.handle(target,baseRequest,request,response);
     }

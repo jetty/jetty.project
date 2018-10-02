@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.HandshakerFactory;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketServletNegotiator} objects.

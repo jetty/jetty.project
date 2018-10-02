@@ -38,9 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
-
- */
 public class ChatWebSocketClient
 {
     private static Logger LOG = Log.getLogger(ChatWebSocketClient.class);
@@ -60,8 +57,7 @@ public class ChatWebSocketClient
         handler = TextMessageHandler.from(this::onText);
         AbstractUpgradeRequest request = new UpgradeRequest(client, wsUri, handler);
         request.setSubProtocols("chat");
-        Future<FrameHandler.CoreSession> response = client.connect(request);
-        response.get(5, TimeUnit.SECONDS);
+        client.connect(request).get(5, TimeUnit.SECONDS);
     }
 
     public void onText(String message)
@@ -138,5 +134,4 @@ public class ChatWebSocketClient
             t.printStackTrace(System.err);
         }
     }
-
 }
