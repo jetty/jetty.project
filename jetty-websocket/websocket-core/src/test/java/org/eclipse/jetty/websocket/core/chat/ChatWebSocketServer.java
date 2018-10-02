@@ -40,7 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ChatWebSocketServer extends TextMessageHandler
+public class ChatWebSocketServer
 {
     private static Logger LOG = Log.getLogger(ChatWebSocketServer.class);
 
@@ -49,7 +49,6 @@ public class ChatWebSocketServer extends TextMessageHandler
     private FrameHandler negotiate(Negotiation negotiation)
     {
         // Finalize negotiations in API layer involves:
-        // TODO need access to real request/response????
         //  + MAY mutate the policy
         //  + MAY replace the policy
         //  + MAY read request and set response headers
@@ -60,8 +59,7 @@ public class ChatWebSocketServer extends TextMessageHandler
         if (!subprotocols.contains("chat"))
             return null;
         negotiation.setSubprotocol("chat");
-
-
+        
         //  + MUST return the FrameHandler or null or exception?
         return new TextMessageHandler()
         {
