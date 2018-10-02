@@ -19,9 +19,8 @@
 package org.eclipse.jetty.websocket.common.endpoints.listeners;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.common.test.EventQueue;
+import org.eclipse.jetty.websocket.common.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 

@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.common.test.EventQueue;
+import org.eclipse.jetty.websocket.common.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
 
 import static org.hamcrest.MatcherAssert.assertThat;

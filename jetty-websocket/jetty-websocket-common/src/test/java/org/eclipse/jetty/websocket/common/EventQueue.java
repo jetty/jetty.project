@@ -16,16 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.io;
+package org.eclipse.jetty.websocket.common;
 
-/**
- * Connection suspend token
- */
-@Deprecated
-public interface SuspendToken
+import java.util.Iterator;
+import java.util.concurrent.LinkedBlockingDeque;
+
+import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class EventQueue extends LinkedBlockingDeque<String>
 {
-    /**
-     * Resume a previously suspended connection.
-     */
-    void resume();
+    public void add(String format, Object... args)
+    {
+        add(String.format(format, args));
+    }
+    
+    public void assertEvents(String... regexEvents)
+    {
+        Iterator<String> capturedIterator = iterator();
+        for (int i = 0; i < regexEvents.length; i++)
+        {
+            assertThat("Event [" + i + "]", capturedIterator.next(), matchesPattern(regexEvents[i]));
+        }
+    }
 }

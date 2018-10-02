@@ -40,7 +40,6 @@ import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSoc
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeResponse;
-import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
