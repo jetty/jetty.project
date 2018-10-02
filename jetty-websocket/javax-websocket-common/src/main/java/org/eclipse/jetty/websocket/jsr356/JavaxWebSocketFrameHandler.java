@@ -40,15 +40,15 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.AbstractPartialFrameHandler;
+import org.eclipse.jetty.websocket.common.AbstractFrameTypeHandler;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryStreamMessageSink;
@@ -61,7 +61,7 @@ import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 
-public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
+public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
 {
     private final Logger LOG;
     private final JavaxWebSocketContainer container;
@@ -507,16 +507,6 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     }
 
     @Override
-    public void onBinary(Frame frame, Callback callback)
-    {
-        super.onBinary(frame, callback);
-        if (activeMessageSink == null)
-            activeMessageSink = binarySink;
-
-        acceptMessage(frame, callback);
-    }
-
-    @Override
     public void onClose(Frame frame, Callback callback)
     {
         if (closeHandle != null)
@@ -576,9 +566,17 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     @Override
     public void onText(Frame frame, Callback callback)
     {
-        super.onText(frame, callback);
         if (activeMessageSink == null)
             activeMessageSink = textSink;
+
+        acceptMessage(frame, callback);
+    }
+
+    @Override
+    public void onBinary(Frame frame, Callback callback)
+    {
+        if (activeMessageSink == null)
+            activeMessageSink = binarySink;
 
         acceptMessage(frame, callback);
     }

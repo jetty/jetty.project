@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 
-public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHandler
+public abstract class AbstractWholeMessageHandler extends AbstractFrameTypeHandler
 {
     private ByteBuffer binaryMessage;
     private Utf8StringBuilder textMessage = new Utf8StringBuilder();
@@ -44,8 +44,6 @@ public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHa
     @Override
     public void onText(Frame frame, Callback callback)
     {
-        super.onText(frame, callback);
-
         // handle below here
         if (frame.getOpCode() == OpCode.TEXT)
             textMessage.reset();
@@ -62,8 +60,6 @@ public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHa
     @Override
     public void onBinary(Frame frame, Callback callback)
     {
-        super.onBinary(frame, callback);
-
         // handle below here
         if (frame.getOpCode() == OpCode.BINARY)
         {
@@ -72,8 +68,10 @@ public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHa
 
         if (frame.hasPayload())
         {
-            BufferUtil.ensureCapacity(binaryMessage, binaryMessage.remaining() + frame.getPayloadLength());
-            binaryMessage.put(frame.getPayload());
+            if (BufferUtil.space(binaryMessage) < frame.getPayloadLength())
+                binaryMessage = BufferUtil.ensureCapacity(binaryMessage,binaryMessage.capacity()+Math.max(binaryMessage.capacity(), frame.getPayloadLength()*3));
+
+            BufferUtil.append(binaryMessage,frame.getPayload());
         }
 
         if (frame.isFin())
