@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -54,6 +47,14 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
+// TODO: remove this class, as it is testing the ALPN bootclasspath?
 /**
  * HTTP2 setup.
  */
@@ -63,14 +64,13 @@ public class TestJettyOSGiBootHTTP2
 {
     private static final String LOG_LEVEL = "WARN";
 
-
     @Inject
     private BundleContext bundleContext;
 
     @Configuration
     public Option[] config()
     {
-        ArrayList<Option> options = new ArrayList<Option>();
+        ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
@@ -83,7 +83,7 @@ public class TestJettyOSGiBootHTTP2
         options.addAll(TestOSGiUtil.jspDependencies());
         //deploy a test webapp
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-openjdk8-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-http-client-transport").versionAsInProject().start());
@@ -91,12 +91,12 @@ public class TestJettyOSGiBootHTTP2
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("DEBUG"));
         options.add(CoreOptions.cleanCaches(true));
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
 
     public static List<Option> http2JettyDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
+        List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
 
         String alpnBoot = System.getProperty("mortbay-alpn-boot");
@@ -107,7 +107,7 @@ public class TestJettyOSGiBootHTTP2
         res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + checkALPNBoot.getAbsolutePath()));
         
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-openjdk8-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
 
 
@@ -128,19 +128,17 @@ public class TestJettyOSGiBootHTTP2
     
     @Ignore
     @Test
-    public void assertAllBundlesActiveOrResolved() throws Exception
+    public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        Bundle openjdk8 = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.openjdk8.server");
-        assertNotNull(openjdk8);
-        ServiceReference[] services = openjdk8.getRegisteredServices();
+        Bundle openjdk9 = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.java.server");
+        assertNotNull(openjdk9);
+        ServiceReference[] services = openjdk9.getRegisteredServices();
         assertNotNull(services);        
         Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
         assertNotNull(server);
     }
-
-    
 
     @Test
     public void testHTTP2() throws Exception
@@ -152,10 +150,9 @@ public class TestJettyOSGiBootHTTP2
             //get the port chosen for https
             String tmp = System.getProperty("boot.https.port");
             assertNotNull(tmp);
-            int port = Integer.valueOf(tmp.trim()).intValue();
+            int port = Integer.parseInt(tmp.trim());
             
             Path path = Paths.get("src",  "test", "config");
-            File base = path.toFile();
             File keys = path.resolve("etc").resolve("keystore").toFile();
             
             //set up client to do http2
@@ -181,5 +178,4 @@ public class TestJettyOSGiBootHTTP2
             if (http2Client != null) http2Client.stop();
         }
     }
-
 }

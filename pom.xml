@@ -13,6 +13,19 @@
   <url>https://eclipse.org/jetty</url>
   <inceptionYear>1995</inceptionYear>
 
+  <pluginRepositories>
+    <pluginRepository>
+      <id>apache.snapshots</id>
+      <url>https://repository.apache.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
   <properties>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -28,7 +41,7 @@
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.1.4</conscrypt.version>
-    <asm.version>6.2</asm.version>
+    <asm.version>7.0-beta</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
@@ -49,7 +62,6 @@
     <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
-
 
     <!-- testing -->
     <jetty.test.version>5.1</jetty.test.version>
@@ -90,8 +102,9 @@
     <module>jetty-util-ajax</module>
     <module>apache-jsp</module>
     <module>apache-jstl</module>
-    <module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module>
+    <!-- TODO: restore these modules when the maven-plugin-plugin works with JDK 11 -->
+    <!--<module>jetty-maven-plugin</module>-->
+    <!--<module>jetty-jspc-maven-plugin</module>-->
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plus</module>
@@ -140,34 +153,17 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[3.0.0,)</version>
-                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.0.0 or newer</message>
+                  <version>[3.5.0,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.5.0 or newer</message>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[1.8,)</version>
-                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 1.8.0 or newer</message>
+                  <version>[11,)</version>
+                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 11 or newer</message>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
-              </rules>
-            </configuration>
-          </execution>
-          <execution>
-            <id>ban-junit-dep.jar</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <excludes>
-                    <exclude>junit:junit-dep:*:jar</exclude>
-                  </excludes>
-                  <searchTransitive>true</searchTransitive>
-                  <message>We use junit.jar, not junit-dep.jar (as of junit 4.11, hamcrest is no longer embedded)</message>
-                </bannedDependencies>
               </rules>
             </configuration>
           </execution>
@@ -247,7 +243,7 @@
         </executions>
         <configuration>
           <linkXRef>false</linkXRef>
-          <targetJdk>1.8</targetJdk>
+          <targetJdk>11</targetJdk>
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
@@ -438,8 +434,9 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.plugin.version}</version>
           <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
+            <source>11</source>
+            <target>11</target>
+            <release>11</release>
           </configuration>
         </plugin>
         <plugin>
@@ -585,7 +582,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.10.0</version>
+          <version>3.11.0-SNAPSHOT</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -610,7 +607,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.1-SNAPSHOT</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -781,9 +778,7 @@
                   <pluginExecutionFilter>
                     <groupId>org.ops4j.pax.exam</groupId>
                     <artifactId>maven-paxexam-plugin</artifactId>
-                    <versionRange>
-                      [1.2.0,)
-                    </versionRange>
+                    <versionRange>[1.2.0,)</versionRange>
                     <goals>
                       <goal>
                         generate-depends-file
@@ -1119,34 +1114,6 @@
       </build>
     </profile>
     <profile>
-      <id>jdk8</id>
-      <activation>
-        <jdk>[1.8,1.9)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>clirr-maven-plugin</artifactId>
-              <version>2.8</version>
-              <configuration>
-                <htmlOutputFile>clirr-report.html</htmlOutputFile>
-                <xmlOutputFile>${project.build.directory}/clirr-report.xml</xmlOutputFile>
-                <failOnError>true</failOnError>
-                <failOnWarning>true</failOnWarning>
-                <failOnInfo>false</failOnInfo>
-                <logResults>true</logResults>
-                <minSeverity>info</minSeverity>
-                <comparisonVersion>9.4.6.v20170531</comparisonVersion>
-                <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-    <profile>
       <id>config</id>
       <activation>
         <file>
@@ -1341,7 +1308,7 @@
           <plugin>
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-jarsigner-plugin</artifactId>
-	          <version>${cbi-plugins.version}</version>
+            <version>${cbi-plugins.version}</version>
             <executions>
               <execution>
                 <id>sign</id>
@@ -1365,430 +1332,6 @@
                 <phase>package</phase>
               </execution>
             </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>8u00</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.0.v20141016</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u05</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_05</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.0.v20141016</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u11</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_11</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.0.v20141016</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u20</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_20</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.0.v20141016</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u25</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_25</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.2.v20141202</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u31</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_31</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.3.v20150130</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u40</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_40</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.3.v20150130</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u45</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_45</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.3.v20150130</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u51</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_51</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.4.v20150727</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u60</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_60</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.5.v20150921</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u65</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_65</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.6.v20151105</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u66</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_66</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.6.v20151105</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u71</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_71</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.7.v20160121</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u72</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_72</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.7.v20160121</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u73</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_73</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.7.v20160121</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u74</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_74</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.7.v20160121</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u77</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_77</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.7.v20160121</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u91</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_91</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.7.v20160121</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u92</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_92</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.8.v20160420</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u101</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_101</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.9.v20160720</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u102</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_102</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.9.v20160720</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u111</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_111</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.9.v20160720</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u112</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_112</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.10.v20161026</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u121</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_121</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.11.v20170118</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u131</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_131</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.11.v20170118</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u141</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_141</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.11.v20170118</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u144</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_144</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.11.v20170118</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u151</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_151</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.11.v20170118</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u152</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_152</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.11.v20170118</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u161</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_161</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.12.v20180117</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u162</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_162</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.12.v20180117</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u171</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_171</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.12.v20180117</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u172</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_172</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.12.v20180117</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u181</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0_181</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.1.12.v20180117</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>[1.9,)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <release>8</release>
-            </configuration>
           </plugin>
         </plugins>
       </build>
