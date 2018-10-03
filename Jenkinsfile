@@ -63,7 +63,7 @@ def getFullBuild(jdk, os, mainJdk) {
                           ",**/org/eclipse/jetty/demo/**" +
                           // special environments / late integrations
                           ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
-                          ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +SPIServerTest
+                          ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**"
                           ",**/org/eclipse/jetty/http/spi/**" +
                           // test classes
                           ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
