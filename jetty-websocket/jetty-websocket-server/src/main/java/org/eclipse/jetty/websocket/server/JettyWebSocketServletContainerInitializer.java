@@ -27,7 +27,6 @@ import javax.servlet.ServletException;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
 
 /**
@@ -71,6 +70,9 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
         ServletContextWebSocketContainer wsContainer = ServletContextWebSocketContainer.get(ctx);
-        wsContainer.addFrameHandlerFactory(new JettyWebSocketFrameHandlerFactory(wsContainer));
+        throw new UnsupportedOperationException();
+        /* TODO
+        wsContainer.addFrameHandlerFactory(new JettyWebSocketFrameHandlerFactory(wsContainer.getExecutor()));
+        */
     }
 }

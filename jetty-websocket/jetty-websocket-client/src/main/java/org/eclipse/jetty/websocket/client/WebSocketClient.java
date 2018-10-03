@@ -35,17 +35,16 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.impl.ClientUpgradeRequestImpl;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public class WebSocketClient extends ContainerLifeCycle implements WebSocketContainerContext
+public class WebSocketClient extends ContainerLifeCycle
 {
     private final WebSocketCoreClient coreClient;
     private final int id = ThreadLocalRandom.current().nextInt();
@@ -83,7 +82,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.contextClassLoader = this.getClass().getClassLoader();
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
+        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(getExecutor());
     }
 
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
@@ -166,19 +165,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         getHttpClient().setCookieStore(cookieStore);
     }
 
-    @Override
     public ByteBufferPool getBufferPool()
     {
         return getHttpClient().getByteBufferPool();
     }
 
-    @Override
     public ClassLoader getContextClassloader()
     {
         return this.contextClassLoader;
     }
 
-    @Override
     public Executor getExecutor()
     {
         return getHttpClient().getExecutor();

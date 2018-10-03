@@ -23,12 +23,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.net.HttpCookie;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.util.Arrays;
+import java.security.Principal;
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -38,7 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpRequest}
@@ -62,16 +59,6 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        List<String> rawExtensions = delegate.getHeaders().getValuesList(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
-        if (rawExtensions == null || rawExtensions.isEmpty())
-            return Collections.emptyList();
-
-        return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
-    }
-
-    @Override
     public String getHeader(String name)
     {
         return delegate.getHeaders().get(name);
@@ -84,14 +71,6 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
         if (field == null)
             return -1;
         return field.getIntValue();
-    }
-
-    @Override
-    public Map<String, List<String>> getHeadersMap()
-    {
-        Map<String, List<String>> ret = new HashMap<>();
-        delegate.getHeaders().forEach((field) -> ret.put(field.getName(), Arrays.asList(field.getValues())));
-        return ret;
     }
 
     @Override
@@ -112,45 +91,10 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
         return delegate.getVersion().toString();
     }
 
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        return localSocketAddress;
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return remoteSocketAddress;
-    }
-
     public void configure(EndPoint endpoint)
     {
         this.localSocketAddress = endpoint.getLocalAddress();
         this.remoteSocketAddress = endpoint.getRemoteAddress();
-    }
-
-    @Override
-    public Locale getLocale()
-    {
-        HttpField field = delegate.getHeaders().getField("Locale");
-        if (field == null)
-            return null;
-        String values[] = field.getValues();
-        if (values == null || values.length < 1)
-            return null;
-        return new Locale(values[0]);
-    }
-
-    @Override
-    public Enumeration<Locale> getLocales()
-    {
-        HttpField field = delegate.getHeaders().getField("Locale");
-        if (field == null || field.getValues() == null)
-            return Collections.emptyEnumeration();
-        return Collections.enumeration(Arrays.stream(field.getValues())
-                .map((s) -> new Locale(s))
-                .collect(Collectors.toList()));
     }
 
     @Override
@@ -214,5 +158,123 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
     {
         // TODO: figure out how to obtain from HttpClient's HttpRequest
         return false;
+    }
+
+    @Override
+    public void addExtensions(org.eclipse.jetty.websocket.api.extensions.ExtensionConfig... configs)
+    {
+
+    }
+
+    @Override
+    public void addExtensions(String... configs)
+    {
+
+    }
+
+    @Override
+    public void clearHeaders()
+    {
+
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return null;
+    }
+
+    @Override
+    public Object getSession()
+    {
+        return null;
+    }
+
+    @Override
+    public Principal getUserPrincipal()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isOrigin(String test)
+    {
+        return false;
+    }
+
+    @Override
+    public void setCookies(List<HttpCookie> cookies)
+    {
+
+    }
+
+    @Override
+    public List<ExtensionConfig> getExtensions()
+    {
+        List<String> rawExtensions = delegate.getHeaders().getValuesList(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
+        if (rawExtensions == null || rawExtensions.isEmpty())
+            return Collections.emptyList();
+
+        return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
+    }
+
+    @Override
+    public void setExtensions(List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> configs)
+    {
+
+    }
+
+    @Override
+    public void setHeader(String name, List<String> values)
+    {
+
+    }
+
+    @Override
+    public void setHeader(String name, String value)
+    {
+
+    }
+
+    @Override
+    public void setHeaders(Map<String, List<String>> headers)
+    {
+
+    }
+
+    @Override
+    public void setHttpVersion(String httpVersion)
+    {
+
+    }
+
+    @Override
+    public void setMethod(String method)
+    {
+
+    }
+
+    @Override
+    public void setRequestURI(URI uri)
+    {
+
+    }
+
+    @Override
+    public void setSession(Object session)
+    {
+
+    }
+
+    @Override
+    public void setSubProtocols(List<String> protocols)
+    {
+
+    }
+
+    @Override
+    public void setSubProtocols(String... protocols)
+    {
+
     }
 }

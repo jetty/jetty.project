@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,8 +29,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpResponse}
@@ -51,16 +52,6 @@ public class DelegatedClientUpgradeResponse implements UpgradeResponse
     }
 
     @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        List<String> rawExtensions = delegate.getHeaders().getValuesList(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
-        if (rawExtensions == null || rawExtensions.isEmpty())
-            return Collections.emptyList();
-
-        return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
-    }
-
-    @Override
     public String getHeader(String name)
     {
         return this.delegate.getHeaders().get(name);
@@ -70,14 +61,6 @@ public class DelegatedClientUpgradeResponse implements UpgradeResponse
     public Set<String> getHeaderNames()
     {
         return delegate.getHeaders().getFieldNamesCollection();
-    }
-
-    @Override
-    public Map<String, List<String>> getHeadersMap()
-    {
-        Map<String, List<String>> ret = new HashMap<>();
-        delegate.getHeaders().forEach((field) -> ret.put(field.getName(), Arrays.asList(field.getValues())));
-        return ret;
     }
 
     @Override
@@ -91,4 +74,81 @@ public class DelegatedClientUpgradeResponse implements UpgradeResponse
     {
         return this.delegate.getStatus();
     }
+
+    @Override
+    public void addHeader(String name, String value)
+    {
+
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return null;
+    }
+
+    @Override
+    public String getStatusReason()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isSuccess()
+    {
+        return false;
+    }
+
+    @Override
+    public void sendForbidden(String message) throws IOException
+    {
+
+    }
+
+    @Override
+    public void setAcceptedSubProtocol(String protocol)
+    {
+
+    }
+
+    @Override
+    public List<ExtensionConfig> getExtensions()
+    {
+        List<String> rawExtensions = delegate.getHeaders().getValuesList(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
+        if (rawExtensions == null || rawExtensions.isEmpty())
+            return Collections.emptyList();
+
+        return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
+    }
+
+    @Override
+    public void setExtensions(List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> extensions)
+    {
+
+    }
+
+    @Override
+    public void setHeader(String name, String value)
+    {
+
+    }
+
+    @Override
+    public void setStatusCode(int statusCode)
+    {
+
+    }
+
+    @Override
+    public void setStatusReason(String statusReason)
+    {
+
+    }
+
+    @Override
+    public void setSuccess(boolean success)
+    {
+
+    }
+
 }
