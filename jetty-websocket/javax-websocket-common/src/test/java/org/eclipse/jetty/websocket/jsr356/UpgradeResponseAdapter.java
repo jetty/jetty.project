@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests;
+package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,11 +25,11 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.HeaderUtil;
 
-public class HandshakeResponseAdapter implements HandshakeResponse
+public class UpgradeResponseAdapter implements UpgradeResponse
 {
     public static final String SEC_WEBSOCKET_PROTOCOL = HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString();
     private int statusCode;
@@ -64,7 +64,7 @@ public class HandshakeResponseAdapter implements HandshakeResponse
     public String getHeader(String name)
     {
         List<String> values = getHeaders(name);
-        return HeaderUtil.joinValues(values);
+        return QuotedCSV.join(values);
     }
 
     @Override

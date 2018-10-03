@@ -25,6 +25,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.core.AbstractTrackingEndpoint;
@@ -35,8 +37,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {
-    public HandshakeRequest openUpgradeRequest;
-    public HandshakeResponse openUpgradeResponse;
+    public UpgradeRequest openUpgradeRequest;
+    public UpgradeResponse openUpgradeResponse;
 
     public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();

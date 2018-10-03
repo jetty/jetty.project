@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * Servlet Specific UpgradeResponse implementation.
  */
-public class ServletUpgradeResponse implements HandshakeResponse
+public class ServletUpgradeResponse implements UpgradeResponse
 {
     private final HttpServletResponse response;
     private boolean extensionsNegotiated = false;

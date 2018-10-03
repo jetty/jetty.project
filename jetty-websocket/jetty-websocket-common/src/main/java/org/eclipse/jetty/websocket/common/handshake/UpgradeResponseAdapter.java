@@ -26,9 +26,9 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.HeaderUtil;
 
 @Deprecated
 public class UpgradeResponseAdapter implements UpgradeResponse
@@ -69,7 +69,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public String getHeader(String name)
     {
         List<String> values = getHeaders(name);
-        return HeaderUtil.joinValues(values);
+        return QuotedCSV.join(values);
     }
 
     @Override

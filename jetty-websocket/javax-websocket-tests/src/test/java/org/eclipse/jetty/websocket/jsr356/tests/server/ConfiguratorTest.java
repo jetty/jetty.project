@@ -50,10 +50,10 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.HeaderUtil;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -158,7 +158,7 @@ public class ConfiguratorTest
                 }
                 else
                 {
-                    response.append(HeaderUtil.joinValues(values));
+                    response.append(QuotedCSV.join(values));
                 }
             }
 

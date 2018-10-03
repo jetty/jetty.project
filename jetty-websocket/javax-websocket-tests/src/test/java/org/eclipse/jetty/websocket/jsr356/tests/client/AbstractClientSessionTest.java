@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.tests.client;
 
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
@@ -29,8 +29,8 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyEndpoint;
-import org.eclipse.jetty.websocket.jsr356.tests.HandshakeRequestAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.HandshakeResponseAdapter;
+import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
+import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -45,18 +45,18 @@ public abstract class AbstractClientSessionTest
         container = new JavaxWebSocketClientContainer();
         container.start();
         Object websocketPojo = new DummyEndpoint();
-        HandshakeRequest handshakeRequest = new HandshakeRequestAdapter();
-        HandshakeResponse handshakeResponse = new HandshakeResponseAdapter();
+        UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
+        UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
         JavaxWebSocketFrameHandler frameHandler =
-                container.newFrameHandler(websocketPojo, container.getPolicy(), handshakeRequest, handshakeResponse, null);
+                container.newFrameHandler(websocketPojo, container.getPolicy(), upgradeRequest, upgradeResponse, null);
         FrameHandler.CoreSession channel = new DummyChannel();
         String id = "dummy";
         EndpointConfig endpointConfig = null;
         session = new JavaxWebSocketSession(container,
                 channel,
                 frameHandler,
-                handshakeRequest,
-                handshakeResponse,
+            upgradeRequest,
+            upgradeResponse,
                 id,
                 endpointConfig);
         container.addManaged(session);

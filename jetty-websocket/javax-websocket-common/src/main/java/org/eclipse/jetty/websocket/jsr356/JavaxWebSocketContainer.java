@@ -30,8 +30,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
@@ -198,8 +198,8 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         this.asyncSendTimeout = timeoutmillis;
     }
 
-    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse, CompletableFuture<Session> futureSession)
+    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
-        return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, futureSession);
+        return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse, futureSession);
     }
 }

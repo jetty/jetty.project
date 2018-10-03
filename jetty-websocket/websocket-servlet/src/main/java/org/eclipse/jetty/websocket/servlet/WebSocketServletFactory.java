@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
@@ -67,9 +67,9 @@ public class WebSocketServletFactory
         return this.policy;
     }
 
-    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
+    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
-        return container.newFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse);
+        return container.newFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse);
     }
 
     /**

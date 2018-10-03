@@ -32,19 +32,18 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpRequest}
- * in the {@link HandshakeRequest} interface.
+ * in the {@link UpgradeRequest} interface.
  */
-public class DelegatedClientHandshakeRequest implements HandshakeRequest
+public class DelegatedClientUpgradeRequest implements UpgradeRequest
 {
-    private final UpgradeRequest delegate;
+    private final org.eclipse.jetty.websocket.core.client.UpgradeRequest delegate;
 
-    public DelegatedClientHandshakeRequest(UpgradeRequest delegate)
+    public DelegatedClientUpgradeRequest(org.eclipse.jetty.websocket.core.client.UpgradeRequest delegate)
     {
         this.delegate = delegate;
     }

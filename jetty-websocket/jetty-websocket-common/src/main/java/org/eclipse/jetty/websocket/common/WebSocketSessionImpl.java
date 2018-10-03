@@ -33,26 +33,23 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class WebSocketSessionImpl implements Session
 {
-    private final WebSocketContainerContext container;
     private final Behavior behavior;
     private final WebSocketPolicy sessionPolicy;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
-    private final HandshakeRequest handshakeRequest;
-    private final HandshakeResponse handshakeResponse;
+    private final UpgradeRequest upgradeRequest;
+    private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSessionImpl(WebSocketContainerContext container,
-                                Behavior behavior,
-                                WebSocketPolicy sessionPolicy,
-                                JettyWebSocketRemoteEndpoint remoteEndpoint,
-                                HandshakeRequest handshakeRequest,
-                                HandshakeResponse handshakeResponse)
+    public WebSocketSessionImpl(Behavior behavior,
+        WebSocketPolicy sessionPolicy,
+        JettyWebSocketRemoteEndpoint remoteEndpoint,
+        UpgradeRequest upgradeRequest,
+        UpgradeResponse upgradeResponse)
     {
-        this.container = container;
         this.behavior = behavior;
         this.sessionPolicy = sessionPolicy;
         this.remoteEndpoint = remoteEndpoint;
-        this.handshakeRequest = handshakeRequest;
-        this.handshakeResponse = handshakeResponse;
+        this.upgradeRequest = upgradeRequest;
+        this.upgradeResponse = upgradeResponse;
     }
 
     @Override
@@ -101,7 +98,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public String getProtocolVersion()
     {
-        return handshakeRequest.getProtocolVersion();
+        return upgradeRequest.getProtocolVersion();
     }
 
     @Override
@@ -119,7 +116,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public boolean isSecure()
     {
-        return handshakeRequest.isSecure();
+        return upgradeRequest.isSecure();
     }
 
     @Override
@@ -147,13 +144,13 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public UpgradeRequest getUpgradeRequest()
+    public org.eclipse.jetty.websocket.api.UpgradeRequest getUpgradeRequest()
     {
         return null;
     }
 
     @Override
-    public UpgradeResponse getUpgradeResponse()
+    public org.eclipse.jetty.websocket.api.UpgradeResponse getUpgradeResponse()
     {
         return null;
     }

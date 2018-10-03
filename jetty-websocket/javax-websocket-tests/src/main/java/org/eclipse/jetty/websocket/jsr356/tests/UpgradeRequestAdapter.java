@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.tests;
 
 import java.net.HttpCookie;
 import java.net.SocketAddress;
@@ -30,11 +30,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.HeaderUtil;
 
-public class HandshakeRequestAdapter implements HandshakeRequest
+public class UpgradeRequestAdapter implements UpgradeRequest
 {
     private URI requestURI;
     private List<String> subProtocols = new ArrayList<>(1);
@@ -49,12 +49,12 @@ public class HandshakeRequestAdapter implements HandshakeRequest
     private SocketAddress remoteSocketAddress;
     private boolean secure;
 
-    public HandshakeRequestAdapter()
+    public UpgradeRequestAdapter()
     {
         /* anonymous, no requestURI, upgrade request */
     }
 
-    public HandshakeRequestAdapter(URI uri)
+    public UpgradeRequestAdapter(URI uri)
     {
         this.requestURI = uri;
         String scheme = uri.getScheme();
@@ -82,7 +82,7 @@ public class HandshakeRequestAdapter implements HandshakeRequest
     public String getHeader(String name)
     {
         List<String> values = headers.get(name);
-        return HeaderUtil.joinValues(values);
+        return QuotedCSV.join(values);
     }
 
     @Override

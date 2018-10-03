@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 /**
  * An immutable interface to the HTTP Upgrade to WebSocket Response
  */
-public interface HandshakeResponse
+public interface UpgradeResponse
 {
     /**
      * Get the accepted WebSocket protocol.

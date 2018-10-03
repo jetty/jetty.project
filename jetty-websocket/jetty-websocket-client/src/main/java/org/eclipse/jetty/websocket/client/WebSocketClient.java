@@ -35,10 +35,9 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.impl.ClientUpgradeRequestImpl;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
@@ -103,7 +102,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, org.eclipse.jetty.websocket.api.UpgradeRequest request) throws IOException
     {
         ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, coreClient, request, toUri, websocket);
         coreClient.connect(upgradeRequest);
@@ -269,9 +268,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return coreClient.getPolicy();
     }
 
-    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse, CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
-        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, futureSession);
+        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse, futureSession);
     }
 
     /**

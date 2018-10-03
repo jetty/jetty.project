@@ -23,10 +23,12 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -53,22 +55,21 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class JettyWebSocketFrameHandlerTest
 {
-    public static DummyContainer container;
+    private static QueuedThreadPool executor = new QueuedThreadPool();
 
     @BeforeAll
     public static void startContainer() throws Exception
     {
-        container = new DummyContainer(new WebSocketPolicy());
-        container.start();
+        executor.start();
     }
 
     @AfterAll
     public static void stopContainer() throws Exception
     {
-        container.stop();
+        executor.stop();
     }
 
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
+    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
     private WebSocketPolicy policy = new WebSocketPolicy();
     private FrameHandler.CoreSession channel = new DummyChannel();
 

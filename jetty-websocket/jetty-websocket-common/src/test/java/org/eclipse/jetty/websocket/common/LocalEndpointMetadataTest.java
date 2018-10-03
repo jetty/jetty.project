@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedTextSocket;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,22 +57,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class LocalEndpointMetadataTest
 {
     public static final Matcher<Object> EXISTS = notNullValue();
-    public static DummyContainer container;
+    public static QueuedThreadPool threadpool;
 
     @BeforeAll
     public static void startContainer() throws Exception
     {
-        container = new DummyContainer(new WebSocketPolicy());
-        container.start();
+        threadpool = new QueuedThreadPool();
+        threadpool.start();
     }
 
     @AfterAll
     public static void stopContainer() throws Exception
     {
-        container.stop();
+        threadpool.stop();
     }
 
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
+    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(threadpool);
 
     private JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {

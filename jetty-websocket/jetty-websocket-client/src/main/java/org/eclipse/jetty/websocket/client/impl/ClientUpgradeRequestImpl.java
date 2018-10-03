@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
@@ -43,7 +43,7 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
     private final Object websocketPojo;
     private final CompletableFuture<Session> onOpenFuture;
     private final CompletableFuture<Session> futureSession;
-    private final DelegatedClientHandshakeRequest handshakeRequest;
+    private final DelegatedClientUpgradeRequest handshakeRequest;
 
     public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, org.eclipse.jetty.websocket.api.UpgradeRequest request, URI requestURI, Object websocketPojo)
     {
@@ -92,7 +92,7 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
                 version(HttpVersion.fromString(request.getHttpVersion()));
         }
 
-        handshakeRequest = new DelegatedClientHandshakeRequest(this);
+        handshakeRequest = new DelegatedClientUpgradeRequest(this);
     }
 
     @Override
@@ -111,10 +111,10 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
     @Override
     public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
     {
-        HandshakeResponse handshakeResponse = new DelegatedClientHandshakeResponse(response);
+        UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
 
         JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradePolicy,
-                handshakeRequest, handshakeResponse, onOpenFuture);
+                handshakeRequest, upgradeResponse, onOpenFuture);
 
         return frameHandler;
     }

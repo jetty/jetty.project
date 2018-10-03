@@ -21,12 +21,15 @@ package org.eclipse.jetty.websocket.common;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketException;
@@ -38,7 +41,7 @@ import org.eclipse.jetty.websocket.core.BatchMode;
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
     private final Logger log;
-    private final WebSocketContainerContext container;
+    private final Executor executor;
     private final Object endpointInstance;
     private final WebSocketPolicy policy;
     private MethodHandle openHandle;
@@ -54,20 +57,20 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     /**
      * Immutable HandshakeRequest available via Session
      */
-    private final HandshakeRequest handshakeRequest;
+    private final UpgradeRequest upgradeRequest;
     /**
      * Immutable HandshakeResponse available via Session
      */
-    private final HandshakeResponse handshakeResponse;
+    private final UpgradeResponse upgradeResponse;
     private final CompletableFuture<Session> futureSession;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
 
-    public JettyWebSocketFrameHandler(WebSocketContainerContext container,
+    public JettyWebSocketFrameHandler(Executor executor,
                                       Object endpointInstance, WebSocketPolicy upgradePolicy,
-                                      HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse,
+                                      UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       MethodHandle textHandle, MethodHandle binaryHandle,
                                       Class<? extends MessageSink> textSinkClass,
@@ -78,11 +81,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
-        this.container = container;
+        this.executor = executor;
         this.endpointInstance = endpointInstance;
         this.policy = upgradePolicy;
-        this.handshakeRequest = handshakeRequest;
-        this.handshakeResponse = handshakeResponse;
+        this.upgradeRequest = upgradeRequest;
+        this.upgradeResponse = upgradeResponse;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
@@ -146,7 +149,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             try
             {
-                frameHandle.invoke(frame.asReadOnly());
+                frameHandle.invoke(new JettyWebSocketFrame(frame));
             }
             catch (Throwable cause)
             {
@@ -181,7 +184,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public void onOpen(CoreSession coreSession) throws Exception
     {
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(coreSession);
-        session = new WebSocketSessionImpl(container, coreSession.getBehavior(), policy, remote, handshakeRequest, handshakeResponse);
+        session = new WebSocketSessionImpl(coreSession.getBehavior(), policy, remote, upgradeRequest, upgradeResponse);
 
         frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
         openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
@@ -194,12 +197,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (textHandle != null)
         {
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, getPolicy(), container.getExecutor());
+            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, getPolicy(), executor);
         }
 
         if (binaryHandle != null)
         {
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, getPolicy(), container.getExecutor());
+            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, getPolicy(), executor);
         }
 
         if (openHandle != null)

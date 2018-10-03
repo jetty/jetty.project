@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 /**
  * An immutable interface to the Upgrade Request.
  */
-public interface HandshakeRequest
+public interface UpgradeRequest
 {
     /**
      * Get the list of Cookies on the Upgrade request
@@ -44,7 +44,7 @@ public interface HandshakeRequest
     /**
      * Get the list of WebSocket Extension Configurations for this Upgrade Request.
      * <p>
-     * This is merely the list of requested Extensions to use, see {@link HandshakeResponse#getExtensions()} for what was
+     * This is merely the list of requested Extensions to use, see {@link UpgradeResponse#getExtensions()} for what was
      * negotiated
      *
      * @return the list of Extension configurations (in the order they were specified)

@@ -44,8 +44,8 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -64,8 +64,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
     private final FrameHandler.CoreSession coreSession;
-    private final HandshakeRequest handshakeRequest;
-    private final HandshakeResponse upgradeResponse;
+    private final UpgradeRequest upgradeRequest;
+    private final UpgradeResponse upgradeResponse;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final WebSocketPolicy policy;
     private final EndpointConfig config;
@@ -82,16 +82,16 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
                                  FrameHandler.CoreSession coreSession,
                                  JavaxWebSocketFrameHandler frameHandler,
-                                 HandshakeRequest handshakeRequest,
-                                 HandshakeResponse handshakeResponse,
+                                 UpgradeRequest upgradeRequest,
+                                 UpgradeResponse upgradeResponse,
                                  String id,
                                  EndpointConfig endpointConfig)
     {
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
-        this.handshakeRequest = handshakeRequest;
-        this.upgradeResponse = handshakeResponse;
+        this.upgradeRequest = upgradeRequest;
+        this.upgradeResponse = upgradeResponse;
         this.policy = frameHandler.getPolicy();
         this.id = id;
 
@@ -482,7 +482,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getProtocolVersion()
     {
-        return handshakeRequest.getProtocolVersion();
+        return upgradeRequest.getProtocolVersion();
     }
 
     /**
@@ -494,7 +494,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getQueryString()
     {
-        return handshakeRequest.getRequestURI().getQuery();
+        return upgradeRequest.getRequestURI().getQuery();
     }
 
     /**
@@ -506,7 +506,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Map<String, List<String>> getRequestParameterMap()
     {
-        return handshakeRequest.getParameterMap();
+        return upgradeRequest.getParameterMap();
     }
 
     /**
@@ -518,7 +518,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public URI getRequestURI()
     {
-        return handshakeRequest.getRequestURI();
+        return upgradeRequest.getRequestURI();
     }
 
     /**
@@ -532,8 +532,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     {
         try
         {
-            Method method = handshakeRequest.getClass().getMethod("getUserPrincipal");
-            return (Principal) method.invoke(handshakeRequest);
+            Method method = upgradeRequest.getClass().getMethod("getUserPrincipal");
+            return (Principal) method.invoke(upgradeRequest);
         }
         catch (NoSuchMethodException e)
         {
@@ -580,7 +580,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public boolean isSecure()
     {
-        return handshakeRequest.isSecure();
+        return upgradeRequest.isSecure();
     }
 
     @Override

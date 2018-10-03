@@ -39,14 +39,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * Servlet specific Upgrade Request implementation.
  */
-public class ServletUpgradeRequest implements HandshakeRequest
+public class ServletUpgradeRequest implements UpgradeRequest
 {
     private final URI requestURI;
     private final String queryString;

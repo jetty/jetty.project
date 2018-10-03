@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.client;
+package org.eclipse.jetty.websocket.client.impl;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,18 +28,18 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
- * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link HttpResponse}
- * in the {@link HandshakeResponse} interface.
+ * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpResponse}
+ * in the {@link UpgradeResponse} interface.
  */
-public class DelegatedClientHandshakeResponse implements HandshakeResponse
+public class DelegatedClientUpgradeResponse implements UpgradeResponse
 {
     private HttpResponse delegate;
 
-    public DelegatedClientHandshakeResponse(HttpResponse response)
+    public DelegatedClientUpgradeResponse(HttpResponse response)
     {
         this.delegate = response;
     }

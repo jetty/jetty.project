@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -33,7 +34,76 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
  * @see "https://tools.ietf.org/html/rfc7230#section-7"
  */
 public class QuotedCSV implements Iterable<String>
-{    
+{
+    /**
+     * ABNF from RFC 2616, RFC 822, and RFC 6455 specified characters requiring quoting.
+     */
+    public static final String ABNF_REQUIRED_QUOTING = "\"'\\\n\r\t\f\b%+ ;=,";
+
+    /**
+     * @param values A list of values
+     * @return A Quoted Comma Separated Value list
+     */
+    public static String join(List<String> values)
+    {
+        // no value list
+        if (values == null)
+            return null;
+
+        int size = values.size();
+        // empty value list
+        if (size <= 0)
+            return "";
+
+        // simple return
+        if (size == 1)
+            return values.get(0);
+
+        StringBuilder ret = new StringBuilder();
+        join(ret,values);
+        return ret.toString();
+    }
+
+    public static String join(String... values)
+    {
+        if (values == null)
+            return null;
+
+        // empty value list
+        if (values.length <= 0)
+            return "";
+
+        // simple return
+        if (values.length == 1)
+            return values[0];
+
+        StringBuilder ret = new StringBuilder();
+        join(ret, Arrays.asList(values));
+        return ret.toString();
+    }
+
+    /**
+     * @param values A list of values
+     * @return A Quoted Comma Separated Value list
+     */
+    public static void join(StringBuilder ret, List<String> values)
+    {
+        if (values == null || values.isEmpty())
+            return;
+
+        // join it with commas
+        boolean needsDelim = false;
+        for (String value : values)
+        {
+            if (needsDelim)
+                ret.append(", ");
+            else
+                needsDelim = true;
+            QuotedStringTokenizer.quoteIfNeeded(ret, value, ABNF_REQUIRED_QUOTING);
+        }
+    }
+
+
     private enum State { VALUE, PARAM_NAME, PARAM_VALUE};
     
     protected final List<String> _values = new ArrayList<>();

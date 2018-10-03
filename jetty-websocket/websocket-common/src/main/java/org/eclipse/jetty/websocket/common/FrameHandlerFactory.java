@@ -35,9 +35,9 @@ public interface FrameHandlerFactory
      *
      * @param websocketPojo the websocket pojo to work with
      * @param policy the policy to use when creating new FrameHandler instances (this is assumed to be a unique/cloned policy for this FrameHandler instance)
-     * @param handshakeRequest the Upgrade Handshake Request used to create the FrameHandler
-     * @param handshakeResponse the Upgrade Handshake Response used to create the FrameHandler
+     * @param upgradeRequest the Upgrade Handshake Request used to create the FrameHandler
+     * @param upgradeResponse the Upgrade Handshake Response used to create the FrameHandler
      * @return the API specific FrameHandler, or null if this implementation is unable to create the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
      */
-    FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse);
+    FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse);
 }

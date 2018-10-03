@@ -24,15 +24,14 @@ import java.util.concurrent.CompletableFuture;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 
-public class ClientUpgradeRequestImpl extends UpgradeRequest
+public class ClientUpgradeRequestImpl extends org.eclipse.jetty.websocket.core.client.UpgradeRequest
 {
     private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;
@@ -57,11 +56,11 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
     @Override
     public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
     {
-        HandshakeRequest handshakeRequest = new DelegatedClientHandshakeRequest(this);
-        HandshakeResponse handshakeResponse = new DelegatedClientHandshakeResponse(response);
+        UpgradeRequest upgradeRequest = new DelegatedClientUpgradeRequest(this);
+        UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
 
         JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradePolicy,
-                handshakeRequest, handshakeResponse, onOpenFuture);
+            upgradeRequest, upgradeResponse, onOpenFuture);
 
         return frameHandler;
     }

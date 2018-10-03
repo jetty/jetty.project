@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
@@ -70,11 +70,11 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
         JavaxWebSocketFrameHandlerFactory factory = container.getFrameHandlerFactory();
         BasicEndpointConfig config = new BasicEndpointConfig();
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, config);
-        HandshakeRequest handshakeRequest = new HandshakeRequestAdapter();
-        HandshakeResponse handshakeResponse = new HandshakeResponseAdapter();
+        UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
+        UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
 
         JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxFrameHandler(endpoint,
-                container.getPolicy(), handshakeRequest, handshakeResponse, new CompletableFuture<>());
+                container.getPolicy(), upgradeRequest, upgradeResponse, new CompletableFuture<>());
 
         return localEndpoint;
     }

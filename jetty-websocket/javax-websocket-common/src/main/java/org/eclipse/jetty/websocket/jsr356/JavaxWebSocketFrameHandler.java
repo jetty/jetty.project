@@ -40,8 +40,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -105,11 +105,11 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     /**
      * Immutable HandshakeRequest available via Session
      */
-    private final HandshakeRequest handshakeRequest;
+    private final UpgradeRequest upgradeRequest;
     /**
      * Immutable HandshakeResponse available via Session
      */
-    private final HandshakeResponse handshakeResponse;
+    private final UpgradeResponse upgradeResponse;
     private final String id;
     private final EndpointConfig endpointConfig;
     private final CompletableFuture<Session> futureSession;
@@ -125,7 +125,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
                                       Object endpointInstance, WebSocketPolicy upgradePolicy,
-                                      HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse,
+                                      UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       MessageMetadata textMetadata,
                                       MessageMetadata binaryMetadata,
@@ -145,8 +145,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
         this.endpointInstance = endpointInstance;
         this.policy = upgradePolicy;
-        this.handshakeRequest = handshakeRequest;
-        this.handshakeResponse = handshakeResponse;
+        this.upgradeRequest = upgradeRequest;
+        this.upgradeResponse = upgradeResponse;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
@@ -215,7 +215,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     public void onOpen(CoreSession coreSession) throws Exception
     {
         this.coreSession = coreSession;
-        session = new JavaxWebSocketSession(container, coreSession, this, handshakeRequest, handshakeResponse, id, endpointConfig);
+        session = new JavaxWebSocketSession(container, coreSession, this, upgradeRequest, upgradeResponse, id, endpointConfig);
 
         openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
         closeHandle = InvokerUtils.bindTo(closeHandle, session);

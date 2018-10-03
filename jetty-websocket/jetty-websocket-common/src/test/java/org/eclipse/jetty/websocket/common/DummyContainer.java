@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 /**
  * Dummy Container for testing.
  */
-public class DummyContainer extends ContainerLifeCycle implements WebSocketContainerContext
+public class DummyContainer extends ContainerLifeCycle
 {
     private final ByteBufferPool bufferPool;
     private final ClassLoader contextClassLoader;
@@ -50,37 +50,31 @@ public class DummyContainer extends ContainerLifeCycle implements WebSocketConta
         this.objectFactory = new DecoratedObjectFactory();
     }
 
-    @Override
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
     }
 
-    @Override
     public ClassLoader getContextClassloader()
     {
         return contextClassLoader;
     }
 
-    @Override
     public Executor getExecutor()
     {
         return executor;
     }
 
-    @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
         return extensionRegistry;
     }
 
-    @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return objectFactory;
     }
 
-    @Override
     public WebSocketPolicy getPolicy()
     {
         return policy;

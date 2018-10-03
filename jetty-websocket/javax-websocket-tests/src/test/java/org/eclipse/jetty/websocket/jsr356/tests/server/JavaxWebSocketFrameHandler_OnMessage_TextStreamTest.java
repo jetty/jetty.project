@@ -31,15 +31,15 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
-import org.eclipse.jetty.websocket.jsr356.tests.HandshakeRequestAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.HandshakeResponseAdapter;
+import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
+import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.junit.jupiter.api.Test;
 
@@ -52,14 +52,14 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
     private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JavaxWebSocketFrameHandler> func) throws Exception
     {
         WebSocketPolicy policy = container.getPolicy().clonePolicy();
-        HandshakeRequest request = new HandshakeRequestAdapter() {
+        UpgradeRequest request = new UpgradeRequestAdapter() {
             @Override
             public URI getRequestURI()
             {
                 return URI.create("http://localhost:8080/msg/foo");
             }
         };
-        HandshakeResponse response = new HandshakeResponseAdapter();
+        UpgradeResponse response = new UpgradeResponseAdapter();
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
         // Establish endpoint function

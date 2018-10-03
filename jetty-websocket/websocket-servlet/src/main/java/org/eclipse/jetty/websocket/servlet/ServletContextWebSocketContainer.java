@@ -35,8 +35,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
@@ -173,7 +173,7 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
         return this.policy;
     }
 
-    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
+    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
 
@@ -187,7 +187,7 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
 
         for (FrameHandlerFactory factory : getFrameHandlerFactories())
         {
-            frameHandler = factory.newFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse);
+            frameHandler = factory.newFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse);
             if (frameHandler != null)
                 return frameHandler;
         }

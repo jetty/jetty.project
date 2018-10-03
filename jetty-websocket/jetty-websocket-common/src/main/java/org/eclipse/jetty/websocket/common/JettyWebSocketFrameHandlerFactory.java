@@ -34,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -76,14 +78,14 @@ import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
  * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketFrameListener}</li>
  * </ul>
  */
-public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
+public class JettyWebSocketFrameHandlerFactory
 {
-    private final WebSocketContainerContext container;
+    private final Executor executor;
     private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
-    public JettyWebSocketFrameHandlerFactory(WebSocketContainerContext container)
+    public JettyWebSocketFrameHandlerFactory(Executor executor)
     {
-        this.container = container;
+        this.executor = executor;
     }
 
     public JettyWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -115,13 +117,12 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    @Override
-    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
+    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
-        return newJettyFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, null);
+        return newJettyFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse, null);
     }
 
-    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, WebSocketPolicy policy, HandshakeRequest upgradeRequest, HandshakeResponse upgradeResponse, CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
@@ -171,7 +172,7 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
             future = new CompletableFuture<>();
 
         return new JettyWebSocketFrameHandler(
-                container,
+                executor,
                 endpointInstance,
                 policy,
                 upgradeRequest, upgradeResponse,
@@ -289,7 +290,7 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
         // Frame Listener
         if (WebSocketFrameListener.class.isAssignableFrom(endpointClass))
         {
-            Method frameMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketFrame", Frame.class);
+            Method frameMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketFrame", org.eclipse.jetty.websocket.api.extensions.Frame.class);
             MethodHandle frame = toMethodHandle(lookup, frameMethod);
             metadata.setFrameHandler(frame, frameMethod);
         }
