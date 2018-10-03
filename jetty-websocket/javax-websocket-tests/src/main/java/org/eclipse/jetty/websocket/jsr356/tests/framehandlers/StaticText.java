@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.CoreMessageHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 
-public class StaticText extends CoreMessageHandler
+public class StaticText extends MessageHandler
 {
     private final String staticMessage;
 

@@ -31,7 +31,6 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
@@ -41,7 +40,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.CoreMessageHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -61,7 +60,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * This class tests receiving of messages by different types of {@link MessageHandler}
+ * This class tests receiving of messages by different types of {@link javax.websocket.MessageHandler}
  */
 public class MessageReceivingTest
 {
@@ -251,7 +250,7 @@ public class MessageReceivingTest
         }
     }
 
-    public static class SendPartialTextFrameHandler extends CoreMessageHandler
+    public static class SendPartialTextFrameHandler extends MessageHandler
     {
         @Override
         public void onText(String wholeMessage, Callback callback)
@@ -274,7 +273,7 @@ public class MessageReceivingTest
         }
     }
 
-    public static class SendPartialBinaryFrameHandler extends CoreMessageHandler
+    public static class SendPartialBinaryFrameHandler extends MessageHandler
     {
         @Override
         public void onBinary(ByteBuffer wholeMessage, Callback callback)
@@ -308,7 +307,7 @@ public class MessageReceivingTest
         }
     }
 
-    public static class EchoWholeMessageFrameHandler extends CoreMessageHandler
+    public static class EchoWholeMessageFrameHandler extends MessageHandler
     {
         @Override
         public void onBinary(ByteBuffer wholeMessage, Callback callback)
@@ -390,7 +389,7 @@ public class MessageReceivingTest
     /**
      * Abstract message handler implementation, used for tests.
      */
-    private static abstract class AbstractHandler implements MessageHandler
+    private static abstract class AbstractHandler implements javax.websocket.MessageHandler
     {
         public final BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     }
@@ -399,7 +398,7 @@ public class MessageReceivingTest
      * Partial message handler for receiving binary messages.
      */
     public static class PartialByteBufferCaptureHandler extends AbstractHandler implements
-            MessageHandler.Partial<ByteBuffer>
+            javax.websocket.MessageHandler.Partial<ByteBuffer>
     {
         /**
          * Parts of the current message. This list is appended with every non-last part and is
@@ -441,7 +440,7 @@ public class MessageReceivingTest
      * Whole message handler for receiving binary messages.
      */
     public static class WholeByteBufferCaptureHandler extends AbstractHandler implements
-            MessageHandler.Whole<ByteBuffer>
+            javax.websocket.MessageHandler.Whole<ByteBuffer>
     {
         @Override
         public void onMessage(ByteBuffer message)
@@ -455,7 +454,7 @@ public class MessageReceivingTest
      * Partial message handler for receiving text messages.
      */
     public static class PartialStringCaptureHandler extends AbstractHandler implements
-            MessageHandler.Partial<String>
+            javax.websocket.MessageHandler.Partial<String>
     {
         /**
          * Parts of the current message. This list is appended with every non-last part and is
@@ -479,7 +478,7 @@ public class MessageReceivingTest
      * Whole message handler for receiving text messages.
      */
     public static class WholeStringCaptureHandler extends AbstractHandler implements
-            MessageHandler.Whole<String>
+            javax.websocket.MessageHandler.Whole<String>
     {
         @Override
         public void onMessage(String message)

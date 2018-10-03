@@ -22,9 +22,9 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.CoreMessageHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 
-public class WholeMessageEcho extends CoreMessageHandler
+public class WholeMessageEcho extends MessageHandler
 {
     @Override
     public void onBinary(ByteBuffer wholeMessage, Callback callback)

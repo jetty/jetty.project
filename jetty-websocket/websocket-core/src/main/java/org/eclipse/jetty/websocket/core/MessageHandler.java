@@ -37,11 +37,11 @@ import org.eclipse.jetty.util.log.Logger;
  * may extend {@link #isDemanding()} to return true and then explicityly control
  * demand with calls to {@link org.eclipse.jetty.websocket.core.FrameHandler.CoreSession#demand(long)}
  */
-public class CoreMessageHandler implements FrameHandler
+public class MessageHandler implements FrameHandler
 {
-    public static CoreMessageHandler from(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
+    public static MessageHandler from(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
     {
-        return new CoreMessageHandler()
+        return new MessageHandler()
         {
             @Override
             protected void onText(String message, Callback callback)
@@ -86,7 +86,7 @@ public class CoreMessageHandler implements FrameHandler
     }
 
 
-    private Logger LOG = Log.getLogger(CoreMessageHandler.class);
+    private Logger LOG = Log.getLogger(MessageHandler.class);
 
     private final int factor;
 
@@ -96,12 +96,12 @@ public class CoreMessageHandler implements FrameHandler
     private byte dataType = OpCode.UNDEFINED;
 
 
-    public CoreMessageHandler()
+    public MessageHandler()
     {
         this(3);
     }
 
-    public CoreMessageHandler(int factor)
+    public MessageHandler(int factor)
     {
         this.factor = factor;
     }

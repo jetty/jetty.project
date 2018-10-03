@@ -38,7 +38,7 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.CoreMessageHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
@@ -166,7 +166,7 @@ public class DecoderReaderManySmallTest
         }
     }
 
-    public static class EventIdFrameHandler extends CoreMessageHandler
+    public static class EventIdFrameHandler extends MessageHandler
     {
         @Override
         public void onText(String text, Callback callback)

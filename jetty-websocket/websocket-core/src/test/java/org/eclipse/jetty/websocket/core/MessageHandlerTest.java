@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(TestTrackerExtension.class)
-public class CoreMessageHandlerTest
+public class MessageHandlerTest
 {
 
     // Testing with 4 byte UTF8 character "\uD842\uDF9F"
@@ -60,7 +60,7 @@ public class CoreMessageHandlerTest
     List<ByteBuffer> binaryMessages = new ArrayList<>();
     List<Callback> callbacks = new ArrayList<>();
     List<Frame> frames = new ArrayList<>();
-    CoreMessageHandler handler;
+    MessageHandler handler;
 
     @BeforeEach
     public void beforeEach() throws Exception
@@ -170,7 +170,7 @@ public class CoreMessageHandlerTest
             }
         };
 
-        handler = new CoreMessageHandler()
+        handler = new MessageHandler()
         {
             @Override
             protected void onText(String message, Callback callback)
@@ -732,7 +732,7 @@ public class CoreMessageHandlerTest
     @Test
     public void testTextNotImplemented() throws Exception
     {
-        handler = new CoreMessageHandler()
+        handler = new MessageHandler()
         {
             @Override
             protected void onBinary(ByteBuffer message, Callback callback)
@@ -762,7 +762,7 @@ public class CoreMessageHandlerTest
     @Test
     public void testBinaryNotImplemented() throws Exception
     {
-        handler = new CoreMessageHandler()
+        handler = new MessageHandler()
         {
             @Override
             protected void onText(String message, Callback callback)

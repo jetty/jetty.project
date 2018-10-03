@@ -27,9 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.CoreMessageHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 
-public class FrameHandlerTracker extends CoreMessageHandler
+public class FrameHandlerTracker extends MessageHandler
 {
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
