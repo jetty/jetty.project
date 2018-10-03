@@ -38,11 +38,9 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.CoreMessageHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.jsr356.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.junit.jupiter.api.AfterEach;
@@ -168,10 +166,10 @@ public class DecoderReaderManySmallTest
         }
     }
 
-    public static class EventIdFrameHandler extends AbstractWholeMessageHandler
+    public static class EventIdFrameHandler extends CoreMessageHandler
     {
         @Override
-        public void onWholeText(String text, Callback callback)
+        public void onText(String text, Callback callback)
         {
             if (text.startsWith("seq|"))
             {
@@ -181,7 +179,7 @@ public class DecoderReaderManySmallTest
 
                 for (int id = from; id < to; id++)
                 {
-                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(Integer.toString(id)), Callback.NOOP, BatchMode.OFF);
+                    sendText(Integer.toString(id), Callback.NOOP, BatchMode.OFF);
                 }
             }
         }

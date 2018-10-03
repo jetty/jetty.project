@@ -91,7 +91,7 @@ public interface RemoteEndpoint
     /**
      * Send a Ping message containing the given application data to the remote endpoint. The corresponding Pong message
      * may be picked up using the
-     * MessageHandler.Pong handler.
+     * CoreMessageHandler.Pong handler.
      * 
      * @param applicationData
      *            the data to be carried in the ping request

@@ -44,7 +44,7 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
     @Override
     public void describeTo(Description description)
     {
-        description.appendText(".getMessageHandlers() contains registered MessageHandler for type " + expectedType);
+        description.appendText(".getMessageHandlers() contains registered CoreMessageHandler for type " + expectedType);
     }
 
     @Override

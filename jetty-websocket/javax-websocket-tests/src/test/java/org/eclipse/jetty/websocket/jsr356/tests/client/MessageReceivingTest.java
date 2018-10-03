@@ -41,11 +41,11 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.CoreMessageHandler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.jsr356.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.eclipse.jetty.websocket.jsr356.tests.DataUtils;
 import org.eclipse.jetty.websocket.jsr356.util.TextUtil;
@@ -251,16 +251,16 @@ public class MessageReceivingTest
         }
     }
 
-    public static class SendPartialTextFrameHandler extends AbstractWholeMessageHandler
+    public static class SendPartialTextFrameHandler extends CoreMessageHandler
     {
         @Override
-        public void onWholeText(String wholeMessage, Callback callback)
+        public void onText(String wholeMessage, Callback callback)
         {
             String parts[] = wholeMessage.split(" ");
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
-                    coreSession.sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, BatchMode.ON);
+                    getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, BatchMode.ON);
                 boolean last = (i >= (parts.length - 1));
                 BatchMode bm = last ? BatchMode.OFF : BatchMode.ON;
                 Frame frame;
@@ -268,16 +268,16 @@ public class MessageReceivingTest
                 else frame = new Frame(OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
                 frame.setFin(last);
-                coreSession.sendFrame(frame, Callback.NOOP, bm);
+                getCoreSession().sendFrame(frame, Callback.NOOP, bm);
             }
             callback.succeeded();
         }
     }
 
-    public static class SendPartialBinaryFrameHandler extends AbstractWholeMessageHandler
+    public static class SendPartialBinaryFrameHandler extends CoreMessageHandler
     {
         @Override
-        public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
+        public void onBinary(ByteBuffer wholeMessage, Callback callback)
         {
             ByteBuffer copy = DataUtils.copyOf(wholeMessage);
             int segmentSize = 128 * 1024;
@@ -302,33 +302,34 @@ public class MessageReceivingTest
                 {
                     LOG.debug("segment[{}]: {}", i, frame);
                 }
-                coreSession.sendFrame(frame, Callback.NOOP, BatchMode.OFF);
+                getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.OFF);
             }
             callback.succeeded();
         }
     }
 
-    public static class EchoWholeMessageFrameHandler extends AbstractWholeMessageHandler
+    public static class EchoWholeMessageFrameHandler extends CoreMessageHandler
     {
         @Override
-        public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
+        public void onBinary(ByteBuffer wholeMessage, Callback callback)
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("{}.onWholeBinary({})", EchoWholeMessageFrameHandler.class.getSimpleName(), BufferUtil.toDetailString(wholeMessage));
             }
-            coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
+
+            sendBinary(wholeMessage, callback, BatchMode.OFF);
         }
 
         @Override
-        public void onWholeText(String wholeMessage, Callback callback)
+        public void onText(String wholeMessage, Callback callback)
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtil.hint(wholeMessage));
             }
 
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
+            sendText(wholeMessage, callback, BatchMode.OFF);
         }
     }
 

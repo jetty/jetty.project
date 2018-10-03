@@ -22,23 +22,19 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jsr356.AbstractWholeMessageHandler;
+import org.eclipse.jetty.websocket.core.CoreMessageHandler;
 
-public class WholeMessageEcho extends AbstractWholeMessageHandler
+public class WholeMessageEcho extends CoreMessageHandler
 {
     @Override
-    public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
+    public void onBinary(ByteBuffer wholeMessage, Callback callback)
     {
-        super.onWholeBinary(wholeMessage, callback);
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
+        sendBinary(wholeMessage, callback, BatchMode.OFF);
     }
 
     @Override
-    public void onWholeText(String wholeMessage, Callback callback)
+    public void onText(String wholeMessage, Callback callback)
     {
-        super.onWholeText(wholeMessage, callback);
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
+        sendText(wholeMessage, callback, BatchMode.OFF);
     }
 }

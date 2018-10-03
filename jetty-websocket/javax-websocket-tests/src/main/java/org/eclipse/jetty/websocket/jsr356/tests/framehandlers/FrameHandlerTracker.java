@@ -24,12 +24,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.jsr356.AbstractWholeMessageHandler;
+import org.eclipse.jetty.websocket.core.CoreMessageHandler;
 
-public class FrameHandlerTracker extends AbstractWholeMessageHandler
+public class FrameHandlerTracker extends CoreMessageHandler
 {
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
@@ -52,10 +52,11 @@ public class FrameHandlerTracker extends AbstractWholeMessageHandler
     }
 
     @Override
-    public void onClose(Frame frame, Callback callback)
+    public void onClosed(CloseStatus closeStatus)
     {
-        super.onClose(frame, callback);
-        closeDetail.compareAndSet(null, new CloseStatus(frame.getPayload()));
+        super.onClosed(closeStatus);
+
+        closeDetail.compareAndSet(null, closeStatus);
         closeLatch.countDown();
     }
 
@@ -67,16 +68,16 @@ public class FrameHandlerTracker extends AbstractWholeMessageHandler
     }
 
     @Override
-    public void onWholeText(String wholeMessage, Callback callback)
+    public void onText(String wholeMessage, Callback callback)
     {
         messageQueue.offer(wholeMessage);
         callback.succeeded();
     }
 
     @Override
-    public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
+    public void onBinary(ByteBuffer wholeMessage, Callback callback)
     {
-        bufferQueue.offer(copyOf(wholeMessage));
+        bufferQueue.offer(BufferUtil.copy(wholeMessage));
         callback.succeeded();
     }
 }

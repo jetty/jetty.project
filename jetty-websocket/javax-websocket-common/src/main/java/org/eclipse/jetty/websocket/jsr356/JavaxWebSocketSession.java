@@ -122,10 +122,10 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler)
     {
-        Objects.requireNonNull(handler, "MessageHandler.Partial cannot be null");
+        Objects.requireNonNull(handler, "CoreMessageHandler.Partial cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Add MessageHandler.Partial: {}", handler);
+            LOG.debug("Add CoreMessageHandler.Partial: {}", handler);
         }
 
         frameHandler.addMessageHandler(this, clazz, handler);
@@ -140,10 +140,10 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler)
     {
-        Objects.requireNonNull(handler, "MessageHandler.Whole cannot be null");
+        Objects.requireNonNull(handler, "CoreMessageHandler.Whole cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Add MessageHandler.Whole: {}", handler);
+            LOG.debug("Add CoreMessageHandler.Whole: {}", handler);
         }
 
         frameHandler.addMessageHandler(this, clazz, handler);
@@ -161,7 +161,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {
-        Objects.requireNonNull(handler, "MessageHandler cannot be null");
+        Objects.requireNonNull(handler, "CoreMessageHandler cannot be null");
         Class<? extends MessageHandler> handlerClass = handler.getClass();
         boolean added = false;
 
