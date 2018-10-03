@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
@@ -61,13 +61,7 @@ public class Frame
     public static Frame copy(Frame original)
     {
         Frame copy = copyWithoutPayload(original);
-        ByteBuffer payload = original.getPayload();
-        if (payload != null)
-        {
-            ByteBuffer payloadCopy = ByteBuffer.allocate(payload.remaining());
-            payloadCopy.put(payload.slice()).flip();
-            copy.setPayload(payloadCopy);
-        }
+        copy.setPayload(BufferUtil.copy(original.getPayload()));
         return copy;
     }
     

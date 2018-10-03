@@ -19,27 +19,56 @@
 package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.jsr356.AbstractFrameTypeHandler;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 
-public class FrameEcho extends AbstractFrameTypeHandler
+public class FrameEcho implements FrameHandler
 {
+    private Logger LOG = Log.getLogger(FrameEcho.class);
+
+    private CoreSession coreSession;
+
     @Override
-    public void onText(Frame frame, Callback callback)
+    public void onOpen(CoreSession coreSession) throws Exception
     {
-        coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+        this.coreSession = coreSession;
     }
 
     @Override
-    public void onBinary(Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
-        coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+
+        switch (frame.getOpCode())
+        {
+            case OpCode.TEXT:
+            case OpCode.BINARY:
+            case OpCode.CONTINUATION:
+                coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+                break;
+
+            case OpCode.PING:
+            case OpCode.PONG:
+            case OpCode.CLOSE:
+                callback.succeeded();
+                break;
+        }
     }
 
     @Override
-    public void onContinuation(Frame frame, Callback callback)
+    public void onClosed(CloseStatus closeStatus)
     {
-        coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+        coreSession = null;
+    }
+
+    @Override
+    public void onError(Throwable cause) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug(this + " onError ", cause);
     }
 }

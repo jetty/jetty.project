@@ -45,7 +45,9 @@ import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
@@ -60,7 +62,7 @@ import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 
-public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
+public class JavaxWebSocketFrameHandler implements FrameHandler
 {
     private final Logger LOG;
     private final JavaxWebSocketContainer container;
@@ -116,6 +118,10 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
     private MessageSink activeMessageSink;
     private JavaxWebSocketSession session;
     private Map<Byte, RegisteredMessageHandler> messageHandlerMap;
+    private CoreSession coreSession;
+
+    protected byte dataType = OpCode.UNDEFINED;
+
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
                                       Object endpointInstance, WebSocketPolicy upgradePolicy,
@@ -208,6 +214,7 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
     @Override
     public void onOpen(CoreSession coreSession) throws Exception
     {
+        this.coreSession = coreSession;
         session = new JavaxWebSocketSession(container, coreSession, this, handshakeRequest, handshakeResponse, id, endpointConfig);
 
         openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
@@ -250,6 +257,37 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
         }
 
         futureSession.complete(session);
+    }
+
+    @Override
+    public void onReceiveFrame(Frame frame, Callback callback)
+    {
+        switch (frame.getOpCode())
+        {
+            case OpCode.TEXT:
+                dataType = OpCode.TEXT;
+                onText(frame, callback);
+                break;
+            case OpCode.BINARY:
+                dataType = OpCode.BINARY;
+                onBinary(frame, callback);
+                break;
+            case OpCode.CONTINUATION:
+                onContinuation(frame, callback);
+                break;
+            case OpCode.PING:
+                onPing(frame, callback);
+                break;
+            case OpCode.PONG:
+                onPong(frame, callback);
+                break;
+            case OpCode.CLOSE:
+                onClose(frame, callback);
+                break;
+        }
+
+        if (frame.isFin() && !frame.isControlFrame())
+            dataType = OpCode.UNDEFINED;
     }
 
 
@@ -505,7 +543,6 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
             activeMessageSink = null;
     }
 
-    @Override
     public void onClose(Frame frame, Callback callback)
     {
         if (closeHandle != null)
@@ -524,7 +561,6 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
         callback.succeeded();
     }
 
-    @Override
     public void onPing(Frame frame, Callback callback)
     {
         ByteBuffer payload = BufferUtil.EMPTY_BUFFER;
@@ -538,7 +574,6 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
         callback.succeeded();
     }
 
-    @Override
     public void onPong(Frame frame, Callback callback)
     {
         if (pongHandle != null)
@@ -562,7 +597,6 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
         callback.succeeded();
     }
 
-    @Override
     public void onText(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
@@ -571,12 +605,26 @@ public class JavaxWebSocketFrameHandler extends AbstractFrameTypeHandler
         acceptMessage(frame, callback);
     }
 
-    @Override
     public void onBinary(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = binarySink;
 
         acceptMessage(frame, callback);
+    }
+
+    public void onContinuation(Frame frame, Callback callback)
+    {
+        switch (dataType)
+        {
+            case OpCode.TEXT:
+                onText(frame, callback);
+                break;
+            case OpCode.BINARY:
+                onBinary(frame, callback);
+                break;
+            default:
+                throw new ProtocolException("Unable to process continuation during dataType " + dataType);
+        }
     }
 }
