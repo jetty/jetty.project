@@ -19,10 +19,10 @@
 package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.AbstractWholeMessageHandler;
+import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.jsr356.AbstractWholeMessageHandler;
 
 public class StaticText extends AbstractWholeMessageHandler
 {

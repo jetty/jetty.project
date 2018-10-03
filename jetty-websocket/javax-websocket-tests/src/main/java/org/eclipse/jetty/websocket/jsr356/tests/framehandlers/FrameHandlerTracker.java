@@ -25,9 +25,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.jsr356.AbstractWholeMessageHandler;
 
 public class FrameHandlerTracker extends AbstractWholeMessageHandler
 {

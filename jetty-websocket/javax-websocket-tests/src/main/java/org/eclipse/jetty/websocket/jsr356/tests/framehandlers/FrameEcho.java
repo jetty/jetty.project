@@ -19,9 +19,9 @@
 package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.AbstractFrameTypeHandler;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.jsr356.AbstractFrameTypeHandler;
 
 public class FrameEcho extends AbstractFrameTypeHandler
 {

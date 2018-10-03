@@ -37,12 +37,12 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.jsr356.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.junit.jupiter.api.AfterEach;
