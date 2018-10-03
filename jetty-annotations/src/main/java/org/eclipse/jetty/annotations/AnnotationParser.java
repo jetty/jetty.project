@@ -84,11 +84,12 @@ public class AnnotationParser
      */
     public static int asmVersion ()
     {
+        String asmString = "ASM6";
         int asmVersion = ASM_OPCODE_VERSION;
         String version = ManifestUtils.getVersion(Opcodes.class).orElse(null);
         if (version == null)
         {
-            LOG.warn("Unknown ASM version, assuming {}", ASM_OPCODE_VERSION);
+            LOG.warn("Unknown ASM version, assuming {}", asmString);
         }
         else
         {
@@ -116,13 +117,13 @@ public class AnnotationParser
                     }
                     default:
                     {
-                        LOG.warn("Unrecognized ASM version, assuming {}", ASM_OPCODE_VERSION);
+                        LOG.warn("Unrecognized ASM version, assuming {}", asmString);
                     }
                 }
             }
             catch (NumberFormatException e)
             {
-                LOG.warn("Unable to parse ASM version, assuming {}", ASM_OPCODE_VERSION);
+                LOG.warn("Unable to parse ASM version, assuming {}", asmString);
             }
         }
         return asmVersion;
