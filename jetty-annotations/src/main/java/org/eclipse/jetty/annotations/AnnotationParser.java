@@ -70,6 +70,7 @@ public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
     private static final int ASM_OPCODE_VERSION = Opcodes.ASM6; //compatibility of api
+    private static final String ASM_OPCODE_VERSION_STR = "ASM6";
 
     /**
      * Map of classnames scanned and the first location from which scan occurred
@@ -84,12 +85,11 @@ public class AnnotationParser
      */
     public static int asmVersion ()
     {
-        String asmString = "ASM6";
         int asmVersion = ASM_OPCODE_VERSION;
         String version = ManifestUtils.getVersion(Opcodes.class).orElse(null);
         if (version == null)
         {
-            LOG.warn("Unknown ASM version, assuming {}", asmString);
+            LOG.warn("Unknown ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
         }
         else
         {
@@ -117,13 +117,13 @@ public class AnnotationParser
                     }
                     default:
                     {
-                        LOG.warn("Unrecognized ASM version, assuming {}", asmString);
+                        LOG.warn("Unrecognized ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
                     }
                 }
             }
             catch (NumberFormatException e)
             {
-                LOG.warn("Unable to parse ASM version, assuming {}", asmString);
+                LOG.warn("Unable to parse ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
             }
         }
         return asmVersion;
