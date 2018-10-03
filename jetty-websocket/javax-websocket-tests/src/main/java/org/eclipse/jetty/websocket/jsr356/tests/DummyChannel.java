@@ -22,10 +22,15 @@ import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.*;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class DummyChannel implements FrameHandler.CoreSession
 {
@@ -56,6 +61,12 @@ public class DummyChannel implements FrameHandler.CoreSession
 
     @Override
     public WebSocketPolicy getPolicy()
+    {
+        return null;
+    }
+
+    @Override
+    public ByteBufferPool getByteBufferPool()
     {
         return null;
     }
