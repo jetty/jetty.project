@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.TextMessageHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
@@ -40,7 +40,7 @@ public class ChatWebSocketClient
 
     private URI baseWebsocketUri;
     private WebSocketCoreClient client;
-    private TextMessageHandler handler;
+    private MessageHandler handler;
     private String name = String.format("unknown@%x", ThreadLocalRandom.current().nextInt());
 
     public ChatWebSocketClient(String hostname, int port) throws Exception
@@ -50,7 +50,7 @@ public class ChatWebSocketClient
         this.client.start();
 
         URI wsUri = baseWebsocketUri.resolve("/chat");
-        handler = TextMessageHandler.from(this::onText);
+        handler = MessageHandler.from(this::onText, null);
         UpgradeRequest request = UpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);

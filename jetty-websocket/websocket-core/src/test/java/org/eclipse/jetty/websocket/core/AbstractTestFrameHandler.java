@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.nio.ByteBuffer;
 
 /**
  * Base level implementation of local WebSocket Endpoint Frame handling.
@@ -144,7 +144,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      * Notification method for when a Text frame is received.
      * The default implementation accumulates the payload in a Utf8StringBuilder
      * and calls the {@link #onText(Utf8StringBuilder, Callback, boolean)} method.
-     * For partial messages (fin == false), the {@link #onText(Utf8StringBuilder, Callback, boolean)}
+     * For partial textMessages (fin == false), the {@link #onText(Utf8StringBuilder, Callback, boolean)}
      * may either leave the contents in the Utf8StringBuilder to accumulate with following Continuation
      * frames, or it may be consumed.
      * @see #onText(Utf8StringBuilder, Callback, boolean)
@@ -189,7 +189,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      * Notification method for when a Binary frame is received.
      * The default implementation accumulates the payload in a ByteBuffer
      * and calls the {@link #onBinary(ByteBuffer, Callback, boolean)} method.
-     * For partial messages (fin == false), the {@link #onBinary(ByteBuffer, Callback, boolean)}
+     * For partial textMessages (fin == false), the {@link #onBinary(ByteBuffer, Callback, boolean)}
      * may either leave the contents in the ByteBuffer to accumulate with following Continuation
      * frames, or it may be consumed.
      * @see #onBinary(ByteBuffer, Callback, boolean)

@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
@@ -42,15 +51,6 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
-
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The Core WebSocket Session.
@@ -330,6 +330,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         return policy;
     }
 
+    @Override
+    public ByteBufferPool getByteBufferPool()
+    {
+        return this.connection.getBufferPool();
+    }
+
 
     public void onClosed(Throwable cause)
     {
@@ -484,11 +490,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public Executor getExecutor()
     {
         return this.connection.getExecutor();
-    }
-
-    public ByteBufferPool getBufferPool()
-    {
-        return this.connection.getBufferPool();
     }
 
     @Override

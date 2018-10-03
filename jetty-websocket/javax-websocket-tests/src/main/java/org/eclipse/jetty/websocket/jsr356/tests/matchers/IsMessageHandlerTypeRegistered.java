@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.tests.matchers;
 
 import java.util.Map;
-
 import javax.websocket.Decoder;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
@@ -45,7 +44,7 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
     @Override
     public void describeTo(Description description)
     {
-        description.appendText(".getMessageHandlers() contains registered TextMessageHandler for type " + expectedType);
+        description.appendText(".getMessageHandlers() contains registered MessageHandler for type " + expectedType);
     }
 
     @Override

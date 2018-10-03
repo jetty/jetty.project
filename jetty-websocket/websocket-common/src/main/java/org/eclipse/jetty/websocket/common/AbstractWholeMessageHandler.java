@@ -75,10 +75,7 @@ public abstract class AbstractWholeMessageHandler extends AbstractFrameTypeHandl
         }
 
         if (frame.isFin())
-        {
-            BufferUtil.flipToFlush(binaryMessage, 0);
             onWholeBinary(binaryMessage, callback);
-        }
         else
             callback.succeeded();
     }

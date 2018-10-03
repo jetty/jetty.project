@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -30,27 +38,16 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.TestUpgradeHandler;
-import org.eclipse.jetty.websocket.core.TextMessageHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 public class ChatWebSocketServer
 {
     private static Logger LOG = Log.getLogger(ChatWebSocketServer.class);
 
-    private Set<TextMessageHandler> members = new HashSet<>();
+    private Set<MessageHandler> members = new HashSet<>();
 
     private FrameHandler negotiate(Negotiation negotiation)
     {
@@ -67,7 +64,7 @@ public class ChatWebSocketServer
         negotiation.setSubprotocol("chat");
         
         //  + MUST return the FrameHandler or null or exception?
-        return new TextMessageHandler()
+        return new MessageHandler()
         {
 
             @Override
@@ -81,7 +78,7 @@ public class ChatWebSocketServer
             @Override
             public void onText(String message, Callback callback)
             {
-                for (TextMessageHandler handler : members)
+                for (MessageHandler handler : members)
                 {
                     if (handler==this)
                         continue;

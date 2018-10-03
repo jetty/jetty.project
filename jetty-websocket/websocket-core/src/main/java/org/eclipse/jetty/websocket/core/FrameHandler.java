@@ -18,14 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
@@ -168,6 +169,11 @@ public interface FrameHandler extends IncomingFrames
          * @return The policy of the session.
          */
         WebSocketPolicy getPolicy();
+
+        /**
+         * @return The shared ByteBufferPool
+         */
+        ByteBufferPool getByteBufferPool();
 
         /**
          * The Local Socket Address for the connection
