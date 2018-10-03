@@ -59,7 +59,7 @@ import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.Frame;
-
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 /**
  * Factory for websocket-core {@link FrameHandler} implementations suitable for
  * use with jetty-native websocket API.

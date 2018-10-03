@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.websocket.common.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 public class ReflectUtils
 {

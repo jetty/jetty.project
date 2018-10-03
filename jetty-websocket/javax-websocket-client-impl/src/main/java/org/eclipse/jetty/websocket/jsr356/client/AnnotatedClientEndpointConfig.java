@@ -30,7 +30,7 @@ import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.Extension;
 
-import org.eclipse.jetty.websocket.common.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
 
 public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
 {

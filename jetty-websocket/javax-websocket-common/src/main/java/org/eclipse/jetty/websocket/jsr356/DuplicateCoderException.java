@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import org.eclipse.jetty.websocket.common.InvalidWebSocketException;
-
 /**
  * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder})
  * TODO: is this still needed?

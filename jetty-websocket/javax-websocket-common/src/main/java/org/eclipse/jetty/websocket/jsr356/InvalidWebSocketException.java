@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.jsr356;
 
 import org.eclipse.jetty.websocket.core.WebSocketException;
 

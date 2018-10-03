@@ -32,7 +32,7 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.common.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.InitException;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;

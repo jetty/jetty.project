@@ -43,6 +43,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+
+
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -346,7 +349,7 @@ public class LocalEndpointMetadataTest
     }
 
     /**
-     * Test Case for socket using {@link org.eclipse.jetty.websocket.api.listeners.WebSocketListener}
+     * Test Case for socket using {@link org.eclipse.jetty.websocket.api.WebSocketListener}
      */
     @Test
     public void testListenerBasicSocket()
@@ -371,7 +374,7 @@ public class LocalEndpointMetadataTest
     }
 
     /**
-     * Test Case for socket using {@link org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener}
+     * Test Case for socket using {@link org.eclipse.jetty.websocket.api.WebSocketFrameListener}
      */
     @Test
     public void testListenerFrameSocket() throws Exception
