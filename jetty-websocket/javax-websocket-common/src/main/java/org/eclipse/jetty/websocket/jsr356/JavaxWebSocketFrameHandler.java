@@ -336,7 +336,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             MethodHandle partialMessageHandler = lookup.findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(Void.TYPE, Object.class, Boolean.TYPE));
             partialMessageHandler = partialMessageHandler.bindTo(handler);
 
-            // CoreMessageHandler.Partial has no decoder support!
+            // MessageHandler.Partial has no decoder support!
             if (byte[].class.isAssignableFrom(clazz))
             {
                 assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());

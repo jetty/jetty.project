@@ -25,7 +25,6 @@ import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
 
 public class FrameEcho implements FrameHandler
 {
@@ -42,21 +41,10 @@ public class FrameEcho implements FrameHandler
     @Override
     public void onReceiveFrame(Frame frame, Callback callback)
     {
-
-        switch (frame.getOpCode())
-        {
-            case OpCode.TEXT:
-            case OpCode.BINARY:
-            case OpCode.CONTINUATION:
-                coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
-                break;
-
-            case OpCode.PING:
-            case OpCode.PONG:
-            case OpCode.CLOSE:
-                callback.succeeded();
-                break;
-        }
+        if (frame.isControlFrame())
+            callback.succeeded();
+        else
+            coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
     }
 
     @Override
