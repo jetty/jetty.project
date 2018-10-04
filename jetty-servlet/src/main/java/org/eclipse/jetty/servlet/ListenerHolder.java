@@ -46,7 +46,12 @@ public class ListenerHolder extends BaseHolder<EventListener>
     {
         super(source);
     }
-   
+
+    public ListenerHolder(Class<? extends EventListener> listenerClass)
+    {
+        super(Source.EMBEDDED);
+        setHeldClass(listenerClass);
+    }
    
     public EventListener getListener()
     {

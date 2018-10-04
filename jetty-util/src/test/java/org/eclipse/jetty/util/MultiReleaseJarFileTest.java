@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -31,8 +27,12 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiReleaseJarFile.VersionedJarEntry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiReleaseJarFileTest
 {
@@ -124,7 +124,7 @@ public class MultiReleaseJarFileTest
     
     
     @Test
-    @EnabledOnJre({JRE.JAVA_9, JRE.JAVA_10, JRE.JAVA_11})
+    @DisabledOnJre(JRE.JAVA_8)
     public void testClassLoaderJava9() throws Exception
     {
         try(URLClassLoader loader = new URLClassLoader(new URL[]{example.toURI().toURL()}))
