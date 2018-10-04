@@ -77,31 +77,77 @@ public class InfinispanSessionLegacyConverter
      * @throws Exception
      */
     public void convert ()
-    throws Exception
+            throws Exception
     {
-        //Get all sessions stored in the legacy format
-        List<String> keys = _legacyCache.keySet().stream().collect(Collectors.toList());
+        long conversions = 0;
+        List<String> keys = null;
         
+        //Get all sessions stored in the legacy format
+        try
+        {
+            keys = _legacyCache.keySet().stream().collect(Collectors.toList());
+        }
+        catch (Exception e)
+        {
+            System.err.println("Error listing legacy sessions, assuming previously converted. Run again using 'check' argument to verify conversion");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
         for (String s:keys)
         {
-            SessionData data = (SessionData)_legacyCache.get(s);
-
+            SessionData data = null;
+            try
+            {
+                data = (SessionData)_legacyCache.get(s);
+            }
+            catch (Exception e)
+            {
+                System.err.println("Read of session "+s+" failed. Assuming session already converted and skipping.");
+                continue;
+            }
+            
+            
             if (data != null)
             {
-                //now write it out to the protobuf format
-                _protoCache.put(s, data);
-                //check we can get it back
-                SessionData converted = (SessionData)_protoCache.get(s);
-                if (converted != null)
+                try
+                {
+                    _legacyCache.remove(s);
+                }
+                catch (Exception e)
+                {
+                    System.err.println("Remove legacy session failed for "+s+" skipping conversion.");
+                    continue;
+                }
+
+                try
+                {
+                    //now write it out to the protobuf format
+                    _protoCache.put(s, data);
                     System.err.println("Converted "+s);
-                else
-                    System.err.println("Conversion failed for "+s);
+                    conversions++;
+                }
+                catch (Exception e)
+                {
+                    System.err.println("Conversion failed for "+s+" re-instating legacy session.");
+                    try
+                    {
+                        _legacyCache.put(s, data);
+                    }
+                    catch (Exception x)
+                    {
+                        System.err.println("FAILED REINSTATING SESSION "+s+". ABORTING.");
+                        x.printStackTrace();
+                        System.exit(1);
+                    }
+                }
+
             }
             else
-                System.err.println("Unreadable legacy "+s);
+                    System.err.println("Unreadable legacy session "+s);
         }
         
-        System.err.println("Total sessions: "+keys.size());
+        System.err.println("Total sessions converted: "+conversions);
     }
     
     
@@ -112,10 +158,20 @@ public class InfinispanSessionLegacyConverter
      * @throws Exception
      */
     public void checkConverted ()
-    throws Exception
+            throws Exception
     {
-        List<String> keys = _legacyCache.keySet().stream().collect(Collectors.toList());
-        
+        List<String> keys = null;
+        try
+        {
+            keys = _protoCache.keySet().stream().collect(Collectors.toList());
+        }
+        catch (Exception e)
+        {
+            System.err.println("Unable to read converted sessions, assuming still in legacy format. Run again without 'check' option to convert.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
         for (String s:keys)
         {
             SessionData converted = (SessionData)_protoCache.get(s);
@@ -127,8 +183,8 @@ public class InfinispanSessionLegacyConverter
             else
                 System.err.println("Failed: "+s);
         }
-        
-        System.err.println("Total sessions: "+keys.size());
+
+        System.err.println("Total converted sessions: "+keys.size());
     }
 
 

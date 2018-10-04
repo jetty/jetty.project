@@ -2,17 +2,18 @@ package org_eclipse_jetty_session_infinispan;
 
 message SessionData
 {
-    required string id = 1;
-    required string contextPath = 2;
-    required string vhost = 3;
+    required int32 version = 1;
+    required string id = 2;
+    required string contextPath = 3;
+    required string vhost = 4;
     
-    required sint64 accessed = 4;
-    required sint64 lastAccessed = 5;
-    required sint64 created = 6;
-    required sint64 cookieSet = 7;
-    required string lastNode = 8;
+    required sint64 accessed = 5;
+    required sint64 lastAccessed = 6;
+    required sint64 created = 7;
+    required sint64 cookieSet = 8;
+    required string lastNode = 9;
       
-    required sint64 expiry = 9;
-    required sint64 maxInactiveMs = 10;
-    required bytes attributes = 11;
+    required sint64 expiry = 10;
+    required sint64 maxInactiveMs = 11;
+    required bytes attributes = 12;
 }

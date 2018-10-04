@@ -21,12 +21,11 @@ package org.eclipse.jetty.session.infinispan;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Map;
 
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.infinispan.protostream.MessageMarshaller;
 
 /**
@@ -37,6 +36,11 @@ import org.infinispan.protostream.MessageMarshaller;
  */
 public class SessionDataMarshaller implements MessageMarshaller<SessionData>
 {
+    /**
+     * The version of the serializer.
+     */
+    private static final int VERSION = 0;
+    
     @Override
     public Class<? extends SessionData> getJavaClass()
     {
@@ -52,6 +56,7 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
     @Override
     public SessionData readFrom(ProtoStreamReader in) throws IOException
     {
+        int version = in.readInt("version");//version of serialized session
         String id = in.readString("id"); //session id
         String cpath = in.readString("contextPath"); //context path
         String vhost = in.readString("vhost"); //first vhost
@@ -64,7 +69,6 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
   
         long expiry = in.readLong("expiry"); 
         long maxInactiveMs = in.readLong("maxInactiveMs");
-        
         
         byte[] attributeArray = in.readBytes("attributes");
         ByteArrayInputStream bin = new ByteArrayInputStream(attributeArray);
@@ -94,6 +98,7 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
     @Override
     public void writeTo(ProtoStreamWriter out, SessionData sdata) throws IOException
     {
+        out.writeInt("version", VERSION);
         out.writeString("id", sdata.getId()); //session id
         out.writeString("contextPath", sdata.getContextPath()); //context path
         out.writeString("vhost", sdata.getVhost()); //first vhost
