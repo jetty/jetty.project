@@ -258,11 +258,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             }
             catch (Throwable x)
             {
-                closeNoExceptions(_selector);
                 if (isRunning())
                     LOG.warn(x);
                 else
+                {
+                    LOG.warn(x.toString());
                     LOG.debug(x);
+                }
+                closeNoExceptions(_selector);
             }
             return false;
         }

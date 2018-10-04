@@ -135,6 +135,7 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
             catch (IOException xx)
             {
                 LOG.ignore(xx);
+                x.addSuppressed(xx);
             }
             finally
             {
