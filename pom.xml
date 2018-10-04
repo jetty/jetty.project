@@ -39,6 +39,7 @@
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
+    <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
 
     <!-- some maven plugins versions -->
     <maven.surefire.version>2.22.0</maven.surefire.version>
@@ -48,7 +49,6 @@
     <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
-
 
     <!-- testing -->
     <jetty.test.version>5.1</jetty.test.version>
@@ -495,7 +495,7 @@
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
               <manifestEntries>
-                <Automatic-Module-Name>${bundle-symbolic-name}</Automatic-Module-Name>
+                <Automatic-Module-Name>${jpms-module-name}</Automatic-Module-Name>
                 <Implementation-Version>${project.version}</Implementation-Version>
                 <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
                 <url>${jetty.url}</url>
