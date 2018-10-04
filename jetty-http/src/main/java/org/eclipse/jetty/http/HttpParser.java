@@ -996,7 +996,7 @@ public class HttpParser
         catch(NumberFormatException e)
         {
             LOG.ignore(e);
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Invalid Content-Length Value");
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Invalid Content-Length Value",e);
         }
     }
 
@@ -1453,7 +1453,7 @@ public class HttpParser
             else
                 LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler);
             setState(State.CLOSE);
-            _handler.badMessage(e.getCode(), e.getReason());
+            _handler.badMessage(e.getCode(), e.getReason(), e);
         }
         catch(NumberFormatException|IllegalStateException e)
         {
@@ -1461,19 +1461,19 @@ public class HttpParser
             LOG.warn("parse exception: {} in {} for {}",e.toString(),_state,_handler);
             if (DEBUG)
                 LOG.debug(e);
-            badMessage();
+            badMessage(e);
 
         }
         catch(Exception|Error e)
         {
             BufferUtil.clear(buffer);
             LOG.warn("parse exception: "+e.toString()+" for "+_handler,e);
-            badMessage();
+            badMessage(e);
         }
         return false;
     }
     
-    protected void badMessage()
+    protected void badMessage(Throwable cause)
     {
         if (_headerComplete)
         {
@@ -1482,7 +1482,7 @@ public class HttpParser
         else if (_state!=State.CLOSED)
         {
             setState(State.CLOSE);
-            _handler.badMessage(400,_requestHandler!=null?"Bad Request":"Bad Response");
+            _handler.badMessage(400,_requestHandler!=null?"Bad Request":"Bad Response", cause);
         }
     }
 
@@ -1802,6 +1802,12 @@ public class HttpParser
          * @param reason The textual reason for badness
          */
         public void badMessage(int status, String reason);
+
+        /* ------------------------------------------------------------ */
+        public default void badMessage(int status, String reason, Throwable cause)
+        {
+            badMessage(status, reason);
+        }
 
         /* ------------------------------------------------------------ */
         /** @return the size in bytes of the per parser header cache
