@@ -32,6 +32,7 @@ import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -204,6 +205,8 @@ public class HttpReceiverOverHTTPTest
         catch (ExecutionException e)
         {
             Assert.assertTrue(e.getCause() instanceof HttpResponseException);
+            Assert.assertTrue(e.getCause().getCause() instanceof BadMessageException);
+            Assert.assertTrue(e.getCause().getCause().getCause() instanceof NumberFormatException);
         }
     }
 

@@ -303,12 +303,18 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public void badMessage(int status, String reason)
     {
+        badMessage(status, reason, null);
+    }
+    
+    @Override
+    public void badMessage(int status, String reason, Throwable cause)
+    {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
         {
             HttpResponse response = exchange.getResponse();
             response.status(status).reason(reason);
-            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response));
+            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response, cause));
         }
     }
 
