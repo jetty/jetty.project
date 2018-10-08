@@ -465,6 +465,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             catch (Throwable t)
             {
                 LOG.warn("Error during OPEN", t);
+                // TODO: this must trigger onError AND onClose
                 processError(new CloseException(CloseStatus.SERVER_ERROR, t));
             }
         }
