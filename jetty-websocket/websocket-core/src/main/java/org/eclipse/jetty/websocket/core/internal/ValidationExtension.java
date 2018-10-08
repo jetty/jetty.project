@@ -28,9 +28,12 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.NullAppendable;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.Map;
 
 import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
@@ -162,26 +165,5 @@ public class ValidationExtension extends AbstractExtension
             opcode = frame.getOpCode();
 
         return opcode;
-    }
-
-
-    private class NullAppendable extends Utf8Appendable
-    {
-        public NullAppendable()
-        {
-            super(IO.getNullWriter());
-        }
-
-        @Override
-        public int length()
-        {
-            return 0;
-        }
-
-        @Override
-        public String getPartialString()
-        {
-            return null;
-        }
     }
 }

@@ -208,17 +208,20 @@ public class Frame
     }
 
     /**
-     * Get the payload ByteBuffer. possible null.
+     * Get the payload ByteBuffer.
      */
     public ByteBuffer getPayload()
     {
+        if (payload == null)
+            return BufferUtil.EMPTY_BUFFER;
+
         return payload;
     }
 
     public String getPayloadAsUTF8()
     {
         if (payload == null)
-            return null;
+            return "";
 
         return BufferUtil.toUTF8String(payload);
     }
@@ -245,7 +248,7 @@ public class Frame
 
     public boolean hasPayload()
     {
-        return ((payload != null) && payload.hasRemaining());
+        return (getPayload().remaining() > 0);
     }
 
     public boolean isFin()

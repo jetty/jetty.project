@@ -185,7 +185,20 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     public void onClosed(CloseStatus closeStatus)
     {
         // TODO: FrameHandler cleanup?
+        if (closeHandle != null)
+        {
+            try
+            {
+                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
+                closeHandle.invoke(closeReason);
+            }
+            catch (Throwable cause)
+            {
+                throw new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause);
+            }
+        }
     }
+
 
     @SuppressWarnings("Duplicates")
     @Override
@@ -545,19 +558,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public void onClose(Frame frame, Callback callback)
     {
-        if (closeHandle != null)
-        {
-            try
-            {
-                CloseStatus close = new CloseStatus(frame.getPayload());
-                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(close.getCode()), close.getReason());
-                closeHandle.invoke(closeReason);
-            }
-            catch (Throwable cause)
-            {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause);
-            }
-        }
         callback.succeeded();
     }
 

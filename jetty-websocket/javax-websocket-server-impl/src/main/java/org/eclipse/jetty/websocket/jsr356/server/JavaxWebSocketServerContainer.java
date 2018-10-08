@@ -255,7 +255,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     private void addEndpointMapping(ServerEndpointConfig config)
     {
         frameHandlerFactory.createMetadata(config.getEndpointClass(), config);
-        
+
         JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this.containerContext.getExtensionRegistry());
         this.mappedWebSocketServletNegotiator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
     }

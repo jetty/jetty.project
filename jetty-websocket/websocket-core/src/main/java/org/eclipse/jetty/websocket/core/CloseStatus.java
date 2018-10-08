@@ -19,9 +19,12 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.internal.ValidationExtension;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
@@ -83,7 +86,16 @@ public class CloseStatus
     public CloseStatus(int statusCode, String reasonPhrase)
     {
         this.code = statusCode;
-        this.reason = reasonPhrase;
+
+        if (reasonPhrase != null)
+        {
+            byte[] reasonBytes = truncateToFit(reasonPhrase.getBytes(StandardCharsets.UTF_8), CloseStatus.MAX_REASON_PHRASE);
+            this.reason = new String(reasonBytes, StandardCharsets.UTF_8);
+        }
+        else
+        {
+            this.reason = null;
+        }
     }
 
     public CloseStatus(Frame frame)
@@ -185,21 +197,11 @@ public class CloseStatus
 
         if (reason != null)
         {
-            // TODO this can cause an exception related to the encoding, catch and throw BadPayloadException
             byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
-            if (utf8Bytes.length > CloseStatus.MAX_REASON_PHRASE)
-            {
-                reasonBytes = truncateToFit(utf8Bytes, CloseStatus.MAX_REASON_PHRASE);
-            }
-            else
-            {
-                reasonBytes = utf8Bytes;
-            }
+            reasonBytes = truncateToFit(utf8Bytes, CloseStatus.MAX_REASON_PHRASE);
 
             if ((reasonBytes != null) && (reasonBytes.length > 0))
-            {
                 len += reasonBytes.length;
-            }
         }
 
         ByteBuffer buf = BufferUtil.allocate(len);
@@ -221,20 +223,16 @@ public class CloseStatus
         if (bytes.length <= maxBytes)
             return bytes;
 
-        ByteBuffer buffer = ByteBuffer.wrap(bytes, 0, maxBytes);
-        CharBuffer chars = CharBuffer.allocate(maxBytes);
+        int lastIndex = -1;
+        NullAppendable a = new NullAppendable();
+        for(int i=0; i<maxBytes; i++)
+        {
+            a.append(bytes[i]);
+            if (a.isUtf8SequenceComplete())
+                lastIndex = i;
+        }
 
-        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-        decoder.onMalformedInput(CodingErrorAction.IGNORE);
-        decoder.decode(buffer, chars, true);
-        decoder.flush(chars);
-
-        chars.flip();
-        buffer.clear();
-        CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-        encoder.encode(chars, buffer, true);
-        return Arrays.copyOf(buffer.array(), buffer.position());
-
+        return Arrays.copyOf(bytes, lastIndex+1);
     }
 
     /**

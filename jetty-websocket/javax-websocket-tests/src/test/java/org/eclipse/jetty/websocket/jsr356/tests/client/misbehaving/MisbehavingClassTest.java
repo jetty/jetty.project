@@ -25,6 +25,7 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.junit.jupiter.api.AfterAll;
@@ -71,7 +72,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(EndpointRuntimeOnOpen.class, JavaxWebSocketSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
         {
             // expecting IOException during onOpen
             Exception e = assertThrows(IOException.class, ()->container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
@@ -92,7 +93,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnOpen.class, JavaxWebSocketSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
         {
             // expecting IOException during onOpen
             Exception e = assertThrows(IOException.class, ()->container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
@@ -101,7 +102,7 @@ public class MisbehavingClassTest
             assertThat("Close should have occurred",socket.closeLatch.await(1,TimeUnit.SECONDS), is(true));
 
             Throwable cause = socket.errors.pop();
-            assertThat("Error",cause, instanceOf(ArrayIndexOutOfBoundsException.class));
+            assertThat("Error",cause, instanceOf(RuntimeException.class));
         }
     }
 }

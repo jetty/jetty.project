@@ -187,4 +187,24 @@ public class CloseStatusTest
         byte[] output = Arrays.copyOfRange(bb.array(), 2, bb.limit());
         assertThat(output, equalTo(reason.getBytes(StandardCharsets.UTF_8)));
     }
+
+    @Test
+    public void testLongCloseReasonOfLongCharacters()
+    {
+        int code = CloseStatus.NORMAL;
+
+        String utf4Bytes = "\uD801\uDC00";
+        String reason = utf4Bytes;
+        for (int i=5;i-->0;)
+            reason = reason + reason;
+
+        ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason);
+        assertThat(bb.limit(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));
+
+        CloseStatus cs = new CloseStatus(bb);
+        reason = cs.getReason();
+
+        byte[] output = Arrays.copyOfRange(bb.array(), 2, bb.limit());
+        assertThat(output, equalTo(reason.getBytes(StandardCharsets.UTF_8)));
+    }
 }

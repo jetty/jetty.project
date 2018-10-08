@@ -94,6 +94,6 @@ public class ParsePayloadLengthTest
         if (size > 0)
             assertThat("Frame payload.remaining", frame.getPayload().remaining(), is(size));
         else
-            assertThat("Frame payload", frame.getPayload(), nullValue());
+            assertThat("Frame payload", BufferUtil.isEmpty(frame.getPayload()));
     }
 }

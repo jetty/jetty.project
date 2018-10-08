@@ -209,7 +209,9 @@ public class MessageHandler implements FrameHandler
 
     private void onTextFrame(Frame frame, Callback callback)
     {
-        utf8StringBuilder.append(frame.getPayload());
+        if (frame.hasPayload())
+            utf8StringBuilder.append(frame.getPayload());
+
         if (frame.isFin())
         {
             dataType = OpCode.UNDEFINED;
@@ -399,7 +401,7 @@ public class MessageHandler implements FrameHandler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onClosed {}", this, closeStatus);
-        if (utf8StringBuilder != null && utf8StringBuilder.length() > 0 && closeStatus.isNormal())
+        if (utf8StringBuilder!=null && utf8StringBuilder.length()>0 && closeStatus.isNormal())
             LOG.warn("{} closed with partial message: {} chars", utf8StringBuilder.length());
 
 
@@ -412,9 +414,11 @@ public class MessageHandler implements FrameHandler
             binaryMessage = null;
         }
 
-        if (utf8StringBuilder != null)
+        if (utf8StringBuilder!=null)
+        {
             utf8StringBuilder.reset();
-        utf8StringBuilder = null;
+            utf8StringBuilder = null;
+        }
         coreSession = null;
     }
 

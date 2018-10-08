@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidErrorIntSo
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenCloseReasonSocket;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenSessionIntSocket;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -108,7 +111,8 @@ public class DeploymentExceptionTest
         try
         {
             context.start();
-            assertThrows(DeploymentException.class, ()->container.addEndpoint(pojo));
+            Exception e = assertThrows(DeploymentException.class, ()->container.addEndpoint(pojo));
+            assertThat(e.getCause(), instanceOf(InvalidSignatureException.class));
         }
         finally
         {

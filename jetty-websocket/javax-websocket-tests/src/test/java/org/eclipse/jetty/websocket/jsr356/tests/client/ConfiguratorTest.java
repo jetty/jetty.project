@@ -87,7 +87,9 @@ public class ConfiguratorTest
     {
         server = new LocalServer();
         server.start();
-        server.registerWebSocket("/", (req,resp) -> new EchoSocket());
+        server.registerWebSocket("/", (req,resp) -> {
+            return new EchoSocket();
+        });
     }
 
     @AfterAll
