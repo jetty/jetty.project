@@ -76,6 +76,19 @@ import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
     private static final AtomicLong IDGEN = new AtomicLong(0);
+    private static final MethodHandle FILTER_RETURN_TYPE_METHOD;
+    static
+    {
+        try
+        {
+            FILTER_RETURN_TYPE_METHOD = MethodHandles.lookup().findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Object.class, Object.class));
+        }
+        catch (Throwable e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
     protected final JavaxWebSocketContainer container;
     protected final InvokerUtils.ParamIdentifier paramIdentifier;
     private Map<Class<?>, JavaxWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
@@ -333,7 +346,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         }
     }
 
-    public static MethodHandle wrapNonVoidReturnType(final MethodHandle handle, JavaxWebSocketSession session) throws NoSuchMethodException, IllegalAccessException
+    public static MethodHandle wrapNonVoidReturnType(MethodHandle handle, JavaxWebSocketSession session) throws NoSuchMethodException, IllegalAccessException
     {
         if (handle == null)
             return null;
@@ -341,19 +354,18 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         if (handle.type().returnType() == Void.TYPE)
             return handle;
 
-        // This looks ugly, but I got this technique from
-        // https://stackoverflow.com/questions/48505787/methodhandle-with-general-non-void-return-filter
+        // Technique from  https://stackoverflow.com/questions/48505787/methodhandle-with-general-non-void-return-filter
 
+        // Change the return type of the to be Object so it will match exact with JavaxWebSocketSession.filterReturnType(Object)
+        handle = handle.asType(handle.type().changeReturnType(Object.class));
 
-        // Use JavaxWebSocketSession.filterReturnType() to perform sendObject() of returned objects.
-        MethodHandle returnFilter = MethodHandles.lookup().findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Object.class, Object.class));
-        returnFilter = returnFilter.bindTo(session);
+        // Filter the method return type to a call to JavaxWebSocketSession.filterReturnType() bound to this session
+        handle = MethodHandles.filterReturnValue(handle, FILTER_RETURN_TYPE_METHOD.bindTo(session));
 
-        // Force return type to be Object always (regardless if the return type is String/Foo/Char/etc)
-        MethodHandle filteredHandle = handle.asType(handle.type().changeReturnType(Object.class));
-        filteredHandle = MethodHandles.filterReturnValue(filteredHandle, returnFilter);
+        // As the return type has now been handled, we can return Void from any invocation
+        handle = handle.asType(handle.type().changeReturnType(Void.class));
 
-        return filteredHandle;
+        return handle;
     }
 
     private MethodHandle toMethodHandle(MethodHandles.Lookup lookup, Method method)
