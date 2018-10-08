@@ -45,6 +45,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.servlet.MappedWebSocketServletNegotiator;
 
 @ManagedObject("JSR356 Server Container")
@@ -191,15 +192,22 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         
         if (isStarted() || isStarting())
         {
-            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-            if (anno == null)
+            try
             {
-                throw new DeploymentException(String.format("Class must be @%s annotated: %s",
-                        ServerEndpoint.class.getName(), endpointClass.getName()));
-            }
+                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+                if (anno == null)
+                {
+                    throw new DeploymentException(String.format("Class must be @%s annotated: %s",
+                            ServerEndpoint.class.getName(), endpointClass.getName()));
+                }
 
-            ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
-            addEndpointMapping(config);
+                ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
+                addEndpointMapping(config);
+            }
+            catch (InvalidSignatureException e)
+            {
+                throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
+            }
         }
         else
         {
@@ -244,7 +252,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         }
     }
     
-    private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
+    private void addEndpointMapping(ServerEndpointConfig config)
     {
         frameHandlerFactory.createMetadata(config.getEndpointClass(), config);
         
