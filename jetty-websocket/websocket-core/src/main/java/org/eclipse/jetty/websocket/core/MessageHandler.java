@@ -399,7 +399,7 @@ public class MessageHandler implements FrameHandler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onClosed {}", this, closeStatus);
-        if (utf8StringBuilder.length()>0 && closeStatus.isNormal())
+        if (utf8StringBuilder != null && utf8StringBuilder.length() > 0 && closeStatus.isNormal())
             LOG.warn("{} closed with partial message: {} chars", utf8StringBuilder.length());
 
 
@@ -412,7 +412,8 @@ public class MessageHandler implements FrameHandler
             binaryMessage = null;
         }
 
-        utf8StringBuilder.reset();
+        if (utf8StringBuilder != null)
+            utf8StringBuilder.reset();
         utf8StringBuilder = null;
         coreSession = null;
     }
