@@ -341,9 +341,15 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         if (handle.type().returnType() == Void.TYPE)
             return handle;
 
+        // This looks ugly, but I got this technique from
+        // https://stackoverflow.com/questions/48505787/methodhandle-with-general-non-void-return-filter
+
+
+        // Use JavaxWebSocketSession.filterReturnType() to perform sendObject() of returned objects.
         MethodHandle returnFilter = MethodHandles.lookup().findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Object.class, Object.class));
         returnFilter = returnFilter.bindTo(session);
 
+        // Force return type to be Object always (regardless if the return type is String/Foo/Char/etc)
         MethodHandle filteredHandle = handle.asType(handle.type().changeReturnType(Object.class));
         filteredHandle = MethodHandles.filterReturnValue(filteredHandle, returnFilter);
 
