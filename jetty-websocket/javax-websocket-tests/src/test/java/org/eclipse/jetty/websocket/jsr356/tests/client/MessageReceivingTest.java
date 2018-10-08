@@ -278,6 +278,12 @@ public class MessageReceivingTest
         @Override
         public void onBinary(ByteBuffer wholeMessage, Callback callback)
         {
+            if (BufferUtil.isEmpty(wholeMessage))
+            {
+                callback.succeeded();
+                return;
+            }
+
             ByteBuffer copy = DataUtils.copyOf(wholeMessage);
             int segmentSize = 128 * 1024;
             int segmentCount = Math.max(1, copy.remaining() / segmentSize);
