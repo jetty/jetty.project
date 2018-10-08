@@ -158,7 +158,7 @@ public class ConfiguratorTest
                 }
                 else
                 {
-                    response.append(QuotedCSV.join(values));
+                    response.append(String.join(", ", values));
                 }
             }
 
@@ -442,7 +442,7 @@ public class ConfiguratorTest
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Incoming Message", incomingMessage, is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: \"identity\""));
+            assertThat("Incoming Message", incomingMessage, is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: identity"));
         }
         finally
         {
@@ -490,7 +490,7 @@ public class ConfiguratorTest
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Incoming Message", incomingMessage, is("Request Header [X-Dummy]: \"Bogus\""));
+            assertThat("Incoming Message", incomingMessage, is("Request Header [X-Dummy]: Bogus"));
         }
         finally
         {
@@ -597,7 +597,7 @@ public class ConfiguratorTest
         upgradeRequest.setSubProtocols("status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"status\"]"));
+        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [status]"));
     }
 
     /**
@@ -616,7 +616,7 @@ public class ConfiguratorTest
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
+        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
     }
 
     /**
@@ -635,7 +635,7 @@ public class ConfiguratorTest
         upgradeRequest.header("sec-websocket-protocol", "echo, chat, status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
+        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
     }
 
     /**
@@ -655,7 +655,7 @@ public class ConfiguratorTest
         upgradeRequest.header("Sec-Websocket-Protocol", "echo, chat, status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
+        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
     }
 
     protected void assertProtocols(FrameHandlerTracker clientSocket, Future<FrameHandler.CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
