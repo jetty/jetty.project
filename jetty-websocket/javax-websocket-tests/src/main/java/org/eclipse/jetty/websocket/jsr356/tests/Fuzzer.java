@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.hamcrest.Matchers;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -166,13 +165,13 @@ public interface Fuzzer extends AutoCloseable
                         LOG.debug("{} {}", prefix, actual);
                 }
 
-                assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), Matchers.is(OpCode.name(expected.getOpCode())));
+                assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), is(OpCode.name(expected.getOpCode())));
                 prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
                 if (expected.getOpCode() == OpCode.CLOSE)
                 {
                     CloseStatus expectedClose = new CloseStatus(expected.getPayload());
                     CloseStatus actualClose = new CloseStatus(actual.getPayload());
-                    assertThat(prefix + ".code", actualClose.getCode(), Matchers.is(expectedClose.getCode()));
+                    assertThat(prefix + ".code", actualClose.getCode(), is(expectedClose.getCode()));
                 }
                 else if (expected.hasPayload())
                 {
@@ -180,18 +179,18 @@ public interface Fuzzer extends AutoCloseable
                     {
                         String expectedText = expected.getPayloadAsUTF8();
                         String actualText = actual.getPayloadAsUTF8();
-                        assertThat(prefix + ".payloadLength", actual.getPayloadLength(), Matchers.is(expected.getPayloadLength()));
+                        assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.getPayloadLength()));
                         assertThat(prefix + ".text-payload", actualText, is(expectedText));
                     }
                     else
                     {
-                        assertThat(prefix + ".payloadLength", actual.getPayloadLength(), Matchers.is(expected.getPayloadLength()));
+                        assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.getPayloadLength()));
                         ByteBufferAssert.assertEquals(prefix + ".payload", expected.getPayload(), actual.getPayload());
                     }
                 }
                 else
                 {
-                    assertThat(prefix + ".payloadLength", actual.getPayloadLength(), Matchers.is(0));
+                    assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(0));
                 }
             }
         }
