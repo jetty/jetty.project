@@ -1902,14 +1902,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //Servlet Spec 3.0 p 74
                 //Duplicate listener declarations don't result in duplicate listener instances
-                EventListener[] listeners=context.getEventListeners();
-                if (listeners!=null)
+                for (ListenerHolder holder : context.getServletHandler().getListeners())
                 {
-                    for (EventListener l : listeners)
-                    {
-                        if (l.getClass().getName().equals(className))
-                            return;
-                    }
+                    if (holder.getClassName().equals(className))
+                        return;
                 }
 
                 ((WebDescriptor)descriptor).addClassName(className);

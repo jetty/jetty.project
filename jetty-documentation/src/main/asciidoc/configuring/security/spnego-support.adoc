@@ -19,11 +19,12 @@
 [[spnego-support]]
 === SPNEGO Support
 
-Simple and Protected GSSAPI Negotiation Mechanism (SPNEGO) is a way for users to be seamlessly authenticated when running on a Windows or Active Directory based network.
-Jetty supports this type of authentication and authorization through the JDK (which has been enabled since the later versions of Java 6 and 7).
-Also important to note is that this is an _incredibly_ fragile setup where everything needs to be configured just right for things to work, otherwise it can fail in fun and exciting, not to mention obscure, ways.
+Simple and Protected GSSAPI Negotiation Mechanism (SPNEGO) is a way for users
+to be seamlessly authenticated when running on systems that rely on Kerberos
+for authentication, such as Windows Active Directory based networks.
 
-There is a substantial amount of configuration and testing required to enable this feature as well as knowledge and access to central systems on a Windows network such as the Active Domain Controller and the ability to create and maintain service users.
+Jetty supports this type of authentication and authorization through the JDK
+(which has been enabled since the later versions of Java 6 and 7).
 
 ==== Configuring Jetty and SPNEGO
 
@@ -31,96 +32,61 @@ To run with SPNEGO enabled the following command line options are required:
 
 [source,screen, subs="{sub-order}"]
 ----
--Djava.security.krb5.conf=/path/to/jetty/etc/krb5.ini \
--Djava.security.auth.login.config=/path/to/jetty/etc/spnego.conf \
--Djavax.security.auth.useSubjectCredsOnly=false
+-Djava.security.krb5.conf=/path/to/krb5.ini
 ----
 
-For debugging the SPNEGO authentication the following options are very helpful:
+For debugging the SPNEGO authentication the following options are helpful:
 
 [source,screen, subs="{sub-order}"]
 ----
--Dorg.eclipse.jetty.LEVEL=debug \
--Dsun.security.spnego.debug=all
+-Dorg.eclipse.jetty.LEVEL=debug
+-Dsun.security.spnego.debug=true
+-Dsun.security.jgss.debug=true
+-Dsun.security.krb5.debug=true
 ----
 
-SPNEGO Authentication must be enabled in the webapp in the following way.
+SPNEGO authentication must be enabled in the webapp in the following way.
 The name of the role will be different for your network.
 
 [source, xml, subs="{sub-order}"]
 ----
-
- <security-constraint>
-   <web-resource-collection>
-     <web-resource-name>Secure Area</web-resource-name>
-     <url-pattern>/secure/me/*</url-pattern>
-   </web-resource-collection>
-   <auth-constraint>
-     <!-- this is the domain that the user is a member of -->
-     <role-name>MORTBAY.ORG</role-name>
-   </auth-constraint>
- </security-constraint>
- <login-config>
-   <auth-method>SPNEGO</auth-method>
-   <realm-name>Test Realm</realm-name>
-   <!-- optionally to add custom error page -->
-   <spnego-login-config>
-     <spnego-error-page>/loginError.html?param=foo</spnego-error-page>
-   </spnego-login-config>
- </login-config>
-
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>Secure Area</web-resource-name>
+    <url-pattern>/secure/me/*</url-pattern>
+  </web-resource-collection>
+  <auth-constraint>
+    <!-- this is the domain that the user is a member of -->
+    <role-name>MORTBAY.ORG</role-name>
+  </auth-constraint>
+</security-constraint>
+<login-config>
+  <auth-method>SPNEGO</auth-method>
+  <realm-name>Test Realm</realm-name>
+  <!-- optionally to add custom error page -->
+  <spnego-login-config>
+    <spnego-error-page>/loginError.html?param=foo</spnego-error-page>
+  </spnego-login-config>
+</login-config>
 ----
 
-A corresponding `UserRealm` needs to be created either programmatically if embedded, via the `jetty.xml` or in a context file for the webapp.
+A corresponding `UserRealm` needs to be created either programmatically if
+embedded, via the `jetty.xml` or in a context file for the webapp.
 
-This is what the configuration within a Jetty xml file would look like.
+This is what the configuration within a context XML file would look like:
 
 [source, xml, subs="{sub-order}"]
 ----
-
-  <Call name="addBean">
-     <Arg>
-       <New class="org.eclipse.jetty.security.SpnegoLoginService">
-         <Set name="name">Test Realm</Set>
-         <Set name="config"><Property name="jetty.home" default="."/>/etc/spnego.properties</Set>
-       </New>
-     </Arg>
-   </Call>
-
+<Get name="securityHandler">
+  <Set name="loginService">
+    <New class="org.eclipse.jetty.security.ConfigurableSpnegoLoginService">
+      <Arg>Test Realm</Arg>
+      <Arg><Ref refid="authorizationService" /></Arg>
+      <Set name="keyTabPath"><Ref refid="keyTabPath" /></Set>
+    </New>
+  </Set>
+</Get>
 ----
-
-This is what the configuration within a context xml file would look like.
-
-[source, xml, subs="{sub-order}"]
-----
-
- <Get name="securityHandler">
-   <Set name="loginService">
-     <New class="org.eclipse.jetty.security.SpnegoLoginService">
-       <Set name="name">Test Realm</Set>
-       <Set name="config">
-        <SystemProperty name="jetty.home" default="."/>/etc/spnego.properties
-      </Set>
-     </New>
-   </Set>
-   <Set name="checkWelcomeFiles">true</Set>
- </Get>
-
-
-----
-
-There are a number of important configuration files with S3pnego that are required. The default values for these configuration files from this
-test example are found in the `/etc` folder of the Jetty distribution.
-
-spnego.properties::
-  configures the user realm with runtime properties
-krb5.ini::
-  configures the underlying kerberos setup
-spnego.conf::
-  configures the glue between gssapi and kerberos
-
-It is important to note that the keytab file referenced in the `krb5.ini` and the `spnego.conf` files needs to contain the keytab for the `targetName` for the http server.
-To do this use a process similar to this:
 
 On the Windows Active Domain Controller run:
 
@@ -129,15 +95,15 @@ On the Windows Active Domain Controller run:
 $ setspn -A HTTP/linux.mortbay.org ADUser
 ----
 
-To create the keytab file use the following process:
+To create the keyTab file use the following process:
 
 [source, screen, subs="{sub-order}"]
 ----
 $ ktpass -out c:\dir\krb5.keytab -princ HTTP/linux.mortbay.org@MORTBAY.ORG -mapUser ADUser -mapOp set -pass ADUserPWD -crypto RC4-HMAC-NT -pType KRB5_NT_PRINCIPAL
 ----
 
-This step will give you the keytab file which should then be copied to the machine running the http server and referenced from the configuration files.
-For our testing we put the keytab into the `/etc` directory of Jetty and referenced it from there.
+This step will give you the keyTab file which should then be copied to the
+machine running the http server and referenced from the configuration files.
 
 ==== Configuring Firefox
 
@@ -160,7 +126,6 @@ The follows steps have been required to inform Internet Explorer that it should 
 6.  Locate and select `Enable Integrated Windows Authentication`
 7.  Tools -> Options -> Advanced -> Security -> Ok
 8.  Close IE then reopen and browse to your SPNEGO protected resource
-
 
 You *must* use hostname and not the IP.
 If you use the IP it will default to NTLM authentication.
