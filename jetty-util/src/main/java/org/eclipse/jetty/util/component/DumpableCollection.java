@@ -19,7 +19,9 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 public class DumpableCollection implements Dumpable
 {
@@ -31,7 +33,12 @@ public class DumpableCollection implements Dumpable
         _name=name;
         _collection=collection;
     }
-    
+
+    public DumpableCollection(String name,Object... items)
+    {
+        this(name, items==null?Collections.emptyList():Arrays.asList(items));
+    }
+
     @Override
     public String dump()
     {
