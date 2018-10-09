@@ -31,7 +31,6 @@ def getFullBuild(jdk, os, mainJdk) {
                   jdk: "$jdk",
                   publisherStrategy: 'EXPLICIT',
                   globalMavenSettingsConfig: settingsName,
-                  options: [invokerPublisher()],
                   mavenOpts: mavenOpts,
                   mavenLocalRepo: localRepo) {
             // Compile only
@@ -71,12 +70,15 @@ def getFullBuild(jdk, os, mainJdk) {
                  sourcePattern: '**/src/main/java'
           consoleParsers = [[parserName: 'Maven'],
                             [parserName: 'JavaDoc'],
-                            [parserName: 'JavaC']];
+                            [parserName: 'JavaC']]
+
+          step([$class: 'MavenInvokerRecorder'])
         }
 
         // Report on Maven and Javadoc warnings
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
+
       }
     }
   }
