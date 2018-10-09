@@ -166,7 +166,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         {
             super(connection.getHttpDestination().getHttpClient().getScheduler());
             this.connection = connection;
-            setIdleTimeout(idleTimeout);
+            setIdleTimeout(idleTimeout >= 0 ? idleTimeout : connection.getEndPoint().getIdleTimeout());
         }
 
         @Override

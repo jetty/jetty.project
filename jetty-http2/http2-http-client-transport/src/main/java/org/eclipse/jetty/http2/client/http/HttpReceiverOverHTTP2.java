@@ -171,8 +171,10 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     @Override
     public boolean onIdleTimeout(Stream stream, Throwable x)
     {
-        responseFailure(x);
-        return true;
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return false;
+        return !exchange.abort(x);
     }
 
     @Override

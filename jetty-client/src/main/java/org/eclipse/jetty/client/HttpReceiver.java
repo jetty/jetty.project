@@ -550,14 +550,14 @@ public abstract class HttpReceiver
             // respect to concurrency between request and response.
             Result result = exchange.terminateResponse();
             terminateResponse(exchange, result);
+            return true;
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Concurrent failure: response termination skipped, performed by helpers");
+            return false;
         }
-
-        return true;
     }
 
     private boolean updateResponseState(ResponseState from, ResponseState to)

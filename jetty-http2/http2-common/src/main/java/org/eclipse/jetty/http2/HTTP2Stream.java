@@ -139,6 +139,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     {
         if (writing.compareAndSet(null, callback))
             return true;
+        close();
         callback.failed(new WritePendingException());
         return false;
     }
@@ -275,8 +276,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
         {
@@ -286,6 +285,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
+
+        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+            session.removeStream(this);
+
         callback.succeeded();
     }
 

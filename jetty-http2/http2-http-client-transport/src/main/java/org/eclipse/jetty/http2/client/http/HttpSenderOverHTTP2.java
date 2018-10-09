@@ -67,7 +67,9 @@ public class HttpSenderOverHTTP2 extends HttpSender
             {
                 channel.setStream(stream);
                 ((IStream)stream).setAttachment(channel);
-                stream.setIdleTimeout(request.getIdleTimeout());
+                long idleTimeout = request.getIdleTimeout();
+                if (idleTimeout >= 0)
+                    stream.setIdleTimeout(idleTimeout);
 
                 if (content.hasContent() && !expects100Continue(request))
                 {

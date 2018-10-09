@@ -341,7 +341,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.MAX_CONCURRENT_STREAMS:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max local concurrent streams to {} for {}", maxLocalStreams, this);
+                        LOG.debug("Updating max local concurrent streams to {} for {}", value, this);
                     maxLocalStreams = value;
                     break;
                 }
@@ -561,7 +561,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 IStream stream = createLocalStream(streamId);
                 stream.setListener(listener);
 
-                ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
+                ControlEntry entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
                 queued = flusher.append(entry);
             }
             // Iterate outside the synchronized block.
@@ -605,7 +605,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 IStream pushStream = createLocalStream(streamId);
                 pushStream.setListener(listener);
 
-                ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
+                ControlEntry entry = new ControlEntry(frame, pushStream, new StreamPromiseCallback(promise, pushStream));
                 queued = flusher.append(entry);
             }
             // Iterate outside the synchronized block.
@@ -779,6 +779,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         else
         {
+            localStreamCount.decrementAndGet();
             throw new IllegalStateException("Duplicate stream " + streamId);
         }
     }
@@ -815,6 +816,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         else
         {
+            remoteStreamCount.addAndGetHi(-1);
             onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream");
             return null;
         }
@@ -1461,21 +1463,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    private static class PromiseCallback<C> implements Callback
+    private static class StreamPromiseCallback implements Callback
     {
-        private final Promise<C> promise;
-        private final C value;
+        private final Promise<Stream> promise;
+        private final IStream stream;
 
-        private PromiseCallback(Promise<C> promise, C value)
+        private StreamPromiseCallback(Promise<Stream> promise, IStream stream)
         {
             this.promise = promise;
-            this.value = value;
+            this.stream = stream;
         }
 
         @Override
         public void succeeded()
         {
-            promise.succeeded(value);
+            promise.succeeded(stream);
         }
 
         @Override
