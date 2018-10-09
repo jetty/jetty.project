@@ -25,6 +25,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
@@ -94,6 +95,10 @@ public class LargeContainerTest
             URI uri = wsb.getWsUri();
 
             WebAppContext webapp = wsb.createWebAppContext();
+            WebSocketPolicy policy = new WebSocketPolicy();
+            policy.setMaxTextMessageSize(128 * 1024);
+            webapp.setAttribute("policy", policy);
+
             wsb.deployWebapp(webapp);
             // wsb.dump();
 

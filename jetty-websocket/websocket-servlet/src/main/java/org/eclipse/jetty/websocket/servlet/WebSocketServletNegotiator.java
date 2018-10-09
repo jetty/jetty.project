@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -27,10 +25,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+
+import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
 public class WebSocketServletNegotiator implements WebSocketNegotiator
 {
@@ -40,8 +40,7 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
 
     public WebSocketServletNegotiator(WebSocketServletFactory factory, WebSocketCreator creator)
     {
-        this.factory = factory;
-        this.creator = creator;
+        this(factory, creator, null);
     }
 
     public WebSocketServletNegotiator(WebSocketServletFactory factory, WebSocketCreator creator, FrameHandlerFactory frameHandlerFactory)

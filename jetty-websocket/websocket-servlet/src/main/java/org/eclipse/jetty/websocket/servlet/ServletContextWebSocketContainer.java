@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
@@ -39,8 +38,8 @@ import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
  * Working with WebSocket's within a ServletContext
@@ -56,7 +55,17 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
             ServletContextWebSocketContainer wsContainer = (ServletContextWebSocketContainer) context.getAttribute(ATTR);
             if (wsContainer == null)
             {
-                wsContainer = new ServletContextWebSocketContainer(context);
+                // TODO clean this up
+                WebSocketPolicy policy = (WebSocketPolicy)context.getAttribute("policy");
+                if(policy != null)
+                {
+                    wsContainer = new ServletContextWebSocketContainer(context, policy, null, null, null);
+                }
+                else
+                {
+                    wsContainer = new ServletContextWebSocketContainer(context);
+                }
+
                 context.setAttribute(ATTR, wsContainer);
                 ContextHandler contextHandler = ContextHandler.getContextHandler(context);
                 if (contextHandler != null)
