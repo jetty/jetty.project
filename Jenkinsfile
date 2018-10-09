@@ -31,6 +31,7 @@ def getFullBuild(jdk, os, mainJdk) {
                   jdk: "$jdk",
                   publisherStrategy: 'EXPLICIT',
                   globalMavenSettingsConfig: settingsName,
+                  options: [invokerPublisher()],
                   mavenOpts: mavenOpts,
                   mavenLocalRepo: localRepo) {
             // Compile only
