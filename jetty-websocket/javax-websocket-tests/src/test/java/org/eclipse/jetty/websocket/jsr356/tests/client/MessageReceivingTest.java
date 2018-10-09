@@ -107,8 +107,7 @@ public class MessageReceivingTest
                 .preferredSubprotocols(Collections.singletonList("partial-binary"))
                 .build();
 
-        final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri());
-        try
+        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("", UTF_8));
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("Echo", UTF_8));
@@ -124,17 +123,13 @@ public class MessageReceivingTest
 
             String msg;
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Echo'd Message", msg, is(""));
+            assertThat("Echo'd Message: empty", msg, is(""));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Echo'd Message", msg, is("Echo"));
+            assertThat("Echo'd Message: short", msg, is("Echo"));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Echo'd Message.length", msg.length(), is(bigBuf.length));
+            assertThat("Echo'd Message: long.length", msg.length(), is(bigBuf.length));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Echo'd Message", msg, is("Another Echo"));
-        }
-        finally
-        {
-            session.close();
+            assertThat("Echo'd Message: another", msg, is("Another Echo"));
         }
     }
 
@@ -153,8 +148,7 @@ public class MessageReceivingTest
                 .preferredSubprotocols(Collections.singletonList("partial-text"))
                 .build();
 
-        final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri());
-        try
+        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendText("");
             session.getBasicRemote().sendText("Echo");
@@ -166,10 +160,6 @@ public class MessageReceivingTest
             assertThat("Received Message", msg, is("Echo"));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Received Message", msg, is("I can live for two months on a good compliment."));
-        }
-        finally
-        {
-            session.close();
         }
     }
 
@@ -188,8 +178,7 @@ public class MessageReceivingTest
                 .preferredSubprotocols(Collections.singletonList("echo"))
                 .build();
 
-        final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri());
-        try
+        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("", UTF_8));
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("Echo", UTF_8));
@@ -199,10 +188,6 @@ public class MessageReceivingTest
             assertThat("Received Message", msg, is(""));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Received Message", msg, is("Echo"));
-        }
-        finally
-        {
-            session.close();
         }
     }
 
@@ -225,8 +210,7 @@ public class MessageReceivingTest
         Arrays.fill(raw, (byte) 'x');
         String veryLongString = new String(raw, UTF_8);
 
-        final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri());
-        try
+        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendText("");
             session.getBasicRemote().sendText("Echo");
@@ -235,17 +219,13 @@ public class MessageReceivingTest
 
             String msg;
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Received Message", msg, is(""));
+            assertThat("Received Message: empty", msg, is(""));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Received Message", msg, is("Echo"));
+            assertThat("Received Message: short", msg, is("Echo"));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Received Message", msg, is(veryLongString));
+            assertThat("Received Message: long", msg.length(), is(veryLongString.length()));
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Received Message", msg, is("Another Echo"));
-        }
-        finally
-        {
-            session.close();
+            assertThat("Received Message: another", msg, is("Another Echo"));
         }
     }
 
@@ -308,6 +288,12 @@ public class MessageReceivingTest
             }
             callback.succeeded();
         }
+
+        @Override
+        public void onError(Throwable cause)
+        {
+            LOG.warn(cause);
+        }
     }
 
     public static class EchoWholeMessageFrameHandler extends MessageHandler
@@ -333,6 +319,12 @@ public class MessageReceivingTest
 
             sendText(wholeMessage, callback, false);
         }
+
+        @Override
+        public void onError(Throwable cause)
+        {
+            LOG.warn(cause);
+        }
     }
 
     public static class ServerMessageNegotiator extends CoreServer.BaseNegotiator
@@ -356,13 +348,17 @@ public class MessageReceivingTest
             if (offeredSubProtocols.contains("partial-binary"))
             {
                 negotiation.setSubprotocol("partial-binary");
-                return new SendPartialBinaryFrameHandler();
+                SendPartialBinaryFrameHandler frameHandler = new SendPartialBinaryFrameHandler();
+                frameHandler.setMaxBinaryMessageSize((1024 * 1024) + 2);
+                return frameHandler;
             }
 
             if (offeredSubProtocols.contains("echo"))
             {
                 negotiation.setSubprotocol("echo");
-                return new EchoWholeMessageFrameHandler();
+                EchoWholeMessageFrameHandler frameHandler = new EchoWholeMessageFrameHandler();
+                frameHandler.setMaxTextMessageSize((1024 * 1024) + 2);
+                return frameHandler;
             }
 
             return null;
@@ -384,6 +380,12 @@ public class MessageReceivingTest
             session.setMaxTextMessageBufferSize(2 * 1024 * 1024);
             session.setMaxBinaryMessageBufferSize(2 * 1024 * 1024);
             session.addMessageHandler(handler);
+        }
+
+        @Override
+        public void onError(Session session, Throwable thr)
+        {
+            LOG.warn(thr);
         }
     }
 
