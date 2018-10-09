@@ -40,9 +40,9 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
@@ -280,6 +280,7 @@ public class MessageReceivingTest
         {
             if (BufferUtil.isEmpty(wholeMessage))
             {
+                getCoreSession().sendFrame(new Frame(OpCode.BINARY), Callback.NOOP, BatchMode.OFF);
                 callback.succeeded();
                 return;
             }
