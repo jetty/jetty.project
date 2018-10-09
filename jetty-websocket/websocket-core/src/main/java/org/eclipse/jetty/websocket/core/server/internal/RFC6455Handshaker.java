@@ -38,7 +38,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
@@ -117,12 +116,6 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        // Create instance of policy that may be mutated by negotiation
-        WebSocketPolicy policy = negotiator.getCandidatePolicy();
-        if (policy==null)
-            policy = new WebSocketPolicy();
-        negotiation.setPolicy(policy);
-        
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation);
         if (LOG.isDebugEnabled())
@@ -152,11 +145,6 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        // Update policy
-        policy = negotiation.getPolicy();
-        if (policy==null)
-            policy = new WebSocketPolicy();
-        
         // Check if subprotocol negotiated
         String subprotocol = negotiation.getSubprotocol();
         if (negotiation.getOfferedSubprotocols().size()>0)
@@ -200,7 +188,7 @@ public final class RFC6455Handshaker implements Handshaker
             pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
 
         extensionStack = new ExtensionStack(negotiator.getExtensionRegistry());
-        extensionStack.negotiate(negotiator.getObjectFactory(), policy, pool, offeredExtensions);
+        extensionStack.negotiate(negotiator.getObjectFactory(), pool, offeredExtensions);
         if (LOG.isDebugEnabled())
             LOG.debug("extensions {}", extensionStack);
         if (extensionStack.hasNegotiatedExtensions())
@@ -210,7 +198,7 @@ public final class RFC6455Handshaker implements Handshaker
             response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),null);
         
         // Create the Channel
-        WebSocketChannel channel = new WebSocketChannel(handler, Behavior.SERVER,policy,extensionStack,subprotocol);
+        WebSocketChannel channel = new WebSocketChannel(handler, Behavior.SERVER, extensionStack, subprotocol);
         if (LOG.isDebugEnabled())
             LOG.debug("channel {}", channel);
         
@@ -225,6 +213,8 @@ public final class RFC6455Handshaker implements Handshaker
         }
         
         channel.setWebSocketConnection(connection);
+
+        negotiator.customize(channel);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 /**
  * Settings for WebSocket operations.
  */
+@Deprecated
 public class WebSocketPolicy
 {
     private static final int KB = 1024;

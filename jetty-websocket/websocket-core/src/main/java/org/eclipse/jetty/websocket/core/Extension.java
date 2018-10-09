@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 public interface Extension extends IncomingFrames, OutgoingFrames
 {
 
-    void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool);
+    void init(ExtensionConfig config, ByteBufferPool bufferPool);
 
     /**
      * The active configuration for this extension.

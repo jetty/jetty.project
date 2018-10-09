@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.FragmentExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +54,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         ext.setNextIncomingFrames(capture);
 
@@ -104,7 +103,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         ext.setNextIncomingFrames(capture);
 
@@ -138,7 +137,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         ext.setNextOutgoingFrames(capture);
 
@@ -209,7 +208,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         ext.setNextOutgoingFrames(capture);
 
@@ -272,7 +271,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         ext.setNextOutgoingFrames(capture);
 

@@ -22,7 +22,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -30,9 +29,9 @@ import java.util.function.Function;
 public interface WebSocketNegotiator
 {
     FrameHandler negotiate(Negotiation negotiation) throws IOException;
-    
-    WebSocketPolicy getCandidatePolicy();
-    
+
+    void customize(FrameHandler.CoreSession session);
+
     WebSocketExtensionRegistry getExtensionRegistry();
     
     DecoratedObjectFactory getObjectFactory();
@@ -53,12 +52,11 @@ public interface WebSocketNegotiator
 
     static WebSocketNegotiator from(
         Function<Negotiation,FrameHandler> negotiate,
-        WebSocketPolicy candidatePolicy,
         WebSocketExtensionRegistry extensionRegistry,
         DecoratedObjectFactory objectFactory,
         ByteBufferPool bufferPool)
     {
-        return new AbstractNegotiator(candidatePolicy,extensionRegistry,objectFactory,bufferPool)
+        return new AbstractNegotiator(extensionRegistry,objectFactory,bufferPool)
         {
             @Override
             public FrameHandler negotiate(Negotiation negotiation)
@@ -70,7 +68,6 @@ public interface WebSocketNegotiator
 
     abstract class AbstractNegotiator implements WebSocketNegotiator
     {
-        final WebSocketPolicy candidatePolicy;
         final WebSocketExtensionRegistry extensionRegistry;
         final DecoratedObjectFactory objectFactory;
         final ByteBufferPool bufferPool;
@@ -78,25 +75,23 @@ public interface WebSocketNegotiator
 
         public AbstractNegotiator()
         {
-            this(null,null,null,null);
+            this(null,null,null);
         }
 
+
         public AbstractNegotiator(
-            WebSocketPolicy candidatePolicy,
             WebSocketExtensionRegistry extensionRegistry,
             DecoratedObjectFactory objectFactory,
             ByteBufferPool bufferPool)
         {
-            this.candidatePolicy = candidatePolicy==null?new WebSocketPolicy():candidatePolicy;
             this.extensionRegistry = extensionRegistry==null?new WebSocketExtensionRegistry():extensionRegistry;
             this.objectFactory = objectFactory==null?new DecoratedObjectFactory():objectFactory;
             this.bufferPool = bufferPool;
         }
 
         @Override
-        public WebSocketPolicy getCandidatePolicy()
+        public void customize(FrameHandler.CoreSession session)
         {
-            return candidatePolicy;
         }
 
         @Override

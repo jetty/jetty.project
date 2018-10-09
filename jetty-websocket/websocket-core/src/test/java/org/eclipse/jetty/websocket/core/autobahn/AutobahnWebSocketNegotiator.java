@@ -23,11 +23,11 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 class AutobahnWebSocketNegotiator implements WebSocketNegotiator
@@ -48,8 +48,6 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
     {
         // Finalize negotiations in API layer involves:
         // TODO need access to real request/response????
-        //  + MAY mutate the policy
-        //  + MAY replace the policy
         //  + MAY read request and set response headers
         //  + MAY reject with sendError semantics
         //  + MAY change/add/remove offered extensions 
@@ -58,16 +56,6 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
         
         // Examples of those steps are below:
 
-        //  + MAY mutate the policy
-        WebSocketPolicy policy = negotiation.getPolicy();
-        policy.setIdleTimeout(policy.getIdleTimeout()+1);
-        int bigFrameSize = 20 * 1024 * 1024;
-        policy.setMaxBinaryMessageSize(bigFrameSize);
-        policy.setMaxTextMessageSize(bigFrameSize);
-        policy.setIdleTimeout(5000);
-        //  + MAY replace the policy
-        negotiation.setPolicy(policy.clonePolicy());
-        
         //  + MAY read request and set response headers
         String special = negotiation.getRequest().getHeader("MySpecialHeader");
         if (special!=null)
@@ -94,10 +82,12 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
     }
 
     @Override
-    public WebSocketPolicy getCandidatePolicy()
+    public void customize(FrameHandler.CoreSession session)
     {
-        return null;
+        session.setIdleTimeout(Duration.ofMillis(5000));
+
     }
+
 
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()

@@ -29,13 +29,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static org.eclipse.jetty.util.BufferUtil.toBuffer;
 import static org.eclipse.jetty.util.Callback.NOOP;
@@ -56,7 +54,6 @@ public class MessageHandlerTest
 
     boolean demanding;
     int demand;
-    WebSocketPolicy policy;
     CoreSession session;
     List<String> textMessages = new ArrayList<>();
     List<ByteBuffer> binaryMessages = new ArrayList<>();
@@ -70,9 +67,10 @@ public class MessageHandlerTest
         demanding = false;
         demand = 0;
 
-        policy = new WebSocketPolicy();
-        session = new CoreSession()
+        session = new DummyCoreSession()
         {
+            private ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+
             @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
             {
@@ -81,88 +79,9 @@ public class MessageHandlerTest
             }
 
             @Override
-            public String getSubprotocol()
-            {
-                return null;
-            }
-
-            @Override
-            public List<ExtensionConfig> getExtensionConfig()
-            {
-                return null;
-            }
-
-            @Override
-            public void abort()
-            {
-            }
-
-            @Override
-            public Behavior getBehavior()
-            {
-                return null;
-            }
-
-            @Override
-            public WebSocketPolicy getPolicy()
-            {
-                return policy;
-            }
-
-
-            private ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-            @Override
             public ByteBufferPool getByteBufferPool()
             {
                 return byteBufferPool;
-            }
-
-            @Override
-            public SocketAddress getLocalAddress()
-            {
-                return null;
-            }
-
-            @Override
-            public SocketAddress getRemoteAddress()
-            {
-                return null;
-            }
-
-            @Override
-            public boolean isOpen()
-            {
-                return false;
-            }
-
-            @Override
-            public long getIdleTimeout(TimeUnit units)
-            {
-                return 0;
-            }
-
-            @Override
-            public void setIdleTimeout(long timeout, TimeUnit units)
-            {
-
-            }
-
-            @Override
-            public void flush(Callback callback)
-            {
-
-            }
-
-            @Override
-            public void close(Callback callback)
-            {
-
-            }
-
-            @Override
-            public void close(int statusCode, String reason, Callback callback)
-            {
-
             }
 
             @Override
@@ -417,7 +336,7 @@ public class MessageHandlerTest
     {
         FutureCallback callback;
 
-        session.getPolicy().setMaxTextMessageSize(4);
+        handler.setMaxTextMessageSize(4);
 
         callback = new FutureCallback();
         handler.onReceiveFrame(new Frame(OpCode.TEXT,true,"test"),callback);
@@ -435,7 +354,7 @@ public class MessageHandlerTest
     {
         FutureCallback callback;
 
-        session.getPolicy().setMaxTextMessageSize(4);
+        handler.setMaxTextMessageSize(4);
         handler.onOpen(session);
 
         callback = new FutureCallback();
@@ -454,7 +373,7 @@ public class MessageHandlerTest
     {
         FutureCallback callback;
 
-        session.getPolicy().setMaxTextMessageSize(4);
+        handler.setMaxTextMessageSize(4);
         handler.onOpen(session);
 
         callback = new FutureCallback();
@@ -482,7 +401,7 @@ public class MessageHandlerTest
     {
         FutureCallback callback;
 
-        session.getPolicy().setMaxTextMessageSize(4);
+        handler.setMaxTextMessageSize(4);
 
         callback = new FutureCallback();
         handler.onReceiveFrame(new Frame(OpCode.TEXT,false, BufferUtil.toBuffer(fourByteUtf8Bytes)),callback);
@@ -640,7 +559,7 @@ public class MessageHandlerTest
     {
         FutureCallback callback;
 
-        session.getPolicy().setMaxBinaryMessageSize(4);
+        handler.setMaxBinaryMessageSize(4);
 
         callback = new FutureCallback();
         handler.onReceiveFrame(new Frame(OpCode.BINARY,true,"test"),callback);
@@ -658,7 +577,7 @@ public class MessageHandlerTest
     {
         FutureCallback callback;
 
-        session.getPolicy().setMaxBinaryMessageSize(4);
+        handler.setMaxBinaryMessageSize(4);
         handler.onOpen(session);
 
         callback = new FutureCallback();
@@ -677,7 +596,7 @@ public class MessageHandlerTest
     {
         FutureCallback callback;
 
-        session.getPolicy().setMaxBinaryMessageSize(4);
+        handler.setMaxBinaryMessageSize(4);
         handler.onOpen(session);
 
         callback = new FutureCallback();

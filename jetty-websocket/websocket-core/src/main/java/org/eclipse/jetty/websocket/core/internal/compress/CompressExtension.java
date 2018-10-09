@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.FrameEntry;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -78,12 +79,33 @@ public abstract class CompressExtension extends AbstractExtension
     protected AtomicInteger decompressCount = new AtomicInteger(0);
     private int tailDrop = TAIL_DROP_NEVER;
     private int rsvUse = RSV_USE_ALWAYS;
+    private int maxFrameSize = Integer.MAX_VALUE;
+
+    public int getMaxFrameSize()
+    {
+        return maxFrameSize;
+    }
+
+    public void setMaxFrameSize(int maxFrameSize)
+    {
+        this.maxFrameSize = maxFrameSize;
+    }
+
 
     protected CompressExtension()
     {
         tailDrop = getTailDropMode();
         rsvUse = getRsvUseMode();
     }
+
+    @Override
+    public void setWebSocketChannel(WebSocketChannel webSocketChannel)
+    {
+        super.setWebSocketChannel(webSocketChannel);
+        setMaxFrameSize(webSocketChannel.getMaxFrameSize());
+    }
+
+
 
     public Deflater getDeflater()
     {

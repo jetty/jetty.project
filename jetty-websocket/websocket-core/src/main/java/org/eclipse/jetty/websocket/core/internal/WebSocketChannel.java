@@ -38,7 +38,6 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
 
@@ -46,10 +45,10 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The Core WebSocket Session.
@@ -62,25 +61,25 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     private final Behavior behavior;
     private final WebSocketChannelState state = new WebSocketChannelState();
-    private final WebSocketPolicy policy;
     private final FrameHandler handler;
     private final ExtensionStack extensionStack;
     private final String subprotocol;
     private final boolean demanding;
     private final FrameSequence outgoingSequence = new FrameSequence();
 
-
     private WebSocketConnection connection;
+    private boolean autoFragment = true;
+    private int maxFrameSize = 4*1024*1024;
+    private int outputBufferSize = 4*1024;
+    private int inputBufferSize = 4*1024;
 
     public WebSocketChannel(FrameHandler handler,
     		Behavior behavior,
-    		WebSocketPolicy policy,
     		ExtensionStack extensionStack,
     		String subprotocol)
     {
         this.handler = handler;
         this.behavior = behavior;
-        this.policy = policy;
         this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
         this.demanding = handler.isDemanding();
@@ -127,8 +126,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining();
 
         // Sane Payload Length
-        if (payloadLength > policy.getMaxAllowedFrameSize())
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
+        if (payloadLength > getMaxFrameSize())
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + getMaxFrameSize());
 
         if (frame.isControlFrame())
         {
@@ -224,15 +223,15 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public long getIdleTimeout(TimeUnit units)
+    public Duration getIdleTimeout()
     {
-        return TimeUnit.MILLISECONDS.convert(getPolicy().getIdleTimeout(),units);
+        return Duration.ofMillis(getConnection().getEndPoint().getIdleTimeout());
     }
     
     @Override
-    public void setIdleTimeout(long timeout, TimeUnit units)
+    public void setIdleTimeout(Duration timeout)
     {
-        getConnection().getEndPoint().setIdleTimeout(units.toMillis(timeout));
+        getConnection().getEndPoint().setIdleTimeout(timeout==null?0:timeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -320,13 +319,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         Frame frame = closeStatus.toFrame();
         extensionStack.sendFrame(frame,callback,batch);
-    }
-
-    @Override
-    public WebSocketPolicy getPolicy()
-    {
-        // TODO readonly?
-        return policy;
     }
 
     @Override
@@ -533,7 +525,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
     }
 
-
     @Override
     public void flush(Callback callback)
     {
@@ -546,7 +537,55 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         connection.cancelDemand();
         connection.getEndPoint().close();
     }
-    
+
+    @Override
+    public boolean isAutoFragment()
+    {
+        return autoFragment;
+    }
+
+    @Override
+    public void setAutoFragment(boolean autoFragment)
+    {
+        this.autoFragment = autoFragment;
+    }
+
+    @Override
+    public int getMaxFrameSize()
+    {
+        return maxFrameSize;
+    }
+
+    @Override
+    public void setMaxFrameSize(int maxFrameSize)
+    {
+        this.maxFrameSize = maxFrameSize;
+    }
+
+    @Override
+    public int getOutputBufferSize()
+    {
+        return outputBufferSize;
+    }
+
+    @Override
+    public void setOutputBufferSize(int outputBufferSize)
+    {
+        this.outputBufferSize = outputBufferSize;
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return inputBufferSize;
+    }
+
+    @Override
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        this.inputBufferSize = inputBufferSize;
+    }
+
     private class IncomingState extends FrameSequence implements IncomingFrames
     {
         @Override
@@ -565,7 +604,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
                         connection.cancelDemand();
-                        CloseStatus closeStatus = ((Parser.ParsedFrame)frame).getCloseStatus();
+                        CloseStatus closeStatus = ((ParsedFrame)frame).getCloseStatus();
                         if (state.onCloseIn(closeStatus))
                         {
                             callback = new Callback.Nested(callback)
@@ -643,7 +682,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void dump(Appendable out, String indent) throws IOException
     {
         ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent,Arrays.asList(subprotocol,policy,extensionStack,handler));
+        ContainerLifeCycle.dump(out,indent,Arrays.asList(subprotocol,extensionStack,handler));
     }
 
     @Override
@@ -661,6 +700,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public String toString()
     {
-        return String.format("WSChannel@%x{%s,x=%d}->%s",hashCode(),state,extensionStack.getExtensions().size(),handler);
+        return String.format("WSChannel@%x{%s,x=%d,af=%b,i/o=%d/%d,fs=%d}->%s",
+            hashCode(),
+            state,
+            extensionStack.getExtensions().size(),
+            autoFragment,
+            inputBufferSize,
+            outputBufferSize,
+            maxFrameSize,
+            handler);
     }
 }

@@ -18,28 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import javax.websocket.CloseReason;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.MessageHandler;
-import javax.websocket.RemoteEndpoint.Async;
-import javax.websocket.RemoteEndpoint.Basic;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -53,6 +31,28 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
+
+import javax.websocket.CloseReason;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.MessageHandler;
+import javax.websocket.RemoteEndpoint.Async;
+import javax.websocket.RemoteEndpoint.Basic;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.security.Principal;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Client Session for the JSR.
@@ -355,7 +355,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public long getMaxIdleTimeout()
     {
-        return coreSession.getIdleTimeout(TimeUnit.MILLISECONDS);
+        return coreSession.getIdleTimeout().toMillis();
     }
 
     /**
@@ -368,7 +368,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public void setMaxIdleTimeout(long milliseconds)
     {
         getPolicy().setIdleTimeout(milliseconds);
-        coreSession.setIdleTimeout(milliseconds, TimeUnit.MILLISECONDS);
+        coreSession.setIdleTimeout(Duration.ofMillis(milliseconds));
     }
 
     /**

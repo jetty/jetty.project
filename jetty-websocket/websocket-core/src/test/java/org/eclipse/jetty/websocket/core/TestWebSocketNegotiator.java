@@ -54,9 +54,8 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     }
 
     @Override
-    public WebSocketPolicy getCandidatePolicy()
+    public void customize(FrameHandler.CoreSession session)
     {
-        return null;
     }
 
     @Override

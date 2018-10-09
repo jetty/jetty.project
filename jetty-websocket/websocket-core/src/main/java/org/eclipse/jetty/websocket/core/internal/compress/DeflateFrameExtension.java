@@ -65,7 +65,7 @@ public class DeflateFrameExtension extends CompressExtension
 
         try
         {
-            ByteAccumulator accumulator = new ByteAccumulator(getPolicy().getMaxAllowedFrameSize());
+            ByteAccumulator accumulator = new ByteAccumulator(getMaxFrameSize());
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
             forwardIncoming(frame, callback, accumulator);

@@ -28,14 +28,12 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -118,7 +116,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      * @param configs
      *            the configurations being requested
      */
-    public void negotiate(DecoratedObjectFactory objectFactory, WebSocketPolicy policy, ByteBufferPool bufferPool, List<ExtensionConfig> configs)
+    public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> configs)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Extension Configs={}",configs);
@@ -129,7 +127,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
         for (ExtensionConfig config : configs)
         {
-            Extension ext = factory.newInstance(objectFactory, policy, bufferPool, config);
+            Extension ext = factory.newInstance(objectFactory, bufferPool, config);
             if (ext == null)
             {
                 // Extension not present on this side
@@ -226,17 +224,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
         for (Extension extension : extensions)
             extension.setWebSocketChannel(webSocketChannel);
-    }
-
-    public void setPolicy(WebSocketPolicy policy)
-    {
-        for (Extension extension : extensions)
-        {
-            if (extension instanceof AbstractExtension)
-            {
-                ((AbstractExtension)extension).setPolicy(policy);
-            }
-        }
     }
 
     private void offerEntry(FrameEntry entry)

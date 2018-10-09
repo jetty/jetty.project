@@ -71,7 +71,7 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         return availableExtensions.values().iterator();
     }
 
-    public Extension newInstance(DecoratedObjectFactory objectFactory, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionConfig config)
+    public Extension newInstance(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, ExtensionConfig config)
     {
         if (config == null)
         {
@@ -93,7 +93,7 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         try
         {
             Extension ext = objectFactory.createInstance(extClass);
-            ext.init(config, policy, bufferPool);
+            ext.init(config, bufferPool);
 
             return ext;
         }

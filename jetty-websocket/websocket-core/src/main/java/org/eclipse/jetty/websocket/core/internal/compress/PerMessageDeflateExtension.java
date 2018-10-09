@@ -26,7 +26,6 @@ import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -74,7 +73,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             return;
         }
 
-        ByteAccumulator accumulator = new ByteAccumulator(getPolicy().getMaxAllowedFrameSize());
+        ByteAccumulator accumulator = new ByteAccumulator(getMaxFrameSize());
         
         try 
         {
@@ -132,7 +131,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    public void init(final ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public void init(final ExtensionConfig config, ByteBufferPool bufferPool)
     {
         configRequested = new ExtensionConfig(config);
         Map<String,String> params_negotiated = new HashMap<>();
@@ -171,7 +170,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         configNegotiated = new ExtensionConfig(config.getName(),params_negotiated);
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
-        super.init(configNegotiated, policy, bufferPool);
+        super.init(configNegotiated, bufferPool);
     }
 
     @Override

@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Objects;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -35,6 +27,14 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
 
 public class FrameFlusher extends IteratingCallback
 {
@@ -118,14 +118,7 @@ public class FrameFlusher extends IteratingCallback
                     break;
                 }
 
-                // Acquire a batchBuffer if we don't have one
-                if (entry.batch && batchBuffer==null)
-                {
-                    batchBuffer = bufferPool.acquire(bufferSize, true);
-                    buffers.add(batchBuffer);
-                }
-
-                int batchSpace = BufferUtil.space(batchBuffer);
+                int batchSpace = batchBuffer==null?bufferSize:BufferUtil.space(batchBuffer);
 
                 boolean batch = entry.batch
                     && !entry.frame.isControlFrame()
@@ -134,13 +127,20 @@ public class FrameFlusher extends IteratingCallback
 
                 if (batch)
                 {
+                    // Acquire a batchBuffer if we don't have one
+                    if (batchBuffer==null)
+                    {
+                        batchBuffer = bufferPool.acquire(bufferSize, true);
+                        buffers.add(batchBuffer);
+                    }
+
                     // generate the frame into the batchBuffer
                     entry.generateHeaderBytes(batchBuffer);
                     ByteBuffer payload = entry.frame.getPayload();
                     if (BufferUtil.hasContent(payload))
                         BufferUtil.append(batchBuffer, payload);
                 }
-                else if (batchSpace>=Generator.MAX_HEADER_LENGTH)
+                else if (batchBuffer!=null && batchSpace>=Generator.MAX_HEADER_LENGTH)
                 {
                     // Use the batch space for our header
                     entry.generateHeaderBytes(batchBuffer);

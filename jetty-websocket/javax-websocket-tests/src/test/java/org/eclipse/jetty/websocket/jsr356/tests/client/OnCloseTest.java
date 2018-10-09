@@ -18,23 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
 import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
@@ -47,6 +39,14 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.Session;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -114,7 +114,7 @@ public class OnCloseTest
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, policy, request, response, futureSession);
-        frameHandler.onOpen(new DummyChannel());
+        frameHandler.onOpen(new DummyCoreSession());
 
         // Execute onClose call
         frameHandler.onReceiveFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);

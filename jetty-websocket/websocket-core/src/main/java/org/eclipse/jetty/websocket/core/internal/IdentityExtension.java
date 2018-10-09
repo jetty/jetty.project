@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 @ManagedObject("Identity Extension")
 public class IdentityExtension extends AbstractExtension
@@ -58,9 +57,9 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public void init(ExtensionConfig config, ByteBufferPool bufferPool)
     {
-        super.init(config, policy, bufferPool);
+        super.init(config, bufferPool);
 
         StringBuilder s = new StringBuilder();
         s.append(config.getName());

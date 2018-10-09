@@ -18,16 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
 
 public abstract class AbstractSessionTest
 {
@@ -44,7 +45,7 @@ public abstract class AbstractSessionTest
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
         JavaxWebSocketFrameHandler frameHandler =
                 container.newFrameHandler(websocketPojo, container.getPolicy(), upgradeRequest, upgradeResponse, null);
-        FrameHandler.CoreSession channel = new DummyChannel();
+        FrameHandler.CoreSession channel = new DummyCoreSession();
         String id = "dummy";
         EndpointConfig endpointConfig = null;
         session = new JavaxWebSocketSession(container,

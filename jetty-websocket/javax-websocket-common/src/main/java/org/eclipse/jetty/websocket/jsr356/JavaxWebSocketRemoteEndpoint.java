@@ -36,7 +36,7 @@ import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint, OutgoingFrames
 {
@@ -88,12 +88,12 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
     public long getIdleTimeout()
     {
-        return channel.getIdleTimeout(TimeUnit.MILLISECONDS);
+        return channel.getIdleTimeout().toMillis();
     }
 
     public void setIdleTimeout(long ms)
     {
-        channel.setIdleTimeout(ms, TimeUnit.MILLISECONDS);
+        channel.setIdleTimeout(Duration.ofMillis(ms));
     }
 
     @Override

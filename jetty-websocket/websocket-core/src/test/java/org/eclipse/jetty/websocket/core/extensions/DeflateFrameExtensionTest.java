@@ -233,7 +233,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void init(DeflateFrameExtension ext)
     {
-        ext.init(new ExtensionConfig(ext.getName()), new WebSocketPolicy(), bufferPool);
+        ext.setMaxFrameSize(20*1024*1024);
+        ext.init(new ExtensionConfig(ext.getName()), bufferPool);
     }
 
     @Test
@@ -374,11 +375,11 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         init(clientExtension);
-        clientExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
+        clientExtension.setMaxFrameSize(maxMessageSize);
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         init(serverExtension);
-        serverExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
+        serverExtension.setMaxFrameSize(maxMessageSize);
 
         // Chain the next element to decompress.
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()

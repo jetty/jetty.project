@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.io.File;
 import java.io.IOException;
@@ -139,9 +138,9 @@ public class FrameCaptureExtension extends AbstractExtension
 
 
     @Override
-    public void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public void init(ExtensionConfig config, ByteBufferPool bufferPool)
     {
-        super.init(config, policy, bufferPool);
+        super.init(config, bufferPool);
 
         String cfgOutputDir = config.getParameter("output-dir",null);
         if (StringUtil.isNotBlank(cfgOutputDir))

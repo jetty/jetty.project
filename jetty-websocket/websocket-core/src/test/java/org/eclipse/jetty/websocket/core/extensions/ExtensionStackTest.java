@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,7 +50,6 @@ public class ExtensionStackTest
     private static final Logger LOG = Log.getLogger(ExtensionStackTest.class);
 
     private static DecoratedObjectFactory objectFactory;
-    private static WebSocketPolicy policy;
     private static ByteBufferPool bufferPool;
     private static ExtensionStack stack;
 
@@ -59,7 +57,6 @@ public class ExtensionStackTest
     public static void init()
     {
         objectFactory = new DecoratedObjectFactory();
-        policy = new WebSocketPolicy();
         bufferPool = new MappedByteBufferPool();
         stack = new ExtensionStack(new WebSocketExtensionRegistry());
     }
@@ -81,7 +78,7 @@ public class ExtensionStackTest
         // 1 extension
         List<ExtensionConfig> configs = new ArrayList<>();
         configs.add(ExtensionConfig.parse("identity"));
-        stack.negotiate(objectFactory, policy, bufferPool, configs);
+        stack.negotiate(objectFactory, bufferPool, configs);
 
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
@@ -105,7 +102,7 @@ public class ExtensionStackTest
         List<ExtensionConfig> configs = new ArrayList<>();
         configs.add(ExtensionConfig.parse("identity; id=A"));
         configs.add(ExtensionConfig.parse("identity; id=B"));
-        stack.negotiate(objectFactory, policy, bufferPool, configs);
+        stack.negotiate(objectFactory, bufferPool, configs);
 
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
@@ -136,7 +133,7 @@ public class ExtensionStackTest
     {
         String chromeRequest = "permessage-deflate; client_max_window_bits, x-webkit-deflate-frame";
         List<ExtensionConfig> requestedConfigs = ExtensionConfig.parseList(chromeRequest);
-        stack.negotiate(objectFactory, policy, bufferPool, requestedConfigs);
+        stack.negotiate(objectFactory, bufferPool, requestedConfigs);
         
         List<ExtensionConfig> negotiated = stack.getNegotiatedExtensions();
         String response = ExtensionConfig.toHeaderValue(negotiated);

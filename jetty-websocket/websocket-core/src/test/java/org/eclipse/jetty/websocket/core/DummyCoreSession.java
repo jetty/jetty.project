@@ -16,25 +16,20 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-public class DummyChannel implements FrameHandler.CoreSession
+public class DummyCoreSession implements FrameHandler.CoreSession
 {
     private final AttributesMap attributes = new AttributesMap();
-
+    
     @Override
     public String getSubprotocol()
     {
@@ -53,6 +48,18 @@ public class DummyChannel implements FrameHandler.CoreSession
     }
 
     @Override
+    public Behavior getBehavior()
+    {
+        return null;
+    }
+
+    @Override
+    public ByteBufferPool getByteBufferPool()
+    {
+        return null;
+    }
+
+    @Override
     public SocketAddress getLocalAddress()
     {
         return null;
@@ -65,42 +72,25 @@ public class DummyChannel implements FrameHandler.CoreSession
     }
 
     @Override
-    public Behavior getBehavior()
-    {
-        return null;
-    }
-
-    @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return null;
-    }
-
-    @Override
-    public ByteBufferPool getByteBufferPool()
-    {
-        return null;
-    }
-
-    @Override
     public boolean isOpen()
     {
         return false;
     }
 
     @Override
-    public long getIdleTimeout(TimeUnit units)
+    public Duration getIdleTimeout()
     {
-        return 0;
+        return Duration.ZERO;
+    }
+
+    @Override
+    public void setIdleTimeout(Duration timeout)
+    {
+
     }
 
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
-    {
-    }
-
-    @Override
-    public void setIdleTimeout(long timeout, TimeUnit units)
     {
     }
 
@@ -122,5 +112,49 @@ public class DummyChannel implements FrameHandler.CoreSession
     @Override
     public void demand(long n)
     {        
+    }
+
+    @Override
+    public boolean isAutoFragment()
+    {
+        return false;
+    }
+
+    @Override
+    public void setAutoFragment(boolean autoFragment)
+    {
+    }
+
+    @Override
+    public int getMaxFrameSize()
+    {
+        return 0;
+    }
+
+    @Override
+    public void setMaxFrameSize(int maxFrameSize)
+    {
+    }
+
+    @Override
+    public int getOutputBufferSize()
+    {
+        return 0;
+    }
+
+    @Override
+    public void setOutputBufferSize(int outputBufferSize)
+    {
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return 0;
+    }
+
+    @Override
+    public void setInputBufferSize(int inputBufferSize)
+    {
     }
 }

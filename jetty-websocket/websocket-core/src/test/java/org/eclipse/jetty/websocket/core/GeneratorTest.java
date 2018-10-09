@@ -57,10 +57,9 @@ public class GeneratorTest
     private static WebSocketChannel newChannel(Behavior behavior)
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        WebSocketPolicy policy = new WebSocketPolicy();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
-        exStack.negotiate(new DecoratedObjectFactory(), policy, bufferPool, new LinkedList<>());
-        return new WebSocketChannel(new AbstractTestFrameHandler(), behavior, policy, exStack, "");
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
+        return new WebSocketChannel(new AbstractTestFrameHandler(), behavior, exStack, "");
     }
 
     /**

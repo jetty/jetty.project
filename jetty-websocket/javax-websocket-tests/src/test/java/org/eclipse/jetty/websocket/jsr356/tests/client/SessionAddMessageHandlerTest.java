@@ -18,17 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
@@ -39,10 +31,9 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientFrameHandlerFactory;
-import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
+import org.eclipse.jetty.websocket.jsr356.tests.MessageType;
 import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.MessageType;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.ByteArrayWholeHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.ByteBufferPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.LongMessageHandler;
@@ -50,6 +41,15 @@ import org.eclipse.jetty.websocket.jsr356.tests.handlers.StringWholeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.Session;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerType;
 import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerTypeRegistered;
@@ -88,7 +88,7 @@ public class SessionAddMessageHandlerTest
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
         frameHandler = frameHandlerFactory.newJavaxFrameHandler(ei, policy, handshakeRequest, handshakeResponse, futureSession);
-        frameHandler.onOpen(new DummyChannel());
+        frameHandler.onOpen(new DummyCoreSession());
 
         // Session
         session = frameHandler.getSession();

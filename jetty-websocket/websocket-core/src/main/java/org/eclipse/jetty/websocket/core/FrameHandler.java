@@ -25,8 +25,8 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
@@ -166,11 +166,6 @@ public interface FrameHandler extends IncomingFrames
         Behavior getBehavior();
 
         /**
-         * @return The policy of the session.
-         */
-        WebSocketPolicy getPolicy();
-
-        /**
          * @return The shared ByteBufferPool
          */
         ByteBufferPool getByteBufferPool();
@@ -204,26 +199,19 @@ public interface FrameHandler extends IncomingFrames
          */
         boolean isOpen();
 
-        // TODO: possible configurable for AsyncSendTimeout (JSR356-ism for async write)
+        /**
+         * Get the Idle Timeout
+         *
+         * @return the idle timeout
+         */
+        Duration getIdleTimeout();
 
         /**
-         * Get the Idle Timeout in the unit provided.
+         * Set the Idle Timeout.
          *
-         * @param units the time unit interested in.
-         * @return the idle timeout in the unit provided (or -1 for no idle timeout, -2 for unset)
-         * TODO: is this how we want to handle infinite timeout?
+         * @param timeout the timeout duration
          */
-        long getIdleTimeout(TimeUnit units);
-
-        /**
-         * Set the Idle Timeout in the unit provided.
-         *
-         * @param timeout the timeout duration (or -1 for no idle timeout, -2 for unset)
-         * @param units the time unit
-         * TODO: is this how we want to handle infinite timeout?
-         * TODO: what to do if someone sets a ridiculous timeout? eg: (600,000, DAYS) allow it?
-         */
-        void setIdleTimeout(long timeout, TimeUnit units);
+        void setIdleTimeout(Duration timeout);
 
         /**
          * If using BatchMode.ON or BatchMode.AUTO, trigger a flush of enqueued / batched frames.
@@ -257,6 +245,23 @@ public interface FrameHandler extends IncomingFrames
          * @param n The number of frames that can be handled (in sequential calls to 
          * {@link FrameHandler#onReceiveFrame(Frame, Callback)}).  May not be negative.
          */
-        void demand(long n);        
+        void demand(long n);
+
+
+        boolean isAutoFragment();
+
+        void setAutoFragment(boolean autoFragment);
+
+        int getMaxFrameSize();
+
+        void setMaxFrameSize(int maxFrameSize);
+
+        int getOutputBufferSize();
+
+        void setOutputBufferSize(int outputBufferSize);
+
+        int getInputBufferSize();
+
+        void setInputBufferSize(int inputBufferSize);
     }
 }

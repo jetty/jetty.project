@@ -69,7 +69,7 @@ public class ExtensionTool
 
         public void assertNegotiated(String expectedNegotiation)
         {
-            this.ext = factory.newInstance(objectFactory, policy, bufferPool, extConfig);
+            this.ext = factory.newInstance(objectFactory, bufferPool, extConfig);
             this.ext.setNextIncomingFrames(capture);
         }
     

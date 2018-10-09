@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -33,21 +25,31 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeResponse;
-import org.eclipse.jetty.websocket.core.*;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
@@ -71,7 +73,7 @@ public class JettyWebSocketFrameHandlerTest
 
     private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
     private WebSocketPolicy policy = new WebSocketPolicy();
-    private FrameHandler.CoreSession channel = new DummyChannel();
+    private FrameHandler.CoreSession channel = new DummyCoreSession();
 
     private JettyWebSocketFrameHandler newLocalFrameHandler(Object wsEndpoint)
     {

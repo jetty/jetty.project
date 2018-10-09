@@ -28,7 +28,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
@@ -53,7 +52,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     private void init(PerMessageDeflateExtension ext)
     {
-        ext.init(new ExtensionConfig(ext.getName()), new WebSocketPolicy(), bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), bufferPool);
     }
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
@@ -231,7 +230,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -266,7 +265,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -320,7 +319,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, new WebSocketPolicy(), bufferPool);
+        ext.init(config, bufferPool);
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();

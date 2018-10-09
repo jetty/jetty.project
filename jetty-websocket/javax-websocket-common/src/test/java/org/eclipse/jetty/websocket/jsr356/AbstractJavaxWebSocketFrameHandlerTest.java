@@ -18,19 +18,20 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import javax.websocket.EndpointConfig;
-
 import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+
+import javax.websocket.EndpointConfig;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public abstract class AbstractJavaxWebSocketFrameHandlerTest
 {
@@ -55,7 +56,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams = new HashMap<>();
     protected EndpointConfig endpointConfig;
-    protected FrameHandler.CoreSession channel = new DummyChannel();
+    protected FrameHandler.CoreSession channel = new DummyCoreSession();
     
     public AbstractJavaxWebSocketFrameHandlerTest()
     {

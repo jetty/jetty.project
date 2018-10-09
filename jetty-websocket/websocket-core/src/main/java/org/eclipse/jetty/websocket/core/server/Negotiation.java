@@ -23,7 +23,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -39,7 +38,6 @@ public class Negotiation
     private final List<ExtensionConfig> offeredExtensions;
     private final List<String> offeredSubprotocols;
     private List<ExtensionConfig> negotiatedExtensions;
-    private WebSocketPolicy policy;
     private int version;
     private Boolean upgrade;
     private String key = null;
@@ -148,11 +146,6 @@ public class Negotiation
         return offeredSubprotocols;
     }
 
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
-    }
-
     public Request getBaseRequest()
     {
         return baseRequest;
@@ -192,11 +185,6 @@ public class Negotiation
     {
         errorCode = code;
         errorReason = reason;
-    }
-
-    public void setPolicy(WebSocketPolicy policy)
-    {
-        this.policy = policy;
     }
 
     public void setSubprotocol(String subprotocol)

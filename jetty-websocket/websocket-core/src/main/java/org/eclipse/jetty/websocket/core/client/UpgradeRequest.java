@@ -280,7 +280,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         // Create unique WebSocketPolicy for this specific upgrade
         WebSocketPolicy upgradePolicy = wsClient.getPolicy().clonePolicy();
 
-        extensionStack.negotiate(wsClient.getObjectFactory(), upgradePolicy, httpClient.getByteBufferPool(), extensions);
+        extensionStack.negotiate(wsClient.getObjectFactory(), httpClient.getByteBufferPool(), extensions);
 
         // Check the negotiated subprotocol
         String negotiatedSubProtocol = null;
@@ -323,7 +323,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
             throw new WebSocketException(err.toString());
         }
 
-        WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, upgradePolicy, extensionStack, negotiatedSubProtocol);
+        WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, extensionStack, negotiatedSubProtocol);
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
         wsChannel.setWebSocketConnection(wsConnection);
 
@@ -349,11 +349,10 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
     }
 
     protected WebSocketChannel newWebSocketChannel(FrameHandler handler,
-                                                   WebSocketPolicy upgradePolicy,
                                                    ExtensionStack extensionStack,
                                                    String negotiatedSubProtocol)
     {
-        return new WebSocketChannel(handler, Behavior.CLIENT, upgradePolicy, extensionStack, negotiatedSubProtocol);
+        return new WebSocketChannel(handler, Behavior.CLIENT, extensionStack, negotiatedSubProtocol);
     }
 
     public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response);

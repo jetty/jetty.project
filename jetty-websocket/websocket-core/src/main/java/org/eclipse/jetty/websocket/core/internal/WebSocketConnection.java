@@ -33,7 +33,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 import java.io.IOException;
@@ -42,7 +41,6 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -61,8 +59,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final Parser parser;
     private final WebSocketChannel channel;
 
-    // Connection level policy (before the session and local endpoint has been created)
-    private final WebSocketPolicy policy;
     private final Flusher flusher;
     private final Random random;
 
@@ -109,25 +105,23 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         this.bufferPool = bufferPool;
 
-        this.policy = channel.getPolicy();
         this.channel = channel;
 
         this.generator = new Generator(bufferPool);
-        this.parser = new Parser(bufferPool,policy.isAutoFragment())
+        this.parser = new Parser(bufferPool,channel.isAutoFragment())
         {
             @Override
             protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
             {
                 super.checkFrameSize(opcode,payloadLength);
-                if (payloadLength > policy.getMaxAllowedFrameSize())
-                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
+                if (payloadLength > channel.getMaxFrameSize())
+                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + channel.getMaxFrameSize());
             }
             
         };
        
-        this.flusher = new Flusher(policy.getOutputBufferSize(), generator, endp);
-        this.setInputBufferSize(policy.getInputBufferSize());
-        this.setMaxIdleTimeout(policy.getIdleTimeout());
+        this.flusher = new Flusher(channel.getOutputBufferSize(), generator, endp);
+        this.setInputBufferSize(channel.getInputBufferSize());
 
         this.random = this.channel.getBehavior() == Behavior.CLIENT ? new Random(endp.hashCode()) : null;
     }
@@ -151,11 +145,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public Parser getParser()
     {
         return parser;
-    }
-
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
     }
 
     public InetSocketAddress getLocalAddress()
@@ -487,13 +476,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen() {}",this);
 
-        // Connection Settings
-        long channelIdleTimeout = channel.getIdleTimeout(TimeUnit.MILLISECONDS);
-        if (channelIdleTimeout >= -1)
-        {
-            this.setMaxIdleTimeout(channelIdleTimeout);
-        }
-
         // Open Channel
         channel.onOpen();
         super.onOpen();
@@ -519,14 +501,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             throw new IllegalArgumentException("Cannot have buffer size less than " + MIN_BUFFER_SIZE);
         }
         super.setInputBufferSize(inputBufferSize);
-    }
-
-    public void setMaxIdleTimeout(long ms)
-    {
-        if (ms >= 0)
-        {
-            getEndPoint().setIdleTimeout(ms);
-        }
     }
 
     @Override

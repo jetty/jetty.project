@@ -72,6 +72,7 @@ public class ChatWebSocketServer
             public void onOpen(CoreSession coreSession) throws Exception
             {
                 LOG.debug("onOpen {}",coreSession);
+                setMaxTextMessageSize(2*1024);
                 super.onOpen(coreSession);
                 members.add(this);
             }
@@ -115,7 +116,6 @@ public class ChatWebSocketServer
 
         ChatWebSocketServer chat = new ChatWebSocketServer();
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(WebSocketNegotiator.from(chat::negotiate));
-        upgradeHandler.getWebSocketNegotiator().getCandidatePolicy().setMaxTextMessageSize(2048);
         context.setHandler(upgradeHandler);
 
         upgradeHandler.setHandler(new AbstractHandler()

@@ -66,10 +66,9 @@ public class GeneratorFrameFlagsTest
 
     public void setup(Frame invalidFrame)
     {
-        WebSocketPolicy policy = new WebSocketPolicy();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
-        exStack.negotiate(new DecoratedObjectFactory(), policy, bufferPool, new LinkedList<>());
-        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.CLIENT, policy, exStack, "");
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
+        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.CLIENT, exStack, "");
     }
     
     @ParameterizedTest

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -30,6 +26,10 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.time.Duration;
 
 public class WebSocketSessionImpl implements Session
 {
@@ -73,7 +73,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public long getIdleTimeout()
     {
-        return remoteEndpoint.getCoreSession().getIdleTimeout(TimeUnit.MILLISECONDS);
+        return remoteEndpoint.getCoreSession().getIdleTimeout().toMillis();
     }
 
     @Override
@@ -122,7 +122,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public void setIdleTimeout(long ms)
     {
-        remoteEndpoint.getCoreSession().setIdleTimeout(ms, TimeUnit.MILLISECONDS);
+        remoteEndpoint.getCoreSession().setIdleTimeout(Duration.ofMillis(ms));
     }
 
     @Override

@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jsr356.DummyChannel;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -139,7 +139,7 @@ public class MessageWriterTest
         assertThat("Message[0].length", message.length(), is(testSize));
     }
 
-    public static class FrameCapture extends DummyChannel
+    public static class FrameCapture extends DummyCoreSession
     {
         public BlockingQueue<Frame> frames = new LinkedBlockingQueue<>();
 
@@ -151,7 +151,7 @@ public class MessageWriterTest
         }
     }
 
-    public static class WholeMessageCapture extends DummyChannel
+    public static class WholeMessageCapture extends DummyCoreSession
     {
         public BlockingQueue<String> messages = new LinkedBlockingQueue<>();
 

@@ -95,6 +95,8 @@ public class MessageHandler implements FrameHandler
     private ByteBuffer binaryMessage = null;
     private byte dataType = OpCode.UNDEFINED;
 
+    private int maxTextMessageSize = 64 * 1024;
+    private int maxBinaryMessageSize = 64 * 1024;
 
     public MessageHandler()
     {
@@ -104,6 +106,26 @@ public class MessageHandler implements FrameHandler
     public MessageHandler(int factor)
     {
         this.factor = factor;
+    }
+
+    public int getMaxTextMessageSize()
+    {
+        return maxTextMessageSize;
+    }
+
+    public void setMaxTextMessageSize(int maxTextMessageSize)
+    {
+        this.maxTextMessageSize = maxTextMessageSize;
+    }
+
+    public int getMaxBinaryMessageSize()
+    {
+        return maxBinaryMessageSize;
+    }
+
+    public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
+    {
+        this.maxBinaryMessageSize = maxBinaryMessageSize;
     }
 
     @Override
@@ -139,7 +161,7 @@ public class MessageHandler implements FrameHandler
                 case OpCode.BINARY:
                     if (frame.isFin())
                     {
-                        final int maxSize = coreSession.getPolicy().getMaxBinaryMessageSize();
+                        final int maxSize = getMaxBinaryMessageSize();
                         if (frame.hasPayload() && frame.getPayload().remaining()>maxSize)
                             throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
 
@@ -157,7 +179,7 @@ public class MessageHandler implements FrameHandler
                     dataType = OpCode.TEXT;
                     if (utf8StringBuilder == null)
                     {
-                        final int maxSize = coreSession.getPolicy().getMaxTextMessageSize();
+                        final int maxSize = getMaxTextMessageSize();
                         utf8StringBuilder = (maxSize < 0) ? new Utf8StringBuilder() : new Utf8StringBuilder()
                         {
                             @Override
@@ -238,7 +260,7 @@ public class MessageHandler implements FrameHandler
             BufferUtil.append(binaryMessage,frame.getPayload());
         }
 
-        final int maxSize = coreSession.getPolicy().getMaxBinaryMessageSize();
+        final int maxSize = getMaxBinaryMessageSize();
         if (binaryMessage.remaining()>maxSize)
         {
             getCoreSession().getByteBufferPool().release(binaryMessage);

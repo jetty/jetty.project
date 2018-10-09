@@ -18,30 +18,30 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.common.UpgradeRequest;
+import org.eclipse.jetty.websocket.common.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.DummyCoreSession;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
+import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
+import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
+import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
+import org.junit.jupiter.api.Test;
+
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.PathParam;
+import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
-import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +64,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
 
         // Establish endpoint function
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, policy, request, response, futureSession);
-        frameHandler.onOpen(new DummyChannel());
+        frameHandler.onOpen(new DummyCoreSession());
         func.accept(frameHandler);
         return socket;
     }

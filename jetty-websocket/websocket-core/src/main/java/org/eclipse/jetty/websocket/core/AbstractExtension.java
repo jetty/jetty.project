@@ -30,7 +30,6 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 public abstract class AbstractExtension implements Extension
 {
     private final Logger log;
-    private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
@@ -43,10 +42,9 @@ public abstract class AbstractExtension implements Extension
     }
 
     @Override
-    public void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public void init(ExtensionConfig config, ByteBufferPool bufferPool)
     {
         this.config = config;
-        this.policy = policy;
         this.bufferPool = bufferPool;
     }
 
@@ -77,11 +75,6 @@ public abstract class AbstractExtension implements Extension
     public OutgoingFrames getNextOutgoing()
     {
         return nextOutgoing;
-    }
-
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
     }
 
     /**
@@ -145,11 +138,6 @@ public abstract class AbstractExtension implements Extension
     public void setNextOutgoingFrames(OutgoingFrames nextOutgoing)
     {
         this.nextOutgoing = nextOutgoing;
-    }
-
-    public void setPolicy(WebSocketPolicy policy)
-    {
-        this.policy = policy;
     }
 
     @Override
