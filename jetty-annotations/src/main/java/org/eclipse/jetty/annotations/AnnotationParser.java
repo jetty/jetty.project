@@ -69,8 +69,8 @@ import org.objectweb.asm.Opcodes;
 public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
-    protected static int ASM_OPCODE_VERSION = Opcodes.ASM6; //compatibility of api
-    protected static String ASM_OPCODE_VERSION_STR = "ASM6";
+    protected static int ASM_OPCODE_VERSION = Opcodes.ASM7; //compatibility of api
+    protected static String ASM_OPCODE_VERSION_STR = "ASM7";
     
     /**
      * Map of classnames scanned and the first location from which scan occurred

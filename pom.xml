@@ -102,9 +102,8 @@
     <module>jetty-util-ajax</module>
     <module>apache-jsp</module>
     <module>apache-jstl</module>
-    <!-- TODO: restore these modules when the maven-plugin-plugin works with JDK 11 -->
-    <!--<module>jetty-maven-plugin</module>-->
-    <!--<module>jetty-jspc-maven-plugin</module>-->
+    <module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plus</module>
@@ -577,7 +576,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.6.0-SNAPSHOT</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
