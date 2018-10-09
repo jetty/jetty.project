@@ -78,13 +78,22 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
     
-   
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        if (_cache == null)
+            throw new IllegalStateException ("No cache");
+    }
+
+
+
     @Override
     public SessionData doLoad(String id) throws Exception
     {  
         try
         {
-
             if (LOG.isDebugEnabled())
                 LOG.debug("Loading session {} from infinispan", id);
 
