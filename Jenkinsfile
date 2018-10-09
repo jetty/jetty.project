@@ -72,7 +72,8 @@ def getFullBuild(jdk, os, mainJdk) {
                             [parserName: 'JavaDoc'],
                             [parserName: 'JavaC']]
 
-          step([$class: 'MavenInvokerRecorder'])
+          step([$class: 'MavenInvokerRecorder', reportsFilenamePattern: "target/invoker-reports/BUILD*.xml",
+                invokerBuildDir: "target/its"])
         }
 
         // Report on Maven and Javadoc warnings
