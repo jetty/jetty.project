@@ -224,7 +224,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
      * @return the same return object (to satisfy {@link java.lang.invoke.MethodHandles#filterReturnValue(MethodHandle, MethodHandle)} rules
      */
     @SuppressWarnings("unused") // used by JavaxWebSocketFrameHandlerFactory via MethodHandle
-    public Object filterReturnType(Object obj)
+    public void filterReturnType(Object obj)
     {
         if (obj != null)
         {
@@ -238,7 +238,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
                 frameHandler.onError(cause);
             }
         }
-        return obj;
     }
 
     /**

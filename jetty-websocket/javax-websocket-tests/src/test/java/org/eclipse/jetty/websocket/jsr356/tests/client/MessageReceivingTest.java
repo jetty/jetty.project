@@ -276,6 +276,7 @@ public class MessageReceivingTest
         {
             if (BufferUtil.isEmpty(wholeMessage))
             {
+                getCoreSession().sendFrame(new Frame(OpCode.BINARY), Callback.NOOP, BatchMode.OFF);
                 callback.succeeded();
                 return;
             }

@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
@@ -29,14 +34,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test behavior of Parser with payload length parsing (per RFC6455)
@@ -94,6 +94,6 @@ public class ParsePayloadLengthTest
         if (size > 0)
             assertThat("Frame payload.remaining", frame.getPayload().remaining(), is(size));
         else
-            assertThat("Frame payload", BufferUtil.isEmpty(frame.getPayload()));
+            assertTrue(BufferUtil.isEmpty(frame.getPayload()), "Frame payload");
     }
 }

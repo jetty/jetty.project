@@ -183,7 +183,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        // TODO: FrameHandler cleanup?
         if (closeHandle != null)
         {
             try
