@@ -18,6 +18,32 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.io.InputStream;
+import java.io.Reader;
+import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import javax.websocket.CloseReason;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.PongMessage;
+import javax.websocket.Session;
+
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.UpgradeRequest;
@@ -42,32 +68,6 @@ import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
-import javax.websocket.CloseReason;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
-import java.io.InputStream;
-import java.io.Reader;
-import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 import static org.eclipse.jetty.websocket.jsr356.util.InvokerUtils.Arg;
@@ -80,7 +80,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
     {
         try
         {
-            FILTER_RETURN_TYPE_METHOD = MethodHandles.lookup().findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Object.class, Object.class));
+            FILTER_RETURN_TYPE_METHOD = MethodHandles.lookup().findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Void.TYPE, Object.class));
         }
         catch (Throwable e)
         {
@@ -360,9 +360,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
 
         // Filter the method return type to a call to JavaxWebSocketSession.filterReturnType() bound to this session
         handle = MethodHandles.filterReturnValue(handle, FILTER_RETURN_TYPE_METHOD.bindTo(session));
-
-        // As the return type has now been handled, we can return Void from any invocation
-        handle = handle.asType(handle.type().changeReturnType(Void.TYPE));
 
         return handle;
     }
