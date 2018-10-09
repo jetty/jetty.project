@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
@@ -35,7 +26,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -51,6 +41,15 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
+
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The Core WebSocket Session.
@@ -265,7 +264,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void close(Callback callback)
     {
-        close(NO_CODE, callback, BatchMode.OFF);
+        close(NO_CODE, callback, false);
     }
 
     /**
@@ -278,10 +277,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void close(int statusCode, String reason, Callback callback)
     {
-        close(new CloseStatus(statusCode, reason), callback, BatchMode.OFF);
+        close(new CloseStatus(statusCode, reason), callback, false);
     }
 
-    private void close(CloseStatus closeStatus, Callback callback, BatchMode batchMode)
+    private void close(CloseStatus closeStatus, Callback callback, boolean batch)
     {
         if (state.onCloseOut(closeStatus))
         {
@@ -316,11 +315,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("close({}, {}, {})", closeStatus, callback, batchMode);
+            LOG.debug("close({}, {}, {})", closeStatus, callback, batch);
         }
 
         Frame frame = closeStatus.toFrame();
-        extensionStack.sendFrame(frame,callback,batchMode);
+        extensionStack.sendFrame(frame,callback,batch);
     }
 
     @Override
@@ -423,7 +422,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         try
         {
             // TODO can we avoid the illegal state exception in outClosed
-            close(closeStatus, Callback.NOOP, BatchMode.OFF);
+            close(closeStatus, Callback.NOOP, false);
         }
         catch(IllegalStateException e)
         {
@@ -509,10 +508,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode) 
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("sendFrame({}, {}, {})", frame, callback, batchMode);
+            LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
         try
         {
@@ -526,19 +525,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            close(new CloseStatus(frame.getPayload()), callback, batchMode);
+            close(new CloseStatus(frame.getPayload()), callback, batch);
         }
         else
         {
-            extensionStack.sendFrame(frame, callback, batchMode);
+            extensionStack.sendFrame(frame, callback, batch);
         }
     }
 
 
     @Override
-    public void flushBatch(Callback callback)
+    public void flush(Callback callback)
     {
-        extensionStack.sendFrame(FrameFlusher.FLUSH_FRAME,callback,BatchMode.OFF);
+        extensionStack.sendFrame(FrameFlusher.FLUSH_FRAME,callback, false);
     }
     
     @Override
@@ -621,11 +620,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private class OutgoingState implements OutgoingFrames
     {
         @Override
-        public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+        public void sendFrame(Frame frame, Callback callback, boolean batch)
         {
             try
             {
-                connection.sendFrame(frame,callback,batchMode);
+                connection.sendFrame(frame,callback, batch);
             }
             catch (ProtocolException e)
             {

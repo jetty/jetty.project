@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -31,12 +26,16 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
+
+import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -290,7 +289,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             Frame pong = new Frame(OpCode.PONG);
             if (frame.hasPayload())
                 pong.setPayload(frame.getPayload());
-            getSession().getRemote().getCoreSession().sendFrame(pong, Callback.NOOP, BatchMode.OFF);
+            getSession().getRemote().getCoreSession().sendFrame(pong, Callback.NOOP, false);
         }
         callback.succeeded();
     }

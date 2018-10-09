@@ -18,21 +18,21 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -41,7 +41,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     private final FrameHandler.CoreSession coreSession;
     private byte messageType = -1;
     private final SharedBlockingCallback blocker = new SharedBlockingCallback();
-    private org.eclipse.jetty.websocket.api.BatchMode batchMode;
+    private BatchMode batchMode;
 
     public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession channel)
     {
@@ -93,7 +93,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
         {
-            coreSession.sendFrame(frame, b, BatchMode.OFF);
+            coreSession.sendFrame(frame, b, false);
             b.block();
         }
     }
@@ -127,13 +127,13 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPing(ByteBuffer applicationData) throws IOException
     {
-        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData), Callback.NOOP, BatchMode.OFF);
+        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData), Callback.NOOP, false);
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData), Callback.NOOP, BatchMode.OFF);
+        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData), Callback.NOOP, false);
     }
 
     @Override
@@ -147,7 +147,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
             Callback.from(callback::writeSuccess,callback::writeFailed),
-            getCoreBatchMode());
+            isBatch());
     }
 
     @Override
@@ -156,7 +156,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         FutureCallback callback = new FutureCallback();
         coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
             callback,
-            getCoreBatchMode());
+            isBatch());
         return callback;
     }
 
@@ -180,7 +180,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         frame.setPayload(fragment);
         frame.setFin(isLast);
 
-        coreSession.sendFrame(frame, callback, getCoreBatchMode());
+        coreSession.sendFrame(frame, callback, isBatch());
 
         if (isLast)
         {
@@ -208,7 +208,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         frame.setPayload(BufferUtil.toBuffer(fragment, UTF_8));
         frame.setFin(isLast);
 
-        coreSession.sendFrame(frame, callback, getCoreBatchMode());
+        coreSession.sendFrame(frame, callback, isBatch());
 
         if (isLast)
         {
@@ -221,7 +221,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text),
             Callback.from(callback::writeSuccess,callback::writeFailed),
-            getCoreBatchMode());
+            isBatch());
     }
 
     @Override
@@ -230,7 +230,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         FutureCallback callback = new FutureCallback();
         coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text),
             callback,
-            getCoreBatchMode());
+            isBatch());
         return callback;
     }
 
@@ -240,25 +240,23 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         return batchMode;
     }
 
-    private BatchMode getCoreBatchMode()
-    {
-        switch (batchMode)
-        {
-            case AUTO:
-                return BatchMode.AUTO;
-            case ON:
-                return BatchMode.ON;
-            default:
-                return BatchMode.OFF;
-        }
-    }
-
     @Override
-    public void setBatchMode(org.eclipse.jetty.websocket.api.BatchMode mode)
+    public void setBatchMode(BatchMode mode)
     {
         batchMode = mode;
     }
 
+    private boolean isBatch()
+    {
+        switch(batchMode)
+        {
+            case ON:
+                return true;
+            default:
+                return false;
+        }
+    }
+    
     @Override
     public InetSocketAddress getInetSocketAddress()
     {

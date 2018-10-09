@@ -18,6 +18,37 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
+import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
+import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
+import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.HandshakeRequest;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
@@ -37,39 +68,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
-
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
-import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -439,7 +437,7 @@ public class ConfiguratorTest
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: identity"));
@@ -463,7 +461,7 @@ public class ConfiguratorTest
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("negotiatedExtensions=[]"));
@@ -487,7 +485,7 @@ public class ConfiguratorTest
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [X-Dummy]: Bogus"));
@@ -512,7 +510,7 @@ public class ConfiguratorTest
         try
         {
             // first request has this UserProperty
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
@@ -531,9 +529,9 @@ public class ConfiguratorTest
         try
         {
             // as this is second request, this should be null
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
             // second request has this UserProperty
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("blueberry"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("blueberry"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = <null>"));
@@ -561,7 +559,7 @@ public class ConfiguratorTest
             SocketAddress expectedLocal = channel.getLocalAddress();
             SocketAddress expectedRemote = channel.getRemoteAddress();
 
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("addr"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("addr"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
 
@@ -664,7 +662,7 @@ public class ConfiguratorTest
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, responseMatcher);
@@ -691,7 +689,7 @@ public class ConfiguratorTest
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, is("cal=2016.06.20 AD at 14:27:44 +0000"));

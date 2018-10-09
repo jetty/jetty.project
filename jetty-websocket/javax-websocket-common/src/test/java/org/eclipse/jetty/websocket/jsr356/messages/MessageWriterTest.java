@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.jsr356.DummyChannel;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jsr356.DummyChannel;
-import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -145,7 +144,7 @@ public class MessageWriterTest
         public BlockingQueue<Frame> frames = new LinkedBlockingQueue<>();
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+        public void sendFrame(Frame frame, Callback callback, boolean batch)
         {
             frames.offer(Frame.copy(frame));
             callback.succeeded();
@@ -159,7 +158,7 @@ public class MessageWriterTest
         private Utf8StringBuilder activeMessage;
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+        public void sendFrame(Frame frame, Callback callback, boolean batch)
         {
             if (frame.getOpCode() == OpCode.TEXT)
                 activeMessage = new Utf8StringBuilder();

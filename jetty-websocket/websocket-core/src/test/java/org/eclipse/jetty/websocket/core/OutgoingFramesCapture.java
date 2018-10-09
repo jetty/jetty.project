@@ -73,7 +73,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         frames.add(Frame.copy(frame));
         // Consume bytes

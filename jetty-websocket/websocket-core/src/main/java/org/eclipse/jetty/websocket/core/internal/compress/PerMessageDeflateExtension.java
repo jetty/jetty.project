@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -110,14 +109,14 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    protected void nextOutgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    protected void nextOutgoingFrame(Frame frame, Callback callback, boolean batch)
     {
         if (frame.isFin() && !outgoingContextTakeover)
         {
             LOG.debug("Outgoing Context Reset");
             getDeflater().reset();
         }
-        super.nextOutgoingFrame(frame, callback, batchMode);
+        super.nextOutgoingFrame(frame, callback, batch);
     }
     
     @Override

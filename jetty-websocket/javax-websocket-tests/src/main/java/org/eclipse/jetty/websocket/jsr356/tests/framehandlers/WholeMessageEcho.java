@@ -18,23 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.MessageHandler;
+
+import java.nio.ByteBuffer;
 
 public class WholeMessageEcho extends MessageHandler
 {
     @Override
     public void onBinary(ByteBuffer wholeMessage, Callback callback)
     {
-        sendBinary(wholeMessage, callback, BatchMode.OFF);
+        sendBinary(wholeMessage, callback, false);
     }
 
     @Override
     public void onText(String wholeMessage, Callback callback)
     {
-        sendText(wholeMessage, callback, BatchMode.OFF);
+        sendText(wholeMessage, callback, false);
     }
 }

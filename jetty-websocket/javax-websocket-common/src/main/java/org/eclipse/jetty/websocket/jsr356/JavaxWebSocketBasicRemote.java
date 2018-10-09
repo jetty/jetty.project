@@ -18,22 +18,21 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.nio.ByteBuffer;
-import javax.websocket.EncodeException;
-import javax.websocket.RemoteEndpoint;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.util.TextUtil;
+
+import javax.websocket.EncodeException;
+import javax.websocket.RemoteEndpoint;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.nio.ByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -68,7 +67,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         }
         try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
-            sendFrame(new Frame(OpCode.BINARY).setPayload(data), b, BatchMode.OFF);
+            sendFrame(new Frame(OpCode.BINARY).setPayload(data), b, false);
         }
     }
 
@@ -100,7 +99,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 
             frame.setPayload(partialByte);
             frame.setFin(isLast);
-            sendFrame(frame, b, BatchMode.OFF);
+            sendFrame(frame, b, false);
         }
     }
 
@@ -123,7 +122,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         }
         try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
-            sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, BatchMode.OFF);
+            sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, false);
         }
     }
 
@@ -155,7 +154,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 
             frame.setPayload(BufferUtil.toBuffer(partialMessage, UTF_8));
             frame.setFin(isLast);
-            sendFrame(frame, b, BatchMode.OFF);
+            sendFrame(frame, b, false);
         }
     }
 }

@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -52,6 +51,7 @@ import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
@@ -115,7 +115,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new Frame(OpCode.TEXT).setPayload(text);
-        ext.sendFrame(frame, null, BatchMode.OFF);
+        ext.sendFrame(frame, null, false);
 
         capture.assertBytes(0, expectedHex);
     }
@@ -222,9 +222,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         init(ext);
         ext.setNextOutgoingFrames(capture);
 
-        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("time:"), null, BatchMode.OFF);
-        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("time:"), null, BatchMode.OFF);
-        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("time:"), null, BatchMode.OFF);
+        ext.sendFrame(new Frame(TEXT).setPayload("time:"), null, false);
+        ext.sendFrame(new Frame(TEXT).setPayload("time:"), null, false);
+        ext.sendFrame(new Frame(TEXT).setPayload("time:"), null, false);
 
         List<String> actual = capture.getCaptured();
 
@@ -292,8 +292,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello"), null, BatchMode.OFF);
-        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("There"), null, BatchMode.OFF);
+        ext.sendFrame(new Frame(TEXT).setPayload("Hello"), null, false);
+        ext.sendFrame(new Frame(TEXT).setPayload("There"), null, false);
 
         capture.assertBytes(0, "c107f248cdc9c90700");
     }
@@ -384,7 +384,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()
         {
             @Override
-            public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+            public void sendFrame(Frame frame, Callback callback, boolean batch)
             {
                 LOG.debug("outgoingFrame({})", frame);
                 serverExtension.onReceiveFrame(frame, callback);
@@ -413,7 +413,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         Frame frame = new Frame(OpCode.BINARY);
         frame.setPayload(input);
         frame.setFin(true);
-        clientExtension.sendFrame(frame, null, BatchMode.OFF);
+        clientExtension.sendFrame(frame, null, false);
 
         assertArrayEquals(input, result.toByteArray());
     }

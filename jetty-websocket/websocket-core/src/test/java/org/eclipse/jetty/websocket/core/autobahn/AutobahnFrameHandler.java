@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -31,6 +30,8 @@ import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
 
 class AutobahnFrameHandler extends AbstractTestFrameHandler
 {
@@ -55,9 +56,9 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
         LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getCoreSession());
         if (fin)
         {
-            getCoreSession().sendFrame(new Frame(OpCode.TEXT).setPayload(utf8.toString()),
-                    callback,
-                    BatchMode.OFF);
+            getCoreSession().sendFrame(new Frame(TEXT).setPayload(utf8.toString()),
+                callback,
+                false);
         }
         else
         {
@@ -74,7 +75,7 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
             Frame echo = new Frame(OpCode.BINARY);
             if (payload!=null)
                 echo.setPayload(payload);
-            getCoreSession().sendFrame(echo,callback,BatchMode.OFF);
+            getCoreSession().sendFrame(echo, callback, false);
         }
         else
         {

@@ -32,10 +32,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +44,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -406,7 +407,7 @@ public class WebSocketCloseTest extends WebSocketTester
             frame.setFin(true);
             frame.setPayload(text);
 
-            getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            getCoreSession().sendFrame(frame, NOOP, false);
         }
     }
 
@@ -454,7 +455,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
         public void sendFrame(Frame frame)
         {
-            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.OFF);
+            handler.getCoreSession().sendFrame(frame, NOOP, false);
         }
 
         public void sendText(String line)

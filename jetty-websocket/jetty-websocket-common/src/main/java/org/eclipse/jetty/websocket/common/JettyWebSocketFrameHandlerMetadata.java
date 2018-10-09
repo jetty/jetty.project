@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.lang.invoke.MethodHandle;
-
-import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+
+import java.lang.invoke.MethodHandle;
 
 public class JettyWebSocketFrameHandlerMetadata
 {
@@ -46,6 +46,7 @@ public class JettyWebSocketFrameHandlerMetadata
     private int maxTextMessageSize = -1;
 
     // Batch Configuration
+    // TODO remove?
     private BatchMode batchMode = BatchMode.OFF;
 
     public void setBatchMode(BatchMode batchMode)

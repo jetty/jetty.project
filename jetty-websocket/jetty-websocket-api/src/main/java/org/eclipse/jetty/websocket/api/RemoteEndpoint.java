@@ -174,7 +174,6 @@ public interface RemoteEndpoint
      * 
      * @throws IOException
      *             if the flush fails
-     * @see #getBatchMode()
      */
     void flush() throws IOException;
 }

@@ -18,13 +18,23 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
+import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
+import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
@@ -40,24 +50,13 @@ import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
-import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
-import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -212,7 +211,7 @@ public class PingPongTest
         {
             assertEcho("/app/pong", (channel) ->
             {
-                channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
+                channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
             }, "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
         });
     }
@@ -224,7 +223,7 @@ public class PingPongTest
         {
             assertEcho("/app/pong-socket", (channel) ->
             {
-                channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
+                channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
             }, "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
         });
     }

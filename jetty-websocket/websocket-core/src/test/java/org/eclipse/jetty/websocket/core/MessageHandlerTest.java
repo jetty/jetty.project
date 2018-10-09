@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
@@ -37,6 +29,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import static org.eclipse.jetty.util.BufferUtil.toBuffer;
+import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -72,7 +74,7 @@ public class MessageHandlerTest
         session = new CoreSession()
         {
             @Override
-            public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+            public void sendFrame(Frame frame, Callback callback, boolean batch)
             {
                 frames.add(frame);
                 callback.succeeded();
@@ -146,7 +148,7 @@ public class MessageHandlerTest
             }
 
             @Override
-            public void flushBatch(Callback callback)
+            public void flush(Callback callback)
             {
 
             }
@@ -507,7 +509,7 @@ public class MessageHandlerTest
     @Test
     public void testSendText()
     {
-        handler.sendText("Hello",Callback.NOOP,BatchMode.AUTO);
+        handler.sendText("Hello", NOOP, false);
         Frame frame = frames.get(0);
         assertThat(frame.getOpCode(),is(OpCode.TEXT));
         assertThat(frame.isFin(),is(true));
@@ -518,7 +520,7 @@ public class MessageHandlerTest
     @Test
     public void testSendSplitText()
     {
-        handler.sendText(Callback.NOOP,BatchMode.AUTO, "Hello", " ", "World");
+        handler.sendText(NOOP, false, "Hello", " ", "World");
         Frame frame = frames.get(0);
         assertThat(frame.getOpCode(),is(OpCode.TEXT));
         assertThat(frame.isFin(),is(false));
@@ -700,7 +702,7 @@ public class MessageHandlerTest
     @Test
     public void testSendBinary()
     {
-        handler.sendBinary(BufferUtil.toBuffer("Hello"),Callback.NOOP,BatchMode.AUTO);
+        handler.sendBinary(toBuffer("Hello"), NOOP, false);
         Frame frame = frames.get(0);
         assertThat(frame.getOpCode(),is(OpCode.BINARY));
         assertThat(frame.isFin(),is(true));
@@ -710,7 +712,7 @@ public class MessageHandlerTest
     @Test
     public void testSendSplitBinary()
     {
-        handler.sendBinary(Callback.NOOP,BatchMode.AUTO, BufferUtil.toBuffer("Hello"), BufferUtil.toBuffer(" "), BufferUtil.toBuffer("World"));
+        handler.sendBinary(NOOP, false, toBuffer("Hello"), toBuffer(" "), toBuffer("World"));
         Frame frame = frames.get(0);
         assertThat(frame.getOpCode(),is(OpCode.BINARY));
         assertThat(frame.isFin(),is(false));

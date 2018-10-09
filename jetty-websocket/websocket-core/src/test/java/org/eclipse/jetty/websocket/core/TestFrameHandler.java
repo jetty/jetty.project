@@ -80,6 +80,6 @@ public class TestFrameHandler implements FrameHandler
         frame.setFin(true);
         frame.setPayload(text);
 
-        getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+        getCoreSession().sendFrame(frame, Callback.NOOP, false);
     }
 }

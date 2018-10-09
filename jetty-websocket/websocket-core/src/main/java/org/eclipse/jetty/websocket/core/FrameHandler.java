@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
@@ -229,9 +229,8 @@ public interface FrameHandler extends IncomingFrames
          * If using BatchMode.ON or BatchMode.AUTO, trigger a flush of enqueued / batched frames.
          *
          * @param callback the callback to track close frame sent (or failed)
-         * TODO: what is the expected reaction to Callback.failed()?
          */
-        void flushBatch(Callback callback);
+        void flush(Callback callback);
 
         /**
          * Initiate close handshake, no payload (no declared status code or reason phrase)

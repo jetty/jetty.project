@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -29,6 +25,10 @@ import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 /**
  * A utility implementation of FrameHandler that defragments
@@ -298,11 +298,11 @@ public class MessageHandler implements FrameHandler
      * Send a String as a single text frame.
      * @param message The message to send
      * @param callback The callback to call when the send is complete
-     * @param mode The batch mode to send the frames in.
+     * @param batch The batch mode to send the frames in.
      */
-    public void sendText(String message, Callback callback, BatchMode mode)
+    public void sendText(String message, Callback callback, boolean batch)
     {
-        getCoreSession().sendFrame(new Frame(OpCode.TEXT,true,message),callback,mode);
+        getCoreSession().sendFrame(new Frame(OpCode.TEXT,true,message),callback, batch);
     }
 
     /**
@@ -310,10 +310,10 @@ public class MessageHandler implements FrameHandler
      * Sending a large message in fragments can reduce memory overheads as only a
      * single fragment need be converted to bytes
      * @param callback The callback to call when the send is complete
-     * @param mode The batch mode to send the frames in.
+     * @param batch The batch mode to send the frames in.
      * @param parts The parts of the message.
      */
-    public void sendText(Callback callback, BatchMode mode, final String... parts)
+    public void sendText(Callback callback, boolean batch, final String... parts)
     {
         if (parts==null || parts.length==0)
         {
@@ -323,7 +323,7 @@ public class MessageHandler implements FrameHandler
 
         if (parts.length==1)
         {
-            sendText(parts[0],callback,mode);
+            sendText(parts[0], callback, batch);
             return;
         }
 
@@ -339,7 +339,7 @@ public class MessageHandler implements FrameHandler
                 String part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
                     i==1?OpCode.TEXT:OpCode.CONTINUATION,
-                    i==parts.length, part), this, mode);
+                    i==parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();
@@ -350,21 +350,21 @@ public class MessageHandler implements FrameHandler
      * Send a ByteBuffer as a single binary frame.
      * @param message The message to send
      * @param callback The callback to call when the send is complete
-     * @param mode The batch mode to send the frames in.
+     * @param batch The batch mode to send the frames in.
      */
-    public void sendBinary(ByteBuffer message, Callback callback, BatchMode mode)
+    public void sendBinary(ByteBuffer message, Callback callback, boolean batch)
     {
-        getCoreSession().sendFrame(new Frame(OpCode.BINARY,true, message),callback,mode);
+        getCoreSession().sendFrame(new Frame(OpCode.BINARY,true, message),callback, batch);
     }
 
     /**
      * Send a sequence of ByteBuffers as a sequences for fragmented text frame.
      *
      * @param callback The callback to call when the send is complete
-     * @param mode The batch mode to send the frames in.
+     * @param batch The batch mode to send the frames in.
      * @param parts The parts of the message.
      */
-    public void sendBinary(Callback callback, BatchMode mode, final ByteBuffer... parts)
+    public void sendBinary(Callback callback, boolean batch, final ByteBuffer... parts)
     {
         if (parts==null || parts.length==0)
         {
@@ -374,7 +374,7 @@ public class MessageHandler implements FrameHandler
 
         if (parts.length==1)
         {
-            sendBinary(parts[0],callback,mode);
+            sendBinary(parts[0],callback,batch);
             return;
         }
 
@@ -390,7 +390,7 @@ public class MessageHandler implements FrameHandler
                 ByteBuffer part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
                         i==1?OpCode.BINARY:OpCode.CONTINUATION,
-                        i==parts.length, part), this, mode);
+                        i==parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();

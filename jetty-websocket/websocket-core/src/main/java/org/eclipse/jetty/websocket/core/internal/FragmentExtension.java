@@ -24,7 +24,6 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -58,17 +57,17 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         ByteBuffer payload = frame.getPayload();
         int length = payload != null ? payload.remaining() : 0;
         if (OpCode.isControlFrame(frame.getOpCode()) || maxLength <= 0 || length <= maxLength)
         {
-            nextOutgoingFrame(frame, callback, batchMode);
+            nextOutgoingFrame(frame, callback, batch);
             return;
         }
 
-        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
+        FrameEntry entry = new FrameEntry(frame, callback, batch);
         if (LOG.isDebugEnabled())
             LOG.debug("Queuing {}", entry);
         offerEntry(entry);
@@ -95,26 +94,6 @@ public class FragmentExtension extends AbstractExtension
         synchronized (this)
         {
             return entries.poll();
-        }
-    }
-
-    private static class FrameEntry
-    {
-        private final Frame frame;
-        private final Callback callback;
-        private final BatchMode batchMode;
-
-        private FrameEntry(Frame frame, Callback callback, BatchMode batchMode)
-        {
-            this.frame = frame;
-            this.callback = callback;
-            this.batchMode = batchMode;
-        }
-
-        @Override
-        public String toString()
-        {
-            return frame.toString();
         }
     }
 
@@ -164,7 +143,7 @@ public class FragmentExtension extends AbstractExtension
                 LOG.debug("Fragmented {}->{}", frame, fragment);
             payload.position(newLimit);
 
-            nextOutgoingFrame(fragment, this, entry.batchMode);
+            nextOutgoingFrame(fragment, this, entry.batch);
         }
 
         @Override

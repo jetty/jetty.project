@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -44,7 +43,7 @@ public class FrameEcho implements FrameHandler
         if (frame.isControlFrame())
             callback.succeeded();
         else
-            coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+            coreSession.sendFrame(Frame.copy(frame), callback, false);
     }
 
     @Override

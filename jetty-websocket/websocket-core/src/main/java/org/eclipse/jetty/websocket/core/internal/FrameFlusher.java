@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 
@@ -47,13 +46,12 @@ public class FrameFlusher extends IteratingCallback
     private final int bufferSize;
     private final Generator generator;
     private final int maxGather;
-    private final Deque<FrameEntry> queue = new ArrayDeque<>();
-    private final List<FrameEntry> entries;
+    private final Deque<Entry> queue = new ArrayDeque<>();
+    private final List<Entry> entries;
     private final List<ByteBuffer> buffers;
     private boolean closed;
     private Throwable terminated;
-    private ByteBuffer aggregate;
-    private BatchMode batchMode;
+    private ByteBuffer batchBuffer=null;
 
     public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
@@ -66,9 +64,9 @@ public class FrameFlusher extends IteratingCallback
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
     }
 
-    public void enqueue(Frame frame, Callback callback, BatchMode batchMode)
+    public void enqueue(Frame frame, Callback callback, boolean batch)
     {
-        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
+        Entry entry = new Entry(frame, callback, batch);
 
         Throwable closed;
         synchronized (this)
@@ -96,10 +94,14 @@ public class FrameFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("Flushing {}", this);
 
-        int space = aggregate == null ? bufferSize : BufferUtil.space(aggregate);
-        BatchMode currentBatchMode = BatchMode.AUTO;
+        boolean flush = false;
         synchronized (this)
         {
+            // Succeed entries from previous call to process
+            // and clear batchBuffer if we wrote it.
+            if (succeedEntries() && batchBuffer!=null)
+                BufferUtil.clear(batchBuffer);
+
             if (closed)
                 return Action.SUCCEEDED;
 
@@ -108,114 +110,90 @@ public class FrameFlusher extends IteratingCallback
 
             while (!queue.isEmpty() && entries.size() <= maxGather)
             {
-                FrameEntry entry = queue.poll();
-                currentBatchMode = BatchMode.max(currentBatchMode, entry.batchMode);
-
-                // Force flush if we need to.
-                if (entry.frame == FLUSH_FRAME)
-                    currentBatchMode = BatchMode.OFF;
-
-                int payloadLength = BufferUtil.length(entry.frame.getPayload());
-                int approxFrameLength = Generator.MAX_HEADER_LENGTH + payloadLength;
-
-                // If it is a "big" frame, avoid copying into the aggregate buffer.
-                if (approxFrameLength > (bufferSize >> 2))
-                    currentBatchMode = BatchMode.OFF;
-
-                // If the aggregate buffer overflows, do not batch.
-                space -= approxFrameLength;
-                if (space <= 0)
-                    currentBatchMode = BatchMode.OFF;
-
+                Entry entry = queue.poll();
                 entries.add(entry);
+                if (entry.frame==FLUSH_FRAME)
+                {
+                    flush = true;
+                    break;
+                }
+
+                int batchSpace = BufferUtil.space(batchBuffer);
+
+                boolean batch = entry.batch
+                    && !entry.frame.isControlFrame()
+                    && entry.frame.getPayloadLength() < bufferSize/4
+                    && (batchSpace-Generator.MAX_HEADER_LENGTH)>=entry.frame.getPayloadLength();
+
+                if (batch)
+                {
+                    // Acquire a batchBuffer if we don't have one
+                    if (batchBuffer==null)
+                    {
+                        batchBuffer = bufferPool.acquire(bufferSize, true);
+                        buffers.add(batchBuffer);
+                    }
+
+                    // generate the frame into the batchBuffer
+                    entry.generateHeaderBytes(batchBuffer);
+                    ByteBuffer payload = entry.frame.getPayload();
+                    if (BufferUtil.hasContent(payload))
+                        BufferUtil.append(batchBuffer, payload);
+                }
+                else if (batchSpace>=Generator.MAX_HEADER_LENGTH)
+                {
+                    // Use the batch space for our header
+                    entry.generateHeaderBytes(batchBuffer);
+                    flush = true;
+
+                    // Add the payload to the list of buffers
+                    ByteBuffer payload = entry.frame.getPayload();
+                    if (BufferUtil.hasContent(payload))
+                    {
+                        buffers.add(payload);
+                        break;
+                    }
+                }
+                else
+                {
+                    // Add headers and payload to the list of buffers
+                    buffers.add(entry.generateHeaderBytes());
+                    flush = true;
+                    ByteBuffer payload = entry.frame.getPayload();
+                    if (BufferUtil.hasContent(payload))
+                        buffers.add(payload);
+                }
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} processing {} entries: {}", this, entries.size(), entries);
+            LOG.debug("{} processed {} entries flush=%b batch=%s: {}",
+                this,
+                entries.size(),
+                flush,
+                BufferUtil.toDetailString(batchBuffer),
+                entries);
 
         if (entries.isEmpty())
         {
-            if (batchMode != BatchMode.AUTO)
-            {
-                // Nothing more to do, release the aggregate buffer if we need to.
-                // Releasing it here rather than in succeeded() allows for its reuse.
-                releaseAggregate();
-                return Action.IDLE;
-            }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} auto flushing", this);
-
-            return flush();
-        }
-
-        batchMode = currentBatchMode;
-
-        return currentBatchMode == BatchMode.OFF ? flush() : batch();
-    }
-
-    private Action batch()
-    {
-        if (aggregate == null)
-        {
-            aggregate = bufferPool.acquire(bufferSize, true);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} acquired aggregate buffer {}", this, aggregate);
-        }
-
-        for (FrameEntry entry : entries)
-        {
-            entry.generateHeaderBytes(aggregate);
-
-            ByteBuffer payload = entry.frame.getPayload();
-            if (BufferUtil.hasContent(payload))
-                BufferUtil.append(aggregate, payload);
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} aggregated {} frames: {}", this, entries.size(), entries);
-
-        // We just aggregated the entries, so we need to succeed their callbacks.
-        succeeded();
-
-        return Action.SCHEDULED;
-    }
-
-    private Action flush()
-    {
-        if (!BufferUtil.isEmpty(aggregate))
-        {
-            buffers.add(aggregate);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} flushing aggregate {}", this, aggregate);
-        }
-
-        for (FrameEntry entry : entries)
-        {
-            // Skip the "synthetic" frame used for flushing.
-            if (entry.frame == FLUSH_FRAME)
-                continue;
-
-            buffers.add(entry.generateHeaderBytes());
-            ByteBuffer payload = entry.frame.getPayload();
-            if (BufferUtil.hasContent(payload))
-                buffers.add(payload);
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} flushing {} frames: {}", this, entries.size(), entries);
-
-        if (buffers.isEmpty())
-        {
             releaseAggregate();
-            // We may have the FLUSH_FRAME to notify.
             succeedEntries();
             return Action.IDLE;
         }
 
-        endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
-        buffers.clear();
+        if (flush)
+        {
+            endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
+            buffers.clear();
+        }
+        else
+        {
+            // We just aggregated the entries, so we need to succeed their callbacks.
+            succeeded();
+        }
+
         return Action.SCHEDULED;
+
     }
 
     private int getQueueSize()
@@ -233,10 +211,12 @@ public class FrameFlusher extends IteratingCallback
         super.succeeded();
     }
 
-    private void succeedEntries()
+    private boolean succeedEntries()
     {
-        for (FrameEntry entry : entries)
+        boolean hadEntries = false;
+        for (Entry entry : entries)
         {
+            hadEntries = true;
             notifyCallbackSuccess(entry.callback);
             entry.release();
             if (entry.frame.getOpCode() == OpCode.CLOSE)
@@ -246,6 +226,7 @@ public class FrameFlusher extends IteratingCallback
             }
         }
         entries.clear();
+        return hadEntries;
     }
 
     @Override
@@ -263,7 +244,7 @@ public class FrameFlusher extends IteratingCallback
             queue.clear();
         }
 
-        for (FrameEntry entry : entries)
+        for (Entry entry : entries)
         {
             notifyCallbackFailure(entry.callback, failure);
             entry.release();
@@ -273,10 +254,10 @@ public class FrameFlusher extends IteratingCallback
 
     private void releaseAggregate()
     {
-        if (BufferUtil.isEmpty(aggregate))
+        if (BufferUtil.isEmpty(batchBuffer))
         {
-            bufferPool.release(aggregate);
-            aggregate = null;
+            bufferPool.release(batchBuffer);
+            batchBuffer = null;
         }
     }
 
@@ -331,26 +312,21 @@ public class FrameFlusher extends IteratingCallback
     @Override
     public String toString()
     {
-        return String.format("%s@%x[queueSize=%d,aggregateSize=%d,terminated=%s]",
+        return String.format("%s@%x[queueSize=%d,aggregate=%s,terminated=%s]",
                              getClass().getSimpleName(),
                              hashCode(),
                              getQueueSize(),
-                             aggregate == null ? 0 : aggregate.position(),
+                             BufferUtil.toDetailString(batchBuffer),
                              terminated);
     }
 
-    private class FrameEntry
+    private class Entry extends FrameEntry
     {
-        private final Frame frame;
-        private final Callback callback;
-        private final BatchMode batchMode;
         private ByteBuffer headerBuffer;
 
-        private FrameEntry(Frame frame, Callback callback, BatchMode batchMode)
+        private Entry(Frame frame, Callback callback, boolean batch)
         {
-            this.frame = Objects.requireNonNull(frame);
-            this.callback = callback;
-            this.batchMode = batchMode;
+            super(frame, callback, batch);
         }
 
         private ByteBuffer generateHeaderBytes()
@@ -377,7 +353,7 @@ public class FrameFlusher extends IteratingCallback
         @Override
         public String toString()
         {
-            return String.format("%s[%s,%s,%s,%s]", getClass().getSimpleName(), frame, callback, batchMode, terminated);
+            return String.format("%s[%s,%s,%b,%s]", getClass().getSimpleName(), frame, callback, batch, terminated);
         }
     }
 }

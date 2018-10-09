@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.autobahn.client;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -62,7 +61,7 @@ public class EchoHandler extends AbstractClientFrameHandler
         {
             Frame echo = new Frame(OpCode.TEXT).setPayload(utf8.toString());
             LOG.debug("onText echo {}", echo);
-            getCoreSession().sendFrame(echo, callback, BatchMode.OFF);
+            getCoreSession().sendFrame(echo, callback, false);
         }
         else
         {
@@ -79,7 +78,7 @@ public class EchoHandler extends AbstractClientFrameHandler
             Frame echo = new Frame(OpCode.BINARY);
             if (payload!=null)
                 echo.setPayload(payload);
-            getCoreSession().sendFrame(echo,callback,BatchMode.OFF);
+            getCoreSession().sendFrame(echo, callback, false);
         }
         else
         {

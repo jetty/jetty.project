@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.net.SocketAddress;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+
+import java.net.SocketAddress;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class DummyChannel implements FrameHandler.CoreSession
 {
@@ -96,7 +95,7 @@ public class DummyChannel implements FrameHandler.CoreSession
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
     }
 
@@ -106,7 +105,7 @@ public class DummyChannel implements FrameHandler.CoreSession
     }
 
     @Override
-    public void flushBatch(Callback callback)
+    public void flush(Callback callback)
     {
     }
 

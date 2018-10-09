@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -199,11 +198,11 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         if (outgoing==null)
             throw new IllegalStateException();
-        FrameEntry entry = new FrameEntry(frame,callback,batchMode);
+        FrameEntry entry = new FrameEntry(frame,callback, batch);
         if (LOG.isDebugEnabled())
             LOG.debug("Queuing {}",entry);
         offerEntry(entry);
@@ -318,26 +317,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         return s.toString();
     }
 
-    private static class FrameEntry
-    {
-        private final Frame frame;
-        private final Callback callback;
-        private final BatchMode batchMode;
-
-        private FrameEntry(Frame frame, Callback callback, BatchMode batchMode)
-        {
-            this.frame = frame;
-            this.callback = callback;
-            this.batchMode = batchMode;
-        }
-
-        @Override
-        public String toString()
-        {
-            return frame.toString();
-        }
-    }
-
     private class Flusher extends IteratingCallback implements Callback
     {
         private FrameEntry current;
@@ -354,7 +333,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {}",current);
-            outgoing.sendFrame(current.frame,this,current.batchMode);
+            outgoing.sendFrame(current.frame,this,current.batch);
             return Action.SCHEDULED;
         }
 

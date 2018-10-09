@@ -18,6 +18,35 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.invoke.InvokerUtils;
+import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
+import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
+import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
+import org.eclipse.jetty.websocket.common.message.StringMessageSink;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
@@ -32,36 +61,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
-import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.common.invoke.InvokerUtils;
-import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
-import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
-import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
-import org.eclipse.jetty.websocket.common.message.StringMessageSink;
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 /**
  * Factory for websocket-core {@link FrameHandler} implementations suitable for
  * use with jetty-native websocket API.
@@ -306,18 +305,7 @@ public class JettyWebSocketFrameHandlerFactory
         metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
         metadata.setMaxTextMessageSize(anno.maxTextMessageSize());
         metadata.setIdleTimeout(anno.maxIdleTime());
-        switch(anno.batchMode())
-        {
-            case AUTO:
-                metadata.setBatchMode(BatchMode.AUTO);
-                break;
-            case ON:
-                metadata.setBatchMode(BatchMode.ON);
-                break;
-            case OFF:
-                metadata.setBatchMode(BatchMode.OFF);
-                break;
-        }
+        metadata.setBatchMode(anno.batchMode());
 
         Method onmethod;
 

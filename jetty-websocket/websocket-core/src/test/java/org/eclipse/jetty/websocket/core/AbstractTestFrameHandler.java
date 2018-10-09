@@ -18,13 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import java.nio.ByteBuffer;
+
+import static org.eclipse.jetty.websocket.core.OpCode.PONG;
 
 /**
  * Base level implementation of local WebSocket Endpoint Frame handling.
@@ -119,7 +121,7 @@ public class AbstractTestFrameHandler implements FrameHandler
 
         try
         {
-            channel.sendFrame(new Frame(OpCode.PONG).setPayload(pongBuf),callback,BatchMode.OFF);
+            channel.sendFrame(new Frame(PONG).setPayload(pongBuf), callback, false);
         }
         catch (Throwable t)
         {

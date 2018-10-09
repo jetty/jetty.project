@@ -23,7 +23,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
@@ -332,7 +331,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         String payload = "Are you there?";
         Frame ping = new Frame(OpCode.PING).setPayload(payload);
 
-        ext.sendFrame(ping, null, BatchMode.OFF);
+        ext.sendFrame(ping, null, false);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);

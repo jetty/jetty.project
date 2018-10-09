@@ -16,34 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.Frame;
 
-/**
- * The possible batch modes when invoking {@link OutgoingFrames#sendFrame(Frame, Callback, BatchMode)}.
- */
-public enum BatchMode
+public class FrameEntry
 {
-    /**
-     * Implementers are free to decide whether to send or not frames
-     * to the network layer.
-     */
-    AUTO,
+    public final Frame frame;
+    public final Callback callback;
+    public final boolean batch;
 
-    /**
-     * Implementers must batch frames.
-     */
-    ON,
-
-    /**
-     * Implementers must send frames to the network layer.
-     */
-    OFF;
-
-    public static BatchMode max(BatchMode one, BatchMode two)
+    public FrameEntry(Frame frame, Callback callback, boolean batch)
     {
-        // Return the BatchMode that has the higher priority, where AUTO < ON < OFF.
-        return one.ordinal() < two.ordinal() ? two : one;
+        this.frame = frame;
+        this.callback = callback;
+        this.batch = batch;
+    }
+
+    @Override
+    public String toString()
+    {
+        return frame.toString();
     }
 }

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.MessageHandler;
 
 public class StaticText extends MessageHandler
@@ -34,6 +33,6 @@ public class StaticText extends MessageHandler
     @Override
     public void onText(String wholeMessage, Callback callback)
     {
-        sendText(staticMessage, callback, BatchMode.OFF);
+        sendText(staticMessage, callback, false);
     }
 }

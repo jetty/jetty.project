@@ -24,9 +24,9 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.internal.FrameEntry;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -201,7 +201,7 @@ public abstract class CompressExtension extends AbstractExtension
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         // We use a queue and an IteratingCallback to handle concurrency.
         // We must compress and write atomically, otherwise the compression
@@ -213,7 +213,7 @@ public abstract class CompressExtension extends AbstractExtension
             return;
         }
 
-        FrameEntry entry = new FrameEntry(frame,callback,batchMode);
+        FrameEntry entry = new FrameEntry(frame,callback, batch);
         if (LOG.isDebugEnabled())
             LOG.debug("Queuing {}",entry);
         offerEntry(entry);
@@ -379,26 +379,6 @@ public abstract class CompressExtension extends AbstractExtension
         return getClass().getSimpleName();
     }
 
-    private static class FrameEntry
-    {
-        private final Frame frame;
-        private final Callback callback;
-        private final BatchMode batchMode;
-
-        private FrameEntry(Frame frame, Callback callback, BatchMode batchMode)
-        {
-            this.frame = frame;
-            this.callback = callback;
-            this.batchMode = batchMode;
-        }
-
-        @Override
-        public String toString()
-        {
-            return frame.toString();
-        }
-    }
-
     private class Flusher extends IteratingCallback
     {
         private FrameEntry current;
@@ -443,11 +423,11 @@ public abstract class CompressExtension extends AbstractExtension
         private void deflate(FrameEntry entry)
         {
             Frame frame = entry.frame;
-            BatchMode batchMode = entry.batchMode;
+            boolean batch = entry.batch;
             if (OpCode.isControlFrame(frame.getOpCode()))
             {
                 // Do not deflate control frames
-                nextOutgoingFrame(frame,this,batchMode);
+                nextOutgoingFrame(frame,this, batch);
                 return;
             }
             
@@ -550,7 +530,7 @@ public abstract class CompressExtension extends AbstractExtension
             chunk.setPayload(payload);
             chunk.setFin(fin);
 
-            nextOutgoingFrame(chunk,this,entry.batchMode);
+            nextOutgoingFrame(chunk,this, entry.batch);
         }
 
         @Override

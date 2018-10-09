@@ -18,24 +18,24 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.SendHandler;
-import javax.websocket.SendResult;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
 import org.eclipse.jetty.websocket.jsr356.util.TextUtil;
+
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint.Async
 {
@@ -69,7 +69,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
         FutureCallback future = new FutureCallback();
-        sendFrame(new Frame(OpCode.BINARY).setPayload(data), future, batchMode);
+        sendFrame(new Frame(OpCode.BINARY).setPayload(data), future, batch);
         return future;
     }
 
@@ -82,7 +82,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(data), handler);
         }
-        sendFrame(new Frame(OpCode.BINARY).setPayload(data), new SendHandlerCallback(handler), batchMode);
+        sendFrame(new Frame(OpCode.BINARY).setPayload(data), new SendHandlerCallback(handler), batch);
     }
 
     @Override
@@ -189,7 +189,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             LOG.debug("sendText({})", TextUtil.hint(text));
         }
         FutureCallback future = new FutureCallback();
-        sendFrame(new Frame(OpCode.TEXT).setPayload(text), future, batchMode);
+        sendFrame(new Frame(OpCode.TEXT).setPayload(text), future, batch);
         return future;
     }
 
@@ -202,6 +202,6 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendText({},{})", TextUtil.hint(text), handler);
         }
-        sendFrame(new Frame(OpCode.TEXT).setPayload(text), new SendHandlerCallback(handler), batchMode);
+        sendFrame(new Frame(OpCode.TEXT).setPayload(text), new SendHandlerCallback(handler), batch);
     }
 }

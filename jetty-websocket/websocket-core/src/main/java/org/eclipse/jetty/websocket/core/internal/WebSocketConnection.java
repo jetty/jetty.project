@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
@@ -608,7 +607,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         if (channel.getBehavior()== Behavior.CLIENT)
         {
@@ -617,7 +616,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             random.nextBytes(mask);
             wsf.setMask(mask);
         }
-        flusher.enqueue(frame,callback,batchMode);
+        flusher.enqueue(frame,callback, batch);
     }
 
     private class Flusher extends FrameFlusher

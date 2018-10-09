@@ -18,6 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.UnitGenerator;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.internal.Generator;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -27,17 +43,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.websocket.core.*;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.internal.Generator;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -152,7 +157,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
-                frameCapture.channel.sendFrame(f, blocker, BatchMode.OFF);
+                frameCapture.channel.sendFrame(f, blocker, false);
             }
         }
     }
@@ -164,7 +169,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
-                frameCapture.channel.sendFrame(f, blocker, BatchMode.OFF);
+                frameCapture.channel.sendFrame(f, blocker, false);
             }
         }
     }

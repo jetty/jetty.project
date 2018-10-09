@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.BatchMode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -82,7 +81,7 @@ public class WebSocketServerTest extends WebSocketTester
         {
             public void onReceiveFrame(Frame frame, Callback callback)
             {
-                getCoreSession().sendFrame(Frame.copy(frame), Callback.NOOP, BatchMode.OFF);
+                getCoreSession().sendFrame(Frame.copy(frame), Callback.NOOP, false);
                 super.onReceiveFrame(frame, callback);
             }
         };
@@ -404,7 +403,7 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(serverHandler.receivedFrames.poll().getPayloadAsUTF8(), is("Hello"));
             receivedCallbacks.poll().succeeded();
 
-            serverHandler.getCoreSession().sendFrame(CloseStatus.toFrame(CloseStatus.SHUTDOWN, "Test Close"), Callback.NOOP, BatchMode.OFF);
+            serverHandler.getCoreSession().sendFrame(CloseStatus.toFrame(CloseStatus.SHUTDOWN, "Test Close"), Callback.NOOP, false);
 
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
@@ -471,7 +470,7 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(serverHandler.receivedFrames.poll().getPayloadAsUTF8(), is("Hello"));
             receivedCallbacks.poll().succeeded();
 
-            serverHandler.getCoreSession().sendFrame(new Frame(OpCode.TEXT, "Ciao"), Callback.NOOP, BatchMode.OFF);
+            serverHandler.getCoreSession().sendFrame(new Frame(OpCode.TEXT, "Ciao"), Callback.NOOP, false);
 
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
@@ -531,7 +530,7 @@ public class WebSocketServerTest extends WebSocketTester
 
         public void sendFrame(Frame frame)
         {
-            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.getCoreSession().sendFrame(frame, Callback.NOOP, false);
         }
 
         public void sendText(String line)

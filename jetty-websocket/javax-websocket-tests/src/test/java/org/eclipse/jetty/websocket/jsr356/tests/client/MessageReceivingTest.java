@@ -18,31 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
@@ -53,6 +36,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.ContainerProvider;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -259,15 +258,12 @@ public class MessageReceivingTest
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
-                    getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, BatchMode.ON);
+                    getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, true);
                 boolean last = (i >= (parts.length - 1));
-                BatchMode bm = last ? BatchMode.OFF : BatchMode.ON;
-                Frame frame;
-                if (i == 0) frame = new Frame(OpCode.TEXT);
-                else frame = new Frame(OpCode.CONTINUATION);
+                Frame frame = new Frame((i==0)?OpCode.TEXT:OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
                 frame.setFin(last);
-                getCoreSession().sendFrame(frame, Callback.NOOP, bm);
+                getCoreSession().sendFrame(frame, Callback.NOOP, !last);
             }
             callback.succeeded();
         }
@@ -307,7 +303,7 @@ public class MessageReceivingTest
                 {
                     LOG.debug("segment[{}]: {}", i, frame);
                 }
-                getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.OFF);
+                getCoreSession().sendFrame(frame, Callback.NOOP, false);
             }
             callback.succeeded();
         }
@@ -323,7 +319,7 @@ public class MessageReceivingTest
                 LOG.debug("{}.onWholeBinary({})", EchoWholeMessageFrameHandler.class.getSimpleName(), BufferUtil.toDetailString(wholeMessage));
             }
 
-            sendBinary(wholeMessage, callback, BatchMode.OFF);
+            sendBinary(wholeMessage, callback, false);
         }
 
         @Override
@@ -334,7 +330,7 @@ public class MessageReceivingTest
                 LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtil.hint(wholeMessage));
             }
 
-            sendText(wholeMessage, callback, BatchMode.OFF);
+            sendText(wholeMessage, callback, false);
         }
     }
 

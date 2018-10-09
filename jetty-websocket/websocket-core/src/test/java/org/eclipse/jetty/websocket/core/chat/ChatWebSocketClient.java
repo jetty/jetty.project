@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.MessageHandler;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -26,14 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.MessageHandler;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
 public class ChatWebSocketClient
 {
@@ -55,7 +54,7 @@ public class ChatWebSocketClient
         UpgradeRequest request = UpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);
-        handler.sendText("["+name+": has joined the room]",Callback.NOOP,BatchMode.AUTO);
+        handler.sendText("["+name+": has joined the room]",Callback.NOOP,false);
     }
 
     public void onText(String message)
@@ -81,7 +80,7 @@ public class ChatWebSocketClient
                         if (value != null && value.length() > 0)
                         {
                             value = value.trim();
-                            handler.sendText("["+value+": changed name from "+name+"]",Callback.NOOP,BatchMode.AUTO);
+                            handler.sendText("["+value+": changed name from "+name+"]",Callback.NOOP,false);
                             name = value;
                             LOG.debug("name changed: " + name);
 
@@ -90,7 +89,7 @@ public class ChatWebSocketClient
 
                     case "exit":
                         handler.sendText("["+name+": has left the "+
-                            ("elvis".equalsIgnoreCase(name)?"building!]":"room]"),Callback.NOOP,BatchMode.AUTO);
+                            ("elvis".equalsIgnoreCase(name)?"building!]":"room]"),Callback.NOOP,false);
                         handler.getCoreSession().close(Callback.from(()->System.exit(0),x->{x.printStackTrace();System.exit(1);}));
                         break;
                 }
@@ -100,7 +99,7 @@ public class ChatWebSocketClient
         }
         LOG.debug("sending {}...",line);
 
-        handler.sendText(Callback.from(()->LOG.debug("message sent"), LOG::warn),BatchMode.AUTO,name,": ",line);
+        handler.sendText(Callback.from(()->LOG.debug("message sent"), LOG::warn),false,name,": ",line);
     }
 
     public static void main(String[] args)
