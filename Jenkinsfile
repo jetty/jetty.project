@@ -1,6 +1,5 @@
 #!groovy
 
-// def jdks = ["jdk8","jdk9","jdk10","jdk11"]
 def mainJdk = "jdk11"
 def jdks = [mainJdk]
 def oss = ["linux"]
@@ -46,7 +45,7 @@ def getFullBuild(jdk, os, mainJdk) {
         // Report failures in the jenkins UI
         junit testResults: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
         consoleParsers = [[parserName: 'JavaDoc'],
-                          [parserName: 'JavaC']];
+                          [parserName: 'JavaC']]
 
         if (mainJdk) {
           // Collect up the jacoco execution results
@@ -62,7 +61,7 @@ def getFullBuild(jdk, os, mainJdk) {
                           ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
                           ",**/org/eclipse/jetty/http/spi/**" +
                           // test classes
-                          ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
+                          ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**"
           jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                  exclusionPattern: jacocoExcludes,
                  execPattern: '**/target/jacoco.exec',
@@ -79,7 +78,6 @@ def getFullBuild(jdk, os, mainJdk) {
         // Report on Maven and Javadoc warnings
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
-
       }
     }
   }
