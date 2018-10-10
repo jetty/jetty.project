@@ -61,13 +61,12 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
 
-                if (size + payload.remaining() > session.getMaxBinaryMessageBufferSize())
+                size += payload.remaining();
+                if (session.getMaxBinaryMessageBufferSize() > 0 && size > session.getMaxBinaryMessageBufferSize())
                 {
                     throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max binary buffer size) %,d",
-                            size + payload.remaining(), session.getMaxBinaryMessageBufferSize()));
+                            size, session.getMaxBinaryMessageBufferSize()));
                 }
-
-                size += payload.remaining();
 
                 if (out == null)
                     out = new ByteArrayOutputStream(BUFFER_SIZE);

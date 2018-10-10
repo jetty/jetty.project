@@ -54,13 +54,12 @@ public class StringMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
 
-                if (size + payload.remaining() > session.getMaxTextMessageBufferSize())
+                size += payload.remaining();
+                if (session.getMaxTextMessageBufferSize() > 0 && size > session.getMaxTextMessageBufferSize())
                 {
                     throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max text buffer size) %,d",
-                            size + payload.remaining(), session.getMaxTextMessageBufferSize()));
+                        size, session.getMaxTextMessageBufferSize()));
                 }
-
-                size += payload.remaining();
 
                 if (utf == null)
                     utf = new Utf8StringBuilder(1024);
