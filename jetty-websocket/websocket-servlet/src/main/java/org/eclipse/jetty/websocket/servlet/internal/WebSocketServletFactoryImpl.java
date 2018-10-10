@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet.internal;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -38,6 +32,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -45,6 +40,12 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * WebSocketServletFactory Implementation for working with WebSockets initiated from the Servlet API
@@ -56,11 +57,11 @@ public class WebSocketServletFactoryImpl implements WebSocketServletFactory, Web
     private final Set<WebSocketServletFrameHandlerFactory> frameHandlerFactories = new HashSet<>();
     private Duration defaultIdleTimeout;
     private int defaultInputBufferSize;
-    private long defaultMaxBinaryMessageSize = 65535;
-    private long defaultMaxTextMessageSize = 65535;
-    private long defaultMaxAllowedFrameSize = 65535;
-    private int defaultOutputBufferSize = 4096;
-    private boolean defaultAutoFragment = true;
+    private long defaultMaxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
+    private long defaultMaxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
+    private long defaultMaxAllowedFrameSize = WebSocketConstants.DEFAULT_MAX_FRAME_SIZE;
+    private int defaultOutputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
+    private boolean defaultAutoFragment = WebSocketConstants.DEFAULT_AUTO_FRAGMENT;
     private DecoratedObjectFactory objectFactory;
     private ClassLoader contextClassLoader;
     private WebSocketExtensionRegistry extensionRegistry;

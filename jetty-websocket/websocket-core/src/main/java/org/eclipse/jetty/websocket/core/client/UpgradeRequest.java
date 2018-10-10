@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpRequest;
@@ -56,12 +46,23 @@ import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.UpgradeException;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 public abstract class UpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
@@ -330,7 +331,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
             negotiatedSubProtocol,
             HttpScheme.HTTPS.is(request.getScheme()), // TODO better than this?
             extensionStack,
-            WebSocketCore.SPEC_VERSION_STRING);
+            WebSocketConstants.SPEC_VERSION_STRING);
 
         WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, negotiated);
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
@@ -383,7 +384,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
 
         // The WebSocket Headers
         setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_KEY, genRandomKey());
-        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketCore.SPEC_VERSION_STRING);
+        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
 
         // (Per the hybi list): Add no-cache headers to avoid compatibility issue.
         // There are some proxies that rewrite "Connection: upgrade"

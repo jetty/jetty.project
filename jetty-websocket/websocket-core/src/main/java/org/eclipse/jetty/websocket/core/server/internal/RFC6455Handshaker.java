@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.core.server.internal;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
@@ -63,7 +63,7 @@ public final class RFC6455Handshaker implements Handshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeader.UPGRADE.asString());
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
-    public final static int VERSION = WebSocketCore.SPEC_VERSION;
+    public final static int VERSION = WebSocketConstants.SPEC_VERSION;
 
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -205,7 +205,7 @@ public final class RFC6455Handshaker implements Handshaker
             subprotocol,
             baseRequest.isSecure(),
             extensionStack,
-            WebSocketCore.SPEC_VERSION_STRING);
+            WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Channel
         WebSocketChannel channel = newWebSocketChannel(handler, negotiated);

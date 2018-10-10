@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -29,6 +25,10 @@ import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 /**
  * A utility implementation of FrameHandler that defragments
@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class MessageHandler implements FrameHandler
 {
+
     public static MessageHandler from(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
     {
         return new MessageHandler()
@@ -95,8 +96,8 @@ public class MessageHandler implements FrameHandler
     private ByteBuffer binaryMessage = null;
     private byte dataType = OpCode.UNDEFINED;
 
-    private int maxTextMessageSize = 64 * 1024;
-    private int maxBinaryMessageSize = 64 * 1024;
+    private int maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
+    private int maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
 
     public MessageHandler()
     {

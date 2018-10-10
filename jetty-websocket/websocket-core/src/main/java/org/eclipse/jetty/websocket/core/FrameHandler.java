@@ -64,6 +64,7 @@ import java.util.Map;
  */
 public interface FrameHandler extends IncomingFrames
 {
+
     // TODO: have conversation about "throws Exception" vs "throws WebSocketException" vs "throws Throwable" in below signatures.
 
 

@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -114,7 +115,7 @@ public class Negotiated
     {
         try
         {
-            return new Negotiated(new URI("/"), new HttpFields(), "", false, extensions, WebSocketCore.SPEC_VERSION_STRING);
+            return new Negotiated(new URI("/"), new HttpFields(), "", false, extensions, WebSocketConstants.SPEC_VERSION_STRING);
         }
         catch(URISyntaxException e)
         {

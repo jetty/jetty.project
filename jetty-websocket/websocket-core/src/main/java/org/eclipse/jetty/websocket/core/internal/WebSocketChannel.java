@@ -38,6 +38,7 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
 
@@ -69,10 +70,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private final FrameSequence outgoingSequence = new FrameSequence();
 
     private WebSocketConnection connection;
-    private boolean autoFragment = true;
-    private long maxFrameSize = 4*1024*1024;
-    private int outputBufferSize = 4*1024;
-    private int inputBufferSize = 4*1024;
+    private boolean autoFragment = WebSocketConstants.DEFAULT_AUTO_FRAGMENT;
+    private long maxFrameSize = WebSocketConstants.DEFAULT_MAX_FRAME_SIZE;
+    private int inputBufferSize = WebSocketConstants.DEFAULT_INPUT_BUFFER_SIZE;
+    private int outputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
 
     public WebSocketChannel(FrameHandler handler,
     		Behavior behavior,
