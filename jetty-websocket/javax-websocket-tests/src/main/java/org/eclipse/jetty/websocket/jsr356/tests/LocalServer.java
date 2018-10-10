@@ -28,6 +28,7 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
@@ -67,7 +69,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
 
     private static final Logger LOG = Log.getLogger(LocalServer.class);
     private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-    private final WebSocketPolicy serverPolicy = new WebSocketPolicy();
     private Server server;
     private ServerConnector connector;
     private LocalConnector localConnector;
@@ -86,11 +87,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     public LocalConnector getLocalConnector()
     {
         return localConnector;
-    }
-    
-    public WebSocketPolicy getServerDefaultPolicy()
-    {
-        return serverPolicy;
     }
     
     public URI getServerUri()
@@ -269,9 +265,10 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactoryImpl factory)
+            public void configure(WebSocketServletFactory factory)
             {
-                factory.setCreator(creator);
+                PathSpec pathSpec = factory.parsePathSpec("/");
+                factory.addMapping(pathSpec, creator);
             }
         });
         servletContextHandler.addServlet(holder, urlPattern);

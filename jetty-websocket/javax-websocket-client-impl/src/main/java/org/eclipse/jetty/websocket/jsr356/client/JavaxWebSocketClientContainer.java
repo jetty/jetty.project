@@ -76,7 +76,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
     public JavaxWebSocketClientContainer(WebSocketCoreClient coreClient)
     {
-        super(coreClient.getPolicy());
+        super();
         this.coreClient = coreClient;
         this.addBean(this.coreClient);
         this.contextClassLoader = this.getClass().getClassLoader();
@@ -89,6 +89,12 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory()
     {
         return frameHandlerFactory;
+    }
+
+    @Override
+    protected WebSocketExtensionRegistry getExtensionRegistry()
+    {
+        return this.extensionRegistry;
     }
 
     protected HttpClient getHttpClient()
@@ -209,15 +215,15 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public ByteBufferPool getBufferPool()
+    public void setDefaultMaxSessionIdleTimeout(long timeout)
     {
-        return getHttpClient().getByteBufferPool();
+        getHttpClient().setIdleTimeout(timeout);
     }
 
     @Override
-    public ClassLoader getContextClassloader()
+    public ByteBufferPool getBufferPool()
     {
-        return contextClassLoader;
+        return getHttpClient().getByteBufferPool();
     }
 
     @Override
@@ -272,17 +278,5 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             return new AnnotatedClientEndpointConfig(anno);
         }
         return config;
-    }
-
-    @Override
-    public void setAsyncSendTimeout(long ms)
-    {
-        // TODO: how?
-    }
-
-    @Override
-    public void setDefaultMaxSessionIdleTimeout(long ms)
-    {
-        getHttpClient().setIdleTimeout(ms);
     }
 }

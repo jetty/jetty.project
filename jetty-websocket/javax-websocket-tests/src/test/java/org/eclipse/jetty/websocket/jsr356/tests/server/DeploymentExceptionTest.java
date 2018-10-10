@@ -37,8 +37,7 @@ import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenCloseR
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenSessionIntSocket;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.internal.ServletContextWebSocketContainer;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -100,11 +99,10 @@ public class DeploymentExceptionTest
     {
         ServletContextHandler context = new ServletContextHandler();
 
-        ServletContextWebSocketContainer contextContainer = ServletContextWebSocketContainer.get(context.getServletContext());
-        NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
+        WebSocketServletFactoryImpl factory = new WebSocketServletFactoryImpl();
         HttpClient httpClient = new HttpClient();
 
-        JavaxWebSocketServerContainer container = new JavaxWebSocketServerContainer(contextContainer, configuration, httpClient);
+        JavaxWebSocketServerContainer container = new JavaxWebSocketServerContainer(factory, httpClient, server.getThreadPool());
         context.addBean(container);
 
         contexts.addHandler(context);

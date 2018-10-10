@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class ByteBufferMessageSink extends AbstractMessageSink
@@ -47,7 +48,13 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             if (frame.hasPayload())
             {
                 ByteBuffer payload = frame.getPayload();
-                policy.assertValidBinaryMessageSize(size + payload.remaining());
+
+                if (size + payload.remaining() > session.getMaxBinaryMessageBufferSize())
+                {
+                    throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max binary buffer size) %,d",
+                            size + payload.remaining(), session.getMaxBinaryMessageBufferSize()));
+                }
+
                 size += payload.remaining();
 
                 if (out == null)

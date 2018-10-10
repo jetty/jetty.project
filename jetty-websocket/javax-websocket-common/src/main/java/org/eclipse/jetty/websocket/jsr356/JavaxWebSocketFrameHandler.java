@@ -237,7 +237,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     public void onOpen(CoreSession coreSession) throws Exception
     {
         this.coreSession = coreSession;
-        session = new JavaxWebSocketSession(container, coreSession, this, upgradeRequest, upgradeResponse, id, endpointConfig);
+        session = new JavaxWebSocketSession(container, coreSession, this, upgradeRequest.getUserPrincipal(), id, endpointConfig);
 
         openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
         closeHandle = InvokerUtils.bindTo(closeHandle, session);
@@ -566,7 +566,21 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public void onClose(Frame frame, Callback callback)
     {
-        callback.succeeded();
+        try
+        {
+            if (closeHandle != null)
+            {
+                CloseStatus closeStatus = new CloseStatus(frame);
+                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
+                closeHandle.invoke(closeReason);
+            }
+            callback.succeeded();
+        }
+        catch (Throwable cause)
+        {
+            callback.failed(cause);
+            throw new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause);
+        }
     }
 
     public void onPing(Frame frame, Callback callback)

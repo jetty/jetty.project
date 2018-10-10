@@ -19,14 +19,15 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 
-public class DummyServerContainer extends JavaxWebSocketServerContainer implements WebSocketContainerContext
+public class DummyServerContainer extends JavaxWebSocketServerContainer
 {
     public DummyServerContainer()
     {
-        super(new DummyContainer(new WebSocketPolicy()), new DummyMappedNegotiator(), new HttpClient());
-        addBean(getHttpClient());
+        super(new WebSocketServletFactoryImpl(), new HttpClient(), new QueuedThreadPool());
+        addBean(getHttpClient(), true);
+        addBean(getExecutor(), true);
     }
 }

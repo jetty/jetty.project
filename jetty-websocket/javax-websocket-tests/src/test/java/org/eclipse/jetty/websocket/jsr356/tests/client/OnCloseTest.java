@@ -19,16 +19,15 @@
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.DummyCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
+import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
+import org.eclipse.jetty.websocket.jsr356.UpgradeRequestAdapter;
+import org.eclipse.jetty.websocket.jsr356.UpgradeResponse;
+import org.eclipse.jetty.websocket.jsr356.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.eclipse.jetty.websocket.jsr356.tests.client.samples.CloseReasonSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.tests.client.samples.CloseReasonSocket;
@@ -100,7 +99,6 @@ public class OnCloseTest
     @MethodSource("data")
     public void testOnCloseCall(Case testcase) throws Exception
     {
-        WebSocketPolicy policy = new WebSocketPolicy();
         WSEventTracker endpoint = (WSEventTracker) testcase.closeClass.newInstance();
         
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
@@ -113,7 +111,7 @@ public class OnCloseTest
         UpgradeResponse response = new UpgradeResponseAdapter();
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
-        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, policy, request, response, futureSession);
+        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request, response, futureSession);
         frameHandler.onOpen(new DummyCoreSession());
 
         // Execute onClose call

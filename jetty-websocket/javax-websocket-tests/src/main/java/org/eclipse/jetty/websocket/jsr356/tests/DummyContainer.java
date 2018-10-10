@@ -32,8 +32,6 @@ import javax.websocket.Session;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
@@ -41,20 +39,17 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 /**
  * Dummy Container for testing.
  */
-public class DummyContainer extends JavaxWebSocketContainer implements WebSocketContainerContext
+public class DummyContainer extends JavaxWebSocketContainer
 {
     private final ByteBufferPool bufferPool;
     private final ClassLoader contextClassLoader;
     private final Executor executor;
     private final WebSocketExtensionRegistry extensionRegistry;
     private final DecoratedObjectFactory objectFactory;
-    private final WebSocketPolicy policy;
     private JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
 
-    public DummyContainer(WebSocketPolicy policy)
+    public DummyContainer()
     {
-        super(policy);
-        this.policy = policy;
         this.bufferPool = new MappedByteBufferPool();
         this.contextClassLoader = this.getClass().getClassLoader();
         this.executor = Executors.newFixedThreadPool(10);
@@ -87,15 +82,21 @@ public class DummyContainer extends JavaxWebSocketContainer implements WebSocket
     }
 
     @Override
-    public ByteBufferPool getBufferPool()
+    public long getDefaultMaxSessionIdleTimeout()
     {
-        return bufferPool;
+        return 0;
     }
 
     @Override
-    public ClassLoader getContextClassloader()
+    public void setDefaultMaxSessionIdleTimeout(long timeout)
     {
-        return contextClassLoader;
+
+    }
+
+    @Override
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
     }
 
     @Override
@@ -114,12 +115,6 @@ public class DummyContainer extends JavaxWebSocketContainer implements WebSocket
     public DecoratedObjectFactory getObjectFactory()
     {
         return objectFactory;
-    }
-
-    @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
     }
 
     @Override

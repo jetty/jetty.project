@@ -25,14 +25,11 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.servlet.internal.MappedWebSocketServletNegotiator;
-import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.internal.ServletContextWebSocketContainer;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -49,16 +46,14 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         context = new ServletContextHandler();
         server.setHandler(context);
 
-        WebSocketContainerContext containerContext = ServletContextWebSocketContainer.get(context.getServletContext());
-        MappedWebSocketServletNegotiator mappedNegotiator = new NativeWebSocketConfiguration(context.getServletContext());
+        WebSocketServletFactoryImpl factory = new WebSocketServletFactoryImpl();
         HttpClient httpClient = new HttpClient();
 
-        container = new JavaxWebSocketServerContainer(containerContext, mappedNegotiator, httpClient);
+        container = new JavaxWebSocketServerContainer(factory, httpClient, server.getThreadPool());
         container.addBean(httpClient, true);
-        container.addBean(mappedNegotiator, true);
-        container.addBean(containerContext, true);
+        container.addBean(factory, true);
 
-        server.addBean(container);
+        server.addBean(container, true);
         server.start();
     }
     

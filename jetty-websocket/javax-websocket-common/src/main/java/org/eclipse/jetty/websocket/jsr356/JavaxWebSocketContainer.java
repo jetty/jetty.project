@@ -21,19 +21,58 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {
-    protected abstract JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory();
+    private long defaultAsyncSendTimeout = -1;
+    private int defaultMaxBinaryMessageBufferSize = 64 * 1024;
+    private int defaultMaxTextMessageBufferSize = 64 * 1024;
 
-    protected abstract WebSocketExtensionRegistry getExtensionRegistry();
+    public abstract ByteBufferPool getBufferPool();
+
+    @Override
+    public long getDefaultAsyncSendTimeout()
+    {
+        return this.defaultAsyncSendTimeout;
+    }
+
+    @Override
+    public int getDefaultMaxBinaryMessageBufferSize()
+    {
+        return this.defaultMaxBinaryMessageBufferSize;
+    }
+
+    public abstract DecoratedObjectFactory getObjectFactory();
+
+    @Override
+    public void setDefaultMaxBinaryMessageBufferSize(int max)
+    {
+        this.defaultMaxBinaryMessageBufferSize = max;
+    }
+
+    @Override
+    public int getDefaultMaxTextMessageBufferSize()
+    {
+        return this.defaultMaxTextMessageBufferSize;
+    }
+
+    @Override
+    public void setDefaultMaxTextMessageBufferSize(int max)
+    {
+        this.defaultMaxTextMessageBufferSize = max;
+    }
+
+    public abstract Executor getExecutor();
 
     /**
      * {@inheritDoc}
@@ -68,4 +107,14 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     {
         return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
     }
+
+    @Override
+    public void setAsyncSendTimeout(long timeoutInMillis)
+    {
+        this.defaultAsyncSendTimeout = timeoutInMillis;
+    }
+
+    protected abstract WebSocketExtensionRegistry getExtensionRegistry();
+
+    protected abstract JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory();
 }

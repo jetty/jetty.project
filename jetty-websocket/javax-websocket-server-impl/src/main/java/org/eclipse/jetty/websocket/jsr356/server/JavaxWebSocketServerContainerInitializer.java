@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -39,11 +40,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
-import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.internal.ServletContextWebSocketContainer;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 
 @HandlesTypes(
 { ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class })
@@ -141,49 +142,45 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
      */
     public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
-        ServletContextWebSocketContainer wsContextContainer = ServletContextWebSocketContainer.get(context.getServletContext());
+        WebSocketUpgradeFilter.configureContext(context);
+        WebSocketServletFactoryImpl webSocketServletFactory = (WebSocketServletFactoryImpl) context.getAttribute(WebSocketServletFactory.class.getName());
 
-        // Create Basic components
-        NativeWebSocketConfiguration nativeWebSocketConfiguration = NativeWebSocketServletContainerInitializer.getDefaultFrom(context.getServletContext());
-        
-        // Build HttpClient
+        Executor executor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
+
+        if (executor == null)
+        {
+            QueuedThreadPool qtp = new QueuedThreadPool();
+            qtp.setName("qtp-Javax-WebSocketServer");
+            executor = qtp;
+        }
+
         HttpClient httpClient = null;
 
+        // Find Pre-Existing (Shared) HttpClient
         httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
         if (httpClient == null)
         {
             httpClient = (HttpClient) context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
         }
 
+        // Build a new HttpClient
         if (httpClient == null)
         {
             httpClient = new HttpClient();
             httpClient.setName("Javax-WebSocketServer@" + Integer.toHexString(httpClient.hashCode()));
+            context.addBean(httpClient, true);
         }
-        
+
         // Create the Jetty ServerContainer implementation
-        JavaxWebSocketServerContainer jettyContainer = new JavaxWebSocketServerContainer(wsContextContainer, nativeWebSocketConfiguration, httpClient);
+        JavaxWebSocketServerContainer jettyContainer = new JavaxWebSocketServerContainer(webSocketServletFactory, httpClient, executor);
         context.addBean(jettyContainer);
 
         // Add FrameHandlerFactory to servlet container for this JSR container
-        wsContextContainer.addFrameHandlerFactory(jettyContainer.getFrameHandlerFactory());
+        webSocketServletFactory.addFrameHandlerFactory(jettyContainer.getFrameHandlerFactory());
 
         // Store a reference to the ServerContainer per - javax.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-    
-        // Create Filter
-        if(isEnabledViaContext(context.getServletContext(), ADD_DYNAMIC_FILTER_KEY, true))
-        {
-            String instanceKey = WebSocketUpgradeFilter.class.getName() + ".SCI";
-            if(context.getAttribute(instanceKey) == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Dynamic filter add to support JSR356/javax.websocket.server: {}", WebSocketUpgradeFilter.class.getName());
-                WebSocketUpgradeFilter wsuf = WebSocketUpgradeFilter.configureContext(context);
-                context.setAttribute(instanceKey, wsuf);
-            }
-        }
-    
+
         return jettyContainer;
     }
     

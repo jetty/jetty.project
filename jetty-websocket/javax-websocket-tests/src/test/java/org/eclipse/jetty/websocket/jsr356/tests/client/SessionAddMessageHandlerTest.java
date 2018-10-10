@@ -23,17 +23,18 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
+import org.eclipse.jetty.websocket.jsr356.UpgradeRequestAdapter;
+import org.eclipse.jetty.websocket.jsr356.UpgradeResponse;
+import org.eclipse.jetty.websocket.jsr356.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.tests.MessageType;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.ByteArrayWholeHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.ByteBufferPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.handlers.LongMessageHandler;
@@ -74,20 +75,18 @@ public class SessionAddMessageHandlerTest
     @BeforeEach
     public void initSession() throws Exception
     {
-        WebSocketPolicy policy = new WebSocketPolicy();
-
         // Container
         container = new JavaxWebSocketClientContainer();
         container.start();
         ClientEndpointConfig endpointConfig = new EmptyClientEndpointConfig();
         ConfiguredEndpoint ei = new ConfiguredEndpoint(new DummyEndpoint(), endpointConfig);
 
-        UpgradeRequestAdapter handshakeRequest = new UpgradeRequestAdapter();
-        UpgradeResponseAdapter handshakeResponse = new UpgradeResponseAdapter();
+        UpgradeRequest handshakeRequest = new UpgradeRequestAdapter();
+        UpgradeResponse handshakeResponse = new UpgradeResponseAdapter();
 
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
-        frameHandler = frameHandlerFactory.newJavaxFrameHandler(ei, policy, handshakeRequest, handshakeResponse, futureSession);
+        frameHandler = frameHandlerFactory.newJavaxFrameHandler(ei, handshakeRequest, handshakeResponse, futureSession);
         frameHandler.onOpen(new DummyCoreSession());
 
         // Session

@@ -16,27 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests;
+package org.eclipse.jetty.websocket.jsr356;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class UpgradeResponseAdapter implements UpgradeResponse
 {
-    public static final String SEC_WEBSOCKET_PROTOCOL = HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString();
-    private int statusCode;
-    private String statusReason;
-    private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private List<ExtensionConfig> extensions = new ArrayList<>();
-    private boolean success = false;
+    private final String acceptedSubProtocol;
+    private final List<ExtensionConfig> extensions;
+
+    public UpgradeResponseAdapter()
+    {
+        this(null, Collections.emptyList());
+    }
+
+    public UpgradeResponseAdapter(String acceptedSubProtocol, List<ExtensionConfig> extensions)
+    {
+        this.acceptedSubProtocol = acceptedSubProtocol;
+        this.extensions = extensions;
+    }
 
     /**
      * Get the accepted WebSocket protocol.
@@ -46,7 +47,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     @Override
     public String getAcceptedSubProtocol()
     {
-        return getHeader(SEC_WEBSOCKET_PROTOCOL);
+        return acceptedSubProtocol;
     }
 
     /**
@@ -58,36 +59,5 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public List<ExtensionConfig> getExtensions()
     {
         return extensions;
-    }
-
-    @Override
-    public String getHeader(String name)
-    {
-        List<String> values = getHeaders(name);
-        return QuotedCSV.join(values);
-    }
-
-    @Override
-    public Set<String> getHeaderNames()
-    {
-        return headers.keySet();
-    }
-
-    @Override
-    public Map<String, List<String>> getHeadersMap()
-    {
-        return headers;
-    }
-
-    @Override
-    public List<String> getHeaders(String name)
-    {
-        return headers.get(name);
-    }
-
-    @Override
-    public int getStatusCode()
-    {
-        return statusCode;
     }
 }

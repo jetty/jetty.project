@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
-import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -46,7 +45,6 @@ import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.messages.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.ByteBufferMessageSink;
@@ -71,7 +69,6 @@ import static org.eclipse.jetty.websocket.jsr356.util.InvokerUtils.Arg;
 
 public abstract class JavaxWebSocketFrameHandlerFactory
 {
-    private static final AtomicLong IDGEN = new AtomicLong(0);
     private static final MethodHandle FILTER_RETURN_TYPE_METHOD;
     static
     {
@@ -168,8 +165,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         if (future == null)
             future = new CompletableFuture<>();
 
-        String id = String.format("%s-%s-%d", upgradeRequest.getLocalSocketAddress(),
-                upgradeRequest.getRemoteSocketAddress(), IDGEN.getAndIncrement());
+        String id = upgradeRequest.toString();
 
         JavaxWebSocketFrameHandler frameHandler = new JavaxWebSocketFrameHandler(
                 container,

@@ -21,17 +21,29 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.net.URI;
 import java.security.Principal;
 
-public interface UpgradeRequest
+public class UpgradeRequestAdapter implements UpgradeRequest
 {
-    /**
-     * For {@link javax.websocket.Session#getUserPrincipal()}
-     * @return the User {@link Principal} present during the Upgrade Request
-     */
-    Principal getUserPrincipal();
+    private URI requestURI;
 
-    /**
-     * For obtaining {@link javax.websocket.server.PathParam} values from Request URI path
-     * @return the request URI
-     */
-    URI getRequestURI();
+    public UpgradeRequestAdapter()
+    {
+        /* anonymous, no requestURI, upgrade request */
+    }
+
+    public UpgradeRequestAdapter(URI uri)
+    {
+        this.requestURI = uri;
+    }
+
+    @Override
+    public Principal getUserPrincipal()
+    {
+        return null;
+    }
+
+    @Override
+    public URI getRequestURI()
+    {
+        return requestURI;
+    }
 }

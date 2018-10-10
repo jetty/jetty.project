@@ -18,15 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -40,16 +38,13 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jsr356.server.internal.AnnotatedServerEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.server.internal.UndefinedServerEndpointConfig;
-import org.eclipse.jetty.websocket.servlet.internal.MappedWebSocketServletNegotiator;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 
 @ManagedObject("JSR356 Server Container")
@@ -78,24 +73,26 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         
         return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
-    
+
     private final WebSocketServletFactoryImpl webSocketServletFactory;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
+    private final Executor executor;
+    private long asyncSendTimeout = -1;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
-    
+
     /**
      * Main entry point for {@link JavaxWebSocketServerContainerInitializer}.
      *
-     * @param containerContext the {@link WebSocketContainerContext} to use
+     * @param webSocketServletFactory the {@link org.eclipse.jetty.websocket.servlet.WebSocketServletFactory} that this container belongs to
      * @param httpClient the {@link HttpClient} instance to use
      */
-    public JavaxWebSocketServerContainer(WebSocketContainerContext containerContext, WebSocketServletFactoryImpl webSocketServletFactory, HttpClient httpClient)
+    public JavaxWebSocketServerContainer(WebSocketServletFactoryImpl webSocketServletFactory, HttpClient httpClient, Executor executor)
     {
         super(new WebSocketCoreClient(httpClient));
         this.coreClient.addBean(httpClient, false);
-        this.containerContext = containerContext;
         this.webSocketServletFactory = webSocketServletFactory;
+        this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
 
@@ -106,15 +103,9 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     }
 
     @Override
-    public ClassLoader getContextClassloader()
-    {
-        return this.webSocketServletFactory.getContextClassloader();
-    }
-
-    @Override
     public Executor getExecutor()
     {
-        return this.containerContext.getExecutor();
+        return this.executor;
     }
 
     @Override
@@ -253,8 +244,8 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     {
         frameHandlerFactory.createMetadata(config.getEndpointClass(), config);
 
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this.containerContext.getExtensionRegistry());
-        this.mappedWebSocketServletNegotiator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this.webSocketServletFactory.getExtensionRegistry());
+        this.webSocketServletFactory.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
     }
 
     @Override
@@ -286,60 +277,50 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public long getDefaultAsyncSendTimeout()
     {
-        return this.containerContext.getPolicy().getAsyncWriteTimeout();
+        return this.asyncSendTimeout;
     }
     
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
-        return this.containerContext.getPolicy().getMaxBinaryMessageSize();
+        // TODO: warn on long -> int conversion issue
+        return (int) this.webSocketServletFactory.getDefaultMaxBinaryMessageSize();
     }
     
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
-        return this.containerContext.getPolicy().getIdleTimeout();
+        return this.webSocketServletFactory.getDefaultIdleTimeout().toMillis();
     }
     
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
-        return this.containerContext.getPolicy().getMaxTextMessageSize();
+        // TODO: warn on long -> int conversion issue
+        return (int) this.webSocketServletFactory.getDefaultMaxTextMessageSize();
     }
     
     @Override
     public void setAsyncSendTimeout(long ms)
     {
-        super.setAsyncSendTimeout(ms);
-        this.containerContext.getPolicy().setAsyncWriteTimeout(ms);
+        this.asyncSendTimeout = ms;
     }
     
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
-        super.setDefaultMaxBinaryMessageBufferSize(max);
-        // overall message limit (used in non-streaming)
-        this.containerContext.getPolicy().setMaxBinaryMessageSize(max);
+        this.webSocketServletFactory.setDefaultMaxBinaryMessageSize(max);
     }
     
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
-        super.setDefaultMaxSessionIdleTimeout(ms);
-        this.containerContext.getPolicy().setIdleTimeout(ms);
+        this.webSocketServletFactory.setDefaultIdleTimeout(Duration.ofMillis(ms));
     }
     
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
-        super.setDefaultMaxTextMessageBufferSize(max);
-        // overall message limit (used in non-streaming)
-        this.containerContext.getPolicy().setMaxTextMessageSize(max);
-    }
-    
-    @Override
-    public Set<Session> getOpenSessions()
-    {
-        return new HashSet<>(getBeans(Session.class));
+        this.webSocketServletFactory.setDefaultMaxTextMessageSize(max);
     }
 }

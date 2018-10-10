@@ -18,30 +18,28 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import javax.websocket.EndpointConfig;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class AbstractJavaxWebSocketFrameHandlerTest
 {
-    protected static WebSocketPolicy clientPolicy = new WebSocketPolicy();
     protected static DummyContainer container;
     
     @BeforeAll
     public static void initContainer() throws Exception
     {
-        container = new DummyContainer(clientPolicy);
+        container = new DummyContainer();
         container.start();
     }
     
@@ -54,7 +52,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
 
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;
-    protected Map<String, String> uriParams = new HashMap<>();
+    protected Map<String, String> uriParams;
     protected EndpointConfig endpointConfig;
     protected FrameHandler.CoreSession channel = new DummyCoreSession();
     
@@ -75,7 +73,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
 
         JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxFrameHandler(endpoint,
-                container.getPolicy(), upgradeRequest, upgradeResponse, new CompletableFuture<>());
+                upgradeRequest, upgradeResponse, new CompletableFuture<>());
 
         return localEndpoint;
     }

@@ -109,7 +109,7 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
     public DispatchedMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
-        this.executor = session.getContainerContext().getExecutor();
+        this.executor = session.getContainerImpl().getExecutor();
         Objects.requireNonNull(this.executor, "Executor");
     }
 

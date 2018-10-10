@@ -18,18 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.jsr356.UpgradeResponse;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link HttpResponse}
@@ -58,37 +54,5 @@ public class DelegatedClientUpgradeResponse implements UpgradeResponse
             return Collections.emptyList();
 
         return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
-    }
-
-    @Override
-    public String getHeader(String name)
-    {
-        return this.delegate.getHeaders().get(name);
-    }
-
-    @Override
-    public Set<String> getHeaderNames()
-    {
-        return delegate.getHeaders().getFieldNamesCollection();
-    }
-
-    @Override
-    public Map<String, List<String>> getHeadersMap()
-    {
-        Map<String, List<String>> ret = new HashMap<>();
-        delegate.getHeaders().forEach((field) -> ret.put(field.getName(), Arrays.asList(field.getValues())));
-        return ret;
-    }
-
-    @Override
-    public List<String> getHeaders(String name)
-    {
-        return this.delegate.getHeaders().getValuesList(name);
-    }
-
-    @Override
-    public int getStatusCode()
-    {
-        return this.delegate.getStatus();
     }
 }

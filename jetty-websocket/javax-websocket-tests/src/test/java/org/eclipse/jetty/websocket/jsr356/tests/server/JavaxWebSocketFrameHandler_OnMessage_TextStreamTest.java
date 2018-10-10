@@ -20,15 +20,14 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.jsr356.tests.UpgradeResponseAdapter;
+import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
+import org.eclipse.jetty.websocket.jsr356.UpgradeRequestAdapter;
+import org.eclipse.jetty.websocket.jsr356.UpgradeResponse;
+import org.eclipse.jetty.websocket.jsr356.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.junit.jupiter.api.Test;
 
@@ -51,19 +50,12 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
     @SuppressWarnings("Duplicates")
     private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JavaxWebSocketFrameHandler> func) throws Exception
     {
-        WebSocketPolicy policy = container.getPolicy().clonePolicy();
-        UpgradeRequest request = new UpgradeRequestAdapter() {
-            @Override
-            public URI getRequestURI()
-            {
-                return URI.create("http://localhost:8080/msg/foo");
-            }
-        };
+        UpgradeRequest request = new UpgradeRequestAdapter(URI.create("http://localhost:8080/msg/foo"));
         UpgradeResponse response = new UpgradeResponseAdapter();
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
         // Establish endpoint function
-        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, policy, request, response, futureSession);
+        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request, response, futureSession);
         frameHandler.onOpen(new DummyCoreSession());
         func.accept(frameHandler);
         return socket;

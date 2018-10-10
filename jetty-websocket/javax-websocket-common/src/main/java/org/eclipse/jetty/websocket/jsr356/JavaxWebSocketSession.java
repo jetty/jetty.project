@@ -38,7 +38,6 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.Principal;
 import java.time.Duration;
@@ -60,8 +59,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
     private final FrameHandler.CoreSession coreSession;
-    private final UpgradeRequest upgradeRequest;
-    private final UpgradeResponse upgradeResponse;
+    private final Principal principal;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final EndpointConfig config;
     private final String id;
@@ -77,16 +75,14 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
                                  FrameHandler.CoreSession coreSession,
                                  JavaxWebSocketFrameHandler frameHandler,
-                                 UpgradeRequest upgradeRequest,
-                                 UpgradeResponse upgradeResponse,
+                                 Principal upgradeRequestPrincipal,
                                  String id,
                                  EndpointConfig endpointConfig)
     {
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
+        this.principal = upgradeRequestPrincipal;
         this.id = id;
 
         this.config = endpointConfig == null ? new BasicEndpointConfig() : endpointConfig;
@@ -278,6 +274,11 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return this.container;
     }
 
+    public JavaxWebSocketContainer getContainerImpl()
+    {
+        return this.container;
+    }
+
     public AvailableDecoders getDecoders()
     {
         return availableDecoders;
@@ -405,7 +406,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public List<Extension> getNegotiatedExtensions()
     {
-        List<ExtensionConfig> extensions = upgradeResponse.getExtensions();
+        List<ExtensionConfig> extensions = coreSession.getNegotiatedExtensions();
 
         if ((negotiatedExtensions == null) && extensions != null)
         {
@@ -423,7 +424,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getNegotiatedSubprotocol()
     {
-        String acceptedSubProtocol = upgradeResponse.getAcceptedSubProtocol();
+        String acceptedSubProtocol = coreSession.getNegotiatedSubProtocol();
         if (acceptedSubProtocol == null)
         {
             return "";
@@ -464,7 +465,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getProtocolVersion()
     {
-        return upgradeRequest.getProtocolVersion();
+        return coreSession.getProtocolVersion();
     }
 
     /**
@@ -476,7 +477,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getQueryString()
     {
-        return upgradeRequest.getRequestURI().getQuery();
+        return coreSession.getRequestURI().getQuery();
     }
 
     /**
@@ -488,7 +489,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Map<String, List<String>> getRequestParameterMap()
     {
-        return upgradeRequest.getParameterMap();
+        // TODO: calculate static Map in Constructor
+        return coreSession.getParameterMap();
     }
 
     /**
@@ -500,7 +502,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public URI getRequestURI()
     {
-        return upgradeRequest.getRequestURI();
+        return coreSession.getRequestURI();
     }
 
     /**
@@ -512,21 +514,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Principal getUserPrincipal()
     {
-        try
-        {
-            Method method = upgradeRequest.getClass().getMethod("getUserPrincipal");
-            return (Principal) method.invoke(upgradeRequest);
-        }
-        catch (NoSuchMethodException e)
-        {
-            return null;
-        }
-        catch (Throwable t)
-        {
-            LOG.warn("Unable to access UserPrincipal", t);
-        }
-
-        return null;
+        return this.principal;
     }
 
     /**
@@ -562,7 +550,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public boolean isSecure()
     {
-        return upgradeRequest.isSecure();
+        return coreSession.isSecure();
     }
 
     @Override

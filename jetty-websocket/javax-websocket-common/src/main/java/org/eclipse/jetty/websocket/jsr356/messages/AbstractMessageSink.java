@@ -21,20 +21,17 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 import java.lang.invoke.MethodHandle;
 import java.util.Objects;
 
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
 public abstract class AbstractMessageSink implements MessageSink
 {
-    protected final WebSocketPolicy policy;
+    protected final JavaxWebSocketSession session;
     protected final MethodHandle methodHandle;
 
     public AbstractMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
-        Objects.requireNonNull(session, "JavaxWebSocketSession");
-        Objects.requireNonNull(methodHandle, "MethodHandle");
-        this.policy = session.getPolicy();
-        this.methodHandle = methodHandle;
+        this.session = Objects.requireNonNull(session, "JavaxWebSocketSession");
+        this.methodHandle = Objects.requireNonNull(methodHandle, "MethodHandle");
     }
 }

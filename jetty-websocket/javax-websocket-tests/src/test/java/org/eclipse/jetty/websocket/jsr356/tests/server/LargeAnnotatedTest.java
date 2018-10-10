@@ -78,10 +78,10 @@ public class LargeAnnotatedTest
             WebSocketCoreClient client = new WebSocketCoreClient();
             try
             {
-                client.getPolicy().setMaxTextMessageSize(128 * 1024);
                 client.start();
 
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
+                clientSocket.setMaxTextMessageSize(128 * 1024);
 
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
                 // wait for connect

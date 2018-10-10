@@ -60,7 +60,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
     protected MessageOutputStream newMessageOutputStream()
     {
-        return new MessageOutputStream(channel, session.getMaxBinaryMessageBufferSize(), session.getContainerContext().getBufferPool());
+        return new MessageOutputStream(channel, session.getMaxBinaryMessageBufferSize(), session.getContainerImpl().getBufferPool());
     }
 
     @Override
