@@ -1,6 +1,5 @@
 #!groovy
 
-// def jdks = ["jdk8","jdk9","jdk10","jdk11"]
 def mainJdk = "jdk11"
 def jdks = [mainJdk]
 def oss = ["linux"]
@@ -34,23 +33,19 @@ def getFullBuild(jdk, os, mainJdk) {
                   mavenOpts: mavenOpts,
                   mavenLocalRepo: localRepo) {
             // Compile only
-            sh "mvn -V -B clean install -DskipTests -T6 -e"
+            sh "mvn -V -B clean install -DskipTests -T6 -e -Dmaven.test.failure.ignore=false"
             // Javadoc only
-            sh "mvn -V -B javadoc:javadoc -T6 -e"
+            sh "mvn -V -B javadoc:javadoc -T6 -e -Dmaven.test.failure.ignore=false"
             // Testing
             sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Djetty.testtracker.log=true -Pmongodb -Dunix.socket.tmp=" + env.JENKINS_HOME
 
-            // Compact 3 build
-            if (mainJdk) {
-              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
-            }
           }
         }
 
         // Report failures in the jenkins UI
         junit testResults: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
         consoleParsers = [[parserName: 'JavaDoc'],
-                          [parserName: 'JavaC']];
+                          [parserName: 'JavaC']]
 
         if (mainJdk) {
           // Collect up the jacoco execution results
@@ -66,7 +61,7 @@ def getFullBuild(jdk, os, mainJdk) {
                           ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
                           ",**/org/eclipse/jetty/http/spi/**" +
                           // test classes
-                          ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
+                          ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**"
           jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                  exclusionPattern: jacocoExcludes,
                  execPattern: '**/target/jacoco.exec',
@@ -74,7 +69,10 @@ def getFullBuild(jdk, os, mainJdk) {
                  sourcePattern: '**/src/main/java'
           consoleParsers = [[parserName: 'Maven'],
                             [parserName: 'JavaDoc'],
-                            [parserName: 'JavaC']];
+                            [parserName: 'JavaC']]
+
+          step([$class: 'MavenInvokerRecorder', reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml",
+                invokerBuildDir: "**/target/its"])
         }
 
         // Report on Maven and Javadoc warnings

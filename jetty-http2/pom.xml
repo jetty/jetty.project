@@ -18,18 +18,7 @@
     <module>http2-hpack</module>
     <module>http2-http-client-transport</module>
     <module>http2-server</module>
+    <module>http2-alpn-tests</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>jdk8</id>
-      <activation>
-        <jdk>[1.8,1.9)</jdk>
-      </activation>
-      <modules>
-        <module>http2-alpn-tests</module>
-      </modules>
-    </profile>
-  </profiles>
 
 </project>

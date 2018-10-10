@@ -206,6 +206,10 @@
       <version>1.0</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+    </dependency>
   </dependencies>
   <profiles>
     <profile>
