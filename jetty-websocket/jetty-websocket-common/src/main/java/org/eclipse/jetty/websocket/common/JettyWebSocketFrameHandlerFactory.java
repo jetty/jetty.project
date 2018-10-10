@@ -146,25 +146,17 @@ public class JettyWebSocketFrameHandlerFactory
             future = new CompletableFuture<>();
 
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
-                executor,
-                endpointInstance,
-                upgradeRequest, upgradeResponse,
-                openHandle, closeHandle, errorHandle,
-                textHandle, binaryHandle,
-                textSinkClass, binarySinkClass,
-                frameHandle, pingHandle, pongHandle,
-                future);
+            executor,
+            endpointInstance,
+            upgradeRequest, upgradeResponse,
+            openHandle, closeHandle, errorHandle,
+            textHandle, binaryHandle,
+            textSinkClass, binarySinkClass,
+            frameHandle, pingHandle, pongHandle,
+            future,
+            metadata);
 
-        // Update passed in (unique) policy for this Frame Handler instance
-        if (metadata.getIdleTimeout() > 0)
-        {
-            frameHandler.setInitialIdleTimeout(Duration.ofMillis(metadata.getIdleTimeout()));
-        }
 
-        if (metadata.getInputBufferSize() > 0)
-        {
-            frameHandler.setInitialBufferSize(metadata.getInputBufferSize());
-        }
 
         if (metadata.getMaxBinaryMessageSize() >= -1)
         {
@@ -175,6 +167,8 @@ public class JettyWebSocketFrameHandlerFactory
         {
             frameHandler.setInitialMaxTextMessageSize(metadata.getMaxTextMessageSize());
         }
+
+
 
         return frameHandler;
     }

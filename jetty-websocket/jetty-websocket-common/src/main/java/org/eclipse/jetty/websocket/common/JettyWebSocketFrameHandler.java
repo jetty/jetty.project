@@ -62,12 +62,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
      */
     private final UpgradeResponse upgradeResponse;
     private final CompletableFuture<Session> futureSession;
+    private final CoreCustomizer customizer;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
-    private Duration initialIdleTimeout;
-    private int initialBufferSize = -1;
     private long initialMaxBinaryMessageSize = -1;
     private long initialMaxTextMessageSize = -1;
 
@@ -80,7 +79,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                                       Class<? extends MessageSink> binarySinkClass,
                                       MethodHandle frameHandle,
                                       MethodHandle pingHandle, MethodHandle pongHandle,
-                                      CompletableFuture<Session> futureSession)
+                                      CompletableFuture<Session> futureSession,
+                                      CoreCustomizer customizer)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
@@ -101,6 +101,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.pongHandle = pongHandle;
 
         this.futureSession = futureSession;
+
+        this.customizer = customizer;
     }
 
     public WebSocketSessionImpl getSession()
@@ -180,6 +182,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onOpen(CoreSession coreSession)
     {
+        customizer.customize(coreSession);
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(coreSession);
         session = new WebSocketSessionImpl(coreSession, remote, upgradeRequest, upgradeResponse);
 
@@ -215,26 +218,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
 
         futureSession.complete(session);
-    }
-
-    public Duration getInitialIdleTimeout()
-    {
-        return initialIdleTimeout;
-    }
-
-    public void setInitialIdleTimeout(Duration duration)
-    {
-        this.initialIdleTimeout = duration;
-    }
-
-    public int getInitialBufferSize()
-    {
-        return initialBufferSize;
-    }
-
-    public void setInitialBufferSize(int bufferSize)
-    {
-        this.initialBufferSize = bufferSize;
     }
 
     public long getInitialMaxBinaryMessageSize()

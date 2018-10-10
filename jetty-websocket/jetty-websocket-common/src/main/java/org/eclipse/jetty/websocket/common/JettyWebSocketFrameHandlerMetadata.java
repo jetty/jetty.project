@@ -20,10 +20,12 @@ package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 
 import java.lang.invoke.MethodHandle;
+import java.time.Duration;
 
-public class JettyWebSocketFrameHandlerMetadata
+public class JettyWebSocketFrameHandlerMetadata implements FrameHandler.CoreCustomizer
 {
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
@@ -223,5 +225,17 @@ public class JettyWebSocketFrameHandlerMetadata
         }
 
         return obj.toString();
+    }
+
+    @Override
+    public void customize(FrameHandler.CoreSession session)
+    {
+        // Update passed in (unique) policy for this Frame Handler instance
+        if (getIdleTimeout() > 0)
+            session.setIdleTimeout(Duration.ofMillis(getIdleTimeout()));
+
+        if (getInputBufferSize()>0)
+            session.setInputBufferSize(getInputBufferSize());
+
     }
 }
