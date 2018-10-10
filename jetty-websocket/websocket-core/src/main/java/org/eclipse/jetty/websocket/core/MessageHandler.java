@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -25,10 +29,6 @@ import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.function.Consumer;
 
 /**
  * A utility implementation of FrameHandler that defragments
@@ -324,6 +324,7 @@ public class MessageHandler implements FrameHandler
      */
     public void sendText(String message, Callback callback, boolean batch)
     {
+        // TODO if autofragment is on, enforce max buffer size
         getCoreSession().sendFrame(new Frame(OpCode.TEXT,true,message),callback, batch);
     }
 

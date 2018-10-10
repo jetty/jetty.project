@@ -60,7 +60,7 @@ public class WebSocketServletFactoryImpl implements WebSocketServletFactory, Web
     private long defaultMaxTextMessageSize = 65535;
     private long defaultMaxAllowedFrameSize = 65535;
     private int defaultOutputBufferSize = 4096;
-    private boolean defaultAutoFragment = false;
+    private boolean defaultAutoFragment = true;
     private DecoratedObjectFactory objectFactory;
     private ClassLoader contextClassLoader;
     private WebSocketExtensionRegistry extensionRegistry;

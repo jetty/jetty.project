@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -34,13 +41,6 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.Executor;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -114,7 +114,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
             {
                 super.checkFrameSize(opcode,payloadLength);
-                if (payloadLength > channel.getMaxFrameSize())
+                if (!channel.isAutoFragment() && channel.getMaxFrameSize()>0 && payloadLength>channel.getMaxFrameSize())
                     throw new MessageTooLargeException("Cannot handle payload lengths larger than " + channel.getMaxFrameSize());
             }
             
