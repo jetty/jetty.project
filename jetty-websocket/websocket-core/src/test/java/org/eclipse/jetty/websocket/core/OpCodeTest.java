@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.websocket.core.internal.FrameSequence;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.eclipse.jetty.websocket.core.OpCode.BINARY;
 import static org.eclipse.jetty.websocket.core.OpCode.CLOSE;
@@ -33,7 +31,6 @@ import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TestTrackerExtension.class)
 public class OpCodeTest
 {
     @Test

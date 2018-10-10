@@ -20,10 +20,8 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -40,7 +38,6 @@ import static org.hamcrest.Matchers.nullValue;
 /**
  * Test behavior of Parser when encountering good / valid close status codes (per RFC6455)
  */
-@ExtendWith(TestTrackerExtension.class)
 public class ParserGoodCloseStatusCodesTest
 {
     public static Stream<Arguments> data()

@@ -25,11 +25,9 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test behavior of Parser with payload length parsing (per RFC6455)
  */
-@ExtendWith(TestTrackerExtension.class)
 public class ParsePayloadLengthTest
 {
     public static Stream<Arguments> data()

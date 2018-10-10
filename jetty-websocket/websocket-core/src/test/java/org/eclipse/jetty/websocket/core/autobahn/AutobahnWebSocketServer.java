@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.TestUpgradeHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -74,7 +73,6 @@ public class AutobahnWebSocketServer
                 server,
                 new HttpConnectionFactory()
         );
-        connector.addBean(new WebSocketPolicy());
         connector.addBean(new RFC6455Handshaker());
 
         connector.setPort(9001); // same port as found in fuzzing-client.json

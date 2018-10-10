@@ -20,14 +20,12 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.ByteBuffer;
 
@@ -35,7 +33,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith({TestTrackerExtension.class})
 public class WebSocketFrameTest
 {
     public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool(WebSocketFrameTest.class);
@@ -59,7 +56,6 @@ public class WebSocketFrameTest
     @BeforeEach
     public void initGenerator()
     {
-        WebSocketPolicy policy = new WebSocketPolicy();
         generator = new Generator(bufferPool);
     }
 

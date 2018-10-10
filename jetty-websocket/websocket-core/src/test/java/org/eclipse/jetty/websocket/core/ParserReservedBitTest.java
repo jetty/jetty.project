@@ -20,13 +20,11 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -40,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Test various RSV violations
  */
-@ExtendWith(TestTrackerExtension.class)
 public class ParserReservedBitTest
 {
     private ByteBufferPool bufferPool = new MappedByteBufferPool();

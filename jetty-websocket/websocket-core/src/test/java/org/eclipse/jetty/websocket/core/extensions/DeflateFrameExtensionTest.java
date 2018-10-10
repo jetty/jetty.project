@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -35,12 +34,10 @@ import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingNetworkBytesCapture;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,10 +52,9 @@ import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-@ExtendWith(TestTrackerExtension.class)
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
     private static final Logger LOG = Log.getLogger(DeflateFrameExtensionTest.class);
@@ -283,8 +279,6 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     @Test
     public void testGeneratedTwoFrames() throws IOException
     {
-        WebSocketPolicy policy = new WebSocketPolicy();
-
         DeflateFrameExtension ext = new DeflateFrameExtension();
         init(ext);
 

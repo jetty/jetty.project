@@ -24,7 +24,6 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -41,13 +40,11 @@ import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTester;
 import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -67,7 +64,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests of a core server with a fake client
  */
-@ExtendWith(TestTrackerExtension.class)
 public class WebSocketServerTest extends WebSocketTester
 {
     private static Logger LOG = Log.getLogger(WebSocketServerTest.class);
@@ -513,7 +509,6 @@ public class WebSocketServerTest extends WebSocketTester
             server.getBean(QueuedThreadPool.class).setName("WSCoreServer");
             ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
-            connector.addBean(new WebSocketPolicy());
             connector.addBean(new RFC6455Handshaker());
             connector.setPort(port);
             connector.setIdleTimeout(1000000);

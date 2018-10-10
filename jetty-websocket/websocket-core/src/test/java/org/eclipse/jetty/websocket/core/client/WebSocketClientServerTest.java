@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -38,7 +37,6 @@ import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -46,7 +44,6 @@ import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.net.URI;
 import java.util.concurrent.BlockingQueue;
@@ -62,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Tests of a core client and core server
  *
  */
-@ExtendWith(TestTrackerExtension.class)
 public class WebSocketClientServerTest
 {
     private static Logger LOG = Log.getLogger(WebSocketClientServerTest.class);
@@ -252,7 +248,6 @@ public class WebSocketClientServerTest
             server.getBean(QueuedThreadPool.class).setName("WSCoreServer");
             ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
-            connector.addBean(new WebSocketPolicy());
             connector.addBean(new RFC6455Handshaker());
             connector.setPort(port);
             connector.setIdleTimeout(1000000);

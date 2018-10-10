@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.core.internal.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -47,7 +45,6 @@ import static org.hamcrest.Matchers.is;
  * <p>
  * See: http://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-15
  */
-@ExtendWith(TestTrackerExtension.class)
 public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     private void init(PerMessageDeflateExtension ext)

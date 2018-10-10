@@ -20,12 +20,8 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(TestTrackerExtension.class)
 public abstract class AbstractExtensionTest
 {
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
@@ -36,7 +32,7 @@ public abstract class AbstractExtensionTest
     @BeforeEach
     public void init()
     {
-        clientExtensions = new ExtensionTool(new WebSocketPolicy(),bufferPool);
-        serverExtensions = new ExtensionTool(new WebSocketPolicy(),bufferPool);
+        clientExtensions = new ExtensionTool(bufferPool);
+        serverExtensions = new ExtensionTool(bufferPool);
     }
 }

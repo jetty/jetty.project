@@ -20,12 +20,10 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -35,7 +33,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TestTrackerExtension.class)
 public class GeneratorParserRoundtripTest
 {
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
@@ -43,7 +40,6 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGenerator() throws Exception
     {
-        WebSocketPolicy policy = new WebSocketPolicy();
         Generator gen = new Generator(bufferPool);
         ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
