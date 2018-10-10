@@ -23,10 +23,8 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,19 +32,20 @@ import java.time.Duration;
 
 public class WebSocketSessionImpl implements Session
 {
-    private final FrameHandler.CoreSession coreSession;
     private final Behavior behavior;
+    private final WebSocketPolicy sessionPolicy;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSessionImpl(FrameHandler.CoreSession coreSession,
-                                JettyWebSocketRemoteEndpoint remoteEndpoint,
-                                UpgradeRequest upgradeRequest,
-                                UpgradeResponse upgradeResponse)
+    public WebSocketSessionImpl(Behavior behavior,
+        WebSocketPolicy sessionPolicy,
+        JettyWebSocketRemoteEndpoint remoteEndpoint,
+        UpgradeRequest upgradeRequest,
+        UpgradeResponse upgradeResponse)
     {
-        this.coreSession = coreSession;
-        this.behavior = coreSession.getBehavior();
+        this.behavior = behavior;
+        this.sessionPolicy = sessionPolicy;
         this.remoteEndpoint = remoteEndpoint;
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
@@ -77,22 +76,10 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public org.eclipse.jetty.websocket.api.WebSocketPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
-        org.eclipse.jetty.websocket.api.WebSocketPolicy policy =
-        new org.eclipse.jetty.websocket.api.WebSocketPolicy(behavior==Behavior.SERVER?WebSocketBehavior.SERVER:WebSocketBehavior.CLIENT);
-
-        policy.setInputBufferSize(coreSession.getInputBufferSize());
-        policy.setOutputBufferSize(coreSession.getOutputBufferSize());
-        policy.setIdleTimeout(coreSession.getIdleTimeout().toMillis());
-
-        // TODO: Fix
-//        policy.setAsyncWriteTimeout(coreSession.getAsyncWriteTimeout());
-//        policy.setMaxBinaryMessageSize(coreSession.getMaxBinaryMessageSize());
-//        policy.setMaxTextMessageSize(coreSession.getMaxTextMessageSize());
-//        policy.setMaxAllowedFrameSize(coreSession.getMaxAllowedFrameSize());
-
-        return policy;
+        // TODO how do setters on this get reflected on the CoreSession?
+        return sessionPolicy;
     }
 
     @Override
@@ -126,9 +113,9 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public void disconnect()
+    public void disconnect() throws IOException
     {
-        coreSession.abort();
+
     }
 
     @Override
@@ -144,13 +131,13 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public org.eclipse.jetty.websocket.api.UpgradeRequest getUpgradeRequest()
+    public UpgradeRequest getUpgradeRequest()
     {
         return null;
     }
 
     @Override
-    public org.eclipse.jetty.websocket.api.UpgradeResponse getUpgradeResponse()
+    public UpgradeResponse getUpgradeResponse()
     {
         return null;
     }
@@ -164,6 +151,6 @@ public class WebSocketSessionImpl implements Session
     @Override
     public String toString()
     {
-        return String.format("WebSocketSessionImpl[%s,to=%,d,%s]", behavior, coreSession.getIdleTimeout(), remoteEndpoint.getCoreSession());
+        return String.format("WebSocketSessionImpl[%s,to=%,d,%s]", behavior, sessionPolicy.getIdleTimeout(), remoteEndpoint.getCoreSession());
     }
 }

@@ -292,4 +292,9 @@ public interface FrameHandler extends IncomingFrames
 
         void setInputBufferSize(int inputBufferSize);
     }
+
+    interface CoreCustomizer
+    {
+        void customize(CoreSession session);
+    }
 }

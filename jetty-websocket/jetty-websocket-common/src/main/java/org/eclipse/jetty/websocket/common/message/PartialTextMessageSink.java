@@ -31,9 +31,9 @@ public class PartialTextMessageSink extends MessageSinkImpl
 {
     private final Utf8StringBuilder utf8Partial;
 
-    public PartialTextMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public PartialTextMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
         this.utf8Partial = new Utf8StringBuilder();
     }
 

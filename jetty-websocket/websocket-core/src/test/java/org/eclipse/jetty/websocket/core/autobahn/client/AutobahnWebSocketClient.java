@@ -186,8 +186,7 @@ public class AutobahnWebSocketClient
         this.userAgent = userAgent;
         this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
         this.client = new WebSocketCoreClient();
-        this.client.getPolicy().setMaxBinaryMessageSize(20 * MBYTE);
-        this.client.getPolicy().setMaxTextMessageSize(20 * MBYTE);
+
         // TODO: this should be enabled by default
         // this.client.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
         this.client.start();

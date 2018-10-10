@@ -39,9 +39,9 @@ public class ByteArrayMessageSink extends MessageSinkImpl
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteArrayMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public ByteArrayMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
 
         Objects.requireNonNull(methodHandle, "MethodHandle");
         // byte[] buf, int offset, int length

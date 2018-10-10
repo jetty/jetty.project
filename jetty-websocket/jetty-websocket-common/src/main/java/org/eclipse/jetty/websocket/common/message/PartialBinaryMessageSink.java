@@ -28,9 +28,9 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class PartialBinaryMessageSink extends MessageSinkImpl
 {
-    public PartialBinaryMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public PartialBinaryMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
     }
 
     @Override

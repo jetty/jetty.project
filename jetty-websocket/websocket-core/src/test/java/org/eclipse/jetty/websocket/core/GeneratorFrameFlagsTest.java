@@ -24,6 +24,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,7 +69,7 @@ public class GeneratorFrameFlagsTest
     {
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
-        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.CLIENT, exStack, "");
+        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
     }
     
     @ParameterizedTest

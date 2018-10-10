@@ -106,9 +106,9 @@ public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
 
-    public DispatchedMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public DispatchedMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
         Objects.requireNonNull(this.executor, "Executor");
     }
 

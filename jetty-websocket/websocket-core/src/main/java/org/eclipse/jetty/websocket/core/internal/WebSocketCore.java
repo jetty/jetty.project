@@ -27,6 +27,7 @@ public final class WebSocketCore
 {
     // Supported Spec Version
     public static final int SPEC_VERSION = 13;
+    public static final String SPEC_VERSION_STRING = Integer.toString(SPEC_VERSION);
 
     /**
      * Globally Unique Identifier for use in WebSocket handshake within {@code Sec-WebSocket-Accept} and <code>Sec-WebSocket-Key</code> http headers.

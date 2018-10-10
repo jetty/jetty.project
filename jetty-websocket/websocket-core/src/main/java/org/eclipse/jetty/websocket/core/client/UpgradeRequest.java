@@ -23,6 +23,7 @@ import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.websocket.core.UpgradeException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
@@ -68,7 +71,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         return new UpgradeRequest(webSocketClient,requestURI)
         {
             @Override
-            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
+            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
             {
                 return frameHandler;
             }
@@ -277,8 +280,6 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
             }
         }
 
-        // Create unique WebSocketPolicy for this specific upgrade
-        WebSocketPolicy upgradePolicy = wsClient.getPolicy().clonePolicy();
 
         extensionStack.negotiate(wsClient.getObjectFactory(), httpClient.getByteBufferPool(), extensions);
 
@@ -310,7 +311,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         EndPoint endp = httpConnection.getEndPoint();
         customize(endp);
 
-        FrameHandler frameHandler = getFrameHandler(wsClient, upgradePolicy, response);
+        FrameHandler frameHandler = getFrameHandler(wsClient, response);
 
         if (frameHandler == null)
         {
@@ -323,7 +324,16 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
             throw new WebSocketException(err.toString());
         }
 
-        WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, extensionStack, negotiatedSubProtocol);
+        Request request = response.getRequest();
+        Negotiated negotiated = new Negotiated(
+            request.getURI(),
+            request.getHeaders(),
+            negotiatedSubProtocol,
+            HttpScheme.HTTPS.is(request.getScheme()), // TODO better than this?
+            extensionStack,
+            WebSocketCore.SPEC_VERSION_STRING);
+
+        WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, negotiated);
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
         wsChannel.setWebSocketConnection(wsConnection);
 
@@ -348,14 +358,12 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         return new WebSocketConnection(endp, executor, byteBufferPool, wsChannel);
     }
 
-    protected WebSocketChannel newWebSocketChannel(FrameHandler handler,
-                                                   ExtensionStack extensionStack,
-                                                   String negotiatedSubProtocol)
+    protected WebSocketChannel newWebSocketChannel(FrameHandler handler, Negotiated negotiated)
     {
-        return new WebSocketChannel(handler, Behavior.CLIENT, extensionStack, negotiatedSubProtocol);
+        return new WebSocketChannel(handler, Behavior.CLIENT, negotiated);
     }
 
-    public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response);
+    public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response);
 
     private final String genRandomKey()
     {
@@ -375,7 +383,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
 
         // The WebSocket Headers
         setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_KEY, genRandomKey());
-        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
+        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketCore.SPEC_VERSION_STRING);
 
         // (Per the hybi list): Add no-cache headers to avoid compatibility issue.
         // There are some proxies that rewrite "Connection: upgrade"

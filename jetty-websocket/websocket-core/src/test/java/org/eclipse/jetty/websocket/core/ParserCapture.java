@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 
@@ -59,7 +60,7 @@ public class ParserCapture
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
-        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), behavior, exStack, "");
+        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
     }
     
     public void parse(ByteBuffer buffer)

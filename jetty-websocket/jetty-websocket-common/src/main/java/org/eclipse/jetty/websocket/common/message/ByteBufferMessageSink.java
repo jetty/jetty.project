@@ -38,9 +38,9 @@ public class ByteBufferMessageSink extends MessageSinkImpl
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteBufferMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public ByteBufferMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
 
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");

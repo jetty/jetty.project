@@ -40,9 +40,9 @@ public class StringMessageSink extends MessageSinkImpl
     private Utf8StringBuilder utf;
     private int size = 0;
 
-    public StringMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public StringMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
 
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");

@@ -67,7 +67,6 @@ public class ParserBadCloseStatusCodesTest
         );
     }
 
-    private WebSocketPolicy policy = new WebSocketPolicy();
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @ParameterizedTest(name = "closeCode={0} {1}")

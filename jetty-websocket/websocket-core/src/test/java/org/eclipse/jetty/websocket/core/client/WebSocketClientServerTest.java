@@ -184,9 +184,6 @@ public class WebSocketClientServerTest
         {
             this.baseWebSocketUri = new URI("ws://" + hostname + ":" + port);
             this.client = new WebSocketCoreClient();
-
-            this.client.getPolicy().setMaxBinaryMessageSize(20 * 1024 * 1024);
-            this.client.getPolicy().setMaxTextMessageSize(20 * 1024 * 1024);
             this.handler = frameHandler;
         }
 

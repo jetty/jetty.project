@@ -102,9 +102,10 @@ public abstract class CompressExtension extends AbstractExtension
     public void setWebSocketChannel(WebSocketChannel webSocketChannel)
     {
         super.setWebSocketChannel(webSocketChannel);
-        setMaxFrameSize(webSocketChannel.getMaxFrameSize());
+        if (webSocketChannel.getMaxFrameSize()>Integer.MAX_VALUE)
+            throw new IllegalArgumentException("maxFrameSize too large");
+        setMaxFrameSize((int)webSocketChannel.getMaxFrameSize());
     }
-
 
 
     public Deflater getDeflater()

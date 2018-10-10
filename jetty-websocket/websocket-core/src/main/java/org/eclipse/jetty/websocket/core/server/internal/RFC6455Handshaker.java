@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.server.internal;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
@@ -196,9 +198,17 @@ public final class RFC6455Handshaker implements Handshaker
                     ExtensionConfig.toHeaderValue(extensionStack.getNegotiatedExtensions()));
         else
             response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),null);
-        
+
+        Negotiated negotiated = new Negotiated(
+            baseRequest.getHttpURI().asURI(),
+            baseRequest.getHttpFields(),
+            subprotocol,
+            baseRequest.isSecure(),
+            extensionStack,
+            WebSocketCore.SPEC_VERSION_STRING);
+
         // Create the Channel
-        WebSocketChannel channel = new WebSocketChannel(handler, Behavior.SERVER, extensionStack, subprotocol);
+        WebSocketChannel channel = newWebSocketChannel(handler, negotiated);
         if (LOG.isDebugEnabled())
             LOG.debug("channel {}", channel);
         
@@ -238,6 +248,11 @@ public final class RFC6455Handshaker implements Handshaker
 
         baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
+    }
+
+    protected WebSocketChannel newWebSocketChannel(FrameHandler handler, Negotiated negotiated)
+    {
+        return new WebSocketChannel(handler, Behavior.SERVER, negotiated);
     }
 
     protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)

@@ -796,6 +796,19 @@ public class HttpURI
     }
 
     /* ------------------------------------------------------------ */
+    public URI asURI()
+    {
+        try
+        {
+            return toURI();
+        }
+        catch(URISyntaxException x)
+        {
+            throw new RuntimeException(x);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
     public String getPathQuery()
     {
         if (_query==null)

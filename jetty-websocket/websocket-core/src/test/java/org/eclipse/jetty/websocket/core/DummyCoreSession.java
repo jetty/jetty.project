@@ -23,28 +23,53 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
 
 import java.net.SocketAddress;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 public class DummyCoreSession implements FrameHandler.CoreSession
 {
-    private final AttributesMap attributes = new AttributesMap();
-    
     @Override
-    public String getSubprotocol()
+    public String getNegotiatedSubProtocol()
     {
         return null;
     }
 
     @Override
-    public List<ExtensionConfig> getExtensionConfig()
+    public List<ExtensionConfig> getNegotiatedExtensions()
     {
         return null;
+    }
+
+    @Override
+    public Map<String, List<String>> getParameterMap()
+    {
+        return null;
+    }
+
+    @Override
+    public String getProtocolVersion()
+    {
+        return null;
+    }
+
+    @Override
+    public URI getRequestURI()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return false;
     }
 
     @Override
     public void abort()
     {
+
     }
 
     @Override
@@ -90,28 +115,27 @@ public class DummyCoreSession implements FrameHandler.CoreSession
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
-    {
-    }
-
-    @Override
     public void flush(Callback callback)
     {
+
     }
 
     @Override
     public void close(Callback callback)
     {
+
     }
 
     @Override
     public void close(int statusCode, String reason, Callback callback)
     {
+
     }
 
     @Override
     public void demand(long n)
-    {        
+    {
+
     }
 
     @Override
@@ -123,17 +147,19 @@ public class DummyCoreSession implements FrameHandler.CoreSession
     @Override
     public void setAutoFragment(boolean autoFragment)
     {
+
     }
 
     @Override
-    public int getMaxFrameSize()
+    public long getMaxFrameSize()
     {
         return 0;
     }
 
     @Override
-    public void setMaxFrameSize(int maxFrameSize)
+    public void setMaxFrameSize(long maxFrameSize)
     {
+
     }
 
     @Override
@@ -145,6 +171,7 @@ public class DummyCoreSession implements FrameHandler.CoreSession
     @Override
     public void setOutputBufferSize(int outputBufferSize)
     {
+
     }
 
     @Override
@@ -156,5 +183,12 @@ public class DummyCoreSession implements FrameHandler.CoreSession
     @Override
     public void setInputBufferSize(int inputBufferSize)
     {
+
+    }
+
+    @Override
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    {
+
     }
 }

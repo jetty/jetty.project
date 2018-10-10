@@ -27,9 +27,9 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class ReaderMessageSink extends DispatchedMessageSink<Reader,Void>
 {
-    public ReaderMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public ReaderMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
     }
 
     @Override

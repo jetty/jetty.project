@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.hamcrest.Matchers;
@@ -59,7 +60,7 @@ public class GeneratorTest
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
-        return new WebSocketChannel(new AbstractTestFrameHandler(), behavior, exStack, "");
+        return new WebSocketChannel(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
     }
 
     /**

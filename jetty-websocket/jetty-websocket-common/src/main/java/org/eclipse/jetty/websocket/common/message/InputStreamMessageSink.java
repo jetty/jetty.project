@@ -28,9 +28,9 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class InputStreamMessageSink extends DispatchedMessageSink<InputStream, Void>
 {
-    public InputStreamMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public InputStreamMessageSink(Executor executor, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(executor, methodHandle);
     }
 
     @Override

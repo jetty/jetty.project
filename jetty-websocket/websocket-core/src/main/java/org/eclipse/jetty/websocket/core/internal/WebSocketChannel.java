@@ -64,8 +64,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private final Behavior behavior;
     private final WebSocketChannelState state = new WebSocketChannelState();
     private final FrameHandler handler;
-    private final ExtensionStack extensionStack;
-    private final String subprotocol;
+    private final Negotiated negotiated;
     private final boolean demanding;
     private final FrameSequence outgoingSequence = new FrameSequence();
 
@@ -77,15 +76,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public WebSocketChannel(FrameHandler handler,
     		Behavior behavior,
-    		ExtensionStack extensionStack,
-    		String subprotocol)
+    		Negotiated negotiated)
     {
         this.handler = handler;
         this.behavior = behavior;
-        this.extensionStack = extensionStack;
-        this.subprotocol = subprotocol;
+        this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        extensionStack.connect(new IncomingState(),new OutgoingState(), this);
+        negotiated.getExtensions().connect(new IncomingState(),new OutgoingState(), this);
     }
 
     /**
@@ -210,7 +207,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public ExtensionStack getExtensionStack()
     {
-        return extensionStack;
+        return negotiated.getExtensions();
     }
 
     public FrameHandler getHandler()
@@ -221,7 +218,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public String getNegotiatedSubProtocol()
     {
-        return subprotocol;
+        return negotiated.getSubProtocol();
     }
 
     @Override
@@ -320,7 +317,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
 
         Frame frame = closeStatus.toFrame();
-        extensionStack.sendFrame(frame,callback,batch);
+        negotiated.getExtensions().sendFrame(frame,callback,batch);
     }
 
     @Override
@@ -498,7 +495,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             callback.failed(ex);
         }
 
-        extensionStack.onReceiveFrame(frame, callback);
+        negotiated.getExtensions().onReceiveFrame(frame, callback);
     }
 
     @Override
@@ -523,14 +520,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
         else
         {
-            extensionStack.sendFrame(frame, callback, batch);
+            negotiated.getExtensions().sendFrame(frame, callback, batch);
         }
     }
 
     @Override
     public void flush(Callback callback)
     {
-        extensionStack.sendFrame(FrameFlusher.FLUSH_FRAME,callback, false);
+        negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME,callback, false);
     }
     
     @Override
@@ -684,41 +681,40 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void dump(Appendable out, String indent) throws IOException
     {
         ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent,Arrays.asList(subprotocol,extensionStack,handler));
+        ContainerLifeCycle.dump(out,indent,Arrays.asList(
+            negotiated.getSubProtocol(),
+            negotiated.getExtensions(),
+            handler));
     }
 
     @Override
     public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        return extensionStack.getNegotiatedExtensions();
+        return negotiated.getExtensions().getNegotiatedExtensions();
     }
 
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        // TODO:
-        return null;
+        return negotiated.getParameterMap();
     }
 
     @Override
     public String getProtocolVersion()
     {
-        // TODO:
-        return null;
+        return negotiated.getProtocolVersion();
     }
 
     @Override
     public URI getRequestURI()
     {
-        // TODO:
-        return null;
+        return negotiated.getRequestURI();
     }
 
     @Override
     public boolean isSecure()
     {
-        // TODO:
-        return false;
+        return negotiated.isSecure();
     }
 
     @Override
@@ -730,10 +726,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public String toString()
     {
-        return String.format("WSChannel@%x{%s,x=%d,af=%b,i/o=%d/%d,fs=%d}->%s",
+        return String.format("WSChannel@%x{%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
             hashCode(),
             state,
-            extensionStack.getExtensions().size(),
+            negotiated,
             autoFragment,
             inputBufferSize,
             outputBufferSize,

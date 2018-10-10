@@ -34,14 +34,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
-public class WebSocketCoreClient extends ContainerLifeCycle
+public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHandler.CoreCustomizer
 {
 
     private static final Logger LOG = Log.getLogger(WebSocketCoreClient.class);
     private HttpClient httpClient;
-    private WebSocketPolicy policy;
     private WebSocketExtensionRegistry extensionRegistry;
     private DecoratedObjectFactory objectFactory;
+    private final FrameHandler.CoreCustomizer customizer;
 
     // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
     // - AsyncWrite Idle Timeout
@@ -60,20 +60,22 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public WebSocketCoreClient(HttpClient httpClient)
     {
-        this(new WebSocketPolicy(), httpClient);
+        this(httpClient,null);
     }
 
-    public WebSocketCoreClient(WebSocketPolicy policy)
-    {
-        this(policy, null);
-    }
-
-    public WebSocketCoreClient(WebSocketPolicy policy, HttpClient httpClient)
+    public WebSocketCoreClient(HttpClient httpClient, FrameHandler.CoreCustomizer customizer)
     {
         this.httpClient = httpClient == null ? new HttpClient() : httpClient;
-        this.policy = policy.clonePolicy();
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.objectFactory = new DecoratedObjectFactory();
+        this.customizer = customizer;
+    }
+
+    @Override
+    public void customize(FrameHandler.CoreSession session)
+    {
+        if (customizer!=null)
+            customizer.customize(session);
     }
 
     public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
@@ -130,10 +132,5 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     public DecoratedObjectFactory getObjectFactory()
     {
         return objectFactory;
-    }
-
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
     }
 }

@@ -26,11 +26,9 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import java.io.IOException;
 import java.util.function.Function;
 
-public interface WebSocketNegotiator
+public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
 {
     FrameHandler negotiate(Negotiation negotiation) throws IOException;
-
-    void customize(FrameHandler.CoreSession session);
 
     WebSocketExtensionRegistry getExtensionRegistry();
     
@@ -50,13 +48,26 @@ public interface WebSocketNegotiator
         };
     }
 
+    static WebSocketNegotiator from(Function<Negotiation,FrameHandler> negotiate, FrameHandler.CoreCustomizer customizer)
+    {
+        return new AbstractNegotiator(null,null,null,customizer)
+        {
+            @Override
+            public FrameHandler negotiate(Negotiation negotiation)
+            {
+                return negotiate.apply(negotiation);
+            }
+        };
+    }
+
     static WebSocketNegotiator from(
         Function<Negotiation,FrameHandler> negotiate,
         WebSocketExtensionRegistry extensionRegistry,
         DecoratedObjectFactory objectFactory,
-        ByteBufferPool bufferPool)
+        ByteBufferPool bufferPool,
+        FrameHandler.CoreCustomizer customizer)
     {
-        return new AbstractNegotiator(extensionRegistry,objectFactory,bufferPool)
+        return new AbstractNegotiator(extensionRegistry,objectFactory,bufferPool,customizer)
         {
             @Override
             public FrameHandler negotiate(Negotiation negotiation)
@@ -71,27 +82,32 @@ public interface WebSocketNegotiator
         final WebSocketExtensionRegistry extensionRegistry;
         final DecoratedObjectFactory objectFactory;
         final ByteBufferPool bufferPool;
+        final FrameHandler.CoreCustomizer customizer;
 
 
         public AbstractNegotiator()
         {
-            this(null,null,null);
+            this(null,null,null,null);
         }
 
 
         public AbstractNegotiator(
             WebSocketExtensionRegistry extensionRegistry,
             DecoratedObjectFactory objectFactory,
-            ByteBufferPool bufferPool)
+            ByteBufferPool bufferPool,
+            FrameHandler.CoreCustomizer customizer)
         {
             this.extensionRegistry = extensionRegistry==null?new WebSocketExtensionRegistry():extensionRegistry;
             this.objectFactory = objectFactory==null?new DecoratedObjectFactory():objectFactory;
             this.bufferPool = bufferPool;
+            this.customizer = customizer;
         }
 
         @Override
         public void customize(FrameHandler.CoreSession session)
         {
+            if (customizer!=null)
+                customizer.customize(session);
         }
 
         @Override
