@@ -33,7 +33,6 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 
@@ -109,11 +108,11 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
     }
 
     @Override
-    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
+    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
     {
         UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
 
-        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradePolicy,
+        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
                 handshakeRequest, upgradeResponse, onOpenFuture);
 
         return frameHandler;

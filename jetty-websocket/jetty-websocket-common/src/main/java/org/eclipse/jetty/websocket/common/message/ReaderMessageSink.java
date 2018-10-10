@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class ReaderMessageSink extends DispatchedMessageSink<Reader,Void>
 {

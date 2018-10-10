@@ -74,12 +74,6 @@ public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.exte
     }
 
     @Override
-    public boolean isLast()
-    {
-        return isFin();
-    }
-
-    @Override
     public boolean isMasked()
     {
         return frame.isMasked();

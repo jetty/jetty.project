@@ -21,6 +21,7 @@ package examples;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -293,7 +294,7 @@ public class ClientDemo
 
     private void open() throws Exception
     {
-        client.getPolicy().setIdleTimeout(timeout);
+        client.setIdleTimeout(Duration.ofMillis(timeout));
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols(protocol);
         socket = new TestSocket();

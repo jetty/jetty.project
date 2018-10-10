@@ -29,7 +29,6 @@ import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -46,14 +45,13 @@ public class OutgoingMessageCapture extends DummyCoreSession implements FrameHan
     public BlockingQueue<ByteBuffer> binaryMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<String> events = new LinkedBlockingDeque<>();
 
-    private final WebSocketPolicy policy;
     private final MethodHandle wholeTextHandle;
     private final MethodHandle wholeBinaryHandle;
     private MessageSink messageSink;
+    private long maxMessageSize = 2 * 1024 * 1024;
 
-    public OutgoingMessageCapture(WebSocketPolicy policy)
+    public OutgoingMessageCapture()
     {
-        this.policy = policy;
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
         {
@@ -101,7 +99,7 @@ public class OutgoingMessageCapture extends DummyCoreSession implements FrameHan
                 String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new StringMessageSink(policy, null, wholeTextHandle);
+                messageSink = new StringMessageSink(null, wholeTextHandle, maxMessageSize);
             }
             break;
             case OpCode.BINARY:
@@ -109,7 +107,7 @@ public class OutgoingMessageCapture extends DummyCoreSession implements FrameHan
                 String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new ByteBufferMessageSink(policy, null, wholeBinaryHandle);
+                messageSink = new ByteBufferMessageSink(null, wholeBinaryHandle, maxMessageSize);
             }
             break;
             case OpCode.CONTINUATION:

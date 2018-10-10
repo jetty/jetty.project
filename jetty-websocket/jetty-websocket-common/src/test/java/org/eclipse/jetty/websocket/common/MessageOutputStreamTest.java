@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.core.TestableLeakTrackingBufferPool;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +38,7 @@ import static org.hamcrest.Matchers.is;
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStreamTest.class);
+    private static final int OUTPUT_BUFFER_SIZE = 4096;
 
     public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");
 
@@ -48,22 +48,18 @@ public class MessageOutputStreamTest
         bufferPool.assertNoLeaks();
     }
 
-    private WebSocketPolicy policy;
     private OutgoingMessageCapture channelCapture;
 
     @BeforeEach
     public void setupTest() throws Exception
     {
-        policy = new WebSocketPolicy();
-        policy.setInputBufferSize(1024);
-
-        channelCapture = new OutgoingMessageCapture(policy);
+        channelCapture = new OutgoingMessageCapture();
     }
 
     @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, policy.getOutputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, OUTPUT_BUFFER_SIZE, bufferPool))
         {
             stream.write("Hello".getBytes("UTF-8"));
             stream.write(" ".getBytes("UTF-8"));
@@ -79,7 +75,7 @@ public class MessageOutputStreamTest
     @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, policy.getOutputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, OUTPUT_BUFFER_SIZE, bufferPool))
         {
             stream.write("Hello World".getBytes("UTF-8"));
         }
@@ -93,13 +89,13 @@ public class MessageOutputStreamTest
     @Test
     public void testWriteLarge_RequiringMultipleBuffers() throws Exception
     {
-        int bufsize = (int) (policy.getOutputBufferSize() * 2.5);
+        int bufsize = (int) (OUTPUT_BUFFER_SIZE * 2.5);
         byte buf[] = new byte[bufsize];
-        LOG.debug("Buffer sizes: max:{}, test:{}", policy.getOutputBufferSize(), bufsize);
+        LOG.debug("Buffer sizes: max:{}, test:{}", OUTPUT_BUFFER_SIZE, bufsize);
         Arrays.fill(buf, (byte) 'x');
         buf[bufsize - 1] = (byte) 'o'; // mark last entry for debugging
 
-        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, policy.getOutputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, OUTPUT_BUFFER_SIZE, bufferPool))
         {
             stream.write(buf);
         }

@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
@@ -37,13 +39,15 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.impl.ClientUpgradeRequestImpl;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public class WebSocketClient extends ContainerLifeCycle
+public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy
 {
     private final WebSocketCoreClient coreClient;
     private final int id = ThreadLocalRandom.current().nextInt();
@@ -51,6 +55,10 @@ public class WebSocketClient extends ContainerLifeCycle
     private ClassLoader contextClassLoader;
     private DecoratedObjectFactory objectFactory;
     private WebSocketExtensionRegistry extensionRegistry;
+    private int inputBufferSize = 4 * 1024;
+    private int outputBufferSize = 4 * 1024;
+    private long maxBinaryMessageSize = 64 * 1024;
+    private long maxTextMessageSize = 64 * 1024;
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -114,19 +122,70 @@ public class WebSocketClient extends ContainerLifeCycle
         dump(out, indent, getOpenSessions());
     }
 
-    /**
-     * Return the number of milliseconds for a timeout of an attempted write operation.
-     *
-     * @return number of milliseconds for timeout of an attempted write operation
-     */
-    public long getAsyncWriteTimeout()
+    @Override
+    public WebSocketBehavior getBehavior()
     {
-        return getPolicy().getAsyncWriteTimeout();
+        return WebSocketBehavior.CLIENT;
     }
 
-    public void setAsyncWriteTimeout(long ms)
+    @Override
+    public Duration getIdleTimeout()
     {
-        getPolicy().setAsyncWriteTimeout(ms);
+        return Duration.ofMillis(getHttpClient().getIdleTimeout());
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return this.inputBufferSize;
+    }
+
+    @Override
+    public int getOutputBufferSize()
+    {
+        return this.outputBufferSize;
+    }
+
+    @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return this.maxBinaryMessageSize;
+    }
+
+    @Override
+    public long getMaxTextMessageSize()
+    {
+        return this.maxTextMessageSize;
+    }
+
+    @Override
+    public void setIdleTimeout(Duration duration)
+    {
+        getHttpClient().setIdleTimeout(duration.toMillis());
+    }
+
+    @Override
+    public void setInputBufferSize(int size)
+    {
+        this.inputBufferSize = size;
+    }
+
+    @Override
+    public void setOutputBufferSize(int size)
+    {
+        this.outputBufferSize = size;
+    }
+
+    @Override
+    public void setMaxBinaryMessageSize(long size)
+    {
+        this.maxBinaryMessageSize = size;
+    }
+
+    @Override
+    public void setMaxTextMessageSize(long size)
+    {
+        this.maxTextMessageSize = size;
     }
 
     public SocketAddress getBindAddress()
@@ -169,11 +228,6 @@ public class WebSocketClient extends ContainerLifeCycle
         return getHttpClient().getByteBufferPool();
     }
 
-    public ClassLoader getContextClassloader()
-    {
-        return this.contextClassLoader;
-    }
-
     public Executor getExecutor()
     {
         return getHttpClient().getExecutor();
@@ -189,65 +243,6 @@ public class WebSocketClient extends ContainerLifeCycle
         return coreClient.getHttpClient();
     }
 
-    /**
-     * Get the maximum size for a binary message.
-     *
-     * @return the maximum size of a binary message.
-     */
-    public long getMaxBinaryMessageSize()
-    {
-        return getPolicy().getMaxBinaryMessageSize();
-    }
-
-    /**
-     * Set the maximum size for a binary message.
-     */
-    public void setMaxBinaryMessageSize(long size)
-    {
-        getPolicy().setMaxBinaryMessageSize(size);
-    }
-
-    /**
-     * Get the max idle timeout for new connections.
-     *
-     * @return the max idle timeout in milliseconds for new connections.
-     */
-    public long getMaxIdleTimeout()
-    {
-        return getPolicy().getIdleTimeout();
-    }
-
-    /**
-     * Set the max idle timeout for new connections.
-     * <p>
-     * Existing connections will not have their max idle timeout adjusted.
-     *
-     * @param ms the timeout in milliseconds
-     */
-    public void setMaxIdleTimeout(long ms)
-    {
-        getPolicy().setIdleTimeout(ms);
-        getHttpClient().setIdleTimeout(ms);
-    }
-
-    /**
-     * Get the maximum size for a text message.
-     *
-     * @return the maximum size of a text message.
-     */
-    public long getMaxTextMessageSize()
-    {
-        return getPolicy().getMaxTextMessageSize();
-    }
-
-    /**
-     * Set the maximum size for a text message.
-     */
-    public void setMaxTextMessageSize(long size)
-    {
-        getPolicy().setMaxTextMessageSize(size);
-    }
-
     public DecoratedObjectFactory getObjectFactory()
     {
         return objectFactory;
@@ -258,14 +253,9 @@ public class WebSocketClient extends ContainerLifeCycle
         return Collections.unmodifiableSet(new HashSet<>(getBeans(Session.class)));
     }
 
-    public WebSocketPolicy getPolicy()
+    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
-        return coreClient.getPolicy();
-    }
-
-    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
-    {
-        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse, futureSession);
+        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
     }
 
     /**

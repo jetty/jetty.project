@@ -23,27 +23,32 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Duration;
+import java.util.Objects;
 
 public class WebSocketSessionImpl implements Session
 {
-    private final WebSocketPolicy sessionPolicy;
+    private final FrameHandler.CoreSession coreSession;
+    private final JettyWebSocketFrameHandler frameHandler;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
     public WebSocketSessionImpl(
-        WebSocketPolicy sessionPolicy,
-        JettyWebSocketRemoteEndpoint remoteEndpoint,
+        FrameHandler.CoreSession coreSession,
+        JettyWebSocketFrameHandler frameHandler,
         UpgradeRequest upgradeRequest,
         UpgradeResponse upgradeResponse)
     {
-        this.sessionPolicy = sessionPolicy;
-        this.remoteEndpoint = remoteEndpoint;
+        this.coreSession = Objects.requireNonNull(coreSession);
+        this.frameHandler = Objects.requireNonNull(frameHandler);
+        this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession);
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
     }
@@ -67,16 +72,74 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public long getIdleTimeout()
+    public WebSocketBehavior getBehavior()
     {
-        return remoteEndpoint.getCoreSession().getIdleTimeout().toMillis();
+        switch(coreSession.getBehavior())
+        {
+            case CLIENT: return WebSocketBehavior.CLIENT;
+            case SERVER: return WebSocketBehavior.SERVER;
+            default: return null;
+        }
     }
 
     @Override
-    public WebSocketPolicy getPolicy()
+    public Duration getIdleTimeout()
     {
-        // TODO how do setters on this get reflected on the CoreSession?
-        return sessionPolicy;
+        return coreSession.getIdleTimeout();
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return coreSession.getInputBufferSize();
+    }
+
+    @Override
+    public int getOutputBufferSize()
+    {
+        return coreSession.getOutputBufferSize();
+    }
+
+    @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return frameHandler.getMaxBinaryMessageSize();
+    }
+
+    @Override
+    public long getMaxTextMessageSize()
+    {
+        return frameHandler.getMaxTextMessageSize();
+    }
+
+    @Override
+    public void setIdleTimeout(Duration duration)
+    {
+        coreSession.setIdleTimeout(duration);
+    }
+
+    @Override
+    public void setInputBufferSize(int size)
+    {
+        coreSession.setInputBufferSize(size);
+    }
+
+    @Override
+    public void setOutputBufferSize(int size)
+    {
+        coreSession.setOutputBufferSize(size);
+    }
+
+    @Override
+    public void setMaxBinaryMessageSize(long size)
+    {
+        frameHandler.setMaxBinaryMessageSize(size);
+    }
+
+    @Override
+    public void setMaxTextMessageSize(long size)
+    {
+        frameHandler.setMaxTextMessageSize(size);
     }
 
     @Override
@@ -104,50 +167,45 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public void setIdleTimeout(long ms)
+    public void disconnect()
     {
-        remoteEndpoint.getCoreSession().setIdleTimeout(Duration.ofMillis(ms));
+        coreSession.abort();
     }
 
     @Override
-    public void disconnect() throws IOException
+    public SocketAddress getLocalAddress()
     {
-
+        return coreSession.getLocalAddress();
     }
 
     @Override
-    public InetSocketAddress getLocalAddress()
+    public SocketAddress getRemoteAddress()
     {
-        return null;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return null;
+        return coreSession.getRemoteAddress();
     }
 
     @Override
     public UpgradeRequest getUpgradeRequest()
     {
-        return null;
+        return this.upgradeRequest;
     }
 
     @Override
     public UpgradeResponse getUpgradeResponse()
     {
-        return null;
+        return this.upgradeResponse;
     }
 
     @Override
     public SuspendToken suspend()
     {
+        // TODO:
         return null;
     }
 
     @Override
     public String toString()
     {
-        return String.format("WebSocketSessionImpl[%s,to=%,d,%s]", sessionPolicy.getBehavior(), sessionPolicy.getIdleTimeout(), remoteEndpoint.getCoreSession());
+        return String.format("WebSocketSessionImpl[%s,to=%s,%s,%s]", getBehavior(), getIdleTimeout(), coreSession, frameHandler);
     }
 }

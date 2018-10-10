@@ -88,18 +88,6 @@ public class DelegatedClientUpgradeResponse implements UpgradeResponse
     }
 
     @Override
-    public String getStatusReason()
-    {
-        return null;
-    }
-
-    @Override
-    public boolean isSuccess()
-    {
-        return false;
-    }
-
-    @Override
     public void sendForbidden(String message) throws IOException
     {
 
@@ -138,17 +126,4 @@ public class DelegatedClientUpgradeResponse implements UpgradeResponse
     {
 
     }
-
-    @Override
-    public void setStatusReason(String statusReason)
-    {
-
-    }
-
-    @Override
-    public void setSuccess(boolean success)
-    {
-
-    }
-
 }

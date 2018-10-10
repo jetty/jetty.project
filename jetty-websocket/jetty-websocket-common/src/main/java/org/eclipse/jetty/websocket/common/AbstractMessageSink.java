@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.common;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-
 public abstract class AbstractMessageSink implements MessageSink
 {
     protected final Executor executor;

@@ -156,10 +156,10 @@ public class JettyWebSocketFrameHandlerFactory
 
         // TODO these are not attributes on the CoreSession, so we need another path to route them to the sinks that enforce them:
         if (metadata.getMaxBinaryMessageSize() >= -1)
-            frameHandler.setInitialMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
+            frameHandler.setMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
 
         if (metadata.getMaxTextMessageSize() >= -1)
-            frameHandler.setInitialMaxTextMessageSize(metadata.getMaxTextMessageSize());
+            frameHandler.setMaxTextMessageSize(metadata.getMaxTextMessageSize());
 
         return frameHandler;
     }

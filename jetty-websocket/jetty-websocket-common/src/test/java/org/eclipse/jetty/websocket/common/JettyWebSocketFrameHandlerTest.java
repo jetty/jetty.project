@@ -34,12 +34,12 @@ import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSoc
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeResponse;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -72,16 +72,14 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
-    private WebSocketPolicy policy = new WebSocketPolicy();
-    private FrameHandler.CoreSession channel = new DummyCoreSession();
+    private FrameHandler.CoreSession channel = new DummyCoreSession(Behavior.CLIENT);
 
     private JettyWebSocketFrameHandler newLocalFrameHandler(Object wsEndpoint)
     {
         UpgradeRequest upgradeRequest = new DummyUpgradeRequest();
         UpgradeResponse upgradeResponse = new DummyUpgradeResponse();
-        JettyWebSocketFrameHandler localEndpoint = endpointFactory.newJettyFrameHandler(wsEndpoint, policy,
-            /* TODO upgradeRequest, upgradeResponse */null, null,
-            null);
+        JettyWebSocketFrameHandler localEndpoint = endpointFactory.newJettyFrameHandler(wsEndpoint,
+            upgradeRequest, upgradeResponse, null);
         return localEndpoint;
     }
 

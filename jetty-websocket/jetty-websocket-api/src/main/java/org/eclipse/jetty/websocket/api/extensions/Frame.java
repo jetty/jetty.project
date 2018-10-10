@@ -99,15 +99,6 @@ public interface Frame
 
     boolean isFin();
 
-    /**
-     * Same as {@link #isFin()}
-     * 
-     * @return true if final frame.
-     * @deprecated use {@link #isFin()} instead
-     */
-    @Deprecated
-    boolean isLast();
-
     boolean isMasked();
 
     boolean isRsv1();

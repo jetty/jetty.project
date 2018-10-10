@@ -24,7 +24,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
 import org.eclipse.jetty.websocket.core.TestableLeakTrackingBufferPool;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +34,7 @@ import static org.hamcrest.Matchers.is;
 public class MessageWriterTest
 {
     private static final Logger LOG = Log.getLogger(MessageWriterTest.class);
+    private static final int OUTPUT_BUFFER_SIZE = 4096;
 
     public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");
 
@@ -44,23 +44,18 @@ public class MessageWriterTest
         bufferPool.assertNoLeaks();
     }
 
-    private WebSocketPolicy policy;
-    private int bufferSize = 1024;
     private OutgoingMessageCapture remoteSocket;
 
     @BeforeEach
-    public void setupSession() throws Exception
+    public void setupSession()
     {
-        policy = new WebSocketPolicy();
-        policy.setInputBufferSize(1024);
-
-        remoteSocket = new OutgoingMessageCapture(policy);
+        remoteSocket = new OutgoingMessageCapture();
     }
     
     @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, OUTPUT_BUFFER_SIZE))
         {
             stream.write("Hello");
             stream.write(" ");
@@ -75,7 +70,7 @@ public class MessageWriterTest
     @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, OUTPUT_BUFFER_SIZE))
         {
             stream.append("Hello World");
         }
@@ -88,14 +83,14 @@ public class MessageWriterTest
     @Test
     public void testWriteLarge_RequiringMultipleBuffers() throws Exception
     {
-        int size = (int)(policy.getOutputBufferSize() * 2.5);
+        int size = (int)(OUTPUT_BUFFER_SIZE * 2.5);
         char buf[] = new char[size];
         if (LOG.isDebugEnabled())
             LOG.debug("Buffer size: {}",size);
         Arrays.fill(buf,'x');
         buf[size - 1] = 'o'; // mark last entry for debugging
 
-        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, OUTPUT_BUFFER_SIZE))
         {
             stream.write(buf);
         }

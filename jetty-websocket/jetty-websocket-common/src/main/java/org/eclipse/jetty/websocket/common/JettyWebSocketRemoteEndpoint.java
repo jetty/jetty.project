@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.Future;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -43,9 +44,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     private final SharedBlockingCallback blocker = new SharedBlockingCallback();
     private BatchMode batchMode;
 
-    public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession channel)
+    public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession coreSession)
     {
-        this.coreSession = channel;
+        this.coreSession = Objects.requireNonNull(coreSession);
     }
 
     /**

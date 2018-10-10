@@ -21,13 +21,15 @@ package org.eclipse.jetty.websocket.api;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.time.Duration;
 
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.
  */
-public interface Session extends Closeable
+public interface Session extends WebSocketPolicy, Closeable
 {
     /**
      * Request a close of the current conversation with a normal status code and no reason phrase.
@@ -84,36 +86,30 @@ public interface Session extends Closeable
      * {@link WebSocketListener#onWebSocketClose(int, String)} or {@link OnWebSocketClose}) will be called on your
      * websocket.
      * 
-     * @throws IOException
-     *             if unable to disconnect
-     * 
      * @see #close()
      * @see #close(CloseStatus)
      * @see #close(int, String)
      */
-    void disconnect() throws IOException;
+    void disconnect();
 
     /**
-     * Return the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received
-     * in that time.
-     * 
-     * @return the timeout in milliseconds.
+     * The Local Socket Address for the active Session
+     * <p>
+     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
+     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+     *     without supporting {@link InetSocketAddress}
+     * </p>
+     *
+     * @return the SocketAddress for the local connection, or null if not supported by Session
      */
-    long getIdleTimeout();
-
-    /**
-     * Get the address of the local side.
-     * 
-     * @return the local side address
-     */
-    InetSocketAddress getLocalAddress();
+    SocketAddress getLocalAddress();
 
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
      * 
      * @return the policy in use
      */
-    WebSocketPolicy getPolicy();
+    default WebSocketPolicy getPolicy() { return this; }
 
     /**
      * Returns the version of the websocket protocol currently being used. This is taken as the value of the Sec-WebSocket-Version header used in the opening
@@ -131,11 +127,16 @@ public interface Session extends Closeable
     RemoteEndpoint getRemote();
 
     /**
-     * Get the address of the remote side.
-     * 
-     * @return the remote side address
+     * The Remote Socket Address for the active Session
+     * <p>
+     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
+     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+     *     without supporting {@link InetSocketAddress}
+     * </p>
+     *
+     * @return the SocketAddress for the remote connection, or null if not supported by Session
      */
-    InetSocketAddress getRemoteAddress();
+    SocketAddress getRemoteAddress();
 
     /**
      * Get the UpgradeRequest used to create this session
@@ -164,14 +165,6 @@ public interface Session extends Closeable
      * @return whether its using a secure transport
      */
     boolean isSecure();
-
-    /**
-     * Set the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received.
-     * 
-     * @param ms
-     *            the number of milliseconds.
-     */
-    void setIdleTimeout(long ms);
 
     /**
      * Suspend the incoming read events on the connection.

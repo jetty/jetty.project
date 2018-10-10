@@ -65,8 +65,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
-    private long initialMaxBinaryMessageSize = -1;
-    private long initialMaxTextMessageSize = -1;
+    private long maxBinaryMessageSize = -1;
+    private long maxTextMessageSize = -1;
 
     public JettyWebSocketFrameHandler(Executor executor,
                                       Object endpointInstance,
@@ -181,10 +181,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public void onOpen(CoreSession coreSession)
     {
         customizer.customize(coreSession);
-        JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(coreSession);
 
-        // TODO policy
-        session = new WebSocketSessionImpl(null, remote, upgradeRequest, upgradeResponse);
+        session = new WebSocketSessionImpl(coreSession, this, upgradeRequest, upgradeResponse);
 
         frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
         openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
@@ -197,12 +195,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (textHandle != null)
         {
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, getInitialMaxTextMessageSize());
+            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, getMaxTextMessageSize());
         }
 
         if (binaryHandle != null)
         {
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, getInitialMaxBinaryMessageSize());
+            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, getMaxBinaryMessageSize());
         }
 
         if (openHandle != null)
@@ -220,24 +218,24 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         futureSession.complete(session);
     }
 
-    public long getInitialMaxBinaryMessageSize()
+    public long getMaxBinaryMessageSize()
     {
-        return initialMaxBinaryMessageSize;
+        return maxBinaryMessageSize;
     }
 
-    public void setInitialMaxBinaryMessageSize(long maxSize)
+    public void setMaxBinaryMessageSize(long maxSize)
     {
-        this.initialMaxBinaryMessageSize = maxSize;
+        this.maxBinaryMessageSize = maxSize;
     }
 
-    public long getInitialMaxTextMessageSize()
+    public long getMaxTextMessageSize()
     {
-        return initialMaxTextMessageSize;
+        return maxTextMessageSize;
     }
 
-    public void setInitialMaxTextMessageSize(long maxSize)
+    public void setMaxTextMessageSize(long maxSize)
     {
-        this.initialMaxTextMessageSize = maxSize;
+        this.maxTextMessageSize = maxSize;
     }
 
     public String toString()
