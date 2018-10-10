@@ -148,21 +148,6 @@ public class WebSocketPolicy
         }
     }
 
-    public WebSocketPolicy clonePolicy()
-    {
-        WebSocketPolicy clone = new WebSocketPolicy();
-        clone.idleTimeout = this.idleTimeout;
-        clone.maxTextMessageSize = this.maxTextMessageSize;
-        clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
-        clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
-        clone.maxBinaryMessageBufferSize = this.maxBinaryMessageBufferSize;
-        clone.inputBufferSize = this.inputBufferSize;
-        clone.outputBufferSize = this.outputBufferSize;
-        clone.maxAllowedFrameSize = this.maxAllowedFrameSize;
-        clone.asyncWriteTimeout = this.asyncWriteTimeout;
-        return clone;
-    }
-
     /**
      * The timeout in ms (milliseconds) for async write operations.
      * <p>
