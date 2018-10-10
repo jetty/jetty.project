@@ -30,6 +30,16 @@ import java.util.Map;
 
 public class DummyCoreSession implements FrameHandler.CoreSession
 {
+    private Behavior behavior;
+
+    public DummyCoreSession() {
+    }
+
+    public DummyCoreSession(Behavior behavior)
+    {
+        this.behavior = behavior;
+    }
+
     @Override
     public String getNegotiatedSubProtocol()
     {
@@ -69,13 +79,12 @@ public class DummyCoreSession implements FrameHandler.CoreSession
     @Override
     public void abort()
     {
-
     }
 
     @Override
     public Behavior getBehavior()
     {
-        return null;
+        return this.behavior;
     }
 
     @Override
