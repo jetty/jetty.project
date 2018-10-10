@@ -9,3 +9,7 @@ plus
 [lib]
 lib/jetty-annotations-${jetty.version}.jar
 lib/annotations/*.jar
+
+[jpms]
+add-modules:org.objectweb.asm
+

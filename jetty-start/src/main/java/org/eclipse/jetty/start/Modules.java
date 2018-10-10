@@ -154,6 +154,10 @@ public class Modules implements Iterable<Module>
                 {
                     System.out.printf("        XML: %s%n",xml);
                 }
+                for (String jpms : module.getJPMS())
+                {
+                    System.out.printf("        JPMS: %s%n",jpms);
+                }
                 for (String jvm : module.getJvmArgs())
                 {
                     System.out.printf("        JVM: %s%n",jvm);

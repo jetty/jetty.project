@@ -24,6 +24,9 @@ lib/jetty-io-${jetty.version}.jar
 [xml]
 etc/jetty.xml
 
+[jpms]
+patch-module: servlet.api=lib/jetty-schemas-3.1.jar
+
 [ini-template]
 ### Common HTTP configuration
 ## Scheme to use to build URIs for secure redirects
