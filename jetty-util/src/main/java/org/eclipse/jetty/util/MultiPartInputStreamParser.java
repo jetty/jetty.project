@@ -39,8 +39,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
@@ -515,7 +513,7 @@ public class MultiPartInputStreamParser
     public Part getPart(String name)
     throws IOException
     {
-        if(_parsed)
+        if(!_parsed)
             parse();
         throwIfError();   
         return _parts.getValue(name, 0);
