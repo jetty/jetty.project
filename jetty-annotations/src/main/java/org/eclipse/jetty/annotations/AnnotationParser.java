@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -116,6 +115,11 @@ public class AnnotationParser
                         case 6:
                         {
                             asmVersion = Opcodes.ASM6;
+                            break;
+                        }
+                        case 7:
+                        {
+                            asmVersion = Opcodes.ASM7;
                             break;
                         }
                         default:
