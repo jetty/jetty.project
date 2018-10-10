@@ -21,22 +21,28 @@ package org.eclipse.jetty.session.infinispan;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Map;
 
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.infinispan.protostream.MessageMarshaller;
 
 /**
  * SessionDataMarshaller
  *
- * A marshaller for converting a SessionData object into protobuf format,
- * which supports queries.
+ * A marshaller for converting a SessionData object into protobuf format which
+ * gives greater control over serialization/deserialization. We use that
+ * extra control to ensure that session attributes can be deserialized using
+ * either the container class loader or the webapp classloader, as appropriate.
  */
 public class SessionDataMarshaller implements MessageMarshaller<SessionData>
 {
+    /**
+     * The version of the serializer.
+     */
+    private static final int VERSION = 0;
+
     @Override
     public Class<? extends SessionData> getJavaClass()
     {
@@ -52,6 +58,7 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
     @Override
     public SessionData readFrom(ProtoStreamReader in) throws IOException
     {
+        int version = in.readInt("version");//version of serialized session
         String id = in.readString("id"); //session id
         String cpath = in.readString("contextPath"); //context path
         String vhost = in.readString("vhost"); //first vhost
@@ -61,14 +68,12 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
         long created = in.readLong("created"); //time created
         long cookieSet = in.readLong("cookieSet");//time cookie was set
         String lastNode = in.readString("lastNode"); //name of last node managing
-  
-        long expiry = in.readLong("expiry"); 
+
+        long expiry = in.readLong("expiry");
         long maxInactiveMs = in.readLong("maxInactiveMs");
-        
-        
+
         byte[] attributeArray = in.readBytes("attributes");
         ByteArrayInputStream bin = new ByteArrayInputStream(attributeArray);
-        
         Map<String, Object> attributes;
         try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bin))
         {
@@ -81,19 +86,19 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
         {
             throw new IOException(e);
         }
-        
+
         SessionData sd = new SessionData(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
         sd.putAllAttributes(attributes);
         sd.setCookieSet(cookieSet);
         sd.setLastNode(lastNode);
         sd.setExpiry(expiry);
         return sd;
-        
     }
 
     @Override
     public void writeTo(ProtoStreamWriter out, SessionData sdata) throws IOException
     {
+        out.writeInt("version", VERSION);
         out.writeString("id", sdata.getId()); //session id
         out.writeString("contextPath", sdata.getContextPath()); //context path
         out.writeString("vhost", sdata.getVhost()); //first vhost
@@ -103,10 +108,10 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
         out.writeLong("created", sdata.getCreated()); //time created
         out.writeLong("cookieSet", sdata.getCookieSet());//time cookie was set
         out.writeString("lastNode", sdata.getLastNode()); //name of last node managing
-  
-        out.writeLong("expiry", sdata.getExpiry()); 
+
+        out.writeLong("expiry", sdata.getExpiry());
         out.writeLong("maxInactiveMs", sdata.getMaxInactiveMs());
-        
+
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         ObjectOutputStream oout = new ObjectOutputStream(bout);
         oout.writeObject(sdata.getAllAttributes());

@@ -11,6 +11,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
+    <hotrod.host>127.0.0.1</hotrod.host>
   </properties>
   <build>
     <plugins>
@@ -121,6 +122,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+     <groupId>org.infinispan.protostream</groupId>
+     <artifactId>protostream</artifactId>
+     <version>4.1.0.Final</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-jdk14</artifactId>
       <version>1.7.25</version>
@@ -147,6 +155,9 @@
               <includes>
                 <include>**/*.java</include>
               </includes>
+              <systemPropertyVariables>
+                <hotrod.host>${hotrod.host}</hotrod.host>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>

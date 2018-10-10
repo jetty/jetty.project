@@ -20,6 +20,7 @@
 package org.eclipse.jetty.session.infinispan;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.infinispan.commons.api.BasicCache;
@@ -32,7 +33,7 @@ import org.infinispan.commons.api.BasicCache;
 public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
     int _infinispanIdleTimeoutSec;
-    BasicCache<String, Object> _cache;
+    BasicCache<String, SessionData> _cache;
     protected QueryManager _queryManager;
     
     /**
@@ -71,7 +72,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
      * 
      * @return the cache
      */
-    public BasicCache<String, Object> getCache() 
+    public BasicCache<String, SessionData> getCache() 
     {
         return _cache;
     }
@@ -83,7 +84,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
      * 
      * @param cache the cache
      */
-    public void setCache (BasicCache<String, Object> cache) 
+    public void setCache (BasicCache<String, SessionData> cache) 
     {
         this._cache = cache;
     }

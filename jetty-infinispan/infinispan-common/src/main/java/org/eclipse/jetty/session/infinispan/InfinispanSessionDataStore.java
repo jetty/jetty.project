@@ -19,8 +19,6 @@
 
 package org.eclipse.jetty.session.infinispan;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +50,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     /**
      * Clustered cache of sessions
      */
-    private BasicCache<String, Object> _cache;
+    private BasicCache<String, SessionData> _cache;
 
     
     private int _infinispanIdleTimeoutSec;
@@ -67,7 +65,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * 
      * @return the cache
      */
-    public BasicCache<String, Object> getCache() 
+    public BasicCache<String, SessionData> getCache() 
     {
         return _cache;
     }
@@ -79,7 +77,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * 
      * @param cache the cache
      */
-    public void setCache (BasicCache<String, Object> cache) 
+    public void setCache (BasicCache<String, SessionData> cache) 
     {
         this._cache = cache;
     }
