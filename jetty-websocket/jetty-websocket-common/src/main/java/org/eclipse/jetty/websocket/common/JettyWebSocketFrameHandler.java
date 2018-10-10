@@ -30,11 +30,9 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -184,7 +182,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         customizer.customize(coreSession);
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(coreSession);
-        session = new WebSocketSessionImpl(coreSession, remote, upgradeRequest, upgradeResponse);
+
+        // TODO policy
+        session = new WebSocketSessionImpl(null, remote, upgradeRequest, upgradeResponse);
 
         frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
         openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
@@ -197,12 +197,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (textHandle != null)
         {
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor);
+            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, getInitialMaxTextMessageSize());
         }
 
         if (binaryHandle != null)
         {
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor);
+            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, getInitialMaxBinaryMessageSize());
         }
 
         if (openHandle != null)

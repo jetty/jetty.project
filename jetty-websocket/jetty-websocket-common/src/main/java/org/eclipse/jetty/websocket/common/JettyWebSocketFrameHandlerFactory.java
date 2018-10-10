@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -57,7 +56,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -156,24 +154,17 @@ public class JettyWebSocketFrameHandlerFactory
             future,
             metadata);
 
-
-
+        // TODO these are not attributes on the CoreSession, so we need another path to route them to the sinks that enforce them:
         if (metadata.getMaxBinaryMessageSize() >= -1)
-        {
             frameHandler.setInitialMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
-        }
 
         if (metadata.getMaxTextMessageSize() >= -1)
-        {
             frameHandler.setInitialMaxTextMessageSize(metadata.getMaxTextMessageSize());
-        }
-
-
 
         return frameHandler;
     }
 
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, long maxMessageSize)
     {
         if (msgHandle == null)
             return null;
@@ -182,13 +173,26 @@ public class JettyWebSocketFrameHandlerFactory
 
         try
         {
-            Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class);
-            MessageSink messageSink = (MessageSink) sinkConstructor.newInstance(executor, msgHandle);
-            return messageSink;
-        }
-        catch (NoSuchMethodException e)
-        {
-            throw new RuntimeException("Missing expected MessageSink constructor found at: " + sinkClass.getName(), e);
+            try
+            {
+                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Long.TYPE);
+                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, maxMessageSize);
+                return messageSink;
+            }
+            catch (NoSuchMethodException e)
+            {
+                try
+                {
+                    Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class);
+                    MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle);
+                    return messageSink;
+                }
+                catch (NoSuchMethodException e2)
+                {
+                    e.addSuppressed(e2);
+                    throw new RuntimeException("Missing expected MessageSink constructor found at: " + sinkClass.getName(), e);
+                }
+            }
         }
         catch (IllegalAccessException | InstantiationException | InvocationTargetException e)
         {

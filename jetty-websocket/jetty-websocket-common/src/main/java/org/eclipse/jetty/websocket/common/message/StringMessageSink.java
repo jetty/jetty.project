@@ -29,20 +29,23 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.MessageSinkImpl;
+import org.eclipse.jetty.websocket.common.AbstractMessageSink;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 
-public class StringMessageSink extends MessageSinkImpl
+public class StringMessageSink extends AbstractMessageSink
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
+    private final long maxMessageSize;
     private Utf8StringBuilder utf;
     private int size = 0;
 
-    public StringMessageSink(Executor executor, MethodHandle methodHandle)
+
+    public StringMessageSink(Executor executor, MethodHandle methodHandle, long maxMessageSize)
     {
         super(executor, methodHandle);
+        this.maxMessageSize = maxMessageSize;
 
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");
@@ -64,8 +67,10 @@ public class StringMessageSink extends MessageSinkImpl
             if (frame.hasPayload())
             {
                 ByteBuffer payload = frame.getPayload();
-                policy.assertValidTextMessageSize(size + payload.remaining());
-                size += payload.remaining();
+                int nextSize = size + payload.remaining();
+                if (maxMessageSize>0 && size>maxMessageSize)
+                    throw new MessageTooLargeException("Message size [" + size + "] exceeds maximum size [" + maxMessageSize + "]");
+                size = nextSize;
 
                 if (utf == null)
                     utf = new Utf8StringBuilder(1024);

@@ -25,9 +25,8 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
-import org.eclipse.jetty.websocket.common.MessageSinkImpl;
+import org.eclipse.jetty.websocket.common.AbstractMessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
  * Centralized logic for Dispatched Message Handling.
@@ -101,7 +100,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
  * @param <T> the type of object to give to user function
  * @param <R> the type of object that user function will return
  */
-public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
+public abstract class DispatchedMessageSink<T, R> extends AbstractMessageSink
 {
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;

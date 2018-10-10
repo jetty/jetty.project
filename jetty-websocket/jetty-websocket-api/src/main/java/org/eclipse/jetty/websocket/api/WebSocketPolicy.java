@@ -25,6 +25,8 @@ import java.time.Duration;
  */
 public interface WebSocketPolicy
 {
+    WebSocketBehavior getBehavior();
+
     /**
      * The duration that a websocket may be idle before being closed by the implementation
      * 

@@ -23,12 +23,12 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-public abstract class MessageSinkImpl implements MessageSink
+public abstract class AbstractMessageSink implements MessageSink
 {
     protected final Executor executor;
     protected final MethodHandle methodHandle;
 
-    public MessageSinkImpl(Executor executor, MethodHandle methodHandle)
+    public AbstractMessageSink(Executor executor, MethodHandle methodHandle)
     {
         this.executor = executor;
         this.methodHandle = methodHandle;

@@ -24,7 +24,6 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.Behavior;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -32,19 +31,17 @@ import java.time.Duration;
 
 public class WebSocketSessionImpl implements Session
 {
-    private final Behavior behavior;
     private final WebSocketPolicy sessionPolicy;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSessionImpl(Behavior behavior,
+    public WebSocketSessionImpl(
         WebSocketPolicy sessionPolicy,
         JettyWebSocketRemoteEndpoint remoteEndpoint,
         UpgradeRequest upgradeRequest,
         UpgradeResponse upgradeResponse)
     {
-        this.behavior = behavior;
         this.sessionPolicy = sessionPolicy;
         this.remoteEndpoint = remoteEndpoint;
         this.upgradeRequest = upgradeRequest;
@@ -151,6 +148,6 @@ public class WebSocketSessionImpl implements Session
     @Override
     public String toString()
     {
-        return String.format("WebSocketSessionImpl[%s,to=%,d,%s]", behavior, sessionPolicy.getIdleTimeout(), remoteEndpoint.getCoreSession());
+        return String.format("WebSocketSessionImpl[%s,to=%,d,%s]", sessionPolicy.getBehavior(), sessionPolicy.getIdleTimeout(), remoteEndpoint.getCoreSession());
     }
 }
