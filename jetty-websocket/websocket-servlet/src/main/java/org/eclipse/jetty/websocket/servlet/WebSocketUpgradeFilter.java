@@ -60,6 +60,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private final RFC6455Handshaker handshaker = new RFC6455Handshaker();
 
     /**
+     * Initialize the default WebSocketUpgradeFilter that the various WebSocket APIs use.
+     *
      * @param context the {@link ServletContextHandler} to use
      * @return a configured {@link WebSocketUpgradeFilter} instance
      * @throws ServletException if the filer cannot be configured
@@ -73,8 +75,11 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             return filter;
         }
 
+        WebSocketServletFactoryImpl factory = new WebSocketServletFactoryImpl();
+        context.setAttribute(WebSocketServletFactory.class.getName(), factory);
+
         // Dynamically add filter
-        filter = new WebSocketUpgradeFilter();
+        filter = new WebSocketUpgradeFilter(factory);
         filter.setToAttribute(context, WebSocketUpgradeFilter.class.getName());
 
         String name = "Jetty_WebSocketUpgradeFilter";
