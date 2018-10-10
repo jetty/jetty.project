@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
 
 public class EmptyServerHandler extends AbstractHandler.ErrorDispatchHandler
 {
@@ -39,6 +38,5 @@ public class EmptyServerHandler extends AbstractHandler.ErrorDispatchHandler
 
     protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Log.getRootLogger().info("EMPTY service {}",target);
     }
 }

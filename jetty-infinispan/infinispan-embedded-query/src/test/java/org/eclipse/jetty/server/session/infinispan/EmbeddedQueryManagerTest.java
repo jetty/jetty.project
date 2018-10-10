@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.server.session.infinispan;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.ElementType;
 import java.util.HashSet;
@@ -40,7 +42,7 @@ import org.infinispan.configuration.cache.Index;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
-import org.junit.Test;
+
 
 public class EmbeddedQueryManagerTest
 {

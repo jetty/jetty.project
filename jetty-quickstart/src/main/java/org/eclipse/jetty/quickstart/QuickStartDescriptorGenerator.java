@@ -51,6 +51,7 @@ import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -176,10 +177,10 @@ public class QuickStartDescriptorGenerator
             .tag("param-value",_webApp.getInitParameter(p))
             .closeTag();
 
-        if (_webApp.getEventListeners() != null)
-            for (EventListener e : _webApp.getEventListeners())
-                out.openTag("listener",origin(md,e.getClass().getCanonicalName() + ".listener"))
-                .tag("listener-class",e.getClass().getCanonicalName())
+        if (_webApp.getServletHandler().getListeners() != null)
+            for (ListenerHolder e : _webApp.getServletHandler().getListeners())
+                out.openTag("listener",origin(md,e.getClassName() + ".listener"))
+                .tag("listener-class",e.getClassName())
                 .closeTag();
 
         ServletHandler servlets = _webApp.getServletHandler();
