@@ -59,7 +59,7 @@ import org.eclipse.jetty.start.Props.Prop;
  */
 public class Module implements Comparable<Module>
 {
-    private static final String VERSION_UNSPECIFIED = "9.2";
+    private static final String VERSION_UNSPECIFIED = "0.0";
     static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
     static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
 
@@ -89,6 +89,9 @@ public class Module implements Comparable<Module>
     
     /** List of library options for this Module */
     private final List<String> _libs=new ArrayList<>();
+
+    /** List of JPMS options for this Module */
+    private final List<String> _jpms=new ArrayList<>();
     
     /** List of files for this Module */
     private final List<String> _files=new ArrayList<>();
@@ -229,6 +232,11 @@ public class Module implements Comparable<Module>
     {
         return _xmls;
     }
+
+    public List<String> getJPMS()
+    {
+        return _jpms;
+    }
     
     public Version getVersion()
     {
@@ -349,6 +357,9 @@ public class Module implements Comparable<Module>
                             case "LIB":
                             case "LIBS":
                                 _libs.add(line);
+                                break;
+                            case "JPMS":
+                                _jpms.add(line);
                                 break;
                             case "LICENSE":
                             case "LICENSES":
