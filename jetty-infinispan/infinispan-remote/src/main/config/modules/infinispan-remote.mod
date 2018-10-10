@@ -7,6 +7,7 @@ session
 [provides]
 infinispan-remote
 
+
 [xml]
 etc/sessions/infinispan/infinispan-remote.xml
 etc/sessions/infinispan/infinispan-common.xml

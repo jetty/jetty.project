@@ -41,7 +41,7 @@
 
   <Call id="serial_context" class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" name="getSerializationContext">
     <Arg>
-      <Ref refid="notrodMgr"/>
+      <Ref refid="hotrodMgr"/>
     </Arg>
     <Call name="registerProtoFiles">
       <Arg>

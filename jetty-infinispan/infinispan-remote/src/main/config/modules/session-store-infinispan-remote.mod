@@ -11,8 +11,9 @@ session-store
 infinispan-common
 infinispan-remote
 
-[lib]
+[files]
 maven://org.infinispan/infinispan-remote/${infinispan.version}|lib/infinispan/infinispan-remote-${infinispan.version}.jar
+basehome:modules/session-store-infinispan-remote/resources/hotrod-client.properties|resources/hotrod-client.properties
 
 [ini]
 infinispan.version?=9.1.0.Final
