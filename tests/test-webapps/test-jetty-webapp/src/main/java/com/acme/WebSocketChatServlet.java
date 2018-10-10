@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 @SuppressWarnings("serial")
 public class WebSocketChatServlet extends WebSocketServlet implements WebSocketCreator
@@ -63,7 +62,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     }
 
     @Override
-    public void configure(WebSocketServletFactoryImpl factory)
+    public void configure(WebSocketServletFactory factory)
     {
         factory.register(ChatWebSocket.class);
         factory.setCreator(this);

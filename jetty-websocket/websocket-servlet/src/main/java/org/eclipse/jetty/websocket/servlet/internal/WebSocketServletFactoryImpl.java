@@ -49,7 +49,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 /**
  * WebSocketServletFactory Implementation for working with WebSockets initiated from the Servlet API
  */
-public class WebSocketServletFactoryImpl implements WebSocketServletFactory, WebSocketServletFrameHandlerFactory, Dumpable
+public class WebSocketServletFactoryImpl implements WebSocketServletFactory, WebSocketServletFrameHandlerFactory, Dumpable, FrameHandler.CoreCustomizer
 {
     private static final Logger LOG = Log.getLogger(WebSocketServletFactoryImpl.class);
     private final PathMappings<WebSocketServletNegotiator> mappings = new PathMappings<>();
@@ -403,5 +403,15 @@ public class WebSocketServletFactoryImpl implements WebSocketServletFactory, Web
     public boolean removeMapping(String rawSpec)
     {
         return removeMapping(parsePathSpec(rawSpec));
+    }
+
+    @Override
+    public void customize(FrameHandler.CoreSession session)
+    {
+        session.setIdleTimeout(getDefaultIdleTimeout());
+        session.setAutoFragment(isAutoFragment());
+        session.setInputBufferSize(getDefaultInputBufferSize());
+        session.setOutputBufferSize(getDefaultOutputBufferSize());
+        session.setMaxFrameSize(getDefaultMaxAllowedFrameSize());
     }
 }

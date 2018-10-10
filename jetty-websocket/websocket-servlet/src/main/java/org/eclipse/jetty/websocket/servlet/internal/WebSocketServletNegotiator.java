@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.servlet.internal;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -29,9 +32,6 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
 
 import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
@@ -99,11 +99,7 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
     @Override
     public void customize(FrameHandler.CoreSession session)
     {
-        session.setIdleTimeout(factory.getDefaultIdleTimeout());
-        session.setAutoFragment(factory.isAutoFragment());
-        session.setInputBufferSize(factory.getDefaultInputBufferSize());
-        session.setOutputBufferSize(factory.getDefaultOutputBufferSize());
-        session.setMaxFrameSize(factory.getDefaultMaxAllowedFrameSize());
+        factory.customize(session);
     }
 
     @Override
