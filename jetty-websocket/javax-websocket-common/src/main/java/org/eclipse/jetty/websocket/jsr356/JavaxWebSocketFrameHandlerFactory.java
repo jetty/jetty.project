@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
+import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -45,10 +46,6 @@ import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.messages.ByteArrayMessageSink;
@@ -72,7 +69,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 import static org.eclipse.jetty.websocket.jsr356.util.InvokerUtils.Arg;
 
-public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
+public abstract class JavaxWebSocketFrameHandlerFactory
 {
     private static final AtomicLong IDGEN = new AtomicLong(0);
     private static final MethodHandle FILTER_RETURN_TYPE_METHOD;
@@ -105,13 +102,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
 
     public abstract JavaxWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
 
-    @Override
-    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
-    {
-        return newJavaxFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse, new CompletableFuture<>());
-    }
-
-    public JavaxWebSocketFrameHandler newJavaxFrameHandler(Object endpointInstance, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
+    public JavaxWebSocketFrameHandler newJavaxFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
         Object endpoint;
         EndpointConfig config;
@@ -140,12 +131,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
             }
         }
 
-        WebSocketPolicy endpointPolicy = policy.clonePolicy();
-
-        if (metadata.hasTextMetdata() && metadata.getTextMetadata().isMaxMessageSizeSet())
-            endpointPolicy.setMaxTextMessageSize(metadata.getTextMetadata().maxMessageSize);
-        if (metadata.hasBinaryMetadata() && metadata.getBinaryMetadata().isMaxMessageSizeSet())
-            endpointPolicy.setMaxBinaryMessageSize(metadata.getBinaryMetadata().maxMessageSize);
 
         MethodHandle openHandle = metadata.getOpenHandle();
         MethodHandle closeHandle = metadata.getCloseHandle();
@@ -186,10 +171,9 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         String id = String.format("%s-%s-%d", upgradeRequest.getLocalSocketAddress(),
                 upgradeRequest.getRemoteSocketAddress(), IDGEN.getAndIncrement());
 
-        return new JavaxWebSocketFrameHandler(
+        JavaxWebSocketFrameHandler frameHandler = new JavaxWebSocketFrameHandler(
                 container,
                 endpoint,
-                endpointPolicy,
                 upgradeRequest, upgradeResponse,
                 openHandle, closeHandle, errorHandle,
                 textMetadata, binaryMetadata,
@@ -197,6 +181,13 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 id,
                 config,
                 future);
+
+        if (metadata.hasTextMetdata() && metadata.getTextMetadata().isMaxMessageSizeSet())
+            frameHandler.setMaxTextMessageBufferSize(metadata.getTextMetadata().maxMessageSize);
+        if (metadata.hasBinaryMetadata() && metadata.getBinaryMetadata().isMaxMessageSizeSet())
+            frameHandler.setMaxBinaryMessageBufferSize(metadata.getBinaryMetadata().maxMessageSize);
+
+        return frameHandler;
     }
 
     /**
@@ -540,7 +531,13 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 OnMessage onMessageAnno = onMsg.getAnnotation(OnMessage.class);
 
                 MessageMetadata msgMetadata = new MessageMetadata();
-                msgMetadata.maxMessageSize = onMessageAnno.maxMessageSize();
+                if(onMessageAnno.maxMessageSize() > Integer.MAX_VALUE)
+                {
+                    throw new InvalidWebSocketException(
+                            String.format("Value too large: %s#%s - @OnMessage.maxMessageSize=%,d > Integer.MAX_VALUE",
+                                    endpointClass.getName(), onMsg.getName(), onMessageAnno.maxMessageSize()));
+                }
+                msgMetadata.maxMessageSize = (int) onMessageAnno.maxMessageSize();
 
                 MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textCallingArgs);
                 if (methodHandle != null)

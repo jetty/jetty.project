@@ -51,7 +51,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
@@ -269,7 +269,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(WebSocketServletFactoryImpl factory)
             {
                 factory.setCreator(creator);
             }

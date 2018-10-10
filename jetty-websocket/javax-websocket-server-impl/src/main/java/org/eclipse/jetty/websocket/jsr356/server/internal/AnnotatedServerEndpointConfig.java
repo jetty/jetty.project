@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.server.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +34,7 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
 
 public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 {

@@ -45,9 +45,11 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
@@ -69,7 +71,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     private WebSocketConnection connection;
     private boolean autoFragment = true;
-    private int maxFrameSize = 4*1024*1024;
+    private long maxFrameSize = 4*1024*1024;
     private int outputBufferSize = 4*1024;
     private int inputBufferSize = 4*1024;
 
@@ -217,7 +219,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public String getSubprotocol()
+    public String getNegotiatedSubProtocol()
     {
         return subprotocol;
     }
@@ -551,13 +553,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public int getMaxFrameSize()
+    public long getMaxFrameSize()
     {
         return maxFrameSize;
     }
 
     @Override
-    public void setMaxFrameSize(int maxFrameSize)
+    public void setMaxFrameSize(long maxFrameSize)
     {
         this.maxFrameSize = maxFrameSize;
     }
@@ -686,9 +688,37 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public List<ExtensionConfig> getExtensionConfig()
+    public List<ExtensionConfig> getNegotiatedExtensions()
     {
         return extensionStack.getNegotiatedExtensions();
+    }
+
+    @Override
+    public Map<String, List<String>> getParameterMap()
+    {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public String getProtocolVersion()
+    {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public URI getRequestURI()
+    {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        // TODO:
+        return false;
     }
 
     @Override

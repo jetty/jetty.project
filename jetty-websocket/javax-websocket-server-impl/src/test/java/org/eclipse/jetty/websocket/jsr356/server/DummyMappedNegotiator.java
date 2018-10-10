@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.servlet.MappedWebSocketServletNegotiator;
+import org.eclipse.jetty.websocket.servlet.internal.MappedWebSocketServletNegotiator;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletNegotiator;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletNegotiator;
 
 public class DummyMappedNegotiator implements MappedWebSocketServletNegotiator
 {

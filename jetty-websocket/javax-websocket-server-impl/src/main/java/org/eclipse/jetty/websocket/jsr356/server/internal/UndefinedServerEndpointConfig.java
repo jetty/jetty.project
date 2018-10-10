@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.server.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,10 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 import javax.websocket.Decoder;
-import javax.websocket.DeploymentException;
 import javax.websocket.Encoder;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpointConfig;
+
+import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
 
 public class UndefinedServerEndpointConfig implements ServerEndpointConfig
 {

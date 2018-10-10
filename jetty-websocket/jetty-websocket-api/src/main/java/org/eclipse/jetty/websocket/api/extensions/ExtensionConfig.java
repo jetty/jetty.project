@@ -158,6 +158,12 @@ public class ExtensionConfig
         }
     }
 
+    public ExtensionConfig(String name, Map<String,String> parameters)
+    {
+        this.name = name;
+        this.parameters = parameters;
+    }
+
     public String getName()
     {
         return name;

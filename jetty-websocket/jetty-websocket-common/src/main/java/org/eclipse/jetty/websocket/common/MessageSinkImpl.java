@@ -25,13 +25,11 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public abstract class MessageSinkImpl implements MessageSink
 {
-    protected final WebSocketPolicy policy;
     protected final Executor executor;
     protected final MethodHandle methodHandle;
 
-    public MessageSinkImpl(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public MessageSinkImpl(Executor executor, MethodHandle methodHandle)
     {
-        this.policy = policy;
         this.executor = executor;
         this.methodHandle = methodHandle;
     }

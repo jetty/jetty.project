@@ -26,131 +26,14 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer, WebSocketContainerContext
+public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {
-    private final WebSocketPolicy containerPolicy;
-    private final WebSocketExtensionRegistry extensionRegistry;
-    private ByteBufferPool bufferPool;
-    private long asyncSendTimeout = -1;
-    private long defaultMaxSessionIdleTimeout = -1; // TODO: this should probably be policy.idleTimeout
-
-    public JavaxWebSocketContainer(WebSocketPolicy containerPolicy)
-    {
-        this.containerPolicy = containerPolicy;
-        this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.bufferPool = new MappedByteBufferPool(); // TODO: obtain from / sync with websocket-core on container setup
-    }
-
     protected abstract JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory();
 
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#getDefaultAsyncSendTimeout()
-     * @since JSR356 v1.0
-     */
-    @Override
-    public long getDefaultAsyncSendTimeout()
-    {
-        return this.asyncSendTimeout;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#getDefaultMaxBinaryMessageBufferSize()
-     * @since JSR356 v1.0
-     */
-    @Override
-    public int getDefaultMaxBinaryMessageBufferSize()
-    {
-        // We use policy.maxBinaryMessageSize here, as that is what JSR356 expects
-        return containerPolicy.getMaxBinaryMessageSize();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#setDefaultMaxBinaryMessageBufferSize(int)
-     * @since JSR356 v1.0
-     */
-    @Override
-    public void setDefaultMaxBinaryMessageBufferSize(int max)
-    {
-        // We use policy.maxBinaryMessageSize here, as that is what JSR356 expects
-        containerPolicy.setMaxBinaryMessageSize(max);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#getDefaultMaxSessionIdleTimeout()
-     * @since JSR356 v1.0
-     */
-    @Override
-    public long getDefaultMaxSessionIdleTimeout()
-    {
-        return this.defaultMaxSessionIdleTimeout;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#setDefaultMaxSessionIdleTimeout(long)
-     * @since JSR356 v1.0
-     */
-    @Override
-    public void setDefaultMaxSessionIdleTimeout(long timeout)
-    {
-        this.defaultMaxSessionIdleTimeout = timeout;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#getDefaultMaxTextMessageBufferSize()
-     * @since JSR356 v1.0
-     */
-    @Override
-    public int getDefaultMaxTextMessageBufferSize()
-    {
-        // We use policy.maxTextMessageSize here, as that is what JSR356 expects
-        return containerPolicy.getMaxTextMessageSize();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#setDefaultMaxTextMessageBufferSize(int)
-     * @since JSR356 v1.0
-     */
-    @Override
-    public void setDefaultMaxTextMessageBufferSize(int max)
-    {
-        // We use policy.maxTextMessageSize here, as that is what JSR356 expects
-        containerPolicy.setMaxTextMessageSize(max);
-    }
-
-    public WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return extensionRegistry;
-    }
-
-    @Override
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return null;
-    }
+    protected abstract WebSocketExtensionRegistry getExtensionRegistry();
 
     /**
      * {@inheritDoc}
@@ -163,7 +46,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     {
         Set<Extension> ret = new HashSet<>();
 
-        for (String name : extensionRegistry.getExtensionNames())
+        for (String name : getExtensionRegistry().getExtensionNames())
         {
             ret.add(new JavaxWebSocketExtension(name));
         }
@@ -181,25 +64,8 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return new HashSet<>(getBeans(JavaxWebSocketSession.class));
     }
 
-    public WebSocketPolicy getPolicy()
+    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
-        return containerPolicy;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see WebSocketContainer#setAsyncSendTimeout(long)
-     * @since JSR356 v1.0
-     */
-    @Override
-    public void setAsyncSendTimeout(long timeoutmillis)
-    {
-        this.asyncSendTimeout = timeoutmillis;
-    }
-
-    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
-    {
-        return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse, futureSession);
+        return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
     }
 }

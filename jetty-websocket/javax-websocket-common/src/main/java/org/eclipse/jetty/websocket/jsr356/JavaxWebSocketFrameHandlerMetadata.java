@@ -36,7 +36,7 @@ public class JavaxWebSocketFrameHandlerMetadata
      *     (-2 means unset/undeclared, -1 means whatever that value means, such as: no idletimeout, or no maximum message size limit)
      * </p>
      */
-    public static final long UNSET = -2L;
+    public static final int UNSET = -2;
 
     private static final String[] NO_VARIABLES = new String[0];
 
@@ -232,7 +232,7 @@ public class JavaxWebSocketFrameHandlerMetadata
         public MethodHandle handle;
         public Class<? extends MessageSink> sinkClass;
         public AvailableDecoders.RegisteredDecoder registeredDecoder;
-        public long maxMessageSize = UNSET;
+        public int maxMessageSize = UNSET;
 
         public static MessageMetadata copyOf(MessageMetadata metadata)
         {

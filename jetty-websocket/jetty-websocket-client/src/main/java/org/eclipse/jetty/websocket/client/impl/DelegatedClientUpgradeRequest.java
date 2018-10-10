@@ -163,19 +163,13 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
     @Override
     public void addExtensions(org.eclipse.jetty.websocket.api.extensions.ExtensionConfig... configs)
     {
-
+        // TODO
     }
 
     @Override
     public void addExtensions(String... configs)
     {
-
-    }
-
-    @Override
-    public void clearHeaders()
-    {
-
+        // TODO
     }
 
     @Override
@@ -197,15 +191,9 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public boolean isOrigin(String test)
-    {
-        return false;
-    }
-
-    @Override
     public void setCookies(List<HttpCookie> cookies)
     {
-
+        // TODO
     }
 
     @Override
@@ -221,31 +209,31 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
     @Override
     public void setExtensions(List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> configs)
     {
-
+        // TODO
     }
 
     @Override
     public void setHeader(String name, List<String> values)
     {
-
+        // TODO
     }
 
     @Override
     public void setHeader(String name, String value)
     {
-
+        // TODO
     }
 
     @Override
     public void setHeaders(Map<String, List<String>> headers)
     {
-
+        // TODO
     }
 
     @Override
     public void setHttpVersion(String httpVersion)
     {
-
+        // TODO
     }
 
     @Override
@@ -257,24 +245,24 @@ public class DelegatedClientUpgradeRequest implements UpgradeRequest
     @Override
     public void setRequestURI(URI uri)
     {
-
+        // TODO
     }
 
     @Override
     public void setSession(Object session)
     {
-
+        // TODO
     }
 
     @Override
     public void setSubProtocols(List<String> protocols)
     {
-
+        // TODO
     }
 
     @Override
     public void setSubProtocols(String... protocols)
     {
-
+        // TODO
     }
 }

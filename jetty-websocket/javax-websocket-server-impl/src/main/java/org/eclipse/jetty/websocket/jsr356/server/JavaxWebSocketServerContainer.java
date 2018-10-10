@@ -44,9 +44,13 @@ import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.servlet.MappedWebSocketServletNegotiator;
+import org.eclipse.jetty.websocket.jsr356.server.internal.AnnotatedServerEndpointConfig;
+import org.eclipse.jetty.websocket.jsr356.server.internal.JavaxWebSocketCreator;
+import org.eclipse.jetty.websocket.jsr356.server.internal.UndefinedServerEndpointConfig;
+import org.eclipse.jetty.websocket.servlet.internal.MappedWebSocketServletNegotiator;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 
 @ManagedObject("JSR356 Server Container")
 public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer
@@ -75,8 +79,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
     
-    private final WebSocketContainerContext containerContext;
-    private final MappedWebSocketServletNegotiator mappedWebSocketServletNegotiator;
+    private final WebSocketServletFactoryImpl webSocketServletFactory;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
@@ -87,25 +90,25 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
      * @param containerContext the {@link WebSocketContainerContext} to use
      * @param httpClient the {@link HttpClient} instance to use
      */
-    public JavaxWebSocketServerContainer(WebSocketContainerContext containerContext, MappedWebSocketServletNegotiator mappedWebSocketServletNegotiator, HttpClient httpClient)
+    public JavaxWebSocketServerContainer(WebSocketContainerContext containerContext, WebSocketServletFactoryImpl webSocketServletFactory, HttpClient httpClient)
     {
         super(new WebSocketCoreClient(httpClient));
         this.coreClient.addBean(httpClient, false);
         this.containerContext = containerContext;
-        this.mappedWebSocketServletNegotiator = mappedWebSocketServletNegotiator;
+        this.webSocketServletFactory = webSocketServletFactory;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
 
     @Override
     public ByteBufferPool getBufferPool()
     {
-        return this.containerContext.getBufferPool();
+        return this.webSocketServletFactory.getBufferPool();
     }
 
     @Override
     public ClassLoader getContextClassloader()
     {
-        return this.containerContext.getContextClassloader();
+        return this.webSocketServletFactory.getContextClassloader();
     }
 
     @Override
@@ -117,7 +120,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return this.containerContext.getExtensionRegistry();
+        return this.webSocketServletFactory.getExtensionRegistry();
     }
 
     @Override
@@ -129,13 +132,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return this.containerContext.getObjectFactory();
-    }
-
-    @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return this.containerContext.getPolicy();
+        return this.webSocketServletFactory.getObjectFactory();
     }
 
     @Override
@@ -204,7 +201,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
                 ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
                 addEndpointMapping(config);
             }
-            catch (InvalidSignatureException e)
+            catch (InvalidWebSocketException e)
             {
                 throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
             }

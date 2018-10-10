@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 /**
  * Dummy Container for testing.
  */
-public class DummyContainer extends JavaxWebSocketContainer implements WebSocketContainerContext
+public class DummyContainer extends JavaxWebSocketContainer
 {
     private final ByteBufferPool bufferPool;
     private final ClassLoader contextClassLoader;

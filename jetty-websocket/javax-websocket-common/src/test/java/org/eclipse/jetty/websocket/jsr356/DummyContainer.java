@@ -38,25 +38,12 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 /**
  * Dummy Container for testing.
  */
-public class DummyContainer extends JavaxWebSocketContainer implements WebSocketContainerContext
+public class DummyContainer extends JavaxWebSocketContainer
 {
-    private final ByteBufferPool bufferPool;
-    private final ClassLoader contextClassLoader;
-    private final Executor executor;
-    private final WebSocketExtensionRegistry extensionRegistry;
-    private final DecoratedObjectFactory objectFactory;
-    private final WebSocketPolicy policy;
     private final JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
 
-    public DummyContainer(WebSocketPolicy policy)
+    public DummyContainer()
     {
-        super(policy);
-        this.policy = policy;
-        this.bufferPool = new MappedByteBufferPool();
-        this.contextClassLoader = this.getClass().getClassLoader();
-        this.executor = Executors.newFixedThreadPool(10);
-        this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.objectFactory = new DecoratedObjectFactory();
         this.frameHandlerFactory = new DummyFrameHandlerFactory(this);
     }
 
@@ -82,42 +69,6 @@ public class DummyContainer extends JavaxWebSocketContainer implements WebSocket
     public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
     {
         throw new UnsupportedOperationException("Not supported by DummyContainer");
-    }
-
-    @Override
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
-    }
-
-    @Override
-    public ClassLoader getContextClassloader()
-    {
-        return contextClassLoader;
-    }
-
-    @Override
-    public Executor getExecutor()
-    {
-        return executor;
-    }
-
-    @Override
-    public WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return extensionRegistry;
-    }
-
-    @Override
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return objectFactory;
-    }
-
-    @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
     }
 
     @Override

@@ -16,28 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.servlet;
 
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
- * Factory for API's to use for creating API specific FrameHandler instances that
- * websocket-core will utilize.
+ * WebSocket Core API - Factory for Servlet based API's to use for creating API specific FrameHandler instances that
+ * websocket-core will eventually utilize.
  * <p>
- *     This is used by both the Server APIs and Client APIs.
+ *     This is used by Servlet based APIs only.
  * </p>
  */
-public interface FrameHandlerFactory
+public interface WebSocketServletFrameHandlerFactory
 {
+    String ATTR_HANDLERS = "org.eclipse.jetty.websocket.servlet.FrameHandlerFactories";
+
     /**
      * Attempt to create a FrameHandler from the provided websocketPojo.
      *
      * @param websocketPojo the websocket pojo to work with
-     * @param policy the policy to use when creating new FrameHandler instances (this is assumed to be a unique/cloned policy for this FrameHandler instance)
      * @param upgradeRequest the Upgrade Handshake Request used to create the FrameHandler
      * @param upgradeResponse the Upgrade Handshake Response used to create the FrameHandler
-     * @return the API specific FrameHandler, or null if this implementation is unable to create the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
+     * @return the API specific FrameHandler, or null if this implementation is unable to create the FrameHandler (allowing another {@link WebSocketServletFrameHandlerFactory} to try)
      */
-    FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse);
+    FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse);
 }

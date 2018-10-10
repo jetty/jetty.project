@@ -57,6 +57,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -116,35 +117,9 @@ public class JettyWebSocketFrameHandlerFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
-    {
-        return newJettyFrameHandler(websocketPojo, policy, upgradeRequest, upgradeResponse, null);
-    }
-
-    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
-
-        // Update passed in (unique) policy for this Frame Handler instance
-        if (metadata.getIdleTimeout() > 0)
-        {
-            policy.setIdleTimeout(metadata.getIdleTimeout());
-        }
-
-        if (metadata.getInputBufferSize() > 0)
-        {
-            policy.setInputBufferSize(metadata.getInputBufferSize());
-        }
-
-        if (metadata.getMaxBinaryMessageSize() >= -1)
-        {
-            policy.setMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
-        }
-
-        if (metadata.getMaxTextMessageSize() >= -1)
-        {
-            policy.setMaxTextMessageSize(metadata.getMaxTextMessageSize());
-        }
 
         MethodHandle openHandle = metadata.getOpenHandle();
         MethodHandle closeHandle = metadata.getCloseHandle();
@@ -170,19 +145,41 @@ public class JettyWebSocketFrameHandlerFactory
         if(future == null)
             future = new CompletableFuture<>();
 
-        return new JettyWebSocketFrameHandler(
+        JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
                 executor,
                 endpointInstance,
-                policy,
                 upgradeRequest, upgradeResponse,
                 openHandle, closeHandle, errorHandle,
                 textHandle, binaryHandle,
                 textSinkClass, binarySinkClass,
                 frameHandle, pingHandle, pongHandle,
                 future);
+
+        // Update passed in (unique) policy for this Frame Handler instance
+        if (metadata.getIdleTimeout() > 0)
+        {
+            frameHandler.setInitialIdleTimeout(Duration.ofMillis(metadata.getIdleTimeout()));
+        }
+
+        if (metadata.getInputBufferSize() > 0)
+        {
+            frameHandler.setInitialBufferSize(metadata.getInputBufferSize());
+        }
+
+        if (metadata.getMaxBinaryMessageSize() >= -1)
+        {
+            frameHandler.setInitialMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
+        }
+
+        if (metadata.getMaxTextMessageSize() >= -1)
+        {
+            frameHandler.setInitialMaxTextMessageSize(metadata.getMaxTextMessageSize());
+        }
+
+        return frameHandler;
     }
 
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketPolicy endpointPolicy, Executor executor)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor)
     {
         if (msgHandle == null)
             return null;
@@ -191,8 +188,8 @@ public class JettyWebSocketFrameHandlerFactory
 
         try
         {
-            Constructor sinkConstructor = sinkClass.getConstructor(WebSocketPolicy.class, Executor.class, MethodHandle.class);
-            MessageSink messageSink = (MessageSink) sinkConstructor.newInstance(endpointPolicy, executor, msgHandle);
+            Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class);
+            MessageSink messageSink = (MessageSink) sinkConstructor.newInstance(executor, msgHandle);
             return messageSink;
         }
         catch (NoSuchMethodException e)

@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
+import org.eclipse.jetty.websocket.jsr356.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;

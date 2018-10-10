@@ -16,35 +16,32 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.servlet.internal;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.Duration;
 
 import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
 public class WebSocketServletNegotiator implements WebSocketNegotiator
 {
-    private final WebSocketServletFactory factory;
+    private final WebSocketServletFactoryImpl factory;
     private final WebSocketCreator creator;
-    private FrameHandlerFactory frameHandlerFactory;
+    private final WebSocketServletFrameHandlerFactory frameHandlerFactory;
 
-    public WebSocketServletNegotiator(WebSocketServletFactory factory, WebSocketCreator creator)
-    {
-        this(factory, creator, null);
-    }
-
-    public WebSocketServletNegotiator(WebSocketServletFactory factory, WebSocketCreator creator, FrameHandlerFactory frameHandlerFactory)
+    public WebSocketServletNegotiator(WebSocketServletFactoryImpl factory, WebSocketCreator creator, WebSocketServletFrameHandlerFactory frameHandlerFactory)
     {
         this.factory = factory;
         this.creator = creator;
@@ -61,18 +58,13 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
         return creator;
     }
 
-    public FrameHandlerFactory getFrameHandlerFactory()
-    {
-        return frameHandlerFactory;
-    }
-
     @Override
     public FrameHandler negotiate(Negotiation negotiation) throws IOException
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
-            Thread.currentThread().setContextClassLoader(factory.getContainer().getContextClassloader());
+            Thread.currentThread().setContextClassLoader(factory.getContextClassloader());
 
             ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation.getRequest());
             ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation.getResponse());
@@ -80,26 +72,19 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
             Object websocketPojo = creator.createWebSocket(upgradeRequest, upgradeResponse);
 
             // Handling for response forbidden (and similar paths)
-            if(upgradeResponse.isCommitted())
+            if (upgradeResponse.isCommitted())
             {
                 return null;
             }
 
-            if(websocketPojo == null)
+            if (websocketPojo == null)
             {
                 // no creation, sorry
                 upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
                 return null;
             }
 
-            // If a FrameHandlerFactory is specified, use it
-            if (frameHandlerFactory != null)
-            {
-                return frameHandlerFactory.newFrameHandler(websocketPojo, factory.getPolicy(), upgradeRequest, upgradeResponse);
-            }
-
-            // Use WebSocketServletFactory to create FrameHandler
-            return factory.newFrameHandler(websocketPojo, factory.getPolicy(), upgradeRequest, upgradeResponse);
+            return frameHandlerFactory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
         }
         catch (URISyntaxException e)
         {
@@ -114,13 +99,11 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
     @Override
     public void customize(FrameHandler.CoreSession session)
     {
-        // TODO replace?
-        WebSocketPolicy policy = factory.getPolicy();
-        session.setIdleTimeout(Duration.ofMillis(policy.getIdleTimeout()));
-        session.setAutoFragment(policy.isAutoFragment());
-        session.setInputBufferSize(policy.getInputBufferSize());
-        session.setOutputBufferSize(policy.getOutputBufferSize());
-        session.setMaxFrameSize(policy.getMaxAllowedFrameSize());
+        session.setIdleTimeout(factory.getDefaultIdleTimeout());
+        session.setAutoFragment(factory.isAutoFragment());
+        session.setInputBufferSize(factory.getDefaultInputBufferSize());
+        session.setOutputBufferSize(factory.getDefaultOutputBufferSize());
+        session.setMaxFrameSize(factory.getDefaultMaxAllowedFrameSize());
     }
 
     @Override
@@ -132,12 +115,12 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return factory.getContainer().getObjectFactory();
+        return factory.getObjectFactory();
     }
 
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        return factory.getContainer().getBufferPool();
+        return factory.getBufferPool();
     }
 }

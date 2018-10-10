@@ -22,15 +22,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryStreamMessageSink;
@@ -66,7 +63,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private final Logger LOG;
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
-    private final WebSocketPolicy policy;
     /**
      * List of configured named variables in the uri-template.
      * <p>
@@ -106,7 +102,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
      */
     private final UpgradeRequest upgradeRequest;
     /**
-     * Immutable HandshakeResponse available via Session
+     * Immutable javax.websocket.HandshakeResponse available via Session
      */
     private final UpgradeResponse upgradeResponse;
     private final String id;
@@ -115,15 +111,16 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
+    private int maxTextMessageBufferSize = 65535;
+    private int maxBinaryMessageBufferSize = 65535;
     private JavaxWebSocketSession session;
     private Map<Byte, RegisteredMessageHandler> messageHandlerMap;
     private CoreSession coreSession;
 
     protected byte dataType = OpCode.UNDEFINED;
 
-
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
-                                      Object endpointInstance, WebSocketPolicy upgradePolicy,
+                                      Object endpointInstance,
                                       UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       MessageMetadata textMetadata,
@@ -143,7 +140,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             throw oops;
         }
         this.endpointInstance = endpointInstance;
-        this.policy = upgradePolicy;
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
 
@@ -170,14 +166,29 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         return endpointConfig;
     }
 
-    public WebSocketPolicy getPolicy()
-    {
-        return this.policy;
-    }
-
     public JavaxWebSocketSession getSession()
     {
         return session;
+    }
+
+    public int getMaxTextMessageBufferSize()
+    {
+        return maxTextMessageBufferSize;
+    }
+
+    public void setMaxTextMessageBufferSize(int maxTextMessageBufferSize)
+    {
+        this.maxTextMessageBufferSize = maxTextMessageBufferSize;
+    }
+
+    public int getMaxBinaryMessageBufferSize()
+    {
+        return maxBinaryMessageBufferSize;
+    }
+
+    public void setMaxBinaryMessageBufferSize(int maxBinaryMessageBufferSize)
+    {
+        this.maxBinaryMessageBufferSize = maxBinaryMessageBufferSize;
     }
 
     @Override
@@ -300,7 +311,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         if (frame.isFin() && !frame.isControlFrame())
             dataType = OpCode.UNDEFINED;
     }
-
 
     public Set<MessageHandler> getMessageHandlers()
     {

@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -27,7 +30,8 @@ import javax.servlet.ServletException;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 
 /**
  * ServletContext configuration for Jetty Native WebSockets API.
@@ -69,10 +73,28 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        ServletContextWebSocketContainer wsContainer = ServletContextWebSocketContainer.get(ctx);
-        throw new UnsupportedOperationException();
-        /* TODO
-        wsContainer.addFrameHandlerFactory(new JettyWebSocketFrameHandlerFactory(wsContainer.getExecutor()));
-        */
+        List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>) ctx.getAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
+        if(factories == null)
+        {
+            factories = new ArrayList<>();
+        }
+
+        Executor executor = (Executor) ctx.getAttribute("org.eclipse.jetty.server.Executor");
+        if(executor == null)
+        {
+            try
+            {
+                QueuedThreadPool threadPool = new QueuedThreadPool();
+                threadPool.setName("Jetty-WebSocketServer");
+                threadPool.start();
+                executor = threadPool;
+            }
+            catch (Exception e)
+            {
+                throw new ServletException("Unable to start internal Executor", e);
+            }
+        }
+
+        factories.add(new JettyWebSocketServletFrameHandlerFactory(executor));
     }
 }

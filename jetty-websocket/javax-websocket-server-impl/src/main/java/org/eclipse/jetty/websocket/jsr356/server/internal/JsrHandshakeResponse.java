@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.server.internal;
 
 import java.util.HashMap;
 import java.util.List;

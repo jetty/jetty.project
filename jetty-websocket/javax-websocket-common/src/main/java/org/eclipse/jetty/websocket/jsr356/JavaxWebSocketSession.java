@@ -22,12 +22,8 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
@@ -67,7 +63,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
     private final JavaxWebSocketFrameHandler frameHandler;
-    private final WebSocketPolicy policy;
     private final EndpointConfig config;
     private final String id;
     private final AvailableDecoders availableDecoders;
@@ -92,7 +87,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         this.frameHandler = frameHandler;
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
-        this.policy = frameHandler.getPolicy();
         this.id = id;
 
         this.config = endpointConfig == null ? new BasicEndpointConfig() : endpointConfig;
@@ -284,11 +278,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return this.container;
     }
 
-    public WebSocketContainerContext getContainerContext()
-    {
-        return container;
-    }
-
     public AvailableDecoders getDecoders()
     {
         return availableDecoders;
@@ -330,7 +319,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public int getMaxBinaryMessageBufferSize()
     {
-        return getPolicy().getMaxBinaryMessageSize();
+        return frameHandler.getMaxBinaryMessageBufferSize();
     }
 
     /**
@@ -343,7 +332,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void setMaxBinaryMessageBufferSize(int length)
     {
-        getPolicy().setMaxBinaryMessageSize(length);
+        frameHandler.setMaxBinaryMessageBufferSize(length);
     }
 
     /**
@@ -367,7 +356,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void setMaxIdleTimeout(long milliseconds)
     {
-        getPolicy().setIdleTimeout(milliseconds);
         coreSession.setIdleTimeout(Duration.ofMillis(milliseconds));
     }
 
@@ -380,7 +368,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public int getMaxTextMessageBufferSize()
     {
-        return getPolicy().getMaxTextMessageSize();
+        return frameHandler.getMaxTextMessageBufferSize();
     }
 
     /**
@@ -393,7 +381,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void setMaxTextMessageBufferSize(int length)
     {
-        getPolicy().setMaxTextMessageSize(length);
+        frameHandler.setMaxTextMessageBufferSize(length);
     }
 
     /**
@@ -465,11 +453,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public Map<String, String> getPathParameters()
     {
         return pathParameters;
-    }
-
-    public WebSocketPolicy getPolicy()
-    {
-        return policy;
     }
 
     /**

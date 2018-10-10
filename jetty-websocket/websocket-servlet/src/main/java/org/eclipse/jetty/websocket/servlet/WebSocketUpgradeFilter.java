@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
@@ -43,8 +44,9 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletNegotiator;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketServletNegotiator} objects.
@@ -54,10 +56,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
-    public static final String CONFIG_ATTRIBUTE_KEY = "configAttributeKey";
 
     private final RFC6455Handshaker handshaker = new RFC6455Handshaker();
-    private ServletContextWebSocketContainer servletContextWebSocketContainer;
 
     /**
      * @param context the {@link ServletContextHandler} to use
@@ -74,8 +74,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         }
 
         // Dynamically add filter
-        NativeWebSocketConfiguration configuration = NativeWebSocketServletContainerInitializer.getDefaultFrom(context.getServletContext());
-        filter = new WebSocketUpgradeFilter(configuration);
+        filter = new WebSocketUpgradeFilter();
         filter.setToAttribute(context, WebSocketUpgradeFilter.class.getName());
 
         String name = "Jetty_WebSocketUpgradeFilter";
@@ -120,81 +119,19 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return configureContext((ServletContextHandler) handler);
     }
 
-    private NativeWebSocketConfiguration configuration;
+    private final WebSocketServletFactoryImpl factory;
     private String instanceKey;
-    private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
 
     @SuppressWarnings("unused")
     public WebSocketUpgradeFilter()
     {
-        // do nothing
+        this(new WebSocketServletFactoryImpl());
     }
 
-    @SuppressWarnings("unused")
-    public WebSocketUpgradeFilter(WebSocketServletFactory factory)
+    public WebSocketUpgradeFilter(WebSocketServletFactoryImpl factory)
     {
-        this(new NativeWebSocketConfiguration(factory));
-    }
-
-    public WebSocketUpgradeFilter(NativeWebSocketConfiguration configuration)
-    {
-        this.configuration = configuration;
-    }
-
-    /**
-     * Add a Negotiator Mapping
-     *
-     * @param pathSpec the path spec
-     * @param negotiator the negotiator
-     * @see NativeWebSocketConfiguration#addMapping(PathSpec, WebSocketServletNegotiator)
-     * @deprecated use {@link #getConfiguration()}.{@link NativeWebSocketConfiguration#addMapping(PathSpec, WebSocketServletNegotiator)} instead.
-     */
-    @Deprecated
-    public void addMapping(PathSpec pathSpec, WebSocketServletNegotiator negotiator)
-    {
-        configuration.addMapping(pathSpec, negotiator);
-    }
-
-    /**
-     * Add a mapping
-     *
-     * @param spec the path spec
-     * @param creator the creator (to be wrapped by {@link WebSocketServletNegotiator})
-     * @see NativeWebSocketConfiguration#addMapping(PathSpec, WebSocketCreator)
-     * @deprecated use {@link #getConfiguration()}.{@link NativeWebSocketConfiguration#addMapping(PathSpec, WebSocketCreator)} instead.
-     */
-    @Deprecated
-    public void addMapping(PathSpec spec, WebSocketCreator creator)
-    {
-        configuration.addMapping(spec, creator);
-    }
-
-    /**
-     * Add a mapping
-     *
-     * @param spec the path spec
-     * @param creator the creator (to be wrapped by {@link WebSocketServletNegotiator})
-     * @see NativeWebSocketConfiguration#addMapping(String, WebSocketCreator)
-     * @deprecated use {@link #getConfiguration()}.{@link NativeWebSocketConfiguration#addMapping(String, WebSocketCreator)} instead.
-     */
-    @Deprecated
-    public void addMapping(String spec, WebSocketCreator creator)
-    {
-        configuration.addMapping(spec, creator);
-    }
-
-    /**
-     * Remove a mapping
-     *
-     * @param spec the path spec
-     * @see NativeWebSocketConfiguration#removeMapping(String)
-     * @deprecated use {@link #getConfiguration()}.{@link NativeWebSocketConfiguration#removeMapping(String)} instead.
-     */
-    @Deprecated
-    public boolean removeMapping(String spec)
-    {
-        return configuration.removeMapping(spec);
+        this.factory = factory;
     }
 
     @Override
@@ -203,10 +140,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         try
         {
             alreadySetToAttribute = false;
-            if (localConfiguration)
-            {
-                configuration.stop();
-            }
         }
         catch (Exception e)
         {
@@ -217,29 +150,10 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        if (configuration == null)
-        {
-            // no configuration, cannot operate
-            LOG.debug("WebSocketUpgradeFilter is not operational - missing " + NativeWebSocketConfiguration.class.getName());
-            chain.doFilter(request, response);
-            return;
-        }
-
-        WebSocketServletFactory factory = configuration.getFactory();
-
-        if (factory == null)
-        {
-            // no factory, cannot operate
-            LOG.debug("WebSocketUpgradeFilter is not operational - no WebSocketServletFactory configured");
-            chain.doFilter(request, response);
-            return;
-        }
-
         try
         {
             HttpServletRequest httpreq = (HttpServletRequest) request;
             HttpServletResponse httpresp = (HttpServletResponse) response;
-
 
             // Since this is a filter, we need to be smart about determining the target path.
             // We should rely on the Container for stripping path parameters and its ilk before
@@ -250,7 +164,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                 target = target + httpreq.getPathInfo();
             }
 
-            MappedResource<WebSocketServletNegotiator> resource = configuration.getMatch(target);
+            MappedResource<WebSocketServletNegotiator> resource = factory.getMatchedResource(target);
             if (resource == null)
             {
                 // no match.
@@ -308,23 +222,14 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(indent).append(" +- configuration=").append(configuration.toString()).append("\n");
-        configuration.dump(out, indent);
+        out.append(indent).append(" +- factory=").append(factory.toString()).append("\n");
+        factory.dump(out, indent);
     }
 
+    @ManagedAttribute(value = "factory", readonly = true)
     public WebSocketServletFactory getFactory()
     {
-        return configuration.getFactory();
-    }
-
-    @ManagedAttribute(value = "configuration", readonly = true)
-    public NativeWebSocketConfiguration getConfiguration()
-    {
-        if (configuration == null)
-        {
-            throw new IllegalStateException(this.getClass().getName() + " not initialized yet");
-        }
-        return configuration;
+        return factory;
     }
 
     @Override
@@ -332,59 +237,50 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     {
         try
         {
-            String configurationKey = config.getInitParameter(CONFIG_ATTRIBUTE_KEY);
-            if (configurationKey == null)
-            {
-                configurationKey = NativeWebSocketConfiguration.class.getName();
-            }
+            final ServletContext context = config.getServletContext();
 
-            if (configuration == null)
-            {
-                this.configuration = (NativeWebSocketConfiguration) config.getServletContext().getAttribute(configurationKey);
-                if (this.configuration == null)
-                {
-                    // The NativeWebSocketConfiguration should have arrived from the NativeWebSocketServletContainerInitializer
-                    throw new ServletException("Unable to find required instance of " +
-                            NativeWebSocketConfiguration.class.getName() + " at ServletContext attribute '" + configurationKey + "'");
-                }
-            }
-            else
-            {
-                // We have a NativeWebSocketConfiguration already present, make sure it exists on the ServletContext
-                if (config.getServletContext().getAttribute(configurationKey) == null)
-                {
-                    config.getServletContext().setAttribute(configurationKey, this.configuration);
-                }
-            }
-
-            if (!this.configuration.isRunning())
-            {
-                localConfiguration = true;
-                this.configuration.start();
-            }
+            factory.setContextClassLoader(context.getClassLoader());
 
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)
             {
-                getFactory().getPolicy().setIdleTimeout(Long.parseLong(max));
+                getFactory().setDefaultIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
             }
 
             max = config.getInitParameter("maxTextMessageSize");
             if (max != null)
             {
-                getFactory().getPolicy().setMaxTextMessageSize(Integer.parseInt(max));
+                getFactory().setDefaultMaxTextMessageSize(Integer.parseInt(max));
             }
 
             max = config.getInitParameter("maxBinaryMessageSize");
             if (max != null)
             {
-                getFactory().getPolicy().setMaxBinaryMessageSize(Integer.parseInt(max));
+                getFactory().setDefaultMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
             max = config.getInitParameter("inputBufferSize");
             if (max != null)
             {
-                getFactory().getPolicy().setInputBufferSize(Integer.parseInt(max));
+                getFactory().setDefaultInputBufferSize(Integer.parseInt(max));
+            }
+
+            max = config.getInitParameter("outputBufferSize");
+            if (max != null)
+            {
+                getFactory().setDefaultOutputBufferSize(Integer.parseInt(max));
+            }
+
+            max = config.getInitParameter("maxAllowedFrameSize");
+            if (max != null)
+            {
+                getFactory().setDefaultMaxAllowedFrameSize(Long.parseLong(max));
+            }
+
+            String autoFragment = config.getInitParameter("autoFragment");
+            if (autoFragment != null)
+            {
+                getFactory().setAutoFragment(Boolean.parseBoolean(autoFragment));
             }
 
             instanceKey = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
@@ -434,6 +330,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s[configuration=%s]", this.getClass().getSimpleName(), configuration);
+        return String.format("%s[factory=%s]", this.getClass().getSimpleName(), factory);
     }
 }

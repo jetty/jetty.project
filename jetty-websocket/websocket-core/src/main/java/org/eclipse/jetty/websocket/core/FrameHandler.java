@@ -25,8 +25,10 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
@@ -130,19 +132,46 @@ public interface FrameHandler extends IncomingFrames
     interface CoreSession extends OutgoingFrames
     {
         /**
-         * The negotiated WebSocket Subprotocol for this channel.
+         * The negotiated WebSocket Sub-Protocol for this channel.
          *
-         * @return the negotiated WebSocket Subprotocol for this channel.
+         * @return the negotiated WebSocket Sub-Protocol for this channel.
          */
-        String getSubprotocol();
-
+        String getNegotiatedSubProtocol();
 
         /**
          * The negotiated WebSocket Extension Configurations for this channel.
          *
-         * @return the list of Extension Configurations for this channel.
+         * @return the list of Negotiated Extension Configurations for this channel.
          */
-        List<ExtensionConfig> getExtensionConfig();
+        List<ExtensionConfig> getNegotiatedExtensions();
+
+        /**
+         * The parameter map (from URI Query) for the active channel.
+         *
+         * @return the immutable map of parameters
+         */
+        Map<String, List<String>> getParameterMap();
+
+        /**
+         * The active {@code Sec-WebSocket-Version} (protocol version) in use.
+         *
+         * @return the protocol version in use.
+         */
+        String getProtocolVersion();
+
+        /**
+         * The active connection's Request URI.
+         *
+         * @return the absolute URI (including Query string)
+         */
+        URI getRequestURI();
+
+        /**
+         * The active connection's Secure status indicator.
+         *
+         * @return true if connection is secure (similar in role to {@code HttpServletRequest.isSecure()})
+         */
+        boolean isSecure();
 
         /**
          * Issue a harsh abort of the underlying connection.
@@ -247,14 +276,13 @@ public interface FrameHandler extends IncomingFrames
          */
         void demand(long n);
 
-
         boolean isAutoFragment();
 
         void setAutoFragment(boolean autoFragment);
 
-        int getMaxFrameSize();
+        long getMaxFrameSize();
 
-        void setMaxFrameSize(int maxFrameSize);
+        void setMaxFrameSize(long maxFrameSize);
 
         int getOutputBufferSize();
 

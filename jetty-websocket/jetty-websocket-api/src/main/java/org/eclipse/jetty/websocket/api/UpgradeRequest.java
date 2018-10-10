@@ -52,13 +52,6 @@ public interface UpgradeRequest
     void addExtensions(String... configs);
 
     /**
-     * Remove all headers from request.
-     * @deprecated (no longer supported, as this can undo the required upgrade request headers)
-     */
-    @Deprecated
-    void clearHeaders();
-
-    /**
      * Get the list of Cookies on the Upgrade request
      *
      * @return the list of Cookies
@@ -209,14 +202,6 @@ public interface UpgradeRequest
     boolean hasSubProtocol(String test);
 
     /**
-     * Test if supplied Origin is the same as the Request
-     *
-     * @param test the supplied origin
-     * @return true if the supplied origin matches the request origin
-     */
-    boolean isOrigin(String test);
-
-    /**
      * Test if connection is secure.
      *
      * @return true if connection is secure.
@@ -319,5 +304,4 @@ public interface UpgradeRequest
      * @param protocols the offered sub-protocol list
      */
     void setSubProtocols(String... protocols);
-
 }

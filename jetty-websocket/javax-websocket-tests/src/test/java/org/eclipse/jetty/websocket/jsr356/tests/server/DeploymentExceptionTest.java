@@ -37,8 +37,8 @@ import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenCloseR
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.InvalidOpenSessionIntSocket;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
+import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.servlet.internal.ServletContextWebSocketContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -42,7 +43,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final Logger log;
     private final Executor executor;
     private final Object endpointInstance;
-    private final WebSocketPolicy policy;
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
@@ -66,9 +66,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
+    private Duration initialIdleTimeout;
+    private int initialBufferSize = -1;
+    private long initialMaxBinaryMessageSize = -1;
+    private long initialMaxTextMessageSize = -1;
 
     public JettyWebSocketFrameHandler(Executor executor,
-                                      Object endpointInstance, WebSocketPolicy upgradePolicy,
+                                      Object endpointInstance,
                                       UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       MethodHandle textHandle, MethodHandle binaryHandle,
@@ -82,7 +86,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         this.executor = executor;
         this.endpointInstance = endpointInstance;
-        this.policy = upgradePolicy;
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
 
@@ -98,11 +101,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.pongHandle = pongHandle;
 
         this.futureSession = futureSession;
-    }
-
-    public WebSocketPolicy getPolicy()
-    {
-        return this.policy;
     }
 
     public WebSocketSessionImpl getSession()
@@ -180,10 +178,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onOpen(CoreSession coreSession) throws Exception
+    public void onOpen(CoreSession coreSession)
     {
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(coreSession);
-        session = new WebSocketSessionImpl(coreSession.getBehavior(), policy, remote, upgradeRequest, upgradeResponse);
+        session = new WebSocketSessionImpl(coreSession, remote, upgradeRequest, upgradeResponse);
 
         frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
         openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
@@ -196,12 +194,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (textHandle != null)
         {
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, getPolicy(), executor);
+            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor);
         }
 
         if (binaryHandle != null)
         {
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, getPolicy(), executor);
+            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor);
         }
 
         if (openHandle != null)
@@ -217,6 +215,46 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
 
         futureSession.complete(session);
+    }
+
+    public Duration getInitialIdleTimeout()
+    {
+        return initialIdleTimeout;
+    }
+
+    public void setInitialIdleTimeout(Duration duration)
+    {
+        this.initialIdleTimeout = duration;
+    }
+
+    public int getInitialBufferSize()
+    {
+        return initialBufferSize;
+    }
+
+    public void setInitialBufferSize(int bufferSize)
+    {
+        this.initialBufferSize = bufferSize;
+    }
+
+    public long getInitialMaxBinaryMessageSize()
+    {
+        return initialMaxBinaryMessageSize;
+    }
+
+    public void setInitialMaxBinaryMessageSize(long maxSize)
+    {
+        this.initialMaxBinaryMessageSize = maxSize;
+    }
+
+    public long getInitialMaxTextMessageSize()
+    {
+        return initialMaxTextMessageSize;
+    }
+
+    public void setInitialMaxTextMessageSize(long maxSize)
+    {
+        this.initialMaxTextMessageSize = maxSize;
     }
 
     public String toString()

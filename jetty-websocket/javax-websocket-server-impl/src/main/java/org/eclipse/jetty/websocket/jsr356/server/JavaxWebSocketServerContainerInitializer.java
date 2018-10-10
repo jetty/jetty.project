@@ -39,11 +39,10 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
-import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.NativeWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
+import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.servlet.internal.ServletContextWebSocketContainer;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
 @HandlesTypes(

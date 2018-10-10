@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
@@ -90,23 +91,6 @@ public interface UpgradeResponse
     int getStatusCode();
 
     /**
-     * Get the HTTP Response Status Reason
-     * 
-     * @return the HTTP Response status reason
-     */
-    String getStatusReason();
-
-    /**
-     * Test if upgrade response is successful.
-     * <p>
-     * Merely notes if the response was sent as a WebSocket Upgrade,
-     * or was failed (resulting in no upgrade handshake)
-     * 
-     * @return true if upgrade response was generated, false if no upgrade response was generated
-     */
-    boolean isSuccess();
-
-    /**
      * Issue a forbidden upgrade response.
      * <p>
      * This means that the websocket endpoint was valid, but the conditions to use a WebSocket resulted in a forbidden
@@ -162,22 +146,4 @@ public interface UpgradeResponse
      * @param statusCode the status code
      */
     void setStatusCode(int statusCode);
-
-    /**
-     * Set the HTTP Response status reason phrase
-     * <p>
-     * Note, not all implementation of UpgradeResponse can support this feature
-     * 
-     * @param statusReason the status reason phrase
-     */
-    void setStatusReason(String statusReason);
-
-    /**
-     * Set the success of the upgrade response.
-     * <p>
-     * 
-     * @param success true to indicate a response to the upgrade handshake was sent, false to indicate no upgrade
-     * response was sent
-     */
-    void setSuccess(boolean success);
 }

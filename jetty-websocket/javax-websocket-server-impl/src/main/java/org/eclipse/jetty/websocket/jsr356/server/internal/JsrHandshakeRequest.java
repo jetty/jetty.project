@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.server.internal;
 
 import java.net.URI;
 import java.security.Principal;

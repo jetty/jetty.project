@@ -30,9 +30,9 @@ import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.servlet.MappedWebSocketServletNegotiator;
-import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
+import org.eclipse.jetty.websocket.servlet.internal.MappedWebSocketServletNegotiator;
+import org.eclipse.jetty.websocket.servlet.internal.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.servlet.internal.ServletContextWebSocketContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 

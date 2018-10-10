@@ -39,14 +39,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
 
 /**
  * Servlet specific Upgrade Request implementation.
  */
-public class ServletUpgradeRequest implements UpgradeRequest
+public class ServletUpgradeRequest
 {
     private final URI requestURI;
     private final String queryString;
@@ -94,20 +94,17 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return cookies;
     }
 
-    @Override
     public List<ExtensionConfig> getExtensions()
     {
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
         return ExtensionConfig.parseEnum(e);
     }
 
-    @Override
     public String getHeader(String name)
     {
         return request.getHeader(name);
     }
 
-    @Override
     public int getHeaderInt(String name)
     {
         String val = request.getHeader(name);
@@ -118,19 +115,16 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return Integer.parseInt(val);
     }
 
-    @Override
     public Map<String, List<String>> getHeadersMap()
     {
         return request.getHeaders();
     }
 
-    @Override
     public List<String> getHeaders(String name)
     {
         return request.getHeaders().get(name);
     }
 
-    @Override
     public String getHost()
     {
         return requestURI.getHost();
@@ -149,7 +143,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return request;
     }
 
-    @Override
     public String getHttpVersion()
     {
         return request.getProtocol();
@@ -160,7 +153,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
      *
      * @return the preferred <code>Locale</code> for the client
      */
-    @Override
     public Locale getLocale()
     {
         return request.getLocale();
@@ -171,7 +163,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
      *
      * @return an Enumeration of preferred Locale objects
      */
-    @Override
     public Enumeration<Locale> getLocales()
     {
         return request.getLocales();
@@ -184,26 +175,22 @@ public class ServletUpgradeRequest implements UpgradeRequest
      *
      * @return the local socket address
      */
-    @Override
     public SocketAddress getLocalSocketAddress()
     {
         // TODO: fix when HttpServletRequest can use Unix Socket stuff
         return new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
     }
 
-    @Override
     public String getMethod()
     {
         return request.getMethod();
     }
 
-    @Override
     public String getOrigin()
     {
         return getHeader("Origin");
     }
 
-    @Override
     public Map<String, List<String>> getParameterMap()
     {
         if (parameterMap == null)
@@ -219,7 +206,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return parameterMap;
     }
 
-    @Override
     public String getProtocolVersion()
     {
         String version = request.getHeader(HttpHeader.SEC_WEBSOCKET_VERSION.asString());
@@ -230,7 +216,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return version;
     }
 
-    @Override
     public String getQueryString()
     {
         return this.queryString;
@@ -258,7 +243,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return requestPath;
     }
 
-    @Override
     public URI getRequestURI()
     {
         return requestURI;
@@ -290,7 +274,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return request.getSession(false);
     }
 
-    @Override
     public List<String> getSubProtocols()
     {
         if (subprotocols == null)
@@ -317,7 +300,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return request.getUserPrincipal();
     }
 
-    @Override
     public boolean hasSubProtocol(String test)
     {
         for (String protocol : getSubProtocols())
@@ -330,7 +312,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return false;
     }
 
-    @Override
     public boolean isSecure()
     {
         return this.secure;
