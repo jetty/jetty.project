@@ -50,22 +50,32 @@ public class ServletUpgradeResponse
 
     public void addHeader(String name, String value)
     {
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-            throw new IllegalArgumentException("use setExtensions");
-
         if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
-            throw new IllegalArgumentException("use setAcceptedSubProtocol");
+        {
+            setAcceptedSubProtocol(value);
+            return;
+        }
+
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+        {
+            response.setHeader(name,ExtensionConfig.toHeaderValue(getExtensions()));
+            setExtensions(null);
+        }
 
         response.addHeader(name, value);
     }
 
     public void setHeader(String name, String value)
     {
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-            throw new IllegalArgumentException("use setExtensions");
 
         if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
-            throw new IllegalArgumentException("use setAcceptedSubProtocol");
+        {
+            setAcceptedSubProtocol(value);
+            return;
+        }
+
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+            setExtensions(null);
 
         response.setHeader(name, value);
     }

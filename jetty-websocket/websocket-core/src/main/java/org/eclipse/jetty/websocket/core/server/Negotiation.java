@@ -152,7 +152,7 @@ public class Negotiation
     {
         if (extensions==offeredExtensions)
             return;
-        negotiatedExtensions = extensions==null?Collections.emptyList():new ArrayList<>(extensions);
+        negotiatedExtensions = extensions==null?null:new ArrayList<>(extensions);
         extensionStack = null;
     }
 
