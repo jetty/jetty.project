@@ -221,11 +221,11 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             .tag("param-value",context.getInitParameter(p))
             .closeTag();
 
-        if(context.getEventListeners()!=null)
-            for (EventListener e : context.getEventListeners())
-                out.openTag("listener",origin(md,e.getClass().getCanonicalName() + ".listener"))
-                    .tag("listener-class",e.getClass().getCanonicalName())
-                    .closeTag();
+        if (context.getServletHandler().getListeners() != null)
+            for (ListenerHolder e : context.getServletHandler().getListeners())
+                out.openTag("listener",origin(md,e.getClassName() + ".listener"))
+                .tag("listener-class",e.getClassName())
+                .closeTag();
 
         ServletHandler servlets = context.getServletHandler();
 
