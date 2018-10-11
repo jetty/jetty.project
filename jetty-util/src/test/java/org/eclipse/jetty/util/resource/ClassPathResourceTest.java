@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class ClassPathResourceTest
 {
@@ -70,6 +71,9 @@ public class ClassPathResourceTest
     @Test
     public void testClassPathResourceDirectory() throws Exception
     {
+        // If the test runs in the module-path, resource "/" cannot be found.
+        assumeFalse(Resource.class.getModule().isNamed());
+
         final String classPathName="/";
 
         Resource resource=Resource.newClassPathResource(classPathName);

@@ -11,7 +11,6 @@
   <packaging>jar</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.apache-jsp</bundle-symbolic-name>
-    <jpms-module-name>${project.groupId}.apache.jsp</jpms-module-name>
   </properties>
   <build>
     <plugins>

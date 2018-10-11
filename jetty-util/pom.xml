@@ -64,6 +64,7 @@
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             </systemPropertyVariables>
+            <argLine>@{argLine} --add-modules javax.servlet.api,org.slf4j</argLine>
           </configuration>
         </plugin>
       </plugins>
