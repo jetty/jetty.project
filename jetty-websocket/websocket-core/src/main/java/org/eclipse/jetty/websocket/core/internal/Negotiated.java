@@ -35,18 +35,16 @@ import java.util.stream.Collectors;
 public class Negotiated
 {
     private final URI requestURI;
-    private final HttpFields httpFields;
     private final Map<String, List<String>> parameterMap;
     private final String subProtocol;
     private final boolean secure;
     private final ExtensionStack extensions;
     private final String protocolVersion;
 
-    public Negotiated(URI requestURI, HttpFields fields, String subProtocol, boolean secure,
+    public Negotiated(URI requestURI, String subProtocol, boolean secure,
         ExtensionStack extensions, String protocolVersion)
     {
         this.requestURI = requestURI;
-        this.httpFields = fields;
         this.subProtocol = subProtocol;
         this.secure = secure;
         this.extensions = extensions;
@@ -69,11 +67,6 @@ public class Negotiated
     public URI getRequestURI()
     {
         return requestURI;
-    }
-
-    public HttpFields getHttpFields()
-    {
-        return httpFields;
     }
 
     public Map<String, List<String>> getParameterMap()
@@ -115,7 +108,7 @@ public class Negotiated
     {
         try
         {
-            return new Negotiated(new URI("/"), new HttpFields(), "", false, extensions, WebSocketConstants.SPEC_VERSION_STRING);
+            return new Negotiated(new URI("/"), "", false, extensions, WebSocketConstants.SPEC_VERSION_STRING);
         }
         catch(URISyntaxException e)
         {

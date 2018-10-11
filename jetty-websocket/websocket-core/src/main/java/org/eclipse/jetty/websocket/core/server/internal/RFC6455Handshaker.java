@@ -62,8 +62,6 @@ public final class RFC6455Handshaker implements Handshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeader.UPGRADE.asString());
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
-    public final static int VERSION = WebSocketConstants.SPEC_VERSION;
-
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         Request baseRequest = Request.getBaseRequest(request);
@@ -91,7 +89,17 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        Negotiation negotiation = new Negotiation(baseRequest,request,response, negotiator.getExtensionRegistry().getAvailableExtensionNames());
+        ByteBufferPool pool = negotiator.getByteBufferPool();
+        if (pool==null)
+            pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
+
+        Negotiation negotiation = new Negotiation(
+            baseRequest,
+            request,
+            response,
+            negotiator.getExtensionRegistry(),
+            negotiator.getObjectFactory(),
+            pool);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         
@@ -102,7 +110,7 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
         
-        if (negotiation.getVersion()!=VERSION)
+        if (!WebSocketConstants.SPEC_VERSION_STRING.equals(negotiation.getVersion()))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded: unsupported version {} {}", negotiation.getVersion(), baseRequest);
@@ -164,40 +172,11 @@ public final class RFC6455Handshaker implements Handshaker
             }
         }
 
-        ByteBufferPool pool = negotiator.getByteBufferPool();
-        if (pool==null)
-            pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
-
-        // Set up extensions
-        ExtensionStack extensionStack;
-        List<ExtensionConfig> offeredExtensions = negotiation.getOfferedExtensions();
-        List<ExtensionConfig> applicationExtensions = negotiation.getNegotiatedExtensions();
-
-        // TODO is this really necessary?
-        for (ListIterator<ExtensionConfig> i = applicationExtensions.listIterator(); i.hasNext();)
-        {
-            ExtensionConfig config = i.next();
-            offeredExtensions.stream().filter(c->c.getName().equalsIgnoreCase(config.getName()))
-                .findFirst()
-                .ifPresent(i::set);
-        }
-
-        extensionStack = new ExtensionStack(negotiator.getExtensionRegistry());
-        extensionStack.negotiate(negotiator.getObjectFactory(), pool, applicationExtensions);
-        if (LOG.isDebugEnabled())
-            LOG.debug("extensions {}", extensionStack);
-        if (extensionStack.hasNegotiatedExtensions())
-            response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),
-                    ExtensionConfig.toHeaderValue(extensionStack.getNegotiatedExtensions()));
-        else
-            response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),null);
-
         Negotiated negotiated = new Negotiated(
             baseRequest.getHttpURI().asURI(),
-            baseRequest.getHttpFields(),
             subprotocol,
             baseRequest.isSecure(),
-            extensionStack,
+            negotiation.getExtensionStack(),
             WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Channel

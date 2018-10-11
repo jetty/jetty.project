@@ -327,7 +327,6 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         Request request = response.getRequest();
         Negotiated negotiated = new Negotiated(
             request.getURI(),
-            request.getHeaders(),
             negotiatedSubProtocol,
             HttpScheme.HTTPS.is(request.getScheme()), // TODO better than this?
             extensionStack,

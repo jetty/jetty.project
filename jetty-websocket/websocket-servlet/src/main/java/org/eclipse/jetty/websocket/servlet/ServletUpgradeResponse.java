@@ -40,8 +40,6 @@ public class ServletUpgradeResponse
 {
     private final HttpServletResponse response;
     private final Negotiation negotiation;
-    private boolean extensionsNegotiated = false;
-    private boolean subprotocolNegotiated = false;
 
     public ServletUpgradeResponse(Negotiation negotiation)
     {
@@ -52,18 +50,36 @@ public class ServletUpgradeResponse
 
     public void addHeader(String name, String value)
     {
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+            throw new IllegalArgumentException("use setExtensions");
+
+        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
+            throw new IllegalArgumentException("use setAcceptedSubProtocol");
+
         response.addHeader(name, value);
     }
 
     public void setHeader(String name, String value)
     {
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+            throw new IllegalArgumentException("use setExtensions");
+
+        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
+            throw new IllegalArgumentException("use setAcceptedSubProtocol");
+
         response.setHeader(name, value);
     }
 
     public void setHeader(String name, List<String> values)
     {
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+            throw new IllegalArgumentException("use setExtensions");
+
+        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
+            throw new IllegalArgumentException("use setAcceptedSubProtocol");
+
         response.setHeader(name, null); // clear it out first
-        values.forEach((value)->response.addHeader(name, value));
+        values.forEach(value->response.addHeader(name, value));
     }
 
     public String getAcceptedSubProtocol()
@@ -73,10 +89,7 @@ public class ServletUpgradeResponse
 
     public List<ExtensionConfig> getExtensions()
     {
-        if (extensionsNegotiated)
-            return negotiation.getNegotiatedExtensions();
-
-        return negotiation.getOfferedExtensions();
+        return negotiation.getNegotiatedExtensions();
     }
 
     public String getHeader(String name)
@@ -112,16 +125,6 @@ public class ServletUpgradeResponse
         return response.isCommitted();
     }
 
-    public boolean isExtensionsNegotiated()
-    {
-        return extensionsNegotiated;
-    }
-
-    public boolean isSubprotocolNegotiated()
-    {
-        return subprotocolNegotiated;
-    }
-
     public void sendError(int statusCode, String message) throws IOException
     {
         response.sendError(statusCode, message);
@@ -136,13 +139,11 @@ public class ServletUpgradeResponse
     public void setAcceptedSubProtocol(String protocol)
     {
         negotiation.setSubprotocol(protocol);
-        subprotocolNegotiated = true;
     }
 
     public void setExtensions(List<ExtensionConfig> configs)
     {
         negotiation.setNegotiatedExtensions(configs);
-        extensionsNegotiated = true;
     }
 
     public void setStatusCode(int statusCode)

@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
@@ -28,8 +30,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 
 public class Negotiation
 {
@@ -38,19 +44,35 @@ public class Negotiation
     private final HttpServletResponse response;
     private final List<ExtensionConfig> offeredExtensions;
     private final List<String> offeredSubprotocols;
-    private int version;
-    private Boolean upgrade;
-    private String key = null;
-    
-    private int errorCode;
-    private String errorReason;
+    private final WebSocketExtensionRegistry registry;
+    private final DecoratedObjectFactory objectFactory;
+    private final ByteBufferPool bufferPool;
+    private final String version;
+    private final Boolean upgrade;
+    private final String key;
 
-    public Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, Set<String> availableExtensions)
+    private List<ExtensionConfig> negotiatedExtensions;
+    private String subprotocol;
+    private ExtensionStack extensionStack;
+
+    public Negotiation(
+        Request baseRequest,
+        HttpServletRequest request,
+        HttpServletResponse response,
+        WebSocketExtensionRegistry registry,
+        DecoratedObjectFactory objectFactory,
+        ByteBufferPool bufferPool)
     {
         this.baseRequest = baseRequest;
         this.request = request;
         this.response = response;
-        
+        this.registry = registry;
+        this.objectFactory = objectFactory;
+        this.bufferPool = bufferPool;
+
+        Boolean upgrade = null;
+        String key = null;
+        String version = null;
         QuotedCSV connectionCSVs = null;
         QuotedCSV extensions = null;
         QuotedCSV subprotocols = null;
@@ -77,7 +99,7 @@ public class Negotiation
                         break;
 
                     case SEC_WEBSOCKET_VERSION:
-                        version = field.getIntValue();
+                        version = field.getValue();
                         break;
                         
                     case SEC_WEBSOCKET_EXTENSIONS:
@@ -98,30 +120,22 @@ public class Negotiation
                 }
             }
         }
-        
-        if (upgrade==null || connectionCSVs==null || !connectionCSVs.getValues().stream().anyMatch(s->s.equalsIgnoreCase("Upgrade")))
-            upgrade = Boolean.FALSE;
-        
+
+        this.version = version;
+        this.key = key;
+        this.upgrade = upgrade!=null && connectionCSVs!=null && connectionCSVs.getValues().stream().anyMatch(s->s.equalsIgnoreCase("Upgrade"));
+
+        Set<String> available = registry.getAvailableExtensionNames();
         offeredExtensions = extensions==null
             ?Collections.emptyList()
             :extensions.getValues().stream()
             .map(ExtensionConfig::parse)
-            .filter(ec->availableExtensions.contains(ec.getName().toLowerCase()))
+            .filter(ec->available.contains(ec.getName().toLowerCase()))
             .collect(Collectors.toList());
 
         offeredSubprotocols = subprotocols==null
             ?Collections.emptyList()
             :subprotocols.getValues();
-    }
-
-    public int getErrorCode()
-    {
-        return errorCode;
-    }
-
-    public String getErrorReason()
-    {
-        return errorReason;
     }
     
     public String getKey()
@@ -136,17 +150,17 @@ public class Negotiation
 
     public void setNegotiatedExtensions(List<ExtensionConfig> extensions)
     {
-        response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),ExtensionConfig.toHeaderValue(extensions));
+        if (extensions==offeredExtensions)
+            return;
+        negotiatedExtensions = extensions==null?Collections.emptyList():new ArrayList<>(extensions);
+        extensionStack = null;
     }
 
     public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        // TODO, if we know that setNegotiatedExtensions is always called, we can remember the parsed list!
-        return baseRequest.getResponse().getHttpFields()
-            .getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,true)
-            .stream()
-            .map(ExtensionConfig::parse)
-            .collect(Collectors.toList());
+        if (negotiatedExtensions==null)
+            return offeredExtensions;
+        return negotiatedExtensions;
     }
 
     public List<String> getOfferedSubprotocols()
@@ -171,22 +185,18 @@ public class Negotiation
 
     public void setSubprotocol(String subprotocol)
     {
+        this.subprotocol = subprotocol;
         response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(),subprotocol);
     }
 
     public String getSubprotocol()
     {
-        return response.getHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
+        return subprotocol;
     }
 
-    public int getVersion()
+    public String getVersion()
     {
         return version;
-    }
-
-    public boolean isError()
-    {
-        return errorCode>0;
     }
 
     public boolean isUpgrade()
@@ -194,18 +204,67 @@ public class Negotiation
         return upgrade;
     }
 
-    public void sendError(int code, String reason)
+    public ExtensionStack getExtensionStack()
     {
-        errorCode = code;
-        errorReason = reason;
+        if (extensionStack == null)
+        {
+            extensionStack = new ExtensionStack(registry);
+            boolean configsFromApplication = true;
+
+            if (negotiatedExtensions == null)
+            {
+                // Has the header been set directly?
+                List<String> extensions = baseRequest.getResponse().getHttpFields()
+                    .getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,true);
+
+                if (extensions.isEmpty())
+                {
+                    // If the negotiatedExtensions has not been set, just use the offered extensions
+                    negotiatedExtensions = new ArrayList(offeredExtensions);
+                    configsFromApplication = false;
+                }
+                else
+                {
+                    negotiatedExtensions = extensions
+                        .stream()
+                        .map(ExtensionConfig::parse)
+                        .collect(Collectors.toList());
+                }
+            }
+
+            if (configsFromApplication)
+            {
+                // TODO is this really necessary?
+                // Replace any configuration in the negotiated extensions with the offered extensions config
+                for (ListIterator<ExtensionConfig> i = negotiatedExtensions.listIterator(); i.hasNext();)
+                {
+                    ExtensionConfig config = i.next();
+                    offeredExtensions.stream().filter(c->c.getName().equalsIgnoreCase(config.getName()))
+                        .findFirst()
+                        .ifPresent(i::set);
+                }
+            }
+
+            extensionStack.negotiate(objectFactory, bufferPool, negotiatedExtensions);
+            negotiatedExtensions = extensionStack.getNegotiatedExtensions();
+            if (extensionStack.hasNegotiatedExtensions())
+                baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
+                    ExtensionConfig.toHeaderValue(negotiatedExtensions));
+            else
+                baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,null);
+        }
+        return extensionStack;
     }
+
+
     @Override
     public String toString()
     {
         return String.format("Negotiation@%x{uri=%s,oe=%s,op=%s}",
-                hashCode(),
-                getRequest().getRequestURI(),
-                getOfferedExtensions(),
-                getOfferedSubprotocols());
+            hashCode(),
+            getRequest().getRequestURI(),
+            getOfferedExtensions(),
+            getOfferedSubprotocols());
     }
+
 }
