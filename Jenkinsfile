@@ -23,9 +23,10 @@ def getFullBuild(jdk, os) {
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
       try {
-        stage("Test - ${jdk}") {
+        stage("Build ${jdk}/${os}") {
           timeout(time: 90, unit: 'MINUTES') {
             // Run test phase / ignore test failures
+            checkout scm
             withMaven(
                     maven: mvnName,
                     jdk: "$jdk",
