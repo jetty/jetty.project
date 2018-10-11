@@ -22,54 +22,6 @@ def getFullBuild(jdk, os) {
       def settingsName = 'oss-settings.xml'
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
-
-      try {
-        stage("Checkout - ${jdk}") {
-          checkout scm
-        }
-      } catch (Exception e) {
-        notifyBuild("Checkout Failure", jdk)
-        throw e
-      }
-
-      try {
-        stage("Compile - ${jdk}") {
-          timeout(time: 15, unit: 'MINUTES') {
-            withMaven(
-                    maven: mvnName,
-                    jdk: "$jdk",
-                    publisherStrategy: 'EXPLICIT',
-                    globalMavenSettingsConfig: settingsName,
-                    mavenOpts: mavenOpts,
-                    mavenLocalRepo: localRepo) {
-              sh "mvn -V -B clean install -DskipTests -T6 -e"
-            }
-          }
-        }
-      } catch(Exception e) {
-        notifyBuild("Compile Failure", jdk)
-        throw e
-      }
-
-      try {
-        stage("Javadoc - ${jdk}") {
-          timeout(time: 20, unit: 'MINUTES') {
-            withMaven(
-                    maven: mvnName,
-                    jdk: "$jdk",
-                    publisherStrategy: 'EXPLICIT',
-                    globalMavenSettingsConfig: settingsName,
-                    mavenOpts: mavenOpts,
-                    mavenLocalRepo: localRepo) {
-              sh "mvn -V -B javadoc:javadoc -T6 -e"
-            }
-          }
-        }
-      } catch(Exception e) {
-        notifyBuild("Javadoc Failure", jdk)
-        throw e
-      }
-
       try {
         stage("Test - ${jdk}") {
           timeout(time: 90, unit: 'MINUTES') {
@@ -82,6 +34,8 @@ def getFullBuild(jdk, os) {
                     //options: [invokerPublisher(disabled: false)],
                     mavenOpts: mavenOpts,
                     mavenLocalRepo: localRepo) {
+              sh "mvn -V -B clean install -DskipTests -T6 -e"
+              sh "mvn -V -B javadoc:javadoc -T6 -e"
               sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -Djetty.testtracker.log=true -Dunix.socket.tmp="+env.JENKINS_HOME
             }
             // withMaven doesn't label..
@@ -112,6 +66,8 @@ def getFullBuild(jdk, os) {
               consoleParsers = [[parserName: 'Maven'],
                                 [parserName: 'JavaDoc'],
                                 [parserName: 'JavaC']];
+              step([$class: 'MavenInvokerRecorder', reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml",
+                    invokerBuildDir: "**/target/its"])
             }
 
             // Report on Maven and Javadoc warnings
