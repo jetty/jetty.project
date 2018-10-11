@@ -63,7 +63,7 @@ public class DefaultHandler extends AbstractHandler
         byte[] favbytes=null;
         try
         {
-            URL fav = this.getClass().getClassLoader().getResource("org/eclipse/jetty/favicon.ico");
+            URL fav = getClass().getResource("/org/eclipse/jetty/favicon.ico");
             if (fav!=null)
             {
                 Resource r = Resource.newResource(fav);
