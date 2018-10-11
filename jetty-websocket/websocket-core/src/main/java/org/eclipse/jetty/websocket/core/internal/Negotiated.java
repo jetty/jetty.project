@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;

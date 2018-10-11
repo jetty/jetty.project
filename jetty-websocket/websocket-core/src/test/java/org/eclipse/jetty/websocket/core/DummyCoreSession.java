@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
 
 import java.net.SocketAddress;

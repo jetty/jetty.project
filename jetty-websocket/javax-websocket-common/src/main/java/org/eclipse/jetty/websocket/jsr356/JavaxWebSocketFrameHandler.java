@@ -282,7 +282,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         switch (frame.getOpCode())
         {

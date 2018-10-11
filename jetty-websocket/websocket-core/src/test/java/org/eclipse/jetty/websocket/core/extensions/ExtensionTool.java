@@ -88,7 +88,7 @@ public class ExtensionTool
                     Frame frame = parser.parse(buffer);
                     if (frame==null)
                         break;
-                    ext.onReceiveFrame(frame,Callback.NOOP);
+                    ext.onFrame(frame,Callback.NOOP);
                 }                
             }
         }

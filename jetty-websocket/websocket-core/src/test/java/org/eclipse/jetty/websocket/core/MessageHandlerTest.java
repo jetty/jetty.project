@@ -120,11 +120,11 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.PING,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.PING,true,"test"),callback);
         assertThat(callback.isDone(),is(true));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.PONG,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.PONG,true,"test"),callback);
         assertThat(callback.isDone(),is(true));
 
         assertThat(textMessages.size(),is(0));
@@ -137,7 +137,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,true,"test"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(textMessages.size(),is(1));
         assertThat(textMessages.get(0),is("test"));
@@ -155,19 +155,19 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT, false,"Hello"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false,"Hello"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(textMessages.size(),is(1));
         assertThat(textMessages.get(0),is("Hello World"));
@@ -186,19 +186,19 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(fourByteUtf8Bytes,0,2)),callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(fourByteUtf8Bytes,0,2)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, false, BufferUtil.toBuffer(fourByteUtf8Bytes,2,1)),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false, BufferUtil.toBuffer(fourByteUtf8Bytes,2,1)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(fourByteUtf8Bytes,3,1)),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(fourByteUtf8Bytes,3,1)),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(textMessages.size(),is(1));
         assertThat(textMessages.get(0),is(fourByteUtf8String));
@@ -217,13 +217,13 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(fourByteUtf8Bytes,0,2)),callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(fourByteUtf8Bytes,0,2)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(fourByteUtf8Bytes,2,1)),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(fourByteUtf8Bytes,2,1)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -242,7 +242,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(nonUtf8Bytes)),callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(nonUtf8Bytes)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -261,13 +261,13 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(nonUtf8Bytes,0,1)),callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(nonUtf8Bytes,0,1)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(nonUtf8Bytes,1,nonUtf8Bytes.length-1)),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(nonUtf8Bytes,1,nonUtf8Bytes.length-1)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -286,12 +286,12 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.PING,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.PING,true,"test"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(demand,is(1));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,true,"test"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(textMessages.size(),is(1));
         assertThat(textMessages.get(0),is("test"));
@@ -300,21 +300,21 @@ public class MessageHandlerTest
         assertThat(demand,is(1));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT, false,"Hello"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false,"Hello"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(1));
         assertThat(callbacks.size(),is(1));
         assertThat(demand,is(2));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(1));
         assertThat(callbacks.size(),is(1));
         assertThat(demand,is(3));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(textMessages.size(),is(2));
         assertThat(textMessages.get(1),is("Hello World"));
@@ -336,7 +336,7 @@ public class MessageHandlerTest
         handler.setMaxTextMessageSize(4);
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,true,"test"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(textMessages.size(),is(1));
         assertThat(textMessages.get(0),is("test"));
@@ -355,7 +355,7 @@ public class MessageHandlerTest
         handler.onOpen(session);
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,true,"Testing"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,true,"Testing"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -374,7 +374,7 @@ public class MessageHandlerTest
         handler.onOpen(session);
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,false,"123"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,false,"123"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -382,7 +382,7 @@ public class MessageHandlerTest
         assertDoesNotThrow(()-> finalCallback.get());
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION,false,"456"),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION,false,"456"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -401,7 +401,7 @@ public class MessageHandlerTest
         handler.setMaxTextMessageSize(4);
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,false, BufferUtil.toBuffer(fourByteUtf8Bytes)),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,false, BufferUtil.toBuffer(fourByteUtf8Bytes)),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(textMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -409,7 +409,7 @@ public class MessageHandlerTest
         assertDoesNotThrow(()-> finalCallback.get());
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,true, BufferUtil.toBuffer(fourByteUtf8Bytes)),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,true, BufferUtil.toBuffer(fourByteUtf8Bytes)),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(textMessages.size(),is(1));
         assertThat(textMessages.get(0),is(fourByteUtf8String+fourByteUtf8String));
@@ -459,7 +459,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY,true,"test"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(binaryMessages.size(),is(1));
         assertThat(BufferUtil.toString(binaryMessages.get(0)), is("test"));
@@ -477,19 +477,19 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY, false,"Hello"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY, false,"Hello"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(binaryMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(binaryMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(binaryMessages.size(),is(1));
         assertThat(BufferUtil.toString(binaryMessages.get(0)),is("Hello World"));
@@ -509,12 +509,12 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.PING,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.PING,true,"test"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(demand,is(1));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY,true,"test"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(binaryMessages.size(),is(1));
         assertThat(BufferUtil.toString(binaryMessages.get(0)),is("test"));
@@ -523,21 +523,21 @@ public class MessageHandlerTest
         assertThat(demand,is(1));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY, false,"Hello"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY, false,"Hello"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(binaryMessages.size(),is(1));
         assertThat(callbacks.size(),is(1));
         assertThat(demand,is(2));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false," "),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(binaryMessages.size(),is(1));
         assertThat(callbacks.size(),is(1));
         assertThat(demand,is(3));
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true,"World"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(binaryMessages.size(),is(2));
         assertThat(BufferUtil.toString(binaryMessages.get(1)),is("Hello World"));
@@ -559,7 +559,7 @@ public class MessageHandlerTest
         handler.setMaxBinaryMessageSize(4);
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY,true,"test"),callback);
         assertThat(callback.isDone(),is(false));
         assertThat(binaryMessages.size(),is(1));
         assertThat(BufferUtil.toString(binaryMessages.get(0)),is("test"));
@@ -578,7 +578,7 @@ public class MessageHandlerTest
         handler.onOpen(session);
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY,true,"Testing"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY,true,"Testing"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(binaryMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -597,7 +597,7 @@ public class MessageHandlerTest
         handler.onOpen(session);
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY,false,"123"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY,false,"123"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(binaryMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -605,7 +605,7 @@ public class MessageHandlerTest
         assertDoesNotThrow(()-> finalCallback.get());
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.CONTINUATION,false,"456"),callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION,false,"456"),callback);
         assertThat(callback.isDone(),is(true));
         assertThat(binaryMessages.size(),is(0));
         assertThat(callbacks.size(),is(0));
@@ -665,7 +665,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.TEXT,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.TEXT,true,"test"),callback);
         assertThat(callback.isDone(),is(true));
 
         Exception e = assertThrows(ExecutionException.class,()->callback.get());
@@ -695,7 +695,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onReceiveFrame(new Frame(OpCode.BINARY,true,"test"),callback);
+        handler.onFrame(new Frame(OpCode.BINARY,true,"test"),callback);
         assertThat(callback.isDone(),is(true));
 
         Exception e = assertThrows(ExecutionException.class,()->callback.get());

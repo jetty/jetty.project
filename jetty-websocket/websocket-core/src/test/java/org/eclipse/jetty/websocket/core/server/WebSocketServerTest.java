@@ -75,10 +75,10 @@ public class WebSocketServerTest extends WebSocketTester
     {
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
-            public void onReceiveFrame(Frame frame, Callback callback)
+            public void onFrame(Frame frame, Callback callback)
             {
                 getCoreSession().sendFrame(Frame.copy(frame), Callback.NOOP, false);
-                super.onReceiveFrame(frame, callback);
+                super.onFrame(frame, callback);
             }
         };
 
@@ -175,7 +175,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public void onReceiveFrame(Frame frame, Callback callback)
+            public void onFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
@@ -304,7 +304,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public void onReceiveFrame(Frame frame, Callback callback)
+            public void onFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
@@ -369,7 +369,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public void onReceiveFrame(Frame frame, Callback callback)
+            public void onFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
@@ -436,7 +436,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
 
             @Override
-            public void onReceiveFrame(Frame frame, Callback callback)
+            public void onFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);

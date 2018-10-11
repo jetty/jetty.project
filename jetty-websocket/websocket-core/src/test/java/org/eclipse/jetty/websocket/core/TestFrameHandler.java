@@ -54,7 +54,7 @@ public class TestFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         LOG.info("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
         receivedFrames.offer(Frame.copy(frame));

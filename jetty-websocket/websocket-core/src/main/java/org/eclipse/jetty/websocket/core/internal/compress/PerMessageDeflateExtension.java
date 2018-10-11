@@ -54,7 +54,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         // Incoming frames are always non concurrent because
         // they are read and parsed with a single thread, and

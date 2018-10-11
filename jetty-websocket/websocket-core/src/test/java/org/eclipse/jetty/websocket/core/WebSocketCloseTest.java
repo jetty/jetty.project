@@ -371,7 +371,7 @@ public class WebSocketCloseTest extends WebSocketTester
         }
 
         @Override
-        public void onReceiveFrame(Frame frame, Callback callback)
+        public void onFrame(Frame frame, Callback callback)
         {
             LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
             receivedCallback.offer(callback);

@@ -50,8 +50,8 @@ import java.util.Map;
  * <ul>
  *     <li>The {@link #onOpen(CoreSession)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
  *     to obtain information about the connection and to send frames</li>
- *     <li>Every data and control frame received is passed to {@link #onReceiveFrame(Frame, Callback)}.</li>
- *     <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onReceiveFrame(Frame, Callback)} to give the
+ *     <li>Every data and control frame received is passed to {@link #onFrame(Frame, Callback)}.</li>
+ *     <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onFrame(Frame, Callback)} to give the
  *     Application an opportunity to send the response itself. If an appropriate response has not been sent when the callback passed is completed, then a
  *     response will be generated.</li>
  *     <li>If an error is detected or received, then {@link #onError(Throwable)} will be called to inform the application of the cause of the problem.
@@ -91,7 +91,7 @@ public interface FrameHandler extends IncomingFrames
      * @param frame the raw frame
      * @param callback the callback to indicate success in processing frame (or failure)
      */
-    void onReceiveFrame(Frame frame, Callback callback);
+    void onFrame(Frame frame, Callback callback);
 
     /**
      * This is the Close Handshake Complete event.
@@ -119,7 +119,7 @@ public interface FrameHandler extends IncomingFrames
      * Does the FrameHandler manage it's own demand?
      * @return true iff the FrameHandler will manage its own flow control by calling {@link CoreSession#demand(long)} when it
      * is willing to receive new Frames.  Otherwise the demand will be managed by an automatic call to demand(1) after every
-     * succeeded callback passed to {@link #onReceiveFrame(Frame, Callback)}.
+     * succeeded callback passed to {@link #onFrame(Frame, Callback)}.
      */
     default boolean isDemanding()
     {
@@ -162,7 +162,8 @@ public interface FrameHandler extends IncomingFrames
 
         /**
          * The active connection's Request URI.
-         *
+         * This is the URI of the upgrade request and is typically http: or https: rather than
+         * the ws: or wss: scheme.
          * @return the absolute URI (including Query string)
          */
         URI getRequestURI();
@@ -269,11 +270,11 @@ public interface FrameHandler extends IncomingFrames
 
         /**
          * Manage flow control by indicating demand for handling Frames.  A call to 
-         * {@link FrameHandler#onReceiveFrame(Frame, Callback)} will only be made if a 
+         * {@link FrameHandler#onFrame(Frame, Callback)} will only be made if a
          * corresponding demand has been signaled.   It is an error to call this method
          * if {@link FrameHandler#isDemanding()} returns false.
          * @param n The number of frames that can be handled (in sequential calls to 
-         * {@link FrameHandler#onReceiveFrame(Frame, Callback)}).  May not be negative.
+         * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
          */
         void demand(long n);
 

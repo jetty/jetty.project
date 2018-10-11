@@ -61,7 +61,7 @@ public class AbstractTestFrameHandler implements FrameHandler
     
 
     @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         byte opcode = frame.getOpCode();
         if (LOG.isDebugEnabled())

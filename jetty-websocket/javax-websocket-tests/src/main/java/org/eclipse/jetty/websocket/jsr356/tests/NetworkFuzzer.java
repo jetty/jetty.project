@@ -245,7 +245,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        public void onReceiveFrame(Frame frame, Callback callback)
+        public void onFrame(Frame frame, Callback callback)
         {
             receivedFrames.offer(Frame.copy(frame));
             callback.succeeded();

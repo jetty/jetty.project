@@ -485,7 +485,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         try
         {
@@ -496,7 +496,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             callback.failed(ex);
         }
 
-        negotiated.getExtensions().onReceiveFrame(frame, callback);
+        negotiated.getExtensions().onFrame(frame, callback);
     }
 
     @Override
@@ -589,7 +589,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private class IncomingState extends FrameSequence implements IncomingFrames
     {
         @Override
-        public void onReceiveFrame(Frame frame, Callback callback)
+        public void onFrame(Frame frame, Callback callback)
         {
             try
             {
@@ -616,7 +616,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                                     connection.close();
                                 }
                             };
-                            handler.onReceiveFrame(frame, callback);
+                            handler.onFrame(frame, callback);
                             return;
                         }
 
@@ -640,7 +640,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     }
                     
                     // Handle the frame
-                    handler.onReceiveFrame(frame, callback);
+                    handler.onFrame(frame, callback);
                 }
                 else
                 {

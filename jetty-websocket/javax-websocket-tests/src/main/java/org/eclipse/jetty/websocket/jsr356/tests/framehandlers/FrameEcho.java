@@ -38,7 +38,7 @@ public class FrameEcho implements FrameHandler
     }
 
     @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         if (frame.isControlFrame())
             callback.succeeded();

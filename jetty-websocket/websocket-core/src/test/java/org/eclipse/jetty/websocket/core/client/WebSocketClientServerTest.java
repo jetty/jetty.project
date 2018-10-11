@@ -109,7 +109,7 @@ public class WebSocketClientServerTest
         TestFrameHandler clientHandler = new TestFrameHandler()
         {
             @Override
-            public void onReceiveFrame(Frame frame, Callback callback)
+            public void onFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 super.receivedFrames.offer(Frame.copy(frame));

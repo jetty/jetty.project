@@ -115,7 +115,7 @@ public class OnCloseTest
         frameHandler.onOpen(new DummyCoreSession());
 
         // Execute onClose call
-        frameHandler.onReceiveFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);
+        frameHandler.onFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);
         frameHandler.onClosed(CloseStatus.NORMAL_STATUS);
 
         // Test captured event

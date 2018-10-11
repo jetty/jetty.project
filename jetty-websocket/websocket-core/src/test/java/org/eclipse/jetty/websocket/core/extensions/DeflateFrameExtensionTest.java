@@ -49,10 +49,10 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
@@ -77,7 +77,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             Frame frame = parser.parse(buffer);
             if (frame==null)
                 break;
-            ext.onReceiveFrame(frame, Callback.NOOP);
+            ext.onFrame(frame, Callback.NOOP);
         }
 
         int len = expectedTextDatas.length;
@@ -382,7 +382,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             public void sendFrame(Frame frame, Callback callback, boolean batch)
             {
                 LOG.debug("outgoingFrame({})", frame);
-                serverExtension.onReceiveFrame(frame, callback);
+                serverExtension.onFrame(frame, callback);
                 callback.succeeded();
             }
         });
@@ -391,7 +391,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         serverExtension.setNextIncomingFrames(new IncomingFrames()
         {
             @Override
-            public void onReceiveFrame(Frame frame, Callback callback)
+            public void onFrame(Frame frame, Callback callback)
             {
                 LOG.debug("incomingFrame({})", frame);
                 try

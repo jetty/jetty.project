@@ -118,6 +118,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onError(Throwable cause)
     {
+        cause = convertCause(cause);
         futureSession.completeExceptionally(cause);
 
         if (errorHandle == null)
@@ -138,8 +139,15 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
     }
 
+    public static Throwable convertCause(Throwable cause)
+    {
+        if (cause instanceof )
+
+        return cause;
+    }
+
     @Override
-    public void onReceiveFrame(Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         // Send to raw frame handling on user side (eg: WebSocketFrameListener)
         if (frameHandle != null)
