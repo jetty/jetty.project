@@ -25,11 +25,18 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.BadPayloadException;
+import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.UpgradeException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
@@ -141,7 +148,26 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public static Throwable convertCause(Throwable cause)
     {
-        if (cause instanceof )
+        if (cause instanceof MessageTooLargeException)
+            return new org.eclipse.jetty.websocket.api.MessageTooLargeException(cause.getMessage(),cause);
+
+        if (cause instanceof ProtocolException)
+            return new org.eclipse.jetty.websocket.api.ProtocolException(cause.getMessage(),cause);
+
+        if (cause instanceof BadPayloadException)
+            return new org.eclipse.jetty.websocket.api.BadPayloadException(cause.getMessage(),cause);
+
+        if (cause instanceof CloseException)
+            return new org.eclipse.jetty.websocket.api.CloseException(((CloseException)cause).getStatusCode(),cause.getMessage(),cause);
+
+        if (cause instanceof WebSocketTimeoutException)
+            return new org.eclipse.jetty.websocket.api.WebSocketTimeoutException(cause.getMessage(),cause);
+
+        if (cause instanceof InvalidSignatureException)
+            return new org.eclipse.jetty.websocket.api.InvalidWebSocketException(cause.getMessage(),cause);
+
+        if (cause instanceof UpgradeException)
+            return new org.eclipse.jetty.websocket.api.UpgradeException(((UpgradeException)cause).getRequestURI(),cause);
 
         return cause;
     }
