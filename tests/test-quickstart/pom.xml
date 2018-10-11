@@ -138,7 +138,7 @@
         <executions>
           <execution>
             <id>copy</id>
-            <phase>package</phase>
+            <phase>process-test-classes</phase>
             <goals>
               <goal>copy</goal>
             </goals>
