@@ -235,6 +235,15 @@ public interface Stream
         }
 
         /**
+         * <p>Callback method invoked after the stream has been closed.</p>
+         *
+         * @param stream the stream
+         */
+        public default void onClosed(Stream stream)
+        {
+        }
+
+        /**
          * <p>Empty implementation of {@link Listener}</p>
          */
         public static class Adapter implements Listener

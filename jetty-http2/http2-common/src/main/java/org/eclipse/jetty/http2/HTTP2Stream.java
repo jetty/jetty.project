@@ -510,6 +510,13 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+        notifyClosed(this);
+    }
+
     private void updateStreamCount(int deltaStream, int deltaClosing)
     {
         ((HTTP2Session)session).updateStreamCount(isLocal(), deltaStream, deltaClosing);
@@ -612,6 +619,21 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         else
         {
             callback.succeeded();
+        }
+    }
+
+    private void notifyClosed(Stream stream)
+    {
+        Listener listener = this.listener;
+        if (listener == null)
+            return;
+        try
+        {
+            listener.onClosed(stream);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
         }
     }
 

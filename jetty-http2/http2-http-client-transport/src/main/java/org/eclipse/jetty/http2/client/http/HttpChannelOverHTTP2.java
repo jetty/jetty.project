@@ -101,6 +101,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         connection.release(this);
     }
 
+    void onStreamClosed(Stream stream)
+    {
+        connection.onStreamClosed(stream, this);
+    }
+
     @Override
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {

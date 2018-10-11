@@ -184,6 +184,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         callback.succeeded();
     }
 
+    @Override
+    public void onClosed(Stream stream)
+    {
+        getHttpChannel().onStreamClosed(stream);
+    }
+
     private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)
     {
         contentNotifier.offer(new DataInfo(exchange, frame, callback));
