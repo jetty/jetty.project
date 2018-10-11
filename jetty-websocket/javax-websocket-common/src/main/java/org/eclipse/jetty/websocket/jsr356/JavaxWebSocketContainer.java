@@ -85,7 +85,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     {
         Set<Extension> ret = new HashSet<>();
 
-        for (String name : getExtensionRegistry().getExtensionNames())
+        for (String name : getExtensionRegistry().getAvailableExtensionNames())
         {
             ret.add(new JavaxWebSocketExtension(name));
         }

@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
@@ -92,8 +93,7 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-
-        Negotiation negotiation = new Negotiation(baseRequest,request,response);
+        Negotiation negotiation = new Negotiation(baseRequest,request,response, negotiator.getExtensionRegistry().getAvailableExtensionNames());
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         
@@ -165,32 +165,26 @@ public final class RFC6455Handshaker implements Handshaker
                 return false;
             }
         }
-        
-        // Set up extensions
-        ExtensionStack extensionStack;
-        List<ExtensionConfig> offeredExtensions = negotiation.getOfferedExtensions();
-        if (baseRequest.getResponse().getHttpFields().contains(HttpHeader.SEC_WEBSOCKET_EXTENSIONS))
-        {
-            // Replace offeredExtensions with application extensions
-            // TODO check if this is correct
-            List<ExtensionConfig> applicationExtensions = new ArrayList<>(offeredExtensions.size());
-            for (String ext : baseRequest.getResponse().getHttpFields().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,false))            
-            {
-                Optional<ExtensionConfig> config = offeredExtensions.stream().filter(c->c.getName().equalsIgnoreCase(ext)).findFirst();
-                if (config.isPresent())
-                    applicationExtensions.add(config.get());
-                else
-                    applicationExtensions.add(ExtensionConfig.parse(ext));
-            }
-            offeredExtensions = applicationExtensions;
-        }
 
         ByteBufferPool pool = negotiator.getByteBufferPool();
         if (pool==null)
             pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
 
+        // Set up extensions
+        ExtensionStack extensionStack;
+        List<ExtensionConfig> offeredExtensions = negotiation.getOfferedExtensions();
+        List<ExtensionConfig> applicationExtensions = negotiation.getNegotiatedExtensions();
+
+        for (ListIterator<ExtensionConfig> i = applicationExtensions.listIterator(); i.hasNext();)
+        {
+            ExtensionConfig config = i.next();
+            offeredExtensions.stream().filter(c->c.getName().equalsIgnoreCase(config.getName()))
+                .findFirst()
+                .ifPresent(i::set);
+        }
+
         extensionStack = new ExtensionStack(negotiator.getExtensionRegistry());
-        extensionStack.negotiate(negotiator.getObjectFactory(), pool, offeredExtensions);
+        extensionStack.negotiate(negotiator.getObjectFactory(), pool, applicationExtensions);
         if (LOG.isDebugEnabled())
             LOG.debug("extensions {}", extensionStack);
         if (extensionStack.hasNegotiatedExtensions())

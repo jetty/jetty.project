@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Negotiation
@@ -37,7 +38,6 @@ public class Negotiation
     private final HttpServletResponse response;
     private final List<ExtensionConfig> offeredExtensions;
     private final List<String> offeredSubprotocols;
-    private List<ExtensionConfig> negotiatedExtensions;
     private int version;
     private Boolean upgrade;
     private String key = null;
@@ -45,7 +45,7 @@ public class Negotiation
     private int errorCode;
     private String errorReason;
 
-    public Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, Set<String> availableExtensions)
     {
         this.baseRequest = baseRequest;
         this.request = request;
@@ -104,7 +104,11 @@ public class Negotiation
         
         offeredExtensions = extensions==null
             ?Collections.emptyList()
-            :extensions.getValues().stream().map(ExtensionConfig::parse).collect(Collectors.toList());
+            :extensions.getValues().stream()
+            .map(ExtensionConfig::parse)
+            .filter(ec->availableExtensions.contains(ec.getName().toLowerCase()))
+            .collect(Collectors.toList());
+        setNegotiatedExtensions(offeredExtensions);
         
         offeredSubprotocols = subprotocols==null
             ?Collections.emptyList()
@@ -131,14 +135,19 @@ public class Negotiation
         return offeredExtensions;
     }
 
-    public List<ExtensionConfig> getNegotiatedExtensions()
-    {
-        return negotiatedExtensions;
-    }
-
     public void setNegotiatedExtensions(List<ExtensionConfig> extensions)
     {
-        negotiatedExtensions = extensions;
+        response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),ExtensionConfig.toHeaderValue(extensions));
+    }
+
+    public List<ExtensionConfig> getNegotiatedExtensions()
+    {
+        // TODO, if we know that setNegotiatedExtensions is always called, we can remember the parsed list!
+        return baseRequest.getResponse().getHttpFields()
+            .getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,true)
+            .stream()
+            .map(ExtensionConfig::parse)
+            .collect(Collectors.toList());
     }
 
     public List<String> getOfferedSubprotocols()
@@ -159,6 +168,11 @@ public class Negotiation
     public HttpServletResponse getResponse()
     {
         return response;
+    }
+
+    public void setSubprotocol(String subprotocol)
+    {
+        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(),subprotocol);
     }
 
     public String getSubprotocol()
@@ -186,12 +200,6 @@ public class Negotiation
         errorCode = code;
         errorReason = reason;
     }
-
-    public void setSubprotocol(String subprotocol)
-    {
-        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(),subprotocol);
-    }
-
     @Override
     public String toString()
     {

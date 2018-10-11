@@ -55,7 +55,7 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         return availableExtensions.get(name);
     }
 
-    public Set<String> getExtensionNames()
+    public Set<String> getAvailableExtensionNames()
     {
         return availableExtensions.keySet();
     }
