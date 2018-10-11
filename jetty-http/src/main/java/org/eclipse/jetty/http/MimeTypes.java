@@ -205,8 +205,8 @@ public class MimeTypes
                 __assumedEncodings.put(type.asString(),type.getCharsetString());
         }
 
-        String resourceName = "org/eclipse/jetty/http/mime.properties";
-        try (InputStream stream = MimeTypes.class.getClassLoader().getResourceAsStream(resourceName))
+        String resourceName = "mime.properties";
+        try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
         {
             if (stream == null)
             {
@@ -246,8 +246,8 @@ public class MimeTypes
             LOG.debug(e);
         }
         
-        resourceName = "org/eclipse/jetty/http/encoding.properties";
-        try (InputStream stream = MimeTypes.class.getClassLoader().getResourceAsStream(resourceName))
+        resourceName = "encoding.properties";
+        try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
         {
             if (stream == null)
                 LOG.warn("Missing encoding resource: {}", resourceName);
