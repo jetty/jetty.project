@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -35,13 +27,20 @@ import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
 /**
  * Servlet specific Upgrade Request implementation.
  */
@@ -51,12 +50,14 @@ public class ServletUpgradeRequest
     private final String queryString;
     private final UpgradeHttpServletRequest request;
     private final boolean secure;
+    private final Negotiation negotiation;
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
-    private List<String> subprotocols;
 
-    public ServletUpgradeRequest(HttpServletRequest httpRequest) throws URISyntaxException
+    public ServletUpgradeRequest(Negotiation negotiation) throws URISyntaxException
     {
+        this.negotiation = negotiation;
+        HttpServletRequest httpRequest = negotiation.getRequest();
         this.queryString = httpRequest.getQueryString();
         this.secure = httpRequest.isSecure();
 
@@ -95,8 +96,7 @@ public class ServletUpgradeRequest
 
     public List<ExtensionConfig> getExtensions()
     {
-        Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
-        return ExtensionConfig.parseEnum(e);
+        return negotiation.getOfferedExtensions();
     }
 
     public String getHeader(String name)
@@ -275,20 +275,7 @@ public class ServletUpgradeRequest
 
     public List<String> getSubProtocols()
     {
-        if (subprotocols == null)
-        {
-            Enumeration<String> requestProtocols = request.getHeaders("Sec-WebSocket-Protocol");
-            if (requestProtocols != null)
-            {
-                subprotocols = new ArrayList<>(2);
-                while (requestProtocols.hasMoreElements())
-                {
-                    String candidate = requestProtocols.nextElement();
-                    Collections.addAll(subprotocols, parseProtocols(candidate));
-                }
-            }
-        }
-        return subprotocols;
+        return negotiation.getOfferedSubprotocols();
     }
 
     /**
@@ -319,16 +306,6 @@ public class ServletUpgradeRequest
     public boolean isUserInRole(String role)
     {
         return request.isUserInRole(role);
-    }
-
-    private String[] parseProtocols(String protocol)
-    {
-        if (protocol == null)
-            return new String[0];
-        protocol = protocol.trim();
-        if (protocol.length() == 0)
-            return new String[0];
-        return protocol.split("\\s*,\\s*");
     }
 
     public void setServletAttribute(String name, Object value)

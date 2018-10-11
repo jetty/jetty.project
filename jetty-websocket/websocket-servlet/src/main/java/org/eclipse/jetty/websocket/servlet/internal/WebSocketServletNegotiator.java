@@ -66,8 +66,8 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
         {
             Thread.currentThread().setContextClassLoader(factory.getContextClassloader());
 
-            ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation.getRequest());
-            ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation.getResponse());
+            ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
+            ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
 
             Object websocketPojo = creator.createWebSocket(upgradeRequest, upgradeResponse);
 

@@ -27,11 +27,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 /**
  * Servlet Specific UpgradeResponse implementation.
@@ -39,14 +39,15 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 public class ServletUpgradeResponse
 {
     private final HttpServletResponse response;
+    private final Negotiation negotiation;
     private boolean extensionsNegotiated = false;
     private boolean subprotocolNegotiated = false;
-    private List<ExtensionConfig> extensions = new ArrayList<>();
 
-    public ServletUpgradeResponse(HttpServletResponse response)
+    public ServletUpgradeResponse(Negotiation negotiation)
     {
+        this.negotiation = negotiation;
+        this.response = negotiation.getResponse();
         Objects.requireNonNull(response, "HttpServletResponse must not be null");
-        this.response = response;
     }
 
     public void addHeader(String name, String value)
@@ -72,7 +73,10 @@ public class ServletUpgradeResponse
 
     public List<ExtensionConfig> getExtensions()
     {
-        return extensions;
+        if (extensionsNegotiated)
+            return negotiation.getNegotiatedExtensions();
+
+        return negotiation.getOfferedExtensions();
     }
 
     public String getHeader(String name)
@@ -131,16 +135,13 @@ public class ServletUpgradeResponse
 
     public void setAcceptedSubProtocol(String protocol)
     {
-        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), protocol);
+        negotiation.setSubprotocol(protocol);
         subprotocolNegotiated = true;
     }
 
     public void setExtensions(List<ExtensionConfig> configs)
     {
-        this.extensions.clear();
-        this.extensions.addAll(configs);
-        String value = ExtensionConfig.toHeaderValue(configs);
-        response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(), value);
+        negotiation.setNegotiatedExtensions(configs);
         extensionsNegotiated = true;
     }
 

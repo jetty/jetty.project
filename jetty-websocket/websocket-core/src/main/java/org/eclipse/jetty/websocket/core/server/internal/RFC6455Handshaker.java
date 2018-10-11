@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.Executor;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -47,15 +54,6 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Optional;
-import java.util.concurrent.Executor;
 
 public final class RFC6455Handshaker implements Handshaker
 {
@@ -175,6 +173,7 @@ public final class RFC6455Handshaker implements Handshaker
         List<ExtensionConfig> offeredExtensions = negotiation.getOfferedExtensions();
         List<ExtensionConfig> applicationExtensions = negotiation.getNegotiatedExtensions();
 
+        // TODO is this really necessary?
         for (ListIterator<ExtensionConfig> i = applicationExtensions.listIterator(); i.hasNext();)
         {
             ExtensionConfig config = i.next();
