@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import java.util.concurrent.TimeUnit;
-import javax.websocket.ContainerProvider;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEndpointTracker;
@@ -32,6 +25,13 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.ContainerProvider;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

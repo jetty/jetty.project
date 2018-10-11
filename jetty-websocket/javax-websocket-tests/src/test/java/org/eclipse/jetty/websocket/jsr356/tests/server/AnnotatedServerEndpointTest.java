@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -39,6 +34,11 @@ import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.ConfiguredEchoSoc
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Example of an annotated echo server discovered via annotation scanning.

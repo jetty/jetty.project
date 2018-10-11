@@ -18,20 +18,19 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
+
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
-
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 
 /**
  * ServletContext configuration for Jetty Native WebSockets API.

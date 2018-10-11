@@ -18,15 +18,14 @@
 
 package examples;
 
-import java.util.Collections;
-import java.util.List;
+import org.eclipse.jetty.http.QuotedCSV;
 
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
-
-import org.eclipse.jetty.http.QuotedCSV;
+import java.util.Collections;
+import java.util.List;
 
 public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator
 {

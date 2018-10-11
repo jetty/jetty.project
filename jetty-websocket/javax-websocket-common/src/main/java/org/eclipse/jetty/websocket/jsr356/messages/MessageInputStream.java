@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.jsr356.MessageSink;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -25,12 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.

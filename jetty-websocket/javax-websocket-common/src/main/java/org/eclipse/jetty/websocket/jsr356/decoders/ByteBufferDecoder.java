@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import java.nio.ByteBuffer;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import java.nio.ByteBuffer;
 
 public class ByteBufferDecoder extends AbstractDecoder implements Decoder.Binary<ByteBuffer>
 {

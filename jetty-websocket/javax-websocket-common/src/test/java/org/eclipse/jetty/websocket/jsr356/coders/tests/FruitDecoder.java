@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.coders.tests;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FruitDecoder implements ExtDecoder<Fruit>
 {

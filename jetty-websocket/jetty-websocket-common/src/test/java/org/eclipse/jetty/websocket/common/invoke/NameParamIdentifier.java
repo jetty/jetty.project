@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.invoke;
 
+import org.eclipse.jetty.util.annotation.Name;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
-import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * Simple {@link org.eclipse.jetty.websocket.common.invoke.InvokerUtils.ParamIdentifier}

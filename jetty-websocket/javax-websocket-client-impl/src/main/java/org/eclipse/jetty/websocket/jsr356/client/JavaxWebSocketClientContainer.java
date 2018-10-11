@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtensionConfig;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -32,18 +37,12 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.Session;
-
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtensionConfig;
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 /**
  * Container for Client use of the javax.websocket API.

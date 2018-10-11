@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
@@ -29,8 +31,6 @@ import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 public class ReflectUtils
 {

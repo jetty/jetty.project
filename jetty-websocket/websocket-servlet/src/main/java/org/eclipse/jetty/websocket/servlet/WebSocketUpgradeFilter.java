@@ -18,21 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.EnumSet;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -44,9 +29,23 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletNegotiator;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.EnumSet;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketServletNegotiator} objects.
@@ -57,7 +56,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
 
-    private final RFC6455Handshaker handshaker = new RFC6455Handshaker();
+    private final Handshaker handshaker = Handshaker.newInstance();
 
     /**
      * Initialize the default WebSocketUpgradeFilter that the various WebSocket APIs use.

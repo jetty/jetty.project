@@ -18,11 +18,10 @@
 
 package examples;
 
-import java.security.Principal;
-
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
+import java.security.Principal;
 
 public class MyAuthedConfigurator extends ServerEndpointConfig.Configurator
 {

@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import java.lang.reflect.Method;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
+
+import java.lang.reflect.Method;
 
 public final class HttpClientProvider
 {

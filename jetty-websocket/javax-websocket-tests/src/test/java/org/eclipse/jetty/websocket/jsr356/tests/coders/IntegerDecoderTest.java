@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.coders;
 
-import javax.websocket.DecodeException;
-
 import org.eclipse.jetty.websocket.jsr356.decoders.IntegerDecoder;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.DecodeException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

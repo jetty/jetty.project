@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -33,6 +27,12 @@ import org.eclipse.jetty.websocket.common.AbstractMessageSink;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.concurrent.Executor;
 
 public class StringMessageSink extends AbstractMessageSink
 {

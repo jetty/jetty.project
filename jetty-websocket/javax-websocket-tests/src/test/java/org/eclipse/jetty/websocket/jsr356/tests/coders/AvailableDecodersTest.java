@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.coders;
 
+import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.websocket.jsr356.BasicEndpointConfig;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.decoders.IntegerDecoder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jsr356.BasicEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jsr356.decoders.IntegerDecoder;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;

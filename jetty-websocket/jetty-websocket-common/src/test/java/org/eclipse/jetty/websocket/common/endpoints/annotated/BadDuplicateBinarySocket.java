@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.annotated;
 
-import java.io.InputStream;
-
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+
+import java.io.InputStream;
 
 /**
  * Invalid Socket: Annotate 2 methods with interest in Binary Messages.

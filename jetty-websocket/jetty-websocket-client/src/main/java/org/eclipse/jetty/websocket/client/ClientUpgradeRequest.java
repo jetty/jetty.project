@@ -18,22 +18,19 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+
 import java.net.HttpCookie;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * Client based UpgradeRequest API

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.invoke;
 
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -25,8 +27,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 public class InvokerUtils
 {

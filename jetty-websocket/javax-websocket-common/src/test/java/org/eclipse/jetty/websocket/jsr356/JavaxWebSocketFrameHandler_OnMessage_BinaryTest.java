@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -33,6 +26,13 @@ import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;

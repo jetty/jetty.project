@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
+import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
+
 import java.net.URI;
 import java.security.Principal;
-
-import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpRequest}

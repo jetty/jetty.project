@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.internal;
 
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+
+import javax.websocket.server.HandshakeRequest;
 import java.net.URI;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-
-import javax.websocket.server.HandshakeRequest;
-
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 
 public class JsrHandshakeRequest implements HandshakeRequest
 {

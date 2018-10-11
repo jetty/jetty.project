@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import javax.websocket.Decoder;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
 
 /**
  * Basic EndpointConfig (used when no EndpointConfig is provided or discovered)

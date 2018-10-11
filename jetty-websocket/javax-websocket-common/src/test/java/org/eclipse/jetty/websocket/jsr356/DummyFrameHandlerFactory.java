@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 public class DummyFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {

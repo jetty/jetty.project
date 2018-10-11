@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-import javax.websocket.DeploymentException;
-import javax.websocket.server.ServerEndpoint;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -43,6 +37,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import javax.websocket.DeploymentException;
+import javax.websocket.server.ServerEndpoint;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;

@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.util.Objects;
-
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
+
+import java.lang.invoke.MethodHandle;
+import java.util.Objects;
 
 public abstract class AbstractMessageSink implements MessageSink
 {

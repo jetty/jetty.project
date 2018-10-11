@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import java.util.concurrent.CompletableFuture;
 
 public class CompletableFutureCallback extends CompletableFuture<Callback> implements Callback
 {

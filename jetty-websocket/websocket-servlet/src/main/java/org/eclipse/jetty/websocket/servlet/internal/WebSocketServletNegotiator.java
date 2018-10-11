@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet.internal;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -32,6 +29,9 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 

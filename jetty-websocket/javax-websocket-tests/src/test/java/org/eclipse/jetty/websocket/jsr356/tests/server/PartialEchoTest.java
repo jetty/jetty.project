@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -40,6 +30,16 @@ import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Sends raw TEXT or BINARY messages to server.

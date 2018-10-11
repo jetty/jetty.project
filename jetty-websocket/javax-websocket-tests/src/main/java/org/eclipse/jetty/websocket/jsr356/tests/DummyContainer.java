@@ -18,23 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Objects;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
+
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.Session;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Dummy Container for testing.

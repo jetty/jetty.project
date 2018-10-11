@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -32,15 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
 /**
  * Servlet specific Upgrade Request implementation.
  */

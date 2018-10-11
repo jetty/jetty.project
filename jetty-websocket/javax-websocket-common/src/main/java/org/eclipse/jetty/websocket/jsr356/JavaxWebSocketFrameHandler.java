@@ -18,24 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import javax.websocket.CloseReason;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -55,6 +37,24 @@ import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
+
+import javax.websocket.CloseReason;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.PongMessage;
+import javax.websocket.Session;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 

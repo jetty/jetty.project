@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.util;
 
+import org.eclipse.jetty.util.annotation.Name;
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
-
-import org.eclipse.jetty.util.annotation.Name;
-import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
+
+import java.lang.invoke.MethodHandle;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Centralized logic for Dispatched Message Handling.

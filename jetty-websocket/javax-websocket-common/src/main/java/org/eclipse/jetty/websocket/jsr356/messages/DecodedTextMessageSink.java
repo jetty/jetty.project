@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
+import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-
-import org.eclipse.jetty.websocket.core.CloseException;
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.jsr356.MessageSink;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T>>
 {

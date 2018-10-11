@@ -18,20 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import java.net.HttpCookie;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
@@ -40,6 +26,20 @@ import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.StaticText;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.WholeMessageEcho;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.ContainerProvider;
+import javax.websocket.Endpoint;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import java.net.HttpCookie;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

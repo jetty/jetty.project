@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-
-import javax.websocket.Session;
-
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
 import org.eclipse.jetty.websocket.jsr356.UpgradeResponse;
+
+import javax.websocket.Session;
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 public class ClientUpgradeRequestImpl extends org.eclipse.jetty.websocket.core.client.UpgradeRequest
 {

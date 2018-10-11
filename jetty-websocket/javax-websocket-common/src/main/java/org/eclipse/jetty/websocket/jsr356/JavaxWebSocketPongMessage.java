@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 
 import javax.websocket.PongMessage;
-
-import org.eclipse.jetty.util.BufferUtil;
+import java.nio.ByteBuffer;
 
 public class JavaxWebSocketPongMessage implements PongMessage
 {

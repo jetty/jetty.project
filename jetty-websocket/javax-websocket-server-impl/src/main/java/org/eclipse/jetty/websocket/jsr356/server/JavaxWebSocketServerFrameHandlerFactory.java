@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.util.concurrent.CompletableFuture;
-
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.server.ServerEndpoint;
-
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
@@ -32,9 +26,14 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata;
 import org.eclipse.jetty.websocket.jsr356.server.internal.PathParamIdentifier;
 import org.eclipse.jetty.websocket.jsr356.server.internal.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.jsr356.server.internal.UpgradeResponseAdapter;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
+
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.server.ServerEndpoint;
+import java.util.concurrent.CompletableFuture;
 
 public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory implements WebSocketServletFrameHandlerFactory
 {

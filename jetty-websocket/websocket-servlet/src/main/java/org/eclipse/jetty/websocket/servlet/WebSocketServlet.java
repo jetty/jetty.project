@@ -18,22 +18,21 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.io.IOException;
-import java.time.Duration;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletNegotiator;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.http.pathmap.MappedResource;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletNegotiator;
+import java.io.IOException;
+import java.time.Duration;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
@@ -88,7 +87,7 @@ public abstract class WebSocketServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(WebSocketServlet.class);
     private WebSocketServletFactoryImpl factory;
-    private final RFC6455Handshaker handshaker = new RFC6455Handshaker();
+    private final Handshaker handshaker = Handshaker.newInstance();
 
     public abstract void configure(WebSocketServletFactory factory);
 

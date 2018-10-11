@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -31,6 +27,10 @@ import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.core.AbstractTrackingEndpoint;
 import org.eclipse.jetty.websocket.core.Frame;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;

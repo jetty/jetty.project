@@ -18,17 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
-
-import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
-import javax.websocket.WebSocketContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -46,6 +35,16 @@ import org.eclipse.jetty.websocket.jsr356.server.internal.AnnotatedServerEndpoin
 import org.eclipse.jetty.websocket.jsr356.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.server.internal.UndefinedServerEndpointConfig;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
+
+import javax.websocket.DeploymentException;
+import javax.websocket.EndpointConfig;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
 
 @ManagedObject("JSR356 Server Container")
 public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer

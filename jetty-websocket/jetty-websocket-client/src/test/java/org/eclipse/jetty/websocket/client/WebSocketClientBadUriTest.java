@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -32,6 +28,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;

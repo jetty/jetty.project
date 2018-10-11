@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.internal;
 
-import java.net.URI;
-import java.security.Principal;
-
 import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+
+import java.net.URI;
+import java.security.Principal;
 
 public class UpgradeRequestAdapter implements UpgradeRequest
 {

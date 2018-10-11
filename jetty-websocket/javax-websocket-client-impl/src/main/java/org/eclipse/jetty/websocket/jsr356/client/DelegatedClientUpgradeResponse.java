@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.jsr356.UpgradeResponse;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link HttpResponse}

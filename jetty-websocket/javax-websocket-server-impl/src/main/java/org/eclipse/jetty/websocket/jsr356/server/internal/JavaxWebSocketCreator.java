@@ -18,17 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.internal;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.websocket.Extension;
-import javax.websocket.Extension.Parameter;
-import javax.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.StringUtil;
@@ -42,6 +31,16 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtension;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+
+import javax.websocket.Extension;
+import javax.websocket.Extension.Parameter;
+import javax.websocket.server.ServerEndpointConfig;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class JavaxWebSocketCreator implements WebSocketCreator
 {

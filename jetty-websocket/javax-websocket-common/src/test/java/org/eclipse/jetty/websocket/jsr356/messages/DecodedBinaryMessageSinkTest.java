@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
+import org.junit.jupiter.api.Test;
+
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -26,14 +34,6 @@ import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
-import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

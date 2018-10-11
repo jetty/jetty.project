@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.Executor;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;

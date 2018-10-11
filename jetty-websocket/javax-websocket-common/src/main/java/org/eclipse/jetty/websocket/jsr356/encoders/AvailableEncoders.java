@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.encoders;
 
+import org.eclipse.jetty.websocket.jsr356.InitException;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
+
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,14 +32,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jsr356.InitException;
-import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
 public class AvailableEncoders implements Predicate<Class<?>>
 {

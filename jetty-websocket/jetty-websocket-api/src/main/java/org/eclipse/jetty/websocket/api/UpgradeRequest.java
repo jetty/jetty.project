@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+
 import java.net.HttpCookie;
 import java.net.URI;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**        
  * The HTTP Upgrade to WebSocket Request

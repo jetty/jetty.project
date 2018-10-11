@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import java.net.HttpCookie;
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -33,8 +28,13 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+
+import java.net.HttpCookie;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class ClientUpgradeRequestImpl extends UpgradeRequest
 {

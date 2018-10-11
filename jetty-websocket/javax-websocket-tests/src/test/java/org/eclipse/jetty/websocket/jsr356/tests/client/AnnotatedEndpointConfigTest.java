@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
+import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
+import org.eclipse.jetty.websocket.jsr356.tests.coders.TimeEncoder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
@@ -33,13 +36,10 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-
-import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
-import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
-import org.eclipse.jetty.websocket.jsr356.tests.coders.TimeEncoder;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;

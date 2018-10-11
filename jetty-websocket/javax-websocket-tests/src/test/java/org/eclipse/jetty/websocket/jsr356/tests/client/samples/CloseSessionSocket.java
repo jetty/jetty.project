@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client.samples;
 
+import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
-
-import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 
 @ClientEndpoint
 public class CloseSessionSocket extends WSEventTracker

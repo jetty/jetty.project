@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.coders;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Example of a valid encoder impl declaring 2 encoders.

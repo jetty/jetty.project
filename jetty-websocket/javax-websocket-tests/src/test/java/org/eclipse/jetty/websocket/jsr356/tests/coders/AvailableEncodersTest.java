@@ -18,17 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.coders;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.ByteBuffer;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
-
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -36,6 +25,17 @@ import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.IntegerEncoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.ByteBuffer;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;

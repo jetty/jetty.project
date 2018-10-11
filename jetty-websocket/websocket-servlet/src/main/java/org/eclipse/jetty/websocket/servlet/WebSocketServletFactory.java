@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.time.Duration;
-
 import org.eclipse.jetty.http.pathmap.PathSpec;
+
+import java.time.Duration;
 
 public interface WebSocketServletFactory
 {

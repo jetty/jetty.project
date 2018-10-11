@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+
+import java.io.IOException;
 
 /**
  * Example EchoSocket using Adapter.

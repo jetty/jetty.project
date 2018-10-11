@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.internal;
 
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+
+import javax.websocket.HandshakeResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.websocket.HandshakeResponse;
-
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
 public class JsrHandshakeResponse implements HandshakeResponse
 {

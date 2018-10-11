@@ -18,6 +18,30 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.tests.WSURI;
+import org.junit.jupiter.api.Test;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.websocket.ContainerProvider;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,30 +56,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
-import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
-import org.junit.jupiter.api.Test;
-import org.eclipse.jetty.websocket.jsr356.tests.WSURI;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;

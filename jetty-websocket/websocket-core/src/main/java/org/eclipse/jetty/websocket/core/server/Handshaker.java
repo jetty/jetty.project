@@ -18,11 +18,18 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public interface Handshaker
 {
+    static Handshaker newInstance()
+    {
+        return new RFC6455Handshaker();
+    }
+
     boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }

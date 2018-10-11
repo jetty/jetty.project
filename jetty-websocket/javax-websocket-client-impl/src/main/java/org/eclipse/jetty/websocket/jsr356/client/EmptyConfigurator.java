@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
-import java.util.List;
-import java.util.Map;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.HandshakeResponse;
+import java.util.List;
+import java.util.Map;
 
 public class EmptyConfigurator extends ClientEndpointConfig.Configurator
 {

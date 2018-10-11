@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.quotes;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -28,8 +27,8 @@ import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
-
-import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 @ClientEndpoint(decoders = QuotesDecoder.class, subprotocols = "quotes")
 public class QuotesSocket extends WSEventTracker

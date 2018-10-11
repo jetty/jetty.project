@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.lang.invoke.MethodHandle;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
+import java.lang.invoke.MethodHandle;
 
 public class JavaxWebSocketFrameHandlerMetadata
 {

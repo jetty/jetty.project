@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server.sockets.streaming;
 
-import java.io.IOException;
-import java.io.Reader;
+import org.eclipse.jetty.toolchain.test.StackUtils;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -27,11 +29,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import java.io.IOException;
+import java.io.Reader;
 
 @ServerEndpoint("/echo/streaming/readerparam/{param}")
 public class ReaderParamSocket

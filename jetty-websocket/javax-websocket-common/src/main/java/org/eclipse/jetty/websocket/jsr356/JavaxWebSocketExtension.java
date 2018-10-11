@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+
+import javax.websocket.Extension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.websocket.Extension;
-
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class JavaxWebSocketExtension implements Extension
 {

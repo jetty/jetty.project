@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.coders;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import org.eclipse.jetty.util.BufferUtil;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.util.BufferUtil;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 public class FruitBinaryEncoder implements Encoder.Binary<Fruit>
 {

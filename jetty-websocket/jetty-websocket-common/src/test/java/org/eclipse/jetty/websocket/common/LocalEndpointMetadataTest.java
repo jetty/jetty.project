@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedTextSocket;
@@ -42,9 +43,6 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;

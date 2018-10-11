@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

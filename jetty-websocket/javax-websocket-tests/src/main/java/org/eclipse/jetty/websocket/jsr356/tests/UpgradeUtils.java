@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
+import org.eclipse.jetty.http.HttpHeader;
+
 import java.util.Map;
 import java.util.TreeMap;
-
-import org.eclipse.jetty.http.HttpHeader;
 
 public class UpgradeUtils
 {

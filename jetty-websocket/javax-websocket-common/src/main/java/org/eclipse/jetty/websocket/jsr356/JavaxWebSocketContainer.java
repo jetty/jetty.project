@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
-import javax.websocket.Extension;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+
+import javax.websocket.Extension;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {

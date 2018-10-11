@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
 
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
@@ -32,9 +28,12 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
-import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 {

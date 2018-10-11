@@ -18,20 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server.sockets;
 
-import java.io.IOException;
-import java.util.Date;
+import org.eclipse.jetty.toolchain.test.StackUtils;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
+import org.eclipse.jetty.websocket.jsr356.tests.coders.DateEncoder;
 
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
-import org.eclipse.jetty.websocket.jsr356.tests.coders.DateEncoder;
+import java.io.IOException;
+import java.util.Date;
 
 @ServerEndpoint(value = "/echo/beans/date", decoders = { DateDecoder.class }, encoders = { DateEncoder.class })
 public class DateTextSocket

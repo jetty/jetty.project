@@ -18,16 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.coders.tests;
 
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.eclipse.jetty.util.BufferUtil;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.util.BufferUtil;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Intentionally bad example of attempting to decode the same object to different message formats.

@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.util.concurrent.TimeUnit;
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnError;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnError;
+import javax.websocket.Session;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;

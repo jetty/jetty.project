@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
+import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.toolchain.test.IO;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,9 +33,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.toolchain.test.IO;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

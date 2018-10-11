@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class InputStreamDecoder implements Decoder.BinaryStream<InputStream>
 {

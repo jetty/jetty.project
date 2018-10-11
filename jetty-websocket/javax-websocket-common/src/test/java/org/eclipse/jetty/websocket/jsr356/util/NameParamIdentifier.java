@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.util;
 
+import org.eclipse.jetty.util.annotation.Name;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
-import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * Simple {@link InvokerUtils.ParamIdentifier}

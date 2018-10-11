@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
+import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
-
-import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
-import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
 public class CompletableFutureMethodHandle
 {

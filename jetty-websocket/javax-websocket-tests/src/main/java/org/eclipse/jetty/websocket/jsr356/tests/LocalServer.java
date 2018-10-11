@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.function.BiConsumer;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -48,12 +39,19 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+import java.net.URI;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {

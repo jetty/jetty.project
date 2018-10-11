@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
+import org.eclipse.jetty.websocket.jsr356.InitException;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
+
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
@@ -27,15 +35,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-
-import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jsr356.InitException;
-import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
 public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredDecoder>
 {

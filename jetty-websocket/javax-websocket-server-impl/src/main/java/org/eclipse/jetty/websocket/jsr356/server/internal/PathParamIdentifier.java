@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.internal;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 import javax.websocket.server.PathParam;
-
-import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 
 /**
  * Method argument identifier for {@link javax.websocket.server.PathParam} annotations.

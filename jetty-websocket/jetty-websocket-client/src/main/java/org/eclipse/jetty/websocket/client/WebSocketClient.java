@@ -18,19 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
-import java.net.CookieStore;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -44,8 +31,20 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.impl.ClientUpgradeRequestImpl;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+
+import java.io.IOException;
+import java.net.CookieStore;
+import java.net.SocketAddress;
+import java.net.URI;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy
 {

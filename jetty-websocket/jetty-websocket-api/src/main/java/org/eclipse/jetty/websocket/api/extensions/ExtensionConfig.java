@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.api.extensions;
 
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -25,8 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.

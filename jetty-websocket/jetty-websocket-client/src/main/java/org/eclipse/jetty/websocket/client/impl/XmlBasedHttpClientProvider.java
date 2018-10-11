@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import java.io.InputStream;
-import java.net.URL;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.xml.XmlConfiguration;
+
+import java.io.InputStream;
+import java.net.URL;
 
 class XmlBasedHttpClientProvider
 {

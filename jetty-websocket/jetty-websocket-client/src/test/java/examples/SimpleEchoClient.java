@@ -18,11 +18,11 @@
 
 package examples;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Example of a simple Echo Client.

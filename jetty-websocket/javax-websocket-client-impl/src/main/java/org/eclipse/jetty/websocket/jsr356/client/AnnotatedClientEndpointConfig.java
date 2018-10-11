@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.Extension;
-
-import org.eclipse.jetty.websocket.jsr356.InvalidWebSocketException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
 {

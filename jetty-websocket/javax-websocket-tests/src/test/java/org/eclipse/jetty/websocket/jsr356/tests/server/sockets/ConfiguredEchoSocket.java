@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server.sockets;
 
-import static java.util.Comparator.naturalOrder;
-import static java.util.stream.Collectors.joining;
-
-import java.nio.ByteBuffer;
-import java.util.Locale;
+import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
+import org.eclipse.jetty.websocket.jsr356.tests.coders.TimeEncoder;
+import org.eclipse.jetty.websocket.jsr356.tests.server.configs.EchoSocketConfigurator;
 
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
@@ -30,10 +28,11 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
+import java.nio.ByteBuffer;
+import java.util.Locale;
 
-import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
-import org.eclipse.jetty.websocket.jsr356.tests.coders.TimeEncoder;
-import org.eclipse.jetty.websocket.jsr356.tests.server.configs.EchoSocketConfigurator;
+import static java.util.Comparator.naturalOrder;
+import static java.util.stream.Collectors.joining;
 
 /**
  * Annotated echo socket, using all of the annotation configurations

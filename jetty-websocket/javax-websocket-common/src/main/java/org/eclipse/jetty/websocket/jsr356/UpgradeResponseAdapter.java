@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+
 import java.util.Collections;
 import java.util.List;
-
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class UpgradeResponseAdapter implements UpgradeResponse
 {

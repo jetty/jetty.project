@@ -18,9 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.quotes;
 
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
+import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
 import javax.websocket.OnClose;
@@ -30,15 +36,9 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

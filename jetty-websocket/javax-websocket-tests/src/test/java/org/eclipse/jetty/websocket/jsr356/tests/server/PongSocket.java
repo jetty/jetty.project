@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.nio.charset.StandardCharsets;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
@@ -26,10 +28,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import java.nio.charset.StandardCharsets;
 
 @ServerEndpoint(value="/pong-socket", configurator=PongContextListener.Config.class)
 public class PongSocket

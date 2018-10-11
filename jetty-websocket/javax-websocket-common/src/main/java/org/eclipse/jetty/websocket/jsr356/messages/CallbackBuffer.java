@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.nio.ByteBuffer;
-import java.util.Objects;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+
+import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class CallbackBuffer
 {

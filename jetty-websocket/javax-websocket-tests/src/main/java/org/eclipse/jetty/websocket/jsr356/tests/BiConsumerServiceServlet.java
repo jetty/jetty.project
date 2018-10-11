@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
-import java.io.IOException;
-import java.util.function.BiConsumer;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.function.BiConsumer;
 
 /**
  * Utility Servlet to make easier testcases

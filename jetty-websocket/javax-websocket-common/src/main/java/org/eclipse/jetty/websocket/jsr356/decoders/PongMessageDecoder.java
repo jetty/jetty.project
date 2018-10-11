@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.PongMessage;
-
-import org.eclipse.jetty.util.BufferUtil;
+import java.nio.ByteBuffer;
 
 public class PongMessageDecoder extends AbstractDecoder implements Decoder.Binary<PongMessage>
 {
