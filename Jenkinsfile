@@ -76,9 +76,22 @@ def getFullBuild(jdk, os, mainJdk) {
         // Report on Maven and Javadoc warnings
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
+
+        slackNotifier(currentBuild.currentResult)
+
       }
     }
   }
 }
+
+def slackNotifier(String buildResult) {
+  if( buildResult == "FAILURE" ) {
+    slackSend color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed"
+  }
+  else if( buildResult == "UNSTABLE" ) {
+    slackSend color: "warning", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable"
+  }
+}
+
 
 // vim: et:ts=2:sw=2:ft=groovy
