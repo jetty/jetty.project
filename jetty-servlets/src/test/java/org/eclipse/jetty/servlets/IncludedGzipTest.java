@@ -16,9 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package org.eclipse.jetty.servlets;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -35,6 +33,7 @@ import java.util.zip.InflaterInputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -44,6 +43,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(WorkDirExtension.class)
 public class IncludedGzipTest

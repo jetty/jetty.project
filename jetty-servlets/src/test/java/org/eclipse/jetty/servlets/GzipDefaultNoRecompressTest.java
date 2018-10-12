@@ -16,13 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.servlets;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;

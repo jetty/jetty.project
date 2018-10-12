@@ -16,33 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.MimeTypes;
+
 /**
- * A sample servlet to serve static content, using a order of construction that has caused problems for
- * {@link GzipHandler} in the past.
- *
- * Using a real-world pattern of:
- *
- * <pre>
- *  1) set content length
- *  2) set content type
- *  3) get stream
- *  4) write
- * </pre>
- *
- * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+ * Test servlet for testing against unusual minGzip configurable.
  */
 @SuppressWarnings("serial")
-public class TestServletLengthTypeStreamWrite extends TestDirContentServlet
+public class TestMinGzipSizeServlet extends TestDirContentServlet
 {
+    private MimeTypes mimeTypes;
+
+    @Override
+    public void init(ServletConfig config) throws ServletException
+    {
+        super.init(config);
+        mimeTypes = new MimeTypes();
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
@@ -50,13 +50,18 @@ public class TestServletLengthTypeStreamWrite extends TestDirContentServlet
         byte[] dataBytes = loadContentFileBytes(fileName);
 
         response.setContentLength(dataBytes.length);
-
-        if (fileName.endsWith("txt"))
-            response.setContentType("text/plain");
-        else if (fileName.endsWith("mp3"))
-            response.setContentType("audio/mpeg");
         response.setHeader("ETag","W/etag-"+fileName);
-
+        if (fileName.endsWith(".js"))
+        {
+            // intentionally long-form content type to test ";" splitting in code
+            response.setContentType("text/javascript; charset=utf-8");
+        }
+        else
+        {
+            String mime = mimeTypes.getMimeByExtension(fileName);
+            if (mime != null)
+                response.setContentType(mime);
+        }
         ServletOutputStream out = response.getOutputStream();
         out.write(dataBytes);
     }

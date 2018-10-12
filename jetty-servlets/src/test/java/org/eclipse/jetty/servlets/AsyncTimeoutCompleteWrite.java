@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
-
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 
@@ -30,6 +27,9 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Respond with requested content, but via AsyncContext manipulation.

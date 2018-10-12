@@ -16,24 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletConfig;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("serial")
-public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
+public class AsyncTimeoutDispatchWrite extends TestDirContentServlet implements AsyncListener
 {
-    public static class Default extends AsyncScheduledDispatchWrite
+    public static class Default extends AsyncTimeoutDispatchWrite
     {
         public Default()
         {
@@ -41,7 +39,7 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
         }
     }
     
-    public static class Passed extends AsyncScheduledDispatchWrite
+    public static class Passed extends AsyncTimeoutDispatchWrite
     {
         public Passed()
         {
@@ -49,45 +47,20 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
         }
     }
 
-    private static class DispatchBack implements Runnable
-    {
-        private final AsyncContext ctx;
-
-        public DispatchBack(AsyncContext ctx)
-        {
-            this.ctx = ctx;
-        }
-
-        @Override
-        public void run()
-        {
-            ctx.dispatch();
-        }
-    }
-
     private final boolean originalReqResp;
-    private ScheduledExecutorService scheduler;
 
-    public AsyncScheduledDispatchWrite(boolean originalReqResp)
+    public AsyncTimeoutDispatchWrite(boolean originalReqResp)
     {
         this.originalReqResp = originalReqResp;
     }
 
     @Override
-    public void init(ServletConfig config) throws ServletException
-    {
-        super.init(config);
-        scheduler = Executors.newScheduledThreadPool(3);
-    }
-
-    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        Boolean suspended = (Boolean)request.getAttribute("SUSPENDED");
-        if (suspended == null || !suspended)
+        AsyncContext ctx = (AsyncContext)request.getAttribute(AsyncContext.class.getName());
+        if (ctx == null)
         {
-            request.setAttribute("SUSPENDED",Boolean.TRUE);
-            AsyncContext ctx;
+            // First pass through
             if (originalReqResp)
             {
                 // Use Original Request & Response
@@ -98,11 +71,13 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
                 // Pass Request & Response
                 ctx = request.startAsync(request,response);
             }
-            ctx.setTimeout(0);
-            scheduler.schedule(new DispatchBack(ctx),500,TimeUnit.MILLISECONDS);
+            ctx.addListener(this);
+            ctx.setTimeout(200);
+            request.setAttribute(AsyncContext.class.getName(),ctx);
         }
         else
         {
+            // second pass through, as result of timeout -> dispatch
             String fileName = request.getServletPath();
             byte[] dataBytes = loadContentFileBytes(fileName);
 
@@ -117,6 +92,30 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
             response.setHeader("ETag","W/etag-" + fileName);
 
             out.write(dataBytes);
+            // no need to call AsyncContext.complete() from here
+            // in fact, it will cause an IllegalStateException if we do
+            // ctx.complete();
         }
+    }
+
+    @Override
+    public void onComplete(AsyncEvent event) throws IOException
+    {
+    }
+
+    @Override
+    public void onTimeout(AsyncEvent event) throws IOException
+    {
+        event.getAsyncContext().dispatch();
+    }
+
+    @Override
+    public void onError(AsyncEvent event) throws IOException
+    {
+    }
+
+    @Override
+    public void onStartAsync(AsyncEvent event) throws IOException
+    {
     }
 }

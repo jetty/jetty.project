@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 
 /**
  * A sample servlet to serve static content, using a order of construction that has caused problems for

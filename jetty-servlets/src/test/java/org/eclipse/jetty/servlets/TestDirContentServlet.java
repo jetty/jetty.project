@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.servlets;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

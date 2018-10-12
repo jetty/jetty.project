@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 
@@ -24,6 +24,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 
 /**
  * A sample servlet to serve static content, using a order of construction that has caused problems for
@@ -33,15 +35,15 @@ import javax.servlet.http.HttpServletResponse;
  *
  * <pre>
  *  1) get stream
- *  2) set content type
  *  2) set content length
+ *  3) set content type
  *  4) write
  * </pre>
  *
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")
-public class TestServletStreamTypeLengthWrite extends TestDirContentServlet
+public class TestServletStreamLengthTypeWrite extends TestDirContentServlet
 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -51,13 +53,13 @@ public class TestServletStreamTypeLengthWrite extends TestDirContentServlet
 
         ServletOutputStream out = response.getOutputStream();
 
+        response.setContentLength(dataBytes.length);
+
         if (fileName.endsWith("txt"))
             response.setContentType("text/plain");
         else if (fileName.endsWith("mp3"))
             response.setContentType("audio/mpeg");
         response.setHeader("ETag","W/etag-"+fileName);
-
-        response.setContentLength(dataBytes.length);
 
         out.write(dataBytes);
     }

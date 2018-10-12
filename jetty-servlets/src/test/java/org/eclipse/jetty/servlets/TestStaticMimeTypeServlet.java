@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 
@@ -29,10 +29,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.MimeTypes;
 
 /**
- * Test servlet for testing against unusual minGzip configurable.
+ * Test servlet for testing against unusual MimeTypes and Content-Types.
  */
 @SuppressWarnings("serial")
-public class TestMinGzipSizeServlet extends TestDirContentServlet
+public class TestStaticMimeTypeServlet extends TestDirContentServlet
 {
     private MimeTypes mimeTypes;
 
@@ -41,6 +41,24 @@ public class TestMinGzipSizeServlet extends TestDirContentServlet
     {
         super.init(config);
         mimeTypes = new MimeTypes();
+        // Some real world, yet not terribly common, mime type mappings.
+        mimeTypes.addMimeMapping("bz2","application/bzip2");
+        mimeTypes.addMimeMapping("br","application/brotli");
+        mimeTypes.addMimeMapping("bmp","image/bmp");
+        mimeTypes.addMimeMapping("tga","application/tga");
+        mimeTypes.addMimeMapping("xcf","image/xcf");
+        mimeTypes.addMimeMapping("jp2","image/jpeg2000");
+
+        // Some of the other gzip mime-types seen in the wild.
+        // NOTE: Using oddball extensions just so that the calling request can specify
+        //       which strange mime type to use.
+        mimeTypes.addMimeMapping("x-gzip","application/x-gzip");
+        mimeTypes.addMimeMapping("x-gunzip","application/x-gunzip");
+        mimeTypes.addMimeMapping("gzipped","application/gzippped");
+        mimeTypes.addMimeMapping("gzip-compressed","application/gzip-compressed");
+        mimeTypes.addMimeMapping("x-compressed","application/x-compressed");
+        mimeTypes.addMimeMapping("x-compress","application/x-compress");
+        mimeTypes.addMimeMapping("gzipdoc","gzip/document");
     }
 
     @Override
@@ -51,17 +69,13 @@ public class TestMinGzipSizeServlet extends TestDirContentServlet
 
         response.setContentLength(dataBytes.length);
         response.setHeader("ETag","W/etag-"+fileName);
-        if (fileName.endsWith(".js"))
-        {
-            // intentionally long-form content type to test ";" splitting in code
-            response.setContentType("text/javascript; charset=utf-8");
-        }
+
+        String mime = mimeTypes.getMimeByExtension(fileName);
+        if (mime == null)
+            response.setContentType("application/octet-stream");
         else
-        {
-            String mime = mimeTypes.getMimeByExtension(fileName);
-            if (mime != null)
-                response.setContentType(mime);
-        }
+            response.setContentType(mime);
+
         ServletOutputStream out = response.getOutputStream();
         out.write(dataBytes);
     }
