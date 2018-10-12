@@ -77,7 +77,7 @@ def getFullBuild(jdk, os, mainJdk) {
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
         }
-      } catch (Exception e) {
+      } catch (e) {
         slackNotifier(currentBuild.currentResult)
         throw e
       }
