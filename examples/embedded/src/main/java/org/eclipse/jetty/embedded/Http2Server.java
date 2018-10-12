@@ -22,9 +22,11 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -40,7 +42,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -127,8 +128,6 @@ public class Http2Server
         http2Connector.setPort(8443);
         server.addConnector(http2Connector);
 
-        ALPN.debug=false;
-
         server.start();
         server.join();
     }
@@ -136,7 +135,7 @@ public class Http2Server
     public static class PushedTilesFilter implements Filter
     {
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException
+        public void init(FilterConfig filterConfig)
         {
         }
 
@@ -159,14 +158,14 @@ public class Http2Server
         public void destroy()
         {
         }
-    };
+    }
 
     static Servlet servlet = new HttpServlet()
     {
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             String code=request.getParameter("code");
             if (code!=null)
@@ -183,10 +182,11 @@ public class Http2Server
             content+="session="+session.getId()+(session.isNew()?"(New)\n":"\n");
             content+="date="+new Date()+"\n";
 
-            Cookie[] cookies = request.getCookies();
-            if (cookies!=null && cookies.length>0)
-                for (Cookie c : cookies)
-                    content+="cookie "+c.getName()+"="+c.getValue()+"\n";
+            content += Optional.ofNullable(request.getCookies())
+                    .stream()
+                    .flatMap(Arrays::stream)
+                    .map(cookie -> String.format("cookie %s=%s", cookie.getName(), cookie.getValue()))
+                    .collect(Collectors.joining(System.lineSeparator()));
 
             response.setContentLength(content.length());
             response.getOutputStream().print(content);
