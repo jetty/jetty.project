@@ -16,12 +16,14 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.servlets {
-    exports org.eclipse.jetty.servlets;
+module org.eclipse.jetty.security {
+    exports org.eclipse.jetty.security;
+    exports org.eclipse.jetty.security.authentication;
 
-    requires static javax.servlet.api;
-    requires static org.eclipse.jetty.util;
-    requires static org.eclipse.jetty.io;
-    requires static org.eclipse.jetty.http;
-    requires static org.eclipse.jetty.server;
+    requires javax.servlet.api;
+    requires org.eclipse.jetty.util;
+    requires org.eclipse.jetty.http;
+    requires org.eclipse.jetty.server;
+    requires static java.sql;
+    requires static java.security.jgss;
 }
