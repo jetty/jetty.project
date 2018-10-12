@@ -21,25 +21,25 @@ def getFullBuild(jdk, os, mainJdk) {
       def settingsName = 'oss-settings.xml'
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
-      stage("Build / Test - $jdk") {
-        timeout(time: 120, unit: 'MINUTES') {
-          // Checkout
-          checkout scm
-          withMaven(
-                  maven: mvnName,
-                  jdk: "$jdk",
-                  publisherStrategy: 'EXPLICIT',
-                  globalMavenSettingsConfig: settingsName,
-                  mavenOpts: mavenOpts,
-                  mavenLocalRepo: localRepo) {
-            // Testing
-            sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Djetty.testtracker.log=true -Pmongodb -Dunix.socket.tmp=" + env.JENKINS_HOME
-            // Javadoc only
-            sh "mvn -V -B javadoc:javadoc -T6 -e -Dmaven.test.failure.ignore=false"
+      try {
+        stage("Build / Test - $jdk") {
+          timeout( time: 120, unit: 'MINUTES' ) {
+            // Checkout
+            checkout scm
+            withMaven( maven: mvnName,
+                       jdk: "$jdk",
+                       publisherStrategy: 'EXPLICIT',
+                       globalMavenSettingsConfig: settingsName,
+                       mavenOpts: mavenOpts,
+                       mavenLocalRepo: localRepo ) {
+              // Testing
+              sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Djetty.testtracker.log=true -Pmongodb -Dunix.socket.tmp=" +
+                         env.JENKINS_HOME
+              // Javadoc only
+              sh "mvn -V -B javadoc:javadoc -T6 -e -Dmaven.test.failure.ignore=false"
 
+            }
           }
-        }
-
         // Report failures in the jenkins UI
         junit testResults: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
         consoleParsers = [[parserName: 'JavaDoc'],
@@ -76,9 +76,10 @@ def getFullBuild(jdk, os, mainJdk) {
         // Report on Maven and Javadoc warnings
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
-
+        }
+      } catch (Exception e) {
         slackNotifier(currentBuild.currentResult)
-
+        throw e
       }
     }
   }
