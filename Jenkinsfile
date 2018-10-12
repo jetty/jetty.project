@@ -87,10 +87,10 @@ def getFullBuild(jdk, os, mainJdk) {
 
 def slackNotifier(String buildResult) {
   if( buildResult == "FAILURE" ) {
-    slackSend color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed"
+    slackSend color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL})"
   }
   else if( buildResult == "UNSTABLE" ) {
-    slackSend color: "warning", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable"
+    slackSend color: "warning", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL})"
   }
 }
 
