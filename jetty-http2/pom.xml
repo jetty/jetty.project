@@ -18,7 +18,6 @@
     <module>http2-hpack</module>
     <module>http2-http-client-transport</module>
     <module>http2-server</module>
-    <module>http2-alpn-tests</module>
   </modules>
 
 </project>
