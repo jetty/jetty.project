@@ -18,6 +18,16 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            --add-reads org.eclipse.jetty.http2.server=javax.servlet.api
+            --add-modules javax.servlet.api
+          </argLine>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>com.github.madgnome</groupId>
         <artifactId>h2spec-maven-plugin</artifactId>
         <configuration>
