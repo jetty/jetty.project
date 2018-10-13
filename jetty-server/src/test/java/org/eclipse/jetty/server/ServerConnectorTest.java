@@ -33,8 +33,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -55,6 +57,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ServerConnectorTest
@@ -296,11 +299,30 @@ public class ServerConnectorTest
         server.stop();
         
         assertThat(connector.getTransport(),Matchers.nullValue());
-        
-        
-        
-        
-        
-        
+    }
+
+    @Test
+    public void testBindToAddressWhichIsInUse() throws Exception {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            final int port = socket.getLocalPort();
+
+            Server server = new Server();
+            ServerConnector connector = new ServerConnector(server);
+            connector.setPort(port);
+            server.addConnector(connector);
+
+            HandlerList handlers = new HandlerList();
+            handlers.addHandler(new DefaultHandler());
+
+            server.setHandler(handlers);
+
+            try {
+                server.start();
+                Assertions.fail("No exception thrown");
+            } catch (IOException e) {
+                assertThat(e.getCause(), Matchers.instanceOf(BindException.class));
+                assertThat(e.getMessage(), Matchers.containsString("0.0.0.0:" + port));
+            }
+        }
     }
 }
