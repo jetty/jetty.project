@@ -4,20 +4,19 @@
 <!-- Weld needs access to some internal classes. Same configuration as "cdi2" module provides on server. -->
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
-
-  <Call name="prependServerClass">
-    <Arg>-org.eclipse.jetty.util.Decorator</Arg>
-  </Call>
-  <Call name="prependServerClass">
-    <Arg>-org.eclipse.jetty.util.DecoratedObjectFactory</Arg>
-  </Call>
-  <Call name="prependServerClass">
-    <Arg>-org.eclipse.jetty.server.handler.ContextHandler.</Arg>
-  </Call>
-  <Call name="prependServerClass">
-    <Arg>-org.eclipse.jetty.server.handler.ContextHandler</Arg>
-  </Call>
-  <Call name="prependServerClass">
-    <Arg>-org.eclipse.jetty.servlet.ServletContextHandler</Arg>
+  <Call name="addServerClasspathPattern">
+    <Arg>
+      <New class="org.eclipse.jetty.webapp.ClasspathPattern">
+        <Arg>
+         <Array type="java.lang.String">
+           <Item>-org.eclipse.jetty.util.Decorator</Item>
+           <Item>-org.eclipse.jetty.util.DecoratedObjectFactory</Item>
+           <Item>-org.eclipse.jetty.server.handler.ContextHandler.</Item>
+           <Item>-org.eclipse.jetty.server.handler.ContextHandler</Item>
+           <Item>-org.eclipse.jetty.servlet.ServletContextHandler</Item>
+         </Array>
+        </Arg>
+      </New>
+    </Arg>
   </Call>
 </Configure>

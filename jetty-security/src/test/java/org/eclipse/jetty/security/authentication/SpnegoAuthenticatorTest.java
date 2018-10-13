@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.security.authentication;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -38,16 +34,15 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Test class for {@link SpnegoAuthenticator}.
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class SpnegoAuthenticatorTest {
-    private SpnegoAuthenticator _authenticator;
+    private ConfigurableSpnegoAuthenticator _authenticator;
 
     @BeforeEach
-    public void setup() throws Exception
+    public void setup()
     {
-        _authenticator = new SpnegoAuthenticator();
+        _authenticator = new ConfigurableSpnegoAuthenticator();
     }
 
     @Test
@@ -67,7 +62,6 @@ public class SpnegoAuthenticatorTest {
             @Override
             public void close()
             {
-                return;
             }
         };
         Response res = new Response(channel, out);
@@ -97,7 +91,6 @@ public class SpnegoAuthenticatorTest {
             @Override
             public void close()
             {
-                return;
             }
         };
         Response res = new Response(channel, out);
@@ -111,38 +104,5 @@ public class SpnegoAuthenticatorTest {
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
-    }
-
-    @Test
-    public void testCaseInsensitiveHeaderParsing()
-    {
-        assertFalse(_authenticator.isAuthSchemeNegotiate(null));
-        assertFalse(_authenticator.isAuthSchemeNegotiate(""));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("Basic"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("basic"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("Digest"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("LotsandLotsandLots of nonsense"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("Negotiat asdfasdf"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("Negotiated"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("Negotiate-and-more"));
-
-        assertTrue(_authenticator.isAuthSchemeNegotiate("Negotiate"));
-        assertTrue(_authenticator.isAuthSchemeNegotiate("negotiate"));
-        assertTrue(_authenticator.isAuthSchemeNegotiate("negOtiAte"));
-    }
-
-    @Test
-    public void testExtractAuthScheme()
-    {
-        assertEquals("", _authenticator.getAuthSchemeFromHeader(null));
-        assertEquals("", _authenticator.getAuthSchemeFromHeader(""));
-        assertEquals("", _authenticator.getAuthSchemeFromHeader("   "));
-        assertEquals("Basic", _authenticator.getAuthSchemeFromHeader(" Basic asdfasdf"));
-        assertEquals("Basicasdf", _authenticator.getAuthSchemeFromHeader("Basicasdf asdfasdf"));
-        assertEquals("basic", _authenticator.getAuthSchemeFromHeader(" basic asdfasdf "));
-        assertEquals("Negotiate", _authenticator.getAuthSchemeFromHeader("Negotiate asdfasdf"));
-        assertEquals("negotiate", _authenticator.getAuthSchemeFromHeader("negotiate asdfasdf"));
-        assertEquals("negotiate", _authenticator.getAuthSchemeFromHeader(" negotiate  asdfasdf"));
-        assertEquals("negotiated", _authenticator.getAuthSchemeFromHeader(" negotiated  asdfasdf"));
     }
 }

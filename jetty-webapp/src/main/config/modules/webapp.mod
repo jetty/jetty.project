@@ -30,3 +30,6 @@ lib/jetty-webapp-${jetty.version}.jar
 ##
 #jetty.webapp.addSystemClasses+=,org.example.
 #jetty.webapp.addServerClasses+=,org.example.
+
+[jpms]
+add-modules:java.instrument

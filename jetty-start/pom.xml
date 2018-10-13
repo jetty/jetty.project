@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
@@ -13,7 +14,7 @@
     <bundle-symbolic-name>${project.groupId}.start</bundle-symbolic-name>
   </properties>
   <build>
-   <plugins>
+    <plugins>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
@@ -50,10 +51,11 @@
                   <artifact>org.eclipse.jetty:jetty-util</artifact>
                   <includes>
                     <include>org/eclipse/jetty/util/JavaVersion*</include>
+                    <include>org/eclipse/jetty/util/ManifestUtils*</include>
                     <include>org/eclipse/jetty/util/TopologicalSort*</include>
                   </includes>
-              	</filter>
-              </filters>              
+                </filter>
+              </filters>
               <relocations>
                 <relocation>
                   <pattern>org.eclipse.jetty.util</pattern>

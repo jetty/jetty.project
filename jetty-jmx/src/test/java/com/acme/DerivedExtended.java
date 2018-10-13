@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject(value = "Test the mbean extended stuff")
 public class DerivedExtended extends Derived
 {
-
     private String doodle4 = "doodle4";
 
     @ManagedAttribute(value = "The doodle4 name of something", name = "doodle4", setter = "setDoodle4")

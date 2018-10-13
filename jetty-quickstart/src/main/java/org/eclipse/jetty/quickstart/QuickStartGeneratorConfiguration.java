@@ -49,6 +49,7 @@ import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -220,10 +221,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             .tag("param-value",context.getInitParameter(p))
             .closeTag();
 
-        if (context.getEventListeners() != null)
-            for (EventListener e : context.getEventListeners())
-                out.openTag("listener",origin(md,e.getClass().getCanonicalName() + ".listener"))
-                .tag("listener-class",e.getClass().getCanonicalName())
+        if (context.getServletHandler().getListeners() != null)
+            for (ListenerHolder e : context.getServletHandler().getListeners())
+                out.openTag("listener",origin(md,e.getClassName() + ".listener"))
+                .tag("listener-class",e.getClassName())
                 .closeTag();
 
         ServletHandler servlets = context.getServletHandler();

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
@@ -54,9 +49,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
-/* This whole test is very specific to how TLS < 1.3 works.
- * Starting in Java 11, TLS/1.3 is now enabled by default.
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+// This whole test is very specific to how TLS < 1.3 works.
+// Starting in Java 11, TLS/1.3 is now enabled by default.
 @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
 public class SslBytesClientTest extends SslBytesTest
 {

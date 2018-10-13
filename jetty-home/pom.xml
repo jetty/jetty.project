@@ -324,7 +324,7 @@
             </goals>
             <configuration>
               <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
+              <includeArtifactIds>javax.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
@@ -337,7 +337,7 @@
             </goals>
             <configuration>
               <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
+              <includeArtifactIds>javax.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/annotations</outputDirectory>
@@ -547,6 +547,14 @@
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+    </dependency>
 
     <!-- jetty deps -->
     <dependency>
@@ -662,7 +670,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-openjdk8-server</artifactId>
+      <artifactId>jetty-alpn-java-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -701,21 +709,5 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>[1.9,)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-alpn-java-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 
 </project>

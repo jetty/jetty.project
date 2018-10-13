@@ -202,7 +202,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
-    private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
@@ -237,7 +236,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    private ContextHandler(Context context, HandlerContainer parent, String contextPath)
+    protected ContextHandler(Context context, HandlerContainer parent, String contextPath)
     {
         _scontext = context == null?new Context():context;
         _attributes = new AttributesMap();
@@ -259,9 +258,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpBeans(out,indent,Collections.singletonList(new ClassLoaderDump(getClassLoader())),
-                Collections.singletonList(new DumpableCollection("Handler attributes " + this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("Context attributes " + this,((Context)getServletContext()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("Initparams " + this,getInitParams().entrySet())));
+                Collections.singletonList(new DumpableCollection("eventListeners "+this,_eventListeners)),
+                Collections.singletonList(new DumpableCollection("handler attributes " + this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
+                Collections.singletonList(new DumpableCollection("context attributes " + this,((Context)getServletContext()).getAttributeEntrySet())),
+                Collections.singletonList(new DumpableCollection("initparams " + this,getInitParams().entrySet())));
     }
 
     /* ------------------------------------------------------------ */
@@ -1554,10 +1554,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setManagedAttribute(String name, Object value)
     {
-        Object old = _managedAttributes.put(name,value);
-        updateBean(old,value);
     }
 
     /* ------------------------------------------------------------ */

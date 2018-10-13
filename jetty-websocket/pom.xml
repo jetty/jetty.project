@@ -1,51 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <parent>
-        <artifactId>jetty-project</artifactId>
-        <groupId>org.eclipse.jetty</groupId>
-        <version>10.0.0-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <artifactId>jetty-project</artifactId>
+    <groupId>org.eclipse.jetty</groupId>
+    <version>10.0.0-SNAPSHOT</version>
+  </parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.eclipse.jetty.websocket</groupId>
-    <artifactId>websocket-parent</artifactId>
-    <name>Jetty :: Websocket :: Parent</name>
-    <packaging>pom</packaging>
-    <url>http://www.eclipse.org/jetty</url>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.websocket</groupId>
+  <artifactId>websocket-parent</artifactId>
+  <name>Jetty :: Websocket :: Parent</name>
+  <packaging>pom</packaging>
+  <url>http://www.eclipse.org/jetty</url>
 
-    <modules>
-        <module>websocket-core</module>
-        <module>websocket-servlet</module>
-        <!-- Jetty Native WebSocket Implementation -->
-        <module>jetty-websocket-api</module>
-        <module>jetty-websocket-common</module>
-        <module>jetty-websocket-client</module>
-        <module>jetty-websocket-server</module>
-        <!-- JSR356 Implementation -->
-        <module>javax-websocket-common</module>
-        <module>javax-websocket-client-impl</module>
-        <module>javax-websocket-server-impl</module>
-        <module>javax-websocket-tests</module>
-    </modules>
+  <modules>
+    <module>websocket-core</module>
+    <module>websocket-servlet</module>
+    <!-- Jetty Native WebSocket Implementation -->
+    <module>jetty-websocket-api</module>
+    <module>jetty-websocket-common</module>
+    <module>jetty-websocket-client</module>
+    <module>jetty-websocket-server</module>
+    <!-- JSR356 Implementation -->
+    <module>javax-websocket-common</module>
+    <module>javax-websocket-client-impl</module>
+    <module>javax-websocket-server-impl</module>
+    <module>javax-websocket-tests</module>
+  </modules>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <configuration>
-                    <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

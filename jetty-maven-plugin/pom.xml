@@ -187,6 +187,26 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -314,18 +334,6 @@
           </plugin>
         </plugins>
       </build>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>apache.snaphots</id>
-          <url>https://repository.apache.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
     </profile>
   </profiles>
 </project>
