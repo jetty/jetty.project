@@ -12,6 +12,15 @@ for (def os in oss) {
 
 parallel builds
 
+def slackNotifier(String buildResult) {
+  if( buildResult == "FAILURE" ) {
+    slackSend (color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL})")
+  }
+  else if( buildResult == "UNSTABLE" ) {
+    slackSend (color: "warning", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL})")
+  }
+}
+
 def getFullBuild(jdk, os, mainJdk) {
   return {
     node(os) {
@@ -77,7 +86,6 @@ def getFullBuild(jdk, os, mainJdk) {
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
         }
-        echo "BUILD OKKKK"
       } catch (e) {
         echo "BUILD FAILED"
         slackNotifier(currentBuild.currentResult)
@@ -87,14 +95,6 @@ def getFullBuild(jdk, os, mainJdk) {
   }
 }
 
-def slackNotifier(String buildResult) {
-  if( buildResult == "FAILURE" ) {
-    slackSend color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL})"
-  }
-  else if( buildResult == "UNSTABLE" ) {
-    slackSend color: "warning", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL})"
-  }
-}
 
 
 // vim: et:ts=2:sw=2:ft=groovy
