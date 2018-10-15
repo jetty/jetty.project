@@ -13,13 +13,14 @@ for (def os in oss) {
 parallel builds
 
 def slackNotifier(String buildResult) {
-  echo "BUILD FAILED"
+  echo "BUILD FAILED slackNotifier"
   if( buildResult == "FAILURE" ) {
-    slackSend (color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL})")
+    slackSend (color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL}")
   }
   else if( buildResult == "UNSTABLE" ) {
-    slackSend (color: "warning", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL})")
+    slackSend (color: "warning", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL}")
   }
+  echo "BUILD FAILED slackNotifier end"
 }
 
 def getFullBuild(jdk, os, mainJdk) {
