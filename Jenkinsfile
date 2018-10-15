@@ -89,7 +89,6 @@ def getFullBuild(jdk, os, mainJdk) {
               consoleParsers: consoleParsers])
         }
       } catch (e) {
-        e.printStackTrace(  )
         slackNotifier(currentBuild.currentResult)
         throw e
       }
