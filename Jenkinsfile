@@ -12,7 +12,7 @@ for (def os in oss) {
 
 parallel builds
 
-def slackNotifier(String buildResult) {
+def slackNotifierFailure(String buildResult) {
 //  currently a bug with withMaven buildResult is always SUCCESS
 //  echo "BUILD FAILED slackNotifier '" + buildResult + "'"
 //  if( buildResult == "FAILURE" ) {
@@ -24,6 +24,11 @@ def slackNotifier(String buildResult) {
 //  echo "BUILD FAILED slackNotifier end"
 
     slackSend (color: "danger", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failing ${env.BUILD_URL}")
+
+}
+
+def slackNotifierUnstable(String buildResult) {
+  slackSend (color: "warning", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL}")
 
 }
 
@@ -91,9 +96,12 @@ def getFullBuild(jdk, os, mainJdk) {
         // Report on Maven and Javadoc warnings
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
+
+        if(buildResult == "UNSTABLE") slackNotifierUnstable(currentBuild.currentResult)
+          
         }
       } catch (e) {
-        slackNotifier(currentBuild.currentResult)
+        slackNotifierFailure(currentBuild.currentResult)
         throw e
       }
     }
