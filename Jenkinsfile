@@ -13,6 +13,7 @@ for (def os in oss) {
 parallel builds
 
 def slackNotifier(String buildResult) {
+  echo "BUILD FAILED"
   if( buildResult == "FAILURE" ) {
     slackSend (color: "danger", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL})")
   }
@@ -87,7 +88,6 @@ def getFullBuild(jdk, os, mainJdk) {
               consoleParsers: consoleParsers])
         }
       } catch (e) {
-        echo "BUILD FAILED"
         slackNotifier(currentBuild.currentResult)
         throw e
       }
