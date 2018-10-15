@@ -13,7 +13,7 @@ for (def os in oss) {
 parallel builds
 
 def slackNotifier(String buildResult) {
-  echo "BUILD FAILED slackNotifier"
+  echo "BUILD FAILED slackNotifier '" + buildResult + "'"
   if( buildResult == "FAILURE" ) {
     slackSend (color: "danger", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL}")
   }
