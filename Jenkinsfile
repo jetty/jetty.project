@@ -77,7 +77,9 @@ def getFullBuild(jdk, os, mainJdk) {
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
         }
+        echo "BUILD OKKKK"
       } catch (e) {
+        echo "BUILD FAILED"
         slackNotifier(currentBuild.currentResult)
         throw e
       }
