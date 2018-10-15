@@ -13,14 +13,18 @@ for (def os in oss) {
 parallel builds
 
 def slackNotifier(String buildResult) {
-  echo "BUILD FAILED slackNotifier '" + buildResult + "'"
-  if( buildResult == "FAILURE" ) {
-    slackSend (color: "danger", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL}")
-  }
-  else if( buildResult == "UNSTABLE" ) {
-    slackSend (color: "warning", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL}")
-  }
-  echo "BUILD FAILED slackNotifier end"
+//  currently a bug with withMaven buildResult is always SUCCESS
+//  echo "BUILD FAILED slackNotifier '" + buildResult + "'"
+//  if( buildResult == "FAILURE" ) {
+//    slackSend (color: "danger", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failed ${env.BUILD_URL}")
+//  }
+//  else if( buildResult == "UNSTABLE" ) {
+//    slackSend (color: "warning", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was unstable ${env.BUILD_URL}")
+//  }
+//  echo "BUILD FAILED slackNotifier end"
+
+    slackSend (color: "danger", channel: "#jenkins", message: "Job: ${env.JOB_NAME} with buildnumber ${env.BUILD_NUMBER} was failing ${env.BUILD_URL}")
+
 }
 
 def getFullBuild(jdk, os, mainJdk) {
