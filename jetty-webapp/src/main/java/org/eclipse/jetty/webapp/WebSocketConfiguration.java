@@ -20,6 +20,10 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
@@ -32,10 +36,26 @@ import java.util.ServiceLoader;
  */
 public class WebSocketConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(WebSocketConfiguration.class);
+
     public WebSocketConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
         protectAndExpose("org.eclipse.jetty.websocket.");
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        try
+        {
+            return Loader.loadClass("org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter")!=null;
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+            return false;
+        }
     }
 }

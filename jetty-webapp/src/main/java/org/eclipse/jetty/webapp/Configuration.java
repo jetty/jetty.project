@@ -56,37 +56,45 @@ import org.eclipse.jetty.util.annotation.Name;
  */
 public interface Configuration 
 {
-    public final static String ATTR="org.eclipse.jetty.webapp.configuration";
-    
+    String ATTR="org.eclipse.jetty.webapp.configuration";
+
+    /**
+     * @return True if the feature this configuration represents is available and has all its dependencies.
+     */
+    default boolean isAvailable()
+    {
+        return true;
+    }
+
     /** Get a class that this class replaces/extends.
      * If this is added to {@link Configurations} collection that already contains a 
      * configuration of the replaced class or that reports to replace the same class, then
      * it is replaced with this instance. 
      * @return The class this Configuration replaces/extends or null if it replaces no other configuration
      */
-    public default Class<? extends Configuration> replaces() { return null; } 
+    default Class<? extends Configuration> replaces() { return null; }
 
     /** Get known Configuration Dependencies.
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * before this configuration.
      */
-    public default Collection<String> getDependencies() { return Collections.emptyList(); }
+    default Collection<String> getDependencies() { return Collections.emptyList(); }
 
     /** Get known Configuration Dependents.
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * after this configuration.
      */
-    public default Collection<String> getDependents(){ return Collections.emptyList(); }
+    default Collection<String> getDependents(){ return Collections.emptyList(); }
 
     /** Get the system classes associated with this Configuration.
      * @return ClasspathPattern of system classes.
      */
-    public default ClasspathPattern getSystemClasses() { return new ClasspathPattern();  }
+    default ClasspathPattern getSystemClasses() { return new ClasspathPattern();  }
 
     /** Get the system classes associated with this Configuration.
      * @return ClasspathPattern of server classes.
      */
-    public default ClasspathPattern getServerClasses() { return new ClasspathPattern();  }
+    default ClasspathPattern getServerClasses() { return new ClasspathPattern();  }
     
     /** Set up for configuration.
      * <p>
@@ -97,7 +105,7 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to pre configure
      */
-    public void preConfigure (WebAppContext context) throws Exception;
+    void preConfigure (WebAppContext context) throws Exception;
     
     /** Configure WebApp.
      * <p>
@@ -106,13 +114,13 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to configure
      */
-    public void configure (WebAppContext context) throws Exception;
+    void configure (WebAppContext context) throws Exception;
     
     /** Clear down after configuration.
      * @param context The context to configure
      * @throws Exception if unable to post configure
      */
-    public void postConfigure (WebAppContext context) throws Exception;
+    void postConfigure (WebAppContext context) throws Exception;
     
     /** DeConfigure WebApp.
      * This method is called to undo all configuration done. This is
@@ -120,7 +128,7 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to deconfigure
      */
-    public void deconfigure (WebAppContext context) throws Exception;
+    void deconfigure (WebAppContext context) throws Exception;
 
     /** Destroy WebApp.
      * This method is called to destroy a webappcontext. It is typically called when a context 
@@ -128,23 +136,23 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to destroy
      */
-    public void destroy (WebAppContext context) throws Exception;
+    void destroy (WebAppContext context) throws Exception;
 
     /**
      * @return true if configuration is disabled by default
      */
-    public boolean isDisabledByDefault();
+    boolean isDisabledByDefault();
 
     /**
      * @return true if configuration should be aborted
      */
-    public boolean abort(WebAppContext context);
+    boolean abort(WebAppContext context);
 
     /**
      * @deprecated Use {@link Configurations}
      */
     @Deprecated
-    public class ClassList extends Configurations
+    class ClassList extends Configurations
     {
         @Deprecated
         public void addAfter(@Name("afterClass") String afterClass,@Name("configClass")String... configClass)

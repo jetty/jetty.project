@@ -20,7 +20,9 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.jsp.JettyJspServlet;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>JSP Configuration</p>
@@ -35,12 +37,29 @@ import org.eclipse.jetty.jsp.JettyJspServlet;
  */
 public class JspConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(JspConfiguration.class);
+
     public JspConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
-        protectAndExpose(JettyJspServlet.class.getPackageName() + ".");
+        protectAndExpose("org.eclipse.jetty.jsp.");
         expose("org.eclipse.jetty.apache.");
         hide("org.eclipse.jdt.");
     }
+
+    @Override
+    public boolean isAvailable()
+    {
+        try
+        {
+            return Loader.loadClass("org.eclipse.jetty.jsp.JettyJspServlet")!=null;
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+            return false;
+        }
+    }
 }
+

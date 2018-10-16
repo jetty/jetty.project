@@ -20,7 +20,9 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.jndi.InitialContextFactory;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>JNDI Configuration</p>
@@ -34,10 +36,27 @@ import org.eclipse.jetty.jndi.InitialContextFactory;
  */
 public class JndiConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(JndiConfiguration.class);
+
     public JndiConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
-        protectAndExpose(InitialContextFactory.class.getPackageName() + ".");
+        protectAndExpose("org.eclipse.jetty.jndi.");
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        try
+        {
+            return Loader.loadClass("org.eclipse.jetty.jndi.InitialContextFactory")!=null;
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+            return false;
+        }
     }
 }
+
