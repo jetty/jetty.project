@@ -30,20 +30,20 @@ module org.eclipse.jetty.webapp {
     requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.servlet;
     requires org.eclipse.jetty.xml;
-    requires static org.eclipse.jetty.apache.jsp;
-    requires static org.eclipse.jetty.jmx;
-    requires static org.eclipse.jetty.jndi;
 
     uses Configuration;
 
     provides Configuration with
             org.eclipse.jetty.webapp.FragmentConfiguration,
             org.eclipse.jetty.webapp.JettyWebXmlConfiguration,
+            org.eclipse.jetty.webapp.JaasConfiguration,
             org.eclipse.jetty.webapp.JmxConfiguration,
             org.eclipse.jetty.webapp.JndiConfiguration,
             org.eclipse.jetty.webapp.JspConfiguration,
             org.eclipse.jetty.webapp.MetaInfConfiguration,
+            org.eclipse.jetty.webapp.ServletsConfiguration,
+            org.eclipse.jetty.webapp.WebAppConfiguration,
             org.eclipse.jetty.webapp.WebInfConfiguration,
-            org.eclipse.jetty.webapp.WebXmlConfiguration,
-            org.eclipse.jetty.webapp.WebAppConfiguration;
+            org.eclipse.jetty.webapp.WebSocketConfiguration,
+            org.eclipse.jetty.webapp.WebXmlConfiguration;
 }

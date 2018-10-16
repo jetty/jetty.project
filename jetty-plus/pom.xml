@@ -50,6 +50,7 @@
       </plugin>
     </plugins>
   </build>
+
   <dependencies>
     <dependency>
       <groupId>javax.transaction</groupId>
