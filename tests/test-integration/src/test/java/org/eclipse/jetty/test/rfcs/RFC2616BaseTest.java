@@ -32,7 +32,6 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -336,8 +335,7 @@ public abstract class RFC2616BaseTest
         HttpFields fields = new HttpFields();
 
         fields.put("Q","bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7");
-        Enumeration<String> qualities = fields.getValues("Q",", \t");
-        List<?> list = HttpFields.qualityList(qualities);
+        List<String> list = fields.getQualityCSV("Q");
         assertEquals("aaa",HttpFields.valueParameters(list.get(0).toString(), null), "Quality parameters");
         assertEquals("aa2",HttpFields.valueParameters(list.get(1).toString(), null), "Quality parameters");
         assertEquals("abb",HttpFields.valueParameters(list.get(2).toString(), null), "Quality parameters");

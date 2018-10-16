@@ -9,10 +9,10 @@
   <Call name="addLifeCycleListener">
     <Arg>
       <New class="org.eclipse.jetty.setuid.SetUIDListener">
-        <Set name="startServerAsPrivileged"><Property name="jetty.setuid.startServerAsPrivileged" deprecated="jetty.startServerAsPrivileged" default="false"/></Set>
-        <Set name="umaskOctal"><Property name="jetty.setuid.umask" deprecated="jetty.umask" default="002"/></Set>
-        <Set name="username"><Property name="jetty.setuid.userName" deprecated="jetty.username" default="jetty"/></Set>
-        <Set name="groupname"><Property name="jetty.setuid.groupName" deprecated="jetty.groupname" default="jetty"/></Set>
+        <Set name="startServerAsPrivileged"><Property name="jetty.setuid.startServerAsPrivileged" default="false"/></Set>
+        <Set name="umaskOctal"><Property name="jetty.setuid.umask" default="002"/></Set>
+        <Set name="username"><Property name="jetty.setuid.userName" default="jetty"/></Set>
+        <Set name="groupname"><Property name="jetty.setuid.groupName" default="jetty"/></Set>
         <!-- uncomment to change the limits on number of open file descriptors for root -->
         <!--
         <Call name="setRLimitNoFiles">

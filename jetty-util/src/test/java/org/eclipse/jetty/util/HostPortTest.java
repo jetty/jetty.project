@@ -33,6 +33,7 @@ public class HostPortTest
 {
     private static Stream<Arguments> validAuthorityProvider()
     {
+
         return Stream.of(
                 Arguments.of("", "", null),
                 Arguments.of(":80", "", "80"),

@@ -26,7 +26,13 @@ import java.util.regex.Pattern;
 public abstract class PatternMatcher
 {
     public abstract void matched (URI uri) throws Exception;
-    
+
+    public void match (String pattern, URI[] uris, boolean isNullInclusive)
+    throws Exception
+    {
+        Pattern p = (pattern==null?null:Pattern.compile(pattern));
+        match(p,uris,isNullInclusive);
+    }
     
     /**
      * Find jar names from the provided list matching a pattern.

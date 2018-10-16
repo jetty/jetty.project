@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
  */
 public interface Frame
 {
-    public static enum Type
+    enum Type
     {
         CONTINUATION((byte)0x00),
         TEXT((byte)0x01),
@@ -48,7 +48,7 @@ public interface Frame
 
         private byte opcode;
 
-        private Type(byte code)
+        Type(byte code)
         {
             this.opcode = code;
         }
@@ -80,24 +80,24 @@ public interface Frame
         }
     }
 
-    public byte[] getMask();
+    byte[] getMask();
 
-    public byte getOpCode();
+    byte getOpCode();
 
-    public ByteBuffer getPayload();
+    ByteBuffer getPayload();
 
     /**
      * The original payload length ({@link ByteBuffer#remaining()})
      * 
      * @return the original payload length ({@link ByteBuffer#remaining()})
      */
-    public int getPayloadLength();
+    int getPayloadLength();
 
-    public Type getType();
+    Type getType();
 
-    public boolean hasPayload();
+    boolean hasPayload();
 
-    public boolean isFin();
+    boolean isFin();
 
     /**
      * Same as {@link #isFin()}
@@ -106,14 +106,13 @@ public interface Frame
      * @deprecated use {@link #isFin()} instead
      */
     @Deprecated
-    public boolean isLast();
+    boolean isLast();
 
-    public boolean isMasked();
+    boolean isMasked();
 
-    public boolean isRsv1();
+    boolean isRsv1();
 
-    public boolean isRsv2();
+    boolean isRsv2();
 
-    public boolean isRsv3();
-
+    boolean isRsv3();
 }

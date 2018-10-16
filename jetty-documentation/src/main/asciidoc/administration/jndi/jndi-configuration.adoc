@@ -193,7 +193,7 @@ The entry in `web.xml` would be:
 </resource-ref>
 ----
 
-TODO: put in an example of a QUEUE from progress demo
+//TODO: put in an example of a QUEUE from progress demo
 
 [[configuring-mail-with-jndi]]
 ==== Configuring Mail
@@ -225,6 +225,11 @@ Jetty also provides infrastructure for access to `javax.mail.Sessions` from with
 
 This setup creates an instance of the `org.eclipse.jetty.jndi.factories.MailSessionReference` class, calls it's setter methods to set up the authentication for the mail system, and populates a set of Properties, setting them on the `MailSessionReference` instance.
 The result is that an application can look up `java:comp/env/mail/Session` at runtime and obtain access to a `javax.mail.Session` that has the necessary configuration to permit it to send email via SMTP.
+
+____
+[NOTE]
+As of Jetty 10, the link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.mail.glassfish/1.4.1.v201005082020/javax.mail.glassfish-1.4.1.v201005082020.jar[`javax.mail`] and  link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.activation/1.1.0.v201105071233/javax.activation-1.1.0.v201105071233.jar[`javax.activation`] jar files are not included in the Jetty Distribution and will need to be downloaded separately from Maven Central.
+____
 
 ____
 [TIP]

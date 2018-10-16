@@ -46,6 +46,8 @@ import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -62,7 +64,9 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -117,19 +121,27 @@ public class DeploymentErrorTest
         server.setHandler(handlers);
 
         // Setup Configurations
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
-        classlist.addAfter(
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
-        classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+        Configurations.setServerDefault(server)
+                .add("org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                        "org.eclipse.jetty.plus.webapp.PlusConfiguration",
+                        "org.eclipse.jetty.annotations.AnnotationConfiguration",
+                        TrackedConfiguration.class.getName()
+                        );
 
-        // Tracking Config
-        classlist.addBefore("org.eclipse.jetty.webapp.WebInfConfiguration",
-                TrackedConfiguration.class.getName());
+        Configurations configurations = Configuration.ClassList.setServerDefault(server);
+        configurations.add(new EnvConfiguration(), new PlusConfiguration(), new TrackedConfiguration());
+
+//        configurations.addAfter(
+//                "org.eclipse.jetty.webapp.FragmentConfiguration",
+//                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+//                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+//        configurations.addBefore(
+//                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+//                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+//
+//        // Tracking Config
+//        configurations.addBefore("org.eclipse.jetty.webapp.WebInfConfiguration",
+//                TrackedConfiguration.class.getName());
 
         server.start();
         return docroots;
@@ -197,7 +209,7 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
         WebAppContext webapp = (WebAppContext) context;
         TrackedConfiguration trackedConfiguration = null;
-        for (Configuration webappConfig : webapp.getConfigurations())
+        for (Configuration webappConfig : webapp.getWebAppConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
                 trackedConfiguration = (TrackedConfiguration) webappConfig;
@@ -243,7 +255,7 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
         WebAppContext webapp = (WebAppContext) context;
         TrackedConfiguration trackedConfiguration = null;
-        for (Configuration webappConfig : webapp.getConfigurations())
+        for (Configuration webappConfig : webapp.getWebAppConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
                 trackedConfiguration = (TrackedConfiguration) webappConfig;
@@ -289,7 +301,7 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
         WebAppContext webapp = (WebAppContext) context;
         TrackedConfiguration trackedConfiguration = null;
-        for (Configuration webappConfig : webapp.getConfigurations())
+        for (Configuration webappConfig : webapp.getWebAppConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
                 trackedConfiguration = (TrackedConfiguration) webappConfig;
@@ -334,6 +346,11 @@ public class DeploymentErrorTest
         public Map<String, Integer> preConfigureCounts = new HashMap<>();
         public Map<String, Integer> configureCounts = new HashMap<>();
         public Map<String, Integer> postConfigureCounts = new HashMap<>();
+
+        public TrackedConfiguration()
+        {
+            addDependents(WebInfConfiguration.class);
+        }
 
         private void incrementCount(WebAppContext context, Map<String, Integer> contextCounts)
         {

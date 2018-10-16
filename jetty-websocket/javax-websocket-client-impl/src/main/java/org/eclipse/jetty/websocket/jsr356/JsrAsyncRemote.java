@@ -97,7 +97,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             LOG.debug("sendObject({},{})",data,handler);
         }
 
-        Encoder encoder = encoders.getEncoderFor(data.getClass());
+        Encoder encoder = session.getEncoders().getInstanceFor(data.getClass());
         if (encoder == null)
         {
             throw new IllegalArgumentException("No encoder for type: " + data.getClass());

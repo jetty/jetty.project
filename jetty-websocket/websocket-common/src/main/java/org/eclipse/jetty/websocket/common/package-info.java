@@ -20,10 +20,12 @@
  * Jetty WebSocket Common : Implementation [<em>Internal Use Only</em>]
  * <p>
  * A core set of internal implementation classes for the Jetty WebSocket API.
+ * </p>
  * <p>
  * Note: do not reference or use classes present in this package space in your code. <br>
  * Restrict your usage to the Jetty WebSocket API classes, the Jetty WebSocket Client API,
  * or the Jetty WebSocket Servlet API.
+ * </p>
  */
 package org.eclipse.jetty.websocket.common;
 

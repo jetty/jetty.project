@@ -5,8 +5,8 @@ applications to deploy using the following conventions:
 + A directory called example/ will be deployed as a standard web
 application if it contains a WEB-INF/ subdirectory, otherwise it will be
 deployed as context of static content. The context path will be /example
-(eg http://localhost:8080/example/) unless the base name is "root" (not 
-case sensitive), in which case the context path is /. If the directory name 
+(eg http://localhost:8080/example/) unless the base name is "root" (not
+case sensitive), in which case the context path is /. If the directory name
 ends with ".d" it is ignored (but may still be used by explicit configuration).
 
 + A file called example.war will be deployed as a standard web application

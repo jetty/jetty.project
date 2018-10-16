@@ -78,7 +78,7 @@ public class FileSystemResourceTest
     public WorkDir workDir;
 
     static Stream<Class> fsResourceProvider() {
-        return Stream.of(FileResource.class, PathResource.class);
+        return Stream.of(PathResource.class);
     }
 
     public Resource newResource(Class<? extends Resource> resourceClass, URL url) throws Exception

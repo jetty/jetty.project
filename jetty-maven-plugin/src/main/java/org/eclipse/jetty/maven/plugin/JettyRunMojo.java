@@ -574,7 +574,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     }
 
 
-    
+
     
     private List<Overlay> getOverlays()
     throws Exception

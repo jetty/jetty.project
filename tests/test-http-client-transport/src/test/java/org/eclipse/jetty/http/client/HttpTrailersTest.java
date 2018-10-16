@@ -97,7 +97,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 }
 
                 // Now the trailers can be accessed.
-                HttpFields trailers = jettyRequest.getTrailers();
+                HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 assertNotNull(trailers);
                 assertEquals(trailerValue, trailers.get(trailerName));
             }
@@ -136,7 +136,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 }
 
                 // Now the trailers can be accessed.
-                HttpFields trailers = jettyRequest.getTrailers();
+                HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 assertNull(trailers);
             }
         });
@@ -179,7 +179,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 trailers.put(trailerName, trailerValue);
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailers(() -> trailers);
+                jettyResponse.setTrailerHttpFields(() -> trailers);
                 if (content != null)
                     response.getOutputStream().write(content);
             }
@@ -223,7 +223,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 HttpFields trailers = new HttpFields();
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailers(() -> trailers);
+                jettyResponse.setTrailerHttpFields(() -> trailers);
             }
         });
 
@@ -269,7 +269,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 trailers.put(trailerName, trailerValue);
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailers(() -> trailers);
+                jettyResponse.setTrailerHttpFields(() -> trailers);
 
                 // Write a large content
                 response.getOutputStream().write(content);

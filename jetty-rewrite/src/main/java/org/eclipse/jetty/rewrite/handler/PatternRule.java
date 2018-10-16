@@ -23,10 +23,10 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 
 /**
- * Abstract rule that use a {@link PathMap} for pattern matching. It uses the 
+ * Abstract rule that use a {@link ServletPathSpec} for pattern matching. It uses the
  * servlet pattern syntax.
  */
 public abstract class PatternRule extends Rule
@@ -69,7 +69,7 @@ public abstract class PatternRule extends Rule
     @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        if (PathMap.match(_pattern, target))
+        if (ServletPathSpec.match(_pattern, target))
         {
             return apply(target,request, response);
         }

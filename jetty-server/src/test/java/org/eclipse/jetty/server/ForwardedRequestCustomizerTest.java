@@ -185,6 +185,22 @@ public class ForwardedRequestCustomizerTest
     }
 
     @Test
+    public void testRFC7239_IPv6() throws Exception
+    {
+        _connector.getResponse(
+            "GET / HTTP/1.1\n"+
+             "Host: myhost\n"+
+             "Forwarded: for=\"[2001:db8:cafe::1]\";by=\"[2001:db8:cafe::2]\";host=\"[2001:db8:cafe::3]:8888\"\n"+
+            "\n");
+
+        assertEquals("http",_results.poll());
+        assertEquals("[2001:db8:cafe::3]",_results.poll());
+        assertEquals("8888",_results.poll());
+        assertEquals("[2001:db8:cafe::1]",_results.poll());
+        assertEquals("0",_results.poll());
+    }
+
+    @Test
     public void testProto() throws Exception
     {
         String response=_connector.getResponse(

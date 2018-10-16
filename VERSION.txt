@@ -1,4 +1,4 @@
-jetty-9.4.13-SNAPSHOT
+jetty-10.0.0-SNAPSHOT
 
 jetty-9.4.12.v20180830 - 30 August 2018
  + 300 Implement Deflater / Inflater Object Pool

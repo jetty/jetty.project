@@ -22,12 +22,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
 import org.eclipse.jetty.deploy.bindings.DebugListenerBinding;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.DebugListener;
@@ -49,7 +52,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 
 /**
  * Starts the Jetty Distribution's demo-base directory using entirely
@@ -165,9 +168,9 @@ public class LikeJettyXml
 
         // === jetty-deploy.xml ===
         DeploymentManager deployer = new DeploymentManager();
-        DebugListener debug = new DebugListener(System.err,true,true,true);
-        server.addBean(debug);        
-        deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
+        //DebugListener debug = new DebugListener(System.out,true,true,true);
+        // server.addBean(debug);        
+        // deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
         deployer.setContexts(contexts);
         deployer.setContextAttribute(
                 "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -184,15 +187,7 @@ public class LikeJettyXml
         server.addBean(deployer);
         
         // === setup jetty plus ==
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault( server );
-        classlist.addAfter(
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
-        
-        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                            "org.eclipse.jetty.annotations.AnnotationConfiguration");
+        Configurations.setServerDefault(server).add(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
 
         // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();
@@ -239,6 +234,7 @@ public class LikeJettyXml
         
         // Start the server
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

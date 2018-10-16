@@ -68,10 +68,11 @@ public class HttpConfiguration
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
+    private boolean _useDirectByteBuffers = false;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
-    private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
+    private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.RFC7578;
     private boolean _notifyRemoteAsyncErrors = true;
 
     /**
@@ -131,6 +132,7 @@ public class HttpConfiguration
         _delayDispatchUntilContent=config._delayDispatchUntilContent;
         _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
         _maxErrorDispatches=config._maxErrorDispatches;
+        _useDirectByteBuffers=config._useDirectByteBuffers;
         _minRequestDataRate=config._minRequestDataRate;
         _minResponseDataRate=config._minResponseDataRate;
         _cookieCompliance=config._cookieCompliance;
@@ -332,6 +334,20 @@ public class HttpConfiguration
     public boolean isDelayDispatchUntilContent()
     {
         return _delayDispatchUntilContent;
+    }
+
+    /**
+     * @param useDirectByteBuffers if true, use direct byte buffers for requests
+     */
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        _useDirectByteBuffers = useDirectByteBuffers;
+    }
+
+    @ManagedAttribute("Whether to use direct byte buffers for requests")
+    public boolean isUseDirectByteBuffers()
+    {
+        return _useDirectByteBuffers;
     }
 
     /**
@@ -553,8 +569,7 @@ public class HttpConfiguration
      */
     public void setMultiPartFormDataCompliance(MultiPartFormDataCompliance multiPartCompliance)
     {
-        // TODO change default in jetty-10 
-        _multiPartCompliance = multiPartCompliance==null?MultiPartFormDataCompliance.LEGACY:multiPartCompliance;
+        _multiPartCompliance = multiPartCompliance==null?MultiPartFormDataCompliance.RFC7578:multiPartCompliance;
     }
 
     public MultiPartFormDataCompliance getMultipartFormDataCompliance()

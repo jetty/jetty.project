@@ -613,6 +613,7 @@ public class DeploymentManager extends ContainerLifeCycle
         return getApps(_lifecycle.getNodeByName(nodeName));
     }
 
+
     public void scope(XmlConfiguration xmlc, Resource webapp)
         throws IOException
     {

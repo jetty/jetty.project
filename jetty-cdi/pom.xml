@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.cdi</groupId>
@@ -12,14 +12,6 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>cdi-core</module>
-    <module>cdi-servlet</module>
-    <module>cdi-full-servlet</module>
-    <module>cdi-websocket</module>
     <module>cdi-2</module>
-    <module>test-cdi-webapp</module>
-    <!-- needs to be fixed still 
-    <module>test-cdi-it</module>
-     -->
   </modules>
 </project>

@@ -271,14 +271,14 @@ public abstract class HttpReceiver
                 .map(Response.AsyncContentListener.class::cast)
                 .collect(Collectors.toList());
 
-        Enumeration<String> contentEncodings = response.getHeaders().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
-        if (contentEncodings != null)
+        List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
+        if (contentEncodings != null && !contentEncodings.isEmpty())
         {
             for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
             {
-                while (contentEncodings.hasMoreElements())
+                for (String encoding: contentEncodings)
                 {
-                    if (factory.getEncoding().equalsIgnoreCase(contentEncodings.nextElement()))
+                    if (factory.getEncoding().equalsIgnoreCase(encoding))
                     {
                         this.decoder = factory.newContentDecoder();
                         break;

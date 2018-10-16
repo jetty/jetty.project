@@ -473,7 +473,7 @@ public class DoSFilter implements Filter
             @Override
             public void run()
             {
-                closeConnection(request, response, thread);
+                onRequestTimeout(request, response, thread);
             }
         };
         Scheduler.Task task = _scheduler.schedule(requestTimeout, getMaxRequestMs(), TimeUnit.MILLISECONDS);
@@ -510,18 +510,6 @@ public class DoSFilter implements Filter
         }
 
         handlingThread.interrupt();
-    }
-
-    /**
-     * @deprecated use {@link #onRequestTimeout(HttpServletRequest, HttpServletResponse, Thread)} instead
-     * @param request  the current request
-     * @param response the current response
-     * @param thread the handling thread
-     */
-    @Deprecated
-    protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
-    {
-        onRequestTimeout(request, response, thread);
     }
 
     /**

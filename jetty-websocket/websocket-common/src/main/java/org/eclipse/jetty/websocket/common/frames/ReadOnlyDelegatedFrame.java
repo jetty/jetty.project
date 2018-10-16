@@ -109,4 +109,10 @@ public class ReadOnlyDelegatedFrame implements Frame
     {
         return delegate.isRsv3();
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", this.getClass().getSimpleName(), delegate.toString());
+    }
 }

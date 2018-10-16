@@ -33,8 +33,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -209,15 +209,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void incomingError(Throwable e)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
-        nextIncoming.incomingError(e);
-    }
-
-    @Override
-    public void incomingFrame(Frame frame)
-    {
-        nextIncoming.incomingFrame(frame);
+        nextIncoming.incomingFrame(frame, callback);
     }
 
     /**
@@ -287,7 +281,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
         if (LOG.isDebugEnabled())
@@ -383,10 +377,10 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     private static class FrameEntry
     {
         private final Frame frame;
-        private final WriteCallback callback;
+        private final FrameCallback callback;
         private final BatchMode batchMode;
 
-        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
+        private FrameEntry(Frame frame, FrameCallback callback, BatchMode batchMode)
         {
             this.frame = frame;
             this.callback = callback;
@@ -400,7 +394,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         }
     }
 
-    private class Flusher extends IteratingCallback implements WriteCallback
+    private class Flusher extends IteratingCallback implements FrameCallback
     {
         private FrameEntry current;
 
@@ -433,34 +427,34 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // The callback are those provided by WriteCallback (implemented
             // below) and even in case of writeFailed() we call succeeded().
         }
-        
+    
         @Override
-        public void writeSuccess()
+        public void succeed()
         {
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
             notifyCallbackSuccess(current.callback);
             succeeded();
         }
-
+    
         @Override
-        public void writeFailed(Throwable x)
+        public void fail(Throwable cause)
         {
             // Notify first, the call succeeded() to drain the queue.
             // We don't want to call failed(x) because that will put
             // this flusher into a final state that cannot be exited,
             // and the failure of a frame may not mean that the whole
             // connection is now invalid.
-            notifyCallbackFailure(current.callback,x);
+            notifyCallbackFailure(current.callback,cause);
             succeeded();
         }
 
-        private void notifyCallbackSuccess(WriteCallback callback)
+        private void notifyCallbackSuccess(FrameCallback callback)
         {
             try
             {
                 if (callback != null)
-                    callback.writeSuccess();
+                    callback.succeed();
             }
             catch (Throwable x)
             {
@@ -468,17 +462,23 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
         }
 
-        private void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+        private void notifyCallbackFailure(FrameCallback callback, Throwable failure)
         {
             try
             {
                 if (callback != null)
-                    callback.writeFailed(failure);
+                    callback.fail(failure);
             }
             catch (Throwable x)
             {
                 LOG.debug("Exception while notifying failure of callback " + callback,x);
             }
+        }
+    
+        @Override
+        public String toString()
+        {
+            return "ExtensionStack$Flusher[" + getState() + "]";
         }
     }
 }

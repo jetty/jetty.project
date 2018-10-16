@@ -193,26 +193,9 @@ public interface Stream
          * @param stream the stream
          * @param x      the timeout failure
          * @see #getIdleTimeout()
-         * @deprecated use {@link #onIdleTimeout(Stream, Throwable)} instead
-         */
-        @Deprecated
-        public default void onTimeout(Stream stream, Throwable x)
-        {
-        }
-
-        /**
-         * <p>Callback method invoked when the stream exceeds its idle timeout.</p>
-         *
-         * @param stream the stream
-         * @param x      the timeout failure
-         * @see #getIdleTimeout()
          * @return true to reset the stream, false to ignore the idle timeout
          */
-        public default boolean onIdleTimeout(Stream stream, Throwable x)
-        {
-            onTimeout(stream, x);
-            return true;
-        }
+        public boolean onIdleTimeout(Stream stream, Throwable x);
 
         public default void onFailure(Stream stream, int error, String reason, Callback callback)
         {
@@ -243,11 +226,6 @@ public interface Stream
 
             @Override
             public void onReset(Stream stream, ResetFrame frame)
-            {
-            }
-
-            @Override
-            public void onTimeout(Stream stream, Throwable x)
             {
             }
 

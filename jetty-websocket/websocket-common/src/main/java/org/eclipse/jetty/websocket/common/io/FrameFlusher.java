@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -68,7 +68,7 @@ public class FrameFlusher extends IteratingCallback
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
     }
 
-    public void enqueue(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void enqueue(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         FrameEntry entry = new FrameEntry(frame, callback, batchMode);
 
@@ -162,8 +162,9 @@ public class FrameFlusher extends IteratingCallback
         if (aggregate == null)
         {
             aggregate = bufferPool.acquire(bufferSize, true);
+            BufferUtil.clearToFill(aggregate);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} acquired aggregate buffer {}", this, aggregate);
+                LOG.debug("{} acquired aggregate buffer {}", this, BufferUtil.toDetailString(aggregate));
         }
 
         for (FrameEntry entry : entries)
@@ -172,7 +173,7 @@ public class FrameFlusher extends IteratingCallback
 
             ByteBuffer payload = entry.frame.getPayload();
             if (BufferUtil.hasContent(payload))
-                BufferUtil.append(aggregate, payload);
+                BufferUtil.put(payload, aggregate);
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} aggregated {} frames: {}", this, entries.size(), entries);
@@ -187,6 +188,7 @@ public class FrameFlusher extends IteratingCallback
     {
         if (!BufferUtil.isEmpty(aggregate))
         {
+            aggregate.flip();
             buffers.add(aggregate);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} flushing aggregate {}", this, aggregate);
@@ -298,13 +300,13 @@ public class FrameFlusher extends IteratingCallback
             iterate();
     }
 
-    protected void notifyCallbackSuccess(WriteCallback callback)
+    protected void notifyCallbackSuccess(FrameCallback callback)
     {
         try
         {
             if (callback != null)
             {
-                callback.writeSuccess();
+                callback.succeed();
             }
         }
         catch (Throwable x)
@@ -314,13 +316,13 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
-    protected void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+    protected void notifyCallbackFailure(FrameCallback callback, Throwable failure)
     {
         try
         {
             if (callback != null)
             {
-                callback.writeFailed(failure);
+                callback.fail(failure);
             }
         }
         catch (Throwable x)
@@ -348,11 +350,11 @@ public class FrameFlusher extends IteratingCallback
     private class FrameEntry
     {
         private final Frame frame;
-        private final WriteCallback callback;
+        private final FrameCallback callback;
         private final BatchMode batchMode;
         private ByteBuffer headerBuffer;
 
-        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
+        private FrameEntry(Frame frame, FrameCallback callback, BatchMode batchMode)
         {
             this.frame = Objects.requireNonNull(frame);
             this.callback = callback;

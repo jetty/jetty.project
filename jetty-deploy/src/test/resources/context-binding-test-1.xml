@@ -1,11 +1,12 @@
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
-  <Call name="addServerClass">
-    <Arg>org.eclipse.foo.</Arg>
+  <Call name="getServerClasspathPattern">
+    <Call name="include">
+      <Arg>org.eclipse.foo.</Arg>
+    </Call>`
   </Call>
 
   <!-- Array id="serverClasses" type="java.lang.String">
-    <Item>-org.eclipse.jetty.continuation.</Item>
     <Item>-org.eclipse.jetty.jndi.</Item>
     <Item>-org.eclipse.jetty.plus.jaas.</Item>
     <Item>-org.eclipse.jetty.websocket.</Item>
@@ -20,7 +21,6 @@
     <Item>org.xml.</Item>
     <Item>org.w3c.</Item>
     <Item>org.apache.commons.logging</Item>
-    <Item>org.eclipse.jetty.continuation</Item>
     <Item>org.eclipse.jetty.plus.jaas.</Item>
     <Item>org.eclipse.jetty.websocket</Item>
     <Item>org.eclipse.jetty.servlet.DefaultServlet</Item>

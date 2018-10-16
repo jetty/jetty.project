@@ -22,14 +22,23 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.io.IOState;
 
 public interface LogicalConnection extends OutgoingFrames, SuspendToken
 {
+    interface Listener extends Connection.Listener
+    {
+        /**
+         * Notification of an error condition at the Connection level
+         *
+         * @param cause the cause
+         */
+        void onError(Throwable cause);
+    }
+
     /**
      * Called to indicate a close frame was successfully sent to the remote.
      * @param close the close details
@@ -40,7 +49,12 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Terminate the connection (no close frame sent)
      */
     void disconnect();
-
+    
+    /**
+     * Register Read Interest in Connection.
+     */
+    void fillInterested();
+    
     /**
      * Get the ByteBufferPool in use by the connection
      * @return the buffer pool
@@ -61,13 +75,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     long getIdleTimeout();
 
     /**
-     * Get the IOState of the connection.
-     * 
-     * @return the IOState of the connection.
-     */
-    IOState getIOState();
-
-    /**
      * Get the local {@link InetSocketAddress} in use for this connection.
      * <p>
      * Note: Non-physical connections, like during the Mux extensions, or during unit testing can result in a InetSocketAddress on port 0 and/or on localhost.
@@ -81,10 +88,11 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return the idle timeout in milliseconds
      */
     long getMaxIdleTimeout();
-
+    
     /**
-     * The policy that the connection is running under.
-     * @return the policy for the connection
+     * Get the Connection based WebSocket Policy.
+     *
+     * @return the WebSocket policy for the connection
      */
     WebSocketPolicy getPolicy();
 
@@ -105,13 +113,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     boolean isOpen();
 
     /**
-     * Tests if the connection is actively reading.
-     * 
-     * @return true if connection is actively attempting to read.
-     */
-    boolean isReading();
-
-    /**
      * Set the maximum number of milliseconds of idleness before the connection is closed/disconnected, (ie no frames are either sent or received)
      * <p>
      * This idle timeout cannot be garunteed to take immediate effect for any active read/write actions.
@@ -121,16 +122,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      *            the number of milliseconds of idle timeout
      */
     void setMaxIdleTimeout(long ms);
-
-    /**
-     * Set where the connection should send the incoming frames to.
-     * <p>
-     * Often this is from the Parser to the start of the extension stack, and eventually on to the session.
-     * 
-     * @param incoming
-     *            the incoming frames handler
-     */
-    void setNextIncomingFrames(IncomingFrames incoming);
 
     /**
      * Associate the Active Session with the connection.

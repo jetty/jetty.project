@@ -153,7 +153,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options)
     {
-        super(parent, contextPath);
+        super(null, parent, contextPath);
         _options=options;
         _scontext = new Context();
         _sessionHandler = sessionHandler;
@@ -170,6 +170,14 @@ public class ServletContextHandler extends ContextHandler
             setErrorHandler(errorHandler);
     }
     
+    protected void setParent(HandlerContainer parent)
+    {
+        if (parent instanceof HandlerWrapper)
+            ((HandlerWrapper)parent).setHandler(this);
+        else if (parent instanceof HandlerCollection)
+            ((HandlerCollection)parent).addHandler(this);
+    }
+
     /* ------------------------------------------------------------ */
     /** Add EventListener
      * Adds an EventListener to the list. @see org.eclipse.jetty.server.handler.ContextHandler#addEventListener().

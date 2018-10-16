@@ -1,0 +1,37 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+=== Upgrading from Jetty 9.x to Jetty 10.0.x
+
+The purpose of this guide is to assist users migrating from Jetty 9 to 10.
+It is not comprehensive, but covers many of the major changes included in the release that may prove as problem areas for users.
+
+//TODO - Make note of any specific required Java versions.
+
+==== Changes to Websocket
+
+==== `javax.mail` and `javax.transaction`
+
+Both `javax.mail` and `javax.transaction` have been removed from the Jetty Distribution in Jetty 10.
+If you require these jars, you will need to enable the `ext` link:#startup-modules[module] and copy the files to your `$JETTY_BASE/lib/ext` directory.
+
+==== Removed Classes
+
+//TODO - Insert major removed/refactored classes from Jetty-9.x.x to Jetty-10.0.x
+
+==== Module Changes in Jetty 10.0

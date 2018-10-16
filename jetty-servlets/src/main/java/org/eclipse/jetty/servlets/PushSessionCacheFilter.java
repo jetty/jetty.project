@@ -33,10 +33,10 @@ import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.PushBuilder;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
@@ -155,13 +155,15 @@ public class PushSessionCacheFilter implements Filter
         // push any associated resources
         if (baseRequest.isPushSupported() && !baseRequest.isPush() && !target._associated.isEmpty())
         {
+            boolean conditional = baseRequest.getHttpFields().contains(HttpHeader.IF_NONE_MATCH) ||
+                                  baseRequest.getHttpFields().contains(HttpHeader.IF_MODIFIED_SINCE);
             // Breadth-first push of associated resources.
             Queue<Target> queue = new ArrayDeque<>();
             queue.offer(target);
             while (!queue.isEmpty())
             {
                 Target parent = queue.poll();
-                PushBuilder builder = baseRequest.getPushBuilder();
+                PushBuilder builder = baseRequest.newPushBuilder();
                 builder.addHeader("X-Pusher", PushSessionCacheFilter.class.toString());
                 for (Target child : parent._associated.values())
                 {
@@ -171,7 +173,9 @@ public class PushSessionCacheFilter implements Filter
                     if (LOG.isDebugEnabled())
                         LOG.debug("PUSH {} <- {}", path, uri);
 
-                    builder.path(path).etag(child._etag).lastModified(child._lastModified).push();
+                    builder.path(path)
+                    .setHeader(HttpHeader.IF_NONE_MATCH.asString(),conditional?child._etag:null)
+                    .setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),conditional?child._lastModified:null);
                 }
             }
         }

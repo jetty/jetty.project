@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  * There is also handling for cookies, headers, redirection, setting status or error codes
  * whenever the rule finds a match.
  *
- * <p> The rules can be matched by the either: pattern matching of PathMap
+ * <p> The rules can be matched by the either: pattern matching of @{@link org.eclipse.jetty.http.pathmap.ServletPathSpec}
  * (eg {@link PatternRule}), regular expressions (eg {@link RegexRule}) or certain conditions set
  * (eg {@link MsieSslRule} - the requests must be in SSL mode).
  *

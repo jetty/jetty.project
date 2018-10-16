@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.io.FileOutputStream;
-import java.util.Locale;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.JarResource;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -32,85 +29,69 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class QuickStartWebApp extends WebAppContext
 {
-    private static final Logger LOG = Log.getLogger(QuickStartWebApp.class);
-    
-    public static final String[] __configurationClasses = new String[] 
-            {
-                org.eclipse.jetty.quickstart.QuickStartConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
-            };
-    
-    private boolean _preconfigure=false;
-    private boolean _autoPreconfigure=false;
-    private boolean _startWebapp=false;
-    private PreconfigureDescriptorProcessor _preconfigProcessor;
+    private final QuickStartConfiguration _quickStartConfiguration;
+
     private String _originAttribute;
     private boolean _generateOrigin;
-    
-    
-    public static final String[] __preconfigurationClasses = new String[]
-    { 
-        org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(), 
-        org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.webapp.MetaInfConfiguration.class.getCanonicalName(), 
-        org.eclipse.jetty.webapp.FragmentConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(), 
-        org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
-    };
-    
     public QuickStartWebApp()
     {
         super();
-        setConfigurationClasses(__preconfigurationClasses);
+        addConfiguration(
+                         _quickStartConfiguration=new QuickStartConfiguration(),
+                         new EnvConfiguration(),
+                         new PlusConfiguration(),
+                         new AnnotationConfiguration());
+        setExtractWAR(true);
+        setCopyWebDir(false);
+        setCopyWebInf(false);
     }
 
+    @Deprecated
     public boolean isPreconfigure()
     {
-        return _preconfigure;
+        switch(_quickStartConfiguration.getMode())
+        {
+            case AUTO:
+            case GENERATE:
+                return true;
+            default: return false;
+        }
     }
-
-    /** 
-     * Preconfigure webapp
-     * @param preconfigure  If true, then starting the webapp will generate 
-     * the WEB-INF/quickstart-web.xml rather than start the webapp.
-     */
+    
+    @Deprecated
     public void setPreconfigure(boolean preconfigure)
     {
-        _preconfigure = preconfigure;
+        _quickStartConfiguration.setMode(preconfigure?Mode.GENERATE:Mode.DISABLED);
     }
 
+    @Deprecated
     public boolean isAutoPreconfigure()
     {
-        return _autoPreconfigure;
+        switch(_quickStartConfiguration.getMode())
+        {
+            case AUTO: return true;
+            default: return false;
+        }
     }
-    
+
+    @Deprecated
     public void setAutoPreconfigure(boolean autoPrecompile)
     {
-        _autoPreconfigure = autoPrecompile;
+        _quickStartConfiguration.setMode(autoPrecompile?Mode.AUTO:Mode.DISABLED);
     }
-    
+
     public void setOriginAttribute (String name)
     {
-        _originAttribute = name;
+        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE,name);
     }
-    
+
     /**
      * @return the originAttribute
      */
     public String getOriginAttribute()
     {
-        return _originAttribute;
-    }
-
-    /**
-     * @return the generateOrigin
-     */
-    public boolean getGenerateOrigin()
-    {
-        return _generateOrigin;
+        Object attr = getAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE);
+        return attr==null?null:attr.toString();
     }
 
     /**
@@ -118,98 +99,25 @@ public class QuickStartWebApp extends WebAppContext
      */
     public void setGenerateOrigin(boolean generateOrigin)
     {
-        _generateOrigin = generateOrigin;
+        setAttribute(QuickStartConfiguration.GENERATE_ORIGIN,generateOrigin);
     }
 
-    @Override
-    protected void startWebapp() throws Exception
+    /**
+     * @return the generateOrigin
+     */
+    public boolean isGenerateOrigin()
     {
-        if (isPreconfigure())
-            generateQuickstartWebXml(_preconfigProcessor.getXML());
-        
-        if (_startWebapp)
-            super.startWebapp();
-    }
-    
-    @Override
-    protected void stopWebapp() throws Exception
-    {
-        if (!_startWebapp)
-            return;
-        
-        super.stopWebapp();
-    }
-    
-    @Override
-    protected void doStart() throws Exception
-    {
-        // unpack and Adjust paths.
-        Resource war = null;
-        Resource dir = null;
-
-        Resource base = getBaseResource();
-        if (base==null)
-            base=Resource.newResource(getWar());
-
-        if (base.isDirectory())
-            dir=base;
-        else if (base.toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
-        {
-            war=base;
-            String w=war.toString();
-            dir=Resource.newResource(w.substring(0,w.length()-4));
-
-            if (!dir.exists())
-            {                       
-                LOG.info("Quickstart Extract " + war + " to " + dir);
-                dir.getFile().mkdirs();
-                JarResource.newJarResource(war).copyTo(dir.getFile());
-            }
-
-            setWar(null);
-            setBaseResource(dir);
-        }
-        else 
-            throw new IllegalArgumentException();
-
-
-        Resource qswebxml=dir.addPath("/WEB-INF/quickstart-web.xml");
-        
-        if (isPreconfigure())
-        {
-            _preconfigProcessor = new PreconfigureDescriptorProcessor();
-            getMetaData().addDescriptorProcessor(_preconfigProcessor);
-            _startWebapp=false;
-        }
-        else if (qswebxml.exists())
-        {
-            setConfigurationClasses(__configurationClasses);
-            _startWebapp=true;
-        }
-        else if (_autoPreconfigure)
-        {   
-            LOG.info("Quickstart preconfigure: {}(war={},dir={})",this,war,dir);
-
-            _preconfigProcessor = new PreconfigureDescriptorProcessor();    
-            getMetaData().addDescriptorProcessor(_preconfigProcessor);
-            setPreconfigure(true);
-            _startWebapp=true;
-        }
-        else
-            _startWebapp=true;
-            
-        super.doStart();
+        Object attr = getAttribute(QuickStartConfiguration.GENERATE_ORIGIN);
+        return attr==null?false:Boolean.valueOf(attr.toString());
     }
 
-    public void generateQuickstartWebXml(String extraXML) throws Exception
+    public Mode getMode()
     {
-        Resource descriptor = getWebInf().addPath(QuickStartDescriptorGenerator.DEFAULT_QUICKSTART_DESCRIPTOR_NAME);
-        if (!descriptor.exists())
-            descriptor.getFile().createNewFile();
-        QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, extraXML, _originAttribute, _generateOrigin);
-        try (FileOutputStream fos = new FileOutputStream(descriptor.getFile()))
-        {
-            generator.generateQuickStartWebXml(fos);
-        }
-    } 
+        return _quickStartConfiguration.getMode();
+    }
+
+    public void setMode(Mode mode)
+    {
+        _quickStartConfiguration.setMode(mode);
+    }
 }

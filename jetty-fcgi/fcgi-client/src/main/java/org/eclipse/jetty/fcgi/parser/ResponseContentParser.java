@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -329,7 +330,7 @@ public class ResponseContentParser extends StreamContentParser
     {
         private FCGIHttpParser(ResponseHandler handler)
         {
-            super(handler, 65 * 1024, true);
+            super(handler, 65 * 1024, HttpCompliance.LEGACY);
             reset();
         }
 

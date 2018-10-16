@@ -26,11 +26,11 @@ import java.util.Set;
 
 public abstract class ExtensionFactory implements Iterable<Class<? extends Extension>>
 {
-    private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
     private Map<String, Class<? extends Extension>> availableExtensions;
 
     public ExtensionFactory()
     {
+        ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {

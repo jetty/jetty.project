@@ -193,10 +193,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             return false;
 
         ReservedThread thread = _stack.pollFirst();
-        if (thread==null)
+        if (thread==null && task!=STOP)
         {
-            if (task!=STOP)
-                startReservedThread();
+            startReservedThread();
             return false;
         }
 

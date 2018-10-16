@@ -43,7 +43,6 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
 
     protected final JsrSession session;
     protected final WebSocketRemoteEndpoint jettyRemote;
-    protected final EncoderFactory encoders;
 
     protected AbstractJsrRemote(JsrSession session)
     {
@@ -59,7 +58,6 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
             throw new IllegalStateException(err.toString());
         }
         this.jettyRemote = (WebSocketRemoteEndpoint)session.getRemote();
-        this.encoders = session.getEncoderFactory();
     }
 
     protected void assertMessageNotNull(Object data)
@@ -108,7 +106,7 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
             LOG.debug("sendObject({})", data);
         }
 
-        Encoder encoder = encoders.getEncoderFor(data.getClass());
+        Encoder encoder = session.getEncoders().getInstanceFor(data.getClass());
         if (encoder == null)
         {
             throw new IllegalArgumentException("No encoder for type: " + data.getClass());

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn-parent</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-server</artifactId>
@@ -26,29 +26,12 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>parse-version</id>
-            <goals>
-              <goal>parse-version</goal>
-            </goals>
-            <configuration>
-              <propertyPrefix>alpn</propertyPrefix>
-              <versionString>${alpn.api.version}</versionString>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <configuration>
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
               <Export-Package>org.eclipse.jetty.alpn.server,*</Export-Package>
-              <Import-Package>org.eclipse.jetty.alpn;version="${alpn.majorVersion}.${alpn.minorVersion}.${alpn.incrementalVersion}",*</Import-Package>
               <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server)";resolution:=optional;cardinality:=multiple</Require-Capability>
             </instructions>
         </configuration>

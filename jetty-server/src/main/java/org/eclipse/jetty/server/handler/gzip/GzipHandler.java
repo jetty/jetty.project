@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -149,6 +148,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public static final int DEFAULT_MIN_GZIP_SIZE=16;
+    public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding","gzip");
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
@@ -158,12 +158,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private DeflaterPool _deflaterPool = null;
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
-    private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
-    /**
-     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
-     */
-    @Deprecated
-    private boolean _checkGzExists = false;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
@@ -406,20 +400,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         super.doStart();
     }
 
-    /**
-     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
-     */
-    @Deprecated
-    public boolean getCheckGzExists()
-    {
-        return _checkGzExists;
-    }
-
-    public int getCompressionLevel()
-    {
-        return _compressionLevel;
-    }
-    
     @Override
     public Deflater getDeflater(Request request, long content_length)
     {
@@ -727,22 +707,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             }
         }
         
-        if (_checkGzExists && context!=null)
-        {
-            String realpath=request.getServletContext().getRealPath(path);
-            if (realpath!=null)
-            {
-                File gz=new File(realpath+".gz");
-                if (gz.exists())
-                {
-                    LOG.debug("{} gzip exists {}",this,request);
-                    // allow default servlet to handle
-                    _handler.handle(target,baseRequest, request, response);
-                    return;
-                }
-            }
-        }
-      
         HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
         try
         {
@@ -807,33 +771,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Set the Check if {@code *.gz} file for the incoming file exists.
-     *
-     * @param checkGzExists whether to check if a static gz file exists for
-     * the resource that the DefaultServlet may serve as precompressed.
-     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
-     */
-    @Deprecated
-    public void setCheckGzExists(boolean checkGzExists)
-    {
-        _checkGzExists = checkGzExists;
-    }
-    
-    /**
-     * Set the Compression level that {@link Deflater} uses.
-     *
-     * @param compressionLevel  The compression level to use to initialize {@link Deflater#setLevel(int)}
-     * @see Deflater#setLevel(int)
-     */
-    public void setCompressionLevel(int compressionLevel)
-    {
         if(isStarted())
             throw new IllegalStateException(getState());
 
-        _compressionLevel = compressionLevel;
-    }
-
-    /**
      * Set the excluded filter list of User-Agent patterns (replacing any previously set)
      *
      * @param patterns Regular expressions list matching user agents to exclude
@@ -1010,6 +950,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     protected DeflaterPool newDeflaterPool(int capacity)
     {
-        return new DeflaterPool(capacity, getCompressionLevel(), true);
+        return new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
     }
 }

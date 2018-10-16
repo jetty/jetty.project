@@ -90,7 +90,7 @@ public class TestJettyOSGiBootWebAppAsService
         // a bundle that registers a webapp as a service for the jetty osgi core
         // to pick up and deploy
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-webapp").versionAsInProject().start());
-        
+
         //a bundle that registers a new named Server instance
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-server").versionAsInProject().start());
        
@@ -117,7 +117,7 @@ public class TestJettyOSGiBootWebAppAsService
             client.start();
             String port = System.getProperty("boot.webapp.service.port");
             assertNotNull(port);
-            
+
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
@@ -130,7 +130,7 @@ public class TestJettyOSGiBootWebAppAsService
 
             port = System.getProperty("bundle.server.port");
             assertNotNull(port);
-            
+
             response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();

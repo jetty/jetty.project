@@ -48,16 +48,7 @@ public class Locker
     }
 
     /**
-     * @deprecated use {@link #lock()} instead
      * @return the lock to unlock
-     */
-    @Deprecated
-    public Lock lockIfNotHeld()
-    {
-        return lock();
-    }
-
-    /**
      * @return whether this lock has been acquired
      */
     public boolean isLocked()
@@ -83,10 +74,5 @@ public class Locker
         {
             _lock.unlock();
         }
-    }
-
-    @Deprecated
-    public class UnLock extends Lock
-    {
     }
 }

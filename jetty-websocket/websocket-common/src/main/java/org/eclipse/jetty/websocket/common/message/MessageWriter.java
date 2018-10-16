@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
@@ -50,12 +51,12 @@ public class MessageWriter extends Writer
     private TextFrame frame;
     private ByteBuffer buffer;
     private Utf8CharBuffer utf;
-    private WriteCallback callback;
+    private FrameCallback callback;
     private boolean closed;
 
     public MessageWriter(WebSocketSession session)
     {
-        this(session.getOutgoingHandler(), session.getPolicy().getMaxTextMessageBufferSize(), session.getBufferPool());
+        this(session.getOutgoingHandler(), session.getPolicy().getOutputBufferSize(), session.getBufferPool());
     }
 
     public MessageWriter(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
@@ -199,27 +200,27 @@ public class MessageWriter extends Writer
 
     private void notifySuccess()
     {
-        WriteCallback callback;
+        FrameCallback callback;
         synchronized (this)
         {
             callback = this.callback;
         }
         if (callback != null)
         {
-            callback.writeSuccess();
+            callback.succeed();
         }
     }
 
     private void notifyFailure(Throwable failure)
     {
-        WriteCallback callback;
+        FrameCallback callback;
         synchronized (this)
         {
             callback = this.callback;
         }
         if (callback != null)
         {
-            callback.writeFailed(failure);
+            callback.fail(failure);
         }
     }
 }

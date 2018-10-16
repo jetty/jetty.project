@@ -74,7 +74,6 @@ public class DebugHandlerTest
     private URI serverURI;
     private URI secureServerURI;
     
-    @SuppressWarnings("deprecation")
     private DebugHandler debugHandler;
     private ByteArrayOutputStream capturedLog;
     
@@ -161,7 +160,7 @@ public class DebugHandlerTest
         assertThat("Response Code", http.getResponseCode(), is(200));
         
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
-        String expectedThreadName = String.format("//%s:%s/foo/bar?a=b",serverURI.getHost(),serverURI.getPort());
+        String expectedThreadName = ":/foo/bar?a=b";
         assertThat("ThreadName", log, containsString(expectedThreadName));
         // Look for bad/mangled/duplicated schemes
         assertThat("ThreadName", log, not(containsString("http:"+expectedThreadName)));
@@ -175,7 +174,7 @@ public class DebugHandlerTest
         assertThat("Response Code", http.getResponseCode(), is(200));
         
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
-        String expectedThreadName = String.format("https://%s:%s/foo/bar?a=b",secureServerURI.getHost(),secureServerURI.getPort());
+        String expectedThreadName = ":/foo/bar?a=b";
         assertThat("ThreadName", log, containsString(expectedThreadName));
         // Look for bad/mangled/duplicated schemes
         assertThat("ThreadName", log, not(containsString("http:"+expectedThreadName)));

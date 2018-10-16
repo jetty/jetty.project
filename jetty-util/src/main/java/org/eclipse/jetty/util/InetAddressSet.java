@@ -41,8 +41,6 @@ import java.util.function.Predicate;
  * "192.168.255.255" </dd>
  * <dt>InetAddress-InetAddress</dt><dd>An inclusive range of InetAddresses. 
  * eg. "[a000::1]-[afff::]", "192.168.128.0-192.168.128.255"</dd>
- * <dt>Legacy format</dt><dd>The legacy format used by {@link IPAddressMap} for IPv4 only. 
- * eg. "10.10.10-14.0-128"</dd>
  * </dl>
  * <p>This class is designed to work with {@link IncludeExcludeSet}</p>
  * @see IncludeExcludeSet

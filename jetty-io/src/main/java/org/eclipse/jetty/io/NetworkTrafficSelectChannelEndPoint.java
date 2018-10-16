@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
+public class NetworkTrafficSelectChannelEndPoint extends SocketChannelEndPoint
 {
     private static final Logger LOG = Log.getLogger(NetworkTrafficSelectChannelEndPoint.class);
 
@@ -37,7 +37,8 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
 
     public NetworkTrafficSelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, Scheduler scheduler, long idleTimeout, List<NetworkTrafficListener> listeners) throws IOException
     {
-        super(channel, selectSet, key, scheduler, idleTimeout);
+        super(channel, selectSet, key, scheduler);
+        setIdleTimeout(idleTimeout);
         this.listeners = listeners;
     }
 

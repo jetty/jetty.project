@@ -10,9 +10,6 @@ plus
 lib/jetty-annotations-${jetty.version}.jar
 lib/annotations/*.jar
 
-[xml]
-# Enable annotation scanning webapp configurations
-etc/jetty-annotations.xml
-
 [jpms]
 add-modules:org.objectweb.asm
+

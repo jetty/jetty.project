@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -55,18 +54,15 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
-import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
+import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.client.SimpleEndpointMetadata;
-import org.eclipse.jetty.websocket.jsr356.decoders.PrimitiveDecoderMetadataSet;
-import org.eclipse.jetty.websocket.jsr356.encoders.PrimitiveEncoderMetadataSet;
-import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEventDriverFactory;
-import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
+import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 
 /**
  * Container for Client use of the javax.websocket API.
@@ -80,25 +76,19 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     /** The delegated Container Scope */
     private final WebSocketContainerScope scopeDelegate;
-    /** Tracking all primitive decoders for the container */
-    private final DecoderFactory decoderFactory;
-    /** Tracking all primitive encoders for the container */
-    private final EncoderFactory encoderFactory;
     /** The jetty websocket client in use for this container */
     private final WebSocketClient client;
     private final boolean internalClient;
-    /** Tracking for all declared Client endpoints */
-    private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
     
     /**
-     * This is the entry point for {@link javax.websocket.ContainerProvider#getWebSocketContainer()}
+     * @deprecated use {@link #ClientContainer(WebSocketContainerScope)}
      */
+    @Deprecated
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
         this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         client.setDaemon(true);
-        client.addManaged(client.getHttpClient());
     }
     
     /**
@@ -109,7 +99,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public ClientContainer(final WebSocketContainerScope scope)
     {
         this(scope, null);
-        client.addManaged(client.getHttpClient());
     }
     
     /**
@@ -134,10 +123,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
     
         this.scopeDelegate = clientScope;
-        this.client = new WebSocketClient(scopeDelegate,
-                new JsrEventDriverFactory(scopeDelegate),
-                new JsrSessionFactory(this),
-                httpClient);
+        this.client = new WebSocketClient(scopeDelegate);
+        this.client.setSessionFactory(new JsrSessionFactory(this));
+        this.internalClient = true;
 
         if(jsr356TrustAll != null)
         {
@@ -145,11 +133,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
             client.getSslContextFactory().setTrustAll(trustAll);
         }
         
-        this.internalClient = true;
-        
-        this.endpointClientMetadataCache = new ConcurrentHashMap<>();
-        this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
-        this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
+        ShutdownThread.register(this);
     }
     
     /**
@@ -161,14 +145,27 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         this.scopeDelegate = client;
         this.client = client;
+        this.client.setSessionFactory(new JsrSessionFactory(this));
         this.internalClient = false;
-        
-        this.endpointClientMetadataCache = new ConcurrentHashMap<>();
-        this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
-        this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
     }
 
-    private Session connect(EndpointInstance instance, URI path) throws IOException
+    public EndpointFunctions newJsrEndpointFunction(Object endpoint,
+                                                    WebSocketPolicy sessionPolicy,
+                                                    AvailableEncoders availableEncoders,
+                                                    AvailableDecoders availableDecoders,
+                                                    Map<String, String> pathParameters,
+                                                    EndpointConfig config)
+    {
+        return new JsrEndpointFunctions(endpoint,
+                sessionPolicy,
+                getExecutor(),
+                availableEncoders,
+                availableDecoders,
+                pathParameters,
+                config);
+    }
+
+    private Session connect(ConfiguredEndpoint instance, URI path) throws IOException
     {
         synchronized (this.client)
         {
@@ -208,14 +205,14 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
             upgradeListener = new JsrUpgradeListener(config.getConfigurator());
         }
 
-        Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(instance,path,req,upgradeListener);
+        Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(instance, path, req, upgradeListener);
         try
         {
-            return (JsrSession)futSess.get();
+            return (JsrSession) futSess.get();
         }
         catch (InterruptedException e)
         {
-            throw new IOException("Connect failure",e);
+            throw new IOException("Connect failure", e);
         }
         catch (ExecutionException e)
         {
@@ -225,59 +222,57 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
             if (cause instanceof IOException)
             {
                 // Just rethrow
-                throw (IOException)cause;
+                throw (IOException) cause;
             }
             else
             {
-                throw new IOException("Connect failure",cause);
+                throw new IOException("Connect failure", cause);
             }
         }
     }
 
     @Override
-    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig config, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws DeploymentException, IOException
     {
-        EndpointInstance instance = newClientEndpointInstance(endpointClass,config);
-        return connect(instance,path);
+        ClientEndpointConfig clientEndpointConfig = config;
+        if (clientEndpointConfig == null)
+        {
+            clientEndpointConfig = new EmptyClientEndpointConfig();
+        }
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, clientEndpointConfig);
+        return connect(instance, path);
     }
 
     @Override
-    public Session connectToServer(Class<?> annotatedEndpointClass, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
     {
-        EndpointInstance instance = newClientEndpointInstance(annotatedEndpointClass,null);
-        return connect(instance,path);
+        ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new EmptyClientEndpointConfig());
+        return connect(instance, path);
     }
 
     @Override
-    public Session connectToServer(Endpoint endpoint, ClientEndpointConfig config, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig config, final URI path) throws DeploymentException, IOException
     {
-        EndpointInstance instance = newClientEndpointInstance(endpoint,config);
-        return connect(instance,path);
+        ClientEndpointConfig clientEndpointConfig = config;
+        if (clientEndpointConfig == null)
+        {
+            clientEndpointConfig = new EmptyClientEndpointConfig();
+        }
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, clientEndpointConfig);
+        return connect(instance, path);
     }
 
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
-        EndpointInstance instance = newClientEndpointInstance(endpoint,null);
-        return connect(instance,path);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        
-        // Initialize the default decoder / encoder factories
-        EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
-        this.decoderFactory.init(empty);
-        this.encoderFactory.init(empty);
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, new EmptyClientEndpointConfig());
+        return connect(instance, path);
     }
 
     @Override
     protected void doStop() throws Exception
     {
         ShutdownThread.deregister(this);
-        endpointClientMetadataCache.clear();
         super.doStop();
     }
 
@@ -290,53 +285,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient getClient()
     {
         return client;
-    }
-
-    public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint, EndpointConfig config)
-    {
-        synchronized (endpointClientMetadataCache)
-        {
-            EndpointMetadata metadata = endpointClientMetadataCache.get(endpoint);
-
-            if (metadata != null)
-            {
-                return metadata;
-            }
-
-            ClientEndpoint anno = endpoint.getAnnotation(ClientEndpoint.class);
-            if (anno != null)
-            {
-                // Annotated takes precedence here
-                AnnotatedClientEndpointMetadata annoMetadata = new AnnotatedClientEndpointMetadata(this,endpoint);
-                AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(annoMetadata);
-                scanner.scan();
-                metadata = annoMetadata;
-            }
-            else if (Endpoint.class.isAssignableFrom(endpoint))
-            {
-                // extends Endpoint
-                @SuppressWarnings("unchecked")
-                Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
-                metadata = new SimpleEndpointMetadata(eendpoint,config);
-            }
-            else
-            {
-                StringBuilder err = new StringBuilder();
-                err.append("Not a recognized websocket [");
-                err.append(endpoint.getName());
-                err.append("] does not extend @").append(ClientEndpoint.class.getName());
-                err.append(" or extend from ").append(Endpoint.class.getName());
-                throw new InvalidWebSocketException(err.toString());
-            }
-
-            endpointClientMetadataCache.put(endpoint,metadata);
-            return metadata;
-        }
-    }
-
-    public DecoderFactory getDecoderFactory()
-    {
-        return decoderFactory;
     }
 
     @Override
@@ -361,11 +309,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public int getDefaultMaxTextMessageBufferSize()
     {
         return client.getMaxTextMessageBufferSize();
-    }
-
-    public EncoderFactory getEncoderFactory()
-    {
-        return encoderFactory;
     }
 
     @Override
@@ -396,6 +339,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Used in {@link Session#getOpenSessions()}
+     *
      * @return the set of open sessions
      */
     public Set<Session> getOpenSessions()
@@ -406,7 +350,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return client.getPolicy();
+        return scopeDelegate.getPolicy();
     }
 
     @Override
@@ -415,11 +359,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         return scopeDelegate.getSslContextFactory();
     }
 
-    private EndpointInstance newClientEndpointInstance(Class<?> endpointClass, ClientEndpointConfig config)
+    private ConfiguredEndpoint newConfiguredEndpoint(Class<?> endpointClass, EndpointConfig config)
     {
         try
         {
-            return newClientEndpointInstance(endpointClass.getDeclaredConstructor().newInstance(),config);
+            return newConfiguredEndpoint(endpointClass.getDeclaredConstructor().newInstance(), config);
         }
         catch (Exception e)
         {
@@ -427,22 +371,47 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
     }
 
-    public EndpointInstance newClientEndpointInstance(Object endpoint, ClientEndpointConfig config)
+    public ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException
     {
-        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
-        ClientEndpointConfig cec = config;
+        EndpointConfig config = providedConfig;
+
         if (config == null)
         {
-            if (metadata instanceof AnnotatedClientEndpointMetadata)
-            {
-                cec = ((AnnotatedClientEndpointMetadata)metadata).getConfig();
-            }
-            else
-            {
-                cec = new EmptyClientEndpointConfig();
-            }
+            config = newEmptyConfig(endpoint);
         }
-        return new EndpointInstance(endpoint,cec,metadata);
+
+        config = readAnnotatedConfig(endpoint, config);
+
+        return new ConfiguredEndpoint(endpoint, config);
+    }
+
+    protected EndpointConfig newEmptyConfig(Object endpoint)
+    {
+        return new EmptyClientEndpointConfig();
+    }
+
+    protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
+    {
+        ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
+        if (anno != null)
+        {
+            // Overwrite Config from Annotation
+            // TODO: should we merge with provided config?
+            return new AnnotatedClientEndpointConfig(anno);
+        }
+        return config;
+    }
+
+    @Override
+    public void addSessionListener(WebSocketSession.Listener listener)
+    {
+        this.scopeDelegate.addSessionListener(listener);
+    }
+
+    @Override
+    public boolean removeSessionListener(WebSocketSession.Listener listener)
+    {
+        return this.scopeDelegate.removeSessionListener(listener);
     }
 
     @Override
@@ -454,7 +423,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
         else
         {
-            LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}",session.getClass().getName(),
+            LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}", session.getClass().getName(),
                     Session.class.getName());
         }
     }
@@ -468,7 +437,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
         else
         {
-            LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}",session.getClass().getName(),
+            LOG.warn("JSR356 Implementation should not be mixed with Jetty native websocket implementation: Expected {} to implement {}", session.getClass().getName(),
                     Session.class.getName());
         }
     }
@@ -482,11 +451,10 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
+        // overall message limit (used in non-streaming)
+        client.getPolicy().setMaxBinaryMessageSize(max);
         // incoming streaming buffer size
         client.setMaxBinaryMessageBufferSize(max);
-
-        // bump overall message limit (used in non-streaming)
-        client.getPolicy().setMaxBinaryMessageSize(max);
     }
 
     @Override
@@ -498,10 +466,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
+        // overall message limit (used in non-streaming)
+        client.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
         client.setMaxTextMessageBufferSize(max);
-
-        // bump overall message limit (used in non-streaming)
-        client.getPolicy().setMaxTextMessageSize(max);
     }
 }

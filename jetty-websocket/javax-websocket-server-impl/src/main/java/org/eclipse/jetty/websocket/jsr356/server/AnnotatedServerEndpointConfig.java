@@ -135,11 +135,11 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             catch (Exception e)
             {
                 StringBuilder err = new StringBuilder();
-                err.append("Unable to instantiate ClientEndpoint.configurator() of ");
+                err.append("Unable to instantiate ServerEndpoint.configurator() of ");
                 err.append(anno.configurator().getName());
                 err.append(" defined as annotation in ");
                 err.append(anno.getClass().getName());
-                throw new DeploymentException(err.toString(),e);
+                throw new DeploymentException(err.toString(), e);
             }
         }
         
@@ -193,6 +193,27 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     public Map<String, Object> getUserProperties()
     {
         return userProperties;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AnnotatedServerEndpointConfig that = (AnnotatedServerEndpointConfig) o;
+
+        if (endpointClass != null ? !endpointClass.equals(that.endpointClass) : that.endpointClass != null)
+            return false;
+        return path != null ? path.equals(that.path) : that.path == null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = endpointClass != null ? endpointClass.hashCode() : 0;
+        result = 31 * result + (path != null ? path.hashCode() : 0);
+        return result;
     }
 
     @Override

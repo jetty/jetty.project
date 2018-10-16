@@ -78,7 +78,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         }
         return Math.max(1,ProcessorUtils.availableProcessors()/2);
     }
-    
+
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
         this(executor, scheduler, -1);
@@ -88,7 +88,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @param executor The executor to use for handling selected {@link EndPoint}s
      * @param scheduler The scheduler to use for timing events
      * @param selectors The number of selectors to use, or -1 for a default derived
-     * from a heuristic over available CPUs and thread pool size. 
+     * from a heuristic over available CPUs and thread pool size.
      */
     protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {

@@ -24,12 +24,15 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -39,21 +42,19 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -74,8 +75,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     // WebSocket Specifics
     private final WebSocketPolicy policy;
     private final WebSocketExtensionFactory extensionRegistry;
-    private final EventDriverFactory eventDriverFactory;
-    private final SessionFactory sessionFactory;
+    private SessionFactory sessionFactory;
+    private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
 
     // defaults to true for backwards compatibility
     private boolean stopAtShutdown = true;
@@ -109,7 +110,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
     {
-        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), null, null, null, objectFactory), null, null, httpClient);
+        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), null, objectFactory), null, httpClient);
     }
 
     /**
@@ -174,7 +175,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(WebSocketContainerScope scope)
     {
-        this(scope, null, null, null);
+        this(scope, null, null);
     }
 
     /**
@@ -224,7 +225,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
         this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), bufferPool, executor, sslContextFactory, objectFactory));
-        addBean(this.httpClient);
     }
 
     /**
@@ -233,14 +233,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param scope
      *            the Container Scope
-     * @param eventDriverFactory
-     *            the EventDriver Factory to use
      * @param sessionFactory
      *            the SessionFactory to use
      */
-    public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory)
+    public WebSocketClient(final WebSocketContainerScope scope, SessionFactory sessionFactory)
     {
-        this(scope, eventDriverFactory, sessionFactory, null);
+        this(scope, sessionFactory, null);
     }
     
     /**
@@ -249,14 +247,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param scope
      *            the Container Scope
-     * @param eventDriverFactory
-     *            the EventDriver Factory to use
      * @param sessionFactory
      *            the SessionFactory to use
      * @param httpClient
      *            the httpClient to use
      */
-    public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
+    public WebSocketClient(final WebSocketContainerScope scope, SessionFactory sessionFactory, HttpClient httpClient)
     {
         if (httpClient == null)
         {
@@ -269,12 +265,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
 
         // Ensure we get a Client version of the policy.
-        this.policy = scope.getPolicy().delegateAs(WebSocketBehavior.CLIENT);
+        this.policy = scope.getPolicy().clonePolicy(WebSocketBehavior.CLIENT);
         // Support Late Binding of Object Factory (for CDI)
         this.objectFactorySupplier = () -> scope.getObjectFactory();
         this.extensionRegistry = new WebSocketExtensionFactory(this);
 
-        this.eventDriverFactory = eventDriverFactory == null ? new EventDriverFactory(this) : eventDriverFactory;
         this.sessionFactory = sessionFactory == null ? new WebSocketSessionFactory(this) : sessionFactory;
     }
 
@@ -431,12 +426,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getByteBufferPool();
     }
 
-    @Deprecated
-    public ConnectionManager getConnectionManager()
-    {
-        throw new UnsupportedOperationException("ConnectionManager is no longer supported");
-    }
-
     public long getConnectTimeout()
     {
         return httpClient.getConnectTimeout();
@@ -447,12 +436,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getCookieStore();
     }
 
-    public EventDriverFactory getEventDriverFactory()
-    {
-        return eventDriverFactory;
-    }
-
-    @Override
     public Executor getExecutor()
     {
         return httpClient.getExecutor();
@@ -477,7 +460,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Get the maximum size for buffering of a binary message.
      *
      * @return the maximum size of a binary message buffer.
+     * @deprecated see {@link WebSocketPolicy#getMaxBinaryMessageBufferSize()}
      */
+    @Deprecated
     public int getMaxBinaryMessageBufferSize()
     {
         return getPolicy().getMaxBinaryMessageBufferSize();
@@ -507,7 +492,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Get the maximum size for buffering of a text message.
      *
      * @return the maximum size of a text message buffer.
+     *
+     * @deprecated see {@link WebSocketPolicy#getMaxTextMessageBufferSize()}
      */
+    @Deprecated
     public int getMaxTextMessageBufferSize()
     {
         return getPolicy().getMaxTextMessageBufferSize();
@@ -540,11 +528,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return this.policy;
     }
 
-    public Scheduler getScheduler()
-    {
-        return httpClient.getScheduler();
-    }
-
     public SessionFactory getSessionFactory()
     {
         return sessionFactory;
@@ -568,16 +551,31 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
     }
 
-    /**
-     * Factory method for new ConnectionManager
-     *
-     * @return the ConnectionManager instance to use
-     * @deprecated use HttpClient instead
-     */
-    @Deprecated
-    protected ConnectionManager newConnectionManager()
+    protected void notifySessionListeners(Consumer<WebSocketSession.Listener> consumer)
     {
-        throw new UnsupportedOperationException("ConnectionManager is no longer supported");
+        for (WebSocketSession.Listener listener : listeners)
+        {
+            try
+            {
+                consumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    @Override
+    public void addSessionListener(WebSocketSession.Listener listener)
+    {
+        this.listeners.add(listener);
+    }
+
+    @Override
+    public boolean removeSessionListener(WebSocketSession.Listener listener)
+    {
+        return this.listeners.remove(listener);
     }
 
     @Override
@@ -670,9 +668,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         /* do nothing */
     }
 
+    /**
+     * @deprecated see {@link WebSocketPolicy#setMaxBinaryMessageBufferSize(int)}
+     */
+    @Deprecated
     public void setMaxBinaryMessageBufferSize(int max)
     {
-        getPolicy().setMaxBinaryMessageBufferSize(max);
+        /* do nothing */
     }
 
     /**
@@ -686,12 +688,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public void setMaxIdleTimeout(long ms)
     {
         getPolicy().setIdleTimeout(ms);
-        this.httpClient.setIdleTimeout(ms);
+        httpClient.setIdleTimeout(ms);
     }
 
+    /**
+     * @deprecated see {@link WebSocketPolicy#setMaxTextMessageBufferSize(int)}
+     */
     public void setMaxTextMessageBufferSize(int max)
     {
-        getPolicy().setMaxTextMessageBufferSize(max);
+        /* do nothing */
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory)
+    {
+        updateBean(this.sessionFactory,sessionFactory);
+        this.sessionFactory = sessionFactory;
     }
 
     @Override

@@ -209,7 +209,7 @@ public class HttpURIParseTest
         {
             // Ignore, as URI is invalid anyway
         }
-        assumeTrue(javaUri != null, "Skipping, not a valid input URI");
+        assumeTrue(javaUri != null, "Skipping, not a valid input URI: " + input);
 
         HttpURI httpUri = new HttpURI(javaUri);
 

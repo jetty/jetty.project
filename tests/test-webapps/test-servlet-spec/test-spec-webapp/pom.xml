@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: Webapps :: Spec Webapp</name>
   <artifactId>test-spec-webapp</artifactId>
@@ -75,6 +75,10 @@
             <Bundle-Description>Test Webapp for Servlet 3.1 Features</Bundle-Description>
             <Import-Package>
               javax.transaction*;version="[1.1,1.3)",
+              javax.servlet*;version="[2.6,4.1)",
+              org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
+              org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional",
+              org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional",
               com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
               *
             </Import-Package>

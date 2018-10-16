@@ -62,26 +62,29 @@
     <Set name="dumpBeforeStop">false</Set>
 
 
-    <!-- =========================================================== -->
-    <!-- Set up the list of default configuration classes            -->
-    <!-- =========================================================== -->    
-    <Call name="setAttribute">
-       <Arg>org.eclipse.jetty.webapp.configuration</Arg>
-       <Arg>
-        <New class="org.eclipse.jetty.webapp.Configuration$ClassList">
-          <Arg>
-            <Array type="String">
-              <Item>org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration</Item>
-              <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
-              <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
-              <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
-              <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>  
-            </Array>
-          </Arg>
-        </New>
-       </Arg>
+
+    <Call class="org.eclipse.jetty.webapp.Configurations" name="setKnown">
+      <Arg>
+        <Array type="String">
+         <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.WebAppConfiguration</Item>                                            
+         <Item>org.eclipse.jetty.webapp.ServletsConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.JspConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.JaasConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.JndiConfiguration</Item>
+         <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+         <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.JmxConfiguration</Item>
+         <Item>org.eclipse.jetty.webapp.WebSocketConfiguration</Item>
+         <Item>org.eclipse.jetty.osgi.annotations.AnnotationConfiguration</Item>
+         <Item>org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration</Item>
+         <Item>org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration</Item>
+        </Array>
+      </Arg>
     </Call>
-   
+ 
 
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.naming.factory.initial</Arg>

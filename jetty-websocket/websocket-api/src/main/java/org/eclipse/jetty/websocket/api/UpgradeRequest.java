@@ -84,10 +84,10 @@ public interface UpgradeRequest
     String getHeader(String name);
 
     /**
-     * Get the specific Header value, as an <code>int</code>, from the Upgrade Request.
+     * Get the specific Header value, as an {@code int}, from the Upgrade Request.
      *
      * @param name the name of the header
-     * @return the value of the header as an <code>int</code> (-1 if header does not exist)
+     * @return the value of the header as an {@code int} (-1 if header does not exist)
      * @throws NumberFormatException if unable to parse value as an int.
      */
     int getHeaderInt(String name);
@@ -118,7 +118,7 @@ public interface UpgradeRequest
      * The HTTP version used for this Upgrade Request
      * <p>
      * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always
-     * <code>HTTP/1.1</code>
+     * {@code HTTP/1.1}
      *
      * @return the HTTP Version used
      */
@@ -127,7 +127,7 @@ public interface UpgradeRequest
     /**
      * The HTTP method for this Upgrade Request.
      * <p>
-     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always <code>GET</code>
+     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always {@code GET}
      *
      * @return the HTTP method used
      */
@@ -155,7 +155,7 @@ public interface UpgradeRequest
      * Get the WebSocket Protocol Version
      * <p>
      * As of <a href="http://tools.ietf.org/html/rfc6455#section-11.6">RFC6455</a>, Jetty only supports version
-     * <code>13</code>
+     * {@code 13}
      *
      * @return the WebSocket protocol version
      */
@@ -273,7 +273,7 @@ public interface UpgradeRequest
      * Set the HTTP Version to use.
      * <p>
      * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this should always be
-     * <code>HTTP/1.1</code>
+     * {@code HTTP/1.1}
      *
      * @param httpVersion the HTTP version to use.
      */
@@ -282,7 +282,7 @@ public interface UpgradeRequest
     /**
      * Set the HTTP method to use.
      * <p>
-     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always <code>GET</code>
+     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always {@code GET}
      *
      * @param method the HTTP method to use.
      */
@@ -291,7 +291,7 @@ public interface UpgradeRequest
     /**
      * Set the Request URI to use for this request.
      * <p>
-     * Must be an absolute URI with scheme <code>'ws'</code> or <code>'wss'</code>
+     * Must be an absolute URI with scheme {@code 'ws'} or {@code 'wss'}
      *
      * @param uri the Request URI
      */

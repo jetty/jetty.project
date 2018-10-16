@@ -27,7 +27,7 @@ public class CloseFrame extends ControlFrame
     {
         super(OpCode.CLOSE);
     }
-
+    
     @Override
     public Type getType()
     {

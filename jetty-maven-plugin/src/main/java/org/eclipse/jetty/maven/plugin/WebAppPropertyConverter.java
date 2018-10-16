@@ -199,7 +199,6 @@ public class WebAppPropertyConverter
         if (!StringUtil.isBlank(str))
         {
             webApp.setQuickStartWebDescriptor(Resource.newResource(new File(str)));
-            webApp.setConfigurationClasses(JettyWebAppContext.QUICKSTART_CONFIGURATION_CLASSES);
         }
 
         // - the tmp directory

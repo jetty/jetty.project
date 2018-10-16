@@ -18,7 +18,17 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -26,18 +36,7 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.junit.jupiter.api.Test;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class FrameFlusherTest
 {
@@ -96,7 +95,7 @@ public class FrameFlusherTest
         System.out.printf("Received: %,d frames / %,d errors%n", endPoint.incomingFrames, endPoint.incomingErrors);
     }
 
-    public static class SaneFrameOrderingEndPoint extends MockEndPoint implements IncomingFrames
+    public static class SaneFrameOrderingEndPoint extends MockEndPoint implements Parser.Handler
     {
         public Parser parser;
         public int incomingFrames;
@@ -104,20 +103,13 @@ public class FrameFlusherTest
 
         public SaneFrameOrderingEndPoint(WebSocketPolicy policy, ByteBufferPool bufferPool)
         {
-            parser = new Parser(policy, bufferPool);
-            parser.setIncomingFramesHandler(this);
+            parser = new Parser(policy, bufferPool, this);
         }
 
         @Override
-        public void incomingError(Throwable t)
+        public boolean onFrame(Frame frame)
         {
-            incomingErrors++;
-        }
-
-        @Override
-        public void incomingFrame(Frame frame)
-        {
-            incomingFrames++;
+            return true;
         }
 
         @Override

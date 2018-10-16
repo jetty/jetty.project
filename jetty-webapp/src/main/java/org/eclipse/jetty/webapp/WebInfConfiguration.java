@@ -20,24 +20,13 @@ package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
 import java.util.Locale;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.JavaVersion;
-import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -50,97 +39,20 @@ public class WebInfConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
-    public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
-    public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
 
-    /**
-     * If set, to a list of URLs, these resources are added to the context
-     * resource base as a resource collection.
-     */
-    public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
-    
+    @Deprecated
+    public static final String CONTAINER_JAR_PATTERN = MetaInfConfiguration.CONTAINER_JAR_PATTERN;
+    @Deprecated
+    public static final String WEBINF_JAR_PATTERN = MetaInfConfiguration.WEBINF_JAR_PATTERN;
+    @Deprecated
+    public static final String RESOURCE_DIRS = MetaInfConfiguration.RESOURCE_DIRS;
 
     protected Resource _preUnpackBaseResource;
-    
-    /**
-     * ContainerPathNameMatcher
-     *
-     * Matches names of jars on the container classpath
-     * against a pattern. If no pattern is specified, no
-     * jars match.
-     */
-    public class ContainerPathNameMatcher extends PatternMatcher
+
+
+    public WebInfConfiguration()
     {
-        protected final WebAppContext _context;
-        protected final Pattern _pattern;
-
-        public ContainerPathNameMatcher(WebAppContext context, Pattern pattern)
-        {
-            if (context == null)
-                throw new IllegalArgumentException("Context null");
-            _context = context;
-            _pattern = pattern;
-        }
-        
-        
-        public void match (List<URI> uris)
-        throws Exception
-        {
-            if (uris == null)
-                return;
-            match(_pattern, uris.toArray(new URI[uris.size()]), false);
-        }
-        
-       
-        
-        /** 
-         * @see org.eclipse.jetty.util.PatternMatcher#matched(java.net.URI)
-         */
-        @Override
-        public void matched(URI uri) throws Exception
-        {
-            _context.getMetaData().addContainerResource(Resource.newResource(uri));
-        }
     }
-
-
-    /**
-     * WebAppPathNameMatcher
-     *
-     * Matches names of jars or dirs on the webapp classpath
-     * against a pattern. If there is no pattern, all jars or dirs
-     * will match.
-     */
-    public class WebAppPathNameMatcher extends PatternMatcher
-    {        
-        protected final WebAppContext _context;
-        protected final Pattern _pattern;
-
-        public WebAppPathNameMatcher (WebAppContext context, Pattern pattern)
-        {
-            if (context == null)
-                throw new IllegalArgumentException("Context null");
-            _context=context;
-            _pattern=pattern;
-        }
-        
-        public void match (List<URI> uris)
-        throws Exception
-        {
-            match(_pattern, uris.toArray(new URI[uris.size()]), true);
-        }
-        
-        /** 
-         * @see org.eclipse.jetty.util.PatternMatcher#matched(java.net.URI)
-         */
-        @Override
-        public void matched(URI uri) throws Exception
-        {
-            _context.getMetaData().addWebInfJar(Resource.newResource(uri));
-        }
-        
-    }
-
 
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -150,183 +62,12 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         //Extract webapp if necessary
         unpack (context);
-
-        findAndFilterContainerPaths(context);
-
-        findAndFilterWebAppPaths(context);
-
-        //No pattern to appy to classes, just add to metadata
-        context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
 
-    /**
-     * Find jars and directories that are on the container's classpath
-     * and apply an optional filter. The filter is a pattern applied to the
-     * full jar or directory names. If there is no pattern, then no jar
-     * or dir is considered to match.
-     * 
-     * Those jars that do match will be later examined for META-INF 
-     * information and annotations.
-     * 
-     * To find them, examine the classloaders in the hierarchy above the
-     * webapp classloader that are URLClassLoaders. For jdk-9 we also
-     * look at the java.class.path, and the jdk.module.path.
-     * 
-     * @param context the WebAppContext being deployed
-     * @throws Exception if unable to apply optional filtering on the container's classpath
-     */
-    public void findAndFilterContainerPaths (final WebAppContext context) throws Exception
-    {
-        //assume the target jvm is the same as that running
-        int currentPlatform = JavaVersion.VERSION.getPlatform();
-        //allow user to specify target jvm different to current runtime
-        int targetPlatform = currentPlatform;
-        Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
-        if (target!=null)
-            targetPlatform = Integer.parseInt(target.toString());
-        
-        //Apply an initial name filter to the jars to select which will be eventually
-        //scanned for META-INF info and annotations. The filter is based on inclusion patterns.
-        String tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
-        Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
-        ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, containerPattern);
-        
-        ClassLoader loader = null;
-        if (context.getClassLoader() != null)
-            loader = context.getClassLoader().getParent();
-
-        List<URI> containerUris = new ArrayList<>();
-        
-        while (loader instanceof URLClassLoader)
-        {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
-            {
-                for (URL u : urls)
-                {
-                    try
-                    {
-                        containerUris.add(u.toURI());
-                    }
-                    catch (URISyntaxException e)
-                    {
-                        containerUris.add(new URI(u.toString().replaceAll(" ", "%20")));
-                    }
-                }
-            }
-            loader = loader.getParent();
-        }
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug("Matching container urls {}", containerUris);
-        containerPathNameMatcher.match(containerUris);
-
-        //if running on jvm 9 or above, we we won't be able to look at the application classloader
-        //to extract urls, so we need to examine the classpath instead.
-        if (currentPlatform >= 9)
-        {
-            tmp = System.getProperty("java.class.path");
-            if (tmp != null)
-            {
-                List<URI> cpUris = new ArrayList<>();
-                String[] entries = tmp.split(File.pathSeparator);
-                for (String entry:entries)
-                {
-                    File f = new File(entry);
-                    cpUris.add(f.toURI());
-                }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Matching java.class.path {}", cpUris);
-                containerPathNameMatcher.match(cpUris);
-            }
-        }
-        
-        //if we're targeting jdk 9 or above, we also need to examine the 
-        //module path
-        if (targetPlatform >= 9)
-        {
-            //TODO need to consider the jdk.module.upgrade.path - how to resolve
-            //which modules will be actually used. If its possible, it can
-            //only be attempted in jetty-10 with jdk-9 specific apis.
-            tmp = System.getProperty("jdk.module.path");
-            if (tmp != null)
-            {
-                List<URI> moduleUris = new ArrayList<>();
-                String[] entries = tmp.split(File.pathSeparator);
-                for (String entry : entries)
-                {
-                    File file = new File(entry);
-                    if (file.isDirectory())
-                    {
-                        File[] files = file.listFiles();
-                        if (files != null)
-                        {
-                            for (File f : files)
-                                moduleUris.add(f.toURI());
-                        }
-                    }
-                    else
-                    {
-                        moduleUris.add(file.toURI());
-                    }
-                }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Matching jdk.module.path {}", moduleUris);
-                containerPathNameMatcher.match(moduleUris);
-            }
-        }
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug("Container paths selected:{}", context.getMetaData().getContainerResources());
-    }
-
-    /**
-     * Finds the jars that are either physically or virtually in
-     * WEB-INF/lib, and applies an optional filter to their full
-     * pathnames. 
-     * 
-     * The filter selects which jars will later be examined for META-INF
-     * information and annotations. If there is no pattern, then
-     * all jars are considered selected.
-     * 
-     * @param context the WebAppContext being deployed
-     * @throws Exception if unable to find the jars or apply filtering
-     */
-    public void findAndFilterWebAppPaths (WebAppContext context)
-    throws Exception
-    {
-        String tmp = (String)context.getAttribute(WEBINF_JAR_PATTERN);
-        Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
-        //Apply filter to WEB-INF/lib jars
-        WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, webInfPattern);
-        
-        List<Resource> jars = findJars(context);
-
-        //Convert to uris for matching
-        if (jars != null)
-        {
-            List<URI> uris = new ArrayList<>();
-            int i=0;
-            for (Resource r: jars)
-            {
-                uris.add(r.getURI());
-            }
-            matcher.match(uris);
-        }
-    }
-    
 
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        //cannot configure if the context is already started
-        if (context.isStarted())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Cannot configure webapp "+context+" after it is started");
-            return;
-        }
-
         Resource web_inf = context.getWebInf();
 
         // Add WEB-INF classes and lib classpaths
@@ -342,19 +83,6 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (lib.exists() || lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
-
-        // Look for extra resource
-        @SuppressWarnings("unchecked")
-        Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
-        if (resources!=null && !resources.isEmpty())
-        {
-            Resource[] collection=new Resource[resources.size()+1];
-            int i=0;
-            collection[i++]=context.getBaseResource();
-            for (Resource resource : resources)
-                collection[i++]=resource;
-            context.setBaseResource(new ResourceCollection(collection));
-        }
     }
 
     @Override
@@ -363,11 +91,11 @@ public class WebInfConfiguration extends AbstractConfiguration
         //if we're not persisting the temp dir contents delete it
         if (!context.isPersistTempDirectory())
         {
-           IO.delete(context.getTempDirectory());
+            IO.delete(context.getTempDirectory());
         }
-        
+
         //if it wasn't explicitly configured by the user, then unset it
-       Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
+        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured) 
             context.setTempDirectory(null);
 
@@ -426,7 +154,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * @throws Exception if unable to resolve the temp directory
      */
     public void resolveTempDirectory (WebAppContext context)
-    throws Exception
+        throws Exception
     {
         //If a tmp directory is already set we should use it
         File tmpDir = context.getTempDirectory();
@@ -505,7 +233,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
 
     public void makeTempDirectory (File parent, WebAppContext context)
-            throws Exception
+        throws Exception
     {
         if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
             throw new IllegalStateException("Parent for temp dir not configured correctly: "+(parent==null?"null":"writeable="+parent.canWrite()));
@@ -572,7 +300,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 web_app = context.newResource(war);
             else
                 web_app=context.getBaseResource();
-            
+
             if (web_app == null)
                 throw new IllegalStateException("No resourceBase or war set for context");
 
@@ -603,11 +331,11 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             // If we should extract or the URL is still not usable
             if (web_app.exists()  && (
-                    (context.isCopyWebDir() && web_app.getFile() != null && web_app.getFile().isDirectory()) ||
-                    (context.isExtractWAR() && web_app.getFile() != null && !web_app.getFile().isDirectory()) ||
-                    (context.isExtractWAR() && web_app.getFile() == null) ||
-                    !web_app.isDirectory())
-                            )
+                (context.isCopyWebDir() && web_app.getFile() != null && web_app.getFile().isDirectory()) ||
+                (context.isExtractWAR() && web_app.getFile() != null && !web_app.getFile().isDirectory()) ||
+                (context.isExtractWAR() && web_app.getFile() == null) ||
+                !web_app.isDirectory())
+                )
             {
                 // Look for sibling directory.
                 File extractedWebAppDir = null;
@@ -788,25 +516,28 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (resource == null)
             {
                 if (context.getWar()==null || context.getWar().length()==0)
-                   throw new IllegalStateException("No resourceBase or war set for context");
+                    throw new IllegalStateException("No resourceBase or war set for context");
 
                 // Set dir or WAR
                 resource = context.newResource(context.getWar());
             }
 
-            String tmp = URIUtil.decodePath(resource.getURL().getPath());
-            if (tmp.endsWith("/"))
-                tmp = tmp.substring(0, tmp.length()-1);
-            if (tmp.endsWith("!"))
-                tmp = tmp.substring(0, tmp.length() -1);
-            //get just the last part which is the filename
-            int i = tmp.lastIndexOf("/");
-            canonicalName.append(tmp.substring(i+1, tmp.length()));
+            if (resource.getURI().getPath()!=null)
+            {
+                String tmp = URIUtil.decodePath(resource.getURI().getPath());
+                if (tmp.endsWith("/"))
+                    tmp = tmp.substring(0, tmp.length()-1);
+                if (tmp.endsWith("!"))
+                    tmp = tmp.substring(0, tmp.length() -1);
+                //get just the last part which is the filename
+                int i = tmp.lastIndexOf("/");
+                canonicalName.append(tmp.substring(i+1, tmp.length()));
+            }
             canonicalName.append("-");
         }
         catch (Exception e)
         {
-            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name: " + e);
+            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name "+e);
             LOG.debug(e);
         }
 
@@ -833,178 +564,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
 
         canonicalName.append("-");
-
+        
         return canonicalName.toString();
     }
-
-    
-    protected List<Resource> findClassDirs (WebAppContext context)
-    throws Exception
-    {
-        if (context == null)
-            return null;
-        
-        List<Resource> classDirs = new ArrayList<Resource>();
-
-        Resource webInfClasses = findWebInfClassesDir(context);
-        if (webInfClasses != null)
-            classDirs.add(webInfClasses);
-        List<Resource> extraClassDirs = findExtraClasspathDirs(context);
-        if (extraClassDirs != null)
-            classDirs.addAll(extraClassDirs);
-        
-        return classDirs;
-    }
-    
-    
-    /**
-     * Look for jars that should be treated as if they are in WEB-INF/lib
-     * 
-     * @param context the context to find the jars in
-     * @return the list of jar resources found within context
-     * @throws Exception if unable to find the jars
-     */
-    protected List<Resource> findJars (WebAppContext context)
-    throws Exception
-    {
-        List<Resource> jarResources = new ArrayList<Resource>();
-        List<Resource> webInfLibJars = findWebInfLibJars(context);
-        if (webInfLibJars != null)
-            jarResources.addAll(webInfLibJars);
-        List<Resource> extraClasspathJars = findExtraClasspathJars(context);
-        if (extraClasspathJars != null)
-            jarResources.addAll(extraClasspathJars);
-        return jarResources;
-    }
-    
-    /**
-     * Look for jars in <code>WEB-INF/lib</code>
-     *  
-     * @param context the context to find the lib jars in
-     * @return the list of jars as {@link Resource}, or null
-     * @throws Exception if unable to scan for lib jars
-     */
-    protected List<Resource> findWebInfLibJars(WebAppContext context)
-    throws Exception
-    {
-        Resource web_inf = context.getWebInf();
-        if (web_inf==null || !web_inf.exists())
-            return null;
-
-        List<Resource> jarResources = new ArrayList<Resource>();
-        Resource web_inf_lib = web_inf.addPath("/lib");
-        if (web_inf_lib.exists() && web_inf_lib.isDirectory())
-        {
-            String[] files=web_inf_lib.list();
-            if (files != null)
-            {
-                Arrays.sort(files);
-            }
-            for (int f=0;files!=null && f<files.length;f++)
-            {
-                try
-                {
-                    Resource file = web_inf_lib.addPath(files[f]);
-                    String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
-                    int dot = fnlc.lastIndexOf('.');
-                    String extension = (dot < 0 ? null : fnlc.substring(dot));
-                    if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
-                    {
-                        jarResources.add(file);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LOG.warn(Log.EXCEPTION,ex);
-                }
-            }
-        }
-        return jarResources;
-    }
-    
-    
-    
-    /**
-     * Get jars from WebAppContext.getExtraClasspath as resources
-     * 
-     * @param context the context to find extra classpath jars in
-     * @return the list of Resources with the extra classpath, or null if not found
-     * @throws Exception if unable to find the extra classpath jars
-     */
-    protected List<Resource>  findExtraClasspathJars(WebAppContext context)
-    throws Exception
-    { 
-        if (context == null || context.getExtraClasspath() == null)
-            return null;
-        
-        List<Resource> jarResources = new ArrayList<Resource>();
-        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
-        while (tokenizer.hasMoreTokens())
-        {
-            Resource resource = context.newResource(tokenizer.nextToken().trim());
-            String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
-            int dot = fnlc.lastIndexOf('.');
-            String extension = (dot < 0 ? null : fnlc.substring(dot));
-            if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
-            {
-                jarResources.add(resource);
-            }
-        }
-        
-        return jarResources;
-    }
-    
-    /**
-     * Get <code>WEB-INF/classes</code> dir
-     * 
-     * @param context the context to look for the <code>WEB-INF/classes</code> directory
-     * @return the Resource for the <code>WEB-INF/classes</code> directory
-     * @throws Exception if unable to find the <code>WEB-INF/classes</code> directory
-     */
-    protected Resource findWebInfClassesDir (WebAppContext context)
-    throws Exception
-    {
-        if (context == null)
-            return null;
-        
-        Resource web_inf = context.getWebInf();
-
-        // Find WEB-INF/classes
-        if (web_inf != null && web_inf.isDirectory())
-        {
-            // Look for classes directory
-            Resource classes= web_inf.addPath("classes/");
-            if (classes.exists())
-                return classes;
-        }
-        return null;
-    }
-    
-    
-    /**
-     * Get class dirs from WebAppContext.getExtraClasspath as resources
-     * 
-     * @param context the context to look for extra classpaths in
-     * @return the list of Resources to the extra classpath 
-     * @throws Exception if unable to find the extra classpaths
-     */
-    protected List<Resource>  findExtraClasspathDirs(WebAppContext context)
-    throws Exception
-    { 
-        if (context == null || context.getExtraClasspath() == null)
-            return null;
-        
-        List<Resource> dirResources = new ArrayList<Resource>();
-        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
-        while (tokenizer.hasMoreTokens())
-        {
-            Resource resource = context.newResource(tokenizer.nextToken().trim());
-            if (resource.exists() && resource.isDirectory())
-                dirResources.add(resource);
-        }
-        
-        return dirResources;
-    }
-    
-    
 }

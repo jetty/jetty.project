@@ -43,7 +43,7 @@
                 <Property>
                   <Name>jetty.deploy.monitoredPath</Name>
                   <Default>
-                    <Property name="jetty.base" default="." />/<Property name="jetty.deploy.monitoredDir" deprecated="jetty.deploy.monitoredDirName" default="webapps"/>
+                    <Property name="jetty.base" default="." />/<Property name="jetty.deploy.monitoredDir" default="webapps"/>
                   </Default>
                 </Property>
               </Set>

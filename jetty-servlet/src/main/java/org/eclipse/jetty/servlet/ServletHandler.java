@@ -115,7 +115,6 @@ public class ServletHandler extends ScopedHandler
     private MultiMap<FilterMapping> _filterNameMappings;
 
     private final Map<String,ServletHolder> _servletNameMap=new HashMap<>();
-    // private PathMap<ServletHolder> _servletPathMap;
     private PathMappings<ServletHolder> _servletPathMap;
     
     private ListenerHolder[] _listeners=new ListenerHolder[0];
@@ -438,6 +437,7 @@ public class ServletHandler extends ScopedHandler
         // Get the base requests
         final String old_servlet_path=baseRequest.getServletPath();
         final String old_path_info=baseRequest.getPathInfo();
+        final PathSpec old_path_spec=baseRequest.getPathSpec();
 
         DispatcherType type = baseRequest.getDispatcherType();
 
@@ -462,6 +462,7 @@ public class ServletHandler extends ScopedHandler
                 }
                 else
                 {
+                    baseRequest.setPathSpec(pathSpec);
                     baseRequest.setServletPath(servlet_path);
                     baseRequest.setPathInfo(path_info);
                 }
@@ -488,6 +489,7 @@ public class ServletHandler extends ScopedHandler
             {
                 baseRequest.setServletPath(old_servlet_path);
                 baseRequest.setPathInfo(old_path_info);
+                baseRequest.setPathSpec(old_path_spec);
             }
         }
     }
@@ -1339,7 +1341,6 @@ public class ServletHandler extends ScopedHandler
         else
         {
             PathMappings<ServletHolder> pm = new PathMappings<>();
-            Map<String,ServletMapping> servletPathMappings = new HashMap<>();
 
             //create a map of paths to set of ServletMappings that define that mapping
             HashMap<String, List<ServletMapping>> sms = new HashMap<>();
@@ -1417,7 +1418,6 @@ public class ServletHandler extends ScopedHandler
                               finalMapping.getServletName(),
                               _servletNameMap.get(finalMapping.getServletName()).getSource());
 
-                servletPathMappings.put(pathSpec, finalMapping);
                 pm.put(new ServletPathSpec(pathSpec),_servletNameMap.get(finalMapping.getServletName()));
             }
      

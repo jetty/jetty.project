@@ -316,7 +316,7 @@ public class HttpFieldsTest
         assertEquals(e.nextElement(), "value0C,value0D");
         assertEquals(false, e.hasMoreElements());
 
-        e = fields.getValues("name0",",");
+        e = Collections.enumeration(fields.getCSV("name0",false));
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value0A");
         assertEquals(true, e.hasMoreElements());
@@ -327,7 +327,7 @@ public class HttpFieldsTest
         assertEquals(e.nextElement(), "value0D");
         assertEquals(false, e.hasMoreElements());
 
-        e = fields.getValues("name1",",");
+        e = Collections.enumeration(fields.getCSV("name1",false));
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value1A");
         assertEquals(true, e.hasMoreElements());

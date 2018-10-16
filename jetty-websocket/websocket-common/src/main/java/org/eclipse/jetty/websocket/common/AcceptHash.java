@@ -24,14 +24,14 @@ import java.security.MessageDigest;
 import org.eclipse.jetty.util.B64Code;
 
 /**
- * Logic for working with the <code>Sec-WebSocket-Key</code> and <code>Sec-WebSocket-Accept</code> headers.
+ * Logic for working with the {@code Sec-WebSocket-Key} and <code>Sec-WebSocket-Accept</code> headers.
  * <p>
  * This is kept separate from Connection objects to facilitate difference in behavior between client and server, as well as making testing easier.
  */
 public class AcceptHash
 {
     /**
-     * Globally Unique Identifier for use in WebSocket handshake within <code>Sec-WebSocket-Accept</code> and <code>Sec-WebSocket-Key</code> http headers.
+     * Globally Unique Identifier for use in WebSocket handshake within {@code Sec-WebSocket-Accept} and <code>Sec-WebSocket-Key</code> http headers.
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-1.3">Opening Handshake (Section 1.3)</a>
      */
@@ -42,7 +42,7 @@ public class AcceptHash
      * 
      * @param key
      *            the key to hash
-     * @return the <code>Sec-WebSocket-Accept</code> header response (per opening handshake spec)
+     * @return the {@code Sec-WebSocket-Accept} header response (per opening handshake spec)
      */
     public static String hashKey(String key)
     {

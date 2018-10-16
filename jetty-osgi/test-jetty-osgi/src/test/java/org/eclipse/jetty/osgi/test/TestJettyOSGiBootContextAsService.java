@@ -75,13 +75,13 @@ public class TestJettyOSGiBootContextAsService
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( System.getProperty( "mavenRepoPath" ) ) );
-        
+
         return options.toArray(new Option[options.size()]);
     }
 
 
 
-   
+
     @Ignore
     public void assertAllBundlesActiveOrResolved()
     {

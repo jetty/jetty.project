@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,10 +54,10 @@ import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 public class WebAppContextTest
@@ -102,10 +103,17 @@ public class WebAppContextTest
     @Test
     public void testConfigurationClassesFromDefault ()
     {
+        String[] known_and_enabled=Configurations.getKnown().stream()
+                .filter(c->!c.isDisabledByDefault())
+                .map(c->c.getClass().getName())
+                .toArray(String[]::new);
+        
         Server server = new Server();
+        
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertEquals(0,wac.getConfigurations().length);
+        assertThat( wac.getWebAppConfigurations().stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),
+                    Matchers.containsInAnyOrder( known_and_enabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -115,34 +123,19 @@ public class WebAppContextTest
     }
 
     @Test
-    public void testConfigurationClassesExplicit ()
+    public void testConfigurationOrder ()
     {
-        String[] classNames = {"x.y.z"};
-
-        Server server = new Server();
-        server.setAttribute(Configuration.ATTR, classNames);
-
-        //test an explicitly set classnames list overrides that from the server
         WebAppContext wac = new WebAppContext();
-        String[] myClassNames = {"a.b.c", "d.e.f"};
-        wac.setConfigurationClasses(myClassNames);
-        wac.setServer(server);
-        String[] names = wac.getConfigurationClasses();
-        assertTrue(Arrays.equals(myClassNames, names));
-
-
-        //test if no explicit classnames, they come from the server
-        WebAppContext wac2 = new WebAppContext();
-        wac2.setServer(server);
-        try
-        {
-            wac2.loadConfigurations();
-        }
-        catch(Exception e)
-        {
-            Log.getRootLogger().ignore(e);
-        }
-        assertTrue(Arrays.equals(classNames, wac2.getConfigurationClasses()));
+        wac.setServer(new Server());
+        assertThat(wac.getWebAppConfigurations().stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
+                Matchers.contains( 
+                        "org.eclipse.jetty.webapp.JmxConfiguration",
+                        "org.eclipse.jetty.webapp.WebInfConfiguration",
+                        "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                        "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                        "org.eclipse.jetty.webapp.FragmentConfiguration",
+                        "org.eclipse.jetty.webapp.WebAppConfiguration",
+                        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"));
     }
 
     @Test
@@ -151,14 +144,14 @@ public class WebAppContextTest
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);
-        assertTrue(Arrays.equals(configs, wac.getConfigurations()));
+        assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
 
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
         server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
-        assertTrue(Arrays.equals(configs,wac.getConfigurations()));
+        assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
     }
 
     @Test
@@ -244,7 +237,6 @@ public class WebAppContextTest
         assertFalse(context.isProtectedTarget("/something-else/web-inf"));
     }
     
-    
     @Test
     public void testNullPath() throws Exception
     {
@@ -262,10 +254,11 @@ public class WebAppContextTest
         server.addConnector(connector);
         
         server.start();
+        
         try
         {
             String response = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
-            assertTrue(response.indexOf("200 OK")>=0);
+            assertThat(response,containsString("200 OK"));
         }
         finally
         {
@@ -301,7 +294,6 @@ public class WebAppContextTest
         }
     }
 
-    
     class ServletA extends GenericServlet
     {
         @Override
@@ -433,7 +425,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setBaseResource(webapp);
         context.setContextPath("/test");
-        new WebInfConfiguration().preConfigure(context);
+        context.setServer(new Server());
+        new MetaInfConfiguration().preConfigure(context);
         assertEquals(Arrays.asList("acme.jar", "alpha.jar", "omega.jar"),
             context.getMetaData().getWebInfJars().stream().map(r -> r.getURI().toString().replaceFirst(".+/", "")).collect(Collectors.toList()));
     }

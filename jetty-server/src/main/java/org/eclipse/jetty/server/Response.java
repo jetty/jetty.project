@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -1312,14 +1313,30 @@ public class Response implements HttpServletResponse
         _out.resetBuffer();
     }
 
-    public void setTrailers(Supplier<HttpFields> trailers)
+    @Deprecated
+    public void setTrailerHttpFields(Supplier<HttpFields> trailers)
     {
         this._trailers = trailers;
+    }
+
+    @Override
+    public void setTrailerFields(Supplier<Map<String,String>> trailers)
+    {
+        // TODO new for 4.0 - avoid transient supplier?
+        this._trailers = new HttpFieldsSupplier(trailers);
     }
 
     public Supplier<HttpFields> getTrailers()
     {
         return _trailers;
+    }
+
+    @Override
+    public Supplier<Map<String,String>> getTrailerFields()
+    {
+        if (_trailers instanceof HttpFieldsSupplier)
+            ((HttpFieldsSupplier)_trailers).getSupplier();
+        return null;
     }
 
     protected MetaData.Response newResponseMetaData()
@@ -1485,6 +1502,35 @@ public class Response implements HttpServletResponse
             String et=content.getETagValue();
             if (et!=null)
                 response.setHeader(HttpHeader.ETAG.asString(),et);
+        }
+    }
+
+    private static class HttpFieldsSupplier implements Supplier<HttpFields>
+    {
+        private final Supplier<Map<String, String>> _supplier;
+
+        public HttpFieldsSupplier(Supplier<Map<String, String>> trailers)
+        {
+            _supplier = trailers;
+        }
+
+        @Override
+        public HttpFields get()
+        {
+            Map<String,String> t = _supplier.get();
+            if (t==null)
+                return null;
+            HttpFields fields = new HttpFields();
+            for (Map.Entry<String,String> e : t.entrySet())
+            {
+                fields.add(e.getKey(),e.getValue());
+            }
+            return fields;
+        }
+
+        public Supplier<Map<String, String>> getSupplier()
+        {
+            return _supplier;
         }
     }
 }

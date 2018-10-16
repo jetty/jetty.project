@@ -11,7 +11,7 @@
       <New id="DebugHandler" class="org.eclipse.jetty.server.handler.DebugHandler">
 	<Set name="outputStream">
 	  <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
-	    <Arg type="String"><Property name="jetty.debuglog.dir" deprecated="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
+	    <Arg type="String"><Property name="jetty.debuglog.dir" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
 	    <Arg type="boolean"><Property name="jetty.debuglog.append" default="true"/></Arg>
 	    <Arg type="int"><Property name="jetty.debuglog.retainDays" default="90"/></Arg>
 	    <Arg>

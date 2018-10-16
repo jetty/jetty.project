@@ -28,9 +28,9 @@
         <Arg>
           <New class="javax.management.remote.JMXServiceURL">
             <Arg type="java.lang.String">rmi</Arg>
-            <Arg type="java.lang.String"><Property name="jetty.jmxremote.rmiserverhost" deprecated="jetty.jmxremote.rmihost,jetty.jmxrmihost" default="localhost"/></Arg>
-            <Arg type="java.lang.Integer"><Property name="jetty.jmxremote.rmiserverport" deprecated="jetty.jmxremote.rmiport,jetty.jmxrmiport" default="1099"/></Arg>
-            <Arg type="java.lang.String">/jndi/rmi://<Property name="jetty.jmxremote.rmiregistryhost" deprecated="jetty.jmxremote.rmihost,jetty.jmxrmihost" default="localhost"/>:<Property name="jetty.jmxremote.rmiregistryport" deprecated="jetty.jmxremote.rmiport,jetty.jmxrmiport" default="1099"/>/jmxrmi</Arg>
+            <Arg type="java.lang.String"><Property name="jetty.jmxremote.rmiserverhost" default="localhost"/></Arg>
+            <Arg type="java.lang.Integer"><Property name="jetty.jmxremote.rmiserverport" default="1099"/></Arg>
+            <Arg type="java.lang.String">/jndi/rmi://<Property name="jetty.jmxremote.rmiregistryhost" default="localhost"/>:<Property name="jetty.jmxremote.rmiregistryport" default="1099"/>/jmxrmi</Arg>
           </New>
         </Arg>
         <Arg>org.eclipse.jetty.jmx:name=rmiconnectorserver</Arg>

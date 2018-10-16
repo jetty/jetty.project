@@ -23,13 +23,13 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
- * Rewrite the URI by replacing the matched {@link PathMap} path with a fixed string.
+ * Rewrite the URI by replacing the matched {@link ServletPathSpec} path with a fixed string.
  */
 public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
 {
@@ -77,7 +77,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        target = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern, target));
+        target = URIUtil.addPaths(_replacement, ServletPathSpec.pathInfo(_pattern, target));
         return target;
     }
 

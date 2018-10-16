@@ -27,6 +27,24 @@ public final class TextUtil
      * Create a hint of what the text is like.
      * <p>
      * Used by logging and error messages to get a hint of what the text is like.
+     *
+     * @param text
+     *            the text to abbreviate, quote, and generally give you a hint of what the value is.
+     * @return the abbreviated text
+     */
+    public static String quote(String text)
+    {
+        if (text == null)
+        {
+            return "<null>";
+        }
+        return '"' + text + '"';
+    }
+    
+    /**
+     * Create a hint of what the text is like.
+     * <p>
+     * Used by logging and error messages to get a hint of what the text is like.
      * 
      * @param text
      *            the text to abbreviate, quote, and generally give you a hint of what the value is.

@@ -48,15 +48,13 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Execute(phase = LifecyclePhase.VALIDATE)
 public class JettyDeployWar extends JettyRunWarMojo
 {
-
-    
     /**
      * If true, the plugin should continue and not block. Otherwise the
      * plugin will block further execution and you will need to use
      * cntrl-c to stop it.
-     * 
+     *
      */
-    @Parameter(defaultValue = "true")
+    @Parameter(property = "jetty.daemon", defaultValue = "true")
     protected boolean daemon = true;
     
     

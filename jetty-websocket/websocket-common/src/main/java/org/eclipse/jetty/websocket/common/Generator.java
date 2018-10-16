@@ -62,8 +62,9 @@ public class Generator
 
     private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
-    private final boolean validating;
     private final boolean readOnly;
+    
+    private boolean validating = true;
 
     /**
      * Are any flags in use
@@ -212,15 +213,15 @@ public class Generator
 
     public ByteBuffer generateHeaderBytes(Frame frame)
     {
-        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,true);
+        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,false);
+        BufferUtil.clearToFill(buffer);
         generateHeaderBytes(frame,buffer);
+        BufferUtil.flipToFlush(buffer,0);
         return buffer;
     }
 
     public void generateHeaderBytes(Frame frame, ByteBuffer buffer)
     {
-        int p = BufferUtil.flipToFill(buffer);
-
         // we need a framing header
         assertFrameValid(frame);
 
@@ -337,8 +338,6 @@ public class Generator
                 }
             }
         }
-
-        BufferUtil.flipToFlush(buffer,p);
     }
 
     /**
@@ -353,7 +352,7 @@ public class Generator
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {
-        buf.put(generateHeaderBytes(frame));
+        generateHeaderBytes(frame, buf);
         if (frame.hasPayload())
         {
             if (readOnly)
@@ -367,11 +366,21 @@ public class Generator
         }
     }
 
+    public WebSocketBehavior getBehavior()
+    {
+        return behavior;
+    }
+
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
     }
-
+    
+    public boolean isValidating()
+    {
+        return validating;
+    }
+    
     public void setRsv1InUse(boolean rsv1InUse)
     {
         if (readOnly)
@@ -398,7 +407,12 @@ public class Generator
         }
         flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse?0x10:0x00));
     }
-
+    
+    public void setValidating(boolean validating)
+    {
+        this.validating = validating;
+    }
+    
     public boolean isRsv1InUse()
     {
         return (flagsInUse & 0x40) != 0;

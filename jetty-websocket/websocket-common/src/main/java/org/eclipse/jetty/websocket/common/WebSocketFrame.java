@@ -267,8 +267,12 @@ public abstract class WebSocketFrame implements Frame
     {
         return (byte)(finRsvOp & 0x80) != 0;
     }
-
+    
+    /**
+     * @deprecated use {@link #isFin()} instead
+     */
     @Override
+    @Deprecated
     public boolean isLast()
     {
         return isFin();

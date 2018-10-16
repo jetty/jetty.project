@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -287,18 +287,18 @@
                 <artifactItem>
                   <groupId>javax.servlet</groupId>
                   <artifactId>javax.servlet-api</artifactId>
-                  <version>3.1.0</version>
+                  <version>${servlet.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>servlet-api-3.1.jar</destFileName>
+                  <destFileName>servlet-api-4.0.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-schemas</artifactId>
-                  <version>3.1.M0</version>
+                  <version>${servlet.schema.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-schemas-3.1.jar</destFileName>
+                  <destFileName>jetty-schemas-4.0.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -620,11 +620,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-continuation</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -641,11 +636,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-spring</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.cdi</groupId>
-      <artifactId>cdi-servlet</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -680,7 +670,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-openjdk8-server</artifactId>
+      <artifactId>jetty-alpn-java-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -719,21 +709,5 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>[1.9,)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-alpn-java-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 
 </project>

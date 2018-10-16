@@ -343,7 +343,7 @@ public class WebAppProvider extends ScanningAppProvider
             context = "/" + context;
         }
 
-        webAppContext.setContextPath(context);
+        webAppContext.setDefaultContextPath(context);
         webAppContext.setWar(file.getAbsolutePath());
         initializeWebAppContextDefaults(webAppContext);
 

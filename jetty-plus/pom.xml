@@ -1,8 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-plus</artifactId>
@@ -14,38 +16,28 @@
   </properties>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Import-Package>javax.transaction.*;version="1.1",*</Import-Package>
+            <Require-Capability>
+              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+            </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader;
+              osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+            </Provide-Capability>
+          </instructions>
+        </configuration>
+      </plugin>
       <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
       with a snapshot. -->
       <plugin>
          <groupId>org.apache.maven.plugins</groupId>
          <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-            <configuration>
-              <instructions>
-                <Import-Package>javax.transaction.*;version="1.1",*</Import-Package>
-              </instructions>
-            </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

@@ -89,11 +89,9 @@ public class GlobalWebappConfigBindingTest
         WebAppContext context = contexts.get(0);
 
         assertNotNull(context, "Context should not be null");
-        String defaultClasses[] = context.getDefaultServerClasses();
         String currentClasses[] = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
-        assertThat("Default Server Classes",addedClass,not(isIn(defaultClasses)));
         assertThat("Current Server Classes",addedClass,isIn(currentClasses));
 
         //  boolean jndiPackage = false;
