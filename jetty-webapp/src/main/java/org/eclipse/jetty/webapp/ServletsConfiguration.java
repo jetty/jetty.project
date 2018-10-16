@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.webapp;
 
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * <p>Jetty Servlets Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
@@ -27,6 +31,8 @@ package org.eclipse.jetty.webapp;
  */
 public class ServletsConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(ServletsConfiguration.class);
+
     public ServletsConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, WebAppConfiguration.class);
@@ -36,5 +42,19 @@ public class ServletsConfiguration extends AbstractConfiguration
                 "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
                 );
         expose("org.eclipse.jetty.servlets."); // don't hide jetty servlets
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        try
+        {
+            return Loader.loadClass("org.eclipse.jetty.servlets.PushCacheFilter")!=null;
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+            return false;
+        }
     }
 }

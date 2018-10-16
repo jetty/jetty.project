@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.ServiceLoader;
+
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.util.ServiceLoader;
 
 /**
  * <p>JMX Configuration</p>
@@ -55,7 +55,7 @@ public class JmxConfiguration extends AbstractConfiguration
         catch (Throwable e)
         {
             LOG.ignore(e);
+            return false;
         }
-        return false;
     }
 }
