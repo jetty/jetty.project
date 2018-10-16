@@ -46,8 +46,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Classpath classes list performs pattern matching of a class name 
- * against an internal array of classpath pattern entries.
+ * A matcher for classes based on package and/or location and/or module/
+ * <p>
+ * Performs pattern matching of a class against a set of pattern entries.
  * A class pattern is a string of one of the forms:<ul>
  * <li>'org.package.SomeClass' will match a specific class
  * <li>'org.package.' will match a specific package hierarchy
@@ -65,9 +66,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * in this string should be separated by ':' (semicolon) or ',' (comma).
  */
 
-public class ClasspathPattern extends AbstractSet<String>
+public class ClassMatcher extends AbstractSet<String>
 {
-    private static final Logger LOG = Log.getLogger(ClasspathPattern.class);
+    private static final Logger LOG = Log.getLogger(ClassMatcher.class);
 
     private static class Entry
     {
@@ -491,23 +492,23 @@ public class ClasspathPattern extends AbstractSet<String>
     IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
     IncludeExcludeSet<Entry,URI> _locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
     
-    public ClasspathPattern()
+    public ClassMatcher()
     {
     }
 
-    public ClasspathPattern(ClasspathPattern patterns)
+    public ClassMatcher(ClassMatcher patterns)
     {
         if (patterns!=null)
             setAll(patterns.getPatterns());
     }
     
-    public ClasspathPattern(String... patterns)
+    public ClassMatcher(String... patterns)
     {
         if (patterns!=null && patterns.length>0)
             setAll(patterns);
     }
     
-    public ClasspathPattern(String pattern)
+    public ClassMatcher(String pattern)
     {
         add(pattern);
     }

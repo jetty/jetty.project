@@ -28,7 +28,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.ClasspathPattern;
+import org.eclipse.jetty.webapp.ClassMatcher;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -52,8 +52,8 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
     private final MimeTypes _mimeTypes;
     private final WebAppClassLoader _webappLoader;
     
-    private ClasspathPattern _systemClasses;
-    private ClasspathPattern _serverClasses;
+    private ClassMatcher _systemClasses;
+    private ClassMatcher _serverClasses;
     private PermissionCollection _permissions;
 
     private boolean _parentLoaderPriority;
@@ -86,9 +86,9 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         _resourceCache=new ResourceCache(null,baseResource,_mimeTypes,false,false);
         
         String[] patterns = (String[])_server.getAttribute(WebAppContext.SERVER_SRV_CLASSES);
-        _serverClasses=new ClasspathPattern(patterns==null?WebAppContext.__dftServerClasses:patterns);
+        _serverClasses=new ClassMatcher(patterns==null?WebAppContext.__dftServerClasses:patterns);
         patterns = (String[])_server.getAttribute(WebAppContext.SERVER_SYS_CLASSES);
-        _systemClasses=new ClasspathPattern(patterns==null?WebAppContext.__dftSystemClasses:patterns);
+        _systemClasses=new ClassMatcher(patterns==null?WebAppContext.__dftSystemClasses:patterns);
         _libLoader=libLoader;
         
 
@@ -227,7 +227,7 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
      */
     public void setServerClasses(String[] serverClasses)
     {
-        _serverClasses = new ClasspathPattern(serverClasses);
+        _serverClasses = new ClassMatcher(serverClasses);
     }
 
     /* ------------------------------------------------------------ */
@@ -247,7 +247,7 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
      */
     public void setSystemClasses(String[] systemClasses)
     {
-        _systemClasses = new ClasspathPattern(systemClasses);
+        _systemClasses = new ClassMatcher(systemClasses);
     }
 
     /* ------------------------------------------------------------ */

@@ -34,9 +34,9 @@ import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
-public class ClasspathPatternTest
+public class ClassMatcherTest
 {
-    private final ClasspathPattern _pattern = new ClasspathPattern();
+    private final ClassMatcher _pattern = new ClassMatcher();
 
     @BeforeEach
     public void before()
@@ -129,14 +129,14 @@ public class ClasspathPatternTest
         // System.err.println(loc_junit);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
         // System.err.println(loc_test);
 
-        ClasspathPattern pattern = new ClasspathPattern();
+        ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
 
         // Add directory for both JVM classes
         pattern.include(Paths.get(loc_string).getParent().toUri().toString());
@@ -146,12 +146,12 @@ public class ClasspathPatternTest
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
 
         pattern.add("-java.lang.String");
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
     }
 
     @SuppressWarnings("restriction")
@@ -168,14 +168,14 @@ public class ClasspathPatternTest
         // System.err.println(loc_junit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
         // System.err.println(loc_test);
 
-        ClasspathPattern pattern = new ClasspathPattern();
+        ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
 
         // Add module for all JVM base classes
         pattern.include("jrt:/java.base");
@@ -185,12 +185,12 @@ public class ClasspathPatternTest
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
 
         pattern.add("-java.lang.String");
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
     }
 
     @SuppressWarnings("restriction")
@@ -207,17 +207,17 @@ public class ClasspathPatternTest
         // System.err.println(loc_junit);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
         // System.err.println(loc_test);
 
-        ClasspathPattern pattern = new ClasspathPattern();
+        ClassMatcher pattern = new ClassMatcher();
 
         // include everything
         pattern.include(".");
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
 
         // Add directory for both JVM classes
         pattern.exclude(Paths.get(loc_string).getParent().toUri().toString());
@@ -227,7 +227,7 @@ public class ClasspathPatternTest
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
     }
 
     @SuppressWarnings("restriction")
@@ -244,17 +244,17 @@ public class ClasspathPatternTest
         // System.err.println(loc_junit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
         // System.err.println(loc_test);
 
-        ClasspathPattern pattern = new ClasspathPattern();
+        ClassMatcher pattern = new ClassMatcher();
 
         // include everything
         pattern.include(".");
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
 
         // Add directory for both JVM classes
         pattern.exclude("jrt:/java.base/");
@@ -264,13 +264,13 @@ public class ClasspathPatternTest
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
     }
 
     @Test
     public void testLarge()
     {
-        ClasspathPattern pattern = new ClasspathPattern();
+        ClassMatcher pattern = new ClassMatcher();
         for (int i = 0; i < 500; i++)
         {
             assertTrue(pattern.add("n" + i + "." + Integer.toHexString(100 + i) + ".Name"));

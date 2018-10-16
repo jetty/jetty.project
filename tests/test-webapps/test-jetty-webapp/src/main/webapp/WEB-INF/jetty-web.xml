@@ -9,7 +9,7 @@ org.eclipse.jetty.servlet.WebApplicationContext object
 -->
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
-  <Get name="ServerClasspathPattern">
+  <Get name="ServerClassMatcher">
     <Call name="exclude">
       <Arg>
         <Array type="String">

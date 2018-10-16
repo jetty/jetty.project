@@ -170,7 +170,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via
     // system classloader.
-    public final static ClasspathPattern __dftSystemClasses = new ClasspathPattern
+    public final static ClassMatcher __dftSystemClasses = new ClassMatcher
     (
         "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
@@ -182,14 +182,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // loaded by the web application using system classloader,
     // so if web application needs to load any of such classes,
     // it has to include them in its distribution.
-    public final static ClasspathPattern __dftServerClasses =new ClasspathPattern
+    public final static ClassMatcher __dftServerClasses =new ClassMatcher
     (
         "org.eclipse.jetty."                // hide jetty classes
     );
 
     private final Configurations _configurations = new Configurations();
-    private final ClasspathPattern _systemClasses = new ClasspathPattern(__dftSystemClasses);
-    private final ClasspathPattern _serverClasses = new ClasspathPattern(__dftServerClasses);
+    private final ClassMatcher _systemClasses = new ClassMatcher(__dftSystemClasses);
+    private final ClassMatcher _serverClasses = new ClassMatcher(__dftServerClasses);
 
     private String _defaultsDescriptor=WEB_DEFAULTS_XML;
     private String _descriptor=null;
@@ -703,7 +703,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param serverClasses the server classes pattern
      *
      */
-    public void setServerClasspathPattern(ClasspathPattern serverClasses)
+    public void setServerClassMatcher(ClassMatcher serverClasses)
     {
         _serverClasses.clear();
         _serverClasses.add(serverClasses.getPatterns());
@@ -718,38 +718,48 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
      * @param systemClasses the system classes pattern
      */
-    public void setSystemClasspathPattern(ClasspathPattern systemClasses)
+    public void setSystemClassMatcher(ClassMatcher systemClasses)
     {
         _systemClasses.clear();
         _systemClasses.add(systemClasses.getPatterns());
     }
 
+    /**
+     * Add a ClassMatcher for server classes by combining with
+     * any existing matcher.
+     * @param serverClasses The class matcher of patterns to add to the server ClassMatcher
+     */
     /* ------------------------------------------------------------ */
-    public void addServerClasspathPattern(ClasspathPattern serverClasses)
+    public void addServerClassMatcher(ClassMatcher serverClasses)
     {
         _serverClasses.add(serverClasses.getPatterns());
     }
 
+    /**
+     * Add a ClassMatcher for system classes by combining with
+     * any existing matcher.
+     * @param systemClasses The class matcher of patterns to add to the system ClassMatcher
+     */
     /* ------------------------------------------------------------ */
-    public void addSystemClasspathPattern(ClasspathPattern systemClasses)
+    public void addSystemClassMatcher(ClassMatcher systemClasses)
     {
         _systemClasses.add(systemClasses.getPatterns());
     }
     
     /* ------------------------------------------------------------ */
     /**
-     * @return The ClasspathPattern used to match System (protected) classes
+     * @return The ClassMatcher used to match System (protected) classes
      */
-    public ClasspathPattern getSystemClasspathPattern()
+    public ClassMatcher getSystemClassMatcher()
     {
         return _systemClasses;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The ClasspathPattern used to match Server (hidden) classes
+     * @return The ClassMatcher used to match Server (hidden) classes
      */
-    public ClasspathPattern getServerClasspathPattern()
+    public ClassMatcher getServerClassMatcher()
     {
         return _serverClasses;
     }
@@ -819,18 +829,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 Object systemClasses = server.getAttribute(SERVER_SYS_CLASSES);
                 if (systemClasses instanceof String[])
-                    systemClasses = new ClasspathPattern((String[])systemClasses);
-                if (systemClasses instanceof ClasspathPattern)
-                    _systemClasses.add(((ClasspathPattern)systemClasses).getPatterns());
+                    systemClasses = new ClassMatcher((String[])systemClasses);
+                if (systemClasses instanceof ClassMatcher)
+                    _systemClasses.add(((ClassMatcher)systemClasses).getPatterns());
             }
 
             if (__dftServerClasses.equals(_serverClasses))
             {
                 Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
                 if (serverClasses instanceof String[])
-                    serverClasses = new ClasspathPattern((String[])serverClasses);
-                if (serverClasses instanceof ClasspathPattern)
-                    _serverClasses.add(((ClasspathPattern)serverClasses).getPatterns());
+                    serverClasses = new ClassMatcher((String[])serverClasses);
+                if (serverClasses instanceof ClassMatcher)
+                    _serverClasses.add(((ClassMatcher)serverClasses).getPatterns());
             }
         }
     }
@@ -1526,9 +1536,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // look for a Server attribute with the list of Server classes
         // to apply to every web application. If not present, use our defaults.        
         Object o = server.getAttribute(SERVER_SRV_CLASSES);
-        if (o instanceof ClasspathPattern)
+        if (o instanceof ClassMatcher)
         {
-            ((ClasspathPattern)o).add(pattern);
+            ((ClassMatcher)o).add(pattern);
             return;
         }
         
@@ -1552,9 +1562,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // look for a Server attribute with the list of System classes
         // to apply to every web application. If not present, use our defaults.
         Object o = server.getAttribute(SERVER_SYS_CLASSES);
-        if (o instanceof ClasspathPattern)
+        if (o instanceof ClassMatcher)
         {
-            ((ClasspathPattern)o).add(pattern);
+            ((ClassMatcher)o).add(pattern);
             return;
         }
         
