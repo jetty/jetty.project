@@ -73,11 +73,22 @@ public class Configurations extends AbstractList<Configuration>
         if (__known.isEmpty())
         {
             ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
-            for (Configuration configuration : configs)
+            for (Iterator<Configuration> i = configs.iterator(); i.hasNext(); )
             {
-                __known.add(configuration);
-                __knownByClassName.add(configuration.getClass().getName());
+                try
+                {
+                    Configuration configuration = i.next();
+                    __known.add(configuration);
+                    __knownByClassName.add(configuration.getClass().getName());
+                }
+                catch (Throwable e)
+                {
+                    LOG.info("Configuration unavailable: "+e.getMessage());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(e);
+                }
             }
+
             sort(__known);
             if (LOG.isDebugEnabled())
             {

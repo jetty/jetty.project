@@ -54,7 +54,7 @@
     <jetty.testtracker.log>false</jetty.testtracker.log>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>2.22.0</maven.surefire.version>
+    <maven.surefire.version>2.22.1</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>

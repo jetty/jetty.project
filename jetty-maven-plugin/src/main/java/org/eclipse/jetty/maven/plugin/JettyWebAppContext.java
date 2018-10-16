@@ -296,7 +296,6 @@ public class JettyWebAppContext extends WebAppContext
             for (String r:rs)
                 resources.add(r);
         }
-        
         setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
     }
     
@@ -346,6 +345,7 @@ public class JettyWebAppContext extends WebAppContext
         {
             MavenQuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
             quickStart.setMode(Mode.GENERATE);
+            quickStart.setQuickStartWebXml(getQuickStartWebDescriptor());
             addConfiguration(quickStart);
         }
 
