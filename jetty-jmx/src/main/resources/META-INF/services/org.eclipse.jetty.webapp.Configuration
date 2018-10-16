@@ -1,2 +1,0 @@
-# Declared in the jmx package, but defined in the webapp package (as it depends on the Configuration interface)
-org.eclipse.jetty.webapp.JmxConfiguration
