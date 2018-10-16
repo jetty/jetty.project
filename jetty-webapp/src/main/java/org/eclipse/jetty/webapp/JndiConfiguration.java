@@ -20,6 +20,8 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.jndi.InitialContextFactory;
+
 /**
  * <p>JNDI Configuration</p>
  * <p>This configuration configures the WebAppContext system/server classes to
@@ -36,6 +38,6 @@ public class JndiConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.jndi.");
+        protectAndExpose(InitialContextFactory.class.getPackageName() + ".");
     }
 }
