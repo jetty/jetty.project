@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.webapp;
 
+import org.eclipse.jetty.jmx.ObjectMBean;
+
 import java.util.ServiceLoader;
 
 /**
@@ -36,6 +38,6 @@ public class JmxConfiguration extends AbstractConfiguration
     public JmxConfiguration()
     {
         addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.jmx.");
+        protectAndExpose(ObjectMBean.class.getPackage().getName()+".");
     }
 }
