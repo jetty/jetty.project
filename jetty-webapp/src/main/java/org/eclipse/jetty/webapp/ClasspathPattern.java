@@ -21,6 +21,7 @@ package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -36,7 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.TypeUtil;
@@ -148,7 +148,7 @@ public class ClasspathPattern extends AbstractSet<String>
             }
             catch(IOException e)
             {
-                throw new RuntimeIOException(e);
+                throw new UncheckedIOException(e);
             }
         }
 

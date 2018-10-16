@@ -41,9 +41,7 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -195,16 +193,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public void findAndFilterContainerPaths(final WebAppContext context) throws Exception
     {
-        //assume the target jvm is the same as that running
-        int currentPlatform = JavaVersion.VERSION.getPlatform();
-        //allow user to specify target jvm different to current runtime
-        int targetPlatform = currentPlatform;
-        Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
-        if (target!=null)
-            targetPlatform = Integer.parseInt(target.toString());
-        
-        //Apply an initial name filter to the jars to select which will be eventually
-        //scanned for META-INF info and annotations. The filter is based on inclusion patterns.
+        // Apply an initial name filter to the jars to select which will be eventually
+        // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
         ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, (String)context.getAttribute(CONTAINER_JAR_PATTERN));
         List<URI> containerUris = getAllContainerJars(context);
 
@@ -214,11 +204,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         // When running on jvm 9 or above, we we won't be able to look at the application
         // classloader to extract urls, so we need to examine the classpath instead.
-        String tmp = System.getProperty("java.class.path");
-        if (tmp != null)
+        String classPath = System.getProperty("java.class.path");
+        if (classPath != null)
         {
             List<URI> cpUris = new ArrayList<>();
-            String[] entries = tmp.split(File.pathSeparator);
+            String[] entries = classPath.split(File.pathSeparator);
             for (String entry:entries)
             {
                 File f = new File(entry);
@@ -233,11 +223,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // TODO need to consider the jdk.module.upgrade.path - how to resolve
         // which modules will be actually used. If its possible, it can
         // only be attempted in jetty-10 with jdk-9 specific apis.
-        tmp = System.getProperty("jdk.module.path");
-        if (tmp != null)
+        String modulePath = System.getProperty("jdk.module.path");
+        if (modulePath != null)
         {
             List<URI> moduleUris = new ArrayList<>();
-            String[] entries = tmp.split(File.pathSeparator);
+            String[] entries = modulePath.split(File.pathSeparator);
             for (String entry : entries)
             {
                 File file = new File(entry);
