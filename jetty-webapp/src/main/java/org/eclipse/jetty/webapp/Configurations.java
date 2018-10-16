@@ -399,7 +399,7 @@ public class Configurations extends AbstractList<Configuration>
             {
                 Configuration c=i.next();
                 if(c.getClass().getName().equals(replaces.getName()) 
-                || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
+                        || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
                 {
                     i.set(configuration);
                     return;
@@ -409,24 +409,22 @@ public class Configurations extends AbstractList<Configuration>
             _configurations.add(configuration);
             return;
         }
-        else
+
+        //check if any existing configurations replace the one we're adding
+        for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
         {
-            //check if any existing configurations replace the one we're adding
-            for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+            Configuration c=i.next();
+            Class<? extends Configuration> r = c.replaces();
+            if (r != null)
             {
-                Configuration c=i.next();
-                Class<? extends Configuration> r = c.replaces();
-                if (r != null)
-                {
-                    if (r.getName().equals(configuration.getClass().getName()))
-                       return; //skip the addition, a replacement is already present
-                }
-                else
-                    if (c.getClass().getName().equals(configuration.getClass().getName()))
-                        return; //don't add same one twice
+                if (r.getName().equals(configuration.getClass().getName()))
+                    return; //skip the addition, a replacement is already present
             }
-            _configurations.add(configuration);
+
+            if (c.getClass().getName().equals(configuration.getClass().getName()))
+                return; //don't add same one twice
         }
+        _configurations.add(configuration);
     }
 
     @Override
