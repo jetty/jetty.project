@@ -20,6 +20,8 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.jsp.JettyJspServlet;
+
 /**
  * <p>JSP Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
@@ -37,7 +39,7 @@ public class JspConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.jsp.");
+        protectAndExpose(JettyJspServlet.class.getPackageName() + ".");
         expose("org.eclipse.jetty.apache.");
         hide("org.eclipse.jdt.");
     }

@@ -1,34 +1,41 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>10.0.0-SNAPSHOT</version>
   </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <artifactId>apache-jsp</artifactId>
   <name>Jetty :: Apache JSP Implementation</name>
-  <url>http://www.eclipse.org/jetty</url>
-  <packaging>jar</packaging>
+
   <properties>
     <bundle-symbolic-name>${project.groupId}.apache-jsp</bundle-symbolic-name>
   </properties>
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-            <configuration>
-              <instructions>
-                <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
-                <Export-Package>org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
-                                org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
-                </Export-Package>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log</Provide-Capability>
-                <_nouses>true</_nouses>
-              </instructions>
-            </configuration>
+        <configuration>
+          <instructions>
+            <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
+            <Export-Package>
+              org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
+              org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+            </Export-Package>
+            <Require-Capability>osgi.extender;
+              filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
+            </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log
+            </Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -60,38 +67,28 @@
 
   <dependencies>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-util</artifactId>
-        <version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>${project.version}</version>
     </dependency>
-
-    <!-- Schemas -->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-schemas</artifactId>
     </dependency>
-
-    <!-- servlet api -->
     <dependency>
-       <groupId>javax.servlet</groupId>
-       <artifactId>javax.servlet-api</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
-
-    <!-- JSP Impl -->
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
       <artifactId>apache-jsp</artifactId>
     </dependency>
-
-    <!-- Running in jetty needs annotations -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
 
-
-    <!-- tests -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
@@ -118,4 +115,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
 </project>
