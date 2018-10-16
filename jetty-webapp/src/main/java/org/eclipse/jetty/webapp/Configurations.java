@@ -409,9 +409,24 @@ public class Configurations extends AbstractList<Configuration>
             _configurations.add(configuration);
             return;
         }
-
-        if (!_configurations.stream().map(c->c.getClass().getName()).anyMatch(n->{return name.equals(n);}))
+        else
+        {
+            //check if any existing configurations replace the one we're adding
+            for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+            {
+                Configuration c=i.next();
+                Class<? extends Configuration> r = c.replaces();
+                if (r != null)
+                {
+                    if (r.getName().equals(configuration.getClass().getName()))
+                       return; //skip the addition, a replacement is already present
+                }
+                else
+                    if (c.getClass().getName().equals(configuration.getClass().getName()))
+                        return; //don't add same one twice
+            }
             _configurations.add(configuration);
+        }
     }
 
     @Override

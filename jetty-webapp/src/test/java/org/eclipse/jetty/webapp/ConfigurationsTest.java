@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.jetty.webapp.Configurations.getKnown;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConfigurationsTest
@@ -110,6 +111,57 @@ public class ConfigurationsTest
                         ));
     }
     
+    @Test
+    public void testReplacement()
+    {
+        Configurations.cleanKnown();
+        Configurations.setKnown(
+                ConfigBar.class.getName(),
+                ConfigZ.class.getName(),
+                ConfigY.class.getName(),
+                ConfigX.class.getName(),
+                ConfigTom.class.getName(),
+                ConfigDick.class.getName(),
+                ConfigHarry.class.getName(),
+                ConfigAdditionalHarry.class.getName(),
+                ConfigFoo.class.getName(),
+                ReplacementDick.class.getName()
+        );
+
+        Configurations configs = new Configurations(
+                ConfigBar.class.getName(),
+                ConfigZ.class.getName(),
+                ConfigY.class.getName(),
+                ConfigX.class.getName(),
+                ConfigTom.class.getName(),
+                ReplacementDick.class.getName(),
+                ConfigHarry.class.getName(),
+                ConfigAdditionalHarry.class.getName(),
+                ConfigFoo.class.getName()
+        );
+        
+        configs.add(ConfigDick.class.getName());
+        configs.sort();
+        
+        assertThat(configs.stream().map(c->c.getClass().getName()).collect(toList()),
+                contains(
+                        ConfigFoo.class.getName(),
+                        ConfigBar.class.getName(),
+                        ConfigX.class.getName(),
+                        ConfigY.class.getName(),
+                        ConfigZ.class.getName(),
+                        ConfigTom.class.getName(),
+                        ReplacementDick.class.getName(),
+                        ConfigHarry.class.getName(),
+                        ConfigAdditionalHarry.class.getName()
+                        ));
+        
+        assertThat(configs.stream().map(c->c.getClass().getName()).collect(toList()),
+                   not(contains(
+                           ConfigDick.class.getName()
+                           )));
+    }
+    
     
     public static class ConfigFoo extends AbstractConfiguration 
     { 
@@ -175,6 +227,14 @@ public class ConfigurationsTest
     }
     
     
+    public static class ReplacementDick extends ConfigDick
+    {
+        @Override
+        public Class<? extends Configuration> replaces()
+        {
+            return ConfigDick.class;
+        }
+    }
     
     
     
