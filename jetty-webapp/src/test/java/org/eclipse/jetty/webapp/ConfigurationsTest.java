@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toList;
@@ -29,11 +30,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConfigurationsTest
 {
+    @AfterEach
+    public void tearDown()
+    {
+        Configurations.cleanKnown();
+    }
 
     @Test
     public void testSetKnown()
     {
-        Configurations.cleanKnown();
         Configurations.setKnown(
                 ConfigBar.class.getName(),
                 ConfigZ.class.getName(),
@@ -66,7 +71,6 @@ public class ConfigurationsTest
     @Test
     public void testConfigurations()
     {
-        Configurations.cleanKnown();
         Configurations.setKnown(
                 ConfigBar.class.getName(),
                 ConfigZ.class.getName(),
@@ -115,7 +119,6 @@ public class ConfigurationsTest
     @Test
     public void testDuplicates()
     {
-        Configurations.cleanKnown();
         Configurations.setKnown(
                 ConfigBar.class.getName(),
                 ConfigZ.class.getName()
@@ -134,7 +137,6 @@ public class ConfigurationsTest
     @Test
     public void testReplacement()
     {
-        Configurations.cleanKnown();
         Configurations.setKnown(
                 ConfigBar.class.getName(),
                 ConfigZ.class.getName(),
@@ -186,7 +188,6 @@ public class ConfigurationsTest
     @Test
     public void testTransitiveReplacements () throws Exception
     {
-        Configurations.cleanKnown();
         Configurations.setKnown(
                 ConfigBar.class.getName(),
                 ConfigZ.class.getName(),

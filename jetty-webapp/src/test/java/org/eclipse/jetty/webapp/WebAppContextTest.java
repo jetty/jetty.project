@@ -58,6 +58,7 @@ import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 public class WebAppContextTest
@@ -81,6 +82,12 @@ public class WebAppContextTest
         
     }
     
+    @AfterEach
+    public void tearDown()
+    {
+        Configurations.cleanKnown();
+    }
+
     @Test
     public void testSessionListeners ()
     throws Exception
@@ -103,6 +110,7 @@ public class WebAppContextTest
     @Test
     public void testConfigurationClassesFromDefault ()
     {
+        Configurations.cleanKnown();
         String[] known_and_enabled=Configurations.getKnown().stream()
                 .filter(c->!c.isDisabledByDefault())
                 .map(c->c.getClass().getName())
@@ -125,6 +133,7 @@ public class WebAppContextTest
     @Test
     public void testConfigurationOrder ()
     {
+        Configurations.cleanKnown();
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
         assertThat(wac.getWebAppConfigurations().stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
@@ -141,6 +150,7 @@ public class WebAppContextTest
     @Test
     public void testConfigurationInstances ()
     {
+        Configurations.cleanKnown();
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);
