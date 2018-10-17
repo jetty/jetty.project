@@ -97,11 +97,11 @@ def getFullBuild(jdk, os, mainJdk) {
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
 
-        if(currentBuild.buildResult == "UNSTABLE") slackNotifierUnstable(currentBuild.currentResult)
+        if(currentBuild.buildResult == "UNSTABLE") slackNotifierUnstable(currentBuild.buildResult)
           
         }
       } catch (e) {
-        slackNotifierFailure(currentBuild.currentResult)
+        slackNotifierFailure(currentBuild.buildResult)
         throw e
       }
     }
