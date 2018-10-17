@@ -20,6 +20,10 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * <p>JMX Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
@@ -33,9 +37,25 @@ import java.util.ServiceLoader;
  */
 public class JmxConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(JmxConfiguration.class);
+
     public JmxConfiguration()
     {
         addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jmx.");
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        try
+        {
+            return Loader.loadClass("org.eclipse.jetty.jmx.ObjectMBean")!=null;
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+            return false;
+        }
     }
 }

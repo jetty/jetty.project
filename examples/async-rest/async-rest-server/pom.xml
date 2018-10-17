@@ -6,22 +6,14 @@
   </parent>  
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.example-async-rest</groupId>
-  <artifactId>example-async-rest-webapp</artifactId>
-  <packaging>war</packaging>
-  <name>Example Async Rest :: Webapp</name>
-  <build>
-    <finalName>async-rest</finalName>
-  </build>
+  <artifactId>example-async-rest-server</artifactId>
+  <packaging>jar</packaging>
+  <name>Example Async Rest :: Server</name>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.example-async-rest</groupId>
-      <artifactId>example-async-rest-jar</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <scope>provided</scope>
     </dependency>
   </dependencies>
 </project>

@@ -20,6 +20,10 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * <p>JAAS Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
@@ -32,10 +36,26 @@ import java.util.ServiceLoader;
  */
 public class JaasConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(JaasConfiguration.class);
+
     public JaasConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jaas.");
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        try
+        {
+            return Loader.loadClass("org.eclipse.jetty.jaas.JAASLoginService")!=null;
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+            return false;
+        }
     }
 }

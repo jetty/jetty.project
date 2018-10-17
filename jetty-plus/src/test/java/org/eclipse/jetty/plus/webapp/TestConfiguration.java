@@ -28,7 +28,6 @@ import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -50,8 +49,8 @@ public class TestConfiguration
             WebAppContext wac = new WebAppContext();
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
-            wac.getSystemClasspathPattern().include("org.eclipse.jetty.jndi.");
-            wac.getServerClasspathPattern().exclude("org.eclipse.jetty.jndi.");
+            wac.getSystemClassMatcher().include("org.eclipse.jetty.jndi.");
+            wac.getServerClassMatcher().exclude("org.eclipse.jetty.jndi.");
 
             MetaData metaData = new MetaData();
 

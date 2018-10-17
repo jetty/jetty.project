@@ -50,8 +50,12 @@ public class OneWebApp
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        File warFile = new File(
-                "../../tests/test-jmx/jmx-webapp/target/jmx-webapp");
+        File warFile = new File("../../tests/test-jmx/jmx-webapp/target/jmx-webapp");
+        if (!warFile.exists())
+            warFile = new File("tests/test-jmx/jmx-webapp/target/jmx-webapp");
+        if (!warFile.exists())
+            throw new IllegalArgumentException();
+
         webapp.setWar(warFile.getAbsolutePath());
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to

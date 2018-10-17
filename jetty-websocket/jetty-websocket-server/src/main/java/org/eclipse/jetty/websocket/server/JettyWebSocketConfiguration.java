@@ -28,6 +28,10 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
@@ -40,6 +44,7 @@ import java.util.ServiceLoader;
  */
 public class JettyWebSocketConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(JettyWebSocketConfiguration.class);
     public JettyWebSocketConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
@@ -49,5 +54,19 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
             "org.eclipse.jetty.websocket.common.",
             "org.eclipse.jetty.websocket.client.",
             "org.eclipse.jetty.websocket.server.");
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        try
+        {
+            return Loader.loadClass("org.eclipse.jetty.websocket.common.JettyWebSocketFrame")!=null;
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+            return false;
+        }
     }
 }

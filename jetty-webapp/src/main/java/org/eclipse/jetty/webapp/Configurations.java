@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,11 +74,26 @@ public class Configurations extends AbstractList<Configuration>
         if (__known.isEmpty())
         {
             ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
-            for (Configuration configuration : configs)
+            for (Iterator<Configuration> i = configs.iterator(); i.hasNext(); )
             {
-                __known.add(configuration);
-                __knownByClassName.add(configuration.getClass().getName());
+                try
+                {
+                    Configuration configuration = i.next();
+                    if (!configuration.isAvailable())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Configuration unavailable: "+configuration);
+                        continue;
+                    }
+                    __known.add(configuration);
+                    __knownByClassName.add(configuration.getClass().getName());
+                }
+                catch (Throwable e)
+                {
+                    LOG.warn(e);
+                }
             }
+
             sort(__known);
             if (LOG.isDebugEnabled())
             {
@@ -102,7 +118,14 @@ public class Configurations extends AbstractList<Configuration>
         {
             try
             {
-                Class<?> clazz = Loader.loadClass(c);
+                Class<? extends Configuration> clazz = Loader.loadClass(c);
+                Configuration configuration = clazz.getConstructor().newInstance();
+                if (!configuration.isAvailable())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Configuration unavailable: "+configuration);
+                    continue;
+                }
                 __known.add((Configuration)clazz.newInstance());
                 __knownByClassName.add(c);
             }
@@ -221,9 +244,9 @@ public class Configurations extends AbstractList<Configuration>
         {
             @SuppressWarnings("unchecked")
             Class<Configuration> clazz = Loader.loadClass(classname);
-            return clazz.newInstance();
+            return clazz.getConstructor().newInstance();
         }
-        catch (ClassNotFoundException | InstantiationException | IllegalAccessException e)
+        catch (Throwable e)
         {
             throw new RuntimeException(e);
         }
