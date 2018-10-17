@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.inject.Inject;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,6 +92,10 @@ public class TestJettyOSGiBootCore
     {
         List<Option> res = new ArrayList<Option>();
         
+        String mavenRepoPath = System.getProperty( "mavenRepoPath" );
+        if (!StringUtil.isBlank( mavenRepoPath))
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
+
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).version("5.0.1").start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).version("5.0.1").start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).version("5.0.1").start());
