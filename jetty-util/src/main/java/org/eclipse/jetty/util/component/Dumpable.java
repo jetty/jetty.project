@@ -28,6 +28,13 @@ public interface Dumpable
 {
     @ManagedOperation(value="Dump the nested Object state as a String", impact="INFO")
     String dump();
-    
+
+    /**
+     * Dump this object (and children) into an Appendable using the provided indent after any new lines.
+     * The indent should not be applied to the first object dumped.
+     * @param out The appendable to dump to
+     * @param indent The indent to apply after any new lines.
+     * @throws IOException
+     */
     void dump(Appendable out,String indent) throws IOException;
 }

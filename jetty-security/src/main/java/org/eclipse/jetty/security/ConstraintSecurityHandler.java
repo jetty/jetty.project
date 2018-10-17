@@ -767,10 +767,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         // TODO these should all be beans
         dumpBeans(out,indent,
-                Collections.singleton(getLoginService()),
-                Collections.singleton(getIdentityService()),
-                Collections.singleton(getAuthenticator()),
-                Collections.singleton(_roles),
+                getLoginService(),
+                getIdentityService(),
+                getAuthenticator(),
+                _roles,
                 _constraintMap.entrySet());
     }
     

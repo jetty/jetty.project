@@ -690,7 +690,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpBeans(out,indent,Collections.singleton(new ClassLoaderDump(this.getClass().getClassLoader())));
+        dumpBeans(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()));
     }
 
     /* ------------------------------------------------------------ */

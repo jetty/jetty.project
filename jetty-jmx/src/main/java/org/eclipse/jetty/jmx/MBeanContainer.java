@@ -398,8 +398,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, _mbeans.entrySet());
+        ContainerLifeCycle.dumpObjects(out, indent, this, _mbeans.entrySet());
     }
 
     @Override

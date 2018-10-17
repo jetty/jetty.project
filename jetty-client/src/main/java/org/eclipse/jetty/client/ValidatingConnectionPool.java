@@ -131,8 +131,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
-        ContainerLifeCycle.dump(out, indent, quarantine.values());
+        super.doDump(out, indent, quarantine.values());
     }
 
     @Override

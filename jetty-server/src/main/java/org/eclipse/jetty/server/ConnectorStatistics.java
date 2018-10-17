@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -246,8 +245,11 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent,Arrays.asList(new String[]{"connections="+_connectionStats,"duration="+_connectionDurationStats,"in="+_messagesIn,"out="+_messagesOut}));
+        ContainerLifeCycle.dumpObjects(out,indent,this,
+            "connections="+_connectionStats,
+            "duration="+_connectionDurationStats,
+            "in="+_messagesIn,
+            "out="+_messagesOut);
     }
     
     public static void addToAllConnectors(Server server)

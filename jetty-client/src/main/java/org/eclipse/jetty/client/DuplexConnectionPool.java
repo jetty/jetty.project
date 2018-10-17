@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -239,21 +241,38 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<Connection> connections = new ArrayList<>();
+        doDump(out, indent);
+    }
+
+    protected void doDump(Appendable out, String indent, Object... items) throws IOException
+    {
+
+        DumpableCollection active;
+        DumpableCollection idle;
         lock();
         try
         {
-            connections.addAll(activeConnections);
-            connections.addAll(idleConnections);
+            active = new DumpableCollection("active",new ArrayList<>(activeConnections));
+            idle = new DumpableCollection("idle",new ArrayList<>(idleConnections));
         }
         finally
         {
             unlock();
         }
 
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, connections);
+        if (items==null || items.length==0)
+            items = new Object[] {active,idle};
+        else
+        {
+            items = Arrays.copyOf(items,items.length+2);
+            System.arraycopy(items,0,items,2,items.length-2);
+            items[0] = active;
+            items[1] = idle;
+        }
+
+        ContainerLifeCycle.dumpObjects(out, indent, this, items);
     }
+
 
     @Override
     public boolean sweep()

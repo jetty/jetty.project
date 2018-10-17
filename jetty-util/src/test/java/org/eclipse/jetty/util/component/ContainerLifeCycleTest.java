@@ -280,11 +280,12 @@ public class ContainerLifeCycleTest
             @Override
             public void dump(Appendable out, String indent) throws IOException
             {
-                out.append(this.toString()).append("\n");
-                dump(out, indent, TypeUtil.asList(new Object[]{a1, a2}), TypeUtil.asList(new Object[]{a3, a4}));
+                dumpObjects(out, indent, this.toString(), TypeUtil.asList(new Object[]{a1, a2}), TypeUtil.asList(new Object[]{a3, a4}));
             }
         };
         a0.addBean(aa, true);
+
+
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
         dump = check(dump, " += ContainerLife");
@@ -292,10 +293,12 @@ public class ContainerLifeCycleTest
         dump = check(dump, " += ContainerLife");
         dump = check(dump, " |   += Container");
         dump = check(dump, " += ContainerLife");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +> java.util.Arrays$ArrayList");
+        dump = check(dump, "     |   +> ContainerLifeCycle");
+        dump = check(dump, "     |   +> ContainerLifeCycle");
+        dump = check(dump, "     +> java.util.Arrays$ArrayList");
+        dump = check(dump, "         +> ContainerLifeCycle");
+        dump = check(dump, "         +> ContainerLifeCycle");
         dump = check(dump, "");
 
         a2.addBean(aa0, true);
@@ -306,12 +309,14 @@ public class ContainerLifeCycleTest
         dump = check(dump, " += ContainerLife");
         dump = check(dump, " |   += Container");
         dump = check(dump, " += ContainerLife");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     |   += Conta");
-        dump = check(dump, "     |       +~ C");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +> java.util.Arrays$ArrayList");
+        dump = check(dump, "     |   +> ContainerLifeCycle");
+        dump = check(dump, "     |   +> ContainerLifeCycle");
+        dump = check(dump, "     |       += Conta");
+        dump = check(dump, "     |           +~ C");
+        dump = check(dump, "     +> java.util.Arrays$ArrayList");
+        dump = check(dump, "         +> ContainerLifeCycle");
+        dump = check(dump, "         +> ContainerLifeCycle");
         dump = check(dump, "");
 
         a2.unmanage(aa0);
@@ -322,11 +327,13 @@ public class ContainerLifeCycleTest
         dump = check(dump, " += ContainerLife");
         dump = check(dump, " |   += Container");
         dump = check(dump, " += ContainerLife");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     |   +~ Conta");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +> java.util.Arrays$ArrayList");
+        dump = check(dump, "     |   +> ContainerLifeCycle");
+        dump = check(dump, "     |   +> ContainerLifeCycle");
+        dump = check(dump, "     |       +~ Conta");
+        dump = check(dump, "     +> java.util.Arrays$ArrayList");
+        dump = check(dump, "         +> ContainerLifeCycle");
+        dump = check(dump, "         +> ContainerLifeCycle");
         dump = check(dump, "");
 
         a0.unmanage(aa);

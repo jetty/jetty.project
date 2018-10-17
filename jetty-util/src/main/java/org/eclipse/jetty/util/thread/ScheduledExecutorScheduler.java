@@ -19,8 +19,6 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -115,13 +113,11 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this);
         Thread thread = this.thread;
-        if (thread != null)
-        {
-            List<StackTraceElement> frames = Arrays.asList(thread.getStackTrace());
-            ContainerLifeCycle.dump(out, indent, frames);
-        }
+        if (thread == null)
+            ContainerLifeCycle.dumpObject(out, this);
+        else
+            ContainerLifeCycle.dumpObjects(out,indent,this, (Object[])thread.getStackTrace());
     }
 
     private static class ScheduledFutureTask implements Task

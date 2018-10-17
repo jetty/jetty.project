@@ -70,7 +70,7 @@ public class ClassLoaderDumptTest
         server.dump(out);
         String dump = out.toString();
         assertThat(dump,containsString("+- ParentedLoader"));
-        assertThat(dump,containsString("|   +- "+Server.class.getClassLoader()));
+        assertThat(dump,containsString("|   +> "+Server.class.getClassLoader()));
         assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
     }
     
@@ -99,8 +99,8 @@ public class ClassLoaderDumptTest
         server.dump(out);
         String dump = out.toString();
         assertThat(dump,containsString("+- TopLoader"));
-        assertThat(dump,containsString("|   +- MiddleLoader"));
-        assertThat(dump,containsString("|       +- "+Server.class.getClassLoader()));
+        assertThat(dump,containsString("|   +> MiddleLoader"));
+        assertThat(dump,containsString("|       +> "+Server.class.getClassLoader()));
         assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
     }
     
@@ -123,8 +123,8 @@ public class ClassLoaderDumptTest
         server.dump(out);
         String dump = out.toString();
         assertThat(dump,containsString("+- TopLoader"));
-        assertThat(dump,containsString("|   +- DumpableClassLoader"));
-        assertThat(dump,not(containsString("|       +- "+Server.class.getClassLoader())));
+        assertThat(dump,containsString("|   +> DumpableClassLoader"));
+        assertThat(dump,not(containsString("|       +> "+Server.class.getClassLoader())));
         assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
     }
     
@@ -185,14 +185,14 @@ public class ClassLoaderDumptTest
         String dump = out.toString();
         // System.err.println(dump);
         assertThat(dump,containsString("+- TopLoader"));
-        assertThat(dump,containsString("|   +- file:/ONE"));
-        assertThat(dump,containsString("|   +- file:/TWO"));
-        assertThat(dump,containsString("|   +- file:/THREE"));
-        assertThat(dump,containsString("|   +- MiddleLoader"));
-        assertThat(dump,containsString("|       +- file:/one"));
-        assertThat(dump,containsString("|       +- file:/two"));
-        assertThat(dump,containsString("|       +- file:/three"));
-        assertThat(dump,containsString("|       +- "+Server.class.getClassLoader()));
+        assertThat(dump,containsString("|   |   +> file:/ONE"));
+        assertThat(dump,containsString("|   |   +> file:/TWO"));
+        assertThat(dump,containsString("|   |   +> file:/THREE"));
+        assertThat(dump,containsString("|   +> MiddleLoader"));
+        assertThat(dump,containsString("|       |   +> file:/one"));
+        assertThat(dump,containsString("|       |   +> file:/two"));
+        assertThat(dump,containsString("|       |   +> file:/three"));
+        assertThat(dump,containsString("|       +> "+Server.class.getClassLoader()));
         assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
     }
 }

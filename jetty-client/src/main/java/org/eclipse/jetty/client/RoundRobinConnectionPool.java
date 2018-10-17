@@ -192,8 +192,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
         {
             connections = new ArrayList<>(entries);
         }
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, connections);
+        ContainerLifeCycle.dumpObjects(out, indent, out, connections);
     }
 
     @Override
