@@ -64,8 +64,6 @@ public class OneWebApp
 
         // Start things up! 
         server.start();
-        
-        server.dumpStdErr();
 
         server.dumpStdErr();
         
