@@ -658,10 +658,12 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         try
         {
+            String s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
+
             if (o instanceof LifeCycle)
-                out.append(String.valueOf(o)).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
+                out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
             else
-                out.append(String.valueOf(o)).append("\n");
+                out.append(s).append("\n");
         }
         catch (Throwable th)
         {
