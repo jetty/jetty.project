@@ -26,9 +26,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
- * Preconfigure DescriptorProcessor
+ * ExtraXmlDescriptorProcessor
  *
- * Saves literal XML snippets
+ * Saves literal XML snippets from web.xml.
  *
  */
 

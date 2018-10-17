@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -38,6 +40,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -60,7 +65,7 @@ import org.eclipse.jetty.util.log.Logger;
  * type.
  * </p>
  */
-public class Configurations extends AbstractList<Configuration>
+public class Configurations extends AbstractList<Configuration> implements Dumpable
 {        
     private static final Logger LOG = Log.getLogger(Configurations.class);
     
@@ -440,7 +445,7 @@ public class Configurations extends AbstractList<Configuration>
     @Override
     public String toString()
     {
-        return getConfigurations().toString();
+        return String.format("%s@%x",this.getClass(),this.hashCode());
     }
 
     public void preConfigure(WebAppContext webapp) throws Exception
@@ -487,5 +492,20 @@ public class Configurations extends AbstractList<Configuration>
             configuration.postConfigure(webapp);
         }
     }
-    
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out, this);
+        ContainerLifeCycle.dump(out,indent,
+            Collections.singletonList(new DumpableCollection("Known",Configurations.getKnown())),
+            Collections.singletonList(new DumpableCollection("Configurations",this)));
+
+    }
 }

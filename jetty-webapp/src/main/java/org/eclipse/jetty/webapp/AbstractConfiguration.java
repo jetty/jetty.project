@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 public class AbstractConfiguration implements Configuration
 {
-    protected static final boolean ENABLE_BY_DEFAULT = true;
     private final boolean _disabledByDefault;
     private final List<String> _after=new ArrayList<>();
     private final List<String> _beforeThis=new ArrayList<>();
