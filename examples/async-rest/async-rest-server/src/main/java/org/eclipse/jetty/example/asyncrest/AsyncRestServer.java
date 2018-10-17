@@ -22,22 +22,32 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.ClassMatcher;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class DemoServer
+import javax.servlet.http.HttpServlet;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+public class AsyncRestServer
 {
     public static void main(String[] args)
         throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home",".");
+        // Find the async-reset webapp based on common IDE working directories
+        // TODO import webapp as maven artifact
+        Path home = FileSystems.getDefault().getPath(System.getProperty("jetty.home",".")).toAbsolutePath();
+        Path war = home.resolve("../async-rest-webapp/target/async-rest/");
+        if (!Files.exists(war))
+            war = home.resolve("examples/async-rest/async-rest-webapp/target/async-rest/");
+        if (!Files.exists(war))
+            throw new IllegalArgumentException("Cannot find async-rest webapp");
 
+        // Build a demo server
         Server server = new Server(Integer.getInteger("jetty.http.port",8080).intValue());
-                
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setWar(jetty_home+"/target/async-rest/");
-        webapp.setParentLoaderPriority(true);
-        webapp.setServerClassMatcher(new ClassMatcher());
+        webapp.setWar(war.toAbsolutePath().toString());
         server.setHandler(webapp);
-        
+
         server.start();
         server.join();
     }

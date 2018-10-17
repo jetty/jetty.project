@@ -13,5 +13,6 @@
   <modules>
     <module>async-rest-jar</module>
     <module>async-rest-webapp</module>
+    <module>async-rest-server</module>
   </modules>
 </project>
