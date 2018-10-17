@@ -226,7 +226,7 @@
                     <JDURL>http://download.eclipse.org/jetty/stable-9/apidocs</JDURL>
                     <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
                     <SRCDIR>${basedir}/../jetty.project/</SRCDIR>
-                    <GITBROWSEURL>https://github.com/eclipse/jetty.project/master</GITBROWSEURL>
+                    <GITBROWSEURL>https://github.com/eclipse/jetty.project/jetty-10.0.x</GITBROWSEURL>
                     <icons>font</icons>
                     <pagenums />
                     <toc />

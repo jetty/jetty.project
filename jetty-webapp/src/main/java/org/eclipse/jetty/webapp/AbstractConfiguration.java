@@ -26,12 +26,11 @@ import java.util.stream.Collectors;
 
 public class AbstractConfiguration implements Configuration
 {
-    protected static final boolean ENABLE_BY_DEFAULT = true;
     private final boolean _disabledByDefault;
     private final List<String> _after=new ArrayList<>();
     private final List<String> _beforeThis=new ArrayList<>();
-    private final ClasspathPattern _system=new ClasspathPattern();
-    private final ClasspathPattern _server=new ClasspathPattern();
+    private final ClassMatcher _system=new ClassMatcher();
+    private final ClassMatcher _server=new ClassMatcher();
 
     protected AbstractConfiguration()
     {
@@ -149,13 +148,13 @@ public class AbstractConfiguration implements Configuration
     }
 
     @Override
-    public ClasspathPattern getSystemClasses()
+    public ClassMatcher getSystemClasses()
     {
         return _system;
     }
 
     @Override
-    public ClasspathPattern getServerClasses()
+    public ClassMatcher getServerClasses()
     {
         return _server;
     }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -658,10 +659,12 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         try
         {
+            String s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
+
             if (o instanceof LifeCycle)
-                out.append(String.valueOf(o)).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
+                out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
             else
-                out.append(String.valueOf(o)).append("\n");
+                out.append(s).append("\n");
         }
         catch (Throwable th)
         {

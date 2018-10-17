@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -33,7 +34,10 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -206,10 +210,10 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
-        if(_filter instanceof Dumpable) {
-            ((Dumpable) _filter).dump(out, indent);
-        }
+        out.append(toString()).append(" - ").append(AbstractLifeCycle.getState(this)).append('\n');
+        ContainerLifeCycle.dump(out,indent,
+            Collections.singletonList(_filter),
+            Collections.singletonList(new DumpableCollection("initParams", _initParams.entrySet())));
     }
 
     /* ------------------------------------------------------------ */

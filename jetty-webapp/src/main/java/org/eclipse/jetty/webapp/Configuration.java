@@ -87,14 +87,14 @@ public interface Configuration
     default Collection<String> getDependents(){ return Collections.emptyList(); }
 
     /** Get the system classes associated with this Configuration.
-     * @return ClasspathPattern of system classes.
+     * @return ClassMatcher of system classes.
      */
-    default ClasspathPattern getSystemClasses() { return new ClasspathPattern();  }
+    default ClassMatcher getSystemClasses() { return new ClassMatcher();  }
 
     /** Get the system classes associated with this Configuration.
-     * @return ClasspathPattern of server classes.
+     * @return ClassMatcher of server classes.
      */
-    default ClasspathPattern getServerClasses() { return new ClasspathPattern();  }
+    default ClassMatcher getServerClasses() { return new ClassMatcher();  }
     
     /** Set up for configuration.
      * <p>
