@@ -61,7 +61,7 @@ ____
 ==== The jetty-logging.properties file
 
 By default, the internal Jetty Logging discovery mechanism will load logging specific properties from a classpath resource called `jetty-logging.properties` and then initialize the Logging from a combination of properties found in that file, along with any System Properties.
-A typical jetty-logging.properties file will include at least the declaration of which logging implementation you want to use by defining a value for the `org.eclipse.jetty.util.log.class` property.
+A typical `jetty-logging.properties` file will include at least the declaration of which logging implementation you want to use by defining a value for the `org.eclipse.jetty.util.log.class` property.
 
 Examples for various logging frameworks can be found later in this documentation.
 

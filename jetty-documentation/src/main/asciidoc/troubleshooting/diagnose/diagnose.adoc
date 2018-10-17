@@ -21,6 +21,7 @@
 === Diagnosing Issues In Jetty
 
 How to check the server if you think there is a problem::
+* Logging Review
 * checking CPU
 * checking FDs
 * hitting static resources
@@ -29,3 +30,18 @@ How to check the server if you think there is a problem::
 * creating new sessions
 * getting thread dump(s)  -- DONE - see dump-tool.adoc
 * getting server dump(s) -- DONE - see dump-tool.adoc
+
+==== Server Logging
+
+If you have not already done so, you should familiarize yourself with link:#configuring-jetty-logging[server logging in Jetty.]
+Jetty supports several flavors of server logging, all of which can be used to provide vital insight into how your Jetty instance is running.
+
+==== System Status
+
+In addition to the server logs, it is also important to capture the exact status of the system running Jetty when an error occurs.
+What does the CPU load look like?
+How much RAM is being used?
+Is there an abnormal amount of system read/write?
+What are the network statistics?
+
+Having a holistic view of the system is just as critical as a stacktrace or server log file.
