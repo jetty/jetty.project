@@ -427,19 +427,30 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             {
                 Configuration c=i.next();
                 if(c.getClass().getName().equals(replaces.getName()) 
-                || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
+                        || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
                 {
-                    i.set(configuration);
-                    return;
+                    i.remove();
+                    break;
                 }
             }
-
-            _configurations.add(configuration);
-            return;
         }
 
-        if (!_configurations.stream().map(c->c.getClass().getName()).anyMatch(n->{return name.equals(n);}))
-            _configurations.add(configuration);
+        //check if any existing configurations replace the one we're adding
+        for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+        {
+            Configuration c=i.next();
+            Class<? extends Configuration> r = c.replaces();
+            if (r != null)
+            {
+                if (r.getName().equals(configuration.getClass().getName()))
+                    return; //skip the addition, a replacement is already present
+            }
+
+            if (c.getClass().getName().equals(configuration.getClass().getName()))
+                return; //don't add same one twice
+        }
+
+        _configurations.add(configuration);
     }
 
     @Override
