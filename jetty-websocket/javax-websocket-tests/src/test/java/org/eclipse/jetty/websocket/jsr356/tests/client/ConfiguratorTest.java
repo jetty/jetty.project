@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.eclipse.jetty.websocket.jsr356.tests.WSEndpointTracker;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.EndpointConfig;
@@ -33,9 +30,12 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
+import org.eclipse.jetty.websocket.jsr356.tests.WSEndpointTracker;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
@@ -103,9 +103,7 @@ public class ConfiguratorTest
     {
         server = new LocalServer();
         server.start();
-        server.registerWebSocket("/", (req,resp) -> {
-            return new EchoSocket();
-        });
+        server.getServerContainer().addEndpoint(EchoSocket.class);
     }
 
     @AfterAll
@@ -142,6 +140,5 @@ public class ConfiguratorTest
         assertThat("configurator.response",configurator.response, notNullValue());
 
         session.close();
-
     }
 }
