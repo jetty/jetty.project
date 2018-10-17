@@ -18,6 +18,16 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpRequest;
@@ -54,16 +64,6 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
-
 public abstract class UpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
     public static UpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
@@ -79,7 +79,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
     }
 
     private static final Logger LOG = Log.getLogger(UpgradeRequest.class);
-    protected final CompletableFuture<FrameHandler.CoreSession> fut;
+    protected final CompletableFuture<FrameHandler.CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
     /** Offered Extensions */
@@ -114,7 +114,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         }
 
         this.wsClient = webSocketClient;
-        this.fut = new CompletableFuture<>();
+        this.futureCoreSession = new CompletableFuture<>();
         method(HttpMethod.GET);
         version(HttpVersion.HTTP_1_1);
 
@@ -181,7 +181,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
     public CompletableFuture<FrameHandler.CoreSession> sendAsync()
     {
         send(this);
-        return fut;
+        return futureCoreSession;
     }
 
     @SuppressWarnings("Duplicates")
@@ -235,7 +235,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
 
     protected void handleException(Throwable failure)
     {
-        fut.completeExceptionally(failure);
+        futureCoreSession.completeExceptionally(failure);
     }
 
     @SuppressWarnings("Duplicates")
@@ -342,7 +342,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         // Now swap out the connection
         endp.upgrade(wsConnection);
 
-        fut.complete(wsChannel);
+        futureCoreSession.complete(wsChannel);
     }
 
     /**

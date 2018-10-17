@@ -33,22 +33,20 @@ public class ClientUpgradeRequestImpl extends org.eclipse.jetty.websocket.core.c
 {
     private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;
-    private final CompletableFuture<Session> onOpenFuture;
-    private final CompletableFuture<Session> futureSession;
-
+    private final CompletableFuture<Session> futureJavaxSession;
     public ClientUpgradeRequestImpl(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
-        this.onOpenFuture = new CompletableFuture<>();
-        this.futureSession = super.fut.thenCombine(onOpenFuture, (channel, session) -> session);
+        this.futureJavaxSession = new CompletableFuture<>();
     }
 
+    @Override
     protected void handleException(Throwable failure)
     {
         super.handleException(failure);
-        onOpenFuture.completeExceptionally(failure);
+        futureJavaxSession.completeExceptionally(failure);
     }
 
     @Override
@@ -58,13 +56,13 @@ public class ClientUpgradeRequestImpl extends org.eclipse.jetty.websocket.core.c
         UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
 
         JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
-            upgradeRequest, upgradeResponse, onOpenFuture);
+            upgradeRequest, upgradeResponse, futureJavaxSession);
 
         return frameHandler;
     }
 
     public CompletableFuture<Session> getFutureSession()
     {
-        return futureSession;
+        return futureJavaxSession;
     }
 }

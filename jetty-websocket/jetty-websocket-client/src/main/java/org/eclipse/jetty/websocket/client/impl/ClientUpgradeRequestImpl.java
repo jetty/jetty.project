@@ -51,10 +51,7 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
         this.websocketPojo = websocketPojo;
 
         this.onOpenFuture = new CompletableFuture<>();
-        this.futureSession = super.fut.thenCombine(onOpenFuture, (channel, session) -> {
-            containerContext.addBean(session, true);
-            return session;
-        });
+        this.futureSession = super.futureCoreSession.thenCombine(onOpenFuture, (channel, session) -> session);
 
         if (request != null)
         {

@@ -206,6 +206,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 throw new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause);
             }
         }
+
+        container.removeBean(session);
     }
 
 
@@ -278,6 +280,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             }
         }
 
+        container.addBean(session, true);
         futureSession.complete(session);
     }
 
