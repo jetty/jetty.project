@@ -214,7 +214,7 @@ public class ConfigurationsTest
                 ConfigFoo.class.getName()
         );
         
-        configs.add(ConfigDick.class.getName());
+        configs.add(ReplacementDick.class.getName());
         configs.sort();
 
         assertThat(configs.stream().map(c->c.getClass().getName()).collect(toList()),
@@ -226,14 +226,14 @@ public class ConfigurationsTest
                            ConfigZ.class.getName(),
                            ConfigTom.class.getName(),
                            AnotherReplacementDick.class.getName(),
-                           ConfigDick.class.getName(),
                            ConfigHarry.class.getName(),
                            ConfigAdditionalHarry.class.getName()
                            ));
         
         assertThat(configs.stream().map(c->c.getClass().getName()).collect(toList()),
                    not(contains(
-                           ReplacementDick.class.getName()
+                           ReplacementDick.class.getName(),
+                           ConfigDick.class.getName()
                            )));
     }
     

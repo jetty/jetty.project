@@ -401,13 +401,10 @@ public class Configurations extends AbstractList<Configuration>
                 if(c.getClass().getName().equals(replaces.getName()) 
                         || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
                 {
-                    i.set(configuration);
-                    return;
+                    i.remove();
+                    break;
                 }
             }
-
-            _configurations.add(configuration);
-            return;
         }
 
         //check if any existing configurations replace the one we're adding
@@ -424,6 +421,7 @@ public class Configurations extends AbstractList<Configuration>
             if (c.getClass().getName().equals(configuration.getClass().getName()))
                 return; //don't add same one twice
         }
+
         _configurations.add(configuration);
     }
 
