@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jsr356.server.internal.AnnotatedServerEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.server.internal.UndefinedServerEndpointConfig;
-import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
@@ -73,7 +73,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
 
-    private final WebSocketNegotiatorMap _webSocketNegotiatorMap;
+    private final WebSocketCreatorMapping _webSocketCreatorMapping;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private long asyncSendTimeout = -1;
@@ -83,13 +83,13 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     /**
      * Main entry point for {@link JavaxWebSocketServerContainerInitializer}.
      *
-     * @param webSocketNegotiatorMap the {@link WebSocketNegotiatorMap} that this container belongs to
+     * @param webSocketCreatorMapping the {@link WebSocketCreatorMapping} that this container belongs to
      * @param httpClient the {@link HttpClient} instance to use
      */
-    public JavaxWebSocketServerContainer(WebSocketNegotiatorMap webSocketNegotiatorMap, HttpClient httpClient, Executor executor)
+    public JavaxWebSocketServerContainer(WebSocketCreatorMapping webSocketCreatorMapping, HttpClient httpClient, Executor executor)
     {
         super(new WebSocketCoreClient(httpClient));
-        this._webSocketNegotiatorMap = webSocketNegotiatorMap;
+        this._webSocketCreatorMapping = webSocketCreatorMapping;
         this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
@@ -97,7 +97,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public ByteBufferPool getBufferPool()
     {
-        return this._webSocketNegotiatorMap.getBufferPool();
+        return this._webSocketCreatorMapping.getBufferPool();
     }
 
     @Override
@@ -109,7 +109,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return this._webSocketNegotiatorMap.getExtensionRegistry();
+        return this._webSocketCreatorMapping.getExtensionRegistry();
     }
 
     @Override
@@ -121,7 +121,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return this._webSocketNegotiatorMap.getObjectFactory();
+        return this._webSocketCreatorMapping.getObjectFactory();
     }
 
     @Override
@@ -242,8 +242,8 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     {
         frameHandlerFactory.createMetadata(config.getEndpointClass(), config);
 
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this._webSocketNegotiatorMap.getExtensionRegistry());
-        this._webSocketNegotiatorMap.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this._webSocketCreatorMapping.getExtensionRegistry());
+        this._webSocketCreatorMapping.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
     }
 
     @Override
@@ -282,20 +282,20 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     public int getDefaultMaxBinaryMessageBufferSize()
     {
         // TODO: warn on long -> int conversion issue
-        return (int) this._webSocketNegotiatorMap.getDefaultMaxBinaryMessageSize();
+        return (int) this._webSocketCreatorMapping.getDefaultMaxBinaryMessageSize();
     }
     
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
-        return this._webSocketNegotiatorMap.getDefaultIdleTimeout().toMillis();
+        return this._webSocketCreatorMapping.getDefaultIdleTimeout().toMillis();
     }
     
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
         // TODO: warn on long -> int conversion issue
-        return (int) this._webSocketNegotiatorMap.getDefaultMaxTextMessageSize();
+        return (int) this._webSocketCreatorMapping.getDefaultMaxTextMessageSize();
     }
     
     @Override
@@ -307,18 +307,18 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
-        this._webSocketNegotiatorMap.setDefaultMaxBinaryMessageSize(max);
+        this._webSocketCreatorMapping.setDefaultMaxBinaryMessageSize(max);
     }
     
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
-        this._webSocketNegotiatorMap.setDefaultIdleTimeout(Duration.ofMillis(ms));
+        this._webSocketCreatorMapping.setDefaultIdleTimeout(Duration.ofMillis(ms));
     }
     
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
-        this._webSocketNegotiatorMap.setDefaultMaxTextMessageSize(max);
+        this._webSocketCreatorMapping.setDefaultMaxTextMessageSize(max);
     }
 }

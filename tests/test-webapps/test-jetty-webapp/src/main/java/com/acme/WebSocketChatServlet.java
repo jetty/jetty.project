@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 @SuppressWarnings("serial")
 public class WebSocketChatServlet extends WebSocketServlet implements WebSocketCreator
@@ -62,7 +62,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     }
 
     @Override
-    public void configure(WebSocketNegotiatorMap factory)
+    public void configure(WebSocketServletFactory factory)
     {
         factory.addMapping(factory.parsePathSpec("/"), this);
     }

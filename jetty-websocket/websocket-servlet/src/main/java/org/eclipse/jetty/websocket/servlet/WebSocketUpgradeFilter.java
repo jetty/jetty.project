@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -47,7 +48,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 
 /**
- * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketNegotiator} objects.
+ * Inline Servlet Filter to capture WebSocket upgrade requests.
  */
 @ManagedObject("WebSocket Upgrade Filter")
 public class WebSocketUpgradeFilter implements Filter, Dumpable
@@ -73,8 +74,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             return filter;
         }
 
-        WebSocketNegotiatorMap factory = new WebSocketNegotiatorMap();
-        context.setAttribute(WebSocketNegotiatorMap.class.getName(), factory);
+        WebSocketCreatorMapping factory = new WebSocketCreatorMapping();
+        context.setAttribute(WebSocketCreatorMapping.class.getName(), factory);
 
         // Dynamically add filter
         filter = new WebSocketUpgradeFilter(factory);
@@ -122,17 +123,17 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return configureContext((ServletContextHandler) handler);
     }
 
-    private final WebSocketNegotiatorMap factory;
+    private final WebSocketCreatorMapping factory;
     private String instanceKey;
     private boolean alreadySetToAttribute = false;
 
     @SuppressWarnings("unused")
     public WebSocketUpgradeFilter()
     {
-        this(new WebSocketNegotiatorMap());
+        this(new WebSocketCreatorMapping());
     }
 
-    public WebSocketUpgradeFilter(WebSocketNegotiatorMap factory)
+    public WebSocketUpgradeFilter(WebSocketCreatorMapping factory)
     {
         this.factory = factory;
     }
@@ -230,7 +231,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     }
 
     @ManagedAttribute(value = "factory", readonly = true)
-    public WebSocketNegotiatorMap getFactory()
+    public WebSocketCreatorMapping getFactory()
     {
         return factory;
     }

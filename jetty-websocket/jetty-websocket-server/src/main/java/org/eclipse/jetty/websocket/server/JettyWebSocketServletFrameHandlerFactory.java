@@ -24,12 +24,12 @@ import org.eclipse.jetty.websocket.server.internal.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.server.internal.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-public class JettyWebSocketServletFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
+public class JettyWebSocketServletFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory implements WebSocketServletFrameHandlerFactory
 {
     public JettyWebSocketServletFrameHandlerFactory(Executor executor)
     {

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.servlet.internal;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
@@ -37,6 +37,11 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -44,16 +49,17 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
 /**
  */
-public class WebSocketNegotiatorMap implements Dumpable, FrameHandler.CoreCustomizer
+public class WebSocketCreatorMapping implements Dumpable, FrameHandler.CoreCustomizer, WebSocketServletFactory
 {
-    private static final Logger LOG = Log.getLogger(WebSocketNegotiatorMap.class);
-    private final PathMappings<WebSocketNegotiator> mappings = new PathMappings<>();
-    private final Set<FrameHandlerFactory> frameHandlerFactories = new HashSet<>();
+    private static final Logger LOG = Log.getLogger(WebSocketCreatorMapping.class);
+    private final PathMappings<CreatorNegotiator> mappings = new PathMappings<>();
+    private final Set<WebSocketServletFrameHandlerFactory> frameHandlerFactories = new HashSet<>();
     private Duration defaultIdleTimeout;
     private int defaultInputBufferSize;
     private long defaultMaxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
@@ -66,12 +72,12 @@ public class WebSocketNegotiatorMap implements Dumpable, FrameHandler.CoreCustom
     private WebSocketExtensionRegistry extensionRegistry;
     private ByteBufferPool bufferPool;
 
-    public WebSocketNegotiatorMap()
+    public WebSocketCreatorMapping()
     {
         this(new WebSocketExtensionRegistry(), new DecoratedObjectFactory(), new MappedByteBufferPool());
     }
 
-    public WebSocketNegotiatorMap(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
+    public WebSocketCreatorMapping(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
     {
         this.extensionRegistry = extensionRegistry;
         this.objectFactory = objectFactory;
@@ -87,65 +93,35 @@ public class WebSocketNegotiatorMap implements Dumpable, FrameHandler.CoreCustom
      * </p>
      *
      * @param pathSpec the pathspec to respond on
-     * @param creator the websocket creator to activate on the provided mapping.
+     * @param creator  the websocket creator to activate on the provided mapping.
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
     {
-        mappings.put(pathSpec, WebSocketNegotiator.from(negotiation ->
-            {
-                ClassLoader old = Thread.currentThread().getContextClassLoader();
-                try
-                {
-                    Thread.currentThread().setContextClassLoader(getContextClassloader());
-
-                    ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
-                    ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
-
-                    Object websocketPojo = creator.createWebSocket(upgradeRequest, upgradeResponse);
-
-                    // Handling for response forbidden (and similar paths)
-                    if (upgradeResponse.isCommitted())
-                        return null;
-
-                    if (websocketPojo == null)
-                    {
-                        // no creation, sorry
-                        upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
-                        return null;
-                    }
-
-                    for (FrameHandlerFactory factory : frameHandlerFactories)
-                    {
-                        FrameHandler frameHandler = factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
-                        if (frameHandler != null)
-                            return frameHandler;
-                    }
-
-                    if (frameHandlerFactories.isEmpty())
-                        LOG.warn("There are no {} instances registered", FrameHandlerFactory.class);
-
-                    // No factory worked!
-                    return null;
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeIOException(e);
-                }
-                catch (URISyntaxException e)
-                {
-                    throw new RuntimeIOException("Unable to negotiate websocket due to mangled request URI", e);
-                }
-                finally
-                {
-                    Thread.currentThread().setContextClassLoader(old);
-                }
-            },
-            getExtensionRegistry(),
-            getObjectFactory(),
-            getBufferPool(),
-            this));
+        // Handling for response forbidden (and similar paths)
+        // no creation, sorry
+        // No factory worked!
+        mappings.put(pathSpec, new CreatorNegotiator(creator));
     }
 
+    @Override
+    public WebSocketCreator getMapping(PathSpec pathSpec)
+    {
+        CreatorNegotiator cn = mappings.get(pathSpec);
+        return cn==null?null:cn.getWebSocketCreator();
+    }
+
+    @Override
+    public WebSocketCreator getMatch(String target)
+    {
+        MappedResource<CreatorNegotiator> resource = mappings.getMatch(target);
+        return resource==null?null:resource.getResource().getWebSocketCreator();
+    }
+
+    @Override
+    public boolean removeMapping(PathSpec pathSpec)
+    {
+        return mappings.remove(pathSpec);
+    }
 
     @Override
     public String dump()
@@ -189,10 +165,10 @@ public class WebSocketNegotiatorMap implements Dumpable, FrameHandler.CoreCustom
         return this.objectFactory;
     }
 
-    public void addFrameHandlerFactory(FrameHandlerFactory frameHandlerFactory)
+    public void addFrameHandlerFactory(WebSocketServletFrameHandlerFactory webSocketServletFrameHandlerFactory)
     {
         // TODO should this be done by a ServiceLoader?
-        this.frameHandlerFactories.add(frameHandlerFactory);
+        this.frameHandlerFactories.add(webSocketServletFrameHandlerFactory);
     }
 
     public void setDefaultIdleTimeout(Duration duration)
@@ -260,7 +236,6 @@ public class WebSocketNegotiatorMap implements Dumpable, FrameHandler.CoreCustom
         this.defaultAutoFragment = autoFragment;
     }
 
-
     /**
      * Get the matching {@link MappedResource} for the provided target.
      *
@@ -269,11 +244,9 @@ public class WebSocketNegotiatorMap implements Dumpable, FrameHandler.CoreCustom
      */
     public WebSocketNegotiator getMatchedNegotiator(String target, Consumer<PathSpec> pathSpecConsumer)
     {
-        MappedResource<WebSocketNegotiator> mapping = this.mappings.getMatch(target);
+        MappedResource<CreatorNegotiator> mapping = this.mappings.getMatch(target);
         if (mapping == null)
-        {
             return null;
-        }
 
         pathSpecConsumer.accept(mapping.getPathSpec());
         return mapping.getResource();
@@ -326,5 +299,77 @@ public class WebSocketNegotiatorMap implements Dumpable, FrameHandler.CoreCustom
         session.setInputBufferSize(getDefaultInputBufferSize());
         session.setOutputBufferSize(getDefaultOutputBufferSize());
         session.setMaxFrameSize(getDefaultMaxAllowedFrameSize());
+    }
+
+    private class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
+    {
+        private final WebSocketCreator creator;
+
+        public CreatorNegotiator(WebSocketCreator creator)
+        {
+            super(WebSocketCreatorMapping.this.getExtensionRegistry(), WebSocketCreatorMapping.this.getObjectFactory(),
+                WebSocketCreatorMapping.this.getBufferPool(),
+                WebSocketCreatorMapping.this);
+            this.creator = creator;
+        }
+
+        public WebSocketCreator getWebSocketCreator()
+        {
+            return creator;
+        }
+
+        @Override
+        public FrameHandler negotiate(Negotiation negotiation1)
+        {
+            return ((Function<Negotiation, FrameHandler>)negotiation ->
+            {
+                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                try
+                {
+                    Thread.currentThread().setContextClassLoader(getContextClassloader());
+
+                    ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
+                    ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
+
+                    Object websocketPojo = creator.createWebSocket(upgradeRequest, upgradeResponse);
+
+                    // Handling for response forbidden (and similar paths)
+                    if (upgradeResponse.isCommitted())
+                        return null;
+
+                    if (websocketPojo == null)
+                    {
+                        // no creation, sorry
+                        upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
+                        return null;
+                    }
+
+                    for (WebSocketServletFrameHandlerFactory factory : frameHandlerFactories)
+                    {
+                        FrameHandler frameHandler = factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
+                        if (frameHandler != null)
+                            return frameHandler;
+                    }
+
+                    if (frameHandlerFactories.isEmpty())
+                        LOG.warn("There are no {} instances registered", WebSocketServletFrameHandlerFactory.class);
+
+                    // No factory worked!
+                    return null;
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeIOException(e);
+                }
+                catch (URISyntaxException e)
+                {
+                    throw new RuntimeIOException("Unable to negotiate websocket due to mangled request URI", e);
+                }
+                finally
+                {
+                    Thread.currentThread().setContextClassLoader(old);
+                }
+            }).apply(negotiation1);
+        }
     }
 }

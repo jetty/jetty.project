@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -264,7 +264,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
             @Override
-            public void configure(WebSocketNegotiatorMap factory)
+            public void configure(WebSocketServletFactory factory)
             {
                 PathSpec pathSpec = factory.parsePathSpec("/");
                 factory.addMapping(pathSpec, creator);

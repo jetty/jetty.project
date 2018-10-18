@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
-import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
 import javax.servlet.ServletContainerInitializer;
@@ -140,7 +140,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
     public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
         WebSocketUpgradeFilter.configureContext(context);
-        WebSocketNegotiatorMap webSocketNegotiatorMap = (WebSocketNegotiatorMap) context.getAttribute(WebSocketNegotiatorMap.class.getName());
+        WebSocketCreatorMapping webSocketCreatorMapping = (WebSocketCreatorMapping) context.getAttribute(WebSocketCreatorMapping.class.getName());
 
         // Find Pre-Existing (Shared?) HttpClient and/or executor
         HttpClient httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
@@ -175,11 +175,11 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         }
 
         // Create the Jetty ServerContainer implementation
-        JavaxWebSocketServerContainer jettyContainer = new JavaxWebSocketServerContainer(webSocketNegotiatorMap, httpClient, executor);
+        JavaxWebSocketServerContainer jettyContainer = new JavaxWebSocketServerContainer(webSocketCreatorMapping, httpClient, executor);
         context.addBean(jettyContainer);
 
-        // Add FrameHandlerFactory to servlet container for this JSR container
-        webSocketNegotiatorMap.addFrameHandlerFactory(jettyContainer.getFrameHandlerFactory());
+        // Add WebSocketServletFrameHandlerFactory to servlet container for this JSR container
+        webSocketCreatorMapping.addFrameHandlerFactory(jettyContainer.getFrameHandlerFactory());
 
         // Store a reference to the ServerContainer per - javax.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);

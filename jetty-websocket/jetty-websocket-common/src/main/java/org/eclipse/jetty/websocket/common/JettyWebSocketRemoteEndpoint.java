@@ -248,9 +248,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private boolean isBatch()
     {
-        if (BatchMode.ON==batchMode)
-            return true;
-        return false;
+        return BatchMode.ON==batchMode;
     }
     
     @Override

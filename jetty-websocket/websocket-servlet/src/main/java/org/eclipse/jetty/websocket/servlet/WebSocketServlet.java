@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -36,7 +37,7 @@ import java.util.List;
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
- * To use this servlet, you will be required to register your websockets with the {@link WebSocketNegotiatorMap} so that it can create your websockets under the
+ * To use this servlet, you will be required to register your websockets with the {@link WebSocketCreatorMapping} so that it can create your websockets under the
  * appropriate conditions.
  * <p>
  * The most basic implementation would be as follows.
@@ -60,7 +61,7 @@ import java.util.List;
  * }
  * </pre>
  * <p>
- * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketNegotiatorMap} handling of creating
+ * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketCreatorMapping} handling of creating
  * WebSockets.<br>
  * All other requests are treated as normal servlet requests.
  * <p>
@@ -85,10 +86,10 @@ import java.util.List;
 public abstract class WebSocketServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(WebSocketServlet.class);
-    private WebSocketNegotiatorMap factory;
+    private WebSocketCreatorMapping factory;
     private final Handshaker handshaker = Handshaker.newInstance();
 
-    public abstract void configure(WebSocketNegotiatorMap factory);
+    public abstract void configure(WebSocketServletFactory factory);
 
     /**
      * @see javax.servlet.GenericServlet#init()
@@ -100,7 +101,7 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             ServletContext ctx = getServletContext();
 
-            factory = new WebSocketNegotiatorMap();
+            factory = new WebSocketCreatorMapping();
             factory.setContextClassLoader(ctx.getClassLoader());
             String max = getInitParameter("maxIdleTime");
             if (max != null)
@@ -144,13 +145,14 @@ public abstract class WebSocketServlet extends HttpServlet
                 factory.setAutoFragment(Boolean.parseBoolean(autoFragment));
             }
 
-            List<FrameHandlerFactory> factories = (List<FrameHandlerFactory>) ctx.getAttribute(FrameHandlerFactory.ATTR_HANDLERS);
+            List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>) ctx.getAttribute(
+                WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
             if (factories!=null)
                 factories.forEach(factory::addFrameHandlerFactory);
 
             configure(factory); // Let user modify factory
 
-            ctx.setAttribute(WebSocketNegotiatorMap.class.getName(), factory);
+            ctx.setAttribute(WebSocketCreatorMapping.class.getName(), factory);
         }
         catch (Throwable x)
         {

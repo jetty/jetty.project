@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -46,7 +46,7 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         context = new ServletContextHandler();
         server.setHandler(context);
 
-        WebSocketNegotiatorMap factory = new WebSocketNegotiatorMap();
+        WebSocketCreatorMapping factory = new WebSocketCreatorMapping();
         HttpClient httpClient = new HttpClient();
 
         container = new JavaxWebSocketServerContainer(factory, httpClient, server.getThreadPool());
