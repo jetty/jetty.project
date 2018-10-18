@@ -509,63 +509,6 @@
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
             </links>
-            <tags>
-              <tag>
-                <name>org.apache.xbean.XBean</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>phase</name>
-                <placement>t</placement>
-                <head>Phase:</head>
-              </tag>
-              <tag>
-                <name>goal</name>
-                <placement>t</placement>
-                <head>Goal:</head>
-              </tag>
-              <tag>
-                <name>description</name>
-                <placement>a</placement>
-                <head>Description:</head>
-              </tag>
-              <tag>
-                <name>parameter</name>
-                <placement>f</placement>
-                <head>Parameter:</head>
-              </tag>
-              <tag>
-                <name>required</name>
-                <placement>f</placement>
-                <head>Required:</head>
-              </tag>
-              <tag>
-                <name>readonly</name>
-                <placement>f</placement>
-                <head>Read-Only:</head>
-              </tag>
-              <tag>
-                <name>execute</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresDependencyResolution</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresProject</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>threadSafe</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-            </tags>
           </configuration>
         </plugin>
         <plugin>
