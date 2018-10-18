@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -55,6 +55,7 @@ import java.util.function.BiConsumer;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
+
     @ServerEndpoint("/echo/text")
     public static class TextEchoSocket
     {
@@ -275,5 +276,10 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     public ServerContainer getServerContainer()
     {
         return serverContainer;
+    }
+
+    public Server getServer()
+    {
+        return server;
     }
 }

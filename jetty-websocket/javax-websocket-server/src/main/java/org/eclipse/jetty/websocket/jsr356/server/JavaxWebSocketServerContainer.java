@@ -89,7 +89,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     public JavaxWebSocketServerContainer(WebSocketNegotiatorMap webSocketNegotiatorMap, HttpClient httpClient, Executor executor)
     {
         super(new WebSocketCoreClient(httpClient));
-        this.coreClient.addBean(httpClient, false);
         this._webSocketNegotiatorMap = webSocketNegotiatorMap;
         this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);

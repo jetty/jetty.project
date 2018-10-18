@@ -37,7 +37,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 {
 
     private static final Logger LOG = Log.getLogger(WebSocketCoreClient.class);
-    private HttpClient httpClient;
+    private final HttpClient httpClient;
     private WebSocketExtensionRegistry extensionRegistry;
     private DecoratedObjectFactory objectFactory;
     private final FrameHandler.CoreCustomizer customizer;
@@ -68,6 +68,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.objectFactory = new DecoratedObjectFactory();
         this.customizer = customizer;
+        addBean(httpClient);
     }
 
     @Override

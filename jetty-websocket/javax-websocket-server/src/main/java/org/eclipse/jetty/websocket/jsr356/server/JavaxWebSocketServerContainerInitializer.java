@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -142,30 +142,36 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         WebSocketUpgradeFilter.configureContext(context);
         WebSocketNegotiatorMap webSocketNegotiatorMap = (WebSocketNegotiatorMap) context.getAttribute(WebSocketNegotiatorMap.class.getName());
 
-        Executor executor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
+        // Find Pre-Existing (Shared?) HttpClient and/or executor
+        HttpClient httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
+        if (httpClient==null)
+            httpClient = (HttpClient) context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
 
-        if (executor == null)
+        Executor executor = httpClient==null?null:httpClient.getExecutor();
+        if (executor==null)
+            executor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
+        if (executor==null)
+            executor = context.getServer().getThreadPool();
+        if (executor==null)
         {
             QueuedThreadPool qtp = new QueuedThreadPool();
             qtp.setName("qtp-Javax-WebSocketServer");
             executor = qtp;
         }
 
-        HttpClient httpClient = null;
-
-        // Find Pre-Existing (Shared) HttpClient
-        httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
-        if (httpClient == null)
+        // Do we need to make a client?
+        if (httpClient==null)
         {
-            httpClient = (HttpClient) context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
-        }
-
-        // Build a new HttpClient
-        if (httpClient == null)
-        {
+            // TODO Do we always need a HttpClient?
+            // TODO Can the client share the websocket or container buffer pool
             httpClient = new HttpClient();
             httpClient.setName("Javax-WebSocketServer@" + Integer.toHexString(httpClient.hashCode()));
+            httpClient.setExecutor(executor);
             context.addBean(httpClient, true);
+        }
+        else if (httpClient.getExecutor()==null)
+        {
+            httpClient.setExecutor(executor);
         }
 
         // Create the Jetty ServerContainer implementation
