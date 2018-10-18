@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.SendHandler;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -30,13 +37,6 @@ import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
-
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.SendHandler;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
 
 public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint, OutgoingFrames
 {
@@ -55,12 +55,12 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
     protected MessageWriter newMessageWriter()
     {
-        return new MessageWriter(channel, session.getMaxTextMessageBufferSize());
+        return new MessageWriter(channel, channel.getOutputBufferSize());
     }
 
     protected MessageOutputStream newMessageOutputStream()
     {
-        return new MessageOutputStream(channel, session.getMaxBinaryMessageBufferSize(), session.getContainerImpl().getBufferPool());
+        return new MessageOutputStream(channel, channel.getOutputBufferSize(), session.getContainerImpl().getBufferPool());
     }
 
     @Override

@@ -18,32 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryStreamMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.PartialStringMessageSink;
-import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
-
-import javax.websocket.CloseReason;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -55,6 +29,33 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import javax.websocket.CloseReason;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.PongMessage;
+import javax.websocket.Session;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryStreamMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 
@@ -111,8 +112,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
-    private int maxTextMessageBufferSize = 65535;
-    private int maxBinaryMessageBufferSize = 65535;
+    private int maxTextMessageBufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
+    private int maxBinaryMessageBufferSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private JavaxWebSocketSession session;
     private Map<Byte, RegisteredMessageHandler> messageHandlerMap;
     private CoreSession coreSession;

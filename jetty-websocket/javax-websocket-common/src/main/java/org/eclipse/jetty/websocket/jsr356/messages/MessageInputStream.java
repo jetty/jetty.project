@@ -18,19 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.
@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MessageInputStream extends InputStream implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(MessageInputStream.class);
-    private static final CallbackBuffer EOF = new CallbackBuffer(Callback.NOOP, ByteBuffer.allocate(0).asReadOnlyBuffer());
+    private static final CallbackBuffer EOF = new CallbackBuffer(Callback.NOOP, BufferUtil.EMPTY_BUFFER);
     private final Deque<CallbackBuffer> buffers = new ArrayDeque<>(2);
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private CallbackBuffer activeFrame;

@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
-
-import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
-import java.util.Objects;
 
 public class PartialStringMessageSink extends AbstractMessageSink
 {
@@ -57,11 +56,14 @@ public class PartialStringMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
 
-                if (size + payload.remaining() > session.getMaxTextMessageBufferSize())
+                //TODO should we enforce maxTextMessageBufferSize on partial messages?
+                /*
+                if ((session.getMaxTextMessageBufferSize() > 0) && (size + payload.remaining() > session.getMaxTextMessageBufferSize()))
                 {
                     throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max text buffer size) %,d",
                             size + payload.remaining(), session.getMaxTextMessageBufferSize()));
                 }
+                */
 
                 size += payload.remaining();
 
