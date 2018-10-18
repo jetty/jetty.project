@@ -281,8 +281,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(indent).append(" +- configuration=").append(configuration.toString()).append("\n");
-        configuration.dump(out, indent);
+        ContainerLifeCycle.dumpObjects(out,indent,this,configuration);
     }
     
     public WebSocketServletFactory getFactory()
