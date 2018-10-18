@@ -451,12 +451,15 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                closeNoExceptions(_selector);
                 _selector = null;
                 if (isRunning())
                     LOG.warn(x);
                 else
+                {
+                    LOG.warn(x.toString());
                     LOG.debug(x);
+                }
+                closeNoExceptions(_selector);
             }
             return false;
         }

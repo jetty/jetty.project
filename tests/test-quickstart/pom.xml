@@ -44,7 +44,6 @@
     <dependency>
       <groupId>javax.transaction</groupId>
       <artifactId>javax.transaction-api</artifactId>
-      <version>1.2</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
@@ -139,7 +138,7 @@
         <executions>
           <execution>
             <id>copy</id>
-            <phase>package</phase>
+            <phase>process-test-classes</phase>
             <goals>
               <goal>copy</goal>
             </goals>

@@ -10,7 +10,8 @@
   <url>http://www.eclipse.org/jetty</url>
   <packaging>jar</packaging>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.${project.artifactId}</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.apache-jsp</bundle-symbolic-name>
+    <jpms-module-name>${project.groupId}.apache.jsp</jpms-module-name>
   </properties>
   <build>
     <plugins>

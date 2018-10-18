@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -209,6 +210,8 @@ public class HttpReceiverOverHTTPTest
 
         ExecutionException e = assertThrows(ExecutionException.class, ()->listener.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(HttpResponseException.class));
+        assertThat(e.getCause().getCause(),instanceOf(BadMessageException.class));
+        assertThat(e.getCause().getCause().getCause(),instanceOf(NumberFormatException.class));
     }
 
     @ParameterizedTest
