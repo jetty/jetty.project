@@ -135,7 +135,7 @@
                 <include>**/*.java</include>
               </includes>
               <excludes>
-                <exclude>**/ClusteredSessionScavengingTest</exclude>
+                <exclude>**/ClusteredSessionScavengingTest.java</exclude>
               </excludes>
             </configuration>
           </plugin>
