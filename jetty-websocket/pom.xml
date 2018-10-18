@@ -24,8 +24,8 @@
     <module>jetty-websocket-server</module>
     <!-- JSR356 Implementation -->
     <module>javax-websocket-common</module>
-    <module>javax-websocket-client-impl</module>
-    <module>javax-websocket-server-impl</module>
+    <module>javax-websocket-client</module>
+    <module>javax-websocket-server</module>
     <module>javax-websocket-tests</module>
   </modules>
 

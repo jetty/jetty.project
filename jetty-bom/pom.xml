@@ -357,12 +357,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>javax-websocket-client-impl</artifactId>
+        <artifactId>javax-websocket-client</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>javax-websocket-server-impl</artifactId>
+        <artifactId>javax-websocket-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
