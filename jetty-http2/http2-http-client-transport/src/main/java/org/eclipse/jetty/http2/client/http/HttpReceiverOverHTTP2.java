@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -187,7 +188,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     @Override
     public void onClosed(Stream stream)
     {
-        getHttpChannel().onStreamClosed(stream);
+        getHttpChannel().onStreamClosed((IStream)stream);
     }
 
     private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)

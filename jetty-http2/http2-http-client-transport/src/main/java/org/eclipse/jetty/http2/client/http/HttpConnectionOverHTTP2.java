@@ -35,8 +35,8 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
-import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -94,7 +94,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Released {}", channel);
-        // Only non-push channels are released.
         if (activeChannels.remove(channel))
         {
             // Recycle only non-failed channels.
@@ -109,12 +108,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         }
     }
 
-    void onStreamClosed(Stream stream, HttpChannelOverHTTP2 channel)
+    void onStreamClosed(IStream stream, HttpChannelOverHTTP2 channel)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} closed for {}", stream, channel);
         channel.setStream(null);
-        getHttpDestination().release(this);
+        // Only non-push channels are released.
+        if (stream.isLocal())
+            getHttpDestination().release(this);
     }
 
     @Override

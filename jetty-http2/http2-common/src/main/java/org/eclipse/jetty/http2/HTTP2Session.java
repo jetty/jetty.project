@@ -763,6 +763,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int localCount = localStreamCount.get();
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
+                // TODO: remove the dump() in the exception message.
                 throw new IllegalStateException("Max local stream count " + maxCount + " exceeded" + System.lineSeparator() + dump());
             if (localStreamCount.compareAndSet(localCount, localCount + 1))
                 break;
