@@ -52,9 +52,7 @@ public class BadMessageException extends RuntimeException
     
     public BadMessageException(int code, String reason)
     {
-        super(code+": "+reason);
-        _code=code;
-        _reason=reason;
+        this(code, reason, null);
     }
     
     public BadMessageException(int code, String reason, Throwable cause)

@@ -333,9 +333,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
                 case SettingsFrame.ENABLE_PUSH:
                 {
+                    boolean enabled = value == 1;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} push for {}", pushEnabled ? "Enabling" : "Disabling", this);
-                    pushEnabled = value == 1;
+                        LOG.debug("{} push for {}", enabled ? "Enabling" : "Disabling", this);
+                    pushEnabled = enabled;
                     break;
                 }
                 case SettingsFrame.MAX_CONCURRENT_STREAMS:

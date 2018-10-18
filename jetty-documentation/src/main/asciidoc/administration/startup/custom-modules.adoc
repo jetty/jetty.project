@@ -79,6 +79,8 @@ If a user does not accept the license agreement, the module will not be activate
 Additional Startup Commands - `[exec]`::
 The `[exec]` section is used to define additional parameters specific to the module.
 These commands are added to the server startup.
+JPMS Module-Path Definitions - `[jpms]`::
+The `[jpms]` section is used to add link:#startup-jpms[JPMS modules] to the module-path for startup when using the `--jpms` command.
 
 [[custom-module-properties]]
 ==== Module Properties

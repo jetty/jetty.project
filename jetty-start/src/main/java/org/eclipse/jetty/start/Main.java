@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
-import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
-import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
-import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +38,11 @@ import java.util.Locale;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSource;
+
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
+import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
+import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
+import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
 
 /**
  * Main start class.
@@ -353,9 +353,13 @@ public class Main
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
         args.resolveExtraXmls();
-        
+
         // ------------------------------------------------------------
-        // 9) Resolve Property Files
+        // 7) JPMS Expansion
+        args.expandJPMS(activeModules);
+
+        // ------------------------------------------------------------
+        // 8) Resolve Property Files
         args.resolvePropertyFiles();
         
         return args;
