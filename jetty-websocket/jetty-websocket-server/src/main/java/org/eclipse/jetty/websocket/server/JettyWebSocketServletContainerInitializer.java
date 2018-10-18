@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
+import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -72,10 +72,12 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>) ctx.getAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
+        // TODO why doesn't the javax side share this approach?
+        List<FrameHandlerFactory> factories = (List<FrameHandlerFactory>) ctx.getAttribute(FrameHandlerFactory.ATTR_HANDLERS);
         if(factories == null)
         {
             factories = new ArrayList<>();
+            ctx.setAttribute(FrameHandlerFactory.ATTR_HANDLERS,factories);
         }
 
         Executor executor = (Executor) ctx.getAttribute("org.eclipse.jetty.server.Executor");

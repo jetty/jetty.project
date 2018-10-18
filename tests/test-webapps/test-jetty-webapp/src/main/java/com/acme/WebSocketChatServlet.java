@@ -26,7 +26,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
 
 @SuppressWarnings("serial")
 public class WebSocketChatServlet extends WebSocketServlet implements WebSocketCreator
@@ -63,7 +62,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     }
 
     @Override
-    public void configure(WebSocketServletFactory factory)
+    public void configure(WebSocketNegotiatorMap factory)
     {
         factory.addMapping(factory.parsePathSpec("/"), this);
     }

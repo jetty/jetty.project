@@ -29,14 +29,14 @@ import org.eclipse.jetty.websocket.jsr356.server.internal.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.jsr356.server.internal.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
+import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.server.ServerEndpoint;
 import java.util.concurrent.CompletableFuture;
 
-public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory implements WebSocketServletFrameHandlerFactory
+public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
     public JavaxWebSocketServerFrameHandlerFactory(JavaxWebSocketContainer container)
     {

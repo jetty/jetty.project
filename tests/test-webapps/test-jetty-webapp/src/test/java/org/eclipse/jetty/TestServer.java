@@ -43,7 +43,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.Configurations;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.junit.jupiter.api.Disabled;
 
 import javax.servlet.ServletException;
@@ -114,9 +116,7 @@ public class TestServer
         // Add restart handler to test the ability to save sessions and restart
         RestartHandler restart = new RestartHandler();
         restart.setHandler(handlers);
-
         server.setHandler(restart);
-
 
         // Setup context
         HashLoginService login = new HashLoginService();
@@ -135,6 +135,11 @@ public class TestServer
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
+        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
+            ".*/test-jetty-webapp/target/classes.*$|" +
+            ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\\.jar$"
+        );
+
         webapp.setAttribute("testAttribute","testValue");
         File sessiondir=File.createTempFile("sessions",null);
         if (sessiondir.exists())
@@ -157,6 +162,7 @@ public class TestServer
 
         server.start();
         server.dumpStdErr();
+
         server.join();
     }
 

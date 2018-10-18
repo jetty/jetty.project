@@ -52,13 +52,14 @@ public class ServletUpgradeResponse
     {
         if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
         {
-            setAcceptedSubProtocol(value);
+            setAcceptedSubProtocol(value); // Can only be one, so set
             return;
         }
 
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name) && getExtensions()!=null)
         {
-            response.setHeader(name,ExtensionConfig.toHeaderValue(getExtensions()));
+            // Move any extensions configs to the headers
+            response.addHeader(name,ExtensionConfig.toHeaderValue(getExtensions()));
             setExtensions(null);
         }
 
@@ -83,10 +84,22 @@ public class ServletUpgradeResponse
     public void setHeader(String name, List<String> values)
     {
         if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-            throw new IllegalArgumentException("use setExtensions");
+        {
+            if (values==null || values.isEmpty())
+                setAcceptedSubProtocol(null);
+            else if (values.size()==1)
+                setAcceptedSubProtocol(values.get(0));
+            else
+                throw new IllegalArgumentException();
+        }
 
         if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
-            throw new IllegalArgumentException("use setAcceptedSubProtocol");
+        {
+            setExtensions(null);
+            response.setHeader(name, null);
+            values.forEach(value->addHeader(name, value));
+            return;
+        }
 
         response.setHeader(name, null); // clear it out first
         values.forEach(value->response.addHeader(name, value));

@@ -20,13 +20,13 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
+import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
 
 public class DummyServerContainer extends JavaxWebSocketServerContainer
 {
     public DummyServerContainer()
     {
-        super(new WebSocketServletFactoryImpl(), new HttpClient(), new QueuedThreadPool());
+        super(new WebSocketNegotiatorMap(), new HttpClient(), new QueuedThreadPool());
         addBean(getHttpClient(), true);
         addBean(getExecutor(), true);
     }

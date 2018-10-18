@@ -19,23 +19,16 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppConfiguration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
-import java.util.ServiceLoader;
-
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the org.eclipse.jetty.websocket package.   
- * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
- * which is unknown to the websocket package.  However, the corresponding {@link ServiceLoader}
- * resource is defined in the websocket package, so that this configuration only be 
- * loaded if the jetty-websocket jars are on the classpath.
+ * be able to see the org.eclipse.jetty.websocket package.
  * </p>
  */
 public class JavaxWebSocketConfiguration extends AbstractConfiguration
@@ -44,7 +37,6 @@ public class JavaxWebSocketConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-        protectAndExpose("org.eclipse.jetty.websocket.core.internal."); // For Extensions via ServiceLoader
         protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
         protectAndExpose("org.eclipse.jetty.websocket.jsr356."); // TODO
     }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -34,7 +35,8 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
 
     public WebSocketExtensionRegistry()
     {
-        ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
+        // Load extensions from container loader
+        ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class,this.getClass().getClassLoader());
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {

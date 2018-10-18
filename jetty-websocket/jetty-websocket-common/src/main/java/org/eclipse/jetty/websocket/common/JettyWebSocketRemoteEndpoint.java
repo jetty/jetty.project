@@ -220,9 +220,8 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendString(String text, WriteCallback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text),
-            Callback.from(callback::writeSuccess,callback::writeFailed),
-            isBatch());
+        Callback cb = callback==null?Callback.NOOP:Callback.from(callback::writeSuccess,callback::writeFailed);
+        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, isBatch());
     }
 
     @Override
@@ -249,13 +248,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private boolean isBatch()
     {
-        switch(batchMode)
-        {
-            case ON:
-                return true;
-            default:
-                return false;
-        }
+        if (BatchMode.ON==batchMode)
+            return true;
+        return false;
     }
     
     @Override

@@ -25,8 +25,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
+import org.eclipse.jetty.websocket.servlet.WebSocketNegotiatorMap;
 
 /**
  * Example of setting up a Jetty WebSocket server
@@ -55,7 +54,7 @@ public class WebSocketServer
     public static class EchoServlet extends WebSocketServlet
     {
         @Override
-        public void configure(WebSocketServletFactory factory)
+        public void configure(WebSocketNegotiatorMap factory)
         {
             factory.addMapping(factory.parsePathSpec("/"), (req,res)->new EchoSocket());
         }

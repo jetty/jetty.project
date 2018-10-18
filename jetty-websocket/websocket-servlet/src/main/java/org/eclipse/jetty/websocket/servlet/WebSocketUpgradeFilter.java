@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -30,8 +29,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletFactoryImpl;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketServletNegotiator;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -45,10 +43,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.EnumSet;
 
 /**
- * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketServletNegotiator} objects.
+ * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketNegotiator} objects.
  */
 @ManagedObject("WebSocket Upgrade Filter")
 public class WebSocketUpgradeFilter implements Filter, Dumpable
@@ -74,8 +73,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             return filter;
         }
 
-        WebSocketServletFactoryImpl factory = new WebSocketServletFactoryImpl();
-        context.setAttribute(WebSocketServletFactory.class.getName(), factory);
+        WebSocketNegotiatorMap factory = new WebSocketNegotiatorMap();
+        context.setAttribute(WebSocketNegotiatorMap.class.getName(), factory);
 
         // Dynamically add filter
         filter = new WebSocketUpgradeFilter(factory);
@@ -123,17 +122,17 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return configureContext((ServletContextHandler) handler);
     }
 
-    private final WebSocketServletFactoryImpl factory;
+    private final WebSocketNegotiatorMap factory;
     private String instanceKey;
     private boolean alreadySetToAttribute = false;
 
     @SuppressWarnings("unused")
     public WebSocketUpgradeFilter()
     {
-        this(new WebSocketServletFactoryImpl());
+        this(new WebSocketNegotiatorMap());
     }
 
-    public WebSocketUpgradeFilter(WebSocketServletFactoryImpl factory)
+    public WebSocketUpgradeFilter(WebSocketNegotiatorMap factory)
     {
         this.factory = factory;
     }
@@ -168,8 +167,14 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                 target = target + httpreq.getPathInfo();
             }
 
-            MappedResource<WebSocketServletNegotiator> resource = factory.getMatchedResource(target);
-            if (resource == null)
+            WebSocketNegotiator negotiator = factory.getMatchedNegotiator(target,pathSpec ->
+            {
+                // Store PathSpec resource mapping as request attribute, for WebSocketCreator
+                // implementors to use later if they wish
+                httpreq.setAttribute(PathSpec.class.getName(), pathSpec);
+            });
+
+            if (negotiator == null)
             {
                 // no match.
                 chain.doFilter(request, response);
@@ -178,14 +183,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("WebSocket Upgrade detected on {} for endpoint {}", target, resource);
+                LOG.debug("WebSocket Upgrade detected on {} for endpoint {}", target, negotiator);
             }
-
-            WebSocketServletNegotiator negotiator = resource.getResource();
-
-            // Store PathSpec resource mapping as request attribute, for WebSocketCreator
-            // implementors to use later if they wish
-            httpreq.setAttribute(PathSpec.class.getName(), resource.getPathSpec());
 
             // We have an upgrade request
             if (handshaker.upgradeRequest(negotiator, httpreq, httpresp))
@@ -226,12 +225,12 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(indent).append(" +- factory=").append(factory.toString()).append("\n");
-        factory.dump(out, indent);
+        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dump(out,indent, Collections.singletonList(factory) );
     }
 
     @ManagedAttribute(value = "factory", readonly = true)
-    public WebSocketServletFactory getFactory()
+    public WebSocketNegotiatorMap getFactory()
     {
         return factory;
     }
@@ -329,11 +328,5 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         context.setAttribute(key, this);
 
         alreadySetToAttribute = true;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s[factory=%s]", this.getClass().getSimpleName(), factory);
     }
 }
