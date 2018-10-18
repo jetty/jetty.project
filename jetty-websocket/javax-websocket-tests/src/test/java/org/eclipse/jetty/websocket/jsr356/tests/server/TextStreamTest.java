@@ -18,6 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -28,19 +40,8 @@ import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TextStreamTest
 {
@@ -68,12 +69,6 @@ public class TextStreamTest
     public void testWith1kMessage() throws Exception
     {
         testEcho(1024);
-    }
-
-    @Test
-    public void testAtMaxDefaultMessageBufferSize() throws Exception
-    {
-        testEcho(container.getDefaultMaxTextMessageBufferSize());
     }
     
     private byte[] newData(int size)
@@ -107,7 +102,20 @@ public class TextStreamTest
             fuzzer.expect(expect);
         }
     }
-    
+
+
+    // TODO These tests incorrectly assumes no frame fragmentation.
+    // When message fragmentation is implemented in PartialStringMessageSink then update
+    // this test to check on the server side for no buffers larger than the maxTextMessageBufferSize.
+
+    @Disabled
+    @Test
+    public void testAtMaxDefaultMessageBufferSize() throws Exception
+    {
+        testEcho(container.getDefaultMaxTextMessageBufferSize());
+    }
+
+    @Disabled
     @Test
     public void testLargerThenMaxDefaultMessageBufferSize() throws Exception
     {

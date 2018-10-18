@@ -56,7 +56,8 @@ public class PartialStringMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
 
-                //TODO should we enforce maxTextMessageBufferSize on partial messages?
+                //TODO we should fragment on maxTextMessageBufferSize not limit
+                //TODO also for PartialBinaryMessageSink
                 /*
                 if ((session.getMaxTextMessageBufferSize() > 0) && (size + payload.remaining() > session.getMaxTextMessageBufferSize()))
                 {
