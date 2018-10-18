@@ -105,7 +105,7 @@ public abstract class Credential implements Serializable
         int l1 = known.length();
         int l2 = unknown.length();
         for (int i = 0; i < l2; ++i)
-            result &= known.charAt(i%l1) == unknown.charAt(i);
+            result &= ((l1==0)?unknown.charAt(l2-i-1):known.charAt(i%l1)) == unknown.charAt(i);
         return result && l1 == l2;
     }
 
@@ -127,7 +127,7 @@ public abstract class Credential implements Serializable
         int l1 = known.length;
         int l2 = unknown.length;
         for (int i = 0; i < l2; ++i)
-            result &= known[i%l1] == unknown[i];
+            result &= ((l1==0)?unknown[l2-i-1]:known[i%l1]) == unknown[i];
         return result && l1 == l2;
     }
 
