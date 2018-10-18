@@ -507,7 +507,7 @@
             <dependency>
               <groupId>org.codehaus.plexus</groupId>
               <artifactId>plexus-java</artifactId>
-              <version>1.0.0-SNAPSHOT</version>
+              <version>0.9.11-SNAPSHOT</version>
             </dependency>
           </dependencies>
           <configuration>
