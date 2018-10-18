@@ -19,7 +19,9 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.stream.Collectors;
 
 import javax.servlet.DispatcherType;
 
@@ -86,11 +88,31 @@ public class FilterMapping implements Dumpable
         throw new IllegalArgumentException(type.toString());
     }
 
+    /* ------------------------------------------------------------ */
+    /** Dispatch type from name
+     * @param type the dispatcher type
+     * @return the type constant ({@link #REQUEST}, {@link #ASYNC}, {@link #FORWARD}, {@link #INCLUDE}, or {@link #ERROR})
+     */
+    public static DispatcherType dispatch(int type)
+    {
+        switch(type)
+        {
+            case REQUEST:
+                return DispatcherType.REQUEST;
+            case ASYNC:
+                return DispatcherType.ASYNC;
+            case FORWARD:
+                return DispatcherType.FORWARD;
+            case INCLUDE:
+                return DispatcherType.INCLUDE;
+            case ERROR:
+                return DispatcherType.ERROR;
+        }
+        throw new IllegalArgumentException(Integer.toString(type));
+    }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-
-
     private int _dispatches=DEFAULT;
     private String _filterName;
     private transient FilterHolder _holder;
@@ -122,7 +144,7 @@ public class FilterMapping implements Dumpable
     /* ------------------------------------------------------------ */
     /** Check if this filter applies to a particular dispatch type.
      * @param type The type of request:
-     *      {@link Handler#REQUEST}, {@link Handler#FORWARD}, {@link Handler#INCLUDE} or {@link Handler#ERROR}.
+     *      {@link #REQUEST}, {@link #FORWARD}, {@link #INCLUDE} or {@link #ERROR}.
      * @return <code>true</code> if this filter applies
      */
     boolean appliesTo(int type)
@@ -295,9 +317,9 @@ public class FilterMapping implements Dumpable
     public String toString()
     {
         return
-        TypeUtil.asList(_pathSpecs)+"/"+
-        TypeUtil.asList(_servletNames)+"=="+
-        _dispatches+"=>"+
+            TypeUtil.asList(_pathSpecs)+"/"+
+            TypeUtil.asList(_servletNames)+"/"+
+            Arrays.stream(DispatcherType.values()).filter(this::appliesTo).collect(Collectors.toSet())+"=>"+
         _filterName;
     }
 

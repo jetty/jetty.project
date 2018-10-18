@@ -1092,7 +1092,7 @@ public class HttpParser
         catch(NumberFormatException e)
         {
             LOG.ignore(e);
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Invalid Content-Length Value");
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Invalid Content-Length Value",e);
         }
     }
 

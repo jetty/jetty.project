@@ -10,7 +10,7 @@
   <name>Jetty :: Ant Plugin</name>
  
   <properties>
-    <bundle-symbolic-name>org.eclipse.jetty.ant</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.ant</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>

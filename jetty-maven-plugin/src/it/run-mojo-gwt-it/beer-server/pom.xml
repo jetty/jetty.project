@@ -74,6 +74,7 @@
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <contentCheck>Please enter your name</contentCheck>
+            <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
             <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>

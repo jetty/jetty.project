@@ -19,14 +19,11 @@
 [[websocket-intro]]
 == WebSocket Introduction
 
-WebSocket is a new protocol for bidirectional communications over HTTP.
+WebSocket is a new protocol for bidirectional communications initiated via HTTP/1.1 upgrade and providing basic message framing, layered over TCP.
+It is based on a low-level framing protocol that delivers messages in either UTF-8 TEXT or BINARY format.
 
-It is based on a low level framing protocol that delivers messages in either UTF-8 TEXT or BINARY format.
-
-A single message in WebSocket can be of any size (the underlying framing however does have a single frame limit of http://en.wikipedia.org/wiki/9223372036854775807[63-bits])
-
+A single message in WebSocket can be of any size (the underlying framing however does have a single frame limit of http://en.wikipedia.org/wiki/9223372036854775807[63-bits]).
 There can be an unlimited number of messages sent.
-
 Messages are sent sequentially, the base protocol does not support interleaved messages.
 
 A WebSocket connection goes through some basic state changes:
@@ -78,11 +75,9 @@ https://datatracker.ietf.org/doc/draft-ietf-hybi-websocket-perframe-compression/
   Per Frame Compression Extension.
 +
 An early extension draft from the Google/Chromium team that would provide WebSocket frame compression.
-+
 perframe-compression using deflate algorithm is present on many versions of Chrome/Chromium.
 +
 Jetty's support for perframe-compression is based on the draft-04 spec.
-+
 This standard is being replaced with permessage-compression.
 
 https://datatracker.ietf.org/doc/draft-tyoshino-hybi-permessage-compression/[permessage-compression]::
@@ -108,12 +103,11 @@ Java WebSocket Server API::
 
 === Enabling WebSocket
 
-To enable websocket, you need to link:#enabling-modules[enable] the `websocket` link:#enabling-modules[module].
+To enable Websocket, you need to enable the `websocket` link:#enabling-modules[module].
 
-Once this module is enabled for your jetty base, it will apply to all webapps deployed to that base.
-If you want to be more selective about which webapps use websocket, then you can:
+Once this module is enabled for your Jetty base, it will apply to all webapps deployed to that base. If you want to be more selective about which webapps use Websocket, then you can:
 
-Disable jsr-356 for a particular webapp:::
+Disable JSR-356 for a particular webapp:::
   You can disable jsr-356 for a particular webapp by setting the link:#context_attributes[context attribute] `org.eclipse.jetty.websocket.jsr356` to `false`.
   This will mean that websockets are not available to your webapp, however deployment time   scanning for websocket-related classes such as endpoints will still occur.
   This can be a significant impost if your webapp contains a lot of classes and/or jar files.

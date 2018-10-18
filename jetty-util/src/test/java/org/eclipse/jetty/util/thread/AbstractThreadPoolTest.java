@@ -18,29 +18,27 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
-import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class AbstractThreadPoolTest
 {
     private static int originalCoreCount;
 
-    @BeforeClass
+    @BeforeAll
     public static void saveState()
     {
         originalCoreCount = ProcessorUtils.availableProcessors();
     }
 
-    @AfterClass
+    @AfterAll
     public static void restoreState()
     {
         ProcessorUtils.setAvailableProcessors(originalCoreCount);
@@ -58,11 +56,11 @@ public abstract class AbstractThreadPoolTest
         try
         {
             pool.getThreadPoolBudget().leaseTo(this,3);
-            Assert.fail();
+            fail();
         }
         catch(IllegalStateException e)
         {
-            Assert.assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
+            assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
         }
 
         pool.getThreadPoolBudget().leaseTo(this,1);
@@ -80,14 +78,14 @@ public abstract class AbstractThreadPoolTest
         try
         {
             pool.setMaxThreads(1);
-            Assert.fail();
+            fail();
         }
         catch(IllegalStateException e)
         {
-            Assert.assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
+            assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
         }
 
-        Assert.assertThat(pool.getMaxThreads(),Matchers.is(3));
+        assertThat(pool.getMaxThreads(),Matchers.is(3));
         
     }
     

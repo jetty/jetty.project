@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
@@ -63,11 +64,16 @@ public class ErrorPageTest
         context.addServlet(FailServlet.class, "/fail/*");
         context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         context.addServlet(ErrorServlet.class, "/error/*");
+        context.addServlet(AppServlet.class, "/app/*");
+        context.addServlet(LongerAppServlet.class, "/longer.app/*");
         
         ErrorPageErrorHandler error = new ErrorPageErrorHandler();
         context.setErrorHandler(error);
         error.addErrorPage(599,"/error/599");
+        error.addErrorPage(400,"/error/400");
+        // error.addErrorPage(500,"/error/500");
         error.addErrorPage(IllegalStateException.class.getCanonicalName(),"/error/TestException");
+        error.addErrorPage(BadMessageException.class,"/error/BadMessageException");
         error.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE,"/error/GlobalErrorPage");
         
         _server.start();
@@ -86,7 +92,6 @@ public class ErrorPageTest
     public void testSendErrorClosedResponse() throws Exception
     {
         String response = _connector.getResponse("GET /fail-closed/ HTTP/1.0\r\n\r\n");
-        System.out.println(response);
         assertThat(response,Matchers.containsString("HTTP/1.1 599 599"));
         assertThat(response,Matchers.containsString("DISPATCH: ERROR"));
         assertThat(response,Matchers.containsString("ERROR_PAGE: /599"));
@@ -157,6 +162,44 @@ public class ErrorPageTest
         }
     }
 
+    @Test
+    public void testBadMessage() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad query encoding"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
+            assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query encoding"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AppServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
+            assertThat(response, Matchers.containsString("getParameterMap()= {}"));
+        }
+    }
+
+
+    public static class AppServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            request.getRequestDispatcher("/longer.app/").forward(request, response);
+        }
+    }
+    
+    public static class LongerAppServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            PrintWriter writer = response.getWriter();
+            writer.println(request.getRequestURI());
+        }
+    }
+
     public static class FailServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -202,6 +245,7 @@ public class ErrorPageTest
             writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+            writer.println("getParameterMap()= " + request.getParameterMap());
         }
     }
     
