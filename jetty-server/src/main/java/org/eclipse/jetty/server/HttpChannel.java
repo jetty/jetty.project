@@ -483,40 +483,34 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         try
                         {
-                            try
+                            if (!_response.isCommitted() && !_request.isHandled())
                             {
-                                if (!_response.isCommitted() && !_request.isHandled())
+                                _response.sendError(HttpStatus.NOT_FOUND_404);
+                            }
+                            else
+                            {
+                                // RFC 7230, section 3.3.
+                                int status = _response.getStatus();
+                                boolean hasContent = !(_request.isHead() ||
+                                    HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
+                                    HttpStatus.isInformational(status) ||
+                                    status == HttpStatus.NO_CONTENT_204 ||
+                                    status == HttpStatus.NOT_MODIFIED_304);
+                                if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
                                 {
-                                    _response.sendError(HttpStatus.NOT_FOUND_404);
+                                    if (isCommitted())
+                                        abort(new IOException("insufficient content written"));
+                                    else
+                                        _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "insufficient content written");
                                 }
-                                else
-                                {
-                                    // RFC 7230, section 3.3.
-                                    int status = _response.getStatus();
-                                    boolean hasContent = !(_request.isHead() ||
-                                        HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
-                                        HttpStatus.isInformational(status) ||
-                                        status == HttpStatus.NO_CONTENT_204 ||
-                                        status == HttpStatus.NOT_MODIFIED_304);
-                                    if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                                    {
-                                        if (isCommitted())
-                                            abort(new IOException("insufficient content written"));
-                                        else
-                                            _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "insufficient content written");
-                                    }
-                                }
-                                _response.closeOutput();
+                            }
+                            _response.closeOutput();
 
-                            }
-                            finally
-                            {
-                                _request.setHandled(true);
-                                _state.onComplete();
-                            }
                         }
                         finally
                         {
+                            _request.setHandled(true);
+                            _state.onComplete();
                             onCompleted();
                         }
 
