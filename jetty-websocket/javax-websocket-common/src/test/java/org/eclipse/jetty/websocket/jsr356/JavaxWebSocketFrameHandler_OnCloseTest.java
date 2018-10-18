@@ -45,10 +45,10 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
 
         // These invocations are the same for all tests
         localEndpoint.onOpen(channel);
-        Frame closeFrame = CloseStatus.toFrame(CloseStatus.NORMAL, "Normal");
-        localEndpoint.onFrame(closeFrame, Callback.NOOP);
-        
-        String event = socket.events.poll(1, TimeUnit.SECONDS);
+        CloseStatus status = new CloseStatus(CloseStatus.NORMAL,"Normal");
+        Frame closeFrame = status.toFrame();
+        localEndpoint.onFrame(closeFrame, Callback.from(()->{localEndpoint.onClosed(status);},t->{throw new RuntimeException(t);}));
+        String event = socket.events.poll(10, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }
 

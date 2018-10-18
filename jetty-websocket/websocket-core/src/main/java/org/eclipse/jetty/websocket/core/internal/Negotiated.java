@@ -123,37 +123,40 @@ public class Negotiated
      * <p>
      * Converting {@code http} and {@code https} URIs to their WebSocket equivalent
      *
-     * @param inputUri
+     * @param uri
      *            the input URI
      * @return the WebSocket scheme URI for the input URI.
      * @throws URISyntaxException
      *             if unable to convert the input URI
      */
-    public static URI toWebsocket(final URI inputUri)
+    public static URI toWebsocket(final URI uri)
     {
         try
         {
-            Objects.requireNonNull(inputUri,"Input URI must not be null");
-            String httpScheme = inputUri.getScheme();
+            Objects.requireNonNull(uri,"Input URI must not be null");
+            String httpScheme = uri.getScheme();
+            if (httpScheme==null)
+                return uri;
+
             if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
             {
                 // keep as-is
-                return inputUri;
+                return uri;
             }
 
             if ("http".equalsIgnoreCase(httpScheme))
             {
                 // convert to ws
-                return new URI("ws" + inputUri.toString().substring(httpScheme.length()));
+                return new URI("ws" + uri.toString().substring(httpScheme.length()));
             }
 
             if ("https".equalsIgnoreCase(httpScheme))
             {
                 // convert to wss
-                return new URI("wss" + inputUri.toString().substring(httpScheme.length()));
+                return new URI("wss" + uri.toString().substring(httpScheme.length()));
             }
 
-            throw new URISyntaxException(inputUri.toString(),"Unrecognized HTTP scheme");
+            throw new URISyntaxException(uri.toString(),"Unrecognized HTTP scheme");
         }
         catch (URISyntaxException e)
         {
