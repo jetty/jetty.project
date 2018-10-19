@@ -60,7 +60,7 @@ public interface Dumpable
             else if (o.getClass().isArray())
                 s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
             else
-                s = String.valueOf(o);
+                s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
 
             if (o instanceof LifeCycle)
                 out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
