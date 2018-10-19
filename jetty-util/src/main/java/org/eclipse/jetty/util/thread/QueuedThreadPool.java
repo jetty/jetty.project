@@ -629,7 +629,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (isDetailedDump())
             jobs = new ArrayList<>(getQueue());
 
-        dumpBeans(out, indent, threads, new DumpableCollection("jobs", jobs));
+        dumpBeans(out, indent, new DumpableCollection("threads",threads), new DumpableCollection("jobs", jobs));
     }
 
     @Override

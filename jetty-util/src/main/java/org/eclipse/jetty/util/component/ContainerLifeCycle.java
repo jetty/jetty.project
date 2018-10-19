@@ -640,6 +640,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         try
         {
             dump(System.err, "");
+            System.err.println(Dumpable.KEY);
         }
         catch (IOException e)
         {

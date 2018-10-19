@@ -30,8 +30,13 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("Dumpable Object")
 public interface Dumpable
 {
+    String KEY = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +@ map, +> undefined";
+
     @ManagedOperation(value="Dump the nested Object state as a String", impact="INFO")
-    String dump();
+    default String dump()
+    {
+        return dump(this);
+    }
 
     /**
      * Dump this object (and children) into an Appendable using the provided indent after any new lines.
@@ -42,7 +47,11 @@ public interface Dumpable
      */
     void dump(Appendable out,String indent) throws IOException;
 
-
+    /**
+     * Utility method to implement {@link #dump()} by calling {@link #dump(Appendable, String)}
+     * @param dumpable The dumpable to dump
+     * @return The dumped string
+     */
     static String dump(Dumpable dumpable)
     {
         StringBuilder b = new StringBuilder();
@@ -54,6 +63,7 @@ public interface Dumpable
         {
             b.append(e.toString());
         }
+        b.append(KEY);
         return b.toString();
     }
 
@@ -87,7 +97,7 @@ public interface Dumpable
         }
         catch (Throwable th)
         {
-            out.append(" => ").append(th.toString()).append("\n");
+            out.append("=>").append(th.toString()).append("\n");
         }
     }
 
@@ -114,12 +124,12 @@ public interface Dumpable
             for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext();)
             {
                 Object bean = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? " |  " : "    ");
+                String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
                 if (bean instanceof LifeCycle)
                 {
                     if (container.isManaged(bean))
                     {
-                        out.append(indent).append(" += ");
+                        out.append(indent).append("+=");
                         if (bean instanceof Dumpable)
                             ((Dumpable)bean).dump(out,nextIndent);
                         else
@@ -127,7 +137,7 @@ public interface Dumpable
                     }
                     else if (containerLifeCycle != null && containerLifeCycle.isAuto(bean))
                     {
-                        out.append(indent).append(" +? ");
+                        out.append(indent).append("+?");
                         if (bean instanceof Dumpable)
                             ((Dumpable)bean).dump(out,nextIndent);
                         else
@@ -135,18 +145,18 @@ public interface Dumpable
                     }
                     else
                     {
-                        out.append(indent).append(" +~ ");
+                        out.append(indent).append("+~");
                         dumpObject(out, bean);
                     }
                 }
                 else if (containerLifeCycle != null && containerLifeCycle.isUnmanaged(bean))
                 {
-                    out.append(indent).append(" +~ ");
+                    out.append(indent).append("+~");
                     dumpObject(out, bean);
                 }
                 else
                 {
-                    out.append(indent).append(" +- ");
+                    out.append(indent).append("+-");
                     if (bean instanceof Dumpable)
                         ((Dumpable)bean).dump(out,nextIndent);
                     else
@@ -159,8 +169,8 @@ public interface Dumpable
             for (Iterator i = ((Iterable<?>)o).iterator(); i.hasNext();)
             {
                 Object item = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? " |  " : "    ");
-                out.append(indent).append(" +: ");
+                String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
+                out.append(indent).append("+:");
                 if (item instanceof Dumpable)
                     ((Dumpable)item).dump(out,nextIndent);
                 else
@@ -173,8 +183,8 @@ public interface Dumpable
             for (int i = 0; i<length;)
             {
                 Object item = Array.get(o,i++);
-                String nextIndent = indent + ((i<length || size>0) ? " |  " : "    ");
-                out.append(indent).append(" +] ");
+                String nextIndent = indent + ((i<length || size>0) ? "| " : "  ");
+                out.append(indent).append("+]");
                 if (item instanceof Dumpable)
                     ((Dumpable)item).dump(out,nextIndent);
                 else
@@ -186,8 +196,8 @@ public interface Dumpable
             for (Iterator<? extends Map.Entry<?, ?>> i = ((Map<?,?>)o).entrySet().iterator(); i.hasNext();)
             {
                 Map.Entry entry = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? " |  " : "    ");
-                out.append(indent).append(" +@ ").append(String.valueOf(entry.getKey())).append('=');
+                String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
+                out.append(indent).append("+@").append(String.valueOf(entry.getKey())).append('=');
                 Object item = entry.getValue();
                 if (item instanceof Dumpable)
                     ((Dumpable)item).dump(out,nextIndent);
@@ -203,8 +213,8 @@ public interface Dumpable
         for (Object item : children)
         {
             i++;
-            String nextIndent = indent + (i<size ? " |  " : "    ");
-            out.append(indent).append(" +> ");
+            String nextIndent = indent + (i<size ? "| " : "  ");
+            out.append(indent).append("+>");
             if (item instanceof Dumpable)
                 ((Dumpable)item).dump(out,nextIndent);
             else
