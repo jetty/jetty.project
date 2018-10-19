@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 
@@ -288,7 +287,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         @Override
         public String dump()
         {
-            return ContainerLifeCycle.dump(this);
+            return Dumpable.dump(this);
         }
 
         @Override

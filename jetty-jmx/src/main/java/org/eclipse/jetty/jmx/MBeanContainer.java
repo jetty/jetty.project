@@ -404,7 +404,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override

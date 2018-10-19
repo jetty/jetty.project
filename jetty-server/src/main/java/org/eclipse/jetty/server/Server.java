@@ -628,6 +628,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void setAttribute(String name, Object attribute)
     {
+        // TODO this is a crude way to get attribute values managed by JMX.
         Object old=_attributes.getAttribute(name);
         updateBean(old,attribute);        
         _attributes.setAttribute(name, attribute);
@@ -690,7 +691,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpBeans(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()));
+        dumpBeans(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()),_attributes);
     }
 
     /* ------------------------------------------------------------ */

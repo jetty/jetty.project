@@ -486,12 +486,6 @@ public class ConnectHandler extends HandlerWrapper
         return true;
     }
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpBeans(out,indent,(Object[])getHandlers());
-    }
-
     protected class ConnectManager extends SelectorManager
     {
         protected ConnectManager(Executor executor, Scheduler scheduler, int selectors)

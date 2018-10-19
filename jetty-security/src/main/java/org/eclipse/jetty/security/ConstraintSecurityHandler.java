@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
@@ -770,8 +771,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 getLoginService(),
                 getIdentityService(),
                 getAuthenticator(),
-                _roles,
-                _constraintMap.entrySet());
+                DumpableCollection.from("roles",_roles),
+                DumpableCollection.from("constraints",_constraintMap.entrySet()));
     }
     
     /* ------------------------------------------------------------ */

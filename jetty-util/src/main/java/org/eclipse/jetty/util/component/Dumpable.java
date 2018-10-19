@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -42,6 +43,21 @@ public interface Dumpable
     void dump(Appendable out,String indent) throws IOException;
 
 
+    static String dump(Dumpable dumpable)
+    {
+        StringBuilder b = new StringBuilder();
+        try
+        {
+            dumpable.dump(b, "");
+        }
+        catch (IOException e)
+        {
+            b.append(e.toString());
+        }
+        return b.toString();
+    }
+
+
     /**
      * Dump just an Object (but not it's contained items) to an Appendable.
      * @param out The Appendable to dump to
@@ -56,9 +72,11 @@ public interface Dumpable
             if (o==null)
                 s = "null";
             else if (o instanceof Collection)
-                s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Collection)o).size());
+                s = String.format("%s@%x(size=%d)",o.getClass().getName(),o.hashCode(),((Collection)o).size());
             else if (o.getClass().isArray())
                 s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
+            else if (o instanceof Map)
+                s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
             else
                 s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
 
@@ -138,11 +156,11 @@ public interface Dumpable
         }
         if (o instanceof Iterable)
         {
-            for (Iterator i = ((Iterable<?>)o).iterator(); ((Iterator)i).hasNext();)
+            for (Iterator i = ((Iterable<?>)o).iterator(); i.hasNext();)
             {
                 Object item = i.next();
                 String nextIndent = indent + ((i.hasNext() || size>0) ? " |  " : "    ");
-                out.append(indent).append(" +> ");
+                out.append(indent).append(" +: ");
                 if (item instanceof Dumpable)
                     ((Dumpable)item).dump(out,nextIndent);
                 else
@@ -156,7 +174,21 @@ public interface Dumpable
             {
                 Object item = Array.get(o,i++);
                 String nextIndent = indent + ((i<length || size>0) ? " |  " : "    ");
-                out.append(indent).append(" +> ");
+                out.append(indent).append(" +] ");
+                if (item instanceof Dumpable)
+                    ((Dumpable)item).dump(out,nextIndent);
+                else
+                    dumpObjects(out,nextIndent, item);
+            }
+        }
+        else if (o instanceof Map)
+        {
+            for (Iterator<? extends Map.Entry<?, ?>> i = ((Map<?,?>)o).entrySet().iterator(); i.hasNext();)
+            {
+                Map.Entry entry = i.next();
+                String nextIndent = indent + ((i.hasNext() || size>0) ? " |  " : "    ");
+                out.append(indent).append(" +@ ").append(String.valueOf(entry.getKey())).append('=');
+                Object item = entry.getValue();
                 if (item instanceof Dumpable)
                     ((Dumpable)item).dump(out,nextIndent);
                 else

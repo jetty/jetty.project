@@ -44,7 +44,7 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
         @Override
         public String dump()
         {
-            return ContainerLifeCycle.dump(SslSelectionDump.CaptionedList.this);
+            return Dumpable.dump(SslSelectionDump.CaptionedList.this);
         }
 
         @Override
@@ -159,7 +159,7 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
     
     @Override
