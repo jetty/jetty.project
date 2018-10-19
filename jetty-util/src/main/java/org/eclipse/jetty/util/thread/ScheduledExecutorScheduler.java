@@ -115,9 +115,9 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     {
         Thread thread = this.thread;
         if (thread == null)
-            ContainerLifeCycle.dumpObject(out, this);
+            Dumpable.dumpObject(out, this);
         else
-            ContainerLifeCycle.dumpObjects(out,indent,this, (Object[])thread.getStackTrace());
+            Dumpable.dumpObjects(out,indent,this, (Object[])thread.getStackTrace());
     }
 
     private static class ScheduledFutureTask implements Task

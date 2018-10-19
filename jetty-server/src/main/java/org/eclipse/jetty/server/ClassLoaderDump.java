@@ -55,26 +55,26 @@ public class ClassLoaderDump implements Dumpable
             DumpableCollection urls = DumpableCollection.fromArray("URLs", ((URLClassLoader)_loader).getURLs());
             ClassLoader parent = _loader.getParent();
             if (parent==null)
-                ContainerLifeCycle.dumpObjects(out,indent,loader,urls);
+                Dumpable.dumpObjects(out,indent,loader,urls);
             else if (parent == Server.class.getClassLoader())
-                ContainerLifeCycle.dumpObjects(out,indent,loader,urls,parent.toString());
+                Dumpable.dumpObjects(out,indent,loader,urls,parent.toString());
             else if (parent instanceof Dumpable)
-                ContainerLifeCycle.dumpObjects(out,indent,loader,urls,parent);
+                Dumpable.dumpObjects(out,indent,loader,urls,parent);
             else
-                ContainerLifeCycle.dumpObjects(out,indent,loader,urls,new ClassLoaderDump(parent));
+                Dumpable.dumpObjects(out,indent,loader,urls,new ClassLoaderDump(parent));
         }
         else
         {
             String loader = _loader.toString();
             ClassLoader parent = _loader.getParent();
             if (parent==null)
-                ContainerLifeCycle.dumpObject(out,loader);
+                Dumpable.dumpObject(out,loader);
             if (parent==Server.class.getClassLoader())
-                ContainerLifeCycle.dumpObjects(out,indent,loader,parent.toString());
+                Dumpable.dumpObjects(out,indent,loader,parent.toString());
             else if (parent instanceof Dumpable)
-                ContainerLifeCycle.dumpObjects(out,indent,loader,parent);
+                Dumpable.dumpObjects(out,indent,loader,parent);
             else if (parent!=null)
-                ContainerLifeCycle.dumpObjects(out,indent,loader,new ClassLoaderDump(parent));
+                Dumpable.dumpObjects(out,indent,loader,new ClassLoaderDump(parent));
         }
     }
 }

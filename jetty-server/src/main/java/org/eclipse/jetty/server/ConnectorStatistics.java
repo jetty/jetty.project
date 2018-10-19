@@ -245,7 +245,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObjects(out,indent,this,
+        Dumpable.dumpObjects(out,indent,this,
             "connections="+_connectionStats,
             "duration="+_connectionDurationStats,
             "in="+_messagesIn,

@@ -51,7 +51,7 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
         public void dump(Appendable out, String indent) throws IOException
         {
             Object[] array = toArray();
-            ContainerLifeCycle.dumpObjects(out, indent, caption + " size="+array.length, array);
+            Dumpable.dumpObjects(out, indent, caption + " size="+array.length, array);
         }
     }
     

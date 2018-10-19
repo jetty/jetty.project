@@ -33,7 +33,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -197,10 +197,10 @@ public class  FilterHolder extends Holder<Filter>
     public void dump(Appendable out, String indent) throws IOException
     {
         if (_initParams.isEmpty())
-            ContainerLifeCycle.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(out, indent, this,
                 _filter == null?getHeldClass():_filter);
         else
-            ContainerLifeCycle.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(out, indent, this,
                 _filter == null?getHeldClass():_filter,
                 new DumpableCollection("initParams", _initParams.entrySet()));
     }

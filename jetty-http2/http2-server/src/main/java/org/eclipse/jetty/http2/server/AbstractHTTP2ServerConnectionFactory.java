@@ -294,7 +294,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            ContainerLifeCycle.dumpObjects(out,indent,this, sessions);
+            Dumpable.dumpObjects(out,indent,this, sessions);
         }
 
         @Override

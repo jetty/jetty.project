@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,6 +54,6 @@ public class DumpableCollection implements Dumpable
     public void dump(Appendable out, String indent) throws IOException
     {
         Object[] array = _collection.toArray();
-        ContainerLifeCycle.dumpObjects(out,indent,_name + " size="+array.length, array);
+        Dumpable.dumpObjects(out,indent,_name + " size="+array.length, array);
     }
 }

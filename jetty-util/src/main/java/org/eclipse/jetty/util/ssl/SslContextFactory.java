@@ -364,7 +364,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         try
         {
             SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
-            ContainerLifeCycle.dumpObjects(out, indent, this, "trustAll=" + _trustAll,
+            Dumpable.dumpObjects(out, indent, this, "trustAll=" + _trustAll,
                 new SslSelectionDump("Protocol",
                     sslEngine.getSupportedProtocols(),
                     sslEngine.getEnabledProtocols(),

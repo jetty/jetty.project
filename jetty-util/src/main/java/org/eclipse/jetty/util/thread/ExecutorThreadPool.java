@@ -365,14 +365,14 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
                             if (isDetailedDump())
                             {
                                 if (known.isEmpty())
-                                    ContainerLifeCycle.dumpObjects(out, indent, b.toString(), (Object[])frames);
+                                    Dumpable.dumpObjects(out, indent, b.toString(), (Object[])frames);
                                 else
-                                    ContainerLifeCycle.dumpObject(out, b.toString());
+                                    Dumpable.dumpObject(out, b.toString());
                             }
                             else
                             {
                                 b.append(" @ ").append(frames.length > 0 ? String.valueOf(frames[0]) : "<no_stack_frames>");
-                                ContainerLifeCycle.dumpObject(out, b.toString());
+                                Dumpable.dumpObject(out, b.toString());
                             }
                         }
 

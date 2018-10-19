@@ -62,7 +62,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObjects(out, indent, toString(),  _mappings);
+        Dumpable.dumpObjects(out, indent, toString(),  _mappings);
     }
     
     @ManagedAttribute(value = "mappings", readonly = true)

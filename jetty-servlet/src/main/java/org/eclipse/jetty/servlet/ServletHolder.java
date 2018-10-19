@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -1319,10 +1319,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void dump(Appendable out, String indent) throws IOException
     {
         if (_initParams.isEmpty())
-            ContainerLifeCycle.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(out, indent, this,
                 _servlet == null?getHeldClass():_servlet);
         else
-            ContainerLifeCycle.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(out, indent, this,
                 _servlet == null?getHeldClass():_servlet,
                 new DumpableCollection("initParams", _initParams.entrySet()));
     }

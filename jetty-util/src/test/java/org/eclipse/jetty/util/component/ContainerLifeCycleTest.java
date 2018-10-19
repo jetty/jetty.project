@@ -280,7 +280,7 @@ public class ContainerLifeCycleTest
             @Override
             public void dump(Appendable out, String indent) throws IOException
             {
-                dumpObjects(out, indent, this.toString(), TypeUtil.asList(new Object[]{a1, a2}), TypeUtil.asList(new Object[]{a3, a4}));
+                Dumpable.dumpObjects(out, indent, this.toString(), TypeUtil.asList(new Object[]{a1, a2}), TypeUtil.asList(new Object[]{a3, a4}));
             }
         };
         a0.addBean(aa, true);

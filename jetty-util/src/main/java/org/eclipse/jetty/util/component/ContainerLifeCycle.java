@@ -19,12 +19,10 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -229,6 +227,30 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         for (Bean b : _beans)
             if (b._bean == bean)
                 return b.isManaged();
+        return false;
+    }
+
+    /**
+     * @param bean the bean to test
+     * @return whether this aggregate contains the bean in auto state
+     */
+    public boolean isAuto(Object bean)
+    {
+        for (Bean b : _beans)
+            if (b._bean == bean)
+                return b._managed==Managed.AUTO;
+        return false;
+    }
+
+    /**
+     * @param bean the bean to test
+     * @return whether this aggregate contains the bean in auto state
+     */
+    public boolean isUnmanaged(Object bean)
+    {
+        for (Bean b : _beans)
+            if (b._bean == bean)
+                return b._managed==Managed.UNMANAGED;
         return false;
     }
 
@@ -668,10 +690,12 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * @param out The appendable to dump to
      * @throws IOException May be thrown by the Appendable
      */
+    @Deprecated
     protected void dumpThis(Appendable out) throws IOException
     {
         out.append(String.valueOf(this)).append(" - ").append(getState()).append("\n");
     }
+
 
     /** Dump this object, it's contained beans and additional items to an Appendable
      * @param out The appendable to dump to
@@ -681,134 +705,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      */
     protected void dumpBeans(Appendable out, String indent, Object... items) throws IOException
     {
-        dumpThis(out);
-        int size = _beans.size() + (items==null?0:items.length);
-        int i = 0;
-        for (Bean b : _beans)
-        {
-            ++i;
-            switch(b._managed)
-            {
-                case POJO:
-                    out.append(indent).append(" +- ");
-                    dumpObjects(out, indent + (i == size ? "    " : " |  "), b._bean);
-                    break;
-
-                case MANAGED:
-                    out.append(indent).append(" += ");
-                    dumpObjects(out, indent + (i == size ? "    " : " |  "), b._bean);
-                    break;
-
-                case UNMANAGED:
-                    out.append(indent).append(" +~ ");
-                    dumpObject(out, b._bean);
-                    break;
-
-                case AUTO:
-                    out.append(indent).append(" +? ");
-                    dumpObjects(out, indent + (i == size ? "    " : " |  "), b._bean);
-                    break;
-            }
-        }
-
-        if (items==null || items.length==0)
-            return;
-
-        for (Object item : items)
-        {
-            i++;
-            out.append(indent).append(" +> ");
-            dumpObjects(out, indent + (i == size ? "    " : " |  "), item);
-        }
+        Dumpable.dumpObjects(out,indent,this, items);
     }
-
-    /**
-     * Dump just an Object (but not it's contained items) to an Appendable.
-     * This is the static equivalent of {@link #dumpThis(Appendable)}
-     * @param out The Appendable to dump to
-     * @param o The object to dump.
-     * @throws IOException May be thrown by the Appendable
-     */
-    public static void dumpObject(Appendable out, Object o) throws IOException
-    {
-        try
-        {
-            String s;
-            if (o==null)
-                s = "null";
-            else if (o instanceof Collection)
-                s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Collection)o).size());
-            else if (o.getClass().isArray())
-                s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(),Array.getLength(o));
-            else
-                s = String.valueOf(o);
-
-            if (o instanceof LifeCycle)
-                out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
-            else
-                out.append(s).append("\n");
-        }
-        catch (Throwable th)
-        {
-            out.append(" => ").append(th.toString()).append("\n");
-        }
-    }
-
-    /**
-     * Dump an Object, it's contained items and additional items to an {@link Appendable}.
-     * If the object in an {@link Iterable} or an {@link Array}, then its contained items
-     * are also dumped.
-     * This is the static equivalent of {@link #dumpBeans(Appendable, String, Object...)}
-     * @param out the Appendable to dump to
-     * @param indent The indent to apply after any new lines
-     * @param o The object to dump
-     * @param items Additional items to be dump as contained by the object
-     * @throws IOException May be thrown by the Appendable
-     */
-    public static void dumpObjects(Appendable out, String indent, Object o, Object... items) throws IOException
-    {
-        if (o instanceof Dumpable && (items==null || items.length==0))
-        {
-            ((Dumpable)o).dump(out, indent);
-            return;
-        }
-
-        dumpObject(out,o);
-
-        int size = items==null?0:items.length;
-
-        if (o instanceof Iterable)
-        {
-            for (Iterator i = ((Iterable<?>)o).iterator(); ((Iterator)i).hasNext();)
-            {
-                Object item = i.next();
-                out.append(indent).append(" +> ");
-                dumpObjects(out,indent + ((i.hasNext()||size>0) ? " |  " : "    "), item);
-            }
-        }
-        else if (o instanceof Object[])
-        {
-            size += Array.getLength(o);
-            for (int i = 0; i<size;)
-            {
-                Object item = Array.get(o,i++);
-                out.append(indent).append(" +> ");
-                dumpObjects(out,indent + (i<size ? " |  " : "    "), item);
-            }
-        }
-
-        if (size==0)
-            return;
-
-        int i = 0;
-        for (Object item : items)
-        {
-            i++;
-            out.append(indent).append(" +> ");
-            dumpObjects(out, indent + (i == size ? "    " : " |  "), item);
-        }
-    }
-
 
     @Deprecated
     public static void dump(Appendable out, String indent, Collection<?>... collections) throws IOException
@@ -828,7 +726,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             {
                 i++;
                 out.append(indent).append(" +- ");
-                dumpObjects(out,indent + (i<size ? " |  " : "    "), o);
+                Dumpable.dumpObjects(out,indent + (i<size ? " |  " : "    "), o);
             }
         }
     }

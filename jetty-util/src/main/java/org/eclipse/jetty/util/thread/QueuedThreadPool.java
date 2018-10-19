@@ -606,9 +606,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     {
                         String s = thread.getId()+" "+thread.getName()+" "+thread.getState()+" "+thread.getPriority();
                         if (known.length()==0)
-                            ContainerLifeCycle.dumpObjects(out, indent, s, (Object[])trace);
+                            Dumpable.dumpObjects(out, indent, s, (Object[])trace);
                         else
-                            ContainerLifeCycle.dumpObjects(out, indent, s);
+                            Dumpable.dumpObjects(out, indent, s);
                     }
 
                     @Override

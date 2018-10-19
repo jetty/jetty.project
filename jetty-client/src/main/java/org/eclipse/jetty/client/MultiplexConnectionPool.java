@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -326,7 +326,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             unlock();
         }
 
-        ContainerLifeCycle.dumpObjects(out, indent, this, busy, muxed, idle);
+        Dumpable.dumpObjects(out, indent, this, busy, muxed, idle);
     }
 
     @Override

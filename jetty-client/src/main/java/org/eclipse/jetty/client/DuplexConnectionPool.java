@@ -36,7 +36,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -270,7 +270,7 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
             items[1] = idle;
         }
 
-        ContainerLifeCycle.dumpObjects(out, indent, this, items);
+        Dumpable.dumpObjects(out, indent, this, items);
     }
 
 
