@@ -66,7 +66,7 @@ public class Jetty
 
         Package pkg = Jetty.class.getPackage();
         if (pkg != null &&
-                "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) &&
+                "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) &&
                 pkg.getImplementationVersion() != null)
             VERSION = pkg.getImplementationVersion();
         else
