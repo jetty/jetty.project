@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -318,6 +319,7 @@ public class ServerConnectorTest
             server.setHandler(handlers);
 
             IOException x = assertThrows(IOException.class, () -> server.start());
+            assertThat(x.getCause(), instanceOf(BindException.class));
             assertThat(x.getMessage(), containsString("0.0.0.0:" + port));
         }
     }
