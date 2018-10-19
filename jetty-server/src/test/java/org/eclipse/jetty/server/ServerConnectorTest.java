@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -26,14 +27,13 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -57,7 +57,6 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ServerConnectorTest
@@ -302,8 +301,10 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testBindToAddressWhichIsInUse() throws Exception {
-        try (ServerSocket socket = new ServerSocket(0)) {
+    public void testBindToAddressWhichIsInUse() throws Exception
+    {
+        try (ServerSocket socket = new ServerSocket(0))
+        {
             final int port = socket.getLocalPort();
 
             Server server = new Server();
@@ -316,13 +317,8 @@ public class ServerConnectorTest
 
             server.setHandler(handlers);
 
-            try {
-                server.start();
-                Assertions.fail("No exception thrown");
-            } catch (IOException e) {
-                assertThat(e.getCause(), Matchers.instanceOf(BindException.class));
-                assertThat(e.getMessage(), Matchers.containsString("0.0.0.0:" + port));
-            }
+            IOException x = assertThrows(IOException.class, () -> server.start());
+            assertThat(x.getMessage(), containsString("0.0.0.0:" + port));
         }
     }
 }

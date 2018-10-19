@@ -337,9 +337,12 @@ public class ServerConnector extends AbstractNetworkConnector
 
             InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
             serverChannel.socket().setReuseAddress(getReuseAddress());
-            try {
+            try
+            {
                 serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
-            } catch (BindException e) {
+            }
+            catch (BindException e)
+            {
                 throw new IOException("Failed to bind to " + bindAddress, e);
             }
         }
