@@ -1,15 +1,16 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>10.0.0-SNAPSHOT</version>
   </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-spring</artifactId>
   <name>Example :: Jetty Spring</name>
 
   <properties>
-    <spring-version>3.2.8.RELEASE</spring-version>
     <dependencies>target/dependencies</dependencies>
     <bundle-symbolic-name>${project.groupId}.spring</bundle-symbolic-name>
   </properties>
@@ -28,12 +29,16 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-            <configuration>
-              <instructions>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.xml.ConfigurationProcessorFactory</Provide-Capability>
-              </instructions>
-            </configuration>
+        <configuration>
+          <instructions>
+            <Require-Capability>osgi.extender;
+              filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
+            </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.xml.ConfigurationProcessorFactory
+            </Provide-Capability>
+          </instructions>
+        </configuration>
       </plugin>
     </plugins>
   </build>
