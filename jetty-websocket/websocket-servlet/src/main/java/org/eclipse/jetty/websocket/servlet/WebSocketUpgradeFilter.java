@@ -18,6 +18,21 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.EnumSet;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -31,21 +46,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.EnumSet;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests.
@@ -68,7 +68,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
         // Prevent double configure
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) context.getAttribute(WebSocketUpgradeFilter.class.getName());
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) context.getServletContext().getAttribute(WebSocketUpgradeFilter.class.getName());
         if (filter != null)
         {
             return filter;
@@ -321,12 +321,15 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
         if (context.getAttribute(key) != null)
         {
-            throw new ServletException(WebSocketUpgradeFilter.class.getName() +
+            // TODO Why is this attribute needed?
+            LOG.warn(
+            new ServletException(WebSocketUpgradeFilter.class.getName() +
                     " is defined twice for the same context attribute key '" + key
                     + "'.  Make sure you have different init-param '" +
-                    CONTEXT_ATTRIBUTE_KEY + "' values set");
+                    CONTEXT_ATTRIBUTE_KEY + "' values set"));
         }
-        context.setAttribute(key, this);
+        else
+            context.setAttribute(key, this);
 
         alreadySetToAttribute = true;
     }
