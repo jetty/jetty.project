@@ -18,7 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
+
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
@@ -27,19 +38,22 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SessionTrackingTest
 {
+
+    static BlockingArrayQueue<Session> serverSessions = new BlockingArrayQueue<>();
+
     @ServerEndpoint("/session-info/{sessionId}")
     public static class SessionTrackingSocket
     {
+        @OnOpen
+        public void onOpen(Session session)
+        {
+            serverSessions.offer(session);
+        }
+
         @OnMessage
         public void onMessage(Session session, String msg) throws IOException
         {
@@ -86,46 +100,42 @@ public class SessionTrackingTest
 
         try (Fuzzer session1 = server.newNetworkFuzzer("/session-info/1"))
         {
+            assertNotNull(serverSessions.poll(10, TimeUnit.SECONDS));
             expectedFrames.clear();
             sendTextFrameToAll("openSessions|in-1", session1);
             session1.expect(Arrays.asList(new Frame(OpCode.TEXT).setPayload("openSessions(@in-1).size=1")));
 
             try (Fuzzer session2 = server.newNetworkFuzzer("/session-info/2"))
             {
+                assertNotNull(serverSessions.poll(10, TimeUnit.SECONDS));
                 expectedFrames.clear();
                 sendTextFrameToAll("openSessions|in-2", session1, session2);
-                session2.expect(Arrays.asList(new Frame(OpCode.TEXT).setPayload("openSessions(@in-2).size=2")));
                 session1.expect(Arrays.asList(new Frame(OpCode.TEXT).setPayload("openSessions(@in-2).size=2")));
+                session2.expect(Arrays.asList(new Frame(OpCode.TEXT).setPayload("openSessions(@in-2).size=2")));
 
                 try (Fuzzer session3 = server.newNetworkFuzzer("/session-info/3"))
                 {
+                    assertNotNull(serverSessions.poll(10, TimeUnit.SECONDS));
                     sendTextFrameToAll("openSessions|in-3", session1, session2, session3);
                     sendTextFrameToAll("openSessions|lvl-3", session1, session2, session3);
-                    session3.sendFrames(new Frame(OpCode.CLOSE));
-
-                    expectedFrames.clear();
-                    expectedFrames.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-3).size=3"));
-                    expectedFrames.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-3).size=3"));
-                    expectedFrames.add(new Frame(OpCode.CLOSE));
-                    session3.expect(expectedFrames);
-
 
                     expectedFrames.clear();
                     expectedFrames.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-3).size=3"));
                     expectedFrames.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-3).size=3"));
                     session1.expect(expectedFrames);
                     session2.expect(expectedFrames);
+                    session3.expect(expectedFrames);
+
+                    session3.sendFrames(new Frame(OpCode.CLOSE));
+                    session3.expect(Arrays.asList(new Frame(OpCode.CLOSE)));
                 }
     
                 sendTextFrameToAll("openSessions|lvl-2", session1, session2);
-                session2.sendFrames(new Frame(OpCode.CLOSE));
-                
-                expectedFrames.clear();
-                expectedFrames.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-2).size=2"));
-                expectedFrames.add(new Frame(OpCode.CLOSE));
-                session2.expect(expectedFrames);
-
                 session1.expect(Arrays.asList(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-2).size=2")));
+                session2.expect(Arrays.asList(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-2).size=2")));
+
+                session2.sendFrames(new Frame(OpCode.CLOSE));
+                session2.expect(Arrays.asList(new Frame(OpCode.CLOSE)));
             }
     
             sendTextFrameToAll("openSessions|lvl-1", session1);
