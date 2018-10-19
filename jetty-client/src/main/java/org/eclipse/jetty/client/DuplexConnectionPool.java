@@ -21,7 +21,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
@@ -241,12 +240,6 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        doDump(out, indent);
-    }
-
-    protected void doDump(Appendable out, String indent, Object... items) throws IOException
-    {
-
         DumpableCollection active;
         DumpableCollection idle;
         lock();
@@ -259,20 +252,13 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         {
             unlock();
         }
-
-        if (items==null || items.length==0)
-            items = new Object[] {active,idle};
-        else
-        {
-            items = Arrays.copyOf(items,items.length+2);
-            System.arraycopy(items,0,items,2,items.length-2);
-            items[0] = active;
-            items[1] = idle;
-        }
-
-        Dumpable.dumpObjects(out, indent, this, items);
+        dump(out, indent, active, idle);
     }
 
+    protected void dump(Appendable out, String indent, Object... items) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, items);
+    }
 
     @Override
     public boolean sweep()
