@@ -651,7 +651,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @ManagedOperation("Dump the object to a string")
     public String dump()
     {
-        return dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
