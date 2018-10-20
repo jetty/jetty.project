@@ -20,9 +20,12 @@ package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -107,19 +110,26 @@ public interface Dumpable
      * are also dumped.
      * @param out the Appendable to dump to
      * @param indent The indent to apply after any new lines
-     * @param o The object to dump
-     * @param children Additional items to be dumped as children of the object
+     * @param object The object to dump. If the object is an instance
+     *          of {@link Container}, {@link Stream}, {@link Iterable}, {@link Array} or {@link Map},
+     *          then children of the object a recursively dumped.
+     * @param extraChildren Items to be dumped as children of the object, in addition to any discovered children of object
      * @throws IOException May be thrown by the Appendable
      */
-    static void dumpObjects(Appendable out, String indent, Object o, Object... children) throws IOException
+    static void dumpObjects(Appendable out, String indent, Object object, Object... extraChildren) throws IOException
     {
-        dumpObject(out,o);
+        dumpObject(out,object);
 
-        int size = children==null?0:children.length;
+        int size = extraChildren==null?0:extraChildren.length;
 
-        if (o instanceof Container)
+        if (object instanceof Stream)
+            object = ((Stream)object).toArray();
+        if (object instanceof Array)
+            object = Arrays.asList((Object[])object);
+
+        if (object instanceof Container)
         {
-            Container container = (Container)o;
+            Container container = (Container)object;
             ContainerLifeCycle containerLifeCycle = container instanceof ContainerLifeCycle ? (ContainerLifeCycle)container : null;
             for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext();)
             {
@@ -164,9 +174,9 @@ public interface Dumpable
                 }
             }
         }
-        if (o instanceof Iterable)
+        if (object instanceof Iterable)
         {
-            for (Iterator i = ((Iterable<?>)o).iterator(); i.hasNext();)
+            for (Iterator i = ((Iterable<?>)object).iterator(); i.hasNext();)
             {
                 Object item = i.next();
                 String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
@@ -177,23 +187,9 @@ public interface Dumpable
                     dumpObjects(out,nextIndent, item);
             }
         }
-        else if (o instanceof Object[])
+        else if (object instanceof Map)
         {
-            int length = Array.getLength(o);
-            for (int i = 0; i<length;)
-            {
-                Object item = Array.get(o,i++);
-                String nextIndent = indent + ((i<length || size>0) ? "| " : "  ");
-                out.append(indent).append("+]");
-                if (item instanceof Dumpable)
-                    ((Dumpable)item).dump(out,nextIndent);
-                else
-                    dumpObjects(out,nextIndent, item);
-            }
-        }
-        else if (o instanceof Map)
-        {
-            for (Iterator<? extends Map.Entry<?, ?>> i = ((Map<?,?>)o).entrySet().iterator(); i.hasNext();)
+            for (Iterator<? extends Map.Entry<?, ?>> i = ((Map<?,?>)object).entrySet().iterator(); i.hasNext();)
             {
                 Map.Entry entry = i.next();
                 String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
@@ -210,7 +206,7 @@ public interface Dumpable
             return;
 
         int i = 0;
-        for (Object item : children)
+        for (Object item : extraChildren)
         {
             i++;
             String nextIndent = indent + (i<size ? "| " : "  ");

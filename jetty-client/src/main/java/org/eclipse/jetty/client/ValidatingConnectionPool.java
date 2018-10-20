@@ -133,7 +133,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     protected void dump(Appendable out, String indent, Object... items) throws IOException
     {
         DumpableCollection toDump = new DumpableCollection("quarantine", quarantine.values());
-        super.dump(out, indent, Stream.concat(Stream.of(items), Stream.of(toDump)).toArray());
+        super.dump(out, indent, Stream.concat(Stream.of(items), Stream.of(toDump)));
     }
 
     @Override
