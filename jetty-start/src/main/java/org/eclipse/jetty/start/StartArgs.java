@@ -68,7 +68,7 @@ public class StartArgs
         {
             ver = ManifestUtils.getManifest(StartArgs.class)
                     .map(Manifest::getMainAttributes)
-                    .filter(attributes -> "Eclipse.org - Jetty".equals(attributes.getValue("Implementation-Vendor")))
+                    .filter(attributes -> "Eclipse Jetty Project".equals(attributes.getValue("Implementation-Vendor")))
                     .map(attributes -> attributes.getValue("Implementation-Version"))
                     .orElse(null);
         }
