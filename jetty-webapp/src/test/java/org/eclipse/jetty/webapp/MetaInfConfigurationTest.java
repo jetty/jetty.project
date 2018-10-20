@@ -212,7 +212,7 @@ public class MetaInfConfigurationTest
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(1, containerResources.size());
+        assertEquals(2, containerResources.size());
         assertTrue(containerResources.get(0).toString().contains("jetty-util"));
     }
 
