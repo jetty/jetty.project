@@ -303,7 +303,7 @@
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
                   <Bundle-Name>${project.name}</Bundle-Name>
                   <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
-                  <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+                  <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
                   <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
                 </manifestEntries>
@@ -485,7 +485,7 @@
               <manifestEntries>
                 <Automatic-Module-Name>${jpms-module-name}</Automatic-Module-Name>
                 <Implementation-Version>${project.version}</Implementation-Version>
-                <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
+                <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
                 <url>${jetty.url}</url>
               </manifestEntries>
             </archive>

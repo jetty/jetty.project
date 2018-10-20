@@ -1457,9 +1457,22 @@ public class FileSystemResourceTest
     public void testUtf8Dir(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
-        Path utf8Dir = dir.resolve("bãm");
-        Files.createDirectories(utf8Dir);
-        
+        Path utf8Dir;
+
+        try
+        {
+            utf8Dir = dir.resolve("bãm");
+            Files.createDirectories(utf8Dir);
+        }
+        catch (InvalidPathException e)
+        {
+            // if unable to create file, no point testing the rest.
+            // this is the path that occurs if you have a system that doesn't support UTF-8
+            // directory names (or you simply don't have a Locale set properly)
+            assumeTrue(true, "Not supported on this OS");
+            return;
+        }
+
         Path file = utf8Dir.resolve("file.txt");
         Files.createFile(file);
         
