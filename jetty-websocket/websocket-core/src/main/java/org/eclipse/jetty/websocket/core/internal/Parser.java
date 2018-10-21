@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.Closeable;
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -29,9 +32,6 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-
-import java.io.Closeable;
-import java.nio.ByteBuffer;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -213,7 +213,7 @@ public class Parser
                     case PAYLOAD:
                     case FRAGMENT:
                     {
-                        if (aggregate ==null)
+                        if (aggregate == null)
                             checkFrameSize(OpCode.getOpCode(firstByte),payloadLength);
                         ParsedFrame frame = parsePayload(buffer);
                         if (LOG.isDebugEnabled())

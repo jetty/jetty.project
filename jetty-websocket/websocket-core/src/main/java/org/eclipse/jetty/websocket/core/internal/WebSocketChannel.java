@@ -18,6 +18,17 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
@@ -34,24 +45,12 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
-
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
 
 /**
  * The Core WebSocket Session.
@@ -124,10 +123,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         assertValid(frame);
 
         int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining();
-
-        // Sane Payload Length
-        if (payloadLength > getMaxFrameSize())
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + getMaxFrameSize());
 
         if (frame.isControlFrame())
         {
@@ -494,6 +489,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         catch (Throwable ex)
         {
             callback.failed(ex);
+            return;
         }
 
         negotiated.getExtensions().onFrame(frame, callback);
@@ -513,6 +509,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         catch (Throwable ex)
         {
             callback.failed(ex);
+            return;
         }
 
         if (frame.getOpCode() == OpCode.CLOSE)
