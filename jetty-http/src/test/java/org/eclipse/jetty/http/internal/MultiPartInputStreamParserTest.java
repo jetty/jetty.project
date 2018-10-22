@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.http.internal;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -46,8 +46,11 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
-import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
+import org.eclipse.jetty.http.internal.MultiPartInputStreamParser;
+import org.eclipse.jetty.http.internal.MultiPartInputStreamParser.MultiPart;
+import org.eclipse.jetty.http.internal.MultiPartInputStreamParser.NonCompliance;
+import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -56,7 +59,7 @@ import org.junit.jupiter.api.Test;
  *
  */
 @SuppressWarnings("deprecation")
-public class MultiPartInputStreamTest
+public class MultiPartInputStreamParserTest
 {
     private static final String FILENAME = "stuff.txt";
     protected String _contentType = "multipart/form-data, boundary=AaB03x";
@@ -64,7 +67,7 @@ public class MultiPartInputStreamTest
     protected String _dirname = System.getProperty("java.io.tmpdir")+File.separator+"myfiles-"+TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
     protected File _tmpDir = new File(_dirname);
     
-    public MultiPartInputStreamTest ()
+    public MultiPartInputStreamParserTest()
     {
         _tmpDir.deleteOnExit();
     }
@@ -81,7 +84,7 @@ public class MultiPartInputStreamTest
         "\r\n--" + boundary + "-\r\n\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
-        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()), 
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                          "multipart/form-data, boundary="+boundary,
                                                                          config,
                                                                          _tmpDir);
@@ -996,7 +999,7 @@ public class MultiPartInputStreamTest
                         "Content-Transfer-Encoding: base64\r\n"+
                         "Content-Type: application/octet-stream\r\n"+
                         "\r\n"+
-                        B64Code.encode("hello jetty") + "\r\n"+                  
+                        B64Code.encode("hello jetty") + "\r\n"+
                         "--AaB03x\r\n"+
                         "Content-disposition: form-data; name=\"final\"\r\n"+
                         "Content-Type: text/plain\r\n"+

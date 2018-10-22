@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +49,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
+import org.eclipse.jetty.http.internal.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

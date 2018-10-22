@@ -79,6 +79,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartFormDataCompliance;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
