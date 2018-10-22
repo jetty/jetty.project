@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -672,17 +673,16 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent,Arrays.asList(
+        Dumpable.dumpObjects(out,indent,this,
             negotiated.getSubProtocol(),
             negotiated.getExtensions(),
-            handler));
+            handler);
     }
 
     @Override

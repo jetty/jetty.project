@@ -220,14 +220,13 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent, Collections.singletonList(factory) );
+        Dumpable.dumpObjects(out,indent, this, factory);
     }
 
     @ManagedAttribute(value = "factory", readonly = true)

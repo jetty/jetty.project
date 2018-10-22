@@ -126,13 +126,13 @@ public class WebSocketCreatorMapping implements Dumpable, FrameHandler.CoreCusto
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        mappings.dump(out, indent);
+        Dumpable.dumpObjects(out,indent,this,mappings);
     }
 
     public ByteBufferPool getBufferPool()

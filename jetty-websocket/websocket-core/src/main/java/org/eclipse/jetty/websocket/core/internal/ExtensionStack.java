@@ -254,14 +254,13 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent,extensions==null?Collections.emptyList():extensions);
+        Dumpable.dumpObjects(out,indent,this, extensions==null?Collections.emptyList():extensions);
     }
     
     

@@ -506,13 +506,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(toString()).append(System.lineSeparator());
+        Dumpable.dumpObjects(out,indent,this);
     }
 
     @Override
