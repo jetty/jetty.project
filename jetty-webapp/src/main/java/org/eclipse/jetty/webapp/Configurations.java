@@ -70,6 +70,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     private static final Logger LOG = Log.getLogger(Configurations.class);
     
     private static final List<Configuration> __known = new ArrayList<>();
+    private static final List<Configuration> __unavailable = new ArrayList<>();
     private static final Set<String> __knownByClassName = new HashSet<>();
 
 
@@ -88,6 +89,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Configuration unavailable: "+configuration);
+                        __unavailable.add(configuration);
                         continue;
                     }
                     __known.add(configuration);
@@ -129,6 +131,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                 {
                     if (LOG.isDebugEnabled())
                         LOG.warn("Configuration unavailable: "+configuration);
+                    __unavailable.add(configuration);
                     continue;
                 }
                 __known.add((Configuration)clazz.newInstance());
@@ -153,6 +156,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     static synchronized void cleanKnown()
     {
         __known.clear();
+        __unavailable.clear();
     }
     
     /* ------------------------------------------------------------ */
@@ -427,19 +431,30 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             {
                 Configuration c=i.next();
                 if(c.getClass().getName().equals(replaces.getName()) 
-                || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
+                        || c.replaces()!=null && c.replaces().getName().equals(replaces.getName()))
                 {
-                    i.set(configuration);
-                    return;
+                    i.remove();
+                    break;
                 }
             }
-
-            _configurations.add(configuration);
-            return;
         }
 
-        if (!_configurations.stream().map(c->c.getClass().getName()).anyMatch(n->{return name.equals(n);}))
-            _configurations.add(configuration);
+        //check if any existing configurations replace the one we're adding
+        for (ListIterator<Configuration> i=_configurations.listIterator();i.hasNext();)
+        {
+            Configuration c=i.next();
+            Class<? extends Configuration> r = c.replaces();
+            if (r != null)
+            {
+                if (r.getName().equals(configuration.getClass().getName()))
+                    return; //skip the addition, a replacement is already present
+            }
+
+            if (c.getClass().getName().equals(configuration.getClass().getName()))
+                return; //don't add same one twice
+        }
+
+        _configurations.add(configuration);
     }
 
     @Override
@@ -496,16 +511,14 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out,indent,
-            Collections.singletonList(new DumpableCollection("Known",Configurations.getKnown())),
-            Collections.singletonList(new DumpableCollection("Configurations",this)));
-
+        Dumpable.dumpObjects(out,indent,this,
+            new DumpableCollection("Known",Configurations.getKnown()),
+            new DumpableCollection("Unavailable",Configurations.__unavailable));
     }
 }

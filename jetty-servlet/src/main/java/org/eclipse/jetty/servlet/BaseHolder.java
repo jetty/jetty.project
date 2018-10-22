@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -194,14 +193,13 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(toString())
-        .append(" - ").append(AbstractLifeCycle.getState(this)).append("\n");
+        Dumpable.dumpObject(out, this);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 }

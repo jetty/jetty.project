@@ -35,7 +35,8 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -239,20 +240,24 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<Connection> connections = new ArrayList<>();
+        DumpableCollection active;
+        DumpableCollection idle;
         lock();
         try
         {
-            connections.addAll(activeConnections);
-            connections.addAll(idleConnections);
+            active = new DumpableCollection("active",new ArrayList<>(activeConnections));
+            idle = new DumpableCollection("idle",new ArrayList<>(idleConnections));
         }
         finally
         {
             unlock();
         }
+        dump(out, indent, active, idle);
+    }
 
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, connections);
+    protected void dump(Appendable out, String indent, Object... items) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, items);
     }
 
     @Override

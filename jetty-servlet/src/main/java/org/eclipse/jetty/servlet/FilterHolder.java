@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class FilterHolder extends Holder<Filter>
+public class  FilterHolder extends Holder<Filter>
 {
     private static final Logger LOG = Log.getLogger(FilterHolder.class);
 
@@ -104,10 +104,6 @@ public class FilterHolder extends Holder<Filter>
         }
     }
     
-    
-    
-
-
 
     /* ------------------------------------------------------------ */
     @Override
@@ -201,19 +197,22 @@ public class FilterHolder extends Holder<Filter>
 
     /* ------------------------------------------------------------ */
     @Override
-    public String toString()
-    {
-        return getName();
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(toString()).append(" - ").append(AbstractLifeCycle.getState(this)).append('\n');
-        ContainerLifeCycle.dump(out,indent,
-            Collections.singletonList(_filter),
-            Collections.singletonList(new DumpableCollection("initParams", _initParams.entrySet())));
+        if (_initParams.isEmpty())
+            Dumpable.dumpObjects(out, indent, this,
+                _filter == null?getHeldClass():_filter);
+        else
+            Dumpable.dumpObjects(out, indent, this,
+                _filter == null?getHeldClass():_filter,
+                new DumpableCollection("initParams", _initParams.entrySet()));
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x==%s,inst=%b,async=%b",_name,hashCode(),_className,_filter!=null,isAsyncSupported());
     }
 
     /* ------------------------------------------------------------ */
