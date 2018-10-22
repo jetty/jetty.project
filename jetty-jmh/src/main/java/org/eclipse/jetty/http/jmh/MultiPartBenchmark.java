@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.jmh;
 
 import org.eclipse.jetty.http.MultiPartCaptureTest.MultipartExpectations;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
+import org.eclipse.jetty.http.internal.MultiPartInputStreamParser;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -181,7 +182,7 @@ public class MultiPartBenchmark
                 
                 case "UTIL":
                 {
-                    org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, _contentType, config, outputDir.toFile());
+                    MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in, _contentType, config, outputDir.toFile());
                     if (parser.getParts().size() != _numSections)
                         throw new IllegalStateException("Incorrect Parsing");
                     for (Part p : parser.getParts())
@@ -249,7 +250,7 @@ public class MultiPartBenchmark
                     break;
                     case "UTIL":
                     {
-                        org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
+                        MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
                         for (Part p : parser.getParts())
                         {
                             count += p.getSize();
