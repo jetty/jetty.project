@@ -128,7 +128,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance(),isRecordHttpComplianceViolations())
+                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
                 {
                     @Override
                     protected HttpParser newHttpParser(HttpCompliance compliance)
