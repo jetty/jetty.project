@@ -335,7 +335,7 @@ public class ContextHandlerCollection extends HandlerCollection
         {
             return _handler;
         }
-        
+
         @Override
         public String toString()
         {

@@ -58,6 +58,7 @@ public class OneServletContextWithSession
         context.addServlet(HelloSessionServlet.class, "/");
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

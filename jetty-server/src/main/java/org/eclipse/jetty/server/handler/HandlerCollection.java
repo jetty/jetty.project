@@ -202,12 +202,4 @@ public class HandlerCollection extends AbstractHandlerContainer
             child.destroy();
         super.destroy();
     }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public String toString()
-    {
-        Handler[] handlers=getHandlers();
-        return super.toString()+(handlers==null?"[]":Arrays.asList(handlers).toString());
-    }
 }
