@@ -29,7 +29,7 @@ import java.net.URLClassLoader;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.junit.jupiter.api.Test;
 
-public class ClassLoaderDumptTest
+public class ClassLoaderDumpTest
 {
     @Test
     public void testSimple() throws Exception
