@@ -1229,12 +1229,6 @@
       </build>
     </profile>
     <profile>
-      <id>compact3</id>
-      <modules>
-        <module>aggregates/jetty-all-compact3</module>
-      </modules>
-    </profile>
-    <profile>
       <id>eclipse-sign</id>
       <activation>
         <property>
