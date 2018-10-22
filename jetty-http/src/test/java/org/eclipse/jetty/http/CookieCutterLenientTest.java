@@ -34,7 +34,7 @@ import static org.hamcrest.Matchers.is;
  * Tests of poor various name=value scenarios and expectations of results
  * due to our efforts at being lenient with what we receive.
  */
-public class CookieCutter_LenientTest
+public class CookieCutterLenientTest
 {
     public static Stream<Arguments> data()
     {
