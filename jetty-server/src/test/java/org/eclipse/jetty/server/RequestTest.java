@@ -64,6 +64,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartFormDataCompliance;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;

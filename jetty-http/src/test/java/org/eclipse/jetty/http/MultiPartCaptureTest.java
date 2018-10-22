@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.internal.MultiPartInputStreamParser;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -166,7 +167,7 @@ public class MultiPartCaptureTest
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         try (InputStream in = Files.newInputStream(multipartRawFile))
         {
-            org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
+            MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
 
             multipartExpectations.checkParts(parser.getParts(),s->
             { 

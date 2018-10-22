@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.http.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,9 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.ReadLineInputStream.Termination;
+import org.eclipse.jetty.http.internal.ReadLineInputStream.Termination;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +40,7 @@ public class ReadLineInputStreamTest
     volatile PipedOutputStream _pout;
     ReadLineInputStream _in;
     volatile Thread _writer;
-    
+
     @BeforeEach
     public void before() throws Exception
     {
@@ -80,12 +80,12 @@ public class ReadLineInputStreamTest
                 {
                     _writer=null;
                 }
-              
+
             }
         };
         _writer.start();
     }
-    
+
     @AfterEach
     public void after()  throws Exception
     {
@@ -93,13 +93,13 @@ public class ReadLineInputStreamTest
         while (_writer!=null)
             Thread.sleep(10);
     }
-    
+
     @Test
     public void testCR() throws Exception
     {
         _queue.add("\rHello\rWorld\r\r");
         _queue.add("__CLOSE__");
-        
+
         assertEquals("",_in.readLine());
         assertEquals("Hello",_in.readLine());
         assertEquals("World",_in.readLine());
@@ -107,13 +107,13 @@ public class ReadLineInputStreamTest
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.CR), _in.getLineTerminations());
     }
-    
+
     @Test
     public void testLF() throws Exception
     {
         _queue.add("\nHello\nWorld\n\n");
         _queue.add("__CLOSE__");
-        
+
         assertEquals("",_in.readLine());
         assertEquals("Hello",_in.readLine());
         assertEquals("World",_in.readLine());
@@ -121,13 +121,13 @@ public class ReadLineInputStreamTest
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.LF), _in.getLineTerminations());
     }
-    
+
     @Test
     public void testCRLF() throws Exception
     {
         _queue.add("\r\nHello\r\nWorld\r\n\r\n");
         _queue.add("__CLOSE__");
-        
+
         assertEquals("",_in.readLine());
         assertEquals("Hello",_in.readLine());
         assertEquals("World",_in.readLine());
@@ -135,7 +135,7 @@ public class ReadLineInputStreamTest
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.CRLF), _in.getLineTerminations());
     }
-    
+
 
     @Test
     public void testCRBlocking() throws Exception
@@ -146,7 +146,7 @@ public class ReadLineInputStreamTest
         _queue.add("\rWorld\r");
         _queue.add("\r");
         _queue.add("__CLOSE__");
-        
+
         assertEquals("",_in.readLine());
         assertEquals("Hello",_in.readLine());
         assertEquals("World",_in.readLine());
@@ -154,7 +154,7 @@ public class ReadLineInputStreamTest
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.CR), _in.getLineTerminations());
     }
-    
+
     @Test
     public void testLFBlocking() throws Exception
     {
@@ -164,7 +164,7 @@ public class ReadLineInputStreamTest
         _queue.add("\nWorld\n");
         _queue.add("\n");
         _queue.add("__CLOSE__");
-        
+
         assertEquals("",_in.readLine());
         assertEquals("Hello",_in.readLine());
         assertEquals("World",_in.readLine());
@@ -172,7 +172,7 @@ public class ReadLineInputStreamTest
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.LF), _in.getLineTerminations());
     }
-    
+
     @Test
     public void testCRLFBlocking() throws Exception
     {
@@ -183,7 +183,7 @@ public class ReadLineInputStreamTest
         _queue.add("\n");
         _queue.add("");
         _queue.add("__CLOSE__");
-        
+
         assertEquals("",_in.readLine());
         assertEquals("Hello",_in.readLine());
         assertEquals("World",_in.readLine());
@@ -208,12 +208,12 @@ public class ReadLineInputStreamTest
         byte[] body = new byte[6];
         _in.read(body);
         assertEquals("\nBody\n",new String(body,0,6,StandardCharsets.UTF_8));
-        
+
         assertEquals("",_in.readLine());
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.LF), _in.getLineTerminations());
     }
-    
+
     @Test
     public void testHeaderCRBodyLF() throws Exception
     {
@@ -229,13 +229,13 @@ public class ReadLineInputStreamTest
         byte[] body = new byte[6];
         _in.read(body);
         assertEquals("\nBody\n",new String(body,0,6,StandardCharsets.UTF_8));
-        
+
         assertEquals("",_in.readLine());
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.CR), _in.getLineTerminations());
 
     }
-    
+
     @Test
     public void testHeaderCRLFBodyLF() throws Exception
     {
@@ -251,12 +251,12 @@ public class ReadLineInputStreamTest
         byte[] body = new byte[6];
         _in.read(body);
         assertEquals("\nBody\n",new String(body,0,6,StandardCharsets.UTF_8));
-        
+
         assertEquals("",_in.readLine());
         assertEquals(null,_in.readLine());
         assertEquals(EnumSet.of(Termination.CRLF), _in.getLineTerminations());
 
     }
 
-    
+
 }

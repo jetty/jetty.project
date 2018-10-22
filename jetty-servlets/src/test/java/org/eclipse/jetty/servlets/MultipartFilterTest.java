@@ -56,7 +56,7 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.ReadLineInputStream;
+import org.eclipse.jetty.http.internal.ReadLineInputStream;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
