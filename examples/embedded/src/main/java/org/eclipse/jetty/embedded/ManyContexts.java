@@ -50,6 +50,7 @@ public class ManyContexts
         server.setHandler(contexts);
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

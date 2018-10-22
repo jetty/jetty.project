@@ -49,7 +49,7 @@ public class ServerWithAnnotations
         
         webapp.setContextPath("/");
         File warFile = new File(
-                "../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
+                "jetty-distribution/target/distribution/demo-base/webapps/test.war");
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setAttribute(
                 "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -69,10 +69,11 @@ public class ServerWithAnnotations
         // Configure a LoginService
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");
-        loginService.setConfig("src/test/resources/realm.properties");
+        loginService.setConfig("examples/embedded/src/test/resources/realm.properties");
         server.addBean(loginService);
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 

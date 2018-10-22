@@ -24,6 +24,7 @@ import java.lang.management.ManagementFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
+import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebApp
@@ -61,6 +62,8 @@ public class OneWebApp
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to send the appropriate requests.
         server.setHandler(webapp);
+
+        Configurations.setServerDefault(server);
 
         // Start things up! 
         server.start();

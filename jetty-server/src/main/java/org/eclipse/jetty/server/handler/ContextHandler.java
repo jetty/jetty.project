@@ -257,11 +257,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out,indent,Collections.singletonList(new ClassLoaderDump(getClassLoader())),
-                Collections.singletonList(new DumpableCollection("eventListeners "+this,_eventListeners)),
-                Collections.singletonList(new DumpableCollection("handler attributes " + this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("context attributes " + this,((Context)getServletContext()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("initparams " + this,getInitParams().entrySet())));
+        dumpBeans(out, indent,
+            new ClassLoaderDump(getClassLoader()),
+            new DumpableCollection("eventListeners " + this, _eventListeners),
+            new DumpableCollection("handler attributes " + this, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
+            new DumpableCollection("context attributes " + this, ((Context)getServletContext()).getAttributeEntrySet()),
+            new DumpableCollection("initparams " + this,getInitParams().entrySet()));
     }
 
     /* ------------------------------------------------------------ */
