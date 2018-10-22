@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,6 +37,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Test;
 
 public class ClientParserTest
@@ -80,7 +84,7 @@ public class ClientParserTest
                 switch (field.getName())
                 {
                     case contentTypeName:
-                        assertEquals(contentTypeValue, field.getValue());
+                        assertEquals(contentTypeValue, field.getValue().toLowerCase(Locale.ENGLISH));
                         params.set(params.get() * primes[1]);
                         break;
                     default:
