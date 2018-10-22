@@ -29,7 +29,7 @@ import java.net.URLClassLoader;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.junit.jupiter.api.Test;
 
-public class ClassLoaderDumptTest
+public class ClassLoaderDumpTest
 {
     @Test
     public void testSimple() throws Exception
@@ -70,7 +70,7 @@ public class ClassLoaderDumptTest
         server.dump(out);
         String dump = out.toString();
         assertThat(dump,containsString("+-ParentedLoader"));
-        assertThat(dump,containsString("| +>"+Server.class.getClassLoader()));
+        assertThat(dump,containsString("| +>Server loader: "+Server.class.getClassLoader()));
         assertThat(dump,containsString("+>"+Server.class.getClassLoader()));
     }
     
@@ -100,7 +100,7 @@ public class ClassLoaderDumptTest
         String dump = out.toString();
         assertThat(dump,containsString("+-TopLoader"));
         assertThat(dump,containsString("| +>MiddleLoader"));
-        assertThat(dump,containsString("|   +>"+Server.class.getClassLoader()));
+        assertThat(dump,containsString("|   +>Server loader: "+Server.class.getClassLoader()));
         assertThat(dump,containsString("+>"+Server.class.getClassLoader()));
     }
     
