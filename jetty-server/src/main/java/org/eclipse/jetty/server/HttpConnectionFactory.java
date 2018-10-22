@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -54,11 +53,6 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
-    public HttpCompliance getHttpCompliance()
-    {
-        return _config.getHttpCompliance();
-    }
-
     public boolean isRecordHttpComplianceViolations()
     {
         return _recordHttpComplianceViolations;
@@ -67,7 +61,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        HttpConnection conn = new HttpConnection(_config, connector, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations());
+        HttpConnection conn = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
         return configure(conn, connector, endPoint);
     }
     
