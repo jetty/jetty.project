@@ -93,7 +93,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, HttpCompliance compliance, boolean recordComplianceViolations)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
     {
         super(endPoint, connector.getExecutor());
         _config = config;
@@ -102,7 +102,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _generator = newHttpGenerator();
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();
-        _parser = newHttpParser(compliance);
+        _parser = newHttpParser(config.getHttpCompliance());
         _recordHttpComplianceViolations = recordComplianceViolations;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);

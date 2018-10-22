@@ -109,8 +109,9 @@ public class ComplianceViolations2616Test
 
         HttpConfiguration config = new HttpConfiguration();
         config.setSendServerVersion(false);
+        config.setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
 
-        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(config, HttpCompliance.RFC2616_LEGACY);
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(config);
         httpConnectionFactory.setRecordHttpComplianceViolations(true);
         connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
 
