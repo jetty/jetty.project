@@ -70,6 +70,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     private static final Logger LOG = Log.getLogger(Configurations.class);
     
     private static final List<Configuration> __known = new ArrayList<>();
+    private static final List<Configuration> __unavailable = new ArrayList<>();
     private static final Set<String> __knownByClassName = new HashSet<>();
 
 
@@ -88,6 +89,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Configuration unavailable: "+configuration);
+                        __unavailable.add(configuration);
                         continue;
                     }
                     __known.add(configuration);
@@ -129,6 +131,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                 {
                     if (LOG.isDebugEnabled())
                         LOG.warn("Configuration unavailable: "+configuration);
+                    __unavailable.add(configuration);
                     continue;
                 }
                 __known.add((Configuration)clazz.newInstance());
@@ -153,6 +156,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     static synchronized void cleanKnown()
     {
         __known.clear();
+        __unavailable.clear();
     }
     
     /* ------------------------------------------------------------ */
@@ -514,6 +518,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out,indent,this,
-            new DumpableCollection("Known",Configurations.getKnown()));
+            new DumpableCollection("Known",Configurations.getKnown()),
+            new DumpableCollection("Unavailable",Configurations.__unavailable));
     }
 }
