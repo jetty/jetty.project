@@ -507,16 +507,13 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out,indent,
-            Collections.singletonList(new DumpableCollection("Known",Configurations.getKnown())),
-            Collections.singletonList(new DumpableCollection("Configurations",this)));
-
+        Dumpable.dumpObjects(out,indent,this,
+            new DumpableCollection("Known",Configurations.getKnown()));
     }
 }

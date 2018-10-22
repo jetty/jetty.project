@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -606,12 +604,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     @Override
                     public void dump(Appendable out, String indent) throws IOException
                     {
-                        out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(known).append(thread.getState().toString());
-                        if (thread.getPriority()!=Thread.NORM_PRIORITY)
-                            out.append(" prio=").append(String.valueOf(thread.getPriority()));
-                        out.append(System.lineSeparator());
+                        String s = thread.getId()+" "+thread.getName()+" "+thread.getState()+" "+thread.getPriority();
                         if (known.length()==0)
-                            ContainerLifeCycle.dump(out, indent, Arrays.asList(trace));
+                            Dumpable.dumpObjects(out, indent, s, (Object[])trace);
+                        else
+                            Dumpable.dumpObjects(out, indent, s);
                     }
 
                     @Override
@@ -632,7 +629,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (isDetailedDump())
             jobs = new ArrayList<>(getQueue());
 
-        dumpBeans(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs - size=" + jobs.size(), jobs)));
+        dumpBeans(out, indent, new DumpableCollection("threads",threads), new DumpableCollection("jobs", jobs));
     }
 
     @Override

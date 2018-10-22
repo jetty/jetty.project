@@ -705,13 +705,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.sessionFactory = sessionFactory;
     }
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpThis(out);
-        dump(out,indent,getOpenSessions());
-    }
-
     public HttpClient getHttpClient()
     {
         return this.httpClient;
