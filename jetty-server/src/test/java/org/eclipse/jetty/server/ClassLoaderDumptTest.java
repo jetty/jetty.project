@@ -70,7 +70,7 @@ public class ClassLoaderDumptTest
         server.dump(out);
         String dump = out.toString();
         assertThat(dump,containsString("+-ParentedLoader"));
-        assertThat(dump,containsString("| +>"+Server.class.getClassLoader()));
+        assertThat(dump,containsString("| +>Server loader: "+Server.class.getClassLoader()));
         assertThat(dump,containsString("+>"+Server.class.getClassLoader()));
     }
     
@@ -100,7 +100,7 @@ public class ClassLoaderDumptTest
         String dump = out.toString();
         assertThat(dump,containsString("+-TopLoader"));
         assertThat(dump,containsString("| +>MiddleLoader"));
-        assertThat(dump,containsString("|   +>"+Server.class.getClassLoader()));
+        assertThat(dump,containsString("|   +>Server loader: "+Server.class.getClassLoader()));
         assertThat(dump,containsString("+>"+Server.class.getClassLoader()));
     }
     
