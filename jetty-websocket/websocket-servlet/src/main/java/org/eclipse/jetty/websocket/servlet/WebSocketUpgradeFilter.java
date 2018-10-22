@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Map;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -34,7 +35,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -62,23 +62,35 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
      * Initialize the default WebSocketUpgradeFilter that the various WebSocket APIs use.
      *
      * @param context the {@link ServletContextHandler} to use
-     * @return a configured {@link WebSocketUpgradeFilter} instance
      * @throws ServletException if the filer cannot be configured
      */
-    public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
+    public static void configureContext(ServletContextHandler context) throws ServletException
     {
-        // Prevent double configure
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) context.getServletContext().getAttribute(WebSocketUpgradeFilter.class.getName());
-        if (filter != null)
+        WebSocketCreatorMapping factory = (WebSocketCreatorMapping)context.getAttribute(WebSocketCreatorMapping.class.getName());
+        if (factory == null)
         {
-            return filter;
+            factory = new WebSocketCreatorMapping();
+            context.setAttribute(WebSocketCreatorMapping.class.getName(), factory);
         }
 
-        WebSocketCreatorMapping factory = new WebSocketCreatorMapping();
-        context.setAttribute(WebSocketCreatorMapping.class.getName(), factory);
+        for (FilterHolder filterHolder : context.getServletHandler().getFilters())
+        {
+            // TODO does not handle extended filter classes
+            if (WebSocketUpgradeFilter.class.getName().equals(filterHolder.getClassName()))
+            {
+                Map<String, String> initParams = filterHolder.getInitParameters();
+                String key = initParams.get(CONTEXT_ATTRIBUTE_KEY);
+                if (key == null || WebSocketUpgradeFilter.class.getName().equals(key))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Filter already created: {}", filterHolder);
+                    return;
+                }
+            }
+        }
 
         // Dynamically add filter
-        filter = new WebSocketUpgradeFilter(factory);
+        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(factory);
         filter.setToAttribute(context, WebSocketUpgradeFilter.class.getName());
 
         String name = "Jetty_WebSocketUpgradeFilter";
@@ -95,42 +107,16 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         {
             LOG.debug("Adding [{}] {} mapped to {} to {}", name, filter, pathSpec, context);
         }
-
-        return filter;
     }
 
-    /**
-     * @param context the ServletContext to use
-     * @return a configured {@link WebSocketUpgradeFilter} instance
-     * @throws ServletException if the filer cannot be configured
-     * @deprecated use {@link #configureContext(ServletContextHandler)} instead
-     */
-    @Deprecated
-    public static WebSocketUpgradeFilter configureContext(ServletContext context) throws ServletException
-    {
-        ContextHandler handler = ContextHandler.getContextHandler(context);
-
-        if (handler == null)
-        {
-            throw new ServletException("Not running on Jetty, WebSocket support unavailable");
-        }
-
-        if (!(handler instanceof ServletContextHandler))
-        {
-            throw new ServletException("Not running in Jetty ServletContextHandler, WebSocket support via " + WebSocketUpgradeFilter.class.getName() + " unavailable");
-        }
-
-        return configureContext((ServletContextHandler) handler);
-    }
-
-    private final WebSocketCreatorMapping factory;
+    private WebSocketCreatorMapping factory;
     private String instanceKey;
     private boolean alreadySetToAttribute = false;
 
     @SuppressWarnings("unused")
     public WebSocketUpgradeFilter()
     {
-        this(new WebSocketCreatorMapping());
+        this(null);
     }
 
     public WebSocketUpgradeFilter(WebSocketCreatorMapping factory)
@@ -238,6 +224,14 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void init(FilterConfig config) throws ServletException
     {
+        if (factory == null)
+        {
+            factory = (WebSocketCreatorMapping)config.getServletContext().getAttribute(WebSocketCreatorMapping.class.getName());
+
+            if (factory == null)
+                factory = new WebSocketCreatorMapping();
+        }
+
         try
         {
             final ServletContext context = config.getServletContext();
@@ -320,16 +314,13 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
         if (context.getAttribute(key) != null)
         {
-            // TODO Why is this attribute needed?
-            LOG.warn(
-            new ServletException(WebSocketUpgradeFilter.class.getName() +
+            throw new ServletException(WebSocketUpgradeFilter.class.getName() +
                     " is defined twice for the same context attribute key '" + key
                     + "'.  Make sure you have different init-param '" +
-                    CONTEXT_ATTRIBUTE_KEY + "' values set"));
+                    CONTEXT_ATTRIBUTE_KEY + "' values set");
         }
-        else
-            context.setAttribute(key, this);
 
+        context.setAttribute(key, this);
         alreadySetToAttribute = true;
     }
 }
