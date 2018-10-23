@@ -32,10 +32,10 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
+import org.eclipse.jetty.http.MultiPartInputStreamParser;
+import org.eclipse.jetty.http.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.http.internal.MultiPartInputStreamParser;
-import org.eclipse.jetty.http.internal.MultiPartInputStreamParser.NonCompliance;
 
 
 /*

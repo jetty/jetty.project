@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http.internal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -27,11 +25,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.http.internal.ReadLineInputStream.Termination;
+import org.eclipse.jetty.http.ReadLineInputStream;
+import org.eclipse.jetty.http.ReadLineInputStream.Termination;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReadLineInputStreamTest
 {

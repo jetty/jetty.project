@@ -20,42 +20,35 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 
-/**
- * ClusteredSessionScavengingTest
- *
- *
- */
+@Disabled("Disabled due to Infinispan not supporting JDK 11, see eclipse/jetty.project#3024")
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
-    public static InfinispanTestSupport __testSupport;
+    public InfinispanTestSupport _testSupport;
     
-    @BeforeAll
-    public static void setup () throws Exception
+    @BeforeEach
+    public void setup() throws Exception
     {
-        __testSupport = new InfinispanTestSupport();
-        __testSupport.setUseFileStore(true);
-        __testSupport.setup();
+        _testSupport = new InfinispanTestSupport();
+        _testSupport.setUseFileStore(true);
+        _testSupport.setup();
     }
     
-    @AfterAll
-    public static void teardown () throws Exception
+    @AfterEach
+    public void teardown() throws Exception
     {
-        if (__testSupport != null)
-            __testSupport.teardown();
+        if (_testSupport != null)
+            _testSupport.teardown();
     }
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
-        factory.setCache(__testSupport.getCache());
+        factory.setCache(_testSupport.getCache());
         return factory;
     }
 }

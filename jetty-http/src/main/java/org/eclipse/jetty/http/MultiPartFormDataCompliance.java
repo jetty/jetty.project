@@ -27,7 +27,7 @@ public enum MultiPartFormDataCompliance
     /**
      * Legacy <code>multiPart/form-data</code> parsing which is slow but forgiving.
      * It will accept non compliant preambles and inconsistent line termination.
-     * @see org.eclipse.jetty.http.internal.MultiPartInputStreamParser
+     * @see MultiPartInputStreamParser
      */
     LEGACY, 
     /**
