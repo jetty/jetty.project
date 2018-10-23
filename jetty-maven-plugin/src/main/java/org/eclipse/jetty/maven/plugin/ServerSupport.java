@@ -19,12 +19,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -33,11 +27,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
+
+import java.io.File;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * ServerSupport
@@ -69,9 +68,8 @@ public class ServerSupport
             throw new IllegalArgumentException ("Server is null");
 
         DefaultHandler defaultHandler = new DefaultHandler();
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
         if (requestLog != null)
-            requestLogHandler.setRequestLog(requestLog);
+            server.setRequestLog(requestLog);
 
         ContextHandlerCollection contexts = findContextHandlerCollection(server);
         if (contexts == null)
@@ -82,7 +80,7 @@ public class ServerSupport
             {
                 handlers = new HandlerCollection();               
                 server.setHandler(handlers);                            
-                handlers.setHandlers(new Handler[]{contexts, defaultHandler, requestLogHandler});
+                handlers.setHandlers(new Handler[]{contexts, defaultHandler});
             }
             else
             {

@@ -19,13 +19,6 @@
 
 package org.eclipse.jetty.ant;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.eclipse.jetty.ant.types.Connector;
 import org.eclipse.jetty.ant.types.ContextHandlers;
 import org.eclipse.jetty.ant.utils.ServerProxy;
@@ -40,11 +33,17 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.xml.sax.SAXException;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 
 
@@ -407,9 +406,8 @@ public class ServerProxyImpl implements ServerProxy
      */
     private void configureHandlers()
     {
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
         if (requestLog != null)
-            requestLogHandler.setRequestLog(requestLog);
+            server.setRequestLog(requestLog);
 
         contexts = (ContextHandlerCollection) server
                 .getChildHandlerByClass(ContextHandlerCollection.class);
@@ -422,8 +420,7 @@ public class ServerProxyImpl implements ServerProxy
             {
                 handlers = new HandlerCollection();
                 server.setHandler(handlers);
-                handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(),
-                        requestLogHandler });
+                handlers.setHandlers(new Handler[] { contexts, new DefaultHandler() });
             }
             else
             {

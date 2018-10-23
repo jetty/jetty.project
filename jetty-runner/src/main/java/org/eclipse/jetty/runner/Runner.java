@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.runner;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -43,7 +34,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -58,6 +48,15 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Runner
@@ -88,7 +87,6 @@ public class Runner
     protected URLClassLoader _classLoader;
     protected Classpath _classpath = new Classpath();
     protected ContextHandlerCollection _contexts;
-    protected RequestLogHandler _logHandler;
     protected String _logFile;
     protected ArrayList<String> _configFiles;
     protected boolean _enableStats=false;
@@ -392,14 +390,6 @@ public class Runner
                             handlers.addHandler(new DefaultHandler());
                         }
 
-                        //ensure a log handler is present
-                        _logHandler = (RequestLogHandler) handlers.getChildHandlerByClass(RequestLogHandler.class);
-                        if (_logHandler == null) 
-                        {
-                            _logHandler = new RequestLogHandler();
-                            handlers.addHandler(_logHandler);
-                        }
-
 
                         //check a connector is configured to listen on
                         Connector[] connectors = _server.getConnectors();
@@ -509,7 +499,7 @@ public class Runner
         {
             NCSARequestLog requestLog = new NCSARequestLog(_logFile);
             requestLog.setExtended(false);
-            _logHandler.setRequestLog(requestLog);
+            _server.setRequestLog(requestLog);
         }
     }
     

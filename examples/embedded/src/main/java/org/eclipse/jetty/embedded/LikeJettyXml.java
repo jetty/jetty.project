@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.lang.management.ManagementFactory;
-
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
 import org.eclipse.jetty.deploy.bindings.DebugListenerBinding;
@@ -44,12 +40,15 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.webapp.Configuration;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.lang.management.ManagementFactory;
 
 /**
  * Starts the Jetty Distribution's demo-base directory using entirely
@@ -214,9 +213,7 @@ public class LikeJettyXml
         requestLog.setExtended(true);
         requestLog.setLogCookies(false);
         requestLog.setLogTimeZone("GMT");
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
-        requestLogHandler.setRequestLog(requestLog);
-        handlers.addHandler(requestLogHandler);
+        server.setRequestLog(requestLog);
 
 
         // === jetty-lowresources.xml ===
