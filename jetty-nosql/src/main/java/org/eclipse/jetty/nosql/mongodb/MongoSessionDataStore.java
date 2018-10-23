@@ -254,9 +254,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 else
                 {
                     //attributes have special serialized format
-                    ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
-                    ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);
-                    SessionData.deserializeAttributes(data, ois);
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
+                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);)
+                    {
+                        SessionData.deserializeAttributes(data, ois);
+                    }
                 }
             }
             else
@@ -518,13 +520,13 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         sets.put(__ACCESSED, data.getAccessed());
         sets.put(__LAST_ACCESSED, data.getLastAccessed());
         
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        SessionData.serializeAttributes(data, oos);
-        
-        sets.put(getContextSubfield(__ATTRIBUTES), baos.toByteArray());
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos);)
+        {
+            SessionData.serializeAttributes(data, oos);       
+            sets.put(getContextSubfield(__ATTRIBUTES), baos.toByteArray());
+        }
 
-       
         // Do the upsert
         if (!sets.isEmpty())
             update.put("$set",sets);

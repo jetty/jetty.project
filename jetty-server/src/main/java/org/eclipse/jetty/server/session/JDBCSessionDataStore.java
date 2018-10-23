@@ -725,16 +725,17 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.setLong(10, data.getExpiry());
                 statement.setLong(11, data.getMaxInactiveMs());
 
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                SessionData.serializeAttributes(data, oos);
-                oos.flush();
-                byte[] bytes = baos.toByteArray();
-                ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
-                statement.executeUpdate();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Inserted session "+data);
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                     ObjectOutputStream oos = new ObjectOutputStream(baos))
+                {
+                    SessionData.serializeAttributes(data, oos);
+                    byte[] bytes = baos.toByteArray();
+                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                    statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
+                    statement.executeUpdate();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Inserted session "+data);
+                }
             }
         }
     }
@@ -755,17 +756,20 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.setLong(5, data.getExpiry());
                 statement.setLong(6, data.getMaxInactiveMs());
 
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                SessionData.serializeAttributes(data, oos);
-                oos.flush();
-                byte[] bytes = baos.toByteArray();
-                ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
-                statement.executeUpdate();
+                try(ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos))
+                {
+                    SessionData.serializeAttributes(data, oos);
+                    byte[] bytes = baos.toByteArray();
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))
+                    {
+                        statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
+                        statement.executeUpdate();
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Updated session "+data);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Updated session "+data);
+                    }
+                }
             }
         }
     }

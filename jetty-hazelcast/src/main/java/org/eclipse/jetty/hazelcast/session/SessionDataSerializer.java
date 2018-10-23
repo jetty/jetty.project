@@ -66,12 +66,13 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
   
         out.writeLong(data.getExpiry()); 
         out.writeLong(data.getMaxInactiveMs());
-        
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        SessionData.serializeAttributes(data, oos);
-        
-        out.writeByteArray(baos.toByteArray()); 
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos))
+        {
+            SessionData.serializeAttributes(data, oos);
+            out.writeByteArray(baos.toByteArray());
+        }
     }
 
     @Override

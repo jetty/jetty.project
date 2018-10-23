@@ -306,14 +306,17 @@ public class JdbcTestHelper
             if (attributes != null)
             {
                 SessionData tmp = new SessionData (id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                SessionData.serializeAttributes(tmp, oos);
-                oos.flush();
-                byte[] bytes = baos.toByteArray();
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                     ObjectOutputStream oos = new ObjectOutputStream(baos);)
+                {
+                    SessionData.serializeAttributes(tmp, oos);
+                    byte[] bytes = baos.toByteArray();
 
-                ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                statement.setBinaryStream(12, bais, bytes.length);
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);)
+                    {
+                        statement.setBinaryStream(12, bais, bytes.length);
+                    }
+                }
             }
             else
                 statement.setBinaryStream(12, new ByteArrayInputStream("".getBytes()), 0);

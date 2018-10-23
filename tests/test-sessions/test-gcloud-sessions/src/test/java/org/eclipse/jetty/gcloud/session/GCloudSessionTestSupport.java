@@ -133,33 +133,34 @@ public class GCloudSessionTestSupport
                                               throws Exception
     {
         //serialize the attribute map
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        if (attributes != null)
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
-            SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            SessionData.serializeAttributes(tmp, oos);
-        }
+            if (attributes != null)
+            {
+                SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                SessionData.serializeAttributes(tmp, oos);
+            }
 
-        //turn a session into an entity         
-        Entity.Builder builder = Entity.newBuilder(_keyFactory.newKey(contextPath+"_"+vhost+"_"+id))
-                .set(EntityDataModel.ID, id)
-                .set(EntityDataModel.CONTEXTPATH, contextPath)
-                .set(EntityDataModel.VHOST, vhost)
-                .set(EntityDataModel.ACCESSED, accessed)
-                .set(EntityDataModel.LASTACCESSED, lastAccessed)
-                .set(EntityDataModel.CREATETIME, created)
-                .set(EntityDataModel.COOKIESETTIME, cookieset)
-                .set(EntityDataModel.LASTNODE, lastNode)
-                .set(EntityDataModel.EXPIRY, expiry)
-                .set(EntityDataModel.MAXINACTIVE, maxIdle)
-                .set(EntityDataModel.LASTSAVED, lastSaved);
-        if (attributes != null)
+            //turn a session into an entity         
+            Entity.Builder builder = Entity.newBuilder(_keyFactory.newKey(contextPath+"_"+vhost+"_"+id))
+                    .set(EntityDataModel.ID, id)
+                    .set(EntityDataModel.CONTEXTPATH, contextPath)
+                    .set(EntityDataModel.VHOST, vhost)
+                    .set(EntityDataModel.ACCESSED, accessed)
+                    .set(EntityDataModel.LASTACCESSED, lastAccessed)
+                    .set(EntityDataModel.CREATETIME, created)
+                    .set(EntityDataModel.COOKIESETTIME, cookieset)
+                    .set(EntityDataModel.LASTNODE, lastNode)
+                    .set(EntityDataModel.EXPIRY, expiry)
+                    .set(EntityDataModel.MAXINACTIVE, maxIdle)
+                    .set(EntityDataModel.LASTSAVED, lastSaved);
+            if (attributes != null)
                 builder.set(EntityDataModel.ATTRIBUTES, BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build());
+            Entity entity = builder.build();
 
-        Entity entity = builder.build();
-        
-        _ds.put(entity);
+            _ds.put(entity);
+        }
     }
     
     public boolean checkSessionPersisted (SessionData data)

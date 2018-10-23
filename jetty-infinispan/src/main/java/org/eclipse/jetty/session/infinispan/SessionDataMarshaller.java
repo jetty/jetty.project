@@ -111,9 +111,11 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
         out.writeLong("expiry", sdata.getExpiry());
         out.writeLong("maxInactiveMs", sdata.getMaxInactiveMs());
 
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        ObjectOutputStream oout = new ObjectOutputStream(bout);
-        SessionData.serializeAttributes(sdata, oout);
-        out.writeBytes("attributes", bout.toByteArray());
+        try (ByteArrayOutputStream bout = new ByteArrayOutputStream();
+             ObjectOutputStream oout = new ObjectOutputStream(bout);)
+        {
+            SessionData.serializeAttributes(sdata, oout);
+            out.writeBytes("attributes", bout.toByteArray());
+        }
     }
 }

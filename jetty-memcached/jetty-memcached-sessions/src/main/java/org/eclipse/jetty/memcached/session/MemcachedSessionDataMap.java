@@ -66,48 +66,21 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         protected Object deserialize(byte[] in)
         {
             Object rv = null;
-            ByteArrayInputStream bis = null;
-            ClassLoadingObjectInputStream is = null;
-            try
+
+            if (in != null)
             {
-                if (in != null)
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(in);
+                        ClassLoadingObjectInputStream is = new ClassLoadingObjectInputStream(bis))
                 {
-                    bis = new ByteArrayInputStream(in);
-                    is = new ClassLoadingObjectInputStream(bis);
                     rv = is.readObject();
                 }
-            }
-            catch (IOException e)
-            {
-                log.error("Caught IOException decoding " + in.length + " bytes of data", e);
-            }
-            catch (ClassNotFoundException e)
-            {
-                log.error("Caught CNFE decoding " + in.length + " bytes of data", e);
-            }
-            finally
-            {
-                if (is != null)
+                catch (IOException e)
                 {
-                    try
-                    {
-                        is.close();
-                    }
-                    catch (IOException e)
-                    {
-                        //ignored by memcached
-                    }
+                    log.error("Caught IOException decoding " + in.length + " bytes of data", e);
                 }
-                if (bis != null)
+                catch (ClassNotFoundException e)
                 {
-                    try
-                    {
-                        bis.close();
-                    }
-                    catch (IOException e)
-                    {
-                        //ignored by memcached
-                    }
+                    log.error("Caught CNFE decoding " + in.length + " bytes of data", e);
                 }
             }
             return rv;
