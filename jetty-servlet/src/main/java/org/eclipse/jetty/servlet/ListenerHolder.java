@@ -71,7 +71,6 @@ public class ListenerHolder extends BaseHolder<EventListener>
         _listener = listener;
         _extInstance=true;
         setHeldClass(_listener.getClass());
-        setClassName(_listener.getClass().getName());
     }
 
 

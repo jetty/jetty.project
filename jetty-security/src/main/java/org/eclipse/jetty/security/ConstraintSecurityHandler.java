@@ -767,13 +767,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        // TODO these should all be beans
         dumpBeans(out, indent,
-                getLoginService(),
-                getIdentityService(),
-                getAuthenticator(),
-                DumpableCollection.from("roles",_roles),
-                DumpableCollection.from("constraints",_constraintMappings));
+                DumpableCollection.from("roles", _roles),
+                DumpableCollection.from("constraints", _constraintMappings));
     }
     
     /* ------------------------------------------------------------ */
