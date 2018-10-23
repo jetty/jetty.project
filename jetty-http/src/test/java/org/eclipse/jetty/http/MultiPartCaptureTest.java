@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,7 +37,6 @@ import java.util.stream.Stream;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.http.internal.MultiPartInputStreamParser;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -56,6 +49,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 @ExtendWith(WorkDirExtension.class)
 public class MultiPartCaptureTest

@@ -18,19 +18,6 @@
 
 package org.eclipse.jetty.http.internal;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,12 +33,25 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.http.internal.MultiPartInputStreamParser;
-import org.eclipse.jetty.http.internal.MultiPartInputStreamParser.MultiPart;
-import org.eclipse.jetty.http.internal.MultiPartInputStreamParser.NonCompliance;
+import org.eclipse.jetty.http.MultiPartInputStreamParser;
+import org.eclipse.jetty.http.MultiPartInputStreamParser.MultiPart;
+import org.eclipse.jetty.http.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * MultiPartInputStreamTest
