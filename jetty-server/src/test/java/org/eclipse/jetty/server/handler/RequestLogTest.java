@@ -231,7 +231,7 @@ public class RequestLogTest
         _connector.getResponse("XXXXXXXXXXXX\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
-        assertThat(log,containsString(" 400 0 "));
+        assertThat(log,containsString(" 400 "));
     }
     
     @Test
@@ -242,7 +242,7 @@ public class RequestLogTest
         _connector.getResponse("METHOD /f\00o HTTP/1.0\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
-        assertThat(log,containsString(" 400 0 "));
+        assertThat(log,containsString(" 400 "));
     }
     
     @Test
@@ -253,7 +253,7 @@ public class RequestLogTest
         _connector.getResponse("METHOD /foo HTTP/9\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
-        assertThat(log,containsString(" 400 0 "));
+        assertThat(log,containsString(" 400 "));
     }
     
     @Test
@@ -267,7 +267,7 @@ public class RequestLogTest
         _connector.getResponse("METHOD /f"+ooo+" HTTP/1.0\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
-        assertThat(log,containsString(" 414 0 "));
+        assertThat(log,containsString(" 414 "));
     }
     
     @Test
@@ -281,7 +281,7 @@ public class RequestLogTest
         _connector.getResponse("METHOD /foo HTTP/1.0\name: f+"+ooo+"\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"METHOD /foo HTTP/1.0\""));
-        assertThat(log,containsString(" 431 0 "));
+        assertThat(log,containsString(" 431 "));
     }
     
     @Test
@@ -292,7 +292,7 @@ public class RequestLogTest
         _connector.getResponse("GET /foo HTTP/1.1\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo "));
-        assertThat(log,containsString(" 400 0 "));
+        assertThat(log,containsString(" 400 "));
     }
 
     @Test
@@ -303,7 +303,7 @@ public class RequestLogTest
         _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://[:1]/foo "));
-        assertThat(log,containsString(" 400 0 \"http://other.site\" \"-\" - "));
+        assertThat(log,containsString(" 400 50 \"http://other.site\" \"-\" - "));
     }
 
     @Test
@@ -314,7 +314,7 @@ public class RequestLogTest
         _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://[:1]/foo "));
-        assertThat(log,containsString(" 400 0 \"http://other.site\" \"Mozilla/5.0 (test)\" - "));
+        assertThat(log,containsString(" 400 50 \"http://other.site\" \"Mozilla/5.0 (test)\" - "));
     }
     
 
