@@ -18,19 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritePendingException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.WriteListener;
-
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -42,6 +29,19 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritePendingException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>{@link HttpOutput} implements {@link ServletOutputStream}
@@ -934,7 +934,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
         if (_flushed < minFlushed)
-            throw new IOException(String.format("Response content data rate < %d B/s", minDataRate));
+        {
+            IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
+            _channel.abort(ioe);
+            throw ioe;
+        }
     }
 
     public void recycle()
