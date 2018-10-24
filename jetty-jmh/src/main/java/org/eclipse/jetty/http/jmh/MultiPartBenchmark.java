@@ -18,8 +18,23 @@
 
 package org.eclipse.jetty.http.jmh;
 
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.http.Part;
+
 import org.eclipse.jetty.http.MultiPartCaptureTest.MultipartExpectations;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
+import org.eclipse.jetty.http.MultiPartInputStreamParser;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -37,19 +52,6 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.http.Part;
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
 @Threads(4)
@@ -181,7 +183,7 @@ public class MultiPartBenchmark
                 
                 case "UTIL":
                 {
-                    org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, _contentType, config, outputDir.toFile());
+                    MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in, _contentType, config, outputDir.toFile());
                     if (parser.getParts().size() != _numSections)
                         throw new IllegalStateException("Incorrect Parsing");
                     for (Part p : parser.getParts())
@@ -249,7 +251,7 @@ public class MultiPartBenchmark
                     break;
                     case "UTIL":
                     {
-                        org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
+                        MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
                         for (Part p : parser.getParts())
                         {
                             count += p.getSize();

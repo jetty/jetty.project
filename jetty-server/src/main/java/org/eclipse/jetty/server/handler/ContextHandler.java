@@ -679,7 +679,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _durableListeners.add(listener);
 
         if (listener instanceof ContextScopeListener)
+        {
             _contextListeners.add((ContextScopeListener)listener);
+            if (__context.get()!=null)
+                ((ContextScopeListener)listener).enterScope(__context.get(),null,"Listener registered");
+        }
 
         if (listener instanceof ServletContextListener)
             _servletContextListeners.add((ServletContextListener)listener);

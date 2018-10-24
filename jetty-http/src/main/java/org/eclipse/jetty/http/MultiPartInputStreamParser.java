@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.http;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -39,11 +39,18 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.util.ReadLineInputStream.Termination;
+import org.eclipse.jetty.http.ReadLineInputStream.Termination;
+import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -59,7 +66,6 @@ import org.eclipse.jetty.util.log.Logger;
  * @deprecated Replaced by org.eclipse.jetty.http.MultiPartFormInputStream
  * The code for MultiPartInputStream is slower than its replacement MultiPartFormInputStream. However
  * this class accepts formats non compliant the RFC that the new MultiPartFormInputStream does not accept. 
- * 
  */
 @Deprecated
 public class MultiPartInputStreamParser

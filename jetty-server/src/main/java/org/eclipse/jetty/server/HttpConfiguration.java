@@ -24,8 +24,10 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.MultiPartFormDataCompliance;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
@@ -71,6 +73,7 @@ public class HttpConfiguration
     private boolean _useDirectByteBuffers = false;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
+    private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
     private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.RFC7578;
     private boolean _notifyRemoteAsyncErrors = true;
@@ -545,6 +548,16 @@ public class HttpConfiguration
     public void setMinResponseDataRate(long bytesPerSecond)
     {
         _minResponseDataRate = bytesPerSecond;
+    }
+
+    public HttpCompliance getHttpCompliance()
+    {
+        return _httpCompliance;
+    }
+
+    public void setHttpCompliance(HttpCompliance _httpCompliance)
+    {
+        this._httpCompliance = _httpCompliance;
     }
 
     public CookieCompliance getCookieCompliance()

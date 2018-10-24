@@ -148,12 +148,12 @@ public class HttpConnectionTest
     @Test
     public void testHttp09_NoVersion() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
         String request = "GET / HTTP/0.9\r\n\r\n";
         String response = connector.getResponse(request);
         assertThat(response, containsString("400 Bad Version"));
 
-        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230);
         request = "GET / HTTP/0.9\r\n\r\n";
         response = connector.getResponse(request);
         assertThat(response, containsString("400 Bad Version"));
@@ -165,7 +165,7 @@ public class HttpConnectionTest
     @Test
     public void testHttp09_NoHeaders() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
         // header looking like another request is ignored
         String request = "GET /one\r\nGET :/two\r\n\r\n";
         String response = BufferUtil.toString(connector.executeRequest(request).waitForOutput(10,TimeUnit.SECONDS));
@@ -179,7 +179,7 @@ public class HttpConnectionTest
     @Test
     public void testHttp09_MultipleRequests() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
 
         // Verify that pipelining does not work with HTTP/0.9.
         String requests = "GET /?id=123\r\n\r\nGET /?id=456\r\n\r\n";
@@ -407,7 +407,7 @@ public class HttpConnectionTest
     @Test
     public void test_0_9() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         LocalEndPoint endp = connector.executeRequest("GET /R1\n");
         endp.waitUntilClosed();
         String response=BufferUtil.toString(endp.takeOutput());

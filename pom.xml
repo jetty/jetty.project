@@ -134,8 +134,6 @@
     <module>jetty-home</module>
     <module>jetty-bom</module>
     <module>jetty-documentation</module>
-    <!-- modules that need fixed and added back, or simply dropped and not maintained -->
-    <!-- <module>jetty-rhttp</module> -->
   </modules>
 
   <build>
@@ -934,7 +932,6 @@
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.activation</artifactId>
         <version>1.1.0.v201105071233</version>
-        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -945,7 +942,6 @@
         <groupId>javax.transaction</groupId>
         <artifactId>javax.transaction-api</artifactId>
         <version>1.3</version>
-        <scope>provided</scope>
       </dependency>
       <!-- maven deps -->
       <dependency>
@@ -1229,12 +1225,9 @@
       </build>
     </profile>
     <profile>
-      <id>compact3</id>
-      <modules>
-        <module>aggregates/jetty-all-compact3</module>
-      </modules>
-    </profile>
-    <profile>
+      <!-- This profile is used exclusively on Eclipse CBI.
+           Various plugins and artifacts declared here only
+           exist on the Eclipse CBI infrastructure. -->
       <id>eclipse-sign</id>
       <activation>
         <property>
@@ -1258,6 +1251,7 @@
             </executions>
           </plugin>
           <plugin>
+            <!-- This plugin only exists on Eclipse CBI -->
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-jarsigner-plugin</artifactId>
             <version>${cbi-plugins.version}</version>
@@ -1416,7 +1410,7 @@
       <email>joakim.erdfelt@gmail.com</email>
       <organization>Webtide, LLC</organization>
       <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>-7</timezone>
+      <timezone>-6</timezone>
     </developer>
     <developer>
       <id>sbordet</id>

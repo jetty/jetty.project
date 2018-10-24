@@ -16,15 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.http;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
-
-import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 
 /**
  * ReadLineInputStream

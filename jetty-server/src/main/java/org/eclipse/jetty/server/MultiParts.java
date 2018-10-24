@@ -32,10 +32,10 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
+import org.eclipse.jetty.http.MultiPartInputStreamParser;
+import org.eclipse.jetty.http.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
-import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 
 
 /*
@@ -44,13 +44,12 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
  */
 public interface MultiParts extends Closeable
 {   
-    public Collection<Part> getParts();
-    public Part getPart(String name);
-    public boolean isEmpty();
-    public ContextHandler.Context getContext();
-    
-    
-    public class MultiPartsHttpParser implements MultiParts
+    Collection<Part> getParts();
+    Part getPart(String name);
+    boolean isEmpty();
+    ContextHandler.Context getContext();
+
+    class MultiPartsHttpParser implements MultiParts
     {   
         private final MultiPartFormInputStream _httpParser;
         private final ContextHandler.Context _context;
@@ -107,9 +106,8 @@ public interface MultiParts extends Closeable
 
     }
     
-    
-    @SuppressWarnings("deprecation") 
-    public class MultiPartsUtilParser implements MultiParts
+    @SuppressWarnings("deprecation")
+    class MultiPartsUtilParser implements MultiParts
     {   
         private final MultiPartInputStreamParser _utilParser;
         private final ContextHandler.Context _context;

@@ -281,7 +281,7 @@ public class GracefulStopTest
             public Connection newConnection(Connector con, EndPoint endPoint)
             {
                 // Slow closing connection
-                HttpConnection conn = new HttpConnection(getHttpConfiguration(), con, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations())
+                HttpConnection conn = new HttpConnection(getHttpConfiguration(), con, endPoint, isRecordHttpComplianceViolations())
                 {
                     @Override
                     public void close()

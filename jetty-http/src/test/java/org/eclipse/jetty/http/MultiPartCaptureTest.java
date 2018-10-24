@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,6 +49,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 @ExtendWith(WorkDirExtension.class)
 public class MultiPartCaptureTest
@@ -166,7 +166,7 @@ public class MultiPartCaptureTest
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         try (InputStream in = Files.newInputStream(multipartRawFile))
         {
-            org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
+            MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
 
             multipartExpectations.checkParts(parser.getParts(),s->
             { 
