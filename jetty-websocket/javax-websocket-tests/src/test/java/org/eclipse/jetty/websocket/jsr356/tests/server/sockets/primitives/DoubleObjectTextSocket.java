@@ -52,7 +52,7 @@ public class DoubleObjectTextSocket
         }
         else
         {
-            String msg = String.format(Locale.US, "%.4f",d);
+            String msg = String.format(Locale.US, "%.4f", d);
             session.getAsyncRemote().sendText(msg);
         }
     }
@@ -60,7 +60,7 @@ public class DoubleObjectTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

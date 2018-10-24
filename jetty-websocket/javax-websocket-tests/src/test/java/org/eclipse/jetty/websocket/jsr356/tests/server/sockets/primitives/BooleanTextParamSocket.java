@@ -34,7 +34,7 @@ import java.io.IOException;
 public class BooleanTextParamSocket
 {
     private static final Logger LOG = Log.getLogger(BooleanTextParamSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -53,7 +53,7 @@ public class BooleanTextParamSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

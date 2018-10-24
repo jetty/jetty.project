@@ -51,7 +51,7 @@ public class ByteObjectTextSocket
         }
         else
         {
-            String msg = String.format("0x%02X",b);
+            String msg = String.format("0x%02X", b);
             session.getAsyncRemote().sendText(msg);
         }
     }
@@ -59,7 +59,7 @@ public class ByteObjectTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }
