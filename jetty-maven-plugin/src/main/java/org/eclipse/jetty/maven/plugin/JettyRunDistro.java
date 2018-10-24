@@ -500,7 +500,7 @@ public class JettyRunDistro extends JettyRunMojo
         }
         else
         {
-            cmd.add( "java" );
+            cmd.add( getJavaBin() );
         }
         cmd.add("-jar");
         cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
