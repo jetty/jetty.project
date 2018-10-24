@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -625,11 +624,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
         }
 
-        List<Runnable> jobs = Collections.emptyList();
         if (isDetailedDump())
-            jobs = new ArrayList<>(getQueue());
-
-        dumpBeans(out, indent, new DumpableCollection("threads",threads), new DumpableCollection("jobs", jobs));
+        {
+            List<Runnable> jobs = new ArrayList<>(getQueue());
+            dumpBeans(out, indent, new DumpableCollection("threads", threads), new DumpableCollection("jobs", jobs));
+        }
+        else
+        {
+            dumpBeans(out, indent, new DumpableCollection("threads", threads));
+        }
     }
 
     @Override
