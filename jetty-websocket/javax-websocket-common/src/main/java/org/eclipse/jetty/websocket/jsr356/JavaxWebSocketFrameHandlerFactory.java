@@ -91,10 +91,17 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         this.paramIdentifier = paramIdentifier == null ? InvokerUtils.PARAM_IDENTITY : paramIdentifier;
     }
 
-    public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
+    public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
     {
-        // TODO create and save metadata in metadataMap?? like in JettyWebSocketFrameHandlerFactory.getMetadata
-        return metadataMap.get(endpointClass);
+        JavaxWebSocketFrameHandlerMetadata metadata = metadataMap.get(endpointClass);
+
+        if (metadata == null)
+        {
+            metadata = createMetadata(endpointClass, endpointConfig);
+            metadataMap.put(endpointClass, metadata);
+        }
+
+        return metadata;
     }
 
     public abstract JavaxWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
@@ -116,35 +123,25 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             config = new BasicEndpointConfig();
         }
 
-        JavaxWebSocketFrameHandlerMetadata metadata = getMetadata(endpoint.getClass());
-
+        JavaxWebSocketFrameHandlerMetadata metadata = getMetadata(endpoint.getClass(), config);
         if (metadata == null)
-        {
-            metadata = createMetadata(endpoint.getClass(), config);
-            // todo is metadata being saved in metadataMap
-            if (metadata == null)
-            {
-                return null;
-            }
-        }
-
+            return null;
 
         MethodHandle openHandle = metadata.getOpenHandle();
         MethodHandle closeHandle = metadata.getCloseHandle();
         MethodHandle errorHandle = metadata.getErrorHandle();
         MethodHandle pongHandle = metadata.getPongHandle();
 
-        MessageMetadata textMetadata = metadata.getTextMetadata();
-        MessageMetadata binaryMetadata = metadata.getBinaryMetadata();
+        MessageMetadata textMetadata = MessageMetadata.copyOf(metadata.getTextMetadata());
+        MessageMetadata binaryMetadata = MessageMetadata.copyOf(metadata.getBinaryMetadata());
 
-        String[] namedVariables = null;
-        Map<String,String> pathParams = null;
         UriTemplatePathSpec templatePathSpec = metadata.getUriTemplatePathSpec();
         if(templatePathSpec != null)
         {
-            namedVariables = templatePathSpec.getVariables();
+            String[] namedVariables = templatePathSpec.getVariables();
+            Map<String,String> pathParams = templatePathSpec.getPathParams(upgradeRequest.getRequestURI().getRawPath());
+
             // Handle parameterized @PathParam entries
-            pathParams = templatePathSpec.getPathParams(upgradeRequest.getRequestURI().getRawPath());
             openHandle = bindTemplateVariables(openHandle, namedVariables, pathParams);
             closeHandle = bindTemplateVariables(closeHandle, namedVariables, pathParams);
             errorHandle = bindTemplateVariables(errorHandle, namedVariables, pathParams);
@@ -167,7 +164,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
         String id = upgradeRequest.toString();
 
-        //todo can we pass in metadata instead of some of these arguments
         JavaxWebSocketFrameHandler frameHandler = new JavaxWebSocketFrameHandler(
                 container,
                 endpoint,
