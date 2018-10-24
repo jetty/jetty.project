@@ -165,11 +165,6 @@ public abstract class Utf8Appendable
     
     public void append(ByteBuffer buf)
     {
-        if (BufferUtil.isEmpty(buf))
-        {
-            return;
-        }
-
         try
         {
             while (buf.remaining() > 0)
