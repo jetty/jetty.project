@@ -201,7 +201,7 @@ public class JettyRunDistro extends JettyRunMojo
 
     @Parameter(property = "jetty.javaPath")
     private String javaPath;
-    
+
     /** 
      * @see org.eclipse.jetty.maven.plugin.JettyRunMojo#execute()
      */
