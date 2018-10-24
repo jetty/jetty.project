@@ -39,7 +39,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
@@ -152,12 +151,6 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
             executor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
         if (executor==null)
             executor = context.getServer().getThreadPool();
-        if (executor==null)
-        {
-            QueuedThreadPool qtp = new QueuedThreadPool();
-            qtp.setName("qtp-Javax-WebSocketServer");
-            executor = qtp;
-        }
 
         // Do we need to make a client?
         if (httpClient==null)
@@ -351,25 +344,3 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         }
     }
 }
-
-
-
-/*
-
- HTTP ::                  WebSocket ::
-   Application Scope    / Container Scope
-     Servlet Scope
-       Request Scope
-         Upgrade Scope  / Handshake Scope (Configurators too)
-                            Session Scope (Local Endpoint too)
-                              Message Scope
-
-
- Jetty Native
-    Client
-    Server
- JSR356
-    Client
-    Server
-
- */
