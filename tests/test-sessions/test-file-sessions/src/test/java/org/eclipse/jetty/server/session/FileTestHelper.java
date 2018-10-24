@@ -31,9 +31,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
@@ -161,9 +158,8 @@ public class FileTestHelper
     {
         String filename = ""+expiry+"_"+contextPath+"_"+vhost+"_"+id;
         File file = new File(_tmpDir, filename);
-        try(FileOutputStream fos = new FileOutputStream(file,false))
+        try (FileOutputStream fos = new FileOutputStream(file,false); DataOutputStream out = new DataOutputStream(fos))
         {
-            DataOutputStream out = new DataOutputStream(fos);
             out.writeUTF(id);
             out.writeUTF(contextPath);
             out.writeUTF(vhost);
@@ -192,10 +188,8 @@ public class FileTestHelper
         File file = new File(_tmpDir, filename);
         assertTrue(file.exists());
         
-        try (FileInputStream in = new FileInputStream(file))
+        try (FileInputStream in = new FileInputStream(file); DataInputStream di = new DataInputStream(in))
         {
-            DataInputStream di = new DataInputStream(in);
-
             String id = di.readUTF();
             String contextPath = di.readUTF();
             String vhost = di.readUTF();

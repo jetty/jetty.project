@@ -24,27 +24,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
-import java.sql.Date;
-import java.util.HashMap;
 import java.util.Map;
 
-import com.mongodb.MongoClient;
-import org.eclipse.jetty.nosql.NoSqlSessionDataStore.NoSqlSessionData;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
-
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -174,9 +168,10 @@ public class MongoTestHelper
         {
             assertNotNull(attributes);
             SessionData tmp = new SessionData(data.getId(), data.getContextPath(), data.getVhost(), created.longValue(), accessed.longValue(), lastAccessed.longValue(), maxInactive.longValue());
-            ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
-            ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);
-            SessionData.deserializeAttributes(tmp, ois);
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais))
+            {
+                SessionData.deserializeAttributes(tmp, ois);
+            }
    
             //same keys
             assertTrue(data.getKeys().equals(tmp.getKeys()));
@@ -226,16 +221,17 @@ public class MongoTestHelper
         if (attributes != null)
         {
             SessionData tmp = new SessionData (id, contextPath, vhost, created, accessed, lastAccessed, maxIdle, attributes);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            SessionData.serializeAttributes(tmp, oos);
-            sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__ATTRIBUTES, baos.toByteArray());
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos))
+            {
+                SessionData.serializeAttributes(tmp, oos);
+                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__ATTRIBUTES, baos.toByteArray());
+            }
         }
-        
+
         update.put("$set",sets);
         collection.update(key,update,upsert,false,WriteConcern.SAFE); 
     }
-    
+
 
     public static void createSession (String id, String contextPath, String vhost, 
                                       String lastNode, long created, long accessed, 
