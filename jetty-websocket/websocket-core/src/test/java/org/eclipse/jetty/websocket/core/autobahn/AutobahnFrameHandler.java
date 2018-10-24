@@ -38,22 +38,22 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
     private static Logger LOG = Log.getLogger(AutobahnFrameHandler.class);
 
     private AtomicBoolean open = new AtomicBoolean(false);
-        
+
     @Override
     public void onOpen()
-    {        
+    {
         LOG.info("onOpen {}", getCoreSession());
-        
-        if (!open.compareAndSet(false,true))
-            throw new IllegalStateException();        
+
+        if (!open.compareAndSet(false, true))
+            throw new IllegalStateException();
     }
 
     int count;
-    
+
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getCoreSession());
+        LOG.debug("onText {} {} {} {}", count++, utf8.length(), fin, getCoreSession());
         if (fin)
         {
             getCoreSession().sendFrame(new Frame(TEXT).setPayload(utf8.toString()),
@@ -68,12 +68,12 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
 
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
-    {        
-        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getCoreSession());
+    {
+        LOG.debug("onBinary {} {} {}", payload == null?-1:payload.remaining(), fin, getCoreSession());
         if (fin)
-        {       
+        {
             Frame echo = new Frame(OpCode.BINARY);
-            if (payload!=null)
+            if (payload != null)
                 echo.setPayload(payload);
             getCoreSession().sendFrame(echo, callback, false);
         }
@@ -82,13 +82,13 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
             callback.succeeded();
         }
     }
-    
+
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        LOG.info("onClosed {}",closeStatus);  
-        if (!open.compareAndSet(true,false))
-            LOG.warn("Already closed or not open {}",closeStatus);
+        LOG.info("onClosed {}", closeStatus);
+        if (!open.compareAndSet(true, false))
+            LOG.warn("Already closed or not open {}", closeStatus);
     }
 
     @Override
@@ -97,6 +97,6 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
         if (cause instanceof WebSocketTimeoutException && open.get())
             LOG.info("timeout!");
         else
-            LOG.warn("onError",cause);
+            LOG.warn("onError", cause);
     }
 }

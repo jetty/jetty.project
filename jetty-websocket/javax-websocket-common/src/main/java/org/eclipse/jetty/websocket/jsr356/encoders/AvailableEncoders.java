@@ -42,12 +42,12 @@ public class AvailableEncoders implements Predicate<Class<?>>
         public final Class<?> objectType;
         public final boolean primitive;
         public Encoder instance;
-        
+
         public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType)
         {
             this(encoder, interfaceType, objectType, false);
         }
-        
+
         public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType, boolean primitive)
         {
             this.encoder = encoder;
@@ -55,17 +55,17 @@ public class AvailableEncoders implements Predicate<Class<?>>
             this.objectType = objectType;
             this.primitive = primitive;
         }
-        
+
         public boolean implementsInterface(Class<? extends Encoder> type)
         {
             return interfaceType.isAssignableFrom(type);
         }
-        
+
         public boolean isType(Class<?> type)
         {
             return objectType.isAssignableFrom(type);
         }
-    
+
         @Override
         public String toString()
         {
@@ -74,23 +74,24 @@ public class AvailableEncoders implements Predicate<Class<?>>
             str.append('[').append(encoder.getName());
             str.append(',').append(interfaceType.getName());
             str.append(',').append(objectType.getName());
-            if(primitive) {
+            if (primitive)
+            {
                 str.append(",PRIMITIVE");
             }
             str.append(']');
             return str.toString();
         }
     }
-    
+
     private final EndpointConfig config;
     private LinkedList<RegisteredEncoder> registeredEncoders;
-    
+
     public AvailableEncoders(EndpointConfig config)
     {
         Objects.requireNonNull(config);
         this.config = config;
         registeredEncoders = new LinkedList<>();
-        
+
         // TEXT based [via Class reference]
         registerPrimitive(BooleanEncoder.class, Encoder.Text.class, Boolean.class);
         registerPrimitive(ByteEncoder.class, Encoder.Text.class, Byte.class);
@@ -101,7 +102,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
         registerPrimitive(IntegerEncoder.class, Encoder.Text.class, Integer.class);
         registerPrimitive(LongEncoder.class, Encoder.Text.class, Long.class);
         registerPrimitive(StringEncoder.class, Encoder.Text.class, String.class);
-        
+
         // TEXT based [via Primitive reference]
         registerPrimitive(BooleanEncoder.class, Encoder.Text.class, Boolean.TYPE);
         registerPrimitive(ByteEncoder.class, Encoder.Text.class, Byte.TYPE);
@@ -111,85 +112,86 @@ public class AvailableEncoders implements Predicate<Class<?>>
         registerPrimitive(ShortEncoder.class, Encoder.Text.class, Short.TYPE);
         registerPrimitive(IntegerEncoder.class, Encoder.Text.class, Integer.TYPE);
         registerPrimitive(LongEncoder.class, Encoder.Text.class, Long.TYPE);
-        
+
         // BINARY based
         registerPrimitive(ByteBufferEncoder.class, Encoder.Binary.class, ByteBuffer.class);
         registerPrimitive(ByteArrayEncoder.class, Encoder.Binary.class, byte[].class);
-        
+
         // STREAMING based
         // Note: Streams (Writer / OutputStream) are not present here
         // as you don't write with a Stream via an encoder, you tell the
         // encoder to write an object to a Stream
         // register(WriterEncoder.class, Encoder.TextStream.class, Writer.class);
         // register(OutputStreamEncoder.class, Encoder.BinaryStream.class, OutputStream.class);
-        
+
         // Config Based
         registerAll(config.getEncoders());
     }
-    
+
     private void registerPrimitive(Class<? extends Encoder> encoderClass, Class<? extends Encoder> interfaceType, Class<?> type)
     {
         registeredEncoders.add(new RegisteredEncoder(encoderClass, interfaceType, type, true));
     }
-    
+
     public void register(Class<? extends Encoder> encoder)
     {
         if (!ReflectUtils.isDefaultConstructable(encoder))
         {
             throw new InvalidSignatureException("Encoder must have public, no-args constructor: " + encoder.getName());
         }
-        
+
         boolean foundEncoder = false;
-        
+
         if (Encoder.Binary.class.isAssignableFrom(encoder))
         {
             add(encoder, Encoder.Binary.class);
             foundEncoder = true;
         }
-        
+
         if (Encoder.BinaryStream.class.isAssignableFrom(encoder))
         {
             add(encoder, Encoder.BinaryStream.class);
             foundEncoder = true;
         }
-        
+
         if (Encoder.Text.class.isAssignableFrom(encoder))
         {
             add(encoder, Encoder.Text.class);
             foundEncoder = true;
         }
-        
+
         if (Encoder.TextStream.class.isAssignableFrom(encoder))
         {
             add(encoder, Encoder.TextStream.class);
             foundEncoder = true;
         }
-        
+
         if (!foundEncoder)
         {
-            throw new InvalidSignatureException("Not a valid Encoder class: " + encoder.getName() + " implements no " + Encoder.class.getName() + " interfaces");
+            throw new InvalidSignatureException(
+                "Not a valid Encoder class: " + encoder.getName() + " implements no " + Encoder.class.getName() + " interfaces");
         }
     }
-    
+
     public void registerAll(Class<? extends Encoder>[] encoders)
     {
         if (encoders == null)
             return;
-        
+
         for (Class<? extends Encoder> encoder : encoders)
         {
             register(encoder);
         }
     }
-    
+
     public void registerAll(List<Class<? extends Encoder>> encoders)
     {
         if (encoders == null)
             return;
-        
+
         encoders.forEach(this::register);
     }
-    
+
     private void add(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceClass)
     {
         Class<?> objectType = ReflectUtils.findGenericClassFor(encoder, interfaceClass);
@@ -202,21 +204,21 @@ public class AvailableEncoders implements Predicate<Class<?>>
             err.append(encoder);
             throw new InvalidWebSocketException(err.toString());
         }
-        
+
         try
         {
             RegisteredEncoder conflicts = registeredEncoders.stream()
-                    .filter(registered -> registered.isType(objectType))
-                    .filter(registered -> !registered.primitive)
-                    .findFirst()
-                    .get();
-            
+                .filter(registered -> registered.isType(objectType))
+                .filter(registered -> !registered.primitive)
+                .findFirst()
+                .get();
+
             if (conflicts.encoder.equals(encoder) && conflicts.implementsInterface(interfaceClass))
             {
                 // Same encoder as what is there already, don't bother adding it again.
                 return;
             }
-            
+
             StringBuilder err = new StringBuilder();
             err.append("Duplicate Encoder Object type ");
             err.append(objectType.getName());
@@ -231,22 +233,22 @@ public class AvailableEncoders implements Predicate<Class<?>>
             registeredEncoders.addFirst(new RegisteredEncoder(encoder, interfaceClass, objectType));
         }
     }
-    
+
     public List<RegisteredEncoder> supporting(Class<? extends Encoder> interfaceType)
     {
         return registeredEncoders.stream()
-                .filter(registered -> registered.implementsInterface(interfaceType))
-                .collect(Collectors.toList());
+            .filter(registered -> registered.implementsInterface(interfaceType))
+            .collect(Collectors.toList());
     }
-    
+
     public RegisteredEncoder getRegisteredEncoderFor(Class<?> type)
     {
         return registeredEncoders.stream()
-                .filter(registered -> registered.isType(type))
-                .findFirst()
-                .get();
+            .filter(registered -> registered.isType(type))
+            .findFirst()
+            .get();
     }
-    
+
     public Class<? extends Encoder> getEncoderFor(Class<?> type)
     {
         try
@@ -258,7 +260,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
             throw new InvalidWebSocketException("No Encoder found for type " + type);
         }
     }
-    
+
     public Encoder getInstanceFor(Class<?> type)
     {
         try
@@ -268,7 +270,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
             {
                 return registeredEncoder.instance;
             }
-            
+
             registeredEncoder.instance = registeredEncoder.encoder.newInstance();
             registeredEncoder.instance.init(this.config);
             return registeredEncoder.instance;
@@ -282,13 +284,13 @@ public class AvailableEncoders implements Predicate<Class<?>>
             throw new InitException("Unable to init Encoder for type:" + type.getName(), e);
         }
     }
-    
+
     @Override
     public boolean test(Class<?> type)
     {
         return registeredEncoders.stream()
-                .filter(registered -> registered.isType(type))
-                .findFirst()
-                .isPresent();
+            .filter(registered -> registered.isType(type))
+            .findFirst()
+            .isPresent();
     }
 }

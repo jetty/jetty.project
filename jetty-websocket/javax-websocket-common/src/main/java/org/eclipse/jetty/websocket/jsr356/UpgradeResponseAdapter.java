@@ -41,7 +41,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
 
     /**
      * Get the accepted WebSocket protocol.
-     * 
+     *
      * @return the accepted WebSocket protocol.
      */
     @Override
@@ -52,7 +52,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
 
     /**
      * Get the list of extensions that should be used for the websocket.
-     * 
+     *
      * @return the list of negotiated extensions to use.
      */
     @Override

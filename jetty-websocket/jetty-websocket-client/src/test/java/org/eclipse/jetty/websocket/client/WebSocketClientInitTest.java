@@ -35,9 +35,8 @@ public class WebSocketClientInitTest
      * This is the new Jetty 9.4 advanced usage mode of WebSocketClient,
      * that allows for more robust HTTP configurations (such as authentication,
      * cookies, and proxies)
-     * 
-     * @throws Exception
-     *             on test failure
+     *
+     * @throws Exception on test failure
      */
     @Test
     public void testInit_HttpClient_StartedOutside() throws Exception
@@ -51,37 +50,36 @@ public class WebSocketClientInitTest
             ws.start();
             try
             {
-                assertThat("HttpClient",ws.getHttpClient(),is(http));
+                assertThat("HttpClient", ws.getHttpClient(), is(http));
 
-                assertThat("WebSocketClient started",ws.isStarted(),is(true));
-                assertThat("HttpClient started",http.isStarted(),is(true));
+                assertThat("WebSocketClient started", ws.isStarted(), is(true));
+                assertThat("HttpClient started", http.isStarted(), is(true));
 
-                HttpClient httpBean = ws.getBean(HttpClient.class); 
-                assertThat("HttpClient should not be found in WebSocketClient",httpBean,nullValue());
-                assertThat("HttpClient bean is managed",ws.isManaged(httpBean),is(false));
-                assertThat("WebSocketClient should not be found in HttpClient",http.getBean(WebSocketClient.class),nullValue());
+                HttpClient httpBean = ws.getBean(HttpClient.class);
+                assertThat("HttpClient should not be found in WebSocketClient", httpBean, nullValue());
+                assertThat("HttpClient bean is managed", ws.isManaged(httpBean), is(false));
+                assertThat("WebSocketClient should not be found in HttpClient", http.getBean(WebSocketClient.class), nullValue());
             }
             finally
             {
                 ws.stop();
             }
-            assertThat("WebSocketClient stopped",ws.isStopped(),is(true));
-            assertThat("HttpClient stopped",http.isStopped(),is(false));
+            assertThat("WebSocketClient stopped", ws.isStopped(), is(true));
+            assertThat("HttpClient stopped", http.isStopped(), is(false));
         }
         finally
         {
             http.stop();
         }
 
-        assertThat("HttpClient stopped",http.isStopped(),is(true));
+        assertThat("HttpClient stopped", http.isStopped(), is(true));
     }
 
     /**
      * This is the backward compatibility mode of WebSocketClient.
      * This is also the primary mode that JSR356 Standalone WebSocket Client is initialized.
-     * 
-     * @throws Exception
-     *             on test failure
+     *
+     * @throws Exception on test failure
      */
     @Test
     public void testInit_HttpClient_SyntheticStart() throws Exception
@@ -93,21 +91,21 @@ public class WebSocketClientInitTest
         {
             http = ws.getHttpClient();
 
-            assertThat("WebSocketClient started",ws.isStarted(),is(true));
-            assertThat("HttpClient started",http.isStarted(),is(true));
+            assertThat("WebSocketClient started", ws.isStarted(), is(true));
+            assertThat("HttpClient started", http.isStarted(), is(true));
 
             WebSocketCoreClient coreClient = ws.getBean(WebSocketCoreClient.class);
             HttpClient httpBean = coreClient.getBean(HttpClient.class);
-            assertThat("HttpClient bean found in WebSocketClient",httpBean,is(http));
-            assertThat("HttpClient bean is managed",coreClient.isManaged(httpBean),is(true));
-            assertThat("WebSocketClient should not be found in HttpClient",http.getBean(WebSocketClient.class),nullValue());
+            assertThat("HttpClient bean found in WebSocketClient", httpBean, is(http));
+            assertThat("HttpClient bean is managed", coreClient.isManaged(httpBean), is(true));
+            assertThat("WebSocketClient should not be found in HttpClient", http.getBean(WebSocketClient.class), nullValue());
         }
         finally
         {
             ws.stop();
         }
 
-        assertThat("WebSocketClient stopped",ws.isStopped(),is(true));
-        assertThat("HttpClient stopped",http.isStopped(),is(true));
+        assertThat("WebSocketClient stopped", ws.isStopped(), is(true));
+        assertThat("HttpClient stopped", http.isStopped(), is(true));
     }
 }

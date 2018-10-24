@@ -51,7 +51,7 @@ public class MessageWriterTest
     {
         remoteSocket = new OutgoingMessageCapture();
     }
-    
+
     @Test
     public void testMultipleWrites() throws Exception
     {
@@ -62,11 +62,11 @@ public class MessageWriterTest
             stream.write("World");
         }
 
-        assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
+        assertThat("Socket.messageQueue.size", remoteSocket.textMessages.size(), is(1));
         String msg = remoteSocket.textMessages.poll();
-        assertThat("Message",msg,is("Hello World"));
+        assertThat("Message", msg, is("Hello World"));
     }
-    
+
     @Test
     public void testSingleWrite() throws Exception
     {
@@ -75,19 +75,19 @@ public class MessageWriterTest
             stream.append("Hello World");
         }
 
-        assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
+        assertThat("Socket.messageQueue.size", remoteSocket.textMessages.size(), is(1));
         String msg = remoteSocket.textMessages.poll();
-        assertThat("Message",msg,is("Hello World"));
+        assertThat("Message", msg, is("Hello World"));
     }
-    
+
     @Test
     public void testWriteLarge_RequiringMultipleBuffers() throws Exception
     {
         int size = (int)(OUTPUT_BUFFER_SIZE * 2.5);
         char buf[] = new char[size];
         if (LOG.isDebugEnabled())
-            LOG.debug("Buffer size: {}",size);
-        Arrays.fill(buf,'x');
+            LOG.debug("Buffer size: {}", size);
+        Arrays.fill(buf, 'x');
         buf[size - 1] = 'o'; // mark last entry for debugging
 
         try (MessageWriter stream = new MessageWriter(remoteSocket, OUTPUT_BUFFER_SIZE))
@@ -95,9 +95,9 @@ public class MessageWriterTest
             stream.write(buf);
         }
 
-        assertThat("Socket.messageQueue.size",remoteSocket.textMessages.size(),is(1));
+        assertThat("Socket.messageQueue.size", remoteSocket.textMessages.size(), is(1));
         String msg = remoteSocket.textMessages.poll();
         String expected = new String(buf);
-        assertThat("Message",msg,is(expected));
+        assertThat("Message", msg, is(expected));
     }
 }

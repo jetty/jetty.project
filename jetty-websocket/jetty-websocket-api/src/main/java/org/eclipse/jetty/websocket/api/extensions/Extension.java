@@ -27,7 +27,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
 {
     /**
      * The active configuration for this extension.
-     * 
+     *
      * @return the configuration for this extension. never null.
      */
     public ExtensionConfig getConfig();
@@ -36,6 +36,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      * The {@code Sec-WebSocket-Extensions} name for this extension.
      * <p>
      * Also known as the <a href="https://tools.ietf.org/html/rfc6455#section-9.1">{@code extension-token} per Section 9.1. Negotiating Extensions</a>.
+     *
      * @return the name of the extension
      */
     public String getName();
@@ -44,7 +45,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV1.
-     * 
+     *
      * @return true if extension uses RSV1 for its own purposes.
      */
     public abstract boolean isRsv1User();
@@ -53,7 +54,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      * Used to indicate that the extension makes use of the RSV2 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV2.
-     * 
+     *
      * @return true if extension uses RSV2 for its own purposes.
      */
     public abstract boolean isRsv2User();
@@ -62,24 +63,22 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      * Used to indicate that the extension makes use of the RSV3 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV3.
-     * 
+     *
      * @return true if extension uses RSV3 for its own purposes.
      */
     public abstract boolean isRsv3User();
 
     /**
      * Set the next {@link IncomingFrames} to call in the chain.
-     * 
-     * @param nextIncoming
-     *            the next incoming extension
+     *
+     * @param nextIncoming the next incoming extension
      */
     public void setNextIncomingFrames(IncomingFrames nextIncoming);
 
     /**
      * Set the next {@link OutgoingFrames} to call in the chain.
-     * 
-     * @param nextOutgoing
-     *            the next outgoing extension
+     *
+     * @param nextOutgoing the next outgoing extension
      */
     public void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
 }

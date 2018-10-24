@@ -51,21 +51,21 @@ public class AvailableDecodersTest
     {
         testConfig = new BasicEndpointConfig();
     }
-    
 
     private AvailableDecoders decoders = new AvailableDecoders(testConfig);
 
     private <T> void assertTextDecoder(Class<T> type, String value, T expectedDecoded) throws IllegalAccessException, InstantiationException, DecodeException
     {
-        Decoder.Text<T> decoder = (Decoder.Text<T>) decoders.getInstanceFor(type);
+        Decoder.Text<T> decoder = (Decoder.Text<T>)decoders.getInstanceFor(type);
         assertThat("Decoder instance", decoder, notNullValue());
         T decoded = decoder.decode(value);
         assertThat("Decoded", decoded, is(expectedDecoded));
     }
 
-    private <T> void assertBinaryDecoder(Class<T> type, ByteBuffer value, T expectedDecoded) throws IllegalAccessException, InstantiationException, DecodeException
+    private <T> void assertBinaryDecoder(Class<T> type, ByteBuffer value, T expectedDecoded)
+        throws IllegalAccessException, InstantiationException, DecodeException
     {
-        Decoder.Binary<T> decoder = (Decoder.Binary<T>) decoders.getInstanceFor(type);
+        Decoder.Binary<T> decoder = (Decoder.Binary<T>)decoders.getInstanceFor(type);
         assertThat("Decoder Class", decoder, notNullValue());
         T decoded = decoder.decode(value);
         assertThat("Decoded", decoded, equalTo(expectedDecoded));
@@ -88,7 +88,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecode_Byte() throws IllegalAccessException, InstantiationException, DecodeException
     {
-        Byte expected = new Byte((byte) 0x21);
+        Byte expected = new Byte((byte)0x21);
         assertTextDecoder(Byte.class, "33", expected);
     }
 
@@ -191,12 +191,12 @@ public class AvailableDecodersTest
         byte expected[] = Hex.asByteArray("112233445566778899");
         assertBinaryDecoder(byte[].class, val, expected);
     }
-    
+
     @Test
     public void testCustomDecoder_Integer() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(IntegerDecoder.class);
-        
+
         String val = "11223344";
         int expected = 11223344;
         assertTextDecoder(Integer.class, val, expected);
@@ -267,7 +267,7 @@ public class AvailableDecodersTest
     public void testCustomDecoder_ValidDual_Text() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(ValidDualDecoder.class);
-        
+
         AvailableDecoders.RegisteredDecoder registered = decoders.getRegisteredDecoderFor(Integer.class);
         assertThat("Registered Decoder for Integer", registered.decoder.getName(), is(ValidDualDecoder.class.getName()));
 
@@ -281,36 +281,36 @@ public class AvailableDecodersTest
     public void testCustomDecoder_ValidDual_Binary() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(ValidDualDecoder.class);
-    
+
         AvailableDecoders.RegisteredDecoder registered = decoders.getRegisteredDecoderFor(Long.class);
         assertThat("Registered Decoder for Long", registered.decoder.getName(), is(ValidDualDecoder.class.getName()));
 
         ByteBuffer val = ByteBuffer.allocate(16);
-        val.put((byte) '[');
+        val.put((byte)'[');
         val.putLong(0x112233445566L);
-        val.put((byte) ']');
+        val.put((byte)']');
         val.flip();
         Long expected = 0x112233445566L;
 
         assertBinaryDecoder(Long.class, val, expected);
     }
-    
+
     @Test
     public void testCustomDecoder_Register_Duplicate()
     {
         // has duplicated support for the same target Type
-        Exception e = assertThrows(InvalidWebSocketException.class, ()->decoders.register(BadDualDecoder.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> decoders.register(BadDualDecoder.class));
         assertThat(e.getMessage(), containsString("Duplicate"));
     }
-    
+
     @Test
     public void testCustomDecoder_Register_OtherDuplicate()
     {
         // Register DateDecoder (decodes java.util.Date)
         decoders.register(DateDecoder.class);
-    
+
         // Register TimeDecoder (which also wants to decode java.util.Date)
-        Exception e = assertThrows(InvalidWebSocketException.class, ()->decoders.register(TimeDecoder.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> decoders.register(TimeDecoder.class));
         assertThat(e.getMessage(), containsString("Duplicate"));
     }
 }

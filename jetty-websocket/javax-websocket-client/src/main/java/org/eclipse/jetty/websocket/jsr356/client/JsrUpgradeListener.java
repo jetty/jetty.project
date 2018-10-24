@@ -74,7 +74,8 @@ public class JsrUpgradeListener implements UpgradeListener
             return;
         }
 
-        HandshakeResponse handshakeResponse = () -> {
+        HandshakeResponse handshakeResponse = () ->
+        {
             HttpFields fields = response.getHeaders();
             Map<String, List<String>> ret = new HashMap<>();
             fields.forEach((field) ->

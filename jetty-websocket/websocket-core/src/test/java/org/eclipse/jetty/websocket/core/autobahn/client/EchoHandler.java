@@ -48,15 +48,15 @@ public class EchoHandler extends AbstractClientFrameHandler
     public void onOpen()
     {
         super.onOpen();
-        LOG.info("Executing test case {}",currentCaseId);
+        LOG.info("Executing test case {}", currentCaseId);
     }
-    
+
     int count;
 
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getCoreSession());
+        LOG.debug("onText {} {} {} {}", count++, utf8.length(), fin, getCoreSession());
         if (fin)
         {
             Frame echo = new Frame(OpCode.TEXT).setPayload(utf8.toString());
@@ -71,12 +71,12 @@ public class EchoHandler extends AbstractClientFrameHandler
 
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
-    {        
-        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getCoreSession());
+    {
+        LOG.debug("onBinary {} {} {}", payload == null?-1:payload.remaining(), fin, getCoreSession());
         if (fin)
-        {       
+        {
             Frame echo = new Frame(OpCode.BINARY);
-            if (payload!=null)
+            if (payload != null)
                 echo.setPayload(payload);
             getCoreSession().sendFrame(echo, callback, false);
         }
@@ -92,14 +92,13 @@ public class EchoHandler extends AbstractClientFrameHandler
         if (cause instanceof WebSocketTimeoutException)
             LOG.debug("timeout!");
         else
-            LOG.warn("onError",cause);
+            LOG.warn("onError", cause);
     }
-    
 
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        LOG.info("onClosed {}",closeStatus);
+        LOG.info("onClosed {}", closeStatus);
         super.onClosed(closeStatus);
         latch.countDown();
     }

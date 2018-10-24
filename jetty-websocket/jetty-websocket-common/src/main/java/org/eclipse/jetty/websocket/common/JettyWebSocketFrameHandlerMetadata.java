@@ -234,7 +234,7 @@ public class JettyWebSocketFrameHandlerMetadata implements FrameHandler.CoreCust
         if (getIdleTimeout() > 0)
             session.setIdleTimeout(Duration.ofMillis(getIdleTimeout()));
 
-        if (getInputBufferSize()>0)
+        if (getInputBufferSize() > 0)
             session.setInputBufferSize(getInputBufferSize());
 
     }

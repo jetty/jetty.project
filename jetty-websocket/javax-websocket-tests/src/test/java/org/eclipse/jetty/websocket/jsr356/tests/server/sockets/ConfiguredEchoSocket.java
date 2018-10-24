@@ -38,11 +38,11 @@ import static java.util.stream.Collectors.joining;
  * Annotated echo socket, using all of the annotation configurations
  */
 @ServerEndpoint(
-        value = "/echo",
-        decoders = { DateDecoder.class },
-        encoders = { TimeEncoder.class },
-        subprotocols = { "test", "echo", "chat" },
-        configurator = EchoSocketConfigurator.class)
+    value = "/echo",
+    decoders = { DateDecoder.class },
+    encoders = { TimeEncoder.class },
+    subprotocols = { "test", "echo", "chat" },
+    configurator = EchoSocketConfigurator.class)
 public class ConfiguredEchoSocket
 {
     private Session session;
@@ -60,7 +60,7 @@ public class ConfiguredEchoSocket
             this.serverConfig = (ServerEndpointConfig)config;
         }
     }
-    
+
     @SuppressWarnings("unused")
     @OnMessage(maxMessageSize = 111222)
     public String echoText(String msg)
@@ -68,9 +68,9 @@ public class ConfiguredEchoSocket
         switch (msg)
         {
             case "text-max":
-                return String.format(Locale.US, "%,d",session.getMaxTextMessageBufferSize());
+                return String.format(Locale.US, "%,d", session.getMaxTextMessageBufferSize());
             case "binary-max":
-                return String.format(Locale.US, "%,d",session.getMaxBinaryMessageBufferSize());
+                return String.format(Locale.US, "%,d", session.getMaxBinaryMessageBufferSize());
             case "decoders":
                 return config.getDecoders().stream().map(Class::getName).collect(joining(", "));
             case "encoders":

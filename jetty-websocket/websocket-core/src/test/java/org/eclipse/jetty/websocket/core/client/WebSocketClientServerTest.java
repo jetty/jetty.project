@@ -54,15 +54,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 /**
  * Tests of a core client and core server
- *
  */
 public class WebSocketClientServerTest
 {
     private static Logger LOG = Log.getLogger(WebSocketClientServerTest.class);
-    
+
     private WebSocketServer server;
     private WebSocketClient client;
 
@@ -93,15 +91,13 @@ public class WebSocketClientServerTest
         recv = client.getFrames().poll(5, TimeUnit.SECONDS);
         assertNotNull(recv);
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
-        
+
         client.close();
-    
+
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
     }
-    
-    
-    
+
     @Test
     public void testClientSocketClosedInCloseHandshake() throws Exception
     {
@@ -113,7 +109,7 @@ public class WebSocketClientServerTest
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 super.receivedFrames.offer(Frame.copy(frame));
-                if(frame.getOpCode() == OpCode.CLOSE)
+                if (frame.getOpCode() == OpCode.CLOSE)
                 {
                     LOG.info("channel aborted");
                     getCoreSession().abort();
@@ -142,8 +138,6 @@ public class WebSocketClientServerTest
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
     }
 
-
-
     @Test
     public void testClientSocketClosed() throws Exception
     {
@@ -162,11 +156,10 @@ public class WebSocketClientServerTest
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
 
         ((WebSocketChannel)client.handler.getCoreSession()).getConnection().getEndPoint().close();
-        
+
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
     }
-    
 
     static class WebSocketClient
     {
@@ -192,12 +185,10 @@ public class WebSocketClientServerTest
             response.get(5, TimeUnit.SECONDS);
         }
 
-
         public void sendFrame(Frame frame)
         {
             handler.getCoreSession().sendFrame(frame, Callback.NOOP, false);
         }
-
 
         public void sendText(String line)
         {
@@ -221,15 +212,11 @@ public class WebSocketClientServerTest
         }
     }
 
-
-
-
     static class WebSocketServer
     {
         private static Logger LOG = Log.getLogger(WebSocketServer.class);
         private final Server server;
         private final TestFrameHandler handler;
-
 
         public void start() throws Exception
         {
@@ -255,7 +242,8 @@ public class WebSocketClientServerTest
 
             ContextHandler context = new ContextHandler("/");
             server.setHandler(context);
-            WebSocketNegotiator negotiator =  new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool(), frameHandler);
+            WebSocketNegotiator negotiator = new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(),
+                connector.getByteBufferPool(), frameHandler);
 
             WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);

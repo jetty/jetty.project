@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
-import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
-import javax.websocket.WebSocketContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -46,6 +36,16 @@ import org.eclipse.jetty.websocket.jsr356.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.server.internal.UndefinedServerEndpointConfig;
 import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
 
+import javax.websocket.DeploymentException;
+import javax.websocket.EndpointConfig;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
+
 @ManagedObject("JSR356 Server Container")
 public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer
 {
@@ -62,15 +62,15 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         ContextHandler.Context context = ContextHandler.getCurrentContext();
         if (context == null)
             return null;
-        
+
         ContextHandler handler = ContextHandler.getContextHandler(context);
         if (handler == null)
             return null;
-        
+
         if (!(handler instanceof ServletContextHandler))
             return null;
-        
-        return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
+
+        return (javax.websocket.WebSocketContainer)handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
 
     private final WebSocketCreatorMapping _webSocketCreatorMapping;
@@ -84,7 +84,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
      * Main entry point for {@link JavaxWebSocketServerContainerInitializer}.
      *
      * @param webSocketCreatorMapping the {@link WebSocketCreatorMapping} that this container belongs to
-     * @param httpClient the {@link HttpClient} instance to use
+     * @param httpClient              the {@link HttpClient} instance to use
      */
     public JavaxWebSocketServerContainer(WebSocketCreatorMapping webSocketCreatorMapping, HttpClient httpClient, Executor executor)
     {
@@ -128,7 +128,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     protected WebSocketCoreClient getWebSocketCoreClient() throws Exception
     {
         // Lazy Start Http Client
-        if(!coreClient.getHttpClient().isStarted())
+        if (!coreClient.getHttpClient().isStarted())
         {
             coreClient.getHttpClient().start();
         }
@@ -147,7 +147,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     {
         return new UndefinedServerEndpointConfig(endpoint.getClass());
     }
-    
+
     protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
     {
         ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);
@@ -159,7 +159,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         }
         return config;
     }
-    
+
     /**
      * Register a &#064;{@link ServerEndpoint} annotated endpoint class to
      * the server
@@ -175,7 +175,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         {
             throw new DeploymentException("EndpointClass is null");
         }
-        
+
         if (isStarted() || isStarting())
         {
             try
@@ -184,7 +184,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
                 if (anno == null)
                 {
                     throw new DeploymentException(String.format("Class must be @%s annotated: %s",
-                            ServerEndpoint.class.getName(), endpointClass.getName()));
+                        ServerEndpoint.class.getName(), endpointClass.getName()));
                 }
 
                 ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
@@ -219,7 +219,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         {
             throw new DeploymentException("ServerEndpointConfig is null");
         }
-        
+
         if (isStarted() || isStarting())
         {
             if (LOG.isDebugEnabled())
@@ -237,7 +237,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             deferredEndpointConfigs.add(config);
         }
     }
-    
+
     private void addEndpointMapping(ServerEndpointConfig config)
     {
         frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
@@ -251,7 +251,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     {
         // Proceed with Normal Startup
         super.doStart();
-        
+
         // Process Deferred Endpoints
         if (deferredEndpointClasses != null)
         {
@@ -261,7 +261,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             }
             deferredEndpointClasses.clear();
         }
-        
+
         if (deferredEndpointConfigs != null)
         {
             for (ServerEndpointConfig config : deferredEndpointConfigs)
@@ -271,51 +271,51 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             deferredEndpointConfigs.clear();
         }
     }
-    
+
     @Override
     public long getDefaultAsyncSendTimeout()
     {
         return this.asyncSendTimeout;
     }
-    
+
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
         // TODO: warn on long -> int conversion issue
-        return (int) this._webSocketCreatorMapping.getDefaultMaxBinaryMessageSize();
+        return (int)this._webSocketCreatorMapping.getDefaultMaxBinaryMessageSize();
     }
-    
+
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
         return this._webSocketCreatorMapping.getDefaultIdleTimeout().toMillis();
     }
-    
+
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
         // TODO: warn on long -> int conversion issue
-        return (int) this._webSocketCreatorMapping.getDefaultMaxTextMessageSize();
+        return (int)this._webSocketCreatorMapping.getDefaultMaxTextMessageSize();
     }
-    
+
     @Override
     public void setAsyncSendTimeout(long ms)
     {
         this.asyncSendTimeout = ms;
     }
-    
+
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
         this._webSocketCreatorMapping.setDefaultMaxBinaryMessageSize(max);
     }
-    
+
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
         this._webSocketCreatorMapping.setDefaultIdleTimeout(Duration.ofMillis(ms));
     }
-    
+
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {

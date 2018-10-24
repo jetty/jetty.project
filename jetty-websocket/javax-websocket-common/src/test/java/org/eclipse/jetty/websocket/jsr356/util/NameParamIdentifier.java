@@ -39,7 +39,7 @@ public class NameParamIdentifier implements InvokerUtils.ParamIdentifier
             {
                 if (anno.annotationType().equals(Name.class))
                 {
-                    Name name = (Name) anno;
+                    Name name = (Name)anno;
                     return new InvokerUtils.Arg(paramType, name.value());
                 }
             }

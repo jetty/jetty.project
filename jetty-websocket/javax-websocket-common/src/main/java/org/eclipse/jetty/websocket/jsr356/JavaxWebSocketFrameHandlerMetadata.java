@@ -32,7 +32,7 @@ public class JavaxWebSocketFrameHandlerMetadata
     /**
      * Constant for "unset" @OnMessage annotation values.
      * <p>
-     *     (-2 means unset/undeclared, -1 means whatever that value means, such as: no idletimeout, or no maximum message size limit)
+     * (-2 means unset/undeclared, -1 means whatever that value means, such as: no idletimeout, or no maximum message size limit)
      * </p>
      */
     public static final int UNSET = -2;
@@ -58,24 +58,24 @@ public class JavaxWebSocketFrameHandlerMetadata
      * holds the {@link UriTemplatePathSpec} based off of the configured url-pattern.
      *
      * <p>
-     *     This is the source of the configured uri-template variables names, as well as the parser
-     *     for the incoming URI to obtain the values for those variables.
+     * This is the source of the configured uri-template variables names, as well as the parser
+     * for the incoming URI to obtain the values for those variables.
      * </p>
      * <p>
-     *     Used to bind uri-template variables, with their values from the upgrade, to the methods
-     *     that have declared their interest in these values via {@code @PathParam} annotations.
+     * Used to bind uri-template variables, with their values from the upgrade, to the methods
+     * that have declared their interest in these values via {@code @PathParam} annotations.
      * </p>
      * <p>
-     *     The parsed values from the {@link UriTemplatePathSpec} are returned as a Map
-     *     of String names to String values.
+     * The parsed values from the {@link UriTemplatePathSpec} are returned as a Map
+     * of String names to String values.
      * </p>
      * <p>
-     *     This Metadata Object does not keep track of the parsed values, as they are request
-     *     specific.
+     * This Metadata Object does not keep track of the parsed values, as they are request
+     * specific.
      * </p>
      * <p>
-     *     This can be null if Metadata is from a client endpoint, or the server endpoint
-     *     doesn't use uri-template variables.
+     * This can be null if Metadata is from a client endpoint, or the server endpoint
+     * doesn't use uri-template variables.
      * </p>
      */
     private UriTemplatePathSpec uriTemplatePathSpec;
@@ -129,7 +129,7 @@ public class JavaxWebSocketFrameHandlerMetadata
 
     public String[] getNamedTemplateVariables()
     {
-        if(uriTemplatePathSpec != null)
+        if (uriTemplatePathSpec != null)
             return uriTemplatePathSpec.getVariables();
         return NO_VARIABLES;
     }

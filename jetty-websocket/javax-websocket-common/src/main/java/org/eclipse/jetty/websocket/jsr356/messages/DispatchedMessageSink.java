@@ -114,7 +114,7 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
     }
 
     public abstract MessageSink newSink(Frame frame);
-    
+
     public void accept(Frame frame, final Callback callback)
     {
         if (typeSink == null)
@@ -122,8 +122,9 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
             typeSink = newSink(frame);
             // Dispatch to end user function (will likely start with blocking for data/accept)
             dispatchComplete = new CompletableFuture<>();
-            executor.execute(() -> {
-                final T dispatchedType = (T) typeSink;
+            executor.execute(() ->
+            {
+                final T dispatchedType = (T)typeSink;
                 try
                 {
                     methodHandle.invoke(dispatchedType);
@@ -135,9 +136,9 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
                 }
             });
         }
-        
+
         final Callback frameCallback;
-        
+
         if (frame.isFin())
         {
             CompletableFuture<Void> finComplete = new CompletableFuture<>();
@@ -148,7 +149,7 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
                 {
                     finComplete.completeExceptionally(cause);
                 }
-                
+
                 @Override
                 public void succeeded()
                 {
@@ -156,22 +157,22 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
                 }
             };
             CompletableFuture.allOf(dispatchComplete, finComplete).whenComplete(
-                    (aVoid, throwable) ->
-                    {
-                        typeSink = null;
-                        dispatchComplete = null;
-                        if (throwable != null)
-                            callback.failed(throwable);
-                        else
-                            callback.succeeded();
-                    });
+                (aVoid, throwable) ->
+                {
+                    typeSink = null;
+                    dispatchComplete = null;
+                    if (throwable != null)
+                        callback.failed(throwable);
+                    else
+                        callback.succeeded();
+                });
         }
         else
         {
             // Non-fin-frame
             frameCallback = callback;
         }
-        
+
         typeSink.accept(frame, frameCallback);
     }
 }

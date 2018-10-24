@@ -28,7 +28,7 @@ import java.util.Map;
 public abstract class ServerEndpointConfigWrapper implements ServerEndpointConfig
 {
     private final ServerEndpointConfig delegate;
-    
+
     public ServerEndpointConfigWrapper(ServerEndpointConfig delegate)
     {
         this.delegate = delegate;
@@ -69,7 +69,7 @@ public abstract class ServerEndpointConfigWrapper implements ServerEndpointConfi
     {
         return delegate.getSubprotocols();
     }
-    
+
     @Override
     public List<Extension> getExtensions()
     {

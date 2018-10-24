@@ -54,7 +54,7 @@ public class WebSocketTester
     protected Socket newClient(int port) throws IOException
     {
         @SuppressWarnings("resource")
-        Socket client = new Socket("127.0.0.1",port);
+        Socket client = new Socket("127.0.0.1", port);
 
         HttpFields fields = new HttpFields();
         fields.add(HttpHeader.HOST, "127.0.0.1");
@@ -64,7 +64,7 @@ public class WebSocketTester
         fields.add(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
         fields.add(HttpHeader.PRAGMA, "no-cache");
         fields.add(HttpHeader.CACHE_CONTROL, "no-cache");
-        fields.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,"test");
+        fields.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "test");
 
         client.getOutputStream().write(("GET / HTTP/1.1\r\n" + fields.toString()).getBytes(StandardCharsets.ISO_8859_1));
 
@@ -72,26 +72,26 @@ public class WebSocketTester
 
         int state = 0;
         StringBuilder buffer = new StringBuilder();
-        while(state<4)
+        while (state < 4)
         {
             int i = in.read();
-            if (i<0)
+            if (i < 0)
                 throw new EOFException();
-            int b = (byte)(i&0xff);
+            int b = (byte)(i & 0xff);
             buffer.append((char)b);
-            switch(state)
+            switch (state)
             {
                 case 0:
-                    state = (b=='\r')?1:0;
+                    state = (b == '\r')?1:0;
                     break;
                 case 1:
-                    state = (b=='\n')?2:0;
+                    state = (b == '\n')?2:0;
                     break;
                 case 2:
-                    state = (b=='\r')?3:0;
+                    state = (b == '\r')?3:0;
                     break;
                 case 3:
-                    state = (b=='\n')?4:0;
+                    state = (b == '\n')?4:0;
                     break;
                 default:
                     state = 0;
@@ -99,9 +99,9 @@ public class WebSocketTester
         }
 
         String response = buffer.toString();
-        assertThat(response,startsWith("HTTP/1.1 101 Switching Protocols"));
-        assertThat(response,containsString("Sec-WebSocket-Protocol: test"));
-        assertThat(response,containsString("Sec-WebSocket-Accept: +WahVcVmeMLKQUMm0fvPrjSjwzI="));
+        assertThat(response, startsWith("HTTP/1.1 101 Switching Protocols"));
+        assertThat(response, containsString("Sec-WebSocket-Protocol: test"));
+        assertThat(response, containsString("Sec-WebSocket-Accept: +WahVcVmeMLKQUMm0fvPrjSjwzI="));
 
         client.setSoTimeout(10000);
         return client;
@@ -109,18 +109,18 @@ public class WebSocketTester
 
     protected Parser.ParsedFrame receiveFrame(InputStream in) throws IOException
     {
-        ByteBuffer buffer = bufferPool.acquire(4096,false);
-        while(true)
+        ByteBuffer buffer = bufferPool.acquire(4096, false);
+        while (true)
         {
             int p = BufferUtil.flipToFill(buffer);
-            int len = in.read(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
-            if (len<0)
+            int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+            if (len < 0)
                 return null;
-            buffer.position(buffer.position()+len);
-            BufferUtil.flipToFlush(buffer,p);
+            buffer.position(buffer.position() + len);
+            BufferUtil.flipToFlush(buffer, p);
 
             Parser.ParsedFrame frame = parser.parse(buffer);
-            if (frame!=null)
+            if (frame != null)
                 return frame;
         }
     }

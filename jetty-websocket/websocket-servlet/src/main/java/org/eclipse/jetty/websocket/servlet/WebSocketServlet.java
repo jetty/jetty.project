@@ -128,26 +128,26 @@ public abstract class WebSocketServlet extends HttpServlet
             }
 
             max = getInitParameter("outputBufferSize");
-            if(max != null)
+            if (max != null)
             {
                 factory.setDefaultOutputBufferSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("maxAllowedFrameSize");
-            if(max != null)
+            if (max != null)
             {
                 factory.setDefaultMaxAllowedFrameSize(Long.parseLong(max));
             }
 
             String autoFragment = getInitParameter("autoFragment");
-            if(autoFragment != null)
+            if (autoFragment != null)
             {
                 factory.setAutoFragment(Boolean.parseBoolean(autoFragment));
             }
 
-            List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>) ctx.getAttribute(
+            List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>)ctx.getAttribute(
                 WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
-            if (factories!=null)
+            if (factories != null)
                 factories.forEach(factory::addFrameHandlerFactory);
 
             configure(factory); // Let user modify factory
@@ -175,7 +175,7 @@ public abstract class WebSocketServlet extends HttpServlet
             target = target + request.getPathInfo();
         }
 
-        WebSocketNegotiator negotiator = factory.getMatchedNegotiator(target,pathSpec ->
+        WebSocketNegotiator negotiator = factory.getMatchedNegotiator(target, pathSpec ->
         {
             // Store PathSpec resource mapping as request attribute, for WebSocketCreator
             // implementors to use later if they wish
@@ -207,7 +207,7 @@ public abstract class WebSocketServlet extends HttpServlet
         }
         else
         {
-            if(LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled())
             {
                 LOG.debug("No match for WebSocket Upgrade at target: {}", target);
             }

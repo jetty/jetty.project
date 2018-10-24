@@ -39,7 +39,7 @@ public class MessageReader extends InputStreamReader implements MessageSink
         super(stream, StandardCharsets.UTF_8);
         this.stream = stream;
     }
-    
+
     @Override
     public void accept(Frame frame, Callback callback)
     {

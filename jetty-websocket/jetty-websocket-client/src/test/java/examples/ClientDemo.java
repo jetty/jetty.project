@@ -54,7 +54,7 @@ public class ClientDemo
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            super.onWebSocketClose(statusCode,reason);
+            super.onWebSocketClose(statusCode, reason);
         }
 
         @Override
@@ -62,7 +62,7 @@ public class ClientDemo
         {
             if (verbose)
             {
-                System.err.printf("%s#onWebSocketConnect %s %s\n",this.getClass().getSimpleName(),session,session.getClass().getSimpleName());
+                System.err.printf("%s#onWebSocketConnect %s %s\n", this.getClass().getSimpleName(), session, session.getClass().getSimpleName());
             }
         }
 
@@ -185,11 +185,12 @@ public class ClientDemo
 
             for (int i = 0; i < clients; i++)
             {
-                client[i] = new ClientDemo(wsclient,host,port,protocol,60000);
+                client[i] = new ClientDemo(wsclient, host, port, protocol, 60000);
                 client[i].open();
             }
 
-            System.out.println("Jetty WebSocket PING " + host + ":" + port + " (" + new InetSocketAddress(host,port) + ") " + clients + " clients " + protocol);
+            System.out
+                .println("Jetty WebSocket PING " + host + ":" + port + " (" + new InetSocketAddress(host, port) + ") " + clients + " clients " + protocol);
 
             for (int p = 0; p < count; p++)
             {
@@ -225,7 +226,7 @@ public class ClientDemo
 
                 for (int i = 0; i < clients; i++)
                 {
-                    client[i].send(op,data,fragment);
+                    client[i].send(op, data, fragment);
                 }
 
                 while (System.currentTimeMillis() < next)
@@ -247,10 +248,10 @@ public class ClientDemo
             long duration = System.currentTimeMillis() - start;
             System.out.println("--- " + host + " websocket ping statistics using " + clients + " connection" + (clients > 1?"s":"") + " ---");
             System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n", framesSent, framesReceived.get(), messagesSent,
-                    messagesReceived.get(),duration,((1000L * messagesReceived.get()) / duration),(1000.0D * messagesReceived.get() * 8 * size)
-                            / duration / 1024 / 1024);
+                messagesReceived.get(), duration, ((1000L * messagesReceived.get()) / duration), (1000.0D * messagesReceived.get() * 8 * size)
+                    / duration / 1024 / 1024);
             System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n", minDuration.get() / 1000000.0, messagesReceived.get() == 0?0.0:(totalTime.get()
-                    / messagesReceived.get() / 1000000.0), maxDuration.get() / 1000000.0);
+                / messagesReceived.get() / 1000000.0), maxDuration.get() / 1000000.0);
 
             wsclient.stop();
         }
@@ -299,11 +300,11 @@ public class ClientDemo
         request.setSubProtocols(protocol);
         socket = new TestSocket();
         URI wsUri = new URI("ws://" + host + ":" + port + "/");
-        client.connect(socket,wsUri,request).get(10,TimeUnit.SECONDS);
+        client.connect(socket, wsUri, request).get(10, TimeUnit.SECONDS);
     }
 
     private void send(byte op, byte[] data, int fragment)
     {
-        socket.send(op,data,fragment);
+        socket.send(op, data, fragment);
     }
 }

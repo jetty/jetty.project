@@ -31,12 +31,12 @@ public abstract class TrackingSocket
     public BlockingQueue<String> events = new LinkedBlockingDeque();
     public BlockingQueue<Throwable> errors = new LinkedBlockingDeque<>();
     public CloseReason closeReason;
-    
+
     public void addEvent(String format, Object... args)
     {
         events.add(String.format(format, args));
     }
-    
+
     public void addError(Throwable cause)
     {
         errors.offer(cause);

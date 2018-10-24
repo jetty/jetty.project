@@ -33,43 +33,43 @@ public class ReferencedBuffer implements Retainable
 
     public ReferencedBuffer(ByteBufferPool pool, int size)
     {
-        this(pool,size,false);
+        this(pool, size, false);
     }
-    
+
     public ReferencedBuffer(ByteBufferPool pool, int size, boolean direct)
     {
         this.pool = pool;
-        this.buffer = pool.acquire(size,direct);
+        this.buffer = pool.acquire(size, direct);
         this.references = new AtomicInteger(1);
     }
-    
+
     public ByteBuffer getBuffer()
     {
         return buffer;
     }
-    
+
     public int getReferences()
     {
         return references.get();
     }
-    
+
     @Override
     public void retain()
     {
-        while(true)
+        while (true)
         {
             int r = references.get();
-            if (r==0)
+            if (r == 0)
                 throw new IllegalStateException("released");
-            if (references.compareAndSet(r,r+1))
+            if (references.compareAndSet(r, r + 1))
                 break;
         }
     }
-    
+
     public int release()
     {
         int ref = references.decrementAndGet();
-        if (ref==0)
+        if (ref == 0)
             pool.release(buffer);
         return ref;
     }
@@ -78,11 +78,11 @@ public class ReferencedBuffer implements Retainable
     {
         return BufferUtil.isEmpty(buffer);
     }
-    
+
     @Override
     public String toString()
     {
-        return BufferUtil.toDetailString(buffer)+":r="+getReferences();
+        return BufferUtil.toDetailString(buffer) + ":r=" + getReferences();
     }
 
 }

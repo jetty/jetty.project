@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -28,23 +31,20 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the org.eclipse.jetty.websocket package.   
+ * be able to see the org.eclipse.jetty.websocket package.
  * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
  * which is unknown to the websocket package.  However, the corresponding {@link ServiceLoader}
- * resource is defined in the websocket package, so that this configuration only be 
+ * resource is defined in the websocket package, so that this configuration only be
  * loaded if the jetty-websocket jars are on the classpath.
  * </p>
  */
 public class JettyWebSocketConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(JettyWebSocketConfiguration.class);
+
     public JettyWebSocketConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
@@ -61,7 +61,7 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.websocket.common.JettyWebSocketFrame")!=null;
+            return Loader.loadClass("org.eclipse.jetty.websocket.common.JettyWebSocketFrame") != null;
         }
         catch (Throwable e)
         {

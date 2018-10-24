@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.SendHandler;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -37,6 +30,13 @@ import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
+
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.SendHandler;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
 
 public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint, OutgoingFrames
 {
@@ -164,7 +164,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
             if (encoder instanceof Encoder.Text)
             {
-                Encoder.Text text = (Encoder.Text) encoder;
+                Encoder.Text text = (Encoder.Text)encoder;
                 String msg = text.encode(data);
                 sendFrame(new Frame(OpCode.TEXT).setPayload(msg), callback, batch);
                 return;
@@ -172,7 +172,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
             if (encoder instanceof Encoder.TextStream)
             {
-                Encoder.TextStream etxt = (Encoder.TextStream) encoder;
+                Encoder.TextStream etxt = (Encoder.TextStream)encoder;
                 try (MessageWriter writer = newMessageWriter())
                 {
                     writer.setCallback(callback);
@@ -183,7 +183,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
             if (encoder instanceof Encoder.Binary)
             {
-                Encoder.Binary ebin = (Encoder.Binary) encoder;
+                Encoder.Binary ebin = (Encoder.Binary)encoder;
                 ByteBuffer buf = ebin.encode(data);
                 sendFrame(new Frame(OpCode.BINARY).setPayload(buf), callback, batch);
                 return;
@@ -191,7 +191,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
             if (encoder instanceof Encoder.BinaryStream)
             {
-                Encoder.BinaryStream ebin = (Encoder.BinaryStream) encoder;
+                Encoder.BinaryStream ebin = (Encoder.BinaryStream)encoder;
                 try (MessageOutputStream out = newMessageOutputStream())
                 {
                     out.setCallback(callback);

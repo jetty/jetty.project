@@ -36,11 +36,11 @@ public class PongContextListener implements ServletContextListener
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            sec.getUserProperties().put("path",sec.getPath());
-            super.modifyHandshake(sec,request,response);
+            sec.getUserProperties().put("path", sec.getPath());
+            super.modifyHandshake(sec, request, response);
         }
     }
-    
+
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
@@ -54,11 +54,11 @@ public class PongContextListener implements ServletContextListener
         try
         {
             Configurator config = new Config();
-            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/pong").configurator(config).build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/pong").configurator(config).build());
         }
         catch (DeploymentException e)
         {
-            throw new RuntimeException("Unable to add endpoint directly",e);
+            throw new RuntimeException("Unable to add endpoint directly", e);
         }
     }
 }

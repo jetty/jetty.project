@@ -75,7 +75,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         while (BufferUtil.hasContent(buffer))
         {
             Frame frame = parser.parse(buffer);
-            if (frame==null)
+            if (frame == null)
                 break;
             ext.onFrame(frame, Callback.NOOP);
         }
@@ -124,8 +124,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("deflate-frame");
 
         tester.parseIncomingHex(// Captured from Jetty WebSocketClient - "Hello" then "There" via unit test
-                "c18700000000f248cdc9c90700", // "Hello"
-                "c187000000000ac9482d4a0500" // "There"
+            "c18700000000f248cdc9c90700", // "Hello"
+            "c187000000000ac9482d4a0500" // "There"
         );
 
         tester.assertHasFrames("Hello", "There");
@@ -139,7 +139,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("deflate-frame");
 
         tester.parseIncomingHex(// Captured from Chrome 20.x - "Hello" (sent from browser)
-                "c187832b5c11716391d84a2c5c" // "Hello"
+            "c187832b5c11716391d84a2c5c" // "Hello"
         );
 
         tester.assertHasFrames("Hello");
@@ -153,8 +153,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("deflate-frame");
 
         tester.parseIncomingHex(// Captured from Chrome 20.x - "Hello" then "There" (sent from browser)
-                "c1877b1971db8951bc12b21e71", // "Hello"
-                "c18759edc8f4532480d913e8c8" // There
+            "c1877b1971db8951bc12b21e71", // "Hello"
+            "c18759edc8f4532480d913e8c8" // There
         );
 
         tester.assertHasFrames("Hello", "There");
@@ -168,7 +168,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("deflate-frame");
 
         tester.parseIncomingHex(// Captured from Chrome 20.x - "info:" (sent from browser)
-                "c187ca4def7f0081a4b47d4fef" // example payload 
+            "c187ca4def7f0081a4b47d4fef" // example payload
         );
 
         tester.assertHasFrames("info:");
@@ -182,8 +182,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("deflate-frame");
 
         tester.parseIncomingHex(// Captured from Chrome 20.x - "time:" then "time:" once more (sent from browser)
-                "c18782467424a88fb869374474", // "time:"
-                "c1853cfda17f16fcb07f3c" // "time:"
+            "c18782467424a88fb869374474", // "time:"
+            "c1853cfda17f16fcb07f3c" // "time:"
         );
 
         tester.assertHasFrames("time:", "time:");
@@ -197,9 +197,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("deflate-frame");
 
         tester.parseIncomingHex(// Captured from Pywebsocket (r781) - "time:" sent 3 times.
-                "c1876b100104" + "41d9cd49de1201", // "time:"
-                "c1852ae3ff01" + "00e2ee012a", // "time:"
-                "c18435558caa" + "37468caa" // "time:"
+            "c1876b100104" + "41d9cd49de1201", // "time:"
+            "c1852ae3ff01" + "00e2ee012a", // "time:"
+            "c18435558caa" + "37468caa" // "time:"
         );
 
         tester.assertHasFrames("time:", "time:", "time:");
@@ -210,7 +210,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     {
         // What pywebsocket produces for "time:", "time:", "time:"
         String expected[] = new String[]
-                {"2AC9CC4DB50200", "2A01110000", "02130000"};
+            { "2AC9CC4DB50200", "2A01110000", "02130000" };
 
         // Lets see what we produce
         CapturedHexPayloads capture = new CapturedHexPayloads();
@@ -229,7 +229,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void init(DeflateFrameExtension ext)
     {
-        ext.setMaxFrameSize(20*1024*1024);
+        ext.setMaxFrameSize(20 * 1024 * 1024);
         ext.init(new ExtensionConfig(ext.getName()), bufferPool);
     }
 
@@ -326,7 +326,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     {
         // Captured from PyWebSocket - Long Text (echo from server)
         byte rawbuf[] = TypeUtil.fromHexString("c1421cca410a80300c44d1abccce9df7" + "f018298634d05631138ab7b7b8fdef1f" + "dc0282e2061d575a45f6f2686bab25e1"
-                + "3fb7296fa02b5885eb3b0379c394f461" + "98cafd03");
+            + "3fb7296fa02b5885eb3b0379c394f461" + "98cafd03");
         assertIncoming(rawbuf, "It's a big enough umbrella but it's always me that ends up getting wet.");
     }
 
@@ -340,6 +340,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     /**
      * Make sure that the server generated compressed form for "Hello" is consistent with what PyWebSocket creates.
+     *
      * @throws IOException on test failure
      */
     @Test
@@ -350,6 +351,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     /**
      * Make sure that the server generated compressed form for "There" is consistent with what PyWebSocket creates.
+     *
      * @throws IOException on test failure
      */
     @Test
@@ -364,9 +366,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         byte[] input = new byte[1024 * 1024];
         // Make them not compressible.
         new Random().nextBytes(input);
-        
+
         int maxMessageSize = (1024 * 1024) + 8192;
-        
+
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         init(clientExtension);
         clientExtension.setMaxFrameSize(maxMessageSize);

@@ -75,7 +75,7 @@ public final class StatusCode
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
     public final static int NO_CLOSE = 1006;
-    
+
     /**
      * Abnormal Close is a synonym for {@link #NO_CLOSE}, used to indicate a close
      * condition where no close frame was processed from the remote side.
@@ -155,24 +155,25 @@ public final class StatusCode
     /**
      * Test if provided status code can be sent/received on a WebSocket close.
      * <p>
-     *     This honors the RFC6455 rules and IANA rules.
+     * This honors the RFC6455 rules and IANA rules.
      * </p>
+     *
      * @param statusCode the statusCode to test
      * @return true if transmittable
      */
     public static boolean isTransmittable(int statusCode)
     {
         return (statusCode == NORMAL) ||
-                (statusCode == SHUTDOWN) ||
-                (statusCode == PROTOCOL) ||
-                (statusCode == BAD_DATA) ||
-                (statusCode == BAD_PAYLOAD) ||
-                (statusCode == POLICY_VIOLATION) ||
-                (statusCode == MESSAGE_TOO_LARGE) ||
-                (statusCode == REQUIRED_EXTENSION) ||
-                (statusCode == SERVER_ERROR) ||
-                (statusCode == SERVICE_RESTART) ||
-                (statusCode == TRY_AGAIN_LATER) ||
-                (statusCode == INVALID_UPSTREAM_RESPONSE);
+            (statusCode == SHUTDOWN) ||
+            (statusCode == PROTOCOL) ||
+            (statusCode == BAD_DATA) ||
+            (statusCode == BAD_PAYLOAD) ||
+            (statusCode == POLICY_VIOLATION) ||
+            (statusCode == MESSAGE_TOO_LARGE) ||
+            (statusCode == REQUIRED_EXTENSION) ||
+            (statusCode == SERVER_ERROR) ||
+            (statusCode == SERVICE_RESTART) ||
+            (statusCode == TRY_AGAIN_LATER) ||
+            (statusCode == INVALID_UPSTREAM_RESPONSE);
     }
 }

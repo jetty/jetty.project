@@ -65,9 +65,12 @@ public class DummyConnection extends WebSocketConnection
 
         public DummyConnection build()
         {
-            if (endp == null) endp = new ByteArrayEndPoint();
-            if (executor == null) executor = new QueuedThreadPool();
-            if (bufferPool == null) bufferPool = new MappedByteBufferPool();
+            if (endp == null)
+                endp = new ByteArrayEndPoint();
+            if (executor == null)
+                executor = new QueuedThreadPool();
+            if (bufferPool == null)
+                bufferPool = new MappedByteBufferPool();
             if (extensionStack == null)
                 extensionStack = new ExtensionStack(new WebSocketExtensionRegistry());
 

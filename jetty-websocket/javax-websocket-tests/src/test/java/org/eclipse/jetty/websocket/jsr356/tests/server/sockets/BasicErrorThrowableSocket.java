@@ -21,13 +21,13 @@ package org.eclipse.jetty.websocket.jsr356.tests.server.sockets;
 import javax.websocket.OnError;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/error/throwable")
+@ServerEndpoint(value = "/echo/error/throwable")
 public class BasicErrorThrowableSocket extends TrackingSocket
 {
     @OnError
     public void onError(Throwable t)
     {
-        addEvent("onError(%s)",t);
+        addEvent("onError(%s)", t);
         addError(t);
     }
 }

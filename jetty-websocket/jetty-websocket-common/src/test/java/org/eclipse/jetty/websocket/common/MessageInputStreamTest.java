@@ -52,7 +52,7 @@ public class MessageInputStreamTest
     @Test
     public void testBasicAppendRead() throws IOException
     {
-        assertTimeout(Duration.ofMillis(5000), ()->
+        assertTimeout(Duration.ofMillis(5000), () ->
         {
             try (MessageInputStream stream = new MessageInputStream())
             {
@@ -75,7 +75,7 @@ public class MessageInputStreamTest
     @Test
     public void testBlockOnRead() throws Exception
     {
-        assertTimeout(Duration.ofMillis(5000), ()->
+        assertTimeout(Duration.ofMillis(5000), () ->
         {
             try (MessageInputStream stream = new MessageInputStream())
             {
@@ -120,7 +120,7 @@ public class MessageInputStreamTest
     @Test
     public void testBlockOnReadInitial() throws IOException
     {
-        assertTimeout(Duration.ofMillis(5000), ()->
+        assertTimeout(Duration.ofMillis(5000), () ->
         {
             try (MessageInputStream stream = new MessageInputStream())
             {
@@ -155,7 +155,7 @@ public class MessageInputStreamTest
     @Test
     public void testReadByteNoBuffersClosed() throws IOException
     {
-        assertTimeout(Duration.ofMillis(5000), ()->
+        assertTimeout(Duration.ofMillis(5000), () ->
         {
             try (MessageInputStream stream = new MessageInputStream())
             {
@@ -186,11 +186,11 @@ public class MessageInputStreamTest
             }
         });
     }
-    
+
     @Test
     public void testAppendEmptyPayloadRead() throws IOException
     {
-        assertTimeout(Duration.ofMillis(5000), ()->
+        assertTimeout(Duration.ofMillis(5000), () ->
         {
             try (MessageInputStream stream = new MessageInputStream())
             {
@@ -213,11 +213,11 @@ public class MessageInputStreamTest
             }
         });
     }
-    
+
     @Test
     public void testAppendNullPayloadRead() throws IOException
     {
-        assertTimeout(Duration.ofMillis(5000), ()->
+        assertTimeout(Duration.ofMillis(5000), () ->
         {
             try (MessageInputStream stream = new MessageInputStream())
             {

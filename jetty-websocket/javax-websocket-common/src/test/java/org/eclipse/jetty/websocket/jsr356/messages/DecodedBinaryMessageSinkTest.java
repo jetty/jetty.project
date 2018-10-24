@@ -53,9 +53,9 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
 
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
         ByteBuffer data = ByteBuffer.allocate(16);
-        data.putShort((short) 1999);
-        data.put((byte) 12);
-        data.put((byte) 31);
+        data.putShort((short)1999);
+        data.put((byte)12);
+        data.put((byte)31);
         data.flip();
         sink.accept(new Frame(OpCode.BINARY).setPayload(data).setFin(true), finCallback);
 
@@ -79,15 +79,15 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
 
         ByteBuffer data1 = ByteBuffer.allocate(16);
-        data1.putShort((short) 2000);
+        data1.putShort((short)2000);
         data1.flip();
 
         ByteBuffer data2 = ByteBuffer.allocate(16);
-        data2.put((byte) 1);
+        data2.put((byte)1);
         data2.flip();
 
         ByteBuffer data3 = ByteBuffer.allocate(16);
-        data3.put((byte) 1);
+        data3.put((byte)1);
         data3.flip();
 
         sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(false), callback1);
@@ -135,7 +135,7 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         {
             Calendar cal = Calendar.getInstance(GMT);
             cal.set(Calendar.YEAR, buffer.getShort());
-            cal.set(Calendar.MONTH, buffer.get()-1);
+            cal.set(Calendar.MONTH, buffer.get() - 1);
             cal.set(Calendar.DAY_OF_MONTH, buffer.get());
             return cal;
         }

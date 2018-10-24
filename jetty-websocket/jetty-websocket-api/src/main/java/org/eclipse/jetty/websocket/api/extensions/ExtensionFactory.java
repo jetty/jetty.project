@@ -36,7 +36,7 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
         {
             if (ext != null)
             {
-                availableExtensions.put(ext.getName(),ext.getClass());
+                availableExtensions.put(ext.getName(), ext.getClass());
             }
         }
     }
@@ -71,7 +71,7 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
 
     public void register(String name, Class<? extends Extension> extension)
     {
-        availableExtensions.put(name,extension);
+        availableExtensions.put(name, extension);
     }
 
     public void unregister(String name)

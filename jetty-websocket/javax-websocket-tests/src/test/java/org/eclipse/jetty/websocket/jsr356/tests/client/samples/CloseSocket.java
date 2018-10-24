@@ -29,8 +29,17 @@ import javax.websocket.Session;
 @ClientEndpoint
 public class CloseSocket extends WSEventTracker
 {
-    @OnOpen public void onOpen(Session session) { super.onWsOpen(session); }
-    @OnError public void onError(Throwable cause) { super.onWsError(cause); }
+    @OnOpen
+    public void onOpen(Session session)
+    {
+        super.onWsOpen(session);
+    }
+
+    @OnError
+    public void onError(Throwable cause)
+    {
+        super.onWsError(cause);
+    }
 
     @OnClose
     public void onClose()

@@ -137,7 +137,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         EndpointConfig config = configuredEndpoint.getConfig();
         if (config != null && config instanceof ClientEndpointConfig)
         {
-            ClientEndpointConfig clientEndpointConfig = (ClientEndpointConfig) config;
+            ClientEndpointConfig clientEndpointConfig = (ClientEndpointConfig)config;
 
             JsrUpgradeListener jsrUpgradeListener = new JsrUpgradeListener(clientEndpointConfig.getConfigurator());
             upgradeRequest.addListener(jsrUpgradeListener);
@@ -170,7 +170,8 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path)
+        throws DeploymentException, IOException
     {
         ClientEndpointConfig clientEndpointConfig = config;
         if (clientEndpointConfig == null)

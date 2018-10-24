@@ -36,7 +36,7 @@ public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMess
     private final MessageSink rawMessageSink;
 
     public DecodedMessageSink(JavaxWebSocketSession session, T decoder, MethodHandle methodHandle)
-            throws NoSuchMethodException, IllegalAccessException
+        throws NoSuchMethodException, IllegalAccessException
     {
         super(session, methodHandle);
         this.LOG = Log.getLogger(this.getClass());
@@ -46,7 +46,7 @@ public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMess
     }
 
     protected abstract MethodHandle newRawMethodHandle()
-            throws NoSuchMethodException, IllegalAccessException;
+        throws NoSuchMethodException, IllegalAccessException;
 
     protected abstract MessageSink newRawMessageSink(JavaxWebSocketSession session, MethodHandle rawMethodHandle);
 

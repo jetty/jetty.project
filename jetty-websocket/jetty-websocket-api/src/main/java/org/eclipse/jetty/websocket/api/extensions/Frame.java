@@ -88,7 +88,7 @@ public interface Frame
 
     /**
      * The original payload length ({@link ByteBuffer#remaining()})
-     * 
+     *
      * @return the original payload length ({@link ByteBuffer#remaining()})
      */
     int getPayloadLength();

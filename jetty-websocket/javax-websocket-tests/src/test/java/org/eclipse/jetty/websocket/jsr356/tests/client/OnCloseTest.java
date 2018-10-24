@@ -56,31 +56,31 @@ public class OnCloseTest
         public static Case add(List<Case[]> data, Class<?> closeClass)
         {
             Case tcase = new Case(closeClass);
-            data.add(new Case[]{tcase});
+            data.add(new Case[] { tcase });
             return tcase;
         }
-        
+
         public Case(Class<?> closeClass)
         {
             this.closeClass = closeClass;
         }
-        
+
         Class<?> closeClass;
         String expectedCloseEvent;
-        
+
         public Case expect(String expectedEvent)
         {
             this.expectedCloseEvent = expectedEvent;
             return this;
         }
-    
+
         @Override
         public String toString()
         {
             return closeClass.getSimpleName();
         }
     }
-    
+
     private static JavaxWebSocketClientContainer container = new JavaxWebSocketClientContainer();
 
     public static Stream<Arguments> data() throws Exception
@@ -93,14 +93,13 @@ public class OnCloseTest
             Arguments.of(new Case(CloseSessionReasonSocket.class).expect("onClose(Session,CloseReason)"))
         );
     }
-    
-    
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     public void testOnCloseCall(Case testcase) throws Exception
     {
-        WSEventTracker endpoint = (WSEventTracker) testcase.closeClass.newInstance();
-        
+        WSEventTracker endpoint = (WSEventTracker)testcase.closeClass.newInstance();
+
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
         // TODO: use ConfiguredEndpoint here?
 

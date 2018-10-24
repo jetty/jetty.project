@@ -45,7 +45,7 @@ public class HttpClientInitTest
             Executor executor = httpClient.getExecutor();
             assertThat("Executor exists", executor, notNullValue());
             assertThat("Executor instanceof", executor, instanceOf(QueuedThreadPool.class));
-            QueuedThreadPool threadPool = (QueuedThreadPool) executor;
+            QueuedThreadPool threadPool = (QueuedThreadPool)executor;
             assertThat("QueuedThreadPool.name", threadPool.getName(), startsWith("Jetty-WebSocketClient@"));
         }
         finally
@@ -53,7 +53,7 @@ public class HttpClientInitTest
             client.stop();
         }
     }
-    
+
     @Test
     public void testManualInit() throws Exception
     {
@@ -64,7 +64,7 @@ public class HttpClientInitTest
             http.setExecutor(threadPool);
             http.setConnectTimeout(7777);
         }
-        
+
         WebSocketClient client = new WebSocketClient(http);
         client.addBean(http);
         try
@@ -77,7 +77,7 @@ public class HttpClientInitTest
             Executor executor = httpClient.getExecutor();
             assertThat("Executor exists", executor, notNullValue());
             assertThat("Executor instanceof", executor, instanceOf(QueuedThreadPool.class));
-            QueuedThreadPool threadPool = (QueuedThreadPool) executor;
+            QueuedThreadPool threadPool = (QueuedThreadPool)executor;
             assertThat("QueuedThreadPool.name", threadPool.getName(), startsWith("ManualWSClient@"));
         }
         finally

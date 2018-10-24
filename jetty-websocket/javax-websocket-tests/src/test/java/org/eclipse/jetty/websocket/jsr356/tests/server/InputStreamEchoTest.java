@@ -45,7 +45,7 @@ import java.util.List;
 public class InputStreamEchoTest
 {
     private static final Logger LOG = Log.getLogger(InputStreamEchoTest.class);
-    
+
     public static class BaseSocket
     {
         @OnError
@@ -54,7 +54,7 @@ public class InputStreamEchoTest
             LOG.warn("Error", cause);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/stream")
     public static class InputStreamSocket extends BaseSocket
@@ -65,7 +65,7 @@ public class InputStreamEchoTest
             return IO.toString(stream);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/stream-param/{param}")
     public static class InputStreamParamSocket extends BaseSocket
@@ -80,9 +80,9 @@ public class InputStreamEchoTest
             return msg.toString();
         }
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -91,46 +91,46 @@ public class InputStreamEchoTest
         server.getServerContainer().addEndpoint(InputStreamSocket.class);
         server.getServerContainer().addEndpoint(InputStreamParamSocket.class);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testInputStreamSocket() throws Exception
     {
         String requestPath = "/echo/stream";
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload("Hello World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     @Test
     public void testInputStreamParamSocket() throws Exception
     {
         String requestPath = "/echo/stream-param/Every%20Person";
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload("Hello World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("Hello World|Every Person"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);

@@ -33,9 +33,10 @@ public interface OutgoingFrames
      * <p>
      * If you are implementing a mutation, you are obliged to handle
      * the incoming WriteCallback appropriately.
-     *  @param frame     the frame to eventually write to the network layer.
-     * @param callback  the callback to notify when the frame is written.
-     * @param batch the batch mode requested by the sender.
+     *
+     * @param frame    the frame to eventually write to the network layer.
+     * @param callback the callback to notify when the frame is written.
+     * @param batch    the batch mode requested by the sender.
      */
     void sendFrame(Frame frame, Callback callback, boolean batch);
 }

@@ -46,16 +46,16 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
-    
+
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
-        
+
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("FinCallback.done", finCallback.isDone(), is(true));
         assertThat("Writer.contents", writer.getBuffer().toString(), is("Hello World"));
     }
-    
+
     @Test
     public void testReader_3_Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
@@ -63,15 +63,15 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
-        
+
         CompletableFutureCallback callback1 = new CompletableFutureCallback();
         CompletableFutureCallback callback2 = new CompletableFutureCallback();
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
-        
+
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), callback1);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), finCallback);
-        
+
         finCallback.get(1, TimeUnit.SECONDS); // wait for fin callback
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Callback1.done", callback1.isDone(), is(true));
@@ -83,7 +83,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
     public static class ReaderCopy implements Consumer<Reader>
     {
         private CompletableFuture<StringWriter> copyFuture;
-        
+
         public ReaderCopy(CompletableFuture<StringWriter> copyFuture)
         {
             this.copyFuture = copyFuture;

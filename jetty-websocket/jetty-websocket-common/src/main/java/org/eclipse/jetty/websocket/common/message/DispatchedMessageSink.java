@@ -120,8 +120,9 @@ public abstract class DispatchedMessageSink<T, R> extends AbstractMessageSink
             typeSink = newSink(frame);
             // Dispatch to end user function (will likely start with blocking for data/accept)
             dispatchComplete = new CompletableFuture<>();
-            executor.execute(() -> {
-                final T dispatchedType = (T) typeSink;
+            executor.execute(() ->
+            {
+                final T dispatchedType = (T)typeSink;
                 try
                 {
                     methodHandle.invoke(dispatchedType);
@@ -154,15 +155,15 @@ public abstract class DispatchedMessageSink<T, R> extends AbstractMessageSink
                 }
             };
             CompletableFuture.allOf(dispatchComplete, finComplete).whenComplete(
-                    (aVoid, throwable) ->
-                    {
-                        typeSink = null;
-                        dispatchComplete = null;
-                        if (throwable != null)
-                            callback.failed(throwable);
-                        else
-                            callback.succeeded();
-                    });
+                (aVoid, throwable) ->
+                {
+                    typeSink = null;
+                    dispatchComplete = null;
+                    if (throwable != null)
+                        callback.failed(throwable);
+                    else
+                        callback.succeeded();
+                });
         }
         else
         {

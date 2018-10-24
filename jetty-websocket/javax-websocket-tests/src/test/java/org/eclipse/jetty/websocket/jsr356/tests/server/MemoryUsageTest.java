@@ -51,14 +51,14 @@ public class MemoryUsageTest
     public static class BasicEndpoint extends Endpoint implements MessageHandler.Whole<String>
     {
         private javax.websocket.Session session;
-        
+
         @Override
         public void onMessage(String msg)
         {
             // reply with echo
             session.getAsyncRemote().sendText(msg);
         }
-        
+
         @Override
         public void onOpen(javax.websocket.Session session, EndpointConfig config)
         {
@@ -66,7 +66,7 @@ public class MemoryUsageTest
             this.session.addMessageHandler(this);
         }
     }
-    
+
     private Server server;
     private ServerConnector connector;
     private WebSocketContainer client;
@@ -136,7 +136,7 @@ public class MemoryUsageTest
 
         // Assume no more than 25 KiB per session pair (client and server).
         long expected = 25 * 1024 * sessionCount;
-        assertThat("heap used", heapUsed,lessThan(expected));
+        assertThat("heap used", heapUsed, lessThan(expected));
     }
 
     public static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>

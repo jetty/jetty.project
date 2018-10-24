@@ -35,9 +35,9 @@ public class FunctionMethod
     {
         Method foundMethod = null;
 
-        for(Method method: Function.class.getDeclaredMethods())
+        for (Method method : Function.class.getDeclaredMethods())
         {
-            if(method.getName().equals("apply") && method.getParameterCount() == 1)
+            if (method.getName().equals("apply") && method.getParameterCount() == 1)
             {
                 foundMethod = method;
                 break;

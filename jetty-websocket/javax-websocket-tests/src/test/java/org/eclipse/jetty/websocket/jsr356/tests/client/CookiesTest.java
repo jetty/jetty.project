@@ -63,14 +63,14 @@ public class CookiesTest
     {
         server.stop();
     }
-    
+
     @Test
     public void testCookiesAreSentToServer() throws Exception
     {
         final String cookieName = "name";
         final String cookieValue = "value";
         final String cookieString = cookieName + "=" + cookieValue;
-        
+
         startServer(negotiation ->
         {
             HttpServletRequest request = negotiation.getRequest();
@@ -83,7 +83,7 @@ public class CookiesTest
 
             StringBuilder requestHeaders = new StringBuilder();
             Collections.list(request.getHeaderNames())
-                    .forEach(name -> requestHeaders.append(name).append(": ").append(request.getHeader(name)).append("\n"));
+                .forEach(name -> requestHeaders.append(name).append(": ").append(request.getHeader(name)).append("\n"));
 
             return new StaticText(requestHeaders.toString());
         });

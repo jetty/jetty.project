@@ -47,7 +47,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
 
         // This invocation is the same for all tests
         localEndpoint.onOpen(channel);
-        
+
         ByteBuffer payload = BufferUtil.toBuffer(msg, StandardCharsets.UTF_8);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload(payload).setFin(true), Callback.NOOP);
     }
@@ -58,7 +58,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }
-    
+
     @ClientEndpoint
     public static class MessageSocket extends TrackingSocket
     {
@@ -77,10 +77,10 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
     public void testAmbiguousEmptyMessage() throws Exception
     {
         MessageSocket socket = new MessageSocket();
-        Exception e = assertThrows(InvalidSignatureException.class, ()->onText(socket, "Hello World"));
+        Exception e = assertThrows(InvalidSignatureException.class, () -> onText(socket, "Hello World"));
         assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSocket.class.getName() + "#onMessage"));
     }
-    
+
     @ClientEndpoint
     public static class MessageTextSocket extends TrackingSocket
     {
@@ -114,10 +114,10 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
     public void testAmbiguousMessageSession() throws Exception
     {
         MessageSessionSocket socket = new MessageSessionSocket();
-        Exception e = assertThrows(InvalidSignatureException.class, ()->onText(socket, "Hello World"));
+        Exception e = assertThrows(InvalidSignatureException.class, () -> onText(socket, "Hello World"));
         assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + "#onMessage"));
     }
-    
+
     @ClientEndpoint
     public static class MessageSessionTextSocket extends TrackingSocket
     {
@@ -132,10 +132,10 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
     public void testInvokeMessageSessionText() throws Exception
     {
         assertOnMessageInvocation(new MessageSessionTextSocket(),
-                allOf(
-                    containsString("onMessage(JavaxWebSocketSession@"),
-                    containsString(MessageSessionTextSocket.class.getName()),
-                    containsString(", Hello World)")
-                ));
+            allOf(
+                containsString("onMessage(JavaxWebSocketSession@"),
+                containsString(MessageSessionTextSocket.class.getName()),
+                containsString(", Hello World)")
+            ));
     }
 }

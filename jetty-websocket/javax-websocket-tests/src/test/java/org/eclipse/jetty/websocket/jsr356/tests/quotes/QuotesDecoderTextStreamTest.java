@@ -62,9 +62,9 @@ public class QuotesDecoderTextStreamTest
             return buf.toString();
         }
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -79,69 +79,69 @@ public class QuotesDecoderTextStreamTest
         };
         server.start();
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testQuoteEchoString_Bulk() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendBulk(send);
-            
+
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                    containsString("Author: Benjamin Franklin"),
-                    containsString("Quote: Our new Constitution is now established")
+                containsString("Author: Benjamin Franklin"),
+                containsString("Quote: Our new Constitution is now established")
             ));
         }
     }
-    
+
     @Test
     public void testQuoteEchoString_SmallSegments() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendSegmented(send, 3);
-            
+
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                    containsString("Author: Benjamin Franklin"),
-                    containsString("Quote: Our new Constitution is now established")
+                containsString("Author: Benjamin Franklin"),
+                containsString("Quote: Our new Constitution is now established")
             ));
         }
     }
-    
+
     @Test
     public void testQuoteEchoString_FrameWise() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendFrames(send);
-            
+
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                    containsString("Author: Benjamin Franklin"),
-                    containsString("Quote: Our new Constitution is now established")
+                containsString("Author: Benjamin Franklin"),
+                containsString("Quote: Our new Constitution is now established")
             ));
         }
     }

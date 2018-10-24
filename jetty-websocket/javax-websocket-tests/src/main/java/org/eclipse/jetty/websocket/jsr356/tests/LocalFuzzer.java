@@ -255,9 +255,9 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
-        
+
         ByteBuffer outgoing = ByteBuffer.allocate(bufferLength);
-        
+
         boolean eof = false;
         for (Frame f : frames)
         {
@@ -270,28 +270,28 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         if (eof)
             endPoint.addInputEOF();
     }
-    
+
     private HttpTester.Response performUpgrade(LocalConnector.LocalEndPoint endPoint, ByteBuffer buf) throws Exception
     {
         endPoint.addInput(buf);
-        
+
         // Get response
         ByteBuffer response = endPoint.waitForResponse(false, 1, TimeUnit.SECONDS);
         HttpTester.Response parsedResponse = HttpTester.parseResponse(response);
-        
+
         LOG.debug("Response: {}", parsedResponse);
-        
+
         assertThat("Is Switching Protocols", parsedResponse.getStatus(), is(101));
         assertThat("Is Connection Upgrade", parsedResponse.get(HttpHeader.SEC_WEBSOCKET_ACCEPT.asString()), notNullValue());
         assertThat("Is Connection Upgrade", parsedResponse.get("Connection"), is("Upgrade"));
         assertThat("Is WebSocket Upgrade", parsedResponse.get("Upgrade"), is("WebSocket"));
         return parsedResponse;
     }
-    
+
     public interface Provider
     {
         Parser newClientParser();
-        
+
         LocalConnector.LocalEndPoint newLocalConnection();
     }
 }

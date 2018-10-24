@@ -56,10 +56,10 @@ public class ServletUpgradeResponse
             return;
         }
 
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name) && getExtensions()!=null)
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name) && getExtensions() != null)
         {
             // Move any extensions configs to the headers
-            response.addHeader(name,ExtensionConfig.toHeaderValue(getExtensions()));
+            response.addHeader(name, ExtensionConfig.toHeaderValue(getExtensions()));
             setExtensions(null);
         }
 
@@ -85,9 +85,9 @@ public class ServletUpgradeResponse
     {
         if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
         {
-            if (values==null || values.isEmpty())
+            if (values == null || values.isEmpty())
                 setAcceptedSubProtocol(null);
-            else if (values.size()==1)
+            else if (values.size() == 1)
                 setAcceptedSubProtocol(values.get(0));
             else
                 throw new IllegalArgumentException("multiple subprotocols");
@@ -97,12 +97,12 @@ public class ServletUpgradeResponse
         {
             setExtensions(null);
             response.setHeader(name, null);
-            values.forEach(value->addHeader(name, value));
+            values.forEach(value -> addHeader(name, value));
             return;
         }
 
         response.setHeader(name, null); // clear it out first
-        values.forEach(value->response.addHeader(name, value));
+        values.forEach(value -> response.addHeader(name, value));
     }
 
     public String getAcceptedSubProtocol()
@@ -128,8 +128,8 @@ public class ServletUpgradeResponse
     public Map<String, List<String>> getHeadersMap()
     {
         Map<String, List<String>> headers = response.getHeaderNames().stream()
-                .collect(Collectors.toMap((name) -> name,
-                        (name) -> new ArrayList<>(response.getHeaders(name))));
+            .collect(Collectors.toMap((name) -> name,
+                (name) -> new ArrayList<>(response.getHeaders(name))));
         return Collections.unmodifiableMap(headers);
     }
 

@@ -22,13 +22,14 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/invalid")
+@ServerEndpoint(value = "/invalid")
 public class InvalidOpenSessionIntSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter of type int)
+     *
      * @param session the sesion
-     * @param count the count
+     * @param count   the count
      */
     @OnOpen
     public void onOpen(Session session, int count)

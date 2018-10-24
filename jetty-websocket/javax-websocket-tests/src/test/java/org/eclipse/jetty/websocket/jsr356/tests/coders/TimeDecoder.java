@@ -39,7 +39,7 @@ public class TimeDecoder implements Decoder.Text<Date>
         }
         catch (ParseException e)
         {
-            throw new DecodeException(s,e.getMessage(),e);
+            throw new DecodeException(s, e.getMessage(), e);
         }
     }
 

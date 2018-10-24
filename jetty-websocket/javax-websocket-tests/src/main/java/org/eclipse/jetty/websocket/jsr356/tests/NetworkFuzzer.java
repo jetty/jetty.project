@@ -62,17 +62,18 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this(server, wsURI, null);
     }
 
-    public NetworkFuzzer(LocalServer server, URI wsURI, Map<String,String> requestHeaders) throws Exception
+    public NetworkFuzzer(LocalServer server, URI wsURI, Map<String, String> requestHeaders) throws Exception
     {
         super();
         this.server = server;
         this.rawClient = new RawWebSocketClient();
         CompletableFuture<FrameCapture> futureOnCapture = new CompletableFuture<>();
         this.upgradeRequest = new RawUpgradeRequest(rawClient, wsURI, futureOnCapture);
-        if(requestHeaders != null)
+        if (requestHeaders != null)
         {
             HttpFields fields = this.upgradeRequest.getHeaders();
-            requestHeaders.forEach((name, value) -> {
+            requestHeaders.forEach((name, value) ->
+            {
                 fields.remove(name);
                 fields.put(name, value);
             });
@@ -154,7 +155,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         for (Frame f : frames)
         {
-            try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
+            try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
                 frameCapture.channel.sendFrame(f, blocker, false);
             }
@@ -166,7 +167,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         for (Frame f : frames)
         {
-            try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
+            try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
                 frameCapture.channel.sendFrame(f, blocker, false);
             }

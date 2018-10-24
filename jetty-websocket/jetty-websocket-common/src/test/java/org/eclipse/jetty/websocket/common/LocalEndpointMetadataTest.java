@@ -84,7 +84,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateBinarySocket() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadDuplicateBinarySocket.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadDuplicateBinarySocket.class));
         assertThat(e.getMessage(), allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
     }
 
@@ -95,7 +95,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateFrameSocket() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadDuplicateFrameSocket.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadDuplicateFrameSocket.class));
         assertThat(e.getMessage(), containsString("Duplicate @OnWebSocketFrame"));
     }
 
@@ -106,7 +106,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignature_NonVoidReturn() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadBinarySignatureSocket.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadBinarySignatureSocket.class));
         assertThat(e.getMessage(), containsString("must be void"));
     }
 
@@ -117,7 +117,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignature_Static() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, ()->createMetadata(BadTextSignatureSocket.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadTextSignatureSocket.class));
         assertThat(e.getMessage(), containsString("must not be static"));
     }
 

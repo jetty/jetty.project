@@ -47,7 +47,7 @@ import java.util.stream.Stream;
 public class PrimitivesBinaryEchoTest
 {
     private static final Logger LOG = Log.getLogger(PrimitivesBinaryEchoTest.class);
-    
+
     public static class BaseSocket
     {
         @OnError
@@ -56,7 +56,7 @@ public class PrimitivesBinaryEchoTest
             LOG.warn("Error", cause);
         }
     }
-    
+
     @ServerEndpoint("/echo/bytebuffer")
     public static class ByteBufferEchoSocket extends BaseSocket
     {
@@ -64,13 +64,13 @@ public class PrimitivesBinaryEchoTest
         public ByteBuffer onMessage(ByteBuffer buf) throws IOException
         {
             ByteBuffer ret = ByteBuffer.allocate(buf.remaining() + 1);
-            ret.put((byte) 0xFF); // proof that this endpoint got it
+            ret.put((byte)0xFF); // proof that this endpoint got it
             ret.put(buf);
             ret.flip();
             return ret;
         }
     }
-    
+
     @ServerEndpoint("/echo/bytearray")
     public static class ByteArrayEchoSocket extends BaseSocket
     {
@@ -78,34 +78,34 @@ public class PrimitivesBinaryEchoTest
         public byte[] onMessage(byte[] buf) throws IOException
         {
             byte ret[] = new byte[buf.length + 1];
-            ret[0] = (byte) 0xFE; // proof that this endpoint got it
+            ret[0] = (byte)0xFE; // proof that this endpoint got it
             System.arraycopy(buf, 0, ret, 1, buf.length);
             return ret;
         }
     }
-    
+
     private static void addCase(List<Arguments> data, Class<?> endpointClass, String sendHex, String expectHex)
     {
         data.add(Arguments.of(endpointClass.getSimpleName(), endpointClass, sendHex, expectHex));
     }
-    
+
     public static Stream<Arguments> data()
     {
         List<Arguments> data = new ArrayList<>();
-        
+
         addCase(data, ByteBufferEchoSocket.class, "00", "FF00");
         addCase(data, ByteBufferEchoSocket.class, "001133445566778899AA", "FF001133445566778899AA");
         addCase(data, ByteBufferEchoSocket.class, "11112222333344445555", "FF11112222333344445555");
-        
+
         addCase(data, ByteArrayEchoSocket.class, "00", "FE00");
         addCase(data, ByteArrayEchoSocket.class, "001133445566778899AA", "FE001133445566778899AA");
         addCase(data, ByteArrayEchoSocket.class, "11112222333344445555", "FE11112222333344445555");
-        
+
         return data.stream();
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -114,27 +114,27 @@ public class PrimitivesBinaryEchoTest
         server.getServerContainer().addEndpoint(ByteBufferEchoSocket.class);
         server.getServerContainer().addEndpoint(ByteArrayEchoSocket.class);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @ParameterizedTest(name = "{0}: {2}")
     @MethodSource("data")
     public void testPrimitiveEcho(String endpointClassname, Class<?> endpointClass, String sendHex, String expectHex) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(Hex.asByteBuffer(sendHex)));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(Hex.asByteBuffer(expectHex)));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);

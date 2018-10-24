@@ -46,7 +46,7 @@ import java.util.concurrent.BlockingQueue;
 public class BinaryStreamTest
 {
     private static final String PATH = "/echo";
-    
+
     private static LocalServer server;
 
     @BeforeAll
@@ -57,25 +57,25 @@ public class BinaryStreamTest
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerBinaryStreamer.class, PATH).build();
         server.getServerContainer().addEndpoint(config);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testEchoWithMediumMessage() throws Exception
     {
         testEcho(1024);
     }
-    
+
     @Test
     public void testLargestMessage() throws Exception
     {
         testEcho(server.getServerContainer().getDefaultMaxBinaryMessageBufferSize());
     }
-    
+
     private byte[] newData(int size)
     {
         byte[] pattern = "01234567890abcdefghijlklmopqrstuvwxyz".getBytes(StandardCharsets.UTF_8);
@@ -86,17 +86,17 @@ public class BinaryStreamTest
         }
         return data;
     }
-    
+
     private void testEcho(int size) throws Exception
     {
         byte[] data = newData(size);
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(data));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
-        
+
         try (Fuzzer session = server.newNetworkFuzzer("/echo"))
         {
             session.sendBulk(send);
@@ -104,19 +104,19 @@ public class BinaryStreamTest
             session.expectMessage(receivedFrames, OpCode.BINARY, expectedMessage);
         }
     }
-    
+
     @Test
     public void testMoreThanLargestMessageOneByteAtATime() throws Exception
     {
         int size = server.getServerContainer().getDefaultMaxBinaryMessageBufferSize() + 16;
         byte[] data = newData(size);
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(data));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
-        
+
         try (Fuzzer session = server.newNetworkFuzzer("/echo"))
         {
             session.sendSegmented(send, 1);
@@ -124,12 +124,12 @@ public class BinaryStreamTest
             session.expectMessage(receivedFrames, OpCode.BINARY, expectedMessage);
         }
     }
-    
+
     @ServerEndpoint(PATH)
     public static class ServerBinaryStreamer
     {
         private static final Logger LOG = Log.getLogger(ServerBinaryStreamer.class);
-        
+
         @OnMessage
         public void echo(Session session, InputStream input) throws IOException
         {

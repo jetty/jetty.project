@@ -72,11 +72,14 @@ public class WebSocketSessionImpl implements Session
     @Override
     public WebSocketBehavior getBehavior()
     {
-        switch(coreSession.getBehavior())
+        switch (coreSession.getBehavior())
         {
-            case CLIENT: return WebSocketBehavior.CLIENT;
-            case SERVER: return WebSocketBehavior.SERVER;
-            default: return null;
+            case CLIENT:
+                return WebSocketBehavior.CLIENT;
+            case SERVER:
+                return WebSocketBehavior.SERVER;
+            default:
+                return null;
         }
     }
 

@@ -115,8 +115,8 @@ public class ConfiguratorTest
             else
             {
                 return "negotiatedExtensions=" + negotiatedExtensions.stream()
-                        .map((ext) -> ext.getName())
-                        .collect(Collectors.joining(",", "[", "]"));
+                    .map((ext) -> ext.getName())
+                    .collect(Collectors.joining(",", "[", "]"));
             }
         }
     }
@@ -142,7 +142,7 @@ public class ConfiguratorTest
 
             response.append("Request Header [").append(headerKey).append("]: ");
             @SuppressWarnings("unchecked")
-            Map<String, List<String>> headers = (Map<String, List<String>>) session.getUserProperties().get("request-headers");
+            Map<String, List<String>> headers = (Map<String, List<String>>)session.getUserProperties().get("request-headers");
             if (headers == null)
             {
                 response.append("<no headers found in session.getUserProperties()>");
@@ -233,7 +233,7 @@ public class ConfiguratorTest
         @OnMessage
         public String onMessage(Session session, String msg)
         {
-            String value = (String) session.getUserProperties().get(msg);
+            String value = (String)session.getUserProperties().get(msg);
             StringBuilder response = new StringBuilder();
             response.append("Requested User Property: [").append(msg).append("] = ");
             if (value == null)
@@ -253,8 +253,8 @@ public class ConfiguratorTest
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            InetSocketAddress local = (InetSocketAddress) sec.getUserProperties().get(JavaxWebSocketCreator.PROP_LOCAL_ADDRESS);
-            InetSocketAddress remote = (InetSocketAddress) sec.getUserProperties().get(JavaxWebSocketCreator.PROP_REMOTE_ADDRESS);
+            InetSocketAddress local = (InetSocketAddress)sec.getUserProperties().get(JavaxWebSocketCreator.PROP_LOCAL_ADDRESS);
+            InetSocketAddress remote = (InetSocketAddress)sec.getUserProperties().get(JavaxWebSocketCreator.PROP_REMOTE_ADDRESS);
 
             sec.getUserProperties().put("found.local", local);
             sec.getUserProperties().put("found.remote", remote);
@@ -280,7 +280,7 @@ public class ConfiguratorTest
 
         private void appendPropValue(Session session, StringBuilder response, String key)
         {
-            InetSocketAddress value = (InetSocketAddress) session.getUserProperties().get(key);
+            InetSocketAddress value = (InetSocketAddress)session.getUserProperties().get(key);
 
             response.append("[").append(key).append("] = ");
             response.append(toSafeAddr(value));
@@ -346,9 +346,9 @@ public class ConfiguratorTest
 
     @SuppressWarnings("unused")
     @ServerEndpoint(value = "/timedecoder",
-            subprotocols = {"time", "gmt"},
-            configurator = SelectedProtocolConfigurator.class,
-            decoders = {GmtTimeDecoder.class})
+        subprotocols = { "time", "gmt" },
+        configurator = SelectedProtocolConfigurator.class,
+        decoders = { GmtTimeDecoder.class })
     public static class TimeDecoderSocket
     {
         private TimeZone TZ = TimeZone.getTimeZone("GMT+0");
@@ -394,7 +394,7 @@ public class ConfiguratorTest
         }
         if (addr instanceof InetSocketAddress)
         {
-            InetSocketAddress inet = (InetSocketAddress) addr;
+            InetSocketAddress inet = (InetSocketAddress)addr;
             return String.format("%s:%d", inet.getAddress().getHostAddress(), inet.getPort());
         }
         else
@@ -657,7 +657,7 @@ public class ConfiguratorTest
     }
 
     protected void assertProtocols(FrameHandlerTracker clientSocket, Future<FrameHandler.CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
-            throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
+        throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
     {
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try

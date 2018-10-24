@@ -24,13 +24,12 @@ import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 
-
 @ServerEndpoint("/echo/partial/tracking")
 public class PartialTrackingSocket extends TrackingSocket
 {
     @OnMessage
     public void onPartial(String msg, boolean fin) throws IOException
     {
-        addEvent("onPartial(\"%s\",%b)",msg,fin);
+        addEvent("onPartial(\"%s\",%b)", msg, fin);
     }
 }

@@ -27,22 +27,22 @@ import java.util.concurrent.CompletableFuture;
 public class CompletableFutureCallback extends CompletableFuture<Callback> implements Callback
 {
     private static final Logger LOG = Log.getLogger(CompletableFutureCallback.class);
-    
+
     @Override
     public void failed(Throwable cause)
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("failed()", cause);
-        
+
         completeExceptionally(cause);
     }
-    
+
     @Override
     public void succeeded()
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("succeeded()");
-        
+
         complete(this);
     }
 }

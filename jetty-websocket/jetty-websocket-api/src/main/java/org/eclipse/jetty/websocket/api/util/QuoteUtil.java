@@ -218,7 +218,7 @@ public class QuoteUtil
 
     static
     {
-        Arrays.fill(escapes,UNICODE_TAG);
+        Arrays.fill(escapes, UNICODE_TAG);
         // non-unicode
         escapes['\b'] = 'b';
         escapes['\t'] = 't';
@@ -246,9 +246,8 @@ public class QuoteUtil
 
     /**
      * Remove quotes from a string, only if the input string start with and end with the same quote character.
-     * 
-     * @param str
-     *            the string to remove surrounding quotes from
+     *
+     * @param str the string to remove surrounding quotes from
      * @return the de-quoted string
      */
     public static String dequote(String str)
@@ -261,7 +260,7 @@ public class QuoteUtil
             if (start == end)
             {
                 // dequote
-                return str.substring(1,str.length() - 1);
+                return str.substring(1, str.length() - 1);
             }
         }
         return str;
@@ -293,7 +292,7 @@ public class QuoteUtil
                     {
                         buf.append('0');
                     }
-                    buf.append(Integer.toString(c,16)); // hex
+                    buf.append(Integer.toString(c, 16)); // hex
                 }
                 else
                 {
@@ -306,16 +305,14 @@ public class QuoteUtil
 
     /**
      * Simple quote of a string, escaping where needed.
-     * 
-     * @param buf
-     *            the StringBuilder to append to
-     * @param str
-     *            the string to quote
+     *
+     * @param buf the StringBuilder to append to
+     * @param str the string to quote
      */
     public static void quote(StringBuilder buf, String str)
     {
         buf.append('"');
-        escape(buf,str);
+        escape(buf, str);
         buf.append('"');
     }
 
@@ -323,13 +320,10 @@ public class QuoteUtil
      * Append into buf the provided string, adding quotes if needed.
      * <p>
      * Quoting is determined if any of the characters in the {@code delim} are found in the input {@code str}.
-     * 
-     * @param buf
-     *            the buffer to append to
-     * @param str
-     *            the string to possibly quote
-     * @param delim
-     *            the delimiter characters that will trigger automatic quoting
+     *
+     * @param buf   the buffer to append to
+     * @param str   the string to possibly quote
+     * @param delim the delimiter characters that will trigger automatic quoting
      */
     public static void quoteIfNeeded(StringBuilder buf, String str, String delim)
     {
@@ -350,7 +344,7 @@ public class QuoteUtil
             if (delim.indexOf(ch) >= 0)
             {
                 // found a delimiter codepoint. we need to quote it.
-                quote(buf,str);
+                quote(buf, str);
                 return;
             }
         }
@@ -362,16 +356,14 @@ public class QuoteUtil
     /**
      * Create an iterator of the input string, breaking apart the string at the provided delimiters, removing quotes and triming the parts of the string as
      * needed.
-     * 
-     * @param str
-     *            the input string to split apart
-     * @param delims
-     *            the delimiter characters to split the string on
+     *
+     * @param str    the input string to split apart
+     * @param delims the delimiter characters to split the string on
      * @return the iterator of the parts of the string, trimmed, with quotes around the string part removed, and unescaped
      */
     public static Iterator<String> splitAt(String str, String delims)
     {
-        return new DeQuotingStringIterator(str.trim(),delims);
+        return new DeQuotingStringIterator(str.trim(), delims);
     }
 
     public static String unescape(String str)
@@ -425,8 +417,10 @@ public class QuoteUtil
                         ret.append('"');
                         break;
                     case 'u':
-                        ret.append((char)((dehex((byte)str.charAt(i++)) << 24) + (dehex((byte)str.charAt(i++)) << 16) + (dehex((byte)str.charAt(i++)) << 8) + (dehex((byte)str
-                                .charAt(i++)))));
+                        ret.append(
+                            (char)((dehex((byte)str.charAt(i++)) << 24) + (dehex((byte)str.charAt(i++)) << 16) + (dehex((byte)str.charAt(i++)) << 8) + (dehex(
+                                (byte)str
+                                    .charAt(i++)))));
                         break;
                     default:
                         ret.append(c);

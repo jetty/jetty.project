@@ -62,7 +62,7 @@ public class PerMessageDeflateExtension extends CompressExtension
 
         // This extension requires the RSV1 bit set only in the first frame.
         // Subsequent continuation frames don't have RSV1 set, but are compressed.
-        if (OpCode.isDataFrame(frame.getOpCode()) && frame.getOpCode()!=OpCode.CONTINUATION)
+        if (OpCode.isDataFrame(frame.getOpCode()) && frame.getOpCode() != OpCode.CONTINUATION)
         {
             incomingCompressed = frame.isRsv1();
         }
@@ -74,8 +74,8 @@ public class PerMessageDeflateExtension extends CompressExtension
         }
 
         ByteAccumulator accumulator = new ByteAccumulator(getMaxFrameSize());
-        
-        try 
+
+        try
         {
             ByteBuffer payload = frame.getPayload();
             decompress(accumulator, payload);
@@ -83,7 +83,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             {
                 decompress(accumulator, TAIL_BYTES_BUF.slice());
             }
-            
+
             forwardIncoming(frame, callback, accumulator);
         }
         catch (DataFormatException e)
@@ -117,13 +117,13 @@ public class PerMessageDeflateExtension extends CompressExtension
         }
         super.nextOutgoingFrame(frame, callback, batch);
     }
-    
+
     @Override
     int getRsvUseMode()
     {
         return RSV_USE_ONLY_FIRST;
     }
-    
+
     @Override
     int getTailDropMode()
     {
@@ -134,8 +134,8 @@ public class PerMessageDeflateExtension extends CompressExtension
     public void init(final ExtensionConfig config, ByteBufferPool bufferPool)
     {
         configRequested = new ExtensionConfig(config);
-        Map<String,String> params_negotiated = new HashMap<>();
-        
+        Map<String, String> params_negotiated = new HashMap<>();
+
         for (String key : config.getParameterKeys())
         {
             key = key.trim();
@@ -150,13 +150,13 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
                 case "client_no_context_takeover":
                 {
-                    params_negotiated.put("client_no_context_takeover",null);
+                    params_negotiated.put("client_no_context_takeover", null);
                     incomingContextTakeover = false;
                     break;
                 }
                 case "server_no_context_takeover":
                 {
-                    params_negotiated.put("client_no_context_takeover",null);
+                    params_negotiated.put("client_no_context_takeover", null);
                     outgoingContextTakeover = false;
                     break;
                 }
@@ -167,7 +167,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             }
         }
 
-        configNegotiated = new ExtensionConfig(config.getName(),params_negotiated);
+        configNegotiated = new ExtensionConfig(config.getName(), params_negotiated);
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.init(configNegotiated, bufferPool);
@@ -177,8 +177,8 @@ public class PerMessageDeflateExtension extends CompressExtension
     public String toString()
     {
         return String.format("%s[requested=\"%s\", negotiated=\"%s\"]",
-                getClass().getSimpleName(),
-                configRequested.getParameterizedName(),
-                configNegotiated.getParameterizedName());
+            getClass().getSimpleName(),
+            configRequested.getParameterizedName(),
+            configNegotiated.getParameterizedName());
     }
 }

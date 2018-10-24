@@ -80,7 +80,7 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
     public void onWebSocketConnect(Session session)
     {
         assertThat("Session type", session, instanceOf(WebSocketSessionImpl.class));
-        super.onWSOpen((WebSocketSessionImpl) session);
+        super.onWSOpen((WebSocketSessionImpl)session);
         /* TODO
         this.openUpgradeRequest = session.getUpgradeRequest();
         this.openUpgradeResponse = session.getUpgradeResponse();
@@ -102,7 +102,7 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
         }
 
         /** TODO
-        framesQueue.offer(Frame.copy(frame));
+         framesQueue.offer(Frame.copy(frame));
          */
     }
 

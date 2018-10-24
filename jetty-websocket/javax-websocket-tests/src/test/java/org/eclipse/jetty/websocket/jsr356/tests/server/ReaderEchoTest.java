@@ -45,7 +45,7 @@ import java.util.List;
 public class ReaderEchoTest
 {
     private static final Logger LOG = Log.getLogger(ReaderEchoTest.class);
-    
+
     public static class BaseSocket
     {
         @OnError
@@ -54,7 +54,7 @@ public class ReaderEchoTest
             LOG.warn("Error", cause);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/reader")
     public static class ReaderSocket extends BaseSocket
@@ -65,7 +65,7 @@ public class ReaderEchoTest
             return IO.toString(reader);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/reader-param/{param}")
     public static class ReaderParamSocket extends BaseSocket
@@ -80,9 +80,9 @@ public class ReaderEchoTest
             return msg.toString();
         }
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -91,46 +91,46 @@ public class ReaderEchoTest
         server.getServerContainer().addEndpoint(ReaderSocket.class);
         server.getServerContainer().addEndpoint(ReaderParamSocket.class);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testReaderSocket() throws Exception
     {
         String requestPath = "/echo/reader";
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     @Test
     public void testReaderParamSocket() throws Exception
     {
         String requestPath = "/echo/reader-param/Every%20Person";
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("Hello World|Every Person"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);

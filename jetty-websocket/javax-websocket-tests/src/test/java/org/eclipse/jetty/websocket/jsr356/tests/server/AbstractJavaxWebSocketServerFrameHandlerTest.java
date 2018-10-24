@@ -38,7 +38,7 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
     private static Server server;
     protected static ServletContextHandler context;
     protected static JavaxWebSocketServerContainer container;
-    
+
     @BeforeAll
     public static void initContainer() throws Exception
     {
@@ -56,20 +56,19 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         server.addBean(container, true);
         server.start();
     }
-    
+
     @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();
         server.stop();
     }
-    
 
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams = new HashMap<>();
     protected EndpointConfig endpointConfig;
-    
+
     public AbstractJavaxWebSocketServerFrameHandlerTest()
     {
         endpointConfig = new EmptyClientEndpointConfig();

@@ -31,7 +31,7 @@ import java.io.Reader;
 public class QuotesDecoder implements Decoder.TextStream<Quotes>
 {
     private static final Logger LOG = Log.getLogger(QuotesDecoder.class);
-    
+
     @Override
     public Quotes decode(Reader reader) throws DecodeException, IOException
     {
@@ -57,13 +57,13 @@ public class QuotesDecoder implements Decoder.TextStream<Quotes>
         }
         return quotes;
     }
-    
+
     @Override
     public void destroy()
     {
         CoderEventTracking.getInstance().addEvent(this, "destroy()");
     }
-    
+
     @Override
     public void init(EndpointConfig config)
     {

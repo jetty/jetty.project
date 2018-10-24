@@ -18,11 +18,18 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Map;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -33,19 +40,10 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.EnumSet;
+import java.util.Map;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests.
@@ -142,8 +140,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     {
         try
         {
-            HttpServletRequest httpreq = (HttpServletRequest) request;
-            HttpServletResponse httpresp = (HttpServletResponse) response;
+            HttpServletRequest httpreq = (HttpServletRequest)request;
+            HttpServletResponse httpresp = (HttpServletResponse)response;
 
             // Since this is a filter, we need to be smart about determining the target path.
             // We should rely on the Container for stripping path parameters and its ilk before
@@ -154,7 +152,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                 target = target + httpreq.getPathInfo();
             }
 
-            WebSocketNegotiator negotiator = factory.getMatchedNegotiator(target,pathSpec ->
+            WebSocketNegotiator negotiator = factory.getMatchedNegotiator(target, pathSpec ->
             {
                 // Store PathSpec resource mapping as request attribute, for WebSocketCreator
                 // implementors to use later if they wish
@@ -212,7 +210,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent, this, factory);
+        Dumpable.dumpObjects(out, indent, this, factory);
     }
 
     @ManagedAttribute(value = "factory", readonly = true)
@@ -315,9 +313,9 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         if (context.getAttribute(key) != null)
         {
             throw new ServletException(WebSocketUpgradeFilter.class.getName() +
-                    " is defined twice for the same context attribute key '" + key
-                    + "'.  Make sure you have different init-param '" +
-                    CONTEXT_ATTRIBUTE_KEY + "' values set");
+                " is defined twice for the same context attribute key '" + key
+                + "'.  Make sure you have different init-param '" +
+                CONTEXT_ATTRIBUTE_KEY + "' values set");
         }
 
         context.setAttribute(key, this);

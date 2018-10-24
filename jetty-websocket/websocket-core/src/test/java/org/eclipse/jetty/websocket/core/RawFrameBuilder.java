@@ -43,19 +43,19 @@ public class RawFrameBuilder
     {
         if (mask != null)
         {
-            assertThat("Mask.length",mask.length,is(4));
-            putLength(buf,length,(mask != null));
+            assertThat("Mask.length", mask.length, is(4));
+            putLength(buf, length, (mask != null));
             buf.put(mask);
         }
         else
         {
-            putLength(buf,length,false);
+            putLength(buf, length, false);
         }
     }
 
     public static void mask(final byte[] data, final byte mask[])
     {
-        assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length", mask.length, is(4));
         int len = data.length;
         for (int i = 0; i < len; i++)
             data[i] ^= mask[i % 4];
@@ -96,15 +96,14 @@ public class RawFrameBuilder
 
     public static void putMask(ByteBuffer buf, byte mask[])
     {
-        assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length", mask.length, is(4));
         buf.put(mask);
     }
-    
+
     public static void putPayloadLength(ByteBuffer buf, int length)
     {
-        putLength(buf,length,true);
+        putLength(buf, length, true);
     }
-    
 
     public static byte[] buildFrame(byte opcode, String message, boolean masked)
     {
@@ -121,44 +120,44 @@ public class RawFrameBuilder
     {
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
-        RawFrameBuilder.putOpFin(buffer,opcode,fin);
-        putLength(buffer,bytes.length,masked);
+        RawFrameBuilder.putOpFin(buffer, opcode, fin);
+        putLength(buffer, bytes.length, masked);
         if (masked)
         {
             byte[] mask = new byte[4];
             // ThreadLocalRandom.current().nextBytes(mask);
             buffer.put(mask);
-            mask(bytes,mask);
+            mask(bytes, mask);
         }
         buffer.put(bytes);
-        BufferUtil.flipToFlush(buffer,0);
+        BufferUtil.flipToFlush(buffer, 0);
         return BufferUtil.toArray(buffer);
     }
-    
+
     public static byte[] buildText(String message, boolean masked)
     {
-        return buildFrame(OpCode.TEXT,message,masked);
+        return buildFrame(OpCode.TEXT, message, masked);
     }
-    
-    public static byte[] buildClose(CloseStatus status,boolean masked)
+
+    public static byte[] buildClose(CloseStatus status, boolean masked)
     {
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
-        
-        byte[] bytes = status==null?null:BufferUtil.toArray(status.asPayloadBuffer());
-        RawFrameBuilder.putOpFin(buffer,OpCode.CLOSE,true);
-        putLength(buffer,bytes==null?0:bytes.length,masked);
+
+        byte[] bytes = status == null?null:BufferUtil.toArray(status.asPayloadBuffer());
+        RawFrameBuilder.putOpFin(buffer, OpCode.CLOSE, true);
+        putLength(buffer, bytes == null?0:bytes.length, masked);
         if (masked)
         {
             byte[] mask = new byte[4];
             // ThreadLocalRandom.current().nextBytes(mask);
             buffer.put(mask);
-            mask(bytes,mask);
+            mask(bytes, mask);
         }
-        if (bytes!=null)
+        if (bytes != null)
             buffer.put(bytes);
-        BufferUtil.flipToFlush(buffer,0);
+        BufferUtil.flipToFlush(buffer, 0);
         return BufferUtil.toArray(buffer);
     }
-    
+
 }

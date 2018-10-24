@@ -34,7 +34,7 @@ public class JsrClientEchoTrackingSocket extends WSEventTracker.Basic
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> pongQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
-    
+
     public JsrClientEchoTrackingSocket()
     {
         super("@ClientEndpoint");
@@ -46,7 +46,7 @@ public class JsrClientEchoTrackingSocket extends WSEventTracker.Basic
         messageQueue.offer(msg);
         return msg;
     }
-    
+
     @OnMessage(maxMessageSize = 50 * 1024 * 1024)
     public ByteBuffer onBinary(ByteBuffer buffer)
     {
@@ -54,7 +54,7 @@ public class JsrClientEchoTrackingSocket extends WSEventTracker.Basic
         bufferQueue.offer(copy);
         return buffer;
     }
-    
+
     @OnMessage
     public void onPong(PongMessage pong)
     {

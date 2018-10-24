@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import javax.websocket.Session;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
 
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import java.util.concurrent.CompletableFuture;
 
@@ -48,7 +48,7 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
     {
         if (javax.websocket.Endpoint.class.isAssignableFrom(endpointClass))
         {
-            return createEndpointMetadata((Class<? extends Endpoint>) endpointClass, endpointConfig);
+            return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
         }
 
         ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);

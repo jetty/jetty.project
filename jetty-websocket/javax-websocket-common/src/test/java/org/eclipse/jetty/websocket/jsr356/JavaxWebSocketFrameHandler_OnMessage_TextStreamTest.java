@@ -44,9 +44,9 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
 
         // This invocation is the same for all tests
         localEndpoint.onOpen(channel);
-        
+
         func.apply(localEndpoint);
-        
+
         return socket;
     }
 
@@ -67,7 +67,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
             }
         }
     }
-    
+
     @Test
     public void testInvokeMessageStream() throws Exception
     {

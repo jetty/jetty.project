@@ -36,7 +36,7 @@ public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxW
 {
     private void assertBadSocket(Object socket, String expectedString) throws Exception
     {
-        Exception e = assertThrows(InvalidSignatureException.class, ()->newJavaxFrameHandler(socket));
+        Exception e = assertThrows(InvalidSignatureException.class, () -> newJavaxFrameHandler(socket));
         assertThat(e.getMessage(), containsString(expectedString));
     }
 
@@ -46,6 +46,7 @@ public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxW
     {
         /**
          * Invalid Open Method Declaration (parameter type CloseReason)
+         *
          * @param reason the close reason
          */
         @OnOpen
@@ -67,6 +68,7 @@ public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxW
     {
         /**
          * Invalid Open Method Declaration (parameter type int)
+         *
          * @param value the open value
          */
         @OnOpen
@@ -88,8 +90,9 @@ public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxW
     {
         /**
          * Invalid Open Method Declaration (parameter of type int)
+         *
          * @param session the session for the open
-         * @param count the open count
+         * @param count   the open count
          */
         @OnOpen
         public void onOpen(Session session, int count)

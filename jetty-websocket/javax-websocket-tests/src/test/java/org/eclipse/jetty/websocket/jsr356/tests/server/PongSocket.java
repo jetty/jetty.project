@@ -30,7 +30,7 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import java.nio.charset.StandardCharsets;
 
-@ServerEndpoint(value="/pong-socket", configurator=PongContextListener.Config.class)
+@ServerEndpoint(value = "/pong-socket", configurator = PongContextListener.Config.class)
 public class PongSocket
 {
     private static final Logger LOG = Log.getLogger(PongSocket.class);
@@ -43,14 +43,14 @@ public class PongSocket
         this.session = session;
         this.path = (String)config.getUserProperties().get("path");
     }
-    
+
     @OnMessage
     public void onPong(PongMessage pong)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("PongSocket.onPong(): PongMessage.appData={}",BufferUtil.toDetailString(pong.getApplicationData()));
+            LOG.debug("PongSocket.onPong(): PongMessage.appData={}", BufferUtil.toDetailString(pong.getApplicationData()));
         byte buf[] = BufferUtil.toArray(pong.getApplicationData());
-        String message = new String(buf,StandardCharsets.UTF_8);
+        String message = new String(buf, StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("PongSocket.onPong(PongMessage)[" + path + "]:" + message);
     }
 }

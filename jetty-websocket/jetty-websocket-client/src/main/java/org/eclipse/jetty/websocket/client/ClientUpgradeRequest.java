@@ -233,8 +233,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     /**
      * Set Sub Protocol request list.
      *
-     * @param protocols
-     *            the sub protocols desired
+     * @param protocols the sub protocols desired
      */
     @Override
     public void setSubProtocols(String... protocols)
@@ -265,7 +264,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     @Override
     public void setHeader(String name, List<String> values)
     {
-        headers.put(name,values);
+        headers.put(name, values);
     }
 
     @Override
@@ -273,7 +272,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        setHeader(name,values);
+        setHeader(name, values);
     }
 
     @Override
@@ -285,7 +284,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
         {
             String name = entry.getKey();
             List<String> values = entry.getValue();
-            setHeader(name,values);
+            setHeader(name, values);
         }
     }
 
@@ -367,8 +366,8 @@ public final class ClientUpgradeRequest implements UpgradeRequest
      * <p>
      * Quoting is determined if any of the characters in the {@code delim} are found in the input {@code str}.
      *
-     * @param buf the buffer to append to
-     * @param str the string to possibly quote
+     * @param buf   the buffer to append to
+     * @param str   the string to possibly quote
      * @param delim the delimiter characters that will trigger automatic quoting
      */
     private static void quoteIfNeeded(StringBuilder buf, String str, String delim)

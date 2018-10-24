@@ -48,10 +48,10 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
 
     public void assertBytes(int idx, String expectedHex)
     {
-        assertThat("Capture index does not exist",idx,lessThan(captured.size()));
+        assertThat("Capture index does not exist", idx, lessThan(captured.size()));
         ByteBuffer buf = captured.get(idx);
         String actualHex = TypeUtil.toHexString(BufferUtil.toArray(buf)).toUpperCase(Locale.ENGLISH);
-        assertThat("captured[" + idx + "]",actualHex,is(expectedHex.toUpperCase(Locale.ENGLISH)));
+        assertThat("captured[" + idx + "]", actualHex, is(expectedHex.toUpperCase(Locale.ENGLISH)));
     }
 
     public List<ByteBuffer> getCaptured()
@@ -63,8 +63,8 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         ByteBuffer buf = ByteBuffer.allocate(Generator.MAX_HEADER_LENGTH + frame.getPayloadLength());
-        generator.generateWholeFrame(frame,buf);
-        BufferUtil.flipToFlush(buf,0);
+        generator.generateWholeFrame(frame, buf);
+        BufferUtil.flipToFlush(buf, 0);
         captured.add(buf);
         if (callback != null)
         {

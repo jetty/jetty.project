@@ -39,19 +39,19 @@ public abstract class AbstractClientFrameHandler extends AbstractTestFrameHandle
     @Override
     public void onOpen()
     {
-        LOG.info("onOpen({})",getCoreSession());
+        LOG.info("onOpen({})", getCoreSession());
     }
 
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        LOG.debug("onClosed({})",closeStatus);
+        LOG.debug("onClosed({})", closeStatus);
     }
 
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.debug("onText len={} fin={}",utf8.length(),fin);
+        LOG.debug("onText len={} fin={}", utf8.length(), fin);
         if (fin)
             onWholeText(utf8.toString());
         callback.succeeded();

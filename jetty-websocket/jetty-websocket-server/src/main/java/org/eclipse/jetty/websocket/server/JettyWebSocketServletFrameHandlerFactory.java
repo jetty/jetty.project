@@ -39,6 +39,7 @@ public class JettyWebSocketServletFrameHandlerFactory extends JettyWebSocketFram
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
     {
-        return super.newJettyFrameHandler(websocketPojo, new UpgradeRequestAdapter(upgradeRequest), new UpgradeResponseAdapter(upgradeResponse), new CompletableFuture<>());
+        return super.newJettyFrameHandler(websocketPojo, new UpgradeRequestAdapter(upgradeRequest), new UpgradeResponseAdapter(upgradeResponse),
+            new CompletableFuture<>());
     }
 }

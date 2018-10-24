@@ -37,13 +37,13 @@ public class DeflateFrameExtension extends CompressExtension
     {
         return "deflate-frame";
     }
-    
+
     @Override
     int getRsvUseMode()
     {
         return RSV_USE_ALWAYS;
     }
-    
+
     @Override
     int getTailDropMode()
     {
@@ -57,7 +57,7 @@ public class DeflateFrameExtension extends CompressExtension
         // they are read and parsed with a single thread, and
         // therefore there is no need for synchronization.
 
-        if ( (OpCode.isControlFrame(frame.getOpCode())) || !frame.isRsv1() || !frame.hasPayload() )
+        if ((OpCode.isControlFrame(frame.getOpCode())) || !frame.isRsv1() || !frame.hasPayload())
         {
             nextIncomingFrame(frame, callback);
             return;

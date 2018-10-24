@@ -28,7 +28,7 @@ public class EchoSocketConfigurator extends ServerEndpointConfig.Configurator
     @Override
     public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
     {
-        response.getHeaders().put("X-Test",Collections.singletonList("Extra"));
-        super.modifyHandshake(sec,request,response);
+        response.getHeaders().put("X-Test", Collections.singletonList("Extra"));
+        super.modifyHandshake(sec, request, response);
     }
 }

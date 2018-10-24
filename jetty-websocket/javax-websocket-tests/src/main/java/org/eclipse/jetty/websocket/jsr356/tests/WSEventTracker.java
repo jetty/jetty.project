@@ -48,10 +48,28 @@ public abstract class WSEventTracker
 
     public abstract static class Basic extends WSEventTracker
     {
-        public Basic(String id) { super(id); }
-        @OnOpen public void onOpen(Session session) { super.onWsOpen(session); }
-        @OnClose public void onClose(CloseReason closeReason) { super.onWsClose(closeReason); }
-        @OnError public void onError(Throwable cause) { super.onWsError(cause); }
+        public Basic(String id)
+        {
+            super(id);
+        }
+
+        @OnOpen
+        public void onOpen(Session session)
+        {
+            super.onWsOpen(session);
+        }
+
+        @OnClose
+        public void onClose(CloseReason closeReason)
+        {
+            super.onWsClose(closeReason);
+        }
+
+        @OnError
+        public void onError(Throwable cause)
+        {
+            super.onWsError(cause);
+        }
     }
 
     public Session session;
@@ -76,7 +94,7 @@ public abstract class WSEventTracker
         LOG.debug("init");
     }
 
-    public void addEvent(String format, Object ... args)
+    public void addEvent(String format, Object... args)
     {
         events.offer(String.format(format, args));
     }

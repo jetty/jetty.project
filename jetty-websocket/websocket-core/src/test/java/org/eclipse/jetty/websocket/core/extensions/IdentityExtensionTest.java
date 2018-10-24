@@ -69,6 +69,7 @@ public class IdentityExtensionTest extends AbstractExtensionTest
 
     /**
      * Verify that outgoing frames are unmodified
+     *
      * @throws IOException on test failure
      */
     @Test

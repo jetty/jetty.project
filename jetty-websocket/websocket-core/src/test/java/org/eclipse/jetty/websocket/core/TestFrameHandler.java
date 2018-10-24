@@ -64,14 +64,14 @@ public class TestFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        LOG.info("onClosed {}",closeStatus);
+        LOG.info("onClosed {}", closeStatus);
         closed.countDown();
     }
 
     @Override
     public void onError(Throwable cause) throws Exception
     {
-        LOG.info("onError {} ",cause==null?null:cause.toString());
+        LOG.info("onError {} ", cause == null?null:cause.toString());
     }
 
     public void sendText(String text)

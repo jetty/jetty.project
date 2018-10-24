@@ -44,7 +44,8 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
     private final CompletableFuture<Session> futureSession;
     private final DelegatedClientUpgradeRequest handshakeRequest;
 
-    public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, org.eclipse.jetty.websocket.api.UpgradeRequest request, URI requestURI, Object websocketPojo)
+    public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, org.eclipse.jetty.websocket.api.UpgradeRequest request,
+        URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
@@ -61,11 +62,11 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
 
             // Copy manually created Cookies into place
             List<HttpCookie> cookies = request.getCookies();
-            if(cookies != null)
+            if (cookies != null)
             {
                 HttpFields headers = getHeaders();
                 // TODO: remove existing Cookie header (if set)?
-                for (HttpCookie cookie: cookies)
+                for (HttpCookie cookie : cookies)
                 {
                     headers.add(HttpHeader.COOKIE, cookie.toString());
                 }
@@ -110,7 +111,7 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
         UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
 
         JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
-                handshakeRequest, upgradeResponse, onOpenFuture);
+            handshakeRequest, upgradeResponse, onOpenFuture);
 
         return frameHandler;
     }

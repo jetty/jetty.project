@@ -33,6 +33,6 @@ public class IntegerDecoderTest
     {
         IntegerDecoder decoder = new IntegerDecoder();
         Integer val = decoder.decode("123");
-        assertThat("Decoded value",val, is(123));
+        assertThat("Decoded value", val, is(123));
     }
 }

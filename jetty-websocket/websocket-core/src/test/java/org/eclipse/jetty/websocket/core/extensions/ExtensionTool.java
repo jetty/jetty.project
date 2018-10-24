@@ -56,7 +56,7 @@ public class ExtensionTool
             this.extConfig = ExtensionConfig.parse(parameterizedExtension);
             Class<?> extClass = factory.getExtension(extConfig.getName());
             assertThat("extClass", extClass, notNullValue());
-    
+
             this.capture = new IncomingFramesCapture();
             this.parser = new Parser(new MappedByteBufferPool());
         }
@@ -71,7 +71,7 @@ public class ExtensionTool
             this.ext = factory.newInstance(objectFactory, bufferPool, extConfig);
             this.ext.setNextIncomingFrames(capture);
         }
-    
+
         public void parseIncomingHex(String... rawhex)
         {
             int parts = rawhex.length;
@@ -79,17 +79,17 @@ public class ExtensionTool
 
             for (int i = 0; i < parts; i++)
             {
-                String hex = rawhex[i].replaceAll("\\s*(0x)?","");
+                String hex = rawhex[i].replaceAll("\\s*(0x)?", "");
                 net = TypeUtil.fromHexString(hex);
 
                 ByteBuffer buffer = ByteBuffer.wrap(net);
                 while (BufferUtil.hasContent(buffer))
                 {
                     Frame frame = parser.parse(buffer);
-                    if (frame==null)
+                    if (frame == null)
                         break;
-                    ext.onFrame(frame,Callback.NOOP);
-                }                
+                    ext.onFrame(frame, Callback.NOOP);
+                }
             }
         }
 
@@ -112,16 +112,16 @@ public class ExtensionTool
             {
                 Frame actual = capture.frames.poll();
 
-                String prefix = String.format("frame[%d]",i);
-                assertThat(prefix + ".opcode",actual.getOpCode(), Matchers.is(expectedFrames[i].getOpCode()));
-                assertThat(prefix + ".fin",actual.isFin(), Matchers.is(expectedFrames[i].isFin()));
-                assertThat(prefix + ".rsv1",actual.isRsv1(),is(false));
-                assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
-                assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
+                String prefix = String.format("frame[%d]", i);
+                assertThat(prefix + ".opcode", actual.getOpCode(), Matchers.is(expectedFrames[i].getOpCode()));
+                assertThat(prefix + ".fin", actual.isFin(), Matchers.is(expectedFrames[i].isFin()));
+                assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
+                assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+                assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
                 ByteBuffer expected = expectedFrames[i].getPayload().slice();
-                assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
-                ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+                assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+                ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
             }
         }
     }

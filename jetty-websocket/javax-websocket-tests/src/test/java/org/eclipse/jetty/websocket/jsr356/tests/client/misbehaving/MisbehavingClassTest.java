@@ -74,16 +74,16 @@ public class MisbehavingClassTest
         try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
         {
             // expecting IOException during onOpen
-            Exception e = assertThrows(IOException.class, ()->container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
+            Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
             assertThat(e.getCause(), instanceOf(ExecutionException.class));
 
-            assertThat("Close should have occurred",socket.closeLatch.await(1,TimeUnit.SECONDS), is(true));
+            assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
 
             Throwable cause = socket.errors.pop();
-            assertThat("Error",cause, instanceOf(RuntimeException.class));
+            assertThat("Error", cause, instanceOf(RuntimeException.class));
         }
     }
-    
+
     @SuppressWarnings("Duplicates")
     @Test
     public void testAnnotatedRuntimeOnOpen() throws Exception
@@ -95,13 +95,13 @@ public class MisbehavingClassTest
         try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
         {
             // expecting IOException during onOpen
-            Exception e = assertThrows(IOException.class, ()->container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
+            Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
             assertThat(e.getCause(), instanceOf(ExecutionException.class));
 
-            assertThat("Close should have occurred",socket.closeLatch.await(1,TimeUnit.SECONDS), is(true));
+            assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
 
             Throwable cause = socket.errors.pop();
-            assertThat("Error",cause, instanceOf(RuntimeException.class));
+            assertThat("Error", cause, instanceOf(RuntimeException.class));
         }
     }
 }

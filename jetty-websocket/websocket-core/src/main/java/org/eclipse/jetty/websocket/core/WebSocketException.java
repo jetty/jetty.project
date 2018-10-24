@@ -36,7 +36,7 @@ public class WebSocketException extends RuntimeException
 
     public WebSocketException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 
     public WebSocketException(Throwable cause)

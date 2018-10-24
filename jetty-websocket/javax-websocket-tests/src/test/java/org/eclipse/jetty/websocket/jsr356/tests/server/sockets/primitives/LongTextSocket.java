@@ -33,7 +33,7 @@ import java.io.IOException;
 public class LongTextSocket
 {
     private static final Logger LOG = Log.getLogger(LongTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -52,7 +52,7 @@ public class LongTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

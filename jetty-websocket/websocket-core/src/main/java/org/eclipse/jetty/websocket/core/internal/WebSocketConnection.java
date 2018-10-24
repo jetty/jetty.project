@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -76,9 +75,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * </p>
      */
     public WebSocketConnection(EndPoint endp,
-                               Executor executor,
-                               ByteBufferPool bufferPool,
-                               WebSocketChannel channel)
+        Executor executor,
+        ByteBufferPool bufferPool,
+        WebSocketChannel channel)
     {
         this(endp, executor, bufferPool, channel, true);
     }
@@ -91,10 +90,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * </p>
      */
     public WebSocketConnection(EndPoint endp,
-                               Executor executor,
-                               ByteBufferPool bufferPool,
-                               WebSocketChannel channel,
-                               boolean validating)
+        Executor executor,
+        ByteBufferPool bufferPool,
+        WebSocketChannel channel,
+        boolean validating)
     {
         super(endp, executor);
 
@@ -108,22 +107,22 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.channel = channel;
 
         this.generator = new Generator(bufferPool);
-        this.parser = new Parser(bufferPool,channel.isAutoFragment())
+        this.parser = new Parser(bufferPool, channel.isAutoFragment())
         {
             @Override
             protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
             {
-                super.checkFrameSize(opcode,payloadLength);
-                if (!channel.isAutoFragment() && channel.getMaxFrameSize()>0 && payloadLength>channel.getMaxFrameSize())
+                super.checkFrameSize(opcode, payloadLength);
+                if (!channel.isAutoFragment() && channel.getMaxFrameSize() > 0 && payloadLength > channel.getMaxFrameSize())
                     throw new MessageTooLargeException("Cannot handle payload lengths larger than " + channel.getMaxFrameSize());
             }
-            
+
         };
-       
+
         this.flusher = new Flusher(channel.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(channel.getInputBufferSize());
 
-        this.random = this.channel.getBehavior() == Behavior.CLIENT ? new Random(endp.hashCode()) : null;
+        this.random = this.channel.getBehavior() == Behavior.CLIENT?new Random(endp.hashCode()):null;
     }
 
     @Override
@@ -157,7 +156,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return getEndPoint().getRemoteAddress();
     }
 
-
     /**
      * Physical connection disconnect.
      * <p>
@@ -168,10 +166,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
-        
+
         // TODO review all close paths
         IOException e = new IOException("Closed");
-        flusher.terminate(e,true);
+        flusher.terminate(e, true);
         channel.onClosed(e);
         super.onClose();
     }
@@ -190,9 +188,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
-        
+
         final ReferencedBuffer referenced = frame.hasPayload() && !frame.isReleaseable()?networkBuffer:null;
-        if (referenced!=null)
+        if (referenced != null)
             referenced.retain();
 
         channel.onFrame(frame, new Callback()
@@ -204,10 +202,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     LOG.debug("succeeded onFrame({})", frame);
 
                 frame.close();
-                if (referenced!=null)
+                if (referenced != null)
                     referenced.release();
-                
-                if (!channel.isDemanding())                    
+
+                if (!channel.isDemanding())
                     demand(1);
             }
 
@@ -216,9 +214,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("failed onFrame(" + frame + ")", cause);
-                
+
                 frame.close();
-                if (referenced!=null)
+                if (referenced != null)
                     referenced.release();
 
                 // notify session & endpoint
@@ -232,32 +230,32 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         synchronized (this)
         {
             if (networkBuffer == null)
-                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize());             
+                networkBuffer = new ReferencedBuffer(bufferPool, getInputBufferSize());
         }
     }
-    
+
     private void reacquireNetworkBuffer()
     {
         synchronized (this)
         {
             if (networkBuffer == null)
                 throw new IllegalStateException();
-            
+
             if (networkBuffer.getBuffer().hasRemaining())
                 throw new IllegalStateException();
 
             networkBuffer.release();
-            networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize());             
+            networkBuffer = new ReferencedBuffer(bufferPool, getInputBufferSize());
         }
     }
-    
+
     private void releaseNetworkBuffer()
     {
         synchronized (this)
         {
             if (networkBuffer == null)
                 throw new IllegalStateException();
-            
+
             if (networkBuffer.getBuffer().hasRemaining())
                 throw new IllegalStateException();
 
@@ -269,75 +267,75 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     public void onFillable()
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("onFillable()");
         fillAndParse();
     }
-    
+
     @Override
     public void run()
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("run()");
         fillAndParse();
     }
-       
+
     public void demand(long n)
     {
-        if (n<=0)
+        if (n <= 0)
             throw new IllegalArgumentException("Demand must be positive");
-        
+
         boolean fillAndParse = false;
         synchronized (this)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("demand {} d={} fp={} {} {}",n,demand,fillingAndParsing,networkBuffer,this);
-            
-            if (demand<0)
+                LOG.debug("demand {} d={} fp={} {} {}", n, demand, fillingAndParsing, networkBuffer, this);
+
+            if (demand < 0)
                 return;
-            
+
             try
             {
-                demand = Math.addExact(demand,n);
+                demand = Math.addExact(demand, n);
             }
-            catch(ArithmeticException e)
+            catch (ArithmeticException e)
             {
                 demand = Long.MAX_VALUE;
             }
-            
+
             if (!fillingAndParsing)
             {
                 fillingAndParsing = true;
                 fillAndParse = true;
-            }            
+            }
         }
-        
+
         if (fillAndParse)
         {
             // TODO can we just fillAndParse();
             getExecutor().execute(this);
         }
     }
-    
+
     public boolean moreDemand()
     {
         synchronized (this)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("moreDemand? d={} fp={} {} {}",demand,fillingAndParsing,networkBuffer,this);
-            
+                LOG.debug("moreDemand? d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
+
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand>0)
+            if (demand > 0)
                 return true;
-            
-            if (demand==0)
+
+            if (demand == 0)
                 fillingAndParsing = false;
 
             if (networkBuffer.isEmpty())
                 releaseNetworkBuffer();
-            
-            return false;            
+
+            return false;
         }
     }
 
@@ -346,16 +344,16 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         synchronized (this)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("meetDemand d={} fp={} {} {}",demand,fillingAndParsing,networkBuffer,this);
-            
-            if (demand==0)
+                LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
+
+            if (demand == 0)
                 throw new IllegalStateException();
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-                
-            if (demand<0)
+
+            if (demand < 0)
                 return false;
-                
+
             demand--;
             return true;
         }
@@ -366,30 +364,29 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         synchronized (this)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("cancelDemand d={} fp={} {} {}",demand,fillingAndParsing,networkBuffer,this);
-            
+                LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
+
             demand = -1;
         }
     }
-    
-    
+
     private void fillAndParse()
     {
-        acquireNetworkBuffer();   
-                        
+        acquireNetworkBuffer();
+
         try
         {
             while (true)
             {
                 // Parse and handle frames
-                while(!networkBuffer.isEmpty())
+                while (!networkBuffer.isEmpty())
                 {
                     Parser.ParsedFrame frame = parser.parse(networkBuffer.getBuffer());
-                    if (frame==null)
+                    if (frame == null)
                         break;
-                             
-                   if(meetDemand())
-                       onFrame(frame);
+
+                    if (meetDemand())
+                        onFrame(frame);
 
                     if (!moreDemand())
                     {
@@ -398,18 +395,18 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 }
 
                 // buffer must be empty here because parser is fully consuming
-                assert(networkBuffer.isEmpty());
-                
+                assert (networkBuffer.isEmpty());
+
                 if (!getEndPoint().isOpen())
                 {
                     releaseNetworkBuffer();
                     return;
                 }
-                
+
                 // If more references that 1(us), don't refill into buffer and risk compaction.
-                if (networkBuffer.getReferences()>1)
+                if (networkBuffer.getReferences() > 1)
                     reacquireNetworkBuffer();
-                
+
                 int filled = getEndPoint().fill(networkBuffer.getBuffer()); // TODO check if compact is possible.
 
                 if (LOG.isDebugEnabled())
@@ -439,7 +436,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
     }
 
-
     /**
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
@@ -458,7 +454,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             synchronized (this)
             {
-                networkBuffer = new ReferencedBuffer(bufferPool,prefilled.remaining());
+                networkBuffer = new ReferencedBuffer(bufferPool, prefilled.remaining());
             }
             ByteBuffer buffer = networkBuffer.getBuffer();
             BufferUtil.clearToFill(buffer);
@@ -474,7 +470,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onOpen() {}",this);
+            LOG.debug("onOpen() {}", this);
 
         // Open Channel
         channel.onOpen();
@@ -483,15 +479,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     /**
      * Event for no activity on connection (read or write)
+     *
      * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
     @Override
     protected boolean onReadTimeout(Throwable timeout)
     {
-        channel.processError(new WebSocketTimeoutException("Timeout on Read",timeout));
+        channel.processError(new WebSocketTimeoutException("Timeout on Read", timeout));
         return false;
     }
-
 
     @Override
     public void setInputBufferSize(int inputBufferSize)
@@ -512,19 +508,19 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,this);
+        Dumpable.dumpObjects(out, indent, this);
     }
 
     @Override
     public String toConnectionString()
     {
         return String.format("%s@%x[%s,p=%s,f=%s,g=%s]",
-                getClass().getSimpleName(),
-                hashCode(),
-                channel.getBehavior(),
-                parser,
-                flusher,
-                generator);
+            getClass().getSimpleName(),
+            hashCode(),
+            channel.getBehavior(),
+            parser,
+            flusher,
+            generator);
     }
 
     @Override
@@ -551,7 +547,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             return false;
         if (getClass() != obj.getClass())
             return false;
-        WebSocketConnection other = (WebSocketConnection) obj;
+        WebSocketConnection other = (WebSocketConnection)obj;
         EndPoint endp = getEndPoint();
         EndPoint otherEndp = other.getEndPoint();
         if (endp == null)
@@ -583,14 +579,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (channel.getBehavior()== Behavior.CLIENT)
+        if (channel.getBehavior() == Behavior.CLIENT)
         {
             Frame wsf = frame;
             byte[] mask = new byte[4];
             random.nextBytes(mask);
             wsf.setMask(mask);
         }
-        flusher.enqueue(frame,callback, batch);
+        flusher.enqueue(frame, callback, batch);
     }
 
     private class Flusher extends FrameFlusher

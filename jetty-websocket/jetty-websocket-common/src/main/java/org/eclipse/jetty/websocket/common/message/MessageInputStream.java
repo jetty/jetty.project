@@ -45,20 +45,20 @@ public class MessageInputStream extends InputStream implements MessageSink
     private final Deque<CallbackBuffer> buffers = new ArrayDeque<>(2);
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private CallbackBuffer activeFrame;
-    
+
     @Override
     public void accept(Frame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("accepting {}", frame);
-        
+
         // If closed, we should just toss incoming payloads into the bit bucket.
         if (closed.get())
         {
             callback.failed(new IOException("Already Closed"));
             return;
         }
-        
+
         if (!frame.hasPayload() && !frame.isFin())
         {
             callback.succeeded();
@@ -92,13 +92,13 @@ public class MessageInputStream extends InputStream implements MessageSink
             }
         }
     }
-    
+
     @Override
     public void close() throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("close()");
-        
+
         if (closed.compareAndSet(false, true))
         {
             synchronized (buffers)
@@ -109,7 +109,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         }
         super.close();
     }
-    
+
     public CallbackBuffer getActiveFrame() throws InterruptedIOException
     {
         if (activeFrame == null)
@@ -134,10 +134,10 @@ public class MessageInputStream extends InputStream implements MessageSink
             }
             activeFrame = result;
         }
-        
+
         return activeFrame;
     }
-    
+
     private void shutdown()
     {
         if (LOG.isDebugEnabled())
@@ -154,19 +154,19 @@ public class MessageInputStream extends InputStream implements MessageSink
             buffers.clear();
         }
     }
-    
+
     @Override
     public void mark(int readlimit)
     {
         // Not supported.
     }
-    
+
     @Override
     public boolean markSupported()
     {
         return false;
     }
-    
+
     @Override
     public int read() throws IOException
     {
@@ -181,7 +181,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             // reading nothing (len == 0) tries again
         }
     }
-    
+
     @Override
     public int read(final byte[] b, final int off, final int len) throws IOException
     {
@@ -191,9 +191,9 @@ public class MessageInputStream extends InputStream implements MessageSink
                 LOG.debug("Stream closed");
             return -1;
         }
-        
+
         CallbackBuffer result = getActiveFrame();
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("result = {}", result);
 
@@ -204,21 +204,21 @@ public class MessageInputStream extends InputStream implements MessageSink
             shutdown();
             return -1;
         }
-        
+
         // We have content
         int fillLen = Math.min(result.buffer.remaining(), len);
         result.buffer.get(b, off, fillLen);
-        
+
         if (!result.buffer.hasRemaining())
         {
             activeFrame = null;
             result.callback.succeeded();
         }
-        
+
         // return number of bytes actually copied into buffer
         return fillLen;
     }
-    
+
     @Override
     public void reset() throws IOException
     {

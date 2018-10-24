@@ -31,7 +31,8 @@ public class DummyCoreSession implements FrameHandler.CoreSession
 {
     private Behavior behavior;
 
-    public DummyCoreSession() {
+    public DummyCoreSession()
+    {
     }
 
     public DummyCoreSession(Behavior behavior)

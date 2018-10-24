@@ -58,12 +58,12 @@ public class QuotesDecoder implements Decoder.TextStream<Quotes>
         }
         return quotes;
     }
-    
+
     @Override
     public void destroy()
     {
     }
-    
+
     @Override
     public void init(EndpointConfig config)
     {

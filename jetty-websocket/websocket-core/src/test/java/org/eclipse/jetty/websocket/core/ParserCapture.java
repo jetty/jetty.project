@@ -41,17 +41,17 @@ public class ParserCapture
     public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public boolean closed = false;
     public boolean copy;
-    
+
     public ParserCapture(Parser parser)
     {
-        this(parser,true);
+        this(parser, true);
     }
 
     public ParserCapture(Parser parser, boolean copy)
     {
         this(parser, copy, Behavior.CLIENT);
     }
-    
+
     public ParserCapture(Parser parser, boolean copy, Behavior behavior)
     {
         this.parser = parser;
@@ -62,13 +62,13 @@ public class ParserCapture
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
         this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
     }
-    
+
     public void parse(ByteBuffer buffer)
     {
-        while(buffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             Frame frame = parser.parse(buffer);
-            if (frame==null)
+            if (frame == null)
                 break;
 
             channel.assertValidIncoming(frame);
@@ -77,24 +77,24 @@ public class ParserCapture
                 break;
         }
     }
-        
+
     public void assertHasFrame(byte opCode, int expectedCount)
     {
         int count = 0;
-        for(Frame frame: framesQueue)
+        for (Frame frame : framesQueue)
         {
-            if(frame.getOpCode() == opCode)
+            if (frame.getOpCode() == opCode)
                 count++;
         }
         assertThat("Frames[op=" + opCode + "].count", count, is(expectedCount));
     }
-    
+
     @Deprecated
     public BlockingQueue<Frame> getFrames()
     {
         return framesQueue;
     }
-    
+
     public boolean onFrame(Frame frame)
     {
         framesQueue.offer(copy?Frame.copy(frame):frame);

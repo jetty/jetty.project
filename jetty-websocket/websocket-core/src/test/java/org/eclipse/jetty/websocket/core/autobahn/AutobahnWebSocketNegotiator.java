@@ -53,28 +53,28 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
         //  + MAY change/add/remove offered extensions 
         //  + MUST pick subprotocol
         //  + MUST return the FrameHandler or null or exception?
-        
+
         // Examples of those steps are below:
 
         //  + MAY read request and set response headers
         String special = negotiation.getRequest().getHeader("MySpecialHeader");
-        if (special!=null)
-            negotiation.getResponse().setHeader("MySpecialHeader","OK:"+special);
-        
+        if (special != null)
+            negotiation.getResponse().setHeader("MySpecialHeader", "OK:" + special);
+
         //  + MAY reject with sendError semantics
         if ("abort".equals(special))
         {
-            negotiation.getResponse().sendError(401,"Some Auth reason");
+            negotiation.getResponse().sendError(401, "Some Auth reason");
             return null;
         }
-            
+
         //  + MAY change extensions by mutating response headers
         List<ExtensionConfig> offeredExtensions = negotiation.getOfferedExtensions();
         // negotiateResponse.addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@identity");
-        
+
         //  + MUST pick subprotocol
         List<String> subprotocols = negotiation.getOfferedSubprotocols();
-        String subprotocol = (subprotocols==null || subprotocols.isEmpty())?null:subprotocols.get(0);
+        String subprotocol = (subprotocols == null || subprotocols.isEmpty())?null:subprotocols.get(0);
         negotiation.setSubprotocol(subprotocol);
 
         //  + MUST return the FrameHandler or null or exception?
@@ -87,7 +87,6 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
         session.setIdleTimeout(Duration.ofMillis(5000));
 
     }
-
 
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()

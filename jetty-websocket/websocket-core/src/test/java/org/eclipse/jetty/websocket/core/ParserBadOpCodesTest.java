@@ -43,16 +43,16 @@ public class ParserBadOpCodesTest
     public static Stream<Arguments> data()
     {
         return Stream.of(
-            Arguments.of((byte) 3, "Autobahn Server Testcase 4.1.1"),
-            Arguments.of((byte) 4, "Autobahn Server Testcase 4.1.2"),
-            Arguments.of((byte) 5, "Autobahn Server Testcase 4.1.3"),
-            Arguments.of((byte) 6, "Autobahn Server Testcase 4.1.4"),
-            Arguments.of((byte) 7, "Autobahn Server Testcase 4.1.5"),
-            Arguments.of((byte) 11, "Autobahn Server Testcase 4.2.1"),
-            Arguments.of((byte) 12, "Autobahn Server Testcase 4.2.2"),
-            Arguments.of((byte) 13, "Autobahn Server Testcase 4.2.3"),
-            Arguments.of((byte) 14, "Autobahn Server Testcase 4.2.4"),
-            Arguments.of((byte) 15, "Autobahn Server Testcase 4.2.5")
+            Arguments.of((byte)3, "Autobahn Server Testcase 4.1.1"),
+            Arguments.of((byte)4, "Autobahn Server Testcase 4.1.2"),
+            Arguments.of((byte)5, "Autobahn Server Testcase 4.1.3"),
+            Arguments.of((byte)6, "Autobahn Server Testcase 4.1.4"),
+            Arguments.of((byte)7, "Autobahn Server Testcase 4.1.5"),
+            Arguments.of((byte)11, "Autobahn Server Testcase 4.2.1"),
+            Arguments.of((byte)12, "Autobahn Server Testcase 4.2.2"),
+            Arguments.of((byte)13, "Autobahn Server Testcase 4.2.3"),
+            Arguments.of((byte)14, "Autobahn Server Testcase 4.2.4"),
+            Arguments.of((byte)15, "Autobahn Server Testcase 4.2.5")
         );
     }
 
@@ -75,7 +75,7 @@ public class ParserBadOpCodesTest
         BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            Exception e = assertThrows(ProtocolException.class, ()->capture.parse(raw));
+            Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));
             assertThat(e.getMessage(), containsString("Unknown opcode: " + opcode));
         }
     }
@@ -107,7 +107,7 @@ public class ParserBadOpCodesTest
         BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            Exception e = assertThrows(ProtocolException.class, ()->capture.parse(raw));
+            Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));
             assertThat(e.getMessage(), containsString("Unknown opcode: " + opcode));
         }
     }

@@ -43,7 +43,7 @@ public class UpdateReportsHandler extends AbstractClientFrameHandler
     public void onClosed(CloseStatus closeStatus)
     {
         super.onClosed(closeStatus);
-        LOG.debug("onClose({})",closeStatus);
+        LOG.debug("onClose({})", closeStatus);
         LOG.info("Reports updated.");
         LOG.info("Test suite finished!");
         latch.countDown();

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -29,6 +25,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
+
+import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class PartialStringMessageSink extends AbstractMessageSink
 {

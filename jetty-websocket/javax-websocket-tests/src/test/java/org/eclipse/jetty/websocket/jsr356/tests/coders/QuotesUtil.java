@@ -48,11 +48,11 @@ public class QuotesUtil
         }
         return lines;
     }
-    
+
     public static Quotes loadQuote(String filename) throws Exception
     {
         List<String> lines = loadLines(filename);
-        
+
         Quotes quotes = new Quotes();
         for (String line : lines)
         {
@@ -66,10 +66,10 @@ public class QuotesUtil
                     break;
             }
         }
-        
+
         return quotes;
     }
-    
+
     public static List<Frame> loadAsWebSocketFrames(String filename) throws IOException
     {
         List<String> lines = loadLines(filename);
@@ -82,13 +82,13 @@ public class QuotesUtil
                 frame = new Frame(OpCode.TEXT);
             else
                 frame = new Frame(OpCode.CONTINUATION);
-            
+
             frame.setPayload(BufferUtil.toBuffer(linesIter.next() + "\n"));
             frame.setFin(!linesIter.hasNext());
-            
+
             ret.add(frame);
         }
-        
+
         return ret;
     }
 }

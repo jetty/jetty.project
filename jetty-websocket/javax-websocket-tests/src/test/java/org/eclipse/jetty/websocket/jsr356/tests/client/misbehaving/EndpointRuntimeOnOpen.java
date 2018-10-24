@@ -43,7 +43,7 @@ public class EndpointRuntimeOnOpen extends Endpoint
     @Override
     public void onClose(Session session, CloseReason closeReason)
     {
-        super.onClose(session,closeReason);
+        super.onClose(session, closeReason);
         this.closeReason = closeReason;
         closeLatch.countDown();
     }
@@ -51,7 +51,7 @@ public class EndpointRuntimeOnOpen extends Endpoint
     @Override
     public void onError(Session session, Throwable thr)
     {
-        super.onError(session,thr);
+        super.onError(session, thr);
         errors.add(thr);
     }
 }

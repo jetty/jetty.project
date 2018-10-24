@@ -27,13 +27,13 @@ import javax.websocket.server.ServerEndpoint;
 public class EchoAsyncTextSocket
 {
     private Session session;
-    
+
     @OnOpen
     public void onOpen(Session session)
     {
         this.session = session;
     }
-    
+
     @OnMessage
     public void onText(String msg)
     {

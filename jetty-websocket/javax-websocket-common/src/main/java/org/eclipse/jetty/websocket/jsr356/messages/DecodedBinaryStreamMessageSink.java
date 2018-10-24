@@ -33,9 +33,9 @@ import java.lang.invoke.MethodType;
 public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decoder.BinaryStream<T>>
 {
     public DecodedBinaryStreamMessageSink(JavaxWebSocketSession session,
-                                          Decoder.BinaryStream<T> decoder,
-                                          MethodHandle methodHandle)
-            throws NoSuchMethodException, IllegalAccessException
+        Decoder.BinaryStream<T> decoder,
+        MethodHandle methodHandle)
+        throws NoSuchMethodException, IllegalAccessException
     {
         super(session, decoder, methodHandle);
     }
@@ -44,8 +44,8 @@ public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decode
     protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
     {
         return MethodHandles.lookup().findVirtual(DecodedBinaryStreamMessageSink.class,
-                "onStreamStart", MethodType.methodType(void.class, InputStream.class))
-                .bindTo(this);
+            "onStreamStart", MethodType.methodType(void.class, InputStream.class))
+            .bindTo(this);
     }
 
     @Override

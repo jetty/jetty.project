@@ -47,7 +47,7 @@ public class AnnotatedTextSocket
     @OnWebSocketError
     public void onError(Throwable cause)
     {
-        events.add("onError(%s: %s)",cause.getClass().getSimpleName(),cause.getMessage());
+        events.add("onError(%s: %s)", cause.getClass().getSimpleName(), cause.getMessage());
     }
 
     @OnWebSocketMessage

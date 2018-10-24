@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 public class PrimitivesTextEchoTest
 {
     private static final Logger LOG = Log.getLogger(PrimitivesTextEchoTest.class);
-    
+
     public static class BaseSocket
     {
         @OnError
@@ -55,7 +55,7 @@ public class PrimitivesTextEchoTest
             LOG.warn("Error", cause);
         }
     }
-    
+
     @ServerEndpoint("/echo/boolean")
     public static class BooleanEchoSocket extends BaseSocket
     {
@@ -65,7 +65,7 @@ public class PrimitivesTextEchoTest
             return b;
         }
     }
-    
+
     @ServerEndpoint("/echo/boolean-obj")
     public static class BooleanObjEchoSocket extends BaseSocket
     {
@@ -75,7 +75,7 @@ public class PrimitivesTextEchoTest
             return b;
         }
     }
-    
+
     @ServerEndpoint("/echo/byte")
     public static class ByteEchoSocket extends BaseSocket
     {
@@ -85,7 +85,7 @@ public class PrimitivesTextEchoTest
             return b;
         }
     }
-    
+
     @ServerEndpoint("/echo/byte-obj")
     public static class ByteObjEchoSocket extends BaseSocket
     {
@@ -95,7 +95,7 @@ public class PrimitivesTextEchoTest
             return b;
         }
     }
-    
+
     @ServerEndpoint("/echo/char")
     public static class CharacterEchoSocket extends BaseSocket
     {
@@ -105,7 +105,7 @@ public class PrimitivesTextEchoTest
             return c;
         }
     }
-    
+
     @ServerEndpoint("/echo/char-obj")
     public static class CharacterObjEchoSocket extends BaseSocket
     {
@@ -115,7 +115,7 @@ public class PrimitivesTextEchoTest
             return c;
         }
     }
-    
+
     @ServerEndpoint("/echo/double")
     public static class DoubleEchoSocket extends BaseSocket
     {
@@ -125,7 +125,7 @@ public class PrimitivesTextEchoTest
             return d;
         }
     }
-    
+
     @ServerEndpoint("/echo/double-obj")
     public static class DoubleObjEchoSocket extends BaseSocket
     {
@@ -135,7 +135,7 @@ public class PrimitivesTextEchoTest
             return d;
         }
     }
-    
+
     @ServerEndpoint("/echo/float")
     public static class FloatEchoSocket extends BaseSocket
     {
@@ -145,7 +145,7 @@ public class PrimitivesTextEchoTest
             return f;
         }
     }
-    
+
     @ServerEndpoint("/echo/float-obj")
     public static class FloatObjEchoSocket extends BaseSocket
     {
@@ -155,7 +155,7 @@ public class PrimitivesTextEchoTest
             return f;
         }
     }
-    
+
     @ServerEndpoint("/echo/short")
     public static class ShortEchoSocket extends BaseSocket
     {
@@ -165,7 +165,7 @@ public class PrimitivesTextEchoTest
             return s;
         }
     }
-    
+
     @ServerEndpoint("/echo/short-obj")
     public static class ShortObjEchoSocket extends BaseSocket
     {
@@ -175,7 +175,7 @@ public class PrimitivesTextEchoTest
             return s;
         }
     }
-    
+
     @ServerEndpoint("/echo/integer")
     public static class IntegerEchoSocket extends BaseSocket
     {
@@ -185,7 +185,7 @@ public class PrimitivesTextEchoTest
             return i;
         }
     }
-    
+
     @ServerEndpoint("/echo/integer-obj")
     public static class IntegerObjEchoSocket extends BaseSocket
     {
@@ -195,7 +195,7 @@ public class PrimitivesTextEchoTest
             return i;
         }
     }
-    
+
     @ServerEndpoint("/echo/long")
     public static class LongEchoSocket extends BaseSocket
     {
@@ -205,7 +205,7 @@ public class PrimitivesTextEchoTest
             return l;
         }
     }
-    
+
     @ServerEndpoint("/echo/long-obj")
     public static class LongObjEchoSocket extends BaseSocket
     {
@@ -215,7 +215,7 @@ public class PrimitivesTextEchoTest
             return l;
         }
     }
-    
+
     @ServerEndpoint("/echo/string")
     public static class StringEchoSocket extends BaseSocket
     {
@@ -225,16 +225,16 @@ public class PrimitivesTextEchoTest
             return s;
         }
     }
-    
+
     private static void addCase(List<Arguments> data, Class<?> endpointClass, String sendText, String expectText)
     {
         data.add(Arguments.of(endpointClass.getSimpleName(), endpointClass, sendText, expectText));
     }
-    
+
     public static Stream<Arguments> data()
     {
         List<Arguments> data = new ArrayList<>();
-        
+
         addCase(data, BooleanEchoSocket.class, "true", "true");
         addCase(data, BooleanEchoSocket.class, "TRUE", "true");
         addCase(data, BooleanEchoSocket.class, "false", "false");
@@ -243,7 +243,7 @@ public class PrimitivesTextEchoTest
         addCase(data, BooleanEchoSocket.class, Boolean.toString(Boolean.TRUE), "true");
         addCase(data, BooleanEchoSocket.class, Boolean.toString(Boolean.FALSE), "false");
         addCase(data, BooleanEchoSocket.class, "Apple", "false");
-        
+
         addCase(data, BooleanObjEchoSocket.class, "true", "true");
         addCase(data, BooleanObjEchoSocket.class, "TRUE", "true");
         addCase(data, BooleanObjEchoSocket.class, "false", "false");
@@ -252,95 +252,95 @@ public class PrimitivesTextEchoTest
         addCase(data, BooleanObjEchoSocket.class, Boolean.toString(Boolean.TRUE), "true");
         addCase(data, BooleanObjEchoSocket.class, Boolean.toString(Boolean.FALSE), "false");
         addCase(data, BooleanObjEchoSocket.class, "Apple", "false");
-        
+
         addCase(data, ByteEchoSocket.class, Byte.toString((byte)0x00), "0");
         addCase(data, ByteEchoSocket.class, Byte.toString((byte)0x58), "88");
         addCase(data, ByteEchoSocket.class, Byte.toString((byte)0x65), "101");
         addCase(data, ByteEchoSocket.class, Byte.toString(Byte.MAX_VALUE), "127");
         addCase(data, ByteEchoSocket.class, Byte.toString(Byte.MIN_VALUE), "-128");
-        
+
         addCase(data, ByteObjEchoSocket.class, Byte.toString((byte)0x00), "0");
         addCase(data, ByteObjEchoSocket.class, Byte.toString((byte)0x58), "88");
         addCase(data, ByteObjEchoSocket.class, Byte.toString((byte)0x65), "101");
         addCase(data, ByteObjEchoSocket.class, Byte.toString(Byte.MAX_VALUE), "127");
         addCase(data, ByteObjEchoSocket.class, Byte.toString(Byte.MIN_VALUE), "-128");
-        
-        addCase(data, CharacterEchoSocket.class, Character.toString((char) 40), "(");
-        addCase(data, CharacterEchoSocket.class, Character.toString((char) 106), "j");
-        addCase(data, CharacterEchoSocket.class, Character.toString((char) 64), "@");
-        addCase(data, CharacterEchoSocket.class, Character.toString((char) 0x262f), "\u262f");
-    
-        addCase(data, CharacterObjEchoSocket.class, Character.toString((char) 40), "(");
-        addCase(data, CharacterObjEchoSocket.class, Character.toString((char) 106), "j");
-        addCase(data, CharacterObjEchoSocket.class, Character.toString((char) 64), "@");
-        addCase(data, CharacterObjEchoSocket.class, Character.toString((char) 0x262f), "\u262f");
-    
+
+        addCase(data, CharacterEchoSocket.class, Character.toString((char)40), "(");
+        addCase(data, CharacterEchoSocket.class, Character.toString((char)106), "j");
+        addCase(data, CharacterEchoSocket.class, Character.toString((char)64), "@");
+        addCase(data, CharacterEchoSocket.class, Character.toString((char)0x262f), "\u262f");
+
+        addCase(data, CharacterObjEchoSocket.class, Character.toString((char)40), "(");
+        addCase(data, CharacterObjEchoSocket.class, Character.toString((char)106), "j");
+        addCase(data, CharacterObjEchoSocket.class, Character.toString((char)64), "@");
+        addCase(data, CharacterObjEchoSocket.class, Character.toString((char)0x262f), "\u262f");
+
         addCase(data, DoubleEchoSocket.class, Double.toString(3.1459), "3.1459");
         addCase(data, DoubleEchoSocket.class, Double.toString(123.456), "123.456");
         addCase(data, DoubleEchoSocket.class, Double.toString(55), "55.0");
         addCase(data, DoubleEchoSocket.class, Double.toString(.123), "0.123");
         addCase(data, DoubleEchoSocket.class, Double.toString(Double.MAX_VALUE), Double.toString(Double.MAX_VALUE));
         addCase(data, DoubleEchoSocket.class, Double.toString(Double.MIN_VALUE), Double.toString(Double.MIN_VALUE));
-    
+
         addCase(data, DoubleObjEchoSocket.class, Double.toString(3.1459), "3.1459");
         addCase(data, DoubleObjEchoSocket.class, Double.toString(123.456), "123.456");
         addCase(data, DoubleObjEchoSocket.class, Double.toString(55), "55.0");
         addCase(data, DoubleObjEchoSocket.class, Double.toString(.123), "0.123");
         addCase(data, DoubleObjEchoSocket.class, Double.toString(Double.MAX_VALUE), Double.toString(Double.MAX_VALUE));
         addCase(data, DoubleObjEchoSocket.class, Double.toString(Double.MIN_VALUE), Double.toString(Double.MIN_VALUE));
-    
+
         addCase(data, FloatEchoSocket.class, Float.toString(3.1459f), "3.1459");
         addCase(data, FloatEchoSocket.class, Float.toString(0.0f), "0.0");
         addCase(data, FloatEchoSocket.class, Float.toString(Float.MAX_VALUE), Float.toString(Float.MAX_VALUE));
         addCase(data, FloatEchoSocket.class, Float.toString(Float.MIN_VALUE), Float.toString(Float.MIN_VALUE));
-    
+
         addCase(data, FloatObjEchoSocket.class, Float.toString(3.1459f), "3.1459");
         addCase(data, FloatObjEchoSocket.class, Float.toString(0.0f), "0.0");
         addCase(data, FloatObjEchoSocket.class, Float.toString(Float.MAX_VALUE), Float.toString(Float.MAX_VALUE));
         addCase(data, FloatObjEchoSocket.class, Float.toString(Float.MIN_VALUE), Float.toString(Float.MIN_VALUE));
-        
-        addCase(data, ShortEchoSocket.class, Short.toString((short) 0), "0");
-        addCase(data, ShortEchoSocket.class, Short.toString((short) 30000), "30000");
+
+        addCase(data, ShortEchoSocket.class, Short.toString((short)0), "0");
+        addCase(data, ShortEchoSocket.class, Short.toString((short)30000), "30000");
         addCase(data, ShortEchoSocket.class, Short.toString(Short.MAX_VALUE), Short.toString(Short.MAX_VALUE));
         addCase(data, ShortEchoSocket.class, Short.toString(Short.MIN_VALUE), Short.toString(Short.MIN_VALUE));
-        
-        addCase(data, ShortObjEchoSocket.class, Short.toString((short) 0), "0");
-        addCase(data, ShortObjEchoSocket.class, Short.toString((short) 30000), "30000");
+
+        addCase(data, ShortObjEchoSocket.class, Short.toString((short)0), "0");
+        addCase(data, ShortObjEchoSocket.class, Short.toString((short)30000), "30000");
         addCase(data, ShortObjEchoSocket.class, Short.toString(Short.MAX_VALUE), Short.toString(Short.MAX_VALUE));
         addCase(data, ShortObjEchoSocket.class, Short.toString(Short.MIN_VALUE), Short.toString(Short.MIN_VALUE));
-    
+
         addCase(data, IntegerEchoSocket.class, Integer.toString(0), "0");
         addCase(data, IntegerEchoSocket.class, Integer.toString(100_000), "100000");
         addCase(data, IntegerEchoSocket.class, Integer.toString(-2_000_000), "-2000000");
         addCase(data, IntegerEchoSocket.class, Integer.toString(Integer.MAX_VALUE), Integer.toString(Integer.MAX_VALUE));
         addCase(data, IntegerEchoSocket.class, Integer.toString(Integer.MIN_VALUE), Integer.toString(Integer.MIN_VALUE));
-    
+
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(0), "0");
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(100_000), "100000");
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(-2_000_000), "-2000000");
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(Integer.MAX_VALUE), Integer.toString(Integer.MAX_VALUE));
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(Integer.MIN_VALUE), Integer.toString(Integer.MIN_VALUE));
-    
+
         addCase(data, LongEchoSocket.class, Long.toString(0), "0");
         addCase(data, LongEchoSocket.class, Long.toString(100_000), "100000");
         addCase(data, LongEchoSocket.class, Long.toString(-2_000_000), "-2000000");
         addCase(data, LongEchoSocket.class, Long.toString(300_000_000_000l), "300000000000");
         addCase(data, LongEchoSocket.class, Long.toString(Long.MAX_VALUE), Long.toString(Long.MAX_VALUE));
         addCase(data, LongEchoSocket.class, Long.toString(Long.MIN_VALUE), Long.toString(Long.MIN_VALUE));
-    
+
         addCase(data, LongObjEchoSocket.class, Long.toString(0), "0");
         addCase(data, LongObjEchoSocket.class, Long.toString(100_000), "100000");
         addCase(data, LongObjEchoSocket.class, Long.toString(-2_000_000), "-2000000");
         addCase(data, LongObjEchoSocket.class, Long.toString(300_000_000_000l), "300000000000");
         addCase(data, LongObjEchoSocket.class, Long.toString(Long.MAX_VALUE), Long.toString(Long.MAX_VALUE));
         addCase(data, LongObjEchoSocket.class, Long.toString(Long.MIN_VALUE), Long.toString(Long.MIN_VALUE));
-    
+
         addCase(data, StringEchoSocket.class, "Hello World", "Hello World");
         return data.stream();
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -365,28 +365,27 @@ public class PrimitivesTextEchoTest
         container.addEndpoint(LongObjEchoSocket.class);
         container.addEndpoint(StringEchoSocket.class);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
 
     @ParameterizedTest(name = "{0}: {2}")
     @MethodSource("data")
     public void testPrimitiveEcho(String endpointClassname, Class<?> endpointClass, String sendText, String expectText) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(sendText));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(expectText));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);

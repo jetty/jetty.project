@@ -45,9 +45,9 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends Abstr
 
         // This invocation is the same for all tests
         localEndpoint.onOpen(channel);
-        
+
         func.apply(localEndpoint);
-        
+
         return socket;
     }
 
@@ -68,7 +68,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends Abstr
             }
         }
     }
-    
+
     @Test
     public void testInvokeMessageStream() throws Exception
     {
@@ -84,7 +84,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends Abstr
             }
             return null;
         });
-        
+
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("event", event, is("onMessage(MessageInputStream) = \"Hello World\""));
     }

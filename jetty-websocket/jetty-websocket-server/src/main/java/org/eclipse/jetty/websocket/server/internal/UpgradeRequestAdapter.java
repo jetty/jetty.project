@@ -60,8 +60,8 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public List<ExtensionConfig> getExtensions()
     {
         return this.servletRequest.getExtensions().stream()
-                .map((ext)-> new org.eclipse.jetty.websocket.api.extensions.ExtensionConfig(ext.getName(), ext.getParameters()))
-                .collect(Collectors.toList());
+            .map((ext) -> new org.eclipse.jetty.websocket.api.extensions.ExtensionConfig(ext.getName(), ext.getParameters()))
+            .collect(Collectors.toList());
     }
 
     @Override

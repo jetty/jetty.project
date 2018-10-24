@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -33,6 +30,9 @@ import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.echo.BasicEchoSocket;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -50,7 +50,7 @@ public class AltFilterTest
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir.getPath(),"app");
+        WSServer wsb = new WSServer(testdir.getPath(), "app");
         wsb.copyWebInf("alt-filter-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
         wsb.copyClass(BasicEchoSocket.class);
@@ -58,25 +58,25 @@ public class AltFilterTest
         try
         {
             wsb.start();
-            
+
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            
+
             FilterHolder filterWebXml = webapp.getServletHandler().getFilter("wsuf-test");
             assertThat("Filter[wsuf-test]", filterWebXml, notNullValue());
-            
+
             FilterHolder filterSCI = webapp.getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
             assertThat("Filter[Jetty_WebSocketUpgradeFilter]", filterSCI, nullValue());
 
             List<Frame> send = new ArrayList<>();
             send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
             send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-    
+
             List<Frame> expect = new ArrayList<>();
             expect.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
             expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-            
-            try(Fuzzer session = wsb.newNetworkFuzzer("/app/echo;jsession=xyz"))
+
+            try (Fuzzer session = wsb.newNetworkFuzzer("/app/echo;jsession=xyz"))
             {
                 session.sendFrames(send);
                 session.expect(expect);

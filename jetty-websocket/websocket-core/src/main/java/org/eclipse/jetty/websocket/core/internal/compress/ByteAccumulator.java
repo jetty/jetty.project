@@ -46,16 +46,16 @@ public class ByteAccumulator
     {
         if (this.length + length > maxSize)
         {
-            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]",this.length + length, maxSize));
+            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]", this.length + length, maxSize));
         }
 
         byte copy[] = new byte[length - offset];
-        System.arraycopy(buf,offset,copy,0,length);
+        System.arraycopy(buf, offset, copy, 0, length);
 
         chunks.add(copy);
         this.length += length;
     }
-    
+
     public int getLength()
     {
         return length;
@@ -66,12 +66,12 @@ public class ByteAccumulator
         if (bufferInFillMode.remaining() < length)
         {
             throw new IllegalArgumentException(String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]",
-                    bufferInFillMode.remaining(),length));
+                bufferInFillMode.remaining(), length));
         }
 
         for (byte[] chunk : chunks)
         {
-            bufferInFillMode.put(chunk,0,chunk.length);
+            bufferInFillMode.put(chunk, 0, chunk.length);
         }
     }
 }

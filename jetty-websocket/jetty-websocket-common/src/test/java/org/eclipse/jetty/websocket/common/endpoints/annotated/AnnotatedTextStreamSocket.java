@@ -32,19 +32,19 @@ import java.io.Reader;
 public class AnnotatedTextStreamSocket
 {
     public EventQueue events = new EventQueue();
-    
+
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
         events.add("onClose(%d, %s)", statusCode, TextUtil.quote(reason));
     }
-    
+
     @OnWebSocketConnect
     public void onConnect(Session sess)
     {
         events.add("onConnect(%s)", sess);
     }
-    
+
     @OnWebSocketMessage
     public void onText(Reader reader)
     {

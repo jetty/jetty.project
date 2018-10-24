@@ -34,7 +34,7 @@ public class EncodeFailedFuture implements Future<Void>
 
     public EncodeFailedFuture(Object data, Encoder encoder, Class<?> encoderType, Throwable cause)
     {
-        this.msg = String.format("Unable to encode %s using %s as %s",data.getClass().getName(),encoder.getClass().getName(),encoderType.getName());
+        this.msg = String.format("Unable to encode %s using %s as %s", data.getClass().getName(), encoder.getClass().getName(), encoderType.getName());
         this.cause = cause;
     }
 
@@ -47,13 +47,13 @@ public class EncodeFailedFuture implements Future<Void>
     @Override
     public Void get() throws InterruptedException, ExecutionException
     {
-        throw new ExecutionException(msg,cause);
+        throw new ExecutionException(msg, cause);
     }
 
     @Override
     public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        throw new ExecutionException(msg,cause);
+        throw new ExecutionException(msg, cause);
     }
 
     @Override

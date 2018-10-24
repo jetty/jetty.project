@@ -31,7 +31,7 @@ import java.util.TimeZone;
 public class TimeEncoder implements Encoder.Text<Date>
 {
     private TimeZone GMT = TimeZone.getTimeZone("GMT");
-    
+
     @Override
     public String encode(Date object) throws EncodeException
     {
@@ -39,13 +39,13 @@ public class TimeEncoder implements Encoder.Text<Date>
         format.setTimeZone(GMT);
         return format.format(object);
     }
-    
+
     @Override
     public void destroy()
     {
         // TODO: verify destroy called
     }
-    
+
     @Override
     public void init(EndpointConfig config)
     {

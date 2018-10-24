@@ -40,9 +40,23 @@ public class QuotesSocket extends WSEventTracker
         super(id);
     }
 
-    @OnOpen public void onOpen(Session session) { super.onWsOpen(session); }
-    @OnClose public void onClose(CloseReason closeReason) { super.onWsClose(closeReason); }
-    @OnError public void onError(Throwable cause) { super.onWsError(cause); }
+    @OnOpen
+    public void onOpen(Session session)
+    {
+        super.onWsOpen(session);
+    }
+
+    @OnClose
+    public void onClose(CloseReason closeReason)
+    {
+        super.onWsClose(closeReason);
+    }
+
+    @OnError
+    public void onError(Throwable cause)
+    {
+        super.onWsError(cause);
+    }
 
     @OnMessage
     public void onMessage(Quotes quote)

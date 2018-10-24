@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Executor;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.tests.WSURI;
+import org.junit.jupiter.api.Test;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -38,16 +40,14 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.jsr356.tests.WSURI;
-import org.junit.jupiter.api.Test;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executor;
 
 import static org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer.HTTPCLIENT_ATTRIBUTE;
 import static org.hamcrest.CoreMatchers.is;
@@ -121,8 +121,8 @@ public class WebSocketServerContainerExecutorTest
         {
             // Server specific technique
             javax.websocket.server.ServerContainer container =
-                    (javax.websocket.server.ServerContainer)
-                            req.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
+                (javax.websocket.server.ServerContainer)
+                    req.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
             try
             {
                 URI wsURI = WSURI.toWebsocket(req.getRequestURL()).resolve("/echo");
@@ -216,7 +216,6 @@ public class WebSocketServerContainerExecutorTest
         Executor executor = new QueuedThreadPool();
         contextHandler.setAttribute("org.eclipse.jetty.server.Executor", executor);
 
-
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
         javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
@@ -238,7 +237,7 @@ public class WebSocketServerContainerExecutorTest
 
     private String GET(URI destURI) throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection) destURI.toURL().openConnection();
+        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
         assertThat("HTTP GET (" + destURI + ") Response Code", http.getResponseCode(), is(200));
         try (InputStream in = http.getInputStream();
              InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);

@@ -63,7 +63,7 @@ public class DateTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

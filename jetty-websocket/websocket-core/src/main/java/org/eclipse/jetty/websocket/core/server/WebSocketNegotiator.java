@@ -31,12 +31,12 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
     FrameHandler negotiate(Negotiation negotiation) throws IOException;
 
     WebSocketExtensionRegistry getExtensionRegistry();
-    
+
     DecoratedObjectFactory getObjectFactory();
-    
+
     ByteBufferPool getByteBufferPool();
 
-    static WebSocketNegotiator from(Function<Negotiation,FrameHandler> negotiate)
+    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate)
     {
         return new AbstractNegotiator()
         {
@@ -48,9 +48,9 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
         };
     }
 
-    static WebSocketNegotiator from(Function<Negotiation,FrameHandler> negotiate, FrameHandler.CoreCustomizer customizer)
+    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, FrameHandler.CoreCustomizer customizer)
     {
-        return new AbstractNegotiator(null,null,null,customizer)
+        return new AbstractNegotiator(null, null, null, customizer)
         {
             @Override
             public FrameHandler negotiate(Negotiation negotiation)
@@ -61,13 +61,13 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
     }
 
     static WebSocketNegotiator from(
-        Function<Negotiation,FrameHandler> negotiate,
+        Function<Negotiation, FrameHandler> negotiate,
         WebSocketExtensionRegistry extensionRegistry,
         DecoratedObjectFactory objectFactory,
         ByteBufferPool bufferPool,
         FrameHandler.CoreCustomizer customizer)
     {
-        return new AbstractNegotiator(extensionRegistry,objectFactory,bufferPool,customizer)
+        return new AbstractNegotiator(extensionRegistry, objectFactory, bufferPool, customizer)
         {
             @Override
             public FrameHandler negotiate(Negotiation negotiation)
@@ -84,12 +84,10 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
         final ByteBufferPool bufferPool;
         final FrameHandler.CoreCustomizer customizer;
 
-
         public AbstractNegotiator()
         {
-            this(null,null,null,null);
+            this(null, null, null, null);
         }
-
 
         public AbstractNegotiator(
             WebSocketExtensionRegistry extensionRegistry,
@@ -97,8 +95,8 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
             ByteBufferPool bufferPool,
             FrameHandler.CoreCustomizer customizer)
         {
-            this.extensionRegistry = extensionRegistry==null?new WebSocketExtensionRegistry():extensionRegistry;
-            this.objectFactory = objectFactory==null?new DecoratedObjectFactory():objectFactory;
+            this.extensionRegistry = extensionRegistry == null?new WebSocketExtensionRegistry():extensionRegistry;
+            this.objectFactory = objectFactory == null?new DecoratedObjectFactory():objectFactory;
             this.bufferPool = bufferPool;
             this.customizer = customizer;
         }
@@ -106,7 +104,7 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
         @Override
         public void customize(FrameHandler.CoreSession session)
         {
-            if (customizer!=null)
+            if (customizer != null)
                 customizer.customize(session);
         }
 

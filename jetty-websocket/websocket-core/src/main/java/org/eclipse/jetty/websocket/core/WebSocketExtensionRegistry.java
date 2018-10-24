@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -36,13 +35,13 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
     public WebSocketExtensionRegistry()
     {
         // Load extensions from container loader
-        ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class,this.getClass().getClassLoader());
+        ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class, this.getClass().getClassLoader());
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {
             if (ext != null)
             {
-                availableExtensions.put(ext.getName(),ext.getClass());
+                availableExtensions.put(ext.getName(), ext.getClass());
             }
         }
     }
@@ -101,13 +100,13 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         }
         catch (Throwable t)
         {
-            throw new WebSocketException("Cannot instantiate extension: " + extClass,t);
+            throw new WebSocketException("Cannot instantiate extension: " + extClass, t);
         }
     }
 
     public void register(String name, Class<? extends Extension> extension)
     {
-        availableExtensions.put(name,extension);
+        availableExtensions.put(name, extension);
     }
 
     public void unregister(String name)

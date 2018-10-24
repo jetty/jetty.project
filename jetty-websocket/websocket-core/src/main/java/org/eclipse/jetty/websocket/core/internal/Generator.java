@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Generating a frame in WebSocket land.
- * 
+ *
  * <pre>
  *    0                   1                   2                   3
  *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -55,11 +55,11 @@ public class Generator
      */
     public static final int MAX_HEADER_LENGTH = 28;
     private static byte[] mask = new byte[]
-            { 0x00, (byte)0xF0, 0x0F, (byte)0xFF };
+        { 0x00, (byte)0xF0, 0x0F, (byte)0xFF };
 
     public static void putMask(ByteBuffer buffer)
     {
-        buffer.put(mask,0,mask.length);
+        buffer.put(mask, 0, mask.length);
     }
 
     public static void putPayload(ByteBuffer buffer, byte[] payload)
@@ -71,15 +71,13 @@ public class Generator
         }
     }
 
-
     private final ByteBufferPool bufferPool;
     private final boolean readOnly;
 
     /**
      * Construct Generator with provided policy and bufferPool
      *
-     * @param bufferPool
-     *            the buffer pool to use
+     * @param bufferPool the buffer pool to use
      */
     public Generator(ByteBufferPool bufferPool)
     {
@@ -88,8 +86,8 @@ public class Generator
 
     /**
      * Construct Generator with provided policy and bufferPool
-     * @param bufferPool
-     *            the buffer pool to use
+     *
+     * @param bufferPool the buffer pool to use
      * @param readOnly
      */
     public Generator(ByteBufferPool bufferPool, boolean readOnly)
@@ -98,13 +96,12 @@ public class Generator
         this.readOnly = readOnly;
     }
 
-
     public ByteBuffer generateHeaderBytes(Frame frame)
     {
-        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,false);
+        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH, false);
         BufferUtil.clearToFill(buffer);
-        generateHeaderBytes(frame,buffer);
-        BufferUtil.flipToFlush(buffer,0);
+        generateHeaderBytes(frame, buffer);
+        BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }
 
@@ -202,12 +199,12 @@ public class Generator
                 {
                     if (remaining >= 4)
                     {
-                        payload.putInt(start,payload.getInt(start) ^ maskInt);
+                        payload.putInt(start, payload.getInt(start) ^ maskInt);
                         start += 4;
                     }
                     else
                     {
-                        payload.put(start,(byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                        payload.put(start, (byte)(payload.get(start) ^ mask[maskOffset & 3]));
                         ++start;
                         ++maskOffset;
                     }
@@ -220,11 +217,9 @@ public class Generator
      * Generate the whole frame (header + payload copy) into a single ByteBuffer.
      * <p>
      * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
-     * 
-     * @param frame
-     *            the frame to generate
-     * @param buf
-     *            the buffer to output the generated frame to
+     *
+     * @param frame the frame to generate
+     * @param buf   the buffer to output the generated frame to
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {

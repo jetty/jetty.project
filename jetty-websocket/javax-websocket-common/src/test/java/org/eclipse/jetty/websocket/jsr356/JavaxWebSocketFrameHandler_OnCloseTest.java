@@ -38,16 +38,22 @@ import static org.hamcrest.Matchers.containsString;
 public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private static final String EXPECTED_REASON = "CloseReason[1000,Normal]";
-    
+
     private void assertOnCloseInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // These invocations are the same for all tests
         localEndpoint.onOpen(channel);
-        CloseStatus status = new CloseStatus(CloseStatus.NORMAL,"Normal");
+        CloseStatus status = new CloseStatus(CloseStatus.NORMAL, "Normal");
         Frame closeFrame = status.toFrame();
-        localEndpoint.onFrame(closeFrame, Callback.from(()->{localEndpoint.onClosed(status);},t->{throw new RuntimeException(t);}));
+        localEndpoint.onFrame(closeFrame, Callback.from(() ->
+        {
+            localEndpoint.onClosed(status);
+        }, t ->
+        {
+            throw new RuntimeException(t);
+        }));
         String event = socket.events.poll(10, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }
@@ -82,10 +88,10 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseSession() throws Exception
     {
         assertOnCloseInvocation(new CloseSessionSocket(),
-                allOf(
-                        containsString("onClose(JavaxWebSocketSession@"),
-                        containsString(CloseSessionSocket.class.getName())
-                ));
+            allOf(
+                containsString("onClose(JavaxWebSocketSession@"),
+                containsString(CloseSessionSocket.class.getName())
+            ));
     }
 
     @ClientEndpoint
@@ -102,7 +108,7 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseReason() throws Exception
     {
         assertOnCloseInvocation(new CloseReasonSocket(),
-                containsString("onClose(" + EXPECTED_REASON + ")"));
+            containsString("onClose(" + EXPECTED_REASON + ")"));
     }
 
     @ClientEndpoint
@@ -119,10 +125,10 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseSessionReason() throws Exception
     {
         assertOnCloseInvocation(new CloseSessionReasonSocket(),
-                allOf(
-                        containsString("onClose(JavaxWebSocketSession@"),
-                        containsString(CloseSessionReasonSocket.class.getName())
-                ));
+            allOf(
+                containsString("onClose(JavaxWebSocketSession@"),
+                containsString(CloseSessionReasonSocket.class.getName())
+            ));
     }
 
     @ClientEndpoint
@@ -139,9 +145,9 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseReasonSession() throws Exception
     {
         assertOnCloseInvocation(new CloseReasonSessionSocket(),
-                allOf(
-                        containsString("onClose(" + EXPECTED_REASON),
-                        containsString(CloseReasonSessionSocket.class.getName())
-                ));
+            allOf(
+                containsString("onClose(" + EXPECTED_REASON),
+                containsString(CloseReasonSessionSocket.class.getName())
+            ));
     }
 }

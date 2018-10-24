@@ -38,7 +38,7 @@ public class UpgradeException extends WebSocketException
 
     public UpgradeException(URI requestURI, int responseStatusCode, String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
         this.requestURI = requestURI;
         this.responseStatusCode = responseStatusCode;
     }

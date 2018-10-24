@@ -33,21 +33,21 @@ import java.util.Map;
 public class PathParamServerEndpointConfig extends ServerEndpointConfigWrapper implements PathParamProvider
 {
     private final Map<String, String> pathParamMap;
-    
+
     public PathParamServerEndpointConfig(ServerEndpointConfig config, UriTemplatePathSpec pathSpec, String requestPath)
     {
         super(config);
-        
+
         Map<String, String> pathMap = pathSpec.getPathParams(requestPath);
         pathParamMap = new HashMap<>();
         if (pathMap != null)
         {
             pathMap.entrySet().stream().forEach(
-                    entry -> pathParamMap.put(entry.getKey(), URIUtil.decodePath(entry.getValue()))
+                entry -> pathParamMap.put(entry.getKey(), URIUtil.decodePath(entry.getValue()))
             );
         }
     }
-    
+
     @Override
     public Map<String, String> getPathParams()
     {

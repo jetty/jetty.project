@@ -28,7 +28,7 @@ public class FunctionCallException extends WebSocketException
     {
         super(message);
     }
-    
+
     public FunctionCallException(String message, Throwable cause)
     {
         super(message, cause);

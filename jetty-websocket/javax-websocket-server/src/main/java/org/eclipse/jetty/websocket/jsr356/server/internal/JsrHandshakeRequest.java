@@ -62,7 +62,7 @@ public class JsrHandshakeRequest implements HandshakeRequest
 
     public PathSpec getRequestPathSpec()
     {
-        return (PathSpec) delegate.getServletAttribute(PathSpec.class.getName());
+        return (PathSpec)delegate.getServletAttribute(PathSpec.class.getName());
     }
 
     @Override

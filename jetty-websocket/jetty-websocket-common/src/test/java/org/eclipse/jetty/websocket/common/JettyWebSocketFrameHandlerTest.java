@@ -119,8 +119,8 @@ public class JettyWebSocketFrameHandlerTest
 
         // Validate Events
         socket.events.assertEvents(
-                "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketClose\\([^\\)]*\\)");
+            "onWebSocketConnect\\([^\\)]*\\)",
+            "onWebSocketClose\\([^\\)]*\\)");
     }
 
     @WebSocket
@@ -150,7 +150,7 @@ public class JettyWebSocketFrameHandlerTest
     @Test
     public void testAnnotatedStreamedText_Single() throws Exception
     {
-        assertTimeout(Duration.ofMillis(1000), ()->
+        assertTimeout(Duration.ofMillis(1000), () ->
         {
             // Setup
             StreamedText socket = new StreamedText(1);
@@ -172,7 +172,7 @@ public class JettyWebSocketFrameHandlerTest
     @Test
     public void testAnnotatedStreamedText_MultipleParts() throws Exception
     {
-        assertTimeout(Duration.ofMillis(1000), ()->
+        assertTimeout(Duration.ofMillis(1000), () ->
         {
             // Setup
             StreamedText socket = new StreamedText(1);
@@ -213,14 +213,14 @@ public class JettyWebSocketFrameHandlerTest
 
         // Validate Events
         socket.events.assertEvents(
-                "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketPartialText\\(\"Hello\", false\\)",
-                "onWebSocketPartialText\\(\" \", false\\)",
-                "onWebSocketPartialText\\(\"World\", true\\)",
-                "onWebSocketPartialBinary\\(.*ByteBuffer.*Save.*, false\\)",
-                "onWebSocketPartialBinary\\(.*ByteBuffer.* the .*, false\\)",
-                "onWebSocketPartialBinary\\(.*ByteBuffer.*Pig.*, true\\)",
-                "onWebSocketClose\\(NORMAL, <null>\\)"
+            "onWebSocketConnect\\([^\\)]*\\)",
+            "onWebSocketPartialText\\(\"Hello\", false\\)",
+            "onWebSocketPartialText\\(\" \", false\\)",
+            "onWebSocketPartialText\\(\"World\", true\\)",
+            "onWebSocketPartialBinary\\(.*ByteBuffer.*Save.*, false\\)",
+            "onWebSocketPartialBinary\\(.*ByteBuffer.* the .*, false\\)",
+            "onWebSocketPartialBinary\\(.*ByteBuffer.*Pig.*, true\\)",
+            "onWebSocketClose\\(NORMAL, <null>\\)"
         );
     }
 
@@ -243,10 +243,10 @@ public class JettyWebSocketFrameHandlerTest
 
         // Validate Events
         socket.events.assertEvents(
-                "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketText\\(\"Hello World\"\\)",
-                "onWebSocketBinary\\(\\[12\\], 0, 12\\)",
-                "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
+            "onWebSocketConnect\\([^\\)]*\\)",
+            "onWebSocketText\\(\"Hello World\"\\)",
+            "onWebSocketBinary\\(\\[12\\], 0, 12\\)",
+            "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
         );
     }
 
@@ -265,8 +265,8 @@ public class JettyWebSocketFrameHandlerTest
 
         // Validate Events
         socket.events.assertEvents(
-                "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketError\\(\\(RuntimeException\\) \"Nothing to see here\"\\)"
+            "onWebSocketConnect\\([^\\)]*\\)",
+            "onWebSocketError\\(\\(RuntimeException\\) \"Nothing to see here\"\\)"
         );
     }
 
@@ -289,14 +289,14 @@ public class JettyWebSocketFrameHandlerTest
 
         // Validate Events
         socket.events.assertEvents(
-                "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketFrame\\(.*TEXT@[0-9a-f]*.len=5,fin=false,.*\\)",
-                "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=1,fin=false,.*\\)",
-                "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=5,fin=true,.*\\)",
-                "onWebSocketFrame\\(.*BINARY@[0-9a-f]*.len=4,fin=false,.*\\)",
-                "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=5,fin=false,.*\\)",
-                "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=3,fin=true,.*\\)",
-                "onWebSocketFrame\\(.*CLOSE@[0-9a-f]*.len=8,fin=true,.*\\)"
+            "onWebSocketConnect\\([^\\)]*\\)",
+            "onWebSocketFrame\\(.*TEXT@[0-9a-f]*.len=5,fin=false,.*\\)",
+            "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=1,fin=false,.*\\)",
+            "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=5,fin=true,.*\\)",
+            "onWebSocketFrame\\(.*BINARY@[0-9a-f]*.len=4,fin=false,.*\\)",
+            "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=5,fin=false,.*\\)",
+            "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=3,fin=true,.*\\)",
+            "onWebSocketFrame\\(.*CLOSE@[0-9a-f]*.len=8,fin=true,.*\\)"
         );
     }
 
@@ -321,10 +321,10 @@ public class JettyWebSocketFrameHandlerTest
 
         // Validate Events
         socket.events.assertEvents(
-                "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketPing\\(.*ByteBuffer.*You there.*\\)",
-                "onWebSocketPong\\(.*ByteBuffer.*You there.*\\)",
-                "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
+            "onWebSocketConnect\\([^\\)]*\\)",
+            "onWebSocketPing\\(.*ByteBuffer.*You there.*\\)",
+            "onWebSocketPong\\(.*ByteBuffer.*You there.*\\)",
+            "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
         );
     }
 }

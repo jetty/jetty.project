@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.tests.server.sockets;
 import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/onOpen")
+@ServerEndpoint(value = "/echo/onOpen")
 public class BasicOpenSocket extends TrackingSocket
 {
     @OnOpen

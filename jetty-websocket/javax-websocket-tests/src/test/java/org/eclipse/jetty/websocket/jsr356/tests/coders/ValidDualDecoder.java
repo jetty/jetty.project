@@ -50,7 +50,7 @@ public class ValidDualDecoder implements Decoder.Text<Integer>, Decoder.Binary<L
             Number number = numberFormat.parse(s);
             if (number instanceof Long)
             {
-                Long val = (Long) number;
+                Long val = (Long)number;
                 if (val > Integer.MAX_VALUE)
                 {
                     throw new DecodeException(s, "Value exceeds Integer.MAX_VALUE");
@@ -60,7 +60,7 @@ public class ValidDualDecoder implements Decoder.Text<Integer>, Decoder.Binary<L
 
             if (number instanceof Integer)
             {
-                return (Integer) number;
+                return (Integer)number;
             }
 
             throw new DecodeException(s, "Unrecognized number format");

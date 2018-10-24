@@ -54,7 +54,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-{ ElementType.METHOD })
+    { ElementType.METHOD })
 public @interface OnWebSocketMessage
 {
     /* no config */

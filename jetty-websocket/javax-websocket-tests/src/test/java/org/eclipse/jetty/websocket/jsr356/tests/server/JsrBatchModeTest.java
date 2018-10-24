@@ -45,14 +45,14 @@ public class JsrBatchModeTest
     public static class BasicEchoEndpoint extends Endpoint implements MessageHandler.Whole<String>
     {
         private javax.websocket.Session session;
-        
+
         @Override
         public void onMessage(String msg)
         {
             // reply with echo
             session.getAsyncRemote().sendText(msg);
         }
-        
+
         @Override
         public void onOpen(javax.websocket.Session session, EndpointConfig config)
         {
@@ -60,7 +60,7 @@ public class JsrBatchModeTest
             this.session.addMessageHandler(this);
         }
     }
-    
+
     private LocalServer server;
     private WebSocketContainer client;
 

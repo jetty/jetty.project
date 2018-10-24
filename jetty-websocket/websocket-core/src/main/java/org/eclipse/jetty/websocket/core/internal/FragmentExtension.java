@@ -59,7 +59,7 @@ public class FragmentExtension extends AbstractExtension
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         ByteBuffer payload = frame.getPayload();
-        int length = payload != null ? payload.remaining() : 0;
+        int length = payload != null?payload.remaining():0;
         if (OpCode.isControlFrame(frame.getOpCode()) || maxLength <= 0 || length <= maxLength)
         {
             nextOutgoingFrame(frame, callback, batch);
@@ -127,8 +127,8 @@ public class FragmentExtension extends AbstractExtension
             int length = Math.min(remaining, maxLength);
             finished = length == remaining;
 
-            boolean continuation = (frame.getOpCode()==OpCode.CONTINUATION) || !first;
-            Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
+            boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
+            Frame fragment = new Frame(continuation?OpCode.CONTINUATION:frame.getOpCode());
             boolean fin = frame.isFin() && finished;
             fragment.setFin(fin);
 
@@ -150,7 +150,7 @@ public class FragmentExtension extends AbstractExtension
         {
             // This IteratingCallback never completes.
         }
-        
+
         @Override
         protected void onCompleteFailure(Throwable x)
         {
@@ -167,7 +167,7 @@ public class FragmentExtension extends AbstractExtension
             notifyCallbackSuccess(current.callback);
             super.succeeded();
         }
-    
+
         @Override
         public void failed(Throwable cause)
         {

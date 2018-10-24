@@ -89,11 +89,11 @@ public class MessageOutputStreamTest
     @Test
     public void testWriteLarge_RequiringMultipleBuffers() throws Exception
     {
-        int bufsize = (int) (OUTPUT_BUFFER_SIZE * 2.5);
+        int bufsize = (int)(OUTPUT_BUFFER_SIZE * 2.5);
         byte buf[] = new byte[bufsize];
         LOG.debug("Buffer sizes: max:{}, test:{}", OUTPUT_BUFFER_SIZE, bufsize);
-        Arrays.fill(buf, (byte) 'x');
-        buf[bufsize - 1] = (byte) 'o'; // mark last entry for debugging
+        Arrays.fill(buf, (byte)'x');
+        buf[bufsize - 1] = (byte)'o'; // mark last entry for debugging
 
         try (MessageOutputStream stream = new MessageOutputStream(channelCapture, OUTPUT_BUFFER_SIZE, bufferPool))
         {

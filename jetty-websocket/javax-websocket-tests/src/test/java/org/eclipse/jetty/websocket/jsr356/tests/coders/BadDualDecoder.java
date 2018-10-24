@@ -42,7 +42,7 @@ public class BadDualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit
             if (id != FruitBinaryEncoder.FRUIT_ID_BYTE)
             {
                 // not a binary fruit object
-                throw new DecodeException(bytes,"Not an encoded Binary Fruit object");
+                throw new DecodeException(bytes, "Not an encoded Binary Fruit object");
             }
 
             Fruit fruit = new Fruit();
@@ -52,7 +52,7 @@ public class BadDualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit
         }
         catch (BufferUnderflowException e)
         {
-            throw new DecodeException(bytes,"Unable to read Fruit from binary message",e);
+            throw new DecodeException(bytes, "Unable to read Fruit from binary message", e);
         }
     }
 
@@ -63,7 +63,7 @@ public class BadDualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit
         Matcher mat = pat.matcher(s);
         if (!mat.find())
         {
-            throw new DecodeException(s,"Unable to find Fruit reference encoded in text message");
+            throw new DecodeException(s, "Unable to find Fruit reference encoded in text message");
         }
 
         Fruit fruit = new Fruit();

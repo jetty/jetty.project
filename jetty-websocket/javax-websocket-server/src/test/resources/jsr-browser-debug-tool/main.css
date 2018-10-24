@@ -1,9 +1,9 @@
 body {
-	font-family: sans-serif;
+    font-family: sans-serif;
 }
 
 div {
-    border: 0px solid black;	
+    border: 0px solid black;
 }
 
 div#console {
@@ -17,7 +17,7 @@ div#console {
 }
 
 div#console .info {
-	color: black;
+    color: black;
 }
 
 div#console .error {
@@ -25,7 +25,7 @@ div#console .error {
 }
 
 div#console .client {
-	color: blue;
+    color: blue;
 }
 
 div#console .server {

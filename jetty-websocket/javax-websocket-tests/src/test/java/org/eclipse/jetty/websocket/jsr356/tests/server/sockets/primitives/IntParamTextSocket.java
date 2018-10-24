@@ -46,14 +46,14 @@ public class IntParamTextSocket
     @OnMessage
     public void onMessage(int i, @PathParam("a") int param) throws IOException
     {
-        String msg = String.format("%d|%d",i,param);
+        String msg = String.format("%d|%d", i, param);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

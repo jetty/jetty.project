@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
 /**
  * Servlet specific Upgrade Request implementation.
  */
@@ -64,14 +65,14 @@ public class ServletUpgradeRequest
         StringBuffer uri = httpRequest.getRequestURL();
         if (this.queryString != null)
             uri.append("?").append(this.queryString);
-        uri.replace(0, uri.indexOf(":"), secure ? "wss" : "ws");
+        uri.replace(0, uri.indexOf(":"), secure?"wss":"ws");
         this.requestURI = new URI(uri.toString());
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
 
     public X509Certificate[] getCertificates()
     {
-        return (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
     }
 
     public List<HttpCookie> getCookies()

@@ -34,7 +34,7 @@ import java.util.Locale;
 public class FloatTextSocket
 {
     private static final Logger LOG = Log.getLogger(FloatTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -46,14 +46,14 @@ public class FloatTextSocket
     @OnMessage
     public void onMessage(float f) throws IOException
     {
-        String msg = String.format(Locale.US, "%.4f",f);
+        String msg = String.format(Locale.US, "%.4f", f);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

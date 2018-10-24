@@ -34,7 +34,8 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     final ByteBufferPool bufferPool;
     private final FrameHandler frameHandler;
 
-    public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool, FrameHandler frameHandler)
+    public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool,
+        FrameHandler frameHandler)
     {
         this.objectFactory = objectFactory;
         this.extensionRegistry = extensionRegistry;
@@ -51,7 +52,8 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
         negotiation.setSubprotocol("test");
 
         // TODO better to call negotiation.setNegotiatedExtensions();
-        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8");
+        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),
+            "@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8");
         return frameHandler;
     }
 

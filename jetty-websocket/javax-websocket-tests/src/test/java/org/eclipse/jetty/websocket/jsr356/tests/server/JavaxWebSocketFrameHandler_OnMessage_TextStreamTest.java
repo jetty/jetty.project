@@ -78,7 +78,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
             }
         }
     }
-    
+
     @Test
     public void testInvokeMessageStream() throws Exception
     {
@@ -96,7 +96,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         String msg = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Message", msg, is("onMessage(MessageReader) = \"Hello World\""));
     }
-    
+
     @ServerEndpoint("/msg/{param}")
     public static class MessageStreamParamSocket extends WSEventTracker
     {
@@ -115,7 +115,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
             }
         }
     }
-    
+
     @Test
     public void testInvokeMessageStreamParam() throws Exception
     {
@@ -134,5 +134,5 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         String msg = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Message", msg, is("onMessage(MessageReader,foo) = \"Hello World\""));
     }
-    
+
 }

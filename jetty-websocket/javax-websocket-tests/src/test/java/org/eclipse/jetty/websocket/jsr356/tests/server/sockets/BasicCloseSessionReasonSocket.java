@@ -23,13 +23,13 @@ import javax.websocket.OnClose;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/close/session/reason")
+@ServerEndpoint(value = "/echo/close/session/reason")
 public class BasicCloseSessionReasonSocket extends TrackingSocket
 {
     @OnClose
     public void onClose(Session session, CloseReason reason)
     {
-        addEvent("onClose(%s,%s)",session,reason);
+        addEvent("onClose(%s,%s)", session, reason);
         closeLatch.countDown();
     }
 }

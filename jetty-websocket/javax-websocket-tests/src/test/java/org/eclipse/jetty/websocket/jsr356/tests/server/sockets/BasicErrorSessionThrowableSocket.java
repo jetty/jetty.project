@@ -22,13 +22,13 @@ import javax.websocket.OnError;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/error/session/throwable")
+@ServerEndpoint(value = "/echo/error/session/throwable")
 public class BasicErrorSessionThrowableSocket extends TrackingSocket
 {
     @OnError
     public void onError(Session session, Throwable t)
     {
-        addEvent("onError(%s,%s)",session,t);
+        addEvent("onError(%s,%s)", session, t);
         addError(t);
     }
 }

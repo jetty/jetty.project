@@ -45,9 +45,9 @@ public class ValidDualEncoder implements Encoder.Text<Integer>, Encoder.BinarySt
     public void encode(Long object, OutputStream os) throws EncodeException, IOException
     {
         DataOutputStream data = new DataOutputStream(os);
-        data.writeByte((byte) '[');
+        data.writeByte((byte)'[');
         data.writeLong(object);
-        data.writeByte((byte) ']');
+        data.writeByte((byte)']');
         data.flush();
     }
 

@@ -33,27 +33,26 @@ import java.util.concurrent.CompletableFuture;
 public abstract class AbstractJavaxWebSocketFrameHandlerTest
 {
     protected static DummyContainer container;
-    
+
     @BeforeAll
     public static void initContainer() throws Exception
     {
         container = new DummyContainer();
         container.start();
     }
-    
+
     @AfterAll
     public static void stopContainer() throws Exception
     {
         container.stop();
     }
 
-
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams;
     protected EndpointConfig endpointConfig;
     protected FrameHandler.CoreSession channel = new DummyCoreSession();
-    
+
     public AbstractJavaxWebSocketFrameHandlerTest()
     {
         endpointConfig = new BasicEndpointConfig();
@@ -61,7 +60,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
         decoders = new AvailableDecoders(endpointConfig);
         uriParams = new HashMap<>();
     }
-    
+
     protected JavaxWebSocketFrameHandler newJavaxFrameHandler(Object websocket)
     {
         JavaxWebSocketFrameHandlerFactory factory = container.getFrameHandlerFactory();
@@ -71,7 +70,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
 
         JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxFrameHandler(endpoint,
-                upgradeRequest, upgradeResponse, new CompletableFuture<>());
+            upgradeRequest, upgradeResponse, new CompletableFuture<>());
 
         return localEndpoint;
     }

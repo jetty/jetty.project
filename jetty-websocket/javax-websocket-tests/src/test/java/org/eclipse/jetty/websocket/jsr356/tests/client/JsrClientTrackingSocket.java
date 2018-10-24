@@ -34,25 +34,25 @@ public class JsrClientTrackingSocket extends WSEventTracker.Basic
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> pongQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
-    
+
     public JsrClientTrackingSocket()
     {
         super("@ClientEndpoint");
     }
-    
+
     @OnMessage(maxMessageSize = 50 * 1024 * 1024)
     public void onText(String msg)
     {
         messageQueue.offer(msg);
     }
-    
+
     @OnMessage(maxMessageSize = 50 * 1024 * 1024)
     public void onBinary(ByteBuffer buffer)
     {
         ByteBuffer copy = DataUtils.copyOf(buffer);
         bufferQueue.offer(copy);
     }
-    
+
     @OnMessage
     public void onPong(PongMessage pong)
     {

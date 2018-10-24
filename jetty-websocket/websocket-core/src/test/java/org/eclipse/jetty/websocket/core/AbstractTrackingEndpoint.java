@@ -35,22 +35,22 @@ import static org.junit.jupiter.api.Assertions.fail;
 public abstract class AbstractTrackingEndpoint<T>
 {
     public final Logger LOG;
-    
+
     public T session;
-    
+
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
     public AtomicReference<CloseStatus> closeInfo = new AtomicReference<>();
     public AtomicReference<Throwable> closeStack = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
-    
+
     public AbstractTrackingEndpoint(String id)
     {
         LOG = Log.getLogger(this.getClass().getName() + "." + id);
         LOG.debug("init");
     }
-    
+
     public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
     {
         CloseStatus close = closeInfo.get();
@@ -58,33 +58,33 @@ public abstract class AbstractTrackingEndpoint<T>
         assertThat(prefix + " received close code", close.getCode(), Matchers.is(expectedCloseStatusCode));
         assertThat(prefix + " received close reason", close.getReason(), reasonMatcher);
     }
-    
+
     public void assertErrorEvent(String prefix, Matcher<Throwable> throwableMatcher, Matcher<? super String> messageMatcher)
     {
         assertThat(prefix + " error event type", error.get(), throwableMatcher);
         assertThat(prefix + " error event message", error.get().getMessage(), messageMatcher);
     }
-    
+
     public void assertNoErrorEvents(String prefix)
     {
         assertTrue(error.get() == null, prefix + " error event should not have occurred");
     }
-    
+
     public void assertNotClosed(String prefix)
     {
         assertTrue(closeLatch.getCount() > 0, prefix + " close event should not have occurred: got " + closeInfo.get());
     }
-    
+
     public void assertNotOpened(String prefix)
     {
         assertTrue(openLatch.getCount() > 0, prefix + " onOpen event should not have occurred");
     }
-    
+
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
         assertTrue(closeLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onClose event should have occurred");
     }
-    
+
     public void awaitOpenEvent(String prefix) throws InterruptedException
     {
         assertTrue(openLatch.await(Timeouts.OPEN_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onOpen event should have occurred");
@@ -94,7 +94,7 @@ public abstract class AbstractTrackingEndpoint<T>
     {
         assertTrue(errorLatch.await(Timeouts.CLOSE_EVENT_MS, TimeUnit.MILLISECONDS), prefix + " onError event should have occurred");
     }
-    
+
     protected void onWSOpen(T session)
     {
         this.session = session;
@@ -104,10 +104,10 @@ public abstract class AbstractTrackingEndpoint<T>
         }
         this.openLatch.countDown();
     }
-    
+
     protected void onWSClose(int statusCode, String reason)
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             LOG.debug("onWSClose({}, {})", statusCode, reason);
         }
@@ -121,10 +121,10 @@ public abstract class AbstractTrackingEndpoint<T>
         closeStack.compareAndSet(null, new Throwable("original"));
         this.closeLatch.countDown();
     }
-    
+
     protected void onWSError(Throwable cause)
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             LOG.debug("onWSError()", cause);
         }

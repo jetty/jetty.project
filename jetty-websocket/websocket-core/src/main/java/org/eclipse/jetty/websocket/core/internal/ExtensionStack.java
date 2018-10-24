@@ -24,7 +24,6 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -72,15 +71,15 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
     /**
      * Get the list of negotiated extensions, each entry being a full "name; params" extension configuration
-     * 
+     *
      * @return list of negotiated extensions
      */
     public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        if (extensions==null)
+        if (extensions == null)
             return Collections.emptyList();
-        
-        return extensions.stream().filter(e->!e.getName().startsWith("@")).map(Extension::getConfig).collect(Collectors.toList());
+
+        return extensions.stream().filter(e -> !e.getName().startsWith("@")).map(Extension::getConfig).collect(Collectors.toList());
     }
 
     @ManagedAttribute(name = "Next Incoming Frames Handler", readonly = true)
@@ -103,7 +102,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        if (incoming==null)
+        if (incoming == null)
             throw new IllegalStateException();
         incoming.onFrame(frame, callback);
     }
@@ -112,14 +111,13 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      * Perform the extension negotiation.
      * <p>
      * For the list of negotiated extensions, use {@link #getNegotiatedExtensions()}
-     * 
-     * @param configs
-     *            the configurations being requested
+     *
+     * @param configs the configurations being requested
      */
     public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> configs)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Extension Configs={}",configs);
+            LOG.debug("Extension Configs={}", configs);
 
         this.extensions = new ArrayList<>();
 
@@ -137,17 +135,17 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             // Check RSV
             if (ext.isRsv1User() && (rsvClaims[0] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1",config,rsvClaims[0]);
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
                 continue;
             }
             if (ext.isRsv2User() && (rsvClaims[1] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2",config,rsvClaims[1]);
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
                 continue;
             }
             if (ext.isRsv3User() && (rsvClaims[2] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3",config,rsvClaims[2]);
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
                 continue;
             }
 
@@ -155,7 +153,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             extensions.add(ext);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Adding Extension: {}",config);
+                LOG.debug("Adding Extension: {}", config);
 
             // Record RSV Claims
             if (ext.isRsv1User())
@@ -198,18 +196,18 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (outgoing==null)
+        if (outgoing == null)
             throw new IllegalStateException();
-        FrameEntry entry = new FrameEntry(frame,callback, batch);
+        FrameEntry entry = new FrameEntry(frame, callback, batch);
         if (LOG.isDebugEnabled())
-            LOG.debug("Queuing {}",entry);
+            LOG.debug("Queuing {}", entry);
         offerEntry(entry);
         flusher.iterate();
     }
 
     public void connect(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketChannel webSocketChannel)
     {
-        if (extensions==null)
+        if (extensions == null)
             throw new IllegalStateException();
         if (extensions.isEmpty())
         {
@@ -219,7 +217,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         else
         {
             extensions.get(0).setNextOutgoingFrames(outgoing);
-            extensions.get(extensions.size()-1).setNextIncomingFrames(incoming);
+            extensions.get(extensions.size() - 1).setNextIncomingFrames(incoming);
         }
 
         for (Extension extension : extensions)
@@ -250,7 +248,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         }
     }
 
-
     @Override
     public String dump()
     {
@@ -260,10 +257,9 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,this, extensions==null?Collections.emptyList():extensions);
+        Dumpable.dumpObjects(out, indent, this, extensions == null?Collections.emptyList():extensions);
     }
-    
-    
+
     @Override
     public String toString()
     {
@@ -318,8 +314,8 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 return Action.IDLE;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Processing {}",current);
-            outgoing.sendFrame(current.frame,this,current.batch);
+                LOG.debug("Processing {}", current);
+            outgoing.sendFrame(current.frame, this, current.batch);
             return Action.SCHEDULED;
         }
 
@@ -329,7 +325,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             // This IteratingCallback never completes.
             throw new IllegalStateException("This IteratingCallback should never complete.");
         }
-        
+
         @Override
         protected void onCompleteFailure(Throwable x)
         {
@@ -348,7 +344,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             super.succeeded();
         }
 
-
         @Override
         public void failed(Throwable cause)
         {
@@ -357,7 +352,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             // this flusher into a final state that cannot be exited,
             // and the failure of a frame may not mean that the whole
             // connection is now invalid.
-            notifyCallbackFailure(current.callback,cause);
+            notifyCallbackFailure(current.callback, cause);
             super.failed(cause);
         }
 
@@ -370,7 +365,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying success of callback " + callback,x);
+                LOG.debug("Exception while notifying success of callback " + callback, x);
             }
         }
 
@@ -383,14 +378,14 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying failure of callback " + callback,x);
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
             }
         }
-    
+
         @Override
         public String toString()
         {
-            return "ExtensionStack$Flusher[" + (extensions==null?-1:extensions.size()) + "]";
+            return "ExtensionStack$Flusher[" + (extensions == null?-1:extensions.size()) + "]";
         }
     }
 }

@@ -24,7 +24,7 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
 public class FrameSequence
 {
     // TODO should we be able to get a non fin frame then get a close frame without error
-    private byte state= OpCode.UNDEFINED;
+    private byte state = OpCode.UNDEFINED;
 
     public void check(byte opcode, boolean fin) throws ProtocolException
     {

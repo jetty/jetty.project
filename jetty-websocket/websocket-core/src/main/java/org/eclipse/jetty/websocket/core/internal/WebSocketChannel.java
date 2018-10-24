@@ -18,24 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -53,9 +40,18 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+
 /**
  * The Core WebSocket Session.
- *
  */
 public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSession, Dumpable
 {
@@ -76,14 +72,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private int outputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
 
     public WebSocketChannel(FrameHandler handler,
-    		Behavior behavior,
-    		Negotiated negotiated)
+        Behavior behavior,
+        Negotiated negotiated)
     {
         this.handler = handler;
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        negotiated.getExtensions().connect(new IncomingState(),new OutgoingState(), this);
+        negotiated.getExtensions().connect(new IncomingState(), new OutgoingState(), this);
     }
 
     /**
@@ -94,13 +90,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         return demanding;
     }
 
-
     public void assertValidIncoming(Frame frame)
     {
         assertValid(frame);
 
         // Assert Behavior Required by RFC-6455 / Section 5.1
-        switch(behavior)
+        switch (behavior)
         {
             case SERVER:
                 if (!frame.isMasked())
@@ -123,7 +118,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         assertValid(frame);
 
-        int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining();
+        int payloadLength = (frame.getPayload() == null)?0:frame.getPayload().remaining();
 
         if (frame.isControlFrame())
         {
@@ -176,7 +171,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
          * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
          */
         //TODO save these values to not iterate through extensions every frame
-        List<? extends Extension > exts = getExtensionStack().getExtensions();
+        List<? extends Extension> exts = getExtensionStack().getExtensions();
 
         boolean isRsv1InUse = false;
         boolean isRsv2InUse = false;
@@ -201,7 +196,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             throw new ProtocolException("RSV3 not allowed to be set");
     }
 
-
     public ExtensionStack getExtensionStack()
     {
         return negotiated.getExtensions();
@@ -223,11 +217,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     {
         return Duration.ofMillis(getConnection().getEndPoint().getIdleTimeout());
     }
-    
+
     @Override
     public void setIdleTimeout(Duration timeout)
     {
-        getConnection().getEndPoint().setIdleTimeout(timeout==null?0:timeout.toMillis());
+        getConnection().getEndPoint().setIdleTimeout(timeout == null?0:timeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -239,7 +233,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     {
         return getConnection().getEndPoint().getRemoteAddress();
     }
-    
+
     @Override
     public boolean isOpen()
     {
@@ -266,8 +260,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
      * Send Close Frame with specified Status Code and optional Reason
      *
      * @param statusCode a valid WebSocket status code
-     * @param reason an optional reason phrase
-     * @param callback the callback on successful send of close frame
+     * @param reason     an optional reason phrase
+     * @param callback   the callback on successful send of close frame
      */
     @Override
     public void close(int statusCode, String reason, Callback callback)
@@ -288,13 +282,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     {
                         handler.onClosed(state.getCloseStatus());
                     }
-                    catch(Throwable e)
+                    catch (Throwable e)
                     {
                         try
                         {
                             handler.onError(e);
                         }
-                        catch(Throwable e2)
+                        catch (Throwable e2)
                         {
                             e.addSuppressed(e2);
                             LOG.warn(e);
@@ -314,7 +308,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
 
         Frame frame = closeStatus.toFrame();
-        negotiated.getExtensions().sendFrame(frame,callback,batch);
+        negotiated.getExtensions().sendFrame(frame, callback, batch);
     }
 
     @Override
@@ -323,10 +317,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         return this.connection.getBufferPool();
     }
 
-
     public void onClosed(Throwable cause)
     {
-        onClosed(cause, new CloseStatus(CloseStatus.NO_CLOSE, cause==null?null:cause.toString()));
+        onClosed(cause, new CloseStatus(CloseStatus.NO_CLOSE, cause == null?null:cause.toString()));
     }
 
     public void onClosed(Throwable cause, CloseStatus closeStatus)
@@ -340,7 +333,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 handler.onError(cause);
             }
-            catch(Throwable e)
+            catch (Throwable e)
             {
                 cause.addSuppressed(e);
                 LOG.warn(cause);
@@ -356,7 +349,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             }
         }
     }
-
 
     /**
      * Process an Error event seen by the Session and/or Connection
@@ -387,7 +379,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
         else if (cause instanceof CloseException)
         {
-            CloseException ce = (CloseException) cause;
+            CloseException ce = (CloseException)cause;
             closeStatus = new CloseStatus(ce.getStatusCode(), ce.getMessage());
         }
         else if (cause instanceof WebSocketTimeoutException)
@@ -412,10 +404,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             // TODO can we avoid the illegal state exception in outClosed
             close(closeStatus, Callback.NOOP, false);
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
-            if (cause==null)
-                cause=e;
+            if (cause == null)
+                cause = e;
             else
                 cause.addSuppressed(e);
         }
@@ -445,7 +437,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 handler.onOpen(this);
                 if (!demanding)
                     connection.demand(1);
-                    
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
             }
@@ -469,7 +461,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             throw new IllegalStateException();
         connection.demand(n);
     }
-    
+
     public WebSocketConnection getConnection()
     {
         return this.connection;
@@ -505,7 +497,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         try
         {
             assertValidOutgoing(frame);
-            outgoingSequence.check(frame.getOpCode(),frame.isFin());
+            outgoingSequence.check(frame.getOpCode(), frame.isFin());
         }
         catch (Throwable ex)
         {
@@ -526,9 +518,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void flush(Callback callback)
     {
-        negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME,callback, false);
+        negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
     }
-    
+
     @Override
     public void abort()
     {
@@ -593,11 +585,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
-                              frame, callback, state, handler);
+                        frame, callback, state, handler);
 
-                check(frame.getOpCode(),frame.isFin());
+                check(frame.getOpCode(), frame.isFin());
                 if (state.isInOpen())
-                {   
+                {
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
@@ -628,7 +620,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                                 {
                                     // No!
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("ConnectionState: sending close response {}",closeStatus);
+                                        LOG.debug("ConnectionState: sending close response {}", closeStatus);
 
                                     close(closeStatus.getCode(), closeStatus.getReason(), Callback.NOOP);
                                     return;
@@ -636,7 +628,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                             }
                         };
                     }
-                    
+
                     // Handle the frame
                     handler.onFrame(frame, callback);
                 }
@@ -661,15 +653,15 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             try
             {
-                connection.sendFrame(frame,callback, batch);
+                connection.sendFrame(frame, callback, batch);
             }
             catch (ProtocolException e)
             {
                 callback.failed(e);
             }
         }
-    }    
-    
+    }
+
     @Override
     public String dump()
     {
@@ -679,7 +671,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,this,
+        Dumpable.dumpObjects(out, indent, this,
             negotiated.getSubProtocol(),
             negotiated.getExtensions(),
             handler);

@@ -9,6 +9,7 @@ if (!window.WebSocket) {
 function $() {
     return document.getElementById(arguments[0]);
 }
+
 function $F() {
     return document.getElementById(arguments[0]).value;
 }
@@ -20,13 +21,13 @@ function getKeyCode(ev) {
 }
 
 var wstool = {
-    connect : function() {
+    connect: function () {
         var location = document.location.toString().replace('http://', 'ws://')
-                .replace('https://', 'wss://');
+            .replace('https://', 'wss://');
 
         wstool.info("Document URI: " + document.location);
         wstool.info("WS URI: " + location);
-        
+
         this._scount = 0;
 
         try {
@@ -40,11 +41,11 @@ var wstool = {
         }
     },
 
-    close : function() {
+    close: function () {
         this._ws.close();
     },
-    
-    _out : function(css, message) {
+
+    _out: function (css, message) {
         var console = $('console');
         var spanText = document.createElement('span');
         spanText.className = 'text ' + css;
@@ -55,24 +56,24 @@ var wstool = {
         console.scrollTop = console.scrollHeight - console.clientHeight;
     },
 
-    info : function(message) {
+    info: function (message) {
         wstool._out("info", message);
     },
 
-    error : function(message) {
+    error: function (message) {
         wstool._out("error", message);
     },
 
-    infoc : function(message) {
+    infoc: function (message) {
         wstool._out("client", "[c] " + message);
     },
-    
-    infos : function(message) {
+
+    infos: function (message) {
         this._scount++;
         wstool._out("server", "[s" + this._scount + "] " + message);
     },
 
-    setState : function(enabled) {
+    setState: function (enabled) {
         $('connect').disabled = enabled;
         $('close').disabled = !enabled;
         $('info').disabled = !enabled;
@@ -83,41 +84,41 @@ var wstool = {
         $('there').disabled = !enabled;
         $('json').disabled = !enabled;
     },
-    
-    _onopen : function() {
+
+    _onopen: function () {
         wstool.setState(true);
         wstool.info("Websocket Connected");
     },
-    
-    _onerror : function(evt) {
+
+    _onerror: function (evt) {
         wstool.setState(false);
         wstool.error("Websocket Error: " + evt.data);
         wstool.error("See Javascript Console for possible detailed error message");
     },
 
-    _send : function(message) {
+    _send: function (message) {
         if (this._ws) {
             this._ws.send(message);
             wstool.infoc(message);
         }
     },
 
-    write : function(text) {
+    write: function (text) {
         wstool._send(text);
     },
 
-    _onmessage : function(m) {
+    _onmessage: function (m) {
         if (m.data) {
             wstool.infos(m.data);
         }
     },
 
-    _onclose : function(closeEvent) {
+    _onclose: function (closeEvent) {
         this._ws = null;
         wstool.setState(false);
         wstool.info("Websocket Closed");
         wstool.info("  .wasClean = " + closeEvent.wasClean);
-        
+
         var codeMap = {};
         codeMap[1000] = "(NORMAL)";
         codeMap[1001] = "(ENDPOINT_GOING_AWAY)";

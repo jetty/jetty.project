@@ -28,7 +28,7 @@ public interface FrameCallback
      * @param cause the reason for the frame failure
      */
     void fail(Throwable cause);
-    
+
     /**
      * <p>
      * Callback invoked when the frame read/write completes.
@@ -37,14 +37,14 @@ public interface FrameCallback
      * @see #fail(Throwable)
      */
     void succeed();
-    
+
     class Adapter implements FrameCallback
     {
         @Override
         public void fail(Throwable cause)
         {
         }
-        
+
         @Override
         public void succeed()
         {

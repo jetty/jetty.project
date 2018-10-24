@@ -23,16 +23,18 @@ import javax.websocket.OnClose;
 import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicOpenCloseSocket extends TrackingSocket
 {
     @OnOpen
-    public void onOpen() {
+    public void onOpen()
+    {
         openLatch.countDown();
     }
-    
+
     @OnClose
-    public void onClose(CloseReason close) {
+    public void onClose(CloseReason close)
+    {
         this.closeReason = close;
         closeLatch.countDown();
     }

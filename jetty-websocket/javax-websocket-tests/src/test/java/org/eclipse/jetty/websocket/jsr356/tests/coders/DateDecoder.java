@@ -32,7 +32,7 @@ import java.util.TimeZone;
 public class DateDecoder implements Decoder.Text<Date>
 {
     private TimeZone GMT = TimeZone.getTimeZone("GMT");
-    
+
     @Override
     public Date decode(String s) throws DecodeException
     {
@@ -44,7 +44,7 @@ public class DateDecoder implements Decoder.Text<Date>
         }
         catch (ParseException e)
         {
-            throw new DecodeException(s,e.getMessage(),e);
+            throw new DecodeException(s, e.getMessage(), e);
         }
     }
 

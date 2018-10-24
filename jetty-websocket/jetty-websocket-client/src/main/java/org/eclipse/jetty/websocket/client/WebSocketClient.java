@@ -102,8 +102,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * Connect to remote websocket endpoint
      *
      * @param websocket the websocket object
-     * @param toUri the websocket uri to connect to
-     * @param request the upgrade request information
+     * @param toUri     the websocket uri to connect to
+     * @param request   the upgrade request information
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
@@ -252,7 +252,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         return Collections.unmodifiableSet(new HashSet<>(getBeans(Session.class)));
     }
 
-    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+        CompletableFuture<Session> futureSession)
     {
         return frameHandlerFactory.newJettyFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
     }

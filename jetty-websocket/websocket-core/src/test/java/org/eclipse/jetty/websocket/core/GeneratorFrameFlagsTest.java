@@ -60,7 +60,6 @@ public class GeneratorFrameFlagsTest
             Arguments.of(new Frame(OpCode.CLOSE).setRsv3(true))
         );
     }
-    
 
     public void setup(Frame invalidFrame)
     {
@@ -68,7 +67,7 @@ public class GeneratorFrameFlagsTest
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
         this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testGenerateInvalidControlFrame(Frame invalidFrame)
@@ -77,6 +76,6 @@ public class GeneratorFrameFlagsTest
 
         ByteBuffer buffer = ByteBuffer.allocate(100);
         new Generator(bufferPool).generateWholeFrame(invalidFrame, buffer);
-        assertThrows(ProtocolException.class, ()->channel.assertValidOutgoing(invalidFrame));
+        assertThrows(ProtocolException.class, () -> channel.assertValidOutgoing(invalidFrame));
     }
 }

@@ -31,7 +31,7 @@ public class MyAuthedConfigurator extends ServerEndpointConfig.Configurator
         // Is Authenticated?
         Principal principal = request.getUserPrincipal();
         if (principal == null)
-        { 
+        {
             throw new RuntimeException("Not authenticated");
         }
 
@@ -40,8 +40,8 @@ public class MyAuthedConfigurator extends ServerEndpointConfig.Configurator
         {
             throw new RuntimeException("Not authorized");
         }
-        
+
         // normal operation
-        super.modifyHandshake(sec,request,response);
+        super.modifyHandshake(sec, request, response);
     }
 }

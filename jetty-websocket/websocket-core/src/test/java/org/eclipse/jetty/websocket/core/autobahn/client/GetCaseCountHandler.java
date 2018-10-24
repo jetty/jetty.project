@@ -49,6 +49,6 @@ public class GetCaseCountHandler extends AbstractClientFrameHandler
     {
         casecount = Integer.decode(message);
         latch.countDown();
-        LOG.info("Running {} Autobahn testcase",casecount);
+        LOG.info("Running {} Autobahn testcase", casecount);
     }
 }

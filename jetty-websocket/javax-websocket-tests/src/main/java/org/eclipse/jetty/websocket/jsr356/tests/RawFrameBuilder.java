@@ -40,22 +40,22 @@ public class RawFrameBuilder
     {
         if (mask != null)
         {
-            assertThat("Mask.length",mask.length,is(4));
-            putLength(buf,length,(mask != null));
+            assertThat("Mask.length", mask.length, is(4));
+            putLength(buf, length, (mask != null));
             buf.put(mask);
         }
         else
         {
-            putLength(buf,length,false);
+            putLength(buf, length, false);
         }
     }
 
     public static byte[] mask(final byte[] data, final byte mask[])
     {
-        assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length", mask.length, is(4));
         int len = data.length;
         byte ret[] = new byte[len];
-        System.arraycopy(data,0,ret,0,len);
+        System.arraycopy(data, 0, ret, 0, len);
         for (int i = 0; i < len; i++)
         {
             ret[i] ^= mask[i % 4];
@@ -98,12 +98,12 @@ public class RawFrameBuilder
 
     public static void putMask(ByteBuffer buf, byte mask[])
     {
-        assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length", mask.length, is(4));
         buf.put(mask);
     }
 
     public static void putPayloadLength(ByteBuffer buf, int length)
     {
-        putLength(buf,length,true);
+        putLength(buf, length, true);
     }
 }

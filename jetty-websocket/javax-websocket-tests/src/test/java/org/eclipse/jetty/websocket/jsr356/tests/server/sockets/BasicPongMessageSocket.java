@@ -22,13 +22,13 @@ import javax.websocket.OnMessage;
 import javax.websocket.PongMessage;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/pong")
+@ServerEndpoint(value = "/echo/pong")
 public class BasicPongMessageSocket extends TrackingSocket
 {
     @OnMessage
     public void onPong(PongMessage pong)
     {
-        addEvent("onPong(%s)",pong);
+        addEvent("onPong(%s)", pong);
         dataLatch.countDown();
     }
 }

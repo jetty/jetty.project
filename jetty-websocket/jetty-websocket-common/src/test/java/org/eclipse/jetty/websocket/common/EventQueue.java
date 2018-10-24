@@ -30,7 +30,7 @@ public class EventQueue extends LinkedBlockingDeque<String>
     {
         add(String.format(format, args));
     }
-    
+
     public void assertEvents(String... regexEvents)
     {
         Iterator<String> capturedIterator = iterator();

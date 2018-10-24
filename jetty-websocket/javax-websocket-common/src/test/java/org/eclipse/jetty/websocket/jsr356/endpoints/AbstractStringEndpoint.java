@@ -47,7 +47,7 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
     public AtomicReference<CloseStatus> closeInfo = new AtomicReference<>();
     protected Session session;
     protected EndpointConfig config;
-    
+
     public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
     {
         CloseStatus close = closeInfo.get();
@@ -58,7 +58,7 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
 
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
-        assertTrue(closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS),prefix + " onClose event");
+        assertTrue(closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), prefix + " onClose event");
     }
 
     @Override
@@ -80,7 +80,7 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
         CloseStatus close = new CloseStatus(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
         boolean closeTracked = closeInfo.compareAndSet(null, close);
         this.closeLatch.countDown();
-        assertTrue(closeTracked,"Close only happened once");
+        assertTrue(closeTracked, "Close only happened once");
     }
 
     @Override

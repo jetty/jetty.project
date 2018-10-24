@@ -31,14 +31,14 @@ import java.util.ServiceLoader;
 
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
- * 
+ *
  * @see ServiceLoader behavior of {@link javax.websocket.server.ServerEndpointConfig.Configurator}
  */
 public final class ContainerDefaultConfigurator extends Configurator
 {
     private static final Logger LOG = Log.getLogger(ContainerDefaultConfigurator.class);
     private static final String NO_SUBPROTOCOL = "";
-    
+
     /**
      * Default Constructor required, as
      * javax.websocket.server.ServerEndpointConfig$Configurator.fetchContainerDefaultConfigurator()
@@ -60,9 +60,9 @@ public final class ContainerDefaultConfigurator extends Configurator
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(".getEndpointInstance({})",endpointClass);
+            LOG.debug(".getEndpointInstance({})", endpointClass);
         }
-        
+
         try
         {
             // Since this is started via a ServiceLoader, this class has no Scope or context
@@ -71,7 +71,7 @@ public final class ContainerDefaultConfigurator extends Configurator
         }
         catch (Exception e)
         {
-            throw new InstantiationException(String.format("%s: %s",e.getClass().getName(),e.getMessage()));
+            throw new InstantiationException(String.format("%s: %s", e.getClass().getName(), e.getMessage()));
         }
     }
 
@@ -114,8 +114,8 @@ public final class ContainerDefaultConfigurator extends Configurator
         }
 
         LOG.warn("Client requested subprotocols {} do not match any endpoint supported subprotocols {}",
-                String.join(",", requested),
-                String.join(",", supported));
+            String.join(",", requested),
+            String.join(",", supported));
         return NO_SUBPROTOCOL;
     }
 

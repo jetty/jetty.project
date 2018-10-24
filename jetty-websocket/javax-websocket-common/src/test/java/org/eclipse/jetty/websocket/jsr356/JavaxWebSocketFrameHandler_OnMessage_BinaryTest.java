@@ -45,19 +45,19 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
     private void assertOnMessageInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
-        
+
         // This invocation is the same for all tests
         localEndpoint.onOpen(channel);
-        
+
         assertThat("Has Binary Metadata", localEndpoint.getBinaryMetadata(), notNullValue());
-        
+
         // This invocation is the same for all tests
         ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));
         localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload(byteBuffer).setFin(true), Callback.NOOP);
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }
-    
+
     @ClientEndpoint
     public static class MessageSocket extends TrackingSocket
     {
@@ -69,15 +69,15 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
             addEvent("onMessage()");
         }
     }
-    
+
     @Test
     public void testInvokeMessage() throws Exception
     {
-        assertThrows(InvalidSignatureException.class, ()->
+        assertThrows(InvalidSignatureException.class, () ->
             assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"))
         );
     }
-    
+
     @ClientEndpoint
     public static class MessageByteBufferSocket extends TrackingSocket
     {
@@ -87,13 +87,13 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
             addEvent("onMessage(%s)", BufferUtil.toUTF8String(msg));
         }
     }
-    
+
     @Test
     public void testInvokeMessageByteBuffer() throws Exception
     {
         assertOnMessageInvocation(new MessageByteBufferSocket(), containsString("onMessage(Hello World)"));
     }
-    
+
     @ClientEndpoint
     public static class MessageSessionSocket extends TrackingSocket
     {
@@ -104,19 +104,19 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
             addEvent("onMessage(%s)", session);
         }
     }
-    
+
     @Test
     public void testInvokeMessageSession() throws Exception
     {
-        assertThrows(InvalidSignatureException.class, ()->
-        assertOnMessageInvocation(new MessageSessionSocket(),
+        assertThrows(InvalidSignatureException.class, () ->
+            assertOnMessageInvocation(new MessageSessionSocket(),
                 allOf(
-                        containsString("onMessage(JavaxWebSocketSession@"),
-                        containsString(MessageSessionSocket.class.getName())
+                    containsString("onMessage(JavaxWebSocketSession@"),
+                    containsString(MessageSessionSocket.class.getName())
                 ))
         );
     }
-    
+
     @ClientEndpoint
     public static class MessageSessionByteBufferSocket extends TrackingSocket
     {
@@ -126,14 +126,14 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
             addEvent("onMessage(%s, %s)", session, BufferUtil.toUTF8String(msg));
         }
     }
-    
+
     @Test
     public void testInvokeMessageSessionByteBuffer() throws Exception
     {
         assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
-                allOf(
-                        containsString("onMessage(JavaxWebSocketSession@"),
-                        containsString(MessageSessionByteBufferSocket.class.getName())
-                ));
+            allOf(
+                containsString("onMessage(JavaxWebSocketSession@"),
+                containsString(MessageSessionByteBufferSocket.class.getName())
+            ));
     }
 }

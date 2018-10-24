@@ -35,7 +35,7 @@ public interface WebSocketServletFactory
      * </p>
      *
      * @param pathSpec the pathspec to respond on
-     * @param creator the WebSocketCreator to use
+     * @param creator  the WebSocketCreator to use
      * @since 10.0
      */
     void addMapping(PathSpec pathSpec, WebSocketCreator creator);

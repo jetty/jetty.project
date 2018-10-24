@@ -70,7 +70,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
      * Initiate close of the Remote with specified status code and optional reason phrase
      *
      * @param statusCode the status code (must be valid and can be sent)
-     * @param reason optional reason code
+     * @param reason     optional reason code
      * @since 10.0
      */
     public void close(int statusCode, String reason)
@@ -147,7 +147,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
         coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
-            Callback.from(callback::writeSuccess,callback::writeFailed),
+            Callback.from(callback::writeSuccess, callback::writeFailed),
             isBatch());
     }
 
@@ -220,7 +220,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendString(String text, WriteCallback callback)
     {
-        Callback cb = callback==null?Callback.NOOP:Callback.from(callback::writeSuccess,callback::writeFailed);
+        Callback cb = callback == null?Callback.NOOP:Callback.from(callback::writeSuccess, callback::writeFailed);
         coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, isBatch());
     }
 
@@ -248,9 +248,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private boolean isBatch()
     {
-        return BatchMode.ON==batchMode;
+        return BatchMode.ON == batchMode;
     }
-    
+
     @Override
     public InetSocketAddress getInetSocketAddress()
     {

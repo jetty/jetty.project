@@ -101,7 +101,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
     }
 
     @SuppressWarnings(
-            {"rawtypes", "unchecked"})
+        { "rawtypes", "unchecked" })
     @Override
     public void sendObject(Object data, SendHandler handler)
     {
@@ -120,7 +120,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
 
         if (encoder instanceof Encoder.Text)
         {
-            Encoder.Text etxt = (Encoder.Text) encoder;
+            Encoder.Text etxt = (Encoder.Text)encoder;
             try
             {
                 String msg = etxt.encode(data);
@@ -134,7 +134,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         }
         else if (encoder instanceof Encoder.TextStream)
         {
-            Encoder.TextStream etxt = (Encoder.TextStream) encoder;
+            Encoder.TextStream etxt = (Encoder.TextStream)encoder;
             SendHandlerCallback callback = new SendHandlerCallback(handler);
             try (MessageWriter writer = newMessageWriter())
             {
@@ -149,7 +149,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         }
         else if (encoder instanceof Encoder.Binary)
         {
-            Encoder.Binary ebin = (Encoder.Binary) encoder;
+            Encoder.Binary ebin = (Encoder.Binary)encoder;
             try
             {
                 ByteBuffer buf = ebin.encode(data);
@@ -163,7 +163,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         }
         else if (encoder instanceof Encoder.BinaryStream)
         {
-            Encoder.BinaryStream ebin = (Encoder.BinaryStream) encoder;
+            Encoder.BinaryStream ebin = (Encoder.BinaryStream)encoder;
             SendHandlerCallback callback = new SendHandlerCallback(handler);
             try (MessageOutputStream out = newMessageOutputStream())
             {

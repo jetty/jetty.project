@@ -32,9 +32,8 @@ public class Utf8CharBuffer extends Utf8Appendable
 {
     /**
      * Convenience method to wrap a ByteBuffer with a {@link Utf8CharBuffer}
-     * 
-     * @param buffer
-     *            the buffer to wrap
+     *
+     * @param buffer the buffer to wrap
      * @return the Utf8ByteBuffer for the provided ByteBuffer
      */
     public static Utf8CharBuffer wrap(ByteBuffer buffer)
@@ -52,7 +51,7 @@ public class Utf8CharBuffer extends Utf8Appendable
 
     public void append(char[] cbuf, int offset, int size)
     {
-        append(BufferUtil.toDirectBuffer(new String(cbuf,offset,size),StandardCharsets.UTF_8));
+        append(BufferUtil.toDirectBuffer(new String(cbuf, offset, size), StandardCharsets.UTF_8));
     }
 
     public void append(int c)

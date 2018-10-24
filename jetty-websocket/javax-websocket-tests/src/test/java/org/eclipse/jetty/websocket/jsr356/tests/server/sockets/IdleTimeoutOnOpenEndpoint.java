@@ -26,7 +26,7 @@ import javax.websocket.Session;
 public class IdleTimeoutOnOpenEndpoint extends Endpoint implements MessageHandler.Whole<String>
 {
     private Session session;
-    
+
     @Override
     public void onOpen(Session session, EndpointConfig config)
     {

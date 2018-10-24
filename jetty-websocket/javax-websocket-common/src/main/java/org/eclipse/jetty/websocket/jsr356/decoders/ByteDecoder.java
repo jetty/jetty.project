@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
-
 /**
  * Default implementation of the {@link javax.websocket.Decoder.Text} Message to {@link Byte} decoder
  */
@@ -38,7 +37,7 @@ public class ByteDecoder extends AbstractDecoder implements Decoder.Text<Byte>
         }
         catch (NumberFormatException e)
         {
-            throw new DecodeException(s,"Unable to parse Byte",e);
+            throw new DecodeException(s, "Unable to parse Byte", e);
         }
     }
 

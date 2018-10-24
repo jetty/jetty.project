@@ -37,7 +37,8 @@ public class TestWebSocketUpgradeHandler extends WebSocketUpgradeHandler
         setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 response.setStatus(200);
                 response.setContentType("text/plain");

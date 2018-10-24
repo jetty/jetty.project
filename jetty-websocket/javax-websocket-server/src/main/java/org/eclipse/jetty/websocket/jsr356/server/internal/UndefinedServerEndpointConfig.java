@@ -38,7 +38,7 @@ public class UndefinedServerEndpointConfig implements ServerEndpointConfig
     private final ServerEndpointConfig.Configurator configurator;
     private final Class<?> endpointClass;
     private Map<String, Object> userProperties;
-    
+
     public UndefinedServerEndpointConfig(Class<?> endpointClass)
     {
         this.endpointClass = endpointClass;
@@ -49,49 +49,49 @@ public class UndefinedServerEndpointConfig implements ServerEndpointConfig
         this.userProperties = new HashMap<>();
         this.configurator = new ContainerDefaultConfigurator();
     }
-    
+
     @Override
     public List<Class<? extends Encoder>> getEncoders()
     {
         return encoders;
     }
-    
+
     @Override
     public List<Class<? extends Decoder>> getDecoders()
     {
         return decoders;
     }
-    
+
     @Override
     public Map<String, Object> getUserProperties()
     {
         return userProperties;
     }
-    
+
     @Override
     public Class<?> getEndpointClass()
     {
         return endpointClass;
     }
-    
+
     @Override
     public String getPath()
     {
         throw new RuntimeException("Using an UndefinedServerEndpointConfig");
     }
-    
+
     @Override
     public List<String> getSubprotocols()
     {
         return subprotocols;
     }
-    
+
     @Override
     public List<Extension> getExtensions()
     {
         return extensions;
     }
-    
+
     @Override
     public ServerEndpointConfig.Configurator getConfigurator()
     {

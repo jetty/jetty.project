@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -26,11 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class Negotiated
 {
@@ -50,8 +50,8 @@ public class Negotiated
         this.extensions = extensions;
         this.protocolVersion = protocolVersion;
 
-        Map<String,List<String>> map;
-        if (requestURI.getQuery()==null)
+        Map<String, List<String>> map;
+        if (requestURI.getQuery() == null)
             map = Collections.emptyMap();
         else
         {
@@ -59,7 +59,7 @@ public class Negotiated
             MultiMap<String> params = new MultiMap<>();
             UrlEncoded.decodeUtf8To(requestURI.getQuery(), params);
             for (String p : params.keySet())
-                map.put(p,Collections.unmodifiableList(params.getValues(p)));
+                map.put(p, Collections.unmodifiableList(params.getValues(p)));
         }
         this.parameterMap = Collections.unmodifiableMap(map);
     }
@@ -110,12 +110,11 @@ public class Negotiated
         {
             return new Negotiated(new URI("/"), "", false, extensions, WebSocketConstants.SPEC_VERSION_STRING);
         }
-        catch(URISyntaxException e)
+        catch (URISyntaxException e)
         {
             throw new RuntimeException(e);
         }
     }
-
 
     /**
      * Convert to WebSocket {@code ws} or {@code wss} scheme URIs
@@ -123,19 +122,17 @@ public class Negotiated
      * <p>
      * Converting {@code http} and {@code https} URIs to their WebSocket equivalent
      *
-     * @param uri
-     *            the input URI
+     * @param uri the input URI
      * @return the WebSocket scheme URI for the input URI.
-     * @throws URISyntaxException
-     *             if unable to convert the input URI
+     * @throws URISyntaxException if unable to convert the input URI
      */
     public static URI toWebsocket(final URI uri)
     {
         try
         {
-            Objects.requireNonNull(uri,"Input URI must not be null");
+            Objects.requireNonNull(uri, "Input URI must not be null");
             String httpScheme = uri.getScheme();
-            if (httpScheme==null)
+            if (httpScheme == null)
                 return uri;
 
             if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
@@ -156,7 +153,7 @@ public class Negotiated
                 return new URI("wss" + uri.toString().substring(httpScheme.length()));
             }
 
-            throw new URISyntaxException(uri.toString(),"Unrecognized HTTP scheme");
+            throw new URISyntaxException(uri.toString(), "Unrecognized HTTP scheme");
         }
         catch (URISyntaxException e)
         {

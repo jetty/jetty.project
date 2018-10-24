@@ -31,7 +31,7 @@ public class IdleTimeoutOnOpenSocket
     {
         session.setMaxIdleTimeout(500);
     }
-    
+
     @OnMessage
     public String onMessage(String msg)
     {

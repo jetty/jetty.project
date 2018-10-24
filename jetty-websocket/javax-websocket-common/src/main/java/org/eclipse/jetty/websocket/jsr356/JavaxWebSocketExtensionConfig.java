@@ -29,7 +29,7 @@ public class JavaxWebSocketExtensionConfig extends ExtensionConfig
         super(ext.getName());
         for (Extension.Parameter param : ext.getParameters())
         {
-            this.setParameter(param.getName(),param.getValue());
+            this.setParameter(param.getName(), param.getValue());
         }
     }
 }

@@ -50,7 +50,7 @@ import java.util.List;
 public class PartialEchoTest
 {
     private static final Logger LOG = Log.getLogger(PartialEchoTest.class);
-    
+
     public static class BaseSocket
     {
         @OnError
@@ -59,20 +59,20 @@ public class PartialEchoTest
             LOG.warn("Error", cause);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/partial/text")
     public static class PartialTextSocket extends BaseSocket
     {
         private Session session;
         private StringBuilder buf = new StringBuilder();
-    
+
         @OnOpen
         public void onOpen(Session session)
         {
             this.session = session;
         }
-    
+
         @SuppressWarnings("IncorrectOnMessageMethodsInspection")
         @OnMessage
         public void onPartial(String msg, boolean fin) throws IOException
@@ -85,7 +85,7 @@ public class PartialEchoTest
             }
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/partial/text-session")
     public static class PartialTextSessionSocket extends BaseSocket
@@ -104,9 +104,9 @@ public class PartialEchoTest
             }
         }
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -122,18 +122,18 @@ public class PartialEchoTest
         };
         server.start();
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testPartialText() throws Exception
     {
         String requestPath = "/echo/partial/text";
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
@@ -143,29 +143,29 @@ public class PartialEchoTest
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     @Test
     public void testPartialTextSession() throws Exception
     {
         String requestPath = "/echo/partial/text-session";
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);

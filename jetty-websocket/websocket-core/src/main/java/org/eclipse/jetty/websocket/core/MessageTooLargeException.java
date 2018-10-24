@@ -28,16 +28,16 @@ public class MessageTooLargeException extends CloseException
 {
     public MessageTooLargeException(String message)
     {
-        super(CloseStatus.MESSAGE_TOO_LARGE,message);
+        super(CloseStatus.MESSAGE_TOO_LARGE, message);
     }
 
     public MessageTooLargeException(String message, Throwable t)
     {
-        super(CloseStatus.MESSAGE_TOO_LARGE,message,t);
+        super(CloseStatus.MESSAGE_TOO_LARGE, message, t);
     }
 
     public MessageTooLargeException(Throwable t)
     {
-        super(CloseStatus.MESSAGE_TOO_LARGE,t);
+        super(CloseStatus.MESSAGE_TOO_LARGE, t);
     }
 }

@@ -34,6 +34,7 @@ public class ClientUpgradeRequestImpl extends org.eclipse.jetty.websocket.core.c
     private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;
     private final CompletableFuture<Session> futureJavaxSession;
+
     public ClientUpgradeRequestImpl(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);

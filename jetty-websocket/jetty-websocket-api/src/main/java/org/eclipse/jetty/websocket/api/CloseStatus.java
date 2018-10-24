@@ -27,9 +27,8 @@ public class CloseStatus
 
     /**
      * Convenience method for trimming a long reason phrase at the maximum reason phrase length of 123 UTF-8 bytes (per WebSocket spec).
-     * 
-     * @param reason
-     *            the proposed reason phrase
+     *
+     * @param reason the proposed reason phrase
      * @return the reason phrase (trimmed if needed)
      * @deprecated use of this method is strongly discouraged, as it creates too many new objects that are just thrown away to accomplish its goals.
      */
@@ -45,10 +44,10 @@ public class CloseStatus
         if (reasonBytes.length > MAX_REASON_PHRASE)
         {
             byte[] trimmed = new byte[MAX_REASON_PHRASE];
-            System.arraycopy(reasonBytes,0,trimmed,0,MAX_REASON_PHRASE);
-            return new String(trimmed,StandardCharsets.UTF_8);
+            System.arraycopy(reasonBytes, 0, trimmed, 0, MAX_REASON_PHRASE);
+            return new String(trimmed, StandardCharsets.UTF_8);
         }
-        
+
         return reason;
     }
 
@@ -57,11 +56,9 @@ public class CloseStatus
 
     /**
      * Creates a reason for closing a web socket connection with the given code and reason phrase.
-     * 
-     * @param closeCode
-     *            the close code
-     * @param reasonPhrase
-     *            the reason phrase
+     *
+     * @param closeCode    the close code
+     * @param reasonPhrase the reason phrase
      * @see StatusCode
      */
     public CloseStatus(int closeCode, String reasonPhrase)

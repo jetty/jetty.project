@@ -40,7 +40,7 @@ import java.util.List;
 public class UriTemplateParameterTest
 {
     private static final Logger LOG = Log.getLogger(UriTemplateParameterTest.class);
-    
+
     @ServerEndpoint("/echo/params/{a}/{b}")
     public static class IntParamTextSocket
     {
@@ -49,16 +49,16 @@ public class UriTemplateParameterTest
         {
             return String.format("%,d|%,d|%,d", i, paramA, paramB);
         }
-        
+
         @OnError
         public void onError(Throwable cause) throws IOException
         {
             LOG.warn("Error", cause);
         }
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -66,26 +66,26 @@ public class UriTemplateParameterTest
         server.start();
         server.getServerContainer().addEndpoint(IntParamTextSocket.class);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testIntParams() throws Exception
     {
         String requestPath = "/echo/params/1234/5678";
-    
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("9999"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-    
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("9,999|1,234|5,678"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-    
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);

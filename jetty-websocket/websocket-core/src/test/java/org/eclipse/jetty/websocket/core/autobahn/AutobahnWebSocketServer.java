@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 /**
  * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
  * <p>
- *     Installing Autobahn:
+ * Installing Autobahn:
  * </p>
  * <pre>
  *    # For Debian / Ubuntu
@@ -46,13 +46,13 @@ import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
  *    $ sudo pip install autobahntestsuite
  * </pre>
  * <p>
- *     Upgrading an existing installation of autobahntestsuite
+ * Upgrading an existing installation of autobahntestsuite
  * </p>
  * <pre>
  *     $ sudo pip install -U autobahntestsuite
  * </pre>
  * <p>
- *     Running Autobahn Fuzzing Client (against this server implementation):
+ * Running Autobahn Fuzzing Client (against this server implementation):
  * </p>
  * <pre>
  *     # Change to websocket-core first
@@ -70,8 +70,8 @@ public class AutobahnWebSocketServer
         Server server = new Server();
 
         ServerConnector connector = new ServerConnector(
-                server,
-                new HttpConnectionFactory()
+            server,
+            new HttpConnectionFactory()
         );
         connector.addBean(new RFC6455Handshaker());
 
@@ -81,8 +81,8 @@ public class AutobahnWebSocketServer
 
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
-        WebSocketNegotiator negotiator =  
-                new AutobahnWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool());
+        WebSocketNegotiator negotiator =
+            new AutobahnWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool());
 
         WebSocketUpgradeHandler handler = new TestUpgradeHandler(negotiator);
         context.setHandler(handler);

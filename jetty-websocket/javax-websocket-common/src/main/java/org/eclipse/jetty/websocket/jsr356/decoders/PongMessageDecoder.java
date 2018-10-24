@@ -35,8 +35,8 @@ public class PongMessageDecoder extends AbstractDecoder implements Decoder.Binar
         {
             int len = buf.remaining();
             this.bytes = ByteBuffer.allocate(len);
-            BufferUtil.put(buf,this.bytes);
-            BufferUtil.flipToFlush(this.bytes,0);
+            BufferUtil.put(buf, this.bytes);
+            BufferUtil.flipToFlush(this.bytes, 0);
         }
 
         @Override

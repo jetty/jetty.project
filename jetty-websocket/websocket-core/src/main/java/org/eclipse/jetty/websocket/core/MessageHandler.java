@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 
 /**
  * A utility implementation of FrameHandler that defragments
- * text frames into a String message before calling {@link #onText(String,Callback)}.
+ * text frames into a String message before calling {@link #onText(String, Callback)}.
  * Flow control is by default automatic, but an implementation
  * may extend {@link #isDemanding()} to return true and then explicityly control
  * demand with calls to {@link org.eclipse.jetty.websocket.core.FrameHandler.CoreSession#demand(long)}
@@ -69,7 +69,7 @@ public class MessageHandler implements FrameHandler
             {
                 if (onBinary == null)
                 {
-                    super.onBinary(message,callback);
+                    super.onBinary(message, callback);
                     return;
                 }
 
@@ -85,7 +85,6 @@ public class MessageHandler implements FrameHandler
             }
         };
     }
-
 
     private Logger LOG = Log.getLogger(MessageHandler.class);
 
@@ -163,7 +162,7 @@ public class MessageHandler implements FrameHandler
                     if (frame.isFin())
                     {
                         final int maxSize = getMaxBinaryMessageSize();
-                        if (frame.hasPayload() && frame.getPayload().remaining()>maxSize)
+                        if (frame.hasPayload() && frame.getPayload().remaining() > maxSize)
                             throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
 
                         onBinary(frame.getPayload(), callback); //bypass buffer aggregation
@@ -181,7 +180,7 @@ public class MessageHandler implements FrameHandler
                     if (utf8StringBuilder == null)
                     {
                         final int maxSize = getMaxTextMessageSize();
-                        utf8StringBuilder = (maxSize < 0) ? new Utf8StringBuilder() : new Utf8StringBuilder()
+                        utf8StringBuilder = (maxSize < 0)?new Utf8StringBuilder():new Utf8StringBuilder()
                         {
                             @Override
                             protected void appendByte(byte b) throws IOException
@@ -216,12 +215,12 @@ public class MessageHandler implements FrameHandler
                     throw new IllegalStateException();
             }
         }
-        catch(Utf8Appendable.NotUtf8Exception bple)
+        catch (Utf8Appendable.NotUtf8Exception bple)
         {
             utf8StringBuilder.reset();
             callback.failed(new BadPayloadException(bple));
         }
-        catch(Throwable th)
+        catch (Throwable th)
         {
             if (utf8StringBuilder != null)
                 utf8StringBuilder.reset();
@@ -256,13 +255,14 @@ public class MessageHandler implements FrameHandler
         if (frame.hasPayload())
         {
             if (BufferUtil.space(binaryMessage) < frame.getPayloadLength())
-                binaryMessage = BufferUtil.ensureCapacity(binaryMessage,binaryMessage.capacity()+Math.max(binaryMessage.capacity(), frame.getPayloadLength()*factor));
+                binaryMessage = BufferUtil
+                    .ensureCapacity(binaryMessage, binaryMessage.capacity() + Math.max(binaryMessage.capacity(), frame.getPayloadLength() * factor));
 
-            BufferUtil.append(binaryMessage,frame.getPayload());
+            BufferUtil.append(binaryMessage, frame.getPayload());
         }
 
         final int maxSize = getMaxBinaryMessageSize();
-        if (binaryMessage.remaining()>maxSize)
+        if (binaryMessage.remaining() > maxSize)
         {
             getCoreSession().getByteBufferPool().release(binaryMessage);
             binaryMessage = null;
@@ -295,7 +295,6 @@ public class MessageHandler implements FrameHandler
         }
     }
 
-
     /**
      * Method called when a complete text message is received.
      *
@@ -309,6 +308,7 @@ public class MessageHandler implements FrameHandler
 
     /**
      * Method called when a complete binary message is received.
+     *
      * @param message
      * @param callback
      */
@@ -319,33 +319,35 @@ public class MessageHandler implements FrameHandler
 
     /**
      * Send a String as a single text frame.
-     * @param message The message to send
+     *
+     * @param message  The message to send
      * @param callback The callback to call when the send is complete
-     * @param batch The batch mode to send the frames in.
+     * @param batch    The batch mode to send the frames in.
      */
     public void sendText(String message, Callback callback, boolean batch)
     {
         // TODO if autofragment is on, enforce max buffer size
-        getCoreSession().sendFrame(new Frame(OpCode.TEXT,true,message),callback, batch);
+        getCoreSession().sendFrame(new Frame(OpCode.TEXT, true, message), callback, batch);
     }
 
     /**
      * Send a sequence of Strings as a sequences for fragmented text frame.
      * Sending a large message in fragments can reduce memory overheads as only a
      * single fragment need be converted to bytes
+     *
      * @param callback The callback to call when the send is complete
-     * @param batch The batch mode to send the frames in.
-     * @param parts The parts of the message.
+     * @param batch    The batch mode to send the frames in.
+     * @param parts    The parts of the message.
      */
     public void sendText(Callback callback, boolean batch, final String... parts)
     {
-        if (parts==null || parts.length==0)
+        if (parts == null || parts.length == 0)
         {
             callback.succeeded();
             return;
         }
 
-        if (parts.length==1)
+        if (parts.length == 1)
         {
             sendText(parts[0], callback, batch);
             return;
@@ -354,67 +356,69 @@ public class MessageHandler implements FrameHandler
         new IteratingNestedCallback(callback)
         {
             int i = 0;
+
             @Override
             protected Action process() throws Throwable
             {
-                if (i+1>parts.length)
+                if (i + 1 > parts.length)
                     return Action.SUCCEEDED;
 
                 String part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                    i==1?OpCode.TEXT:OpCode.CONTINUATION,
-                    i==parts.length, part), this, batch);
+                    i == 1?OpCode.TEXT:OpCode.CONTINUATION,
+                    i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();
     }
 
-
     /**
      * Send a ByteBuffer as a single binary frame.
-     * @param message The message to send
+     *
+     * @param message  The message to send
      * @param callback The callback to call when the send is complete
-     * @param batch The batch mode to send the frames in.
+     * @param batch    The batch mode to send the frames in.
      */
     public void sendBinary(ByteBuffer message, Callback callback, boolean batch)
     {
-        getCoreSession().sendFrame(new Frame(OpCode.BINARY,true, message),callback, batch);
+        getCoreSession().sendFrame(new Frame(OpCode.BINARY, true, message), callback, batch);
     }
 
     /**
      * Send a sequence of ByteBuffers as a sequences for fragmented text frame.
      *
      * @param callback The callback to call when the send is complete
-     * @param batch The batch mode to send the frames in.
-     * @param parts The parts of the message.
+     * @param batch    The batch mode to send the frames in.
+     * @param parts    The parts of the message.
      */
     public void sendBinary(Callback callback, boolean batch, final ByteBuffer... parts)
     {
-        if (parts==null || parts.length==0)
+        if (parts == null || parts.length == 0)
         {
             callback.succeeded();
             return;
         }
 
-        if (parts.length==1)
+        if (parts.length == 1)
         {
-            sendBinary(parts[0],callback,batch);
+            sendBinary(parts[0], callback, batch);
             return;
         }
 
         new IteratingNestedCallback(callback)
         {
             int i = 0;
+
             @Override
             protected Action process() throws Throwable
             {
-                if (i+1>parts.length)
+                if (i + 1 > parts.length)
                     return Action.SUCCEEDED;
 
                 ByteBuffer part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                        i==1?OpCode.BINARY:OpCode.CONTINUATION,
-                        i==parts.length, part), this, batch);
+                    i == 1?OpCode.BINARY:OpCode.CONTINUATION,
+                    i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();
@@ -425,9 +429,8 @@ public class MessageHandler implements FrameHandler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onClosed {}", this, closeStatus);
-        if (utf8StringBuilder!=null && utf8StringBuilder.length()>0 && closeStatus.isNormal())
+        if (utf8StringBuilder != null && utf8StringBuilder.length() > 0 && closeStatus.isNormal())
             LOG.warn("{} closed with partial message: {} chars", utf8StringBuilder.length());
-
 
         if (binaryMessage != null)
         {
@@ -438,7 +441,7 @@ public class MessageHandler implements FrameHandler
             binaryMessage = null;
         }
 
-        if (utf8StringBuilder!=null)
+        if (utf8StringBuilder != null)
         {
             utf8StringBuilder.reset();
             utf8StringBuilder = null;

@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.tests.server.sockets;
 import javax.websocket.OnError;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/error")
+@ServerEndpoint(value = "/echo/error")
 public class BasicErrorSocket extends TrackingSocket
 {
     @OnError

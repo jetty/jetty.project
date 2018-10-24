@@ -55,7 +55,7 @@ public final class RFC6455Handshaker implements Handshaker
 {
     static final Logger LOG = Log.getLogger(RFC6455Handshaker.class);
     private static final HttpField UPGRADE_WEBSOCKET = new PreEncodedHttpField(HttpHeader.UPGRADE, "WebSocket");
-    private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeader.UPGRADE.asString());
+    private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeader.UPGRADE.asString());
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -63,14 +63,14 @@ public final class RFC6455Handshaker implements Handshaker
         Request baseRequest = Request.getBaseRequest(request);
         HttpChannel httpChannel = baseRequest.getHttpChannel();
         Connector connector = httpChannel.getConnector();
-        
-        if (negotiator==null)
+
+        if (negotiator == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded: no WebSocketNegotiator {}", baseRequest);
             return false;
         }
-        
+
         if (!HttpMethod.GET.is(request.getMethod()))
         {
             if (LOG.isDebugEnabled())
@@ -86,7 +86,7 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         ByteBufferPool pool = negotiator.getByteBufferPool();
-        if (pool==null)
+        if (pool == null)
             pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
 
         Negotiation negotiation = new Negotiation(
@@ -98,14 +98,14 @@ public final class RFC6455Handshaker implements Handshaker
             pool);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
-        
+
         if (!negotiation.isUpgrade())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded: no upgrade header or connection upgrade", baseRequest);
             return false;
         }
-        
+
         if (!WebSocketConstants.SPEC_VERSION_STRING.equals(negotiation.getVersion()))
         {
             if (LOG.isDebugEnabled())
@@ -113,7 +113,7 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        if (negotiation.getKey()==null)
+        if (negotiation.getKey() == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded no key {}", baseRequest);
@@ -124,7 +124,7 @@ public final class RFC6455Handshaker implements Handshaker
         FrameHandler handler = negotiator.negotiate(negotiation);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated handler {}", handler);
-        
+
         // Handle error responses
         if (response.isCommitted())
         {
@@ -133,17 +133,17 @@ public final class RFC6455Handshaker implements Handshaker
             baseRequest.setHandled(true);
             return false;
         }
-        if (response.getStatus()>200)
+        if (response.getStatus() > 200)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: error sent {} {}",response.getStatus(), baseRequest);
+                LOG.debug("not upgraded: error sent {} {}", response.getStatus(), baseRequest);
             response.flushBuffer();
             baseRequest.setHandled(true);
             return false;
         }
 
         // Check for handler
-        if (handler==null)
+        if (handler == null)
         {
             LOG.warn("not upgraded: no channel {}", baseRequest);
             return false;
@@ -151,19 +151,20 @@ public final class RFC6455Handshaker implements Handshaker
 
         // Check if subprotocol negotiated
         String subprotocol = negotiation.getSubprotocol();
-        if (negotiation.getOfferedSubprotocols().size()>0)
+        if (negotiation.getOfferedSubprotocols().size() > 0)
         {
-            if(subprotocol == null)
+            if (subprotocol == null)
             {
                 // TODO: this message needs to be returned to Http Client
                 LOG.warn("not upgraded: no subprotocol selected from offered subprotocols {}: {}", negotiation.getOfferedSubprotocols(), baseRequest);
                 return false;
             }
 
-            if(!negotiation.getOfferedSubprotocols().contains(subprotocol))
+            if (!negotiation.getOfferedSubprotocols().contains(subprotocol))
             {
                 // TODO: this message needs to be returned to Http Client
-                LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}", subprotocol, negotiation.getOfferedSubprotocols(), baseRequest);
+                LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}", subprotocol, negotiation.getOfferedSubprotocols(),
+                    baseRequest);
                 return false;
             }
         }
@@ -179,17 +180,17 @@ public final class RFC6455Handshaker implements Handshaker
         WebSocketChannel channel = newWebSocketChannel(handler, negotiated);
         if (LOG.isDebugEnabled())
             LOG.debug("channel {}", channel);
-        
+
         // Create a connection
-        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(),connector.getExecutor(),connector.getByteBufferPool(),channel);
+        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getByteBufferPool(), channel);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
-        if (connection==null)
+        if (connection == null)
         {
             LOG.warn("not upgraded: no connection {}", baseRequest);
             return false;
         }
-        
+
         channel.setWebSocketConnection(connection);
 
         negotiator.customize(channel);
@@ -225,7 +226,7 @@ public final class RFC6455Handshaker implements Handshaker
 
     protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
     {
-        return new WebSocketConnection(endPoint,executor,byteBufferPool,wsChannel);
+        return new WebSocketConnection(endPoint, executor, byteBufferPool, wsChannel);
     }
 
     private boolean getSendServerVersion(Connector connector)
@@ -236,7 +237,7 @@ public final class RFC6455Handshaker implements Handshaker
 
         if (connFactory instanceof HttpConnectionFactory)
         {
-            HttpConfiguration httpConf = ((HttpConnectionFactory) connFactory).getHttpConfiguration();
+            HttpConfiguration httpConf = ((HttpConnectionFactory)connFactory).getHttpConfiguration();
             if (httpConf != null)
                 return httpConf.getSendServerVersion();
         }

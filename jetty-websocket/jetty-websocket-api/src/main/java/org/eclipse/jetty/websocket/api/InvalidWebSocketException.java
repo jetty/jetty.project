@@ -40,6 +40,6 @@ public class InvalidWebSocketException extends WebSocketException
 
     public InvalidWebSocketException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

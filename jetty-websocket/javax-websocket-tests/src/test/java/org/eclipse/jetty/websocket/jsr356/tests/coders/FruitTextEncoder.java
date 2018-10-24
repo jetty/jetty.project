@@ -32,7 +32,7 @@ public class FruitTextEncoder implements Encoder.Text<Fruit>
     @Override
     public String encode(Fruit fruit) throws EncodeException
     {
-        return String.format("%s|%s",fruit.name,fruit.color);
+        return String.format("%s|%s", fruit.name, fruit.color);
     }
 
     @Override

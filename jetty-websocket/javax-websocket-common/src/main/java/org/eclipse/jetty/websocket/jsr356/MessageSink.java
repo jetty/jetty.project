@@ -22,18 +22,16 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 
 /**
- * Sink consumer for messages (used for multiple frames with continuations, 
+ * Sink consumer for messages (used for multiple frames with continuations,
  * and also to allow for streaming APIs)
  */
 public interface MessageSink
 {
     /**
      * Consume the frame payload to the message.
-     * 
-     * @param frame
-     *            the frame, its payload (and fin state) to append
-     * @param callback
-     *            the callback for how the frame was consumed
+     *
+     * @param frame    the frame, its payload (and fin state) to append
+     * @param callback the callback for how the frame was consumed
      */
     void accept(Frame frame, Callback callback);
 }

@@ -38,53 +38,53 @@ public class QuoteUtilTest
         for (int i = 0; i < len; i++)
         {
             String expected = expectedParts[i];
-            assertThat("Split[" + i + "].hasNext()",iter.hasNext(),is(true));
-            assertThat("Split[" + i + "].next()",iter.next(),is(expected));
+            assertThat("Split[" + i + "].hasNext()", iter.hasNext(), is(true));
+            assertThat("Split[" + i + "].next()", iter.next(), is(expected));
         }
     }
 
     @Test
     public void testSplitAt_PreserveQuoting()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo, bar\"",";");
-        assertSplitAt(iter,"permessage-compress","method=\"foo, bar\"");
+        Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo, bar\"", ";");
+        assertSplitAt(iter, "permessage-compress", "method=\"foo, bar\"");
     }
 
     @Test
     public void testSplitAt_PreserveQuotingWithNestedDelim()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo; x=10\"",";");
-        assertSplitAt(iter,"permessage-compress","method=\"foo; x=10\"");
+        Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo; x=10\"", ";");
+        assertSplitAt(iter, "permessage-compress", "method=\"foo; x=10\"");
     }
 
     @Test
     public void testSplitAtAllWhitespace()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("   ","=");
-        assertThat("Has Next",iter.hasNext(),is(false));
-        assertThrows(NoSuchElementException.class, ()-> iter.next());
+        Iterator<String> iter = QuoteUtil.splitAt("   ", "=");
+        assertThat("Has Next", iter.hasNext(), is(false));
+        assertThrows(NoSuchElementException.class, () -> iter.next());
     }
 
     @Test
     public void testSplitAtEmpty()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("","=");
-        assertThat("Has Next",iter.hasNext(),is(false));
-        assertThrows(NoSuchElementException.class, ()-> iter.next());
+        Iterator<String> iter = QuoteUtil.splitAt("", "=");
+        assertThat("Has Next", iter.hasNext(), is(false));
+        assertThrows(NoSuchElementException.class, () -> iter.next());
     }
 
     @Test
     public void testSplitAtHelloWorld()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("Hello World"," =");
-        assertSplitAt(iter,"Hello","World");
+        Iterator<String> iter = QuoteUtil.splitAt("Hello World", " =");
+        assertSplitAt(iter, "Hello", "World");
     }
 
     @Test
     public void testSplitAtKeyValue_Message()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("method=\"foo, bar\"","=");
-        assertSplitAt(iter,"method","foo, bar");
+        Iterator<String> iter = QuoteUtil.splitAt("method=\"foo, bar\"", "=");
+        assertSplitAt(iter, "method", "foo, bar");
     }
 
     @Test
@@ -92,65 +92,65 @@ public class QuoteUtilTest
     {
         // test that split ignores delimiters that occur within a quoted
         // part of the sequence.
-        Iterator<String> iter = QuoteUtil.splitAt("A,\"B,C\",D",",");
-        assertSplitAt(iter,"A","B,C","D");
+        Iterator<String> iter = QuoteUtil.splitAt("A,\"B,C\",D", ",");
+        assertSplitAt(iter, "A", "B,C", "D");
     }
 
     @Test
     public void testSplitAtSimple()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("Hi","=");
-        assertSplitAt(iter,"Hi");
+        Iterator<String> iter = QuoteUtil.splitAt("Hi", "=");
+        assertSplitAt(iter, "Hi");
     }
 
     @Test
     public void testSplitKeyValue_Quoted()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("Key = \"Value\"","=");
-        assertSplitAt(iter,"Key","Value");
+        Iterator<String> iter = QuoteUtil.splitAt("Key = \"Value\"", "=");
+        assertSplitAt(iter, "Key", "Value");
     }
 
     @Test
     public void testSplitKeyValue_QuotedValueList()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("Fruit = \"Apple, Banana, Cherry\"","=");
-        assertSplitAt(iter,"Fruit","Apple, Banana, Cherry");
+        Iterator<String> iter = QuoteUtil.splitAt("Fruit = \"Apple, Banana, Cherry\"", "=");
+        assertSplitAt(iter, "Fruit", "Apple, Banana, Cherry");
     }
 
     @Test
     public void testSplitKeyValue_QuotedWithDelim()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("Key = \"Option=Value\"","=");
-        assertSplitAt(iter,"Key","Option=Value");
+        Iterator<String> iter = QuoteUtil.splitAt("Key = \"Option=Value\"", "=");
+        assertSplitAt(iter, "Key", "Option=Value");
     }
 
     @Test
     public void testSplitKeyValue_Simple()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("Key=Value","=");
-        assertSplitAt(iter,"Key","Value");
+        Iterator<String> iter = QuoteUtil.splitAt("Key=Value", "=");
+        assertSplitAt(iter, "Key", "Value");
     }
 
     @Test
     public void testSplitKeyValue_WithWhitespace()
     {
-        Iterator<String> iter = QuoteUtil.splitAt("Key = Value","=");
-        assertSplitAt(iter,"Key","Value");
+        Iterator<String> iter = QuoteUtil.splitAt("Key = Value", "=");
+        assertSplitAt(iter, "Key", "Value");
     }
-    
+
     @Test
     public void testQuoteIfNeeded()
     {
         StringBuilder buf = new StringBuilder();
-        QuoteUtil.quoteIfNeeded(buf, "key",",");
-        assertThat("key",buf.toString(),is("key"));
+        QuoteUtil.quoteIfNeeded(buf, "key", ",");
+        assertThat("key", buf.toString(), is("key"));
     }
-    
+
     @Test
     public void testQuoteIfNeeded_null()
     {
         StringBuilder buf = new StringBuilder();
-        QuoteUtil.quoteIfNeeded(buf, null,";=");
-        assertThat("<null>",buf.toString(),is(""));
+        QuoteUtil.quoteIfNeeded(buf, null, ";=");
+        assertThat("<null>", buf.toString(), is(""));
     }
 }

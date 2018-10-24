@@ -32,7 +32,7 @@ public class WebSocketTimeoutException extends WebSocketException
 
     public WebSocketTimeoutException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 
     public WebSocketTimeoutException(Throwable cause)

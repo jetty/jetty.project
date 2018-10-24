@@ -37,24 +37,24 @@ import java.util.Set;
 public class ExtensionConfig
 {
     private static Trie<ExtensionConfig> CACHE = new ArrayTrie<>(512);
+
     static
     {
-        CACHE.put("identity",new ExtensionConfig("identity"));
-        CACHE.put("permessage-deflate",new ExtensionConfig("permessage-deflate"));
-        CACHE.put("permessage-deflate; client_max_window_bits",new ExtensionConfig("permessage-deflate; client_max_window_bits"));
+        CACHE.put("identity", new ExtensionConfig("identity"));
+        CACHE.put("permessage-deflate", new ExtensionConfig("permessage-deflate"));
+        CACHE.put("permessage-deflate; client_max_window_bits", new ExtensionConfig("permessage-deflate; client_max_window_bits"));
     }
 
     /**
      * Parse a single parameterized name.
      *
-     * @param parameterizedName
-     *            the parameterized name
+     * @param parameterizedName the parameterized name
      * @return the ExtensionConfig
      */
     public static ExtensionConfig parse(String parameterizedName)
     {
         ExtensionConfig config = CACHE.get(parameterizedName);
-        if (config!=null)
+        if (config != null)
             return config;
         return new ExtensionConfig(parameterizedName);
     }
@@ -62,8 +62,7 @@ public class ExtensionConfig
     /**
      * Parse enumeration of {@code Sec-WebSocket-Extensions} header values into a {@code ExtensionConfig} list
      *
-     * @param valuesEnum
-     *            the raw header values enum
+     * @param valuesEnum the raw header values enum
      * @return the list of extension configs
      */
     public static List<ExtensionConfig> parseEnum(Enumeration<String> valuesEnum)
@@ -90,8 +89,7 @@ public class ExtensionConfig
     /**
      * Parse 1 or more raw {@code Sec-WebSocket-Extensions} header values into a {@code ExtensionConfig} list
      *
-     * @param rawSecWebSocketExtensions
-     *            the raw header values
+     * @param rawSecWebSocketExtensions the raw header values
      * @return the list of extension configs
      */
     public static List<ExtensionConfig> parseList(String... rawSecWebSocketExtensions)
@@ -115,8 +113,7 @@ public class ExtensionConfig
     /**
      * Convert a list of {@code ExtensionConfig} to a header value
      *
-     * @param configs
-     *            the list of extension configs
+     * @param configs the list of extension configs
      * @return the header value (null if no configs present)
      */
     public static String toHeaderValue(List<ExtensionConfig> configs)
@@ -144,6 +141,7 @@ public class ExtensionConfig
 
     /**
      * Copy constructor
+     *
      * @param copy the extension config to copy
      */
     public ExtensionConfig(ExtensionConfig copy)
@@ -153,7 +151,7 @@ public class ExtensionConfig
         this.parameters.putAll(copy.parameters);
     }
 
-    public ExtensionConfig(String name, Map<String,String> parameters)
+    public ExtensionConfig(String name, Map<String, String> parameters)
     {
         this.name = name;
         this.parameters = new HashMap<>();
@@ -212,7 +210,7 @@ public class ExtensionConfig
             if (value != null)
             {
                 str.append('=');
-                quoteIfNeeded(str,value);
+                quoteIfNeeded(str, value);
             }
         }
         return str.toString();
@@ -234,7 +232,7 @@ public class ExtensionConfig
         for (int i = 0; i < len; i++)
         {
             ch = str.codePointAt(i);
-            if(ch == ';' || ch == '=')
+            if (ch == ';' || ch == '=')
             {
                 // found a special extension delimiter codepoints. we need to quote it.
                 buf.append('"').append(str).append('"');
@@ -263,17 +261,17 @@ public class ExtensionConfig
 
     public final void setParameter(String key)
     {
-        parameters.put(key,null);
+        parameters.put(key, null);
     }
 
     public final void setParameter(String key, int value)
     {
-        parameters.put(key,Integer.toString(value));
+        parameters.put(key, Integer.toString(value));
     }
 
     public final void setParameter(String key, String value)
     {
-        parameters.put(key,value);
+        parameters.put(key, value);
     }
 
     @Override
@@ -322,9 +320,9 @@ public class ExtensionConfig
             super.parsedValue(buffer);
         }
 
-        private Map<String,String> getParamMap(String extName)
+        private Map<String, String> getParamMap(String extName)
         {
-            if(params == null)
+            if (params == null)
             {
                 params = new HashMap<>();
             }

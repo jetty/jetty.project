@@ -54,7 +54,7 @@ public class ChatWebSocketClient
         UpgradeRequest request = UpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);
-        handler.sendText("["+name+": has joined the room]",Callback.NOOP,false);
+        handler.sendText("[" + name + ": has joined the room]", Callback.NOOP, false);
     }
 
     public void onText(String message)
@@ -66,21 +66,21 @@ public class ChatWebSocketClient
 
     private void chat(String line)
     {
-        if(line.startsWith("/"))
+        if (line.startsWith("/"))
         {
             Matcher matcher = COMMAND_PATTERN.matcher(line);
             if (matcher.matches())
             {
                 String command = matcher.group(1);
-                String value = (matcher.groupCount()>2) ? matcher.group(3) : null;
+                String value = (matcher.groupCount() > 2)?matcher.group(3):null;
 
-                switch(command)
+                switch (command)
                 {
                     case "name":
                         if (value != null && value.length() > 0)
                         {
                             value = value.trim();
-                            handler.sendText("["+value+": changed name from "+name+"]",Callback.NOOP,false);
+                            handler.sendText("[" + value + ": changed name from " + name + "]", Callback.NOOP, false);
                             name = value;
                             LOG.debug("name changed: " + name);
 
@@ -88,18 +88,22 @@ public class ChatWebSocketClient
                         break;
 
                     case "exit":
-                        handler.sendText("["+name+": has left the "+
-                            ("elvis".equalsIgnoreCase(name)?"building!]":"room]"),Callback.NOOP,false);
-                        handler.getCoreSession().close(Callback.from(()->System.exit(0),x->{x.printStackTrace();System.exit(1);}));
+                        handler.sendText("[" + name + ": has left the " +
+                            ("elvis".equalsIgnoreCase(name)?"building!]":"room]"), Callback.NOOP, false);
+                        handler.getCoreSession().close(Callback.from(() -> System.exit(0), x ->
+                        {
+                            x.printStackTrace();
+                            System.exit(1);
+                        }));
                         break;
                 }
 
                 return;
             }
         }
-        LOG.debug("sending {}...",line);
+        LOG.debug("sending {}...", line);
 
-        handler.sendText(Callback.from(()->LOG.debug("message sent"), LOG::warn),false,name,": ",line);
+        handler.sendText(Callback.from(() -> LOG.debug("message sent"), LOG::warn), false, name, ": ", line);
     }
 
     public static void main(String[] args)
@@ -118,14 +122,14 @@ public class ChatWebSocketClient
         {
             client = new ChatWebSocketClient(hostname, port);
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8));
+            BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
             System.err.println("Type to chat, or:\n  /name <name> - to set member name\n  /exit - to exit\n");
             String line = in.readLine();
-            while(line!=null)
+            while (line != null)
             {
                 line = line.trim();
-                if (line.length()>0)
+                if (line.length() > 0)
                     client.chat(line);
                 line = in.readLine();
             }

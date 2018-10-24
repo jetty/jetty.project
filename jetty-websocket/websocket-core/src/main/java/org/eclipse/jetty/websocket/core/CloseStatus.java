@@ -43,7 +43,7 @@ public class CloseStatus
     public static final int EXTENSION_ERROR = 1010;
     public static final int SERVER_ERROR = 1011;
     public static final int FAILED_TLS_HANDSHAKE = 1015;
-    
+
     public static final CloseStatus NO_CODE_STATUS = new CloseStatus(NO_CODE);
     public static final CloseStatus NORMAL_STATUS = new CloseStatus(NORMAL);
 
@@ -73,7 +73,7 @@ public class CloseStatus
     /**
      * Creates a reason for closing a web socket connection with the given status code and reason phrase.
      *
-     * @param statusCode the close code
+     * @param statusCode   the close code
      * @param reasonPhrase the reason phrase
      */
     public CloseStatus(int statusCode, String reasonPhrase)
@@ -162,7 +162,6 @@ public class CloseStatus
         return;
     }
 
-
     public int getCode()
     {
         return code;
@@ -177,7 +176,6 @@ public class CloseStatus
     {
         return asPayloadBuffer(code, reason);
     }
-
 
     public static ByteBuffer asPayloadBuffer(int statusCode, String reason)
     {
@@ -199,8 +197,8 @@ public class CloseStatus
 
         ByteBuffer buf = BufferUtil.allocate(len);
         BufferUtil.flipToFill(buf);
-        buf.put((byte) ((statusCode >>> 8) & 0xFF));
-        buf.put((byte) ((statusCode >>> 0) & 0xFF));
+        buf.put((byte)((statusCode >>> 8) & 0xFF));
+        buf.put((byte)((statusCode >>> 0) & 0xFF));
 
         if ((reasonBytes != null) && (reasonBytes.length > 0))
         {
@@ -218,21 +216,22 @@ public class CloseStatus
 
         int lastIndex = -1;
         NullAppendable a = new NullAppendable();
-        for(int i=0; i<maxBytes; i++)
+        for (int i = 0; i < maxBytes; i++)
         {
             a.append(bytes[i]);
             if (a.isUtf8SequenceComplete())
                 lastIndex = i;
         }
 
-        return Arrays.copyOf(bytes, lastIndex+1);
+        return Arrays.copyOf(bytes, lastIndex + 1);
     }
 
     /**
      * Test if provided status code can be sent/received on a WebSocket close.
      * <p>
-     *     This honors the RFC6455 rules and IANA rules.
+     * This honors the RFC6455 rules and IANA rules.
      * </p>
+     *
      * @param statusCode the statusCode to test
      * @return true if transmittable
      */
@@ -245,17 +244,17 @@ public class CloseStatus
         }
 
         // Specifically called out as not-transmittable?
-        if ( (statusCode == NO_CODE) ||
-             (statusCode == NO_CLOSE) ||
-             (statusCode == FAILED_TLS_HANDSHAKE))
+        if ((statusCode == NO_CODE) ||
+            (statusCode == NO_CLOSE) ||
+            (statusCode == FAILED_TLS_HANDSHAKE))
         {
             return false;
         }
 
         // Reserved / not yet allocated
-        if ( (statusCode == 1004) || // Reserved in RFC6455 (might be defined in the future)
-             ((statusCode >= 1016) && (statusCode <= 2999)) || // Reserved in RFC6455 (for future revisions, and extensions)
-             (statusCode >= 5000) ) // RFC6455 Not allowed to be used for any purpose
+        if ((statusCode == 1004) || // Reserved in RFC6455 (might be defined in the future)
+            ((statusCode >= 1016) && (statusCode <= 2999)) || // Reserved in RFC6455 (for future revisions, and extensions)
+            (statusCode >= 5000)) // RFC6455 Not allowed to be used for any purpose
         {
             return false;
         }
@@ -263,7 +262,6 @@ public class CloseStatus
         // All others are allowed
         return true;
     }
-
 
     public Frame toFrame()
     {
@@ -278,29 +276,40 @@ public class CloseStatus
     public static Frame toFrame(int closeStatus, String reason)
     {
         if (isTransmittableStatusCode(closeStatus))
-            return new Frame(OpCode.CLOSE,true,asPayloadBuffer(closeStatus, reason));
+            return new Frame(OpCode.CLOSE, true, asPayloadBuffer(closeStatus, reason));
         return new Frame(OpCode.CLOSE);
     }
 
-
-
     public static String codeString(int closeStatus)
     {
-        switch(closeStatus)
+        switch (closeStatus)
         {
-            case NORMAL : return "NORMAL";
-            case SHUTDOWN: return "SHUTDOWN";
-            case PROTOCOL: return "PROTOCOL";
-            case BAD_DATA: return "BAD_DATA";
-            case NO_CODE: return "NO_CODE";
-            case NO_CLOSE: return "NO_CLOSE";
-            case BAD_PAYLOAD: return "BAD_PAYLOAD";
-            case POLICY_VIOLATION: return "POLICY_VIOLATION";
-            case MESSAGE_TOO_LARGE: return "MESSAGE_TOO_LARGE";
-            case EXTENSION_ERROR: return "EXTENSION_ERROR";
-            case SERVER_ERROR: return "SERVER_ERROR";
-            case FAILED_TLS_HANDSHAKE: return "FAILED_TLS_HANDSHAKE";
-            default: return "UNKNOWN";
+            case NORMAL:
+                return "NORMAL";
+            case SHUTDOWN:
+                return "SHUTDOWN";
+            case PROTOCOL:
+                return "PROTOCOL";
+            case BAD_DATA:
+                return "BAD_DATA";
+            case NO_CODE:
+                return "NO_CODE";
+            case NO_CLOSE:
+                return "NO_CLOSE";
+            case BAD_PAYLOAD:
+                return "BAD_PAYLOAD";
+            case POLICY_VIOLATION:
+                return "POLICY_VIOLATION";
+            case MESSAGE_TOO_LARGE:
+                return "MESSAGE_TOO_LARGE";
+            case EXTENSION_ERROR:
+                return "EXTENSION_ERROR";
+            case SERVER_ERROR:
+                return "SERVER_ERROR";
+            case FAILED_TLS_HANDSHAKE:
+                return "FAILED_TLS_HANDSHAKE";
+            default:
+                return "UNKNOWN";
         }
     }
 
@@ -312,7 +321,7 @@ public class CloseStatus
     @Override
     public String toString()
     {
-        return String.format("{%04d=%s,%s}",code,codeString(code),reason);
+        return String.format("{%04d=%s,%s}", code, codeString(code), reason);
     }
 
 }

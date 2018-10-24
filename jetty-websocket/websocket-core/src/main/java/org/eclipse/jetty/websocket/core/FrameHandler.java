@@ -38,42 +38,41 @@ import java.util.Map;
  * as the primary API to/from the Core websocket implementation.   The instance to be used for each websocket connection
  * is instantiated by the application, either:
  * <ul>
- *     <li>On the server, the application layer must provide a {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator} instance
- *     to negotiate and accept websocket connections, which will return the FrameHandler instance to use from
- *     {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator#negotiate(Negotiation)}.</li>
- *     <li>On the client, the application returns the FrameHandler instance to user from the {@link UpgradeRequest}
- *     instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(UpgradeRequest)} method/</li>.
+ * <li>On the server, the application layer must provide a {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator} instance
+ * to negotiate and accept websocket connections, which will return the FrameHandler instance to use from
+ * {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator#negotiate(Negotiation)}.</li>
+ * <li>On the client, the application returns the FrameHandler instance to user from the {@link UpgradeRequest}
+ * instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(UpgradeRequest)} method/</li>.
  * </ul>
  * </p>
  * <p>
  * Once instantiated the FrameHandler follows is used as follows
  * <ul>
- *     <li>The {@link #onOpen(CoreSession)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
- *     to obtain information about the connection and to send frames</li>
- *     <li>Every data and control frame received is passed to {@link #onFrame(Frame, Callback)}.</li>
- *     <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onFrame(Frame, Callback)} to give the
- *     Application an opportunity to send the response itself. If an appropriate response has not been sent when the callback passed is completed, then a
- *     response will be generated.</li>
- *     <li>If an error is detected or received, then {@link #onError(Throwable)} will be called to inform the application of the cause of the problem.
- *     The connection will then be closed or aborted and the {@link #onClosed(CloseStatus)} method called.</li>
- *     <li>The {@link #onClosed(CloseStatus)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
- *     will indicate the nature of the close.</li>
+ * <li>The {@link #onOpen(CoreSession)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
+ * to obtain information about the connection and to send frames</li>
+ * <li>Every data and control frame received is passed to {@link #onFrame(Frame, Callback)}.</li>
+ * <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onFrame(Frame, Callback)} to give the
+ * Application an opportunity to send the response itself. If an appropriate response has not been sent when the callback passed is completed, then a
+ * response will be generated.</li>
+ * <li>If an error is detected or received, then {@link #onError(Throwable)} will be called to inform the application of the cause of the problem.
+ * The connection will then be closed or aborted and the {@link #onClosed(CloseStatus)} method called.</li>
+ * <li>The {@link #onClosed(CloseStatus)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
+ * will indicate the nature of the close.</li>
  * </ul>
  * </p>
- *
  */
 public interface FrameHandler extends IncomingFrames
 {
 
     // TODO: have conversation about "throws Exception" vs "throws WebSocketException" vs "throws Throwable" in below signatures.
 
-
     /**
      * Connection is being opened.
      * <p>
-     *     FrameHandler can write during this call, but will not receive frames until
-     *     the onOpen() completes.
+     * FrameHandler can write during this call, but will not receive frames until
+     * the onOpen() completes.
      * </p>
+     *
      * @param coreSession the channel associated with this connection.
      * @throws Exception if unable to open. TODO: will close the connection (optionally choosing close status code based on WebSocketException type)?
      */
@@ -81,14 +80,15 @@ public interface FrameHandler extends IncomingFrames
 
     /**
      * Receiver of all Frames.
-     * This method will never be called in parallel for the same session and will be called 
-     * sequentially to satisfy all outstanding demand signaled by calls to 
+     * This method will never be called in parallel for the same session and will be called
+     * sequentially to satisfy all outstanding demand signaled by calls to
      * {@link CoreSession#demand(long)}.
-     * Control and Data frames are passed to this method. 
-     * Control frames that require a response (eg PING and CLOSE) may be responded to by the 
-     * the handler, but if an appropriate response is not sent once the callback is succeeded, 
+     * Control and Data frames are passed to this method.
+     * Control frames that require a response (eg PING and CLOSE) may be responded to by the
+     * the handler, but if an appropriate response is not sent once the callback is succeeded,
      * then a response will be generated and sent.
-     * @param frame the raw frame
+     *
+     * @param frame    the raw frame
      * @param callback the callback to indicate success in processing frame (or failure)
      */
     void onFrame(Frame frame, Callback callback);
@@ -96,8 +96,8 @@ public interface FrameHandler extends IncomingFrames
     /**
      * This is the Close Handshake Complete event.
      * <p>
-     *     The connection is now closed, no reading or writing is possible anymore.
-     *     Implementations of FrameHandler can cleanup their resources for this connection now.
+     * The connection is now closed, no reading or writing is possible anymore.
+     * Implementations of FrameHandler can cleanup their resources for this connection now.
      * </p>
      *
      * @param closeStatus the close status received from remote, or in the case of abnormal closure from local.
@@ -113,10 +113,10 @@ public interface FrameHandler extends IncomingFrames
      * @throws Exception if unable to process the error.
      */
     void onError(Throwable cause) throws Exception;
-    
 
     /**
      * Does the FrameHandler manage it's own demand?
+     *
      * @return true iff the FrameHandler will manage its own flow control by calling {@link CoreSession#demand(long)} when it
      * is willing to receive new Frames.  Otherwise the demand will be managed by an automatic call to demand(1) after every
      * succeeded callback passed to {@link #onFrame(Frame, Callback)}.
@@ -125,8 +125,7 @@ public interface FrameHandler extends IncomingFrames
     {
         return false;
     }
-    
-    
+
     /**
      * Represents the outgoing Frames.
      */
@@ -164,6 +163,7 @@ public interface FrameHandler extends IncomingFrames
          * The active connection's Request URI.
          * This is the URI of the upgrade request and is typically http: or https: rather than
          * the ws: or wss: scheme.
+         *
          * @return the absolute URI (including Query string)
          */
         URI getRequestURI();
@@ -190,7 +190,7 @@ public interface FrameHandler extends IncomingFrames
          * </p>
          */
         void abort();
-        
+
         /**
          * @return Client or Server behaviour
          */
@@ -204,9 +204,9 @@ public interface FrameHandler extends IncomingFrames
         /**
          * The Local Socket Address for the connection
          * <p>
-         *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
-         *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-         *     without supporting {@link InetSocketAddress}
+         * Do not assume that this will return a {@link InetSocketAddress} in all cases.
+         * Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+         * without supporting {@link InetSocketAddress}
          * </p>
          *
          * @return the SocketAddress for the local connection, or null if not supported by Channel
@@ -216,9 +216,9 @@ public interface FrameHandler extends IncomingFrames
         /**
          * The Remote Socket Address for the connection
          * <p>
-         *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
-         *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-         *     without supporting {@link InetSocketAddress}
+         * Do not assume that this will return a {@link InetSocketAddress} in all cases.
+         * Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+         * without supporting {@link InetSocketAddress}
          * </p>
          *
          * @return the SocketAddress for the remote connection, or null if not supported by Channel
@@ -262,19 +262,19 @@ public interface FrameHandler extends IncomingFrames
          * Initiate close handshake with provide status code and optional reason phrase.
          *
          * @param statusCode the status code (should be a valid status code that can be sent)
-         * @param reason optional reason phrase (will be truncated automatically by implementation to fit within limits of protocol)
-         * @param callback the callback to track close frame sent (or failed)
+         * @param reason     optional reason phrase (will be truncated automatically by implementation to fit within limits of protocol)
+         * @param callback   the callback to track close frame sent (or failed)
          */
         void close(int statusCode, String reason, Callback callback);
-        
 
         /**
-         * Manage flow control by indicating demand for handling Frames.  A call to 
+         * Manage flow control by indicating demand for handling Frames.  A call to
          * {@link FrameHandler#onFrame(Frame, Callback)} will only be made if a
          * corresponding demand has been signaled.   It is an error to call this method
          * if {@link FrameHandler#isDemanding()} returns false.
-         * @param n The number of frames that can be handled (in sequential calls to 
-         * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
+         *
+         * @param n The number of frames that can be handled (in sequential calls to
+         *          {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
          */
         void demand(long n);
 

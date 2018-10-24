@@ -57,19 +57,19 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     private ContextHandlerCollection contexts;
     private Path webinf;
     private Path classesDir;
-    
+
     public WSServer(File testdir, String contextName)
     {
         this(testdir.toPath(), contextName);
     }
-    
+
     public WSServer(Path testdir, String contextName)
     {
         this.contextDir = testdir.resolve(contextName);
         this.contextPath = "/" + contextName;
         FS.ensureEmpty(contextDir);
     }
-    
+
     public void copyClass(Class<?> clazz) throws Exception
     {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -81,12 +81,12 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         File srcFile = new File(classUrl.toURI());
         IO.copy(srcFile, destFile.toFile());
     }
-    
+
     public void copyEndpoint(Class<?> endpointClass) throws Exception
     {
         copyClass(endpointClass);
     }
-    
+
     public void copyLib(Class<?> clazz, String jarFileName) throws URISyntaxException, IOException
     {
         webinf = contextDir.resolve("WEB-INF");
@@ -94,10 +94,10 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         Path libDir = webinf.resolve("lib");
         FS.ensureDirExists(libDir);
         Path jarFile = libDir.resolve(jarFileName);
-        
+
         URL codeSourceURL = clazz.getProtectionDomain().getCodeSource().getLocation();
         assertThat("Class CodeSource URL is file scheme", codeSourceURL.getProtocol(), is("file"));
-        
+
         File sourceCodeSourceFile = new File(codeSourceURL.toURI());
         if (sourceCodeSourceFile.isDirectory())
         {
@@ -110,7 +110,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             IO.copy(sourceCodeSourceFile, jarFile.toFile());
         }
     }
-    
+
     public void copyWebInf(String testResourceName) throws IOException
     {
         webinf = contextDir.resolve("WEB-INF");
@@ -121,7 +121,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
         IO.copy(testWebXml, webxml.toFile());
     }
-    
+
     public WebAppContext createWebAppContext() throws IOException
     {
         WebAppContext context = new WebAppContext();
@@ -132,15 +132,15 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         context.addConfiguration(new AnnotationConfiguration());
         context.addConfiguration(new PlusConfiguration());
         context.addConfiguration(new JavaxWebSocketConfiguration());
-        
+
         return context;
     }
-    
+
     public void createWebInf() throws IOException
     {
         copyWebInf("empty-web.xml");
     }
-    
+
     public void deployWebapp(WebAppContext webapp) throws Exception
     {
         contexts.addHandler(webapp);
@@ -152,7 +152,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             LOG.debug("{}", webapp.dump());
         }
     }
-    
+
     public Path getWebAppDir()
     {
         return this.contextDir;

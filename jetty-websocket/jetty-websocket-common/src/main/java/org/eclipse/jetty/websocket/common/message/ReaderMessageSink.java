@@ -24,7 +24,7 @@ import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
 
-public class ReaderMessageSink extends DispatchedMessageSink<Reader,Void>
+public class ReaderMessageSink extends DispatchedMessageSink<Reader, Void>
 {
     public ReaderMessageSink(Executor executor, MethodHandle methodHandle)
     {

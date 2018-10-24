@@ -28,17 +28,17 @@ public class CallbackBuffer
 {
     public ByteBuffer buffer;
     public Callback callback;
-    
+
     public CallbackBuffer(Callback callback, ByteBuffer buffer)
     {
         Objects.requireNonNull(buffer, "buffer");
         this.callback = callback;
         this.buffer = buffer;
     }
-    
+
     @Override
     public String toString()
     {
-        return String.format("CallbackBuffer[%s,%s]", BufferUtil.toDetailString(buffer),callback.getClass().getSimpleName());
+        return String.format("CallbackBuffer[%s,%s]", BufferUtil.toDetailString(buffer), callback.getClass().getSimpleName());
     }
 }

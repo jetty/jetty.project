@@ -24,7 +24,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -40,7 +39,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     final WebSocketNegotiator negotiator;
 
     public WebSocketUpgradeHandler(
-        Function<Negotiation,FrameHandler> negotiate,
+        Function<Negotiation, FrameHandler> negotiate,
         String... pathSpecs)
     {
         this(WebSocketNegotiator.from(negotiate), pathSpecs);
@@ -59,19 +58,19 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
 
     public void addPathSpec(String... pathSpecs)
     {
-        if (pathSpecs!=null)
+        if (pathSpecs != null)
         {
             for (String spec : pathSpecs)
                 this.paths.add(spec);
         }
     }
-    
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!paths.isEmpty() && !paths.test(target))
         {
-            super.handle(target,baseRequest,request,response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -79,6 +78,6 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
             return;
 
         if (!baseRequest.isHandled())
-            super.handle(target,baseRequest,request,response);
+            super.handle(target, baseRequest, request, response);
     }
 }

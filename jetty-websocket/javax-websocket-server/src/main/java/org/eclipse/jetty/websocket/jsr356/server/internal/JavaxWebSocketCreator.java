@@ -69,23 +69,23 @@ public class JavaxWebSocketCreator implements WebSocketCreator
         // per upgrade request.
         ServerEndpointConfig config = new ServerEndpointConfigWrapper(baseConfig)
         {
-            Map<String,Object> userProperties = new HashMap<>(baseConfig.getUserProperties());
-    
+            Map<String, Object> userProperties = new HashMap<>(baseConfig.getUserProperties());
+
             @Override
             public Map<String, Object> getUserProperties()
             {
                 return userProperties;
             }
         };
-        
+
         // Bug 444617 - Expose localAddress and remoteAddress for jsr modify handshake to use
         // This is being implemented as an optional set of userProperties so that
         // it is not JSR api breaking.  A few users on #jetty and a few from cometd
         // have asked for access to this information.
         Map<String, Object> userProperties = config.getUserProperties();
-        userProperties.put(PROP_LOCAL_ADDRESS,req.getLocalSocketAddress());
-        userProperties.put(PROP_REMOTE_ADDRESS,req.getRemoteSocketAddress());
-        userProperties.put(PROP_LOCALES,Collections.list(req.getLocales()));
+        userProperties.put(PROP_LOCAL_ADDRESS, req.getLocalSocketAddress());
+        userProperties.put(PROP_REMOTE_ADDRESS, req.getRemoteSocketAddress());
+        userProperties.put(PROP_LOCALES, Collections.list(req.getLocales()));
 
         // Get Configurator from config object (not guaranteed to be unique per endpoint upgrade)
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
@@ -100,7 +100,7 @@ public class JavaxWebSocketCreator implements WebSocketCreator
             catch (IOException e)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to send error response",e);
+                    LOG.debug("Unable to send error response", e);
             }
             return null;
         }
@@ -108,7 +108,7 @@ public class JavaxWebSocketCreator implements WebSocketCreator
         // [JSR] Step 2: deal with sub protocols
         List<String> supported = config.getSubprotocols();
         List<String> requested = req.getSubProtocols();
-        String subprotocol = configurator.getNegotiatedSubprotocol(supported,requested);
+        String subprotocol = configurator.getNegotiatedSubprotocol(supported, requested);
         if (StringUtil.isNotBlank(subprotocol))
         {
             resp.setAcceptedSubProtocol(subprotocol);
@@ -125,7 +125,7 @@ public class JavaxWebSocketCreator implements WebSocketCreator
         {
             requestedExts.add(new JavaxWebSocketExtension(reqCfg));
         }
-        List<Extension> usedExtensions = configurator.getNegotiatedExtensions(installedExtensions,requestedExts);
+        List<Extension> usedExtensions = configurator.getNegotiatedExtensions(installedExtensions, requestedExts);
         List<ExtensionConfig> configs = new ArrayList<>();
         if (usedExtensions != null)
         {
@@ -134,7 +134,7 @@ public class JavaxWebSocketCreator implements WebSocketCreator
                 ExtensionConfig ecfg = new ExtensionConfig(used.getName());
                 for (Parameter param : used.getParameters())
                 {
-                    ecfg.setParameter(param.getName(),param.getValue());
+                    ecfg.setParameter(param.getName(), param.getValue());
                 }
                 configs.add(ecfg);
             }
@@ -149,11 +149,11 @@ public class JavaxWebSocketCreator implements WebSocketCreator
             UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
             String requestPath = req.getRequestPath();
             // Wrap the config with the path spec information
-            config = new PathParamServerEndpointConfig(config,wspathSpec,requestPath);
+            config = new PathParamServerEndpointConfig(config, wspathSpec, requestPath);
         }
 
         // [JSR] Step 5: Call modifyHandshake
-        configurator.modifyHandshake(config,jsrHandshakeRequest,jsrHandshakeResponse);
+        configurator.modifyHandshake(config, jsrHandshakeRequest, jsrHandshakeResponse);
         // Set modified headers Map back into response properly
         jsrHandshakeResponse.setHeaders(jsrHandshakeResponse.getHeaders());
 
@@ -164,37 +164,39 @@ public class JavaxWebSocketCreator implements WebSocketCreator
             Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
             // Do not decorate here (let the Connection and Session start first)
             // This will allow CDI to see Session for injection into Endpoint classes.
-            return new ConfiguredEndpoint(endpoint,config);
+            return new ConfiguredEndpoint(endpoint, config);
         }
         catch (InstantiationException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to create websocket: " + config.getEndpointClass().getName(),e);
+                LOG.debug("Unable to create websocket: " + config.getEndpointClass().getName(), e);
             return null;
         }
     }
-    
+
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        
-        JavaxWebSocketCreator that = (JavaxWebSocketCreator) o;
-        
-        return baseConfig != null ? baseConfig.equals(that.baseConfig) : that.baseConfig == null;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        JavaxWebSocketCreator that = (JavaxWebSocketCreator)o;
+
+        return baseConfig != null?baseConfig.equals(that.baseConfig):that.baseConfig == null;
     }
-    
+
     @Override
     public int hashCode()
     {
-        int result = (baseConfig != null ? baseConfig.hashCode() : 0);
+        int result = (baseConfig != null?baseConfig.hashCode():0);
         return result;
     }
-    
+
     @Override
     public String toString()
     {
-        return String.format("JsrCreator[%s%s]", (baseConfig instanceof AnnotatedServerEndpointConfig ? "@" : ""), baseConfig.getEndpointClass().getName());
+        return String.format("JsrCreator[%s%s]", (baseConfig instanceof AnnotatedServerEndpointConfig?"@":""), baseConfig.getEndpointClass().getName());
     }
 }

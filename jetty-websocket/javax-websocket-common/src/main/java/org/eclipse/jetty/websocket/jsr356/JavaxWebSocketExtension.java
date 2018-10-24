@@ -56,7 +56,8 @@ public class JavaxWebSocketExtension implements Extension
 
     /**
      * A configured extension
-     * @param cfg the configuration for the extension 
+     *
+     * @param cfg the configuration for the extension
      */
     public JavaxWebSocketExtension(ExtensionConfig cfg)
     {
@@ -65,13 +66,14 @@ public class JavaxWebSocketExtension implements Extension
         {
             for (Map.Entry<String, String> entry : cfg.getParameters().entrySet())
             {
-                parameters.add(new JsrParameter(entry.getKey(),entry.getValue()));
+                parameters.add(new JsrParameter(entry.getKey(), entry.getValue()));
             }
         }
     }
 
     /**
      * A potential (unconfigured) extension
+     *
      * @param name the name of the extension
      */
     public JavaxWebSocketExtension(String name)
@@ -94,18 +96,20 @@ public class JavaxWebSocketExtension implements Extension
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
-        JavaxWebSocketExtension that = (JavaxWebSocketExtension) o;
+        JavaxWebSocketExtension that = (JavaxWebSocketExtension)o;
 
-        return name != null ? name.equals(that.name) : that.name == null;
+        return name != null?name.equals(that.name):that.name == null;
     }
 
     @Override
     public int hashCode()
     {
-        return name != null ? name.hashCode() : 0;
+        return name != null?name.hashCode():0;
     }
 
     @Override

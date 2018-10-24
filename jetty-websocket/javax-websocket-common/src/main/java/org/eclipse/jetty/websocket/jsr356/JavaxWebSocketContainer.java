@@ -102,7 +102,8 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return new HashSet<>(getBeans(JavaxWebSocketSession.class));
     }
 
-    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
+    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+        CompletableFuture<Session> futureSession)
     {
         return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
     }

@@ -18,24 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import javax.websocket.CloseReason;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -57,6 +39,24 @@ import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
+import javax.websocket.CloseReason;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.PongMessage;
+import javax.websocket.Session;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 
 public class JavaxWebSocketFrameHandler implements FrameHandler
@@ -77,18 +77,18 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     /**
      * The Map of path parameter values that arrived during the server side upgrade process.
      * <p>
-     *     Used to bind uri-template variables, with their values from the upgrade, to the methods
-     *     that have declared their interest in these values via {@code @PathParam} annotations.
+     * Used to bind uri-template variables, with their values from the upgrade, to the methods
+     * that have declared their interest in these values via {@code @PathParam} annotations.
      * </p>
      * <p>
-     *     The values are represented as {@link String} and are essentially static for this
-     *     instance of the the JavaxWebSocketFrameHandler.   They will be converted to the
-     *     type declared by the {@code @PathParam} annotations following the JSR356 advice
-     *     to only support String, Java Primitives (or their Boxed version).
+     * The values are represented as {@link String} and are essentially static for this
+     * instance of the the JavaxWebSocketFrameHandler.   They will be converted to the
+     * type declared by the {@code @PathParam} annotations following the JSR356 advice
+     * to only support String, Java Primitives (or their Boxed version).
      * </p>
      * <p>
-     *     Can be null if client side, or no named variables were configured on the server side,
-     *     or the server side component didn't use the {@link org.eclipse.jetty.http.pathmap.UriTemplatePathSpec} for its mapping.
+     * Can be null if client side, or no named variables were configured on the server side,
+     * or the server side component didn't use the {@link org.eclipse.jetty.http.pathmap.UriTemplatePathSpec} for its mapping.
      * </p>
      */
     private MethodHandle openHandle;
@@ -121,15 +121,15 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     protected byte dataType = OpCode.UNDEFINED;
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
-                                      Object endpointInstance,
-                                      UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
-                                      MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                      MessageMetadata textMetadata,
-                                      MessageMetadata binaryMetadata,
-                                      MethodHandle pongHandle,
-                                      String id,
-                                      EndpointConfig endpointConfig,
-                                      CompletableFuture<Session> futureSession)
+        Object endpointInstance,
+        UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+        MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
+        MessageMetadata textMetadata,
+        MessageMetadata binaryMetadata,
+        MethodHandle pongHandle,
+        String id,
+        EndpointConfig endpointConfig,
+        CompletableFuture<Session> futureSession)
     {
         this.LOG = Log.getLogger(endpointInstance.getClass());
 
@@ -210,7 +210,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
         container.removeBean(session);
     }
-
 
     @SuppressWarnings("Duplicates")
     @Override
@@ -324,8 +323,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
 
         return Collections.unmodifiableSet(messageHandlerMap.values().stream()
-                .map((rh) -> rh.getMessageHandler())
-                .collect(Collectors.toSet()));
+            .map((rh) -> rh.getMessageHandler())
+            .collect(Collectors.toSet()));
 
     }
 
@@ -348,7 +347,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         if (messageImpl != null)
         {
-            throw new IllegalStateException("Cannot register " + replacement + ": Basic WebSocket type " + OpCode.name(basicWebSocketType) + " is already registered");
+            throw new IllegalStateException(
+                "Cannot register " + replacement + ": Basic WebSocket type " + OpCode.name(basicWebSocketType) + " is already registered");
         }
     }
 
@@ -358,7 +358,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         {
             // TODO: move methodhandle lookup to container?
             MethodHandles.Lookup lookup = MethodHandles.publicLookup();
-            MethodHandle partialMessageHandler = lookup.findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(Void.TYPE, Object.class, Boolean.TYPE));
+            MethodHandle partialMessageHandler = lookup
+                .findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(Void.TYPE, Object.class, Boolean.TYPE));
             partialMessageHandler = partialMessageHandler.bindTo(handler);
 
             // MessageHandler.Partial has no decoder support!
@@ -394,7 +395,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             }
             else
             {
-                throw new RuntimeException("Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName() + ", " + String.class.getName());
+                throw new RuntimeException(
+                    "Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName()
+                        + ", " + String.class.getName());
             }
         }
         catch (NoSuchMethodException e)
@@ -496,9 +499,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             if (registeredHandler != null)
             {
                 throw new IllegalStateException(String.format("Cannot register %s: Basic WebSocket type %s is already registered to %s",
-                        handler.getClass().getName(),
-                        OpCode.name(basicWebSocketMessageType),
-                        registeredHandler.getMessageHandler().getClass().getName()
+                    handler.getClass().getName(),
+                    OpCode.name(basicWebSocketMessageType),
+                    registeredHandler.getMessageHandler().getClass().getName()
                 ));
             }
 
@@ -513,8 +516,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         synchronized (messageHandlerMap)
         {
             Optional<Map.Entry<Byte, RegisteredMessageHandler>> optionalEntry = messageHandlerMap.entrySet().stream()
-                    .filter((entry) -> entry.getValue().getMessageHandler().equals(handler))
-                    .findFirst();
+                .filter((entry) -> entry.getValue().getMessageHandler().equals(handler))
+                .findFirst();
 
             if (optionalEntry.isPresent())
             {

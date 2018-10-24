@@ -67,7 +67,7 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         Decoder.TextStream<Quotes> decoder = new QuotesDecoder();
         CompletableFuture<Quotes> futureQuotes = new CompletableFuture<>();
         MethodHandle functionHandle = FunctionMethod.getFunctionApplyMethodHandle();
-        MethodHandle quoteHandle = functionHandle.bindTo((Function<Quotes, Void>) (quotes) ->
+        MethodHandle quoteHandle = functionHandle.bindTo((Function<Quotes, Void>)(quotes) ->
         {
             try
             {
@@ -79,7 +79,6 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
             }
             return null;
         });
-
 
         DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session, decoder, quoteHandle);
 

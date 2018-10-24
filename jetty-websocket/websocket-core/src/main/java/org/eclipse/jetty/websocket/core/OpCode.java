@@ -25,56 +25,56 @@ public final class OpCode
      *
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
-    public static final byte CONTINUATION = (byte) 0x00;
+    public static final byte CONTINUATION = (byte)0x00;
 
     /**
      * OpCode for a Text Frame
      *
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
-    public static final byte TEXT = (byte) 0x01;
+    public static final byte TEXT = (byte)0x01;
 
     /**
      * OpCode for a Binary Frame
      *
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
-    public static final byte BINARY = (byte) 0x02;
+    public static final byte BINARY = (byte)0x02;
 
     /**
      * OpCode for a Close Frame
      *
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
-    public static final byte CLOSE = (byte) 0x08;
+    public static final byte CLOSE = (byte)0x08;
 
     /**
      * OpCode for a Ping Frame
      *
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
-    public static final byte PING = (byte) 0x09;
+    public static final byte PING = (byte)0x09;
 
     /**
      * OpCode for a Pong Frame
      *
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
-    public static final byte PONG = (byte) 0x0A;
+    public static final byte PONG = (byte)0x0A;
 
     /**
      * An undefined OpCode
      */
-    public static final byte UNDEFINED = (byte) -1;
+    public static final byte UNDEFINED = (byte)-1;
 
     public static byte getOpCode(byte firstByte)
     {
         return (byte)(firstByte & 0x0F);
     }
-    
+
     public static boolean isControlFrame(byte opcode)
     {
-        switch(opcode)
+        switch (opcode)
         {
             case CLOSE:
             case PING:
@@ -87,7 +87,7 @@ public final class OpCode
 
     public static boolean isDataFrame(byte opcode)
     {
-        switch(opcode)
+        switch (opcode)
         {
             case TEXT:
             case BINARY:
@@ -106,7 +106,7 @@ public final class OpCode
      */
     public static boolean isKnown(byte opcode)
     {
-        switch(opcode)
+        switch (opcode)
         {
             case CLOSE:
             case PING:

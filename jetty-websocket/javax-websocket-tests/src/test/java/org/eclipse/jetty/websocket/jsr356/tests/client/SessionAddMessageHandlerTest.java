@@ -110,12 +110,12 @@ public class SessionAddMessageHandlerTest
         assertThat("session", session, not(isMessageHandlerTypeRegistered(MessageType.PONG)));
 
         assertThat("session.messageHandlers", session.getMessageHandlers(),
-                hasItem(
-                        allOf(
-                                isMessageHandlerType(session, MessageType.BINARY),
-                                instanceOf(ByteBufferPartialHandler.class)
-                        )
+            hasItem(
+                allOf(
+                    isMessageHandlerType(session, MessageType.BINARY),
+                    instanceOf(ByteBufferPartialHandler.class)
                 )
+            )
         );
     }
 
@@ -129,21 +129,21 @@ public class SessionAddMessageHandlerTest
         assertThat("session", session, not(isMessageHandlerTypeRegistered(MessageType.PONG)));
 
         assertThat("session.messageHandlers", session.getMessageHandlers(),
-                hasItem(
-                        allOf(
-                                isMessageHandlerType(session, MessageType.BINARY),
-                                instanceOf(ByteArrayWholeHandler.class)
-                        )
+            hasItem(
+                allOf(
+                    isMessageHandlerType(session, MessageType.BINARY),
+                    instanceOf(ByteArrayWholeHandler.class)
                 )
+            )
         );
 
         assertThat("session.messageHandlers", session.getMessageHandlers(),
-                hasItem(
-                        allOf(
-                                isMessageHandlerType(session, MessageType.TEXT),
-                                instanceOf(StringWholeHandler.class)
-                        )
+            hasItem(
+                allOf(
+                    isMessageHandlerType(session, MessageType.TEXT),
+                    instanceOf(StringWholeHandler.class)
                 )
+            )
         );
     }
 
@@ -162,22 +162,22 @@ public class SessionAddMessageHandlerTest
 
         // Final expected BINARY implementation
         assertThat("session.messageHandlers", session.getMessageHandlers(),
-                hasItem(
-                        allOf(
-                                isMessageHandlerType(session, MessageType.BINARY),
-                                instanceOf(ByteArrayWholeHandler.class)
-                        )
+            hasItem(
+                allOf(
+                    isMessageHandlerType(session, MessageType.BINARY),
+                    instanceOf(ByteArrayWholeHandler.class)
                 )
+            )
         );
 
         // Final expected TEXT implementation
         assertThat("session.messageHandlers", session.getMessageHandlers(),
-                hasItem(
-                        allOf(
-                                isMessageHandlerType(session, MessageType.TEXT),
-                                instanceOf(LongMessageHandler.class)
-                        )
+            hasItem(
+                allOf(
+                    isMessageHandlerType(session, MessageType.TEXT),
+                    instanceOf(LongMessageHandler.class)
                 )
+            )
         );
     }
 
@@ -197,12 +197,12 @@ public class SessionAddMessageHandlerTest
 
         // Final expected BINARY implementation
         assertThat("session.messageHandlers", session.getMessageHandlers(),
-                hasItem(
-                        allOf(
-                                isMessageHandlerType(session, MessageType.BINARY),
-                                instanceOf(ByteArrayWholeHandler.class)
-                        )
+            hasItem(
+                allOf(
+                    isMessageHandlerType(session, MessageType.BINARY),
+                    instanceOf(ByteArrayWholeHandler.class)
                 )
+            )
         );
     }
 
@@ -217,12 +217,12 @@ public class SessionAddMessageHandlerTest
 
         // Final expected TEXT implementation
         assertThat("session.messageHandlers", session.getMessageHandlers(),
-                hasItem(
-                        allOf(
-                                isMessageHandlerType(session, MessageType.TEXT),
-                                instanceOf(StringWholeHandler.class)
-                        )
+            hasItem(
+                allOf(
+                    isMessageHandlerType(session, MessageType.TEXT),
+                    instanceOf(StringWholeHandler.class)
                 )
+            )
         );
     }
 
@@ -265,7 +265,7 @@ public class SessionAddMessageHandlerTest
             ByteBuffer copy = ByteBuffer.allocate(partialMsg.remaining());
             copy.put(partialMsg);
             copy.flip();
-            received.add(new Object[]{copy, isLast});
+            received.add(new Object[] { copy, isLast });
         });
 
         assertThat("session", session, isMessageHandlerTypeRegistered(MessageType.BINARY));
@@ -276,9 +276,9 @@ public class SessionAddMessageHandlerTest
         frameHandler.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" World").setFin(true), Callback.NOOP);
 
         assertThat("Received partial", received.size(), is(2));
-        assertThat("Received Message[0].buffer", BufferUtil.toUTF8String((ByteBuffer) received.get(0)[0]), is("G'day"));
+        assertThat("Received Message[0].buffer", BufferUtil.toUTF8String((ByteBuffer)received.get(0)[0]), is("G'day"));
         assertThat("Received Message[0].last", received.get(0)[1], is(false));
-        assertThat("Received Message[1].buffer", BufferUtil.toUTF8String((ByteBuffer) received.get(1)[0]), is(" World"));
+        assertThat("Received Message[1].buffer", BufferUtil.toUTF8String((ByteBuffer)received.get(1)[0]), is(" World"));
         assertThat("Received Message[1].last", received.get(1)[1], is(true));
     }
 }

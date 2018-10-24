@@ -34,7 +34,7 @@ public class AnnotatedBinaryArraySocket
     @OnWebSocketMessage
     public void onBinary(byte payload[], int offset, int length)
     {
-        events.add("onBinary([%d],%d,%d)",payload.length,offset,length);
+        events.add("onBinary([%d],%d,%d)", payload.length, offset, length);
     }
 
     @OnWebSocketClose

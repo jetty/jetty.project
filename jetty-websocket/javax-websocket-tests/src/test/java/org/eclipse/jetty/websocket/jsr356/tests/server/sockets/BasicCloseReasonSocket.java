@@ -22,7 +22,7 @@ import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/close/reason")
+@ServerEndpoint(value = "/echo/close/reason")
 public class BasicCloseReasonSocket extends TrackingSocket
 {
     @OnClose

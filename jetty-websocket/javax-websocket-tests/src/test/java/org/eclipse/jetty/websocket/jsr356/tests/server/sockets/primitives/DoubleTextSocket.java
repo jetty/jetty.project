@@ -34,7 +34,7 @@ import java.util.Locale;
 public class DoubleTextSocket
 {
     private static final Logger LOG = Log.getLogger(DoubleTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -46,14 +46,14 @@ public class DoubleTextSocket
     @OnMessage
     public void onMessage(double d) throws IOException
     {
-        String msg = String.format(Locale.US, "%.4f",d);
+        String msg = String.format(Locale.US, "%.4f", d);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

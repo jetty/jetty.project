@@ -64,8 +64,8 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onFruit", String.class);
 
         // Declared Variable Names
-        final String namedVariables[] = new String[]{
-                "fruit"
+        final String namedVariables[] = new String[] {
+            "fruit"
         };
 
         // Raw Calling Args - none specified
@@ -85,7 +85,7 @@ public class InvokerUtils_StaticParamsTest
         methodHandle = methodHandle.bindTo(foo);
 
         // Call method against instance
-        String result = (String) methodHandle.invoke();
+        String result = (String)methodHandle.invoke();
         assertThat("Result", result, is("onFruit('pear')"));
     }
 
@@ -95,8 +95,8 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onCount", int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String namedVariables[] = new String[]{
-                "count"
+        final String namedVariables[] = new String[] {
+            "count"
         };
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
@@ -114,7 +114,7 @@ public class InvokerUtils_StaticParamsTest
         methodHandle = methodHandle.bindTo(foo);
 
         // Call method against instance
-        String result = (String) methodHandle.invoke();
+        String result = (String)methodHandle.invoke();
         assertThat("Result", result, is("onCount(2222)"));
     }
 
@@ -124,8 +124,8 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onLabeledCount", String.class, int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String namedVariables[] = new String[]{
-                "count"
+        final String namedVariables[] = new String[] {
+            "count"
         };
 
         final Arg ARG_LABEL = new Arg(String.class).required();
@@ -145,7 +145,7 @@ public class InvokerUtils_StaticParamsTest
         methodHandle = methodHandle.bindTo(foo);
 
         // Call method against instance
-        String result = (String) methodHandle.invoke("cherry");
+        String result = (String)methodHandle.invoke("cherry");
         assertThat("Result", result, is("onLabeledCount('cherry', 444)"));
     }
 }

@@ -33,7 +33,7 @@ import java.io.IOException;
 public class BooleanTextSocket
 {
     private static final Logger LOG = Log.getLogger(BooleanTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -52,7 +52,7 @@ public class BooleanTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

@@ -51,10 +51,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AnnotatedEndpointConfigTest
 {
     @ClientEndpoint(
-            subprotocols = {"chat", "echo-whole"},
-            decoders = {DateDecoder.class},
-            encoders = {TimeEncoder.class},
-            configurator = AnnotatedEndpointConfigurator.class)
+        subprotocols = { "chat", "echo-whole" },
+        decoders = { DateDecoder.class },
+        encoders = { TimeEncoder.class },
+        configurator = AnnotatedEndpointConfigurator.class)
     public static class AnnotatedEndpointClient
     {
         public Session session;
@@ -118,7 +118,7 @@ public class AnnotatedEndpointConfigTest
         assertThat("EndpointConfig", config, notNullValue());
         assertThat("EndpointConfig", config, instanceOf(ClientEndpointConfig.class));
 
-        ceconfig = (ClientEndpointConfig) config;
+        ceconfig = (ClientEndpointConfig)config;
         assertThat("EndpointConfig", ceconfig, notNullValue());
     }
 
@@ -150,16 +150,16 @@ public class AnnotatedEndpointConfigTest
     public void testTextMax() throws Exception
     {
         assertThat("Client Text Max",
-                clientEndpoint.session.getMaxTextMessageBufferSize(),
-                is(111222));
+            clientEndpoint.session.getMaxTextMessageBufferSize(),
+            is(111222));
     }
 
     @Test
     public void testBinaryMax() throws Exception
     {
         assertThat("Client Binary Max",
-                clientEndpoint.session.getMaxBinaryMessageBufferSize(),
-                is(333444));
+            clientEndpoint.session.getMaxBinaryMessageBufferSize(),
+            is(333444));
     }
 
     @Test
@@ -210,7 +210,7 @@ public class AnnotatedEndpointConfigTest
     @Test
     public void testConfigurator() throws Exception
     {
-        ClientEndpointConfig ceconfig = (ClientEndpointConfig) config;
+        ClientEndpointConfig ceconfig = (ClientEndpointConfig)config;
 
         assertThat("Client Configurator", ceconfig.getConfigurator(), instanceOf(AnnotatedEndpointConfigurator.class));
     }

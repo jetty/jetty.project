@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
@@ -99,11 +100,14 @@
             <configuration>
               <instructions>
                 <Bundle-Description>javax.websocket.servlet Implementation</Bundle-Description>
-                <Export-Package>org.eclipse.jetty.websocket.servlet.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                <Export-Package>
+                  org.eclipse.jetty.websocket.servlet.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                </Export-Package>
               </instructions>
             </configuration>
           </execution>
         </executions>
-      </plugin>    </plugins>
+      </plugin>
+    </plugins>
   </build>
 </project>

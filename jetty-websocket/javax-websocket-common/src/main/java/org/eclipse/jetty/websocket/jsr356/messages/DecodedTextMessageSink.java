@@ -32,9 +32,9 @@ import java.lang.invoke.MethodType;
 public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T>>
 {
     public DecodedTextMessageSink(JavaxWebSocketSession session,
-                                  Decoder.Text<T> decoder,
-                                  MethodHandle methodHandle)
-            throws NoSuchMethodException, IllegalAccessException
+        Decoder.Text<T> decoder,
+        MethodHandle methodHandle)
+        throws NoSuchMethodException, IllegalAccessException
     {
         super(session, decoder, methodHandle);
     }
@@ -43,8 +43,8 @@ public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T
     protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
     {
         return MethodHandles.lookup().findVirtual(DecodedTextMessageSink.class,
-                "onWholeMessage", MethodType.methodType(void.class, String.class))
-                .bindTo(this);
+            "onWholeMessage", MethodType.methodType(void.class, String.class))
+            .bindTo(this);
     }
 
     @Override

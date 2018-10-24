@@ -57,7 +57,7 @@ public class ParserReservedBitTest
         // parse buffer
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            Exception e = assertThrows(ProtocolException.class, ()->parserCapture.parse(raw));
+            Exception e = assertThrows(ProtocolException.class, () -> parserCapture.parse(raw));
             assertThat(e.getMessage(), containsString("RSV"));
         }
     }
@@ -148,7 +148,7 @@ public class ParserReservedBitTest
     public void testCase3_5()
     {
         byte payload[] = new byte[8];
-        Arrays.fill(payload, (byte) 0xFF);
+        Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(payload).setRsv3(true).setRsv1(true)); // intentionally bad
@@ -168,7 +168,7 @@ public class ParserReservedBitTest
     public void testCase3_6()
     {
         byte payload[] = new byte[8];
-        Arrays.fill(payload, (byte) 0xFF);
+        Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.PING).setPayload(payload).setRsv3(true).setRsv2(true)); // intentionally bad

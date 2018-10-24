@@ -27,6 +27,6 @@ public class InitException extends IllegalStateException
 
     public InitException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

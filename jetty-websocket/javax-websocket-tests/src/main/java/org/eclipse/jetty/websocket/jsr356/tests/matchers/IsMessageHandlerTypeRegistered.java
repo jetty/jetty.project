@@ -50,7 +50,7 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
     @Override
     protected boolean matchesSafely(JavaxWebSocketSession session)
     {
-        Map<Byte,RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
+        Map<Byte, RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
 
         if (handlerMap == null)
         {
@@ -99,7 +99,7 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
     @Override
     protected void describeMismatchSafely(JavaxWebSocketSession session, Description mismatchDescription)
     {
-        Map<Byte,RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
+        Map<Byte, RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
 
         mismatchDescription.appendText(".getMessageHandlers()");
 

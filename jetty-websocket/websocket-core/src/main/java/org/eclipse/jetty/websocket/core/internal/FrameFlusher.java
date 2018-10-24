@@ -51,7 +51,7 @@ public class FrameFlusher extends IteratingCallback
     private final List<ByteBuffer> buffers;
     private boolean closed;
     private Throwable terminated;
-    private ByteBuffer batchBuffer=null;
+    private ByteBuffer batchBuffer = null;
 
     public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
@@ -99,7 +99,7 @@ public class FrameFlusher extends IteratingCallback
         {
             // Succeed entries from previous call to process
             // and clear batchBuffer if we wrote it.
-            if (succeedEntries() && batchBuffer!=null)
+            if (succeedEntries() && batchBuffer != null)
                 BufferUtil.clear(batchBuffer);
 
             if (closed)
@@ -112,23 +112,23 @@ public class FrameFlusher extends IteratingCallback
             {
                 Entry entry = queue.poll();
                 entries.add(entry);
-                if (entry.frame==FLUSH_FRAME)
+                if (entry.frame == FLUSH_FRAME)
                 {
                     flush = true;
                     break;
                 }
 
-                int batchSpace = batchBuffer==null?bufferSize:BufferUtil.space(batchBuffer);
+                int batchSpace = batchBuffer == null?bufferSize:BufferUtil.space(batchBuffer);
 
                 boolean batch = entry.batch
                     && !entry.frame.isControlFrame()
-                    && entry.frame.getPayloadLength() < bufferSize/4
-                    && (batchSpace-Generator.MAX_HEADER_LENGTH)>=entry.frame.getPayloadLength();
+                    && entry.frame.getPayloadLength() < bufferSize / 4
+                    && (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
 
                 if (batch)
                 {
                     // Acquire a batchBuffer if we don't have one
-                    if (batchBuffer==null)
+                    if (batchBuffer == null)
                     {
                         batchBuffer = bufferPool.acquire(bufferSize, true);
                         buffers.add(batchBuffer);
@@ -140,7 +140,7 @@ public class FrameFlusher extends IteratingCallback
                     if (BufferUtil.hasContent(payload))
                         BufferUtil.append(batchBuffer, payload);
                 }
-                else if (batchBuffer!=null && batchSpace>=Generator.MAX_HEADER_LENGTH)
+                else if (batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
                 {
                     // Use the batch space for our header
                     entry.generateHeaderBytes(batchBuffer);
@@ -272,7 +272,7 @@ public class FrameFlusher extends IteratingCallback
                 terminated = cause;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {}", reason == null ? "Terminating" : "Terminated", this);
+            LOG.debug("{} {}", reason == null?"Terminating":"Terminated", this);
         if (reason == null && !close)
             iterate();
     }
@@ -313,11 +313,11 @@ public class FrameFlusher extends IteratingCallback
     public String toString()
     {
         return String.format("%s@%x[queueSize=%d,aggregate=%s,terminated=%s]",
-                             getClass().getSimpleName(),
-                             hashCode(),
-                             getQueueSize(),
-                             BufferUtil.toDetailString(batchBuffer),
-                             terminated);
+            getClass().getSimpleName(),
+            hashCode(),
+            getQueueSize(),
+            BufferUtil.toDetailString(batchBuffer),
+            terminated);
     }
 
     private class Entry extends FrameEntry
@@ -338,7 +338,7 @@ public class FrameFlusher extends IteratingCallback
         {
             int pos = BufferUtil.flipToFill(buffer);
             generator.generateHeaderBytes(frame, buffer);
-            BufferUtil.flipToFlush(buffer,pos);
+            BufferUtil.flipToFlush(buffer, pos);
         }
 
         private void release()

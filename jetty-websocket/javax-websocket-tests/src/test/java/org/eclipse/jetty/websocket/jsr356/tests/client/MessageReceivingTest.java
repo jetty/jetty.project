@@ -89,7 +89,7 @@ public class MessageReceivingTest
     @AfterEach
     public void stopClient() throws Exception
     {
-        ((LifeCycle) container).stop();
+        ((LifeCycle)container).stop();
     }
 
     /**
@@ -104,15 +104,15 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                .preferredSubprotocols(Collections.singletonList("partial-binary"))
-                .build();
+            .preferredSubprotocols(Collections.singletonList("partial-binary"))
+            .build();
 
-        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
+        try (final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("", UTF_8));
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("Echo", UTF_8));
             byte bigBuf[] = new byte[1024 * 1024];
-            Arrays.fill(bigBuf, (byte) 'x');
+            Arrays.fill(bigBuf, (byte)'x');
             // allocate fresh ByteBuffer and copy array contents, not wrap
             // as the send will modify the wrapped array (for client masking purposes)
             ByteBuffer bigByteBuffer = ByteBuffer.allocate(bigBuf.length);
@@ -145,10 +145,10 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                .preferredSubprotocols(Collections.singletonList("partial-text"))
-                .build();
+            .preferredSubprotocols(Collections.singletonList("partial-text"))
+            .build();
 
-        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
+        try (final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendText("");
             session.getBasicRemote().sendText("Echo");
@@ -175,10 +175,10 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                .preferredSubprotocols(Collections.singletonList("echo"))
-                .build();
+            .preferredSubprotocols(Collections.singletonList("echo"))
+            .build();
 
-        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
+        try (final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("", UTF_8));
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("Echo", UTF_8));
@@ -203,14 +203,14 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                .preferredSubprotocols(Collections.singletonList("echo"))
-                .build();
+            .preferredSubprotocols(Collections.singletonList("echo"))
+            .build();
 
         byte raw[] = new byte[1024 * 1024];
-        Arrays.fill(raw, (byte) 'x');
+        Arrays.fill(raw, (byte)'x');
         String veryLongString = new String(raw, UTF_8);
 
-        try(final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
+        try (final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
             session.getBasicRemote().sendText("");
             session.getBasicRemote().sendText("Echo");
@@ -240,7 +240,7 @@ public class MessageReceivingTest
                 if (i > 0)
                     getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, true);
                 boolean last = (i >= (parts.length - 1));
-                Frame frame = new Frame((i==0)?OpCode.TEXT:OpCode.CONTINUATION);
+                Frame frame = new Frame((i == 0)?OpCode.TEXT:OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
                 frame.setFin(last);
                 getCoreSession().sendFrame(frame, Callback.NOOP, !last);
@@ -276,8 +276,10 @@ public class MessageReceivingTest
                 segment.limit(segment.position() + Math.min(remaining, segmentSize));
                 boolean last = (i >= (segmentCount - 1));
                 Frame frame;
-                if (i == 0) frame = new Frame(OpCode.BINARY);
-                else frame = new Frame(OpCode.CONTINUATION);
+                if (i == 0)
+                    frame = new Frame(OpCode.BINARY);
+                else
+                    frame = new Frame(OpCode.CONTINUATION);
                 frame.setPayload(segment);
                 frame.setFin(last);
                 if (LOG.isDebugEnabled())
@@ -401,7 +403,7 @@ public class MessageReceivingTest
      * Partial message handler for receiving binary messages.
      */
     public static class PartialByteBufferCaptureHandler extends AbstractHandler implements
-            javax.websocket.MessageHandler.Partial<ByteBuffer>
+        javax.websocket.MessageHandler.Partial<ByteBuffer>
     {
         /**
          * Parts of the current message. This list is appended with every non-last part and is
@@ -443,7 +445,7 @@ public class MessageReceivingTest
      * Whole message handler for receiving binary messages.
      */
     public static class WholeByteBufferCaptureHandler extends AbstractHandler implements
-            javax.websocket.MessageHandler.Whole<ByteBuffer>
+        javax.websocket.MessageHandler.Whole<ByteBuffer>
     {
         @Override
         public void onMessage(ByteBuffer message)
@@ -457,7 +459,7 @@ public class MessageReceivingTest
      * Partial message handler for receiving text messages.
      */
     public static class PartialStringCaptureHandler extends AbstractHandler implements
-            javax.websocket.MessageHandler.Partial<String>
+        javax.websocket.MessageHandler.Partial<String>
     {
         /**
          * Parts of the current message. This list is appended with every non-last part and is
@@ -481,7 +483,7 @@ public class MessageReceivingTest
      * Whole message handler for receiving text messages.
      */
     public static class WholeStringCaptureHandler extends AbstractHandler implements
-            javax.websocket.MessageHandler.Whole<String>
+        javax.websocket.MessageHandler.Whole<String>
     {
         @Override
         public void onMessage(String message)

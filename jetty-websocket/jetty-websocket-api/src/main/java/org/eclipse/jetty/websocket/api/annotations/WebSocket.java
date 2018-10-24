@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-{ ElementType.TYPE })
+    { ElementType.TYPE })
 public @interface WebSocket
 {
     /**
@@ -59,7 +59,7 @@ public @interface WebSocket
      * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      */
     int maxTextMessageSize() default -2;
-    
+
     /**
      * The output frame buffering mode.
      * <p>

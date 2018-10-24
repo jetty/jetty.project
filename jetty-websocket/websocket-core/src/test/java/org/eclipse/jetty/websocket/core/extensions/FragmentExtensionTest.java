@@ -125,6 +125,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by the maxLength configuration.
+     *
      * @throws IOException on test failure
      */
     @Test
@@ -196,6 +197,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by default configuration
+     *
      * @throws IOException on test failure
      */
     @Test
@@ -259,6 +261,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
     /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
+     *
      * @throws IOException on test failure
      */
     @Test

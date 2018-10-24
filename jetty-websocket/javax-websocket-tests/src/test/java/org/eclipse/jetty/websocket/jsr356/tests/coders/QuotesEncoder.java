@@ -35,13 +35,13 @@ public class QuotesEncoder implements Encoder.Text<Quotes>
         }
         return buf.toString();
     }
-    
+
     @Override
     public void destroy()
     {
         CoderEventTracking.getInstance().addEvent(this, "destroy()");
     }
-    
+
     @Override
     public void init(EndpointConfig config)
     {

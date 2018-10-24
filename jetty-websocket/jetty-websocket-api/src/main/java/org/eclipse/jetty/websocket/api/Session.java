@@ -33,7 +33,7 @@ public interface Session extends WebSocketPolicy, Closeable
      * Request a close of the current conversation with a normal status code and no reason phrase.
      * <p>
      * This will enqueue a graceful close to the remote endpoint.
-     * 
+     *
      * @see #close(CloseStatus)
      * @see #close(int, String)
      * @see #disconnect()
@@ -46,10 +46,8 @@ public interface Session extends WebSocketPolicy, Closeable
      * phrases.
      * <p>
      * This will enqueue a graceful close to the remote endpoint.
-     * 
-     * @param closeStatus
-     *            the reason for the closure
-     * 
+     *
+     * @param closeStatus the reason for the closure
      * @see #close()
      * @see #close(int, String)
      * @see #disconnect()
@@ -60,13 +58,10 @@ public interface Session extends WebSocketPolicy, Closeable
      * Send a websocket Close frame, with status code.
      * <p>
      * This will enqueue a graceful close to the remote endpoint.
-     * 
-     * @param statusCode
-     *            the status code
-     * @param reason
-     *            the (optional) reason. (can be null for no reason)
+     *
+     * @param statusCode the status code
+     * @param reason     the (optional) reason. (can be null for no reason)
      * @see StatusCode
-     * 
      * @see #close()
      * @see #close(CloseStatus)
      * @see #disconnect()
@@ -83,7 +78,7 @@ public interface Session extends WebSocketPolicy, Closeable
      * Once the underlying connection has been determined to be closed, the various onClose() events (either
      * {@link WebSocketListener#onWebSocketClose(int, String)} or {@link OnWebSocketClose}) will be called on your
      * websocket.
-     * 
+     *
      * @see #close()
      * @see #close(CloseStatus)
      * @see #close(int, String)
@@ -93,9 +88,9 @@ public interface Session extends WebSocketPolicy, Closeable
     /**
      * The Local Socket Address for the active Session
      * <p>
-     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
-     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-     *     without supporting {@link InetSocketAddress}
+     * Do not assume that this will return a {@link InetSocketAddress} in all cases.
+     * Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+     * without supporting {@link InetSocketAddress}
      * </p>
      *
      * @return the SocketAddress for the local connection, or null if not supported by Session
@@ -104,22 +99,25 @@ public interface Session extends WebSocketPolicy, Closeable
 
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
-     * 
+     *
      * @return the policy in use
      */
-    default WebSocketPolicy getPolicy() { return this; }
+    default WebSocketPolicy getPolicy()
+    {
+        return this;
+    }
 
     /**
      * Returns the version of the websocket protocol currently being used. This is taken as the value of the Sec-WebSocket-Version header used in the opening
      * handshake. i.e. "13".
-     * 
+     *
      * @return the protocol version
      */
     String getProtocolVersion();
 
     /**
      * Return a reference to the RemoteEndpoint object representing the other end of this conversation.
-     * 
+     *
      * @return the remote endpoint
      */
     RemoteEndpoint getRemote();
@@ -127,9 +125,9 @@ public interface Session extends WebSocketPolicy, Closeable
     /**
      * The Remote Socket Address for the active Session
      * <p>
-     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
-     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
-     *     without supporting {@link InetSocketAddress}
+     * Do not assume that this will return a {@link InetSocketAddress} in all cases.
+     * Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+     * without supporting {@link InetSocketAddress}
      * </p>
      *
      * @return the SocketAddress for the remote connection, or null if not supported by Session
@@ -138,35 +136,35 @@ public interface Session extends WebSocketPolicy, Closeable
 
     /**
      * Get the UpgradeRequest used to create this session
-     * 
+     *
      * @return the UpgradeRequest used to create this session
      */
     UpgradeRequest getUpgradeRequest();
 
     /**
      * Get the UpgradeResponse used to create this session
-     * 
+     *
      * @return the UpgradeResponse used to create this session
      */
     UpgradeResponse getUpgradeResponse();
 
     /**
      * Return true if and only if the underlying socket is open.
-     * 
+     *
      * @return whether the session is open
      */
     boolean isOpen();
 
     /**
      * Return true if and only if the underlying socket is using a secure transport.
-     * 
+     *
      * @return whether its using a secure transport
      */
     boolean isSecure();
 
     /**
      * Suspend the incoming read events on the connection.
-     * 
+     *
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
     SuspendToken suspend();

@@ -79,7 +79,7 @@ public class MessageOutputStream extends OutputStream
     {
         try
         {
-            send(new byte[]{(byte)b}, 0, 1);
+            send(new byte[] { (byte)b }, 0, 1);
         }
         catch (Throwable x)
         {
@@ -137,7 +137,7 @@ public class MessageOutputStream extends OutputStream
             frame.setPayload(buffer);
             frame.setFin(fin);
 
-            try(SharedBlockingCallback.Blocker b=blocker.acquire())
+            try (SharedBlockingCallback.Blocker b = blocker.acquire())
             {
                 channel.sendFrame(frame, b, false);
                 b.block();

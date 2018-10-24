@@ -30,31 +30,31 @@ import java.nio.ByteBuffer;
 public class ListenerPartialSocket implements WebSocketPartialListener
 {
     public EventQueue events = new EventQueue();
-    
+
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
         events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
     }
-    
+
     @Override
     public void onWebSocketConnect(Session session)
     {
         events.add("onWebSocketConnect(%s)", session);
     }
-    
+
     @Override
     public void onWebSocketError(Throwable cause)
     {
         events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
     }
-    
+
     @Override
     public void onWebSocketPartialText(String payload, boolean fin)
     {
         events.add("onWebSocketPartialText(%s, %b)", TextUtil.quote(payload), fin);
     }
-    
+
     @Override
     public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
     {

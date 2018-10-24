@@ -37,7 +37,7 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
     {
         if (container instanceof LifeCycle)
         {
-            ((LifeCycle) container).stop();
+            ((LifeCycle)container).stop();
         }
     }
 
@@ -45,12 +45,12 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
      * Used by {@link ContainerProvider#getWebSocketContainer()} to get a <b>NEW INSTANCE</b>
      * of the Client {@link WebSocketContainer}.
      * <p>
-     *     <em>NOTE: A WebSocket Client Container is a heavyweight object.</em>
-     *     It is dangerous to repeatedly request a new container, or to manage many containers.
-     *     The existing javax.websocket API has no lifecycle for a ClientContainer, once started
-     *     they exist for the duration of the JVM with no ability to stop them.
-     *     See/Comment on <a href="https://github.com/javaee/websocket-spec/issues/212">javax.websocket Issue #212</a>
-     *     if this is a big concern for you.
+     * <em>NOTE: A WebSocket Client Container is a heavyweight object.</em>
+     * It is dangerous to repeatedly request a new container, or to manage many containers.
+     * The existing javax.websocket API has no lifecycle for a ClientContainer, once started
+     * they exist for the duration of the JVM with no ability to stop them.
+     * See/Comment on <a href="https://github.com/javaee/websocket-spec/issues/212">javax.websocket Issue #212</a>
+     * if this is a big concern for you.
      * </p>
      */
     @Override

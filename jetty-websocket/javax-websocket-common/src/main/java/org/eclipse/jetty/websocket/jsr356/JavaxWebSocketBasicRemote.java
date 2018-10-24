@@ -82,7 +82,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
             Frame frame;
-            switch(messageType)
+            switch (messageType)
             {
                 case -1:
                     // New message!
@@ -137,7 +137,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
             Frame frame;
-            switch(messageType)
+            switch (messageType)
             {
                 case -1:
                     // New message!

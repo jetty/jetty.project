@@ -30,31 +30,31 @@ import java.nio.ByteBuffer;
 public class ListenerPingPongSocket implements WebSocketPingPongListener
 {
     public EventQueue events = new EventQueue();
-    
+
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
         events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
     }
-    
+
     @Override
     public void onWebSocketConnect(Session session)
     {
         events.add("onWebSocketConnect(%s)", session);
     }
-    
+
     @Override
     public void onWebSocketError(Throwable cause)
     {
         events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
     }
-    
+
     @Override
     public void onWebSocketPing(ByteBuffer payload)
     {
         events.add("onWebSocketPing(%s)", BufferUtil.toDetailString(payload));
     }
-    
+
     @Override
     public void onWebSocketPong(ByteBuffer payload)
     {

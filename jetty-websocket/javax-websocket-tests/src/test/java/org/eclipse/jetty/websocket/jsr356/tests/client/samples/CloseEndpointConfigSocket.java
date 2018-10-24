@@ -30,8 +30,17 @@ import javax.websocket.Session;
 @ClientEndpoint
 public class CloseEndpointConfigSocket extends WSEventTracker
 {
-    @OnOpen public void onOpen(Session session) { super.onWsOpen(session); }
-    @OnError public void onError(Throwable cause) { super.onWsError(cause); }
+    @OnOpen
+    public void onOpen(Session session)
+    {
+        super.onWsOpen(session);
+    }
+
+    @OnError
+    public void onError(Throwable cause)
+    {
+        super.onWsError(cause);
+    }
 
     // Intentionally Invalid Declaration
     @OnClose

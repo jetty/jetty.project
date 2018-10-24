@@ -59,12 +59,12 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public WebSocketCoreClient(HttpClient httpClient)
     {
-        this(httpClient,null);
+        this(httpClient, null);
     }
 
     public WebSocketCoreClient(HttpClient httpClient, FrameHandler.CoreCustomizer customizer)
     {
-        this.httpClient = httpClient == null ? new HttpClient() : httpClient;
+        this.httpClient = httpClient == null?new HttpClient():httpClient;
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.objectFactory = new DecoratedObjectFactory();
         this.customizer = customizer;
@@ -74,7 +74,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
     @Override
     public void customize(FrameHandler.CoreSession session)
     {
-        if (customizer!=null)
+        if (customizer != null)
             customizer.customize(session);
     }
 

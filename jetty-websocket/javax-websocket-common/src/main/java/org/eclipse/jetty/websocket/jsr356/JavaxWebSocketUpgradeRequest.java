@@ -26,7 +26,7 @@ public interface JavaxWebSocketUpgradeRequest
 {
     boolean isSecure();
 
-    Map<String,List<String>> getParameterMap();
+    Map<String, List<String>> getParameterMap();
 
     String getProtocolVersion();
 

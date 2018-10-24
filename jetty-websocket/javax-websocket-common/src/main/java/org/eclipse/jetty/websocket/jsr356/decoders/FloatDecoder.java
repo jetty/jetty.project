@@ -36,13 +36,13 @@ public class FloatDecoder extends AbstractDecoder implements Decoder.Text<Float>
             Float val = Float.parseFloat(s);
             if (val.isNaN())
             {
-                throw new DecodeException(s,"NaN");
+                throw new DecodeException(s, "NaN");
             }
             return val;
         }
         catch (NumberFormatException e)
         {
-            throw new DecodeException(s,"Unable to parse float",e);
+            throw new DecodeException(s, "Unable to parse float", e);
         }
     }
 

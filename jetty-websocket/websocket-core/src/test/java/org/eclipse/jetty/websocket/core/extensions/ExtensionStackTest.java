@@ -65,7 +65,7 @@ public class ExtensionStackTest
         {
             return (T)obj;
         }
-        assertEquals("Expected " + msg + " class",clazz.getName(),obj.getClass().getName());
+        assertEquals("Expected " + msg + " class", clazz.getName(), obj.getClass().getName());
         return null;
     }
 
@@ -80,15 +80,15 @@ public class ExtensionStackTest
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
         OutgoingFrames connection = new OutgoingFramesCapture();
-        stack.connect(session,connection, null);
+        stack.connect(session, connection, null);
 
         // Dump
-        LOG.debug("{}",stack.dump());
+        LOG.debug("{}", stack.dump());
 
         // Should be no change to handlers
-        Extension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
-        Extension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
-        assertEquals(actualIncomingExtension,actualOutgoingExtension);
+        Extension actualIncomingExtension = assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
+        Extension actualOutgoingExtension = assertIsExtension("Outgoing", stack.getNextOutgoing(), IdentityExtension.class);
+        assertEquals(actualIncomingExtension, actualOutgoingExtension);
 
     }
 
@@ -104,17 +104,17 @@ public class ExtensionStackTest
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
         OutgoingFrames connection = new OutgoingFramesCapture();
-        stack.connect(session,connection, null);
+        stack.connect(session, connection, null);
 
         // Dump
-        LOG.debug("{}",stack.dump());
+        LOG.debug("{}", stack.dump());
 
         // Should be no change to handlers
-        IdentityExtension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(), IdentityExtension.class);
-        IdentityExtension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
+        IdentityExtension actualIncomingExtension = assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
+        IdentityExtension actualOutgoingExtension = assertIsExtension("Outgoing", stack.getNextOutgoing(), IdentityExtension.class);
 
-        assertThat("Incoming[identity].id",actualIncomingExtension.getParam("id"),is("A"));
-        assertThat("Outgoing[identity].id",actualOutgoingExtension.getParam("id"),is("B"));
+        assertThat("Incoming[identity].id", actualIncomingExtension.getParam("id"), is("A"));
+        assertThat("Outgoing[identity].id", actualOutgoingExtension.getParam("id"), is("B"));
 
     }
 
@@ -122,20 +122,20 @@ public class ExtensionStackTest
     public void testToString()
     {
         // Shouldn't cause a NPE.
-        LOG.debug("Shouldn't cause a NPE: {}",stack.toString());
+        LOG.debug("Shouldn't cause a NPE: {}", stack.toString());
     }
-    
+
     @Test
     public void testNegotiateChrome32()
     {
         String chromeRequest = "permessage-deflate; client_max_window_bits, x-webkit-deflate-frame";
         List<ExtensionConfig> requestedConfigs = ExtensionConfig.parseList(chromeRequest);
         stack.negotiate(objectFactory, bufferPool, requestedConfigs);
-        
+
         List<ExtensionConfig> negotiated = stack.getNegotiatedExtensions();
         String response = ExtensionConfig.toHeaderValue(negotiated);
-        
+
         assertThat("Negotiated Extensions", response, is("permessage-deflate"));
-        LOG.debug("Shouldn't cause a NPE: {}",stack.toString());
+        LOG.debug("Shouldn't cause a NPE: {}", stack.toString());
     }
 }

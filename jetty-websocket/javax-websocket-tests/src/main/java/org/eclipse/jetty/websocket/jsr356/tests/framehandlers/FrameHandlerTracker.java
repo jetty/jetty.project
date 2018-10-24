@@ -39,7 +39,7 @@ public class FrameHandlerTracker extends MessageHandler
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> events = new LinkedBlockingDeque<>();
 
-    public void addEvent(String format, Object ... args)
+    public void addEvent(String format, Object... args)
     {
         events.offer(String.format(format, args));
     }

@@ -250,7 +250,7 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public HttpSession getSession(boolean create)
     {
-        if(create)
+        if (create)
             throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
         return session;
     }

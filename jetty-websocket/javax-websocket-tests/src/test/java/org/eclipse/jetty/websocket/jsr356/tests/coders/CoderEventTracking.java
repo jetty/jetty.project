@@ -30,25 +30,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CoderEventTracking
 {
     private static CoderEventTracking INSTANCE = new CoderEventTracking();
-    
+
     public static CoderEventTracking getInstance()
     {
         return INSTANCE;
     }
-    
+
     // Holds the tracking of events (string to count)
     private Map<String, AtomicInteger> eventTracking = new ConcurrentHashMap<>();
-    
+
     public void clear()
     {
         eventTracking.clear();
     }
-    
+
     private String toId(Class clazz, String method)
     {
         return String.format("%s#%s", clazz.getName(), method);
     }
-    
+
     private void addEventCount(Object obj, String method)
     {
         String id = toId(obj.getClass(), method);
@@ -63,17 +63,17 @@ public class CoderEventTracking
             count.incrementAndGet();
         }
     }
-    
+
     public void addEvent(Decoder decoder, String method)
     {
         addEventCount(decoder, method);
     }
-    
+
     public void addEvent(Encoder encoder, String method)
     {
         addEventCount(encoder, method);
     }
-    
+
     public int getEventCount(Class clazz, String method)
     {
         String id = toId(clazz, method);

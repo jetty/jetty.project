@@ -40,7 +40,7 @@ public class PartialBinaryMessageSink extends AbstractMessageSink
             methodHandle.invoke(frame.getPayload(), frame.isFin());
             callback.succeeded();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             callback.failed(t);
         }

@@ -22,13 +22,13 @@ import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 import java.nio.ByteBuffer;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicBinaryMessageByteBufferSocket extends TrackingSocket
 {
     @OnMessage
     public void onBinary(ByteBuffer data)
     {
-        addEvent("onBinary(%s)",data);
+        addEvent("onBinary(%s)", data);
         dataLatch.countDown();
     }
 }

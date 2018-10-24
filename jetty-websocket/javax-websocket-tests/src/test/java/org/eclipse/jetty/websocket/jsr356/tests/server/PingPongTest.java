@@ -75,7 +75,7 @@ public class PingPongTest
         public void onOpen(Session session, EndpointConfig config)
         {
             this.session = session;
-            this.path = (String) config.getUserProperties().get("path");
+            this.path = (String)config.getUserProperties().get("path");
         }
 
         @OnMessage
@@ -99,7 +99,7 @@ public class PingPongTest
         {
             this.session = session;
             this.session.addMessageHandler(this);
-            this.path = (String) config.getUserProperties().get("path");
+            this.path = (String)config.getUserProperties().get("path");
         }
 
         @Override
@@ -132,7 +132,7 @@ public class PingPongTest
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
-            ServerContainer container = (ServerContainer) sce.getServletContext().getAttribute(ServerContainer.class.getName());
+            ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
             try
             {
                 ServerEndpointConfig.Configurator config = new Config();
@@ -207,7 +207,7 @@ public class PingPongTest
     @Test
     public void testPongEndpoint() throws Exception
     {
-        assertTimeout(Duration.ofMillis(6000), ()->
+        assertTimeout(Duration.ofMillis(6000), () ->
         {
             assertEcho("/app/pong", (channel) ->
             {
@@ -219,7 +219,7 @@ public class PingPongTest
     @Test
     public void testPongSocket() throws Exception
     {
-        assertTimeout(Duration.ofMillis(6000), ()->
+        assertTimeout(Duration.ofMillis(6000), () ->
         {
             assertEcho("/app/pong-socket", (channel) ->
             {

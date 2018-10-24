@@ -125,7 +125,6 @@ public class ValidationExtension extends AbstractExtension
             outgoingUtf8Validation = new NullAppendable();
     }
 
-
     private void validateUTF8(Frame frame, NullAppendable appendable, byte continuedOpCode)
     {
         //TODO this relies on sequencing being set
@@ -139,7 +138,7 @@ public class ValidationExtension extends AbstractExtension
         {
             if (frame.getOpCode() == TEXT || continuedOpCode == TEXT)
             {
-                if(frame.hasPayload())
+                if (frame.hasPayload())
                     appendable.append(frame.getPayload().slice());
 
                 if (frame.isFin())

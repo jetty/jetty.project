@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -107,14 +106,14 @@ public class WebSocketCreatorMapping implements Dumpable, FrameHandler.CoreCusto
     public WebSocketCreator getMapping(PathSpec pathSpec)
     {
         CreatorNegotiator cn = mappings.get(pathSpec);
-        return cn==null?null:cn.getWebSocketCreator();
+        return cn == null?null:cn.getWebSocketCreator();
     }
 
     @Override
     public WebSocketCreator getMatch(String target)
     {
         MappedResource<CreatorNegotiator> resource = mappings.getMatch(target);
-        return resource==null?null:resource.getResource().getWebSocketCreator();
+        return resource == null?null:resource.getResource().getWebSocketCreator();
     }
 
     @Override
@@ -132,7 +131,7 @@ public class WebSocketCreatorMapping implements Dumpable, FrameHandler.CoreCusto
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,this,mappings);
+        Dumpable.dumpObjects(out, indent, this, mappings);
     }
 
     public ByteBufferPool getBufferPool()

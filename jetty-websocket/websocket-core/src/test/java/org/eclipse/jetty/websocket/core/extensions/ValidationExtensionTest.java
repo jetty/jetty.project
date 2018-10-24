@@ -68,7 +68,7 @@ public class ValidationExtensionTest extends WebSocketTester
         server = new WebSocketServer(0, serverHandler);
         server.start();
 
-        byte[] nonUtf8Payload = {0x7F,(byte)0xFF,(byte)0xFF};
+        byte[] nonUtf8Payload = { 0x7F, (byte)0xFF, (byte)0xFF };
 
         try (Socket client = newClient(server.getLocalPort()))
         {
@@ -77,7 +77,6 @@ public class ValidationExtensionTest extends WebSocketTester
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.BINARY));
             assertThat(frame.getPayload().array(), is(nonUtf8Payload));
-
 
             //close normally
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
@@ -98,8 +97,8 @@ public class ValidationExtensionTest extends WebSocketTester
         server.start();
 
         // Testing with 4 byte UTF8 character "\uD842\uDF9F"
-        byte[] initialPayload = new byte[]{(byte)0xF0,(byte)0xA0};
-        byte[] continuationPayload = new byte[]{(byte)0xAE,(byte)0x9F};
+        byte[] initialPayload = new byte[] { (byte)0xF0, (byte)0xA0 };
+        byte[] continuationPayload = new byte[] { (byte)0xAE, (byte)0x9F };
 
         try (Socket client = newClient(server.getLocalPort()))
         {
@@ -134,8 +133,8 @@ public class ValidationExtensionTest extends WebSocketTester
         server.start();
 
         // Testing with 4 byte UTF8 character "\uD842\uDF9F"
-        byte[] initialPayload = new byte[]{(byte)0xF0,(byte)0xA0};
-        byte[] incompleteContinuationPayload = new byte[]{(byte)0xAE};
+        byte[] initialPayload = new byte[] { (byte)0xF0, (byte)0xA0 };
+        byte[] incompleteContinuationPayload = new byte[] { (byte)0xAE };
 
         try (Socket client = newClient(server.getLocalPort()))
         {
@@ -152,9 +151,6 @@ public class ValidationExtensionTest extends WebSocketTester
             assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.BAD_PAYLOAD));
         }
     }
-
-
-
 
     static class WebSocketServer extends AbstractLifeCycle
     {
@@ -192,7 +188,7 @@ public class ValidationExtensionTest extends WebSocketTester
             ContextHandler context = new ContextHandler("/");
             server.setHandler(context);
             WebSocketNegotiator negotiator = new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(),
-                    connector.getByteBufferPool(), frameHandler);
+                connector.getByteBufferPool(), frameHandler);
 
             WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);

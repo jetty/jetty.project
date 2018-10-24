@@ -33,7 +33,7 @@ import java.io.IOException;
 public class ByteTextSocket
 {
     private static final Logger LOG = Log.getLogger(ByteTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -45,14 +45,14 @@ public class ByteTextSocket
     @OnMessage
     public void onMessage(byte b) throws IOException
     {
-        String msg = String.format("0x%02X",b);
+        String msg = String.format("0x%02X", b);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

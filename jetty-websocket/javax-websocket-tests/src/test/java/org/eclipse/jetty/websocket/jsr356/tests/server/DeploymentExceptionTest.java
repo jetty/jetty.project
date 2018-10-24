@@ -74,7 +74,6 @@ public class DeploymentExceptionTest
         return data.stream();
     }
 
-
     private Server server;
     private HandlerCollection contexts;
 
@@ -109,7 +108,7 @@ public class DeploymentExceptionTest
         try
         {
             context.start();
-            Exception e = assertThrows(DeploymentException.class, ()->container.addEndpoint(pojo));
+            Exception e = assertThrows(DeploymentException.class, () -> container.addEndpoint(pojo));
             assertThat(e.getCause(), instanceOf(InvalidSignatureException.class));
         }
         finally

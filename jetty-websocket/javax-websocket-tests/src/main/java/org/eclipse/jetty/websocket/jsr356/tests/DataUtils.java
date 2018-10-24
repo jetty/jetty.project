@@ -42,7 +42,7 @@ public final class DataUtils
         copy.flip();
         return copy;
     }
-    
+
     /**
      * Make a copy of a byte buffer.
      * <p>

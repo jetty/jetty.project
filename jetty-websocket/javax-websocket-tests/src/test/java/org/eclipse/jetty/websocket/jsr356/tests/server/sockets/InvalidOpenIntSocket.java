@@ -21,11 +21,12 @@ package org.eclipse.jetty.websocket.jsr356.tests.server.sockets;
 import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/invalid")
+@ServerEndpoint(value = "/invalid")
 public class InvalidOpenIntSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter type int)
+     *
      * @param value the value
      */
     @OnOpen

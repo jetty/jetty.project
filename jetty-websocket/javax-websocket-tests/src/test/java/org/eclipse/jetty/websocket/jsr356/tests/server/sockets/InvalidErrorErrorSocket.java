@@ -21,11 +21,12 @@ package org.eclipse.jetty.websocket.jsr356.tests.server.sockets;
 import javax.websocket.OnError;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/invalid")
+@ServerEndpoint(value = "/invalid")
 public class InvalidErrorErrorSocket extends TrackingSocket
 {
     /**
      * Invalid Error Method Declaration (parameter type Error)
+     *
      * @param error the error
      */
     @OnError

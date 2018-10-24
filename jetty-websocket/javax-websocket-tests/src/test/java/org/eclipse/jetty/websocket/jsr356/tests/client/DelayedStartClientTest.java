@@ -42,24 +42,24 @@ import static org.hamcrest.Matchers.notNullValue;
 public class DelayedStartClientTest
 {
     WebSocketContainer container;
-    
+
     @AfterEach
     public void stopContainer() throws Exception
     {
         ((LifeCycle)container).stop();
     }
-    
+
     @Test
     public void testNoExtraHttpClientThreads()
     {
         container = ContainerProvider.getWebSocketContainer();
         assertThat("Container", container, notNullValue());
-    
+
         List<String> threadNames = getThreadNames((ContainerLifeCycle)container);
         assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
         assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
     }
-    
+
     public static List<String> getThreadNames(ContainerLifeCycle... containers)
     {
         List<String> threadNames = new ArrayList<>();
@@ -70,14 +70,14 @@ public class DelayedStartClientTest
             {
                 continue;
             }
-            
+
             findConfiguredThreadNames(seen, threadNames, container);
         }
         seen.clear();
         // System.out.println("Threads: " + threadNames.stream().collect(Collectors.joining(", ", "[", "]")));
         return threadNames;
     }
-    
+
     private static void findConfiguredThreadNames(Set<Object> seen, List<String> threadNames, ContainerLifeCycle container)
     {
         if (seen.contains(container))
@@ -85,15 +85,15 @@ public class DelayedStartClientTest
             // skip
             return;
         }
-        
+
         seen.add(container);
-        
+
         Collection<Executor> executors = container.getBeans(Executor.class);
         for (Executor executor : executors)
         {
             if (executor instanceof QueuedThreadPool)
             {
-                QueuedThreadPool qtp = (QueuedThreadPool) executor;
+                QueuedThreadPool qtp = (QueuedThreadPool)executor;
                 threadNames.add(qtp.getName());
             }
             else
@@ -101,7 +101,7 @@ public class DelayedStartClientTest
                 System.err.println("### Executor: " + executor);
             }
         }
-        
+
         for (ContainerLifeCycle child : container.getBeans(ContainerLifeCycle.class))
         {
             findConfiguredThreadNames(seen, threadNames, child);

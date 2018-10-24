@@ -34,7 +34,7 @@ import static org.hamcrest.Matchers.containsString;
 public class JavaxWebSocketFrameHandler_OnErrorTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private static final String EXPECTED_THROWABLE = "java.lang.RuntimeException: From Testcase";
-    
+
     private void assertOnErrorInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
@@ -60,11 +60,11 @@ public class JavaxWebSocketFrameHandler_OnErrorTest extends AbstractJavaxWebSock
     public void testInvokeErrorSessionThrowable() throws Exception
     {
         assertOnErrorInvocation(new ErrorSessionThrowableSocket(),
-                allOf(
-                        containsString("onError(JavaxWebSocketSession@"),
-                        containsString(ErrorSessionThrowableSocket.class.getName()),
-                        containsString(EXPECTED_THROWABLE)
-                ));
+            allOf(
+                containsString("onError(JavaxWebSocketSession@"),
+                containsString(ErrorSessionThrowableSocket.class.getName()),
+                containsString(EXPECTED_THROWABLE)
+            ));
     }
 
     @ClientEndpoint
@@ -81,10 +81,10 @@ public class JavaxWebSocketFrameHandler_OnErrorTest extends AbstractJavaxWebSock
     public void testInvokeErrorThrowable() throws Exception
     {
         assertOnErrorInvocation(new ErrorThrowableSocket(),
-                allOf(
-                        containsString("onError("),
-                        containsString(EXPECTED_THROWABLE)
-                ));
+            allOf(
+                containsString("onError("),
+                containsString(EXPECTED_THROWABLE)
+            ));
     }
 
     @ClientEndpoint
@@ -101,10 +101,10 @@ public class JavaxWebSocketFrameHandler_OnErrorTest extends AbstractJavaxWebSock
     public void testInvokeErrorThrowableSession() throws Exception
     {
         assertOnErrorInvocation(new ErrorThrowableSessionSocket(),
-                allOf(
-                        containsString("onError("),
-                        containsString(ErrorThrowableSessionSocket.class.getName()),
-                        containsString(EXPECTED_THROWABLE)
-                ));
+            allOf(
+                containsString("onError("),
+                containsString(ErrorThrowableSessionSocket.class.getName()),
+                containsString(EXPECTED_THROWABLE)
+            ));
     }
 }

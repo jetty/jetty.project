@@ -45,13 +45,13 @@ public class SimpleEchoSocket
 
     public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException
     {
-        return this.closeLatch.await(duration,unit);
+        return this.closeLatch.await(duration, unit);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        System.out.printf("Connection closed: %d - %s%n",statusCode,reason);
+        System.out.printf("Connection closed: %d - %s%n", statusCode, reason);
         this.session = null;
         this.closeLatch.countDown(); // trigger latch
     }
@@ -59,13 +59,13 @@ public class SimpleEchoSocket
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
-        System.out.printf("Got connect: %s%n",session);
+        System.out.printf("Got connect: %s%n", session);
         this.session = session;
         try
         {
             session.getRemote().sendString("Hello");
             session.getRemote().sendString("Thanks for the conversation.");
-            session.close(StatusCode.NORMAL,"I'm done");
+            session.close(StatusCode.NORMAL, "I'm done");
         }
         catch (Throwable t)
         {
@@ -76,6 +76,6 @@ public class SimpleEchoSocket
     @OnWebSocketMessage
     public void onMessage(String msg)
     {
-        System.out.printf("Got msg: %s%n",msg);
+        System.out.printf("Got msg: %s%n", msg);
     }
 }

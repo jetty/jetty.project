@@ -63,7 +63,7 @@ public class ChatWebSocketServer
         if (!subprotocols.contains("chat"))
             return null;
         negotiation.setSubprotocol("chat");
-        
+
         //  + MUST return the FrameHandler or null or exception?
         return new MessageHandler()
         {
@@ -71,8 +71,8 @@ public class ChatWebSocketServer
             @Override
             public void onOpen(CoreSession coreSession) throws Exception
             {
-                LOG.debug("onOpen {}",coreSession);
-                setMaxTextMessageSize(2*1024);
+                LOG.debug("onOpen {}", coreSession);
+                setMaxTextMessageSize(2 * 1024);
                 super.onOpen(coreSession);
                 members.add(this);
             }
@@ -82,9 +82,9 @@ public class ChatWebSocketServer
             {
                 for (MessageHandler handler : members)
                 {
-                    if (handler==this)
+                    if (handler == this)
                         continue;
-                    LOG.debug("Sending Message{} to {}" ,message,  handler);
+                    LOG.debug("Sending Message{} to {}", message, handler);
                     handler.sendText(message, NOOP, false);
                 }
 
@@ -94,13 +94,12 @@ public class ChatWebSocketServer
             @Override
             public void onClosed(CloseStatus closeStatus)
             {
-                LOG.debug("onClosed {}",closeStatus);
+                LOG.debug("onClosed {}", closeStatus);
                 super.onClosed(closeStatus);
                 members.remove(this);
             }
         };
     }
-
 
     public static void main(String[] args) throws Exception
     {
@@ -121,7 +120,8 @@ public class ChatWebSocketServer
         upgradeHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 response.setStatus(200);
                 response.setContentType("text/plain");

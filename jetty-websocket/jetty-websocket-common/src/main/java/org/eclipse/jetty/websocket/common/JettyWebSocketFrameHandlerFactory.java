@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+
 /**
  * Factory for websocket-core {@link FrameHandler} implementations suitable for
  * use with jetty-native websocket API.
@@ -115,7 +116,8 @@ public class JettyWebSocketFrameHandlerFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+        CompletableFuture<Session> futureSession)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
@@ -140,7 +142,7 @@ public class JettyWebSocketFrameHandlerFactory
         pongHandle = bindTo(pongHandle, endpointInstance);
 
         CompletableFuture<Session> future = futureSession;
-        if(future == null)
+        if (future == null)
             future = new CompletableFuture<>();
 
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
@@ -360,31 +362,31 @@ public class JettyWebSocketFrameHandlerFactory
         {
             // The different kind of @OnWebSocketMessage method parameter signatures expected
 
-            InvokerUtils.Arg textCallingArgs[] = new InvokerUtils.Arg[]{
-                    new InvokerUtils.Arg(Session.class),
-                    new InvokerUtils.Arg(String.class).required()
+            InvokerUtils.Arg textCallingArgs[] = new InvokerUtils.Arg[] {
+                new InvokerUtils.Arg(Session.class),
+                new InvokerUtils.Arg(String.class).required()
             };
 
-            InvokerUtils.Arg binaryBufferCallingArgs[] = new InvokerUtils.Arg[]{
-                    new InvokerUtils.Arg(Session.class),
-                    new InvokerUtils.Arg(ByteBuffer.class).required()
+            InvokerUtils.Arg binaryBufferCallingArgs[] = new InvokerUtils.Arg[] {
+                new InvokerUtils.Arg(Session.class),
+                new InvokerUtils.Arg(ByteBuffer.class).required()
             };
 
-            InvokerUtils.Arg binaryArrayCallingArgs[] = new InvokerUtils.Arg[]{
-                    new InvokerUtils.Arg(Session.class),
-                    new InvokerUtils.Arg(byte[].class).required(),
-                    new InvokerUtils.Arg(int.class), // offset
-                    new InvokerUtils.Arg(int.class) // length
+            InvokerUtils.Arg binaryArrayCallingArgs[] = new InvokerUtils.Arg[] {
+                new InvokerUtils.Arg(Session.class),
+                new InvokerUtils.Arg(byte[].class).required(),
+                new InvokerUtils.Arg(int.class), // offset
+                new InvokerUtils.Arg(int.class) // length
             };
 
-            InvokerUtils.Arg inputStreamCallingArgs[] = new InvokerUtils.Arg[]{
-                    new InvokerUtils.Arg(Session.class),
-                    new InvokerUtils.Arg(InputStream.class).required()
+            InvokerUtils.Arg inputStreamCallingArgs[] = new InvokerUtils.Arg[] {
+                new InvokerUtils.Arg(Session.class),
+                new InvokerUtils.Arg(InputStream.class).required()
             };
 
-            InvokerUtils.Arg readerCallingArgs[] = new InvokerUtils.Arg[]{
-                    new InvokerUtils.Arg(Session.class),
-                    new InvokerUtils.Arg(Reader.class).required()
+            InvokerUtils.Arg readerCallingArgs[] = new InvokerUtils.Arg[] {
+                new InvokerUtils.Arg(Session.class),
+                new InvokerUtils.Arg(Reader.class).required()
             };
 
             onmessageloop:

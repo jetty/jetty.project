@@ -40,7 +40,7 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
             {
                 if (anno.annotationType().equals(PathParam.class))
                 {
-                    PathParam pathParam = (PathParam) anno;
+                    PathParam pathParam = (PathParam)anno;
                     return new InvokerUtils.Arg(paramType, pathParam.value());
                 }
             }

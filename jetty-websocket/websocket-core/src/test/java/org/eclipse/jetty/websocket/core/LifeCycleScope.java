@@ -26,8 +26,8 @@ import java.util.function.Supplier;
  * Simple {@link AutoCloseable} to allow Jetty {@link LifeCycle} components to
  * be managed using {@code try-with-resources} techniques.
  * <p>
- *     {@link LifeCycle#start()} occurs at constructor.
- *     {@link LifeCycle#stop()} occurs at {@link #close()}.
+ * {@link LifeCycle#start()} occurs at constructor.
+ * {@link LifeCycle#stop()} occurs at {@link #close()}.
  * </p>
  *
  * @param <T> the {@link LifeCycle} to have resource managed
@@ -35,19 +35,19 @@ import java.util.function.Supplier;
 public class LifeCycleScope<T extends LifeCycle> implements AutoCloseable, Supplier<T>
 {
     private final T lifecycle;
-    
+
     public LifeCycleScope(T lifecycle) throws Exception
     {
         this.lifecycle = lifecycle;
         this.lifecycle.start();
     }
-    
+
     @Override
     public void close() throws Exception
     {
         this.lifecycle.stop();
     }
-    
+
     @Override
     public T get()
     {

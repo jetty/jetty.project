@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpRequest;
@@ -64,11 +54,21 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+
 public abstract class UpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
     public static UpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
     {
-        return new UpgradeRequest(webSocketClient,requestURI)
+        return new UpgradeRequest(webSocketClient, requestURI)
         {
             @Override
             public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
@@ -82,9 +82,13 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
     protected final CompletableFuture<FrameHandler.CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
-    /** Offered Extensions */
+    /**
+     * Offered Extensions
+     */
     private List<ExtensionConfig> extensions = new ArrayList<>();
-    /** Offered SubProtocols */
+    /**
+     * Offered SubProtocols
+     */
     private List<String> subProtocols = new ArrayList<>();
 
     public UpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
@@ -212,9 +216,9 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
 
             Throwable failure = result.getFailure();
             if ((failure instanceof java.net.SocketException) ||
-                    (failure instanceof java.io.InterruptedIOException) ||
-                    (failure instanceof HttpResponseException) ||
-                    (failure instanceof UpgradeException))
+                (failure instanceof java.io.InterruptedIOException) ||
+                (failure instanceof HttpResponseException) ||
+                (failure instanceof UpgradeException))
             {
                 // handle as-is
                 handleException(failure);
@@ -229,7 +233,8 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI,responseStatusCode,"Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
+            handleException(
+                new UpgradeException(requestURI, responseStatusCode, "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
 
@@ -279,7 +284,6 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
                 }
             }
         }
-
 
         extensionStack.negotiate(wsClient.getObjectFactory(), httpClient.getByteBufferPool(), extensions);
 
@@ -347,6 +351,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
 
     /**
      * Allow for overridden customization of endpoint (such as special transport level properties: e.g. TCP keepAlive)
+     *
      * @see <a href="https://github.com/eclipse/jetty.project/issues/1811">Issue #1811 - Customization of WebSocket Connections via WebSocketPolicy</a>
      */
     protected void customize(EndPoint endp)

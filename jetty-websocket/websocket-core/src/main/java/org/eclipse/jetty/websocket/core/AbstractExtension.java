@@ -81,7 +81,7 @@ public abstract class AbstractExtension implements Extension
      * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV1.
-     * 
+     *
      * @return true if extension uses RSV1 for its own purposes.
      */
     @Override
@@ -94,7 +94,7 @@ public abstract class AbstractExtension implements Extension
      * Used to indicate that the extension makes use of the RSV2 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV2.
-     * 
+     *
      * @return true if extension uses RSV2 for its own purposes.
      */
     @Override
@@ -107,7 +107,7 @@ public abstract class AbstractExtension implements Extension
      * Used to indicate that the extension makes use of the RSV3 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV3.
-     * 
+     *
      * @return true if extension uses RSV3 for its own purposes.
      */
     @Override
@@ -118,14 +118,14 @@ public abstract class AbstractExtension implements Extension
 
     protected void nextIncomingFrame(Frame frame, Callback callback)
     {
-        log.debug("nextIncomingFrame({})",frame);
+        log.debug("nextIncomingFrame({})", frame);
         this.nextIncoming.onFrame(frame, callback);
     }
 
     protected void nextOutgoingFrame(Frame frame, Callback callback, boolean batch)
     {
-        log.debug("nextOutgoingFrame({})",frame);
-        this.nextOutgoing.sendFrame(frame,callback, batch);
+        log.debug("nextOutgoingFrame({})", frame);
+        this.nextOutgoing.sendFrame(frame, callback, batch);
     }
 
     @Override
@@ -154,6 +154,6 @@ public abstract class AbstractExtension implements Extension
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",this.getClass().getSimpleName(),config.getParameterizedName());
+        return String.format("%s[%s]", this.getClass().getSimpleName(), config.getParameterizedName());
     }
 }

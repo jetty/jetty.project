@@ -25,9 +25,13 @@ import javax.websocket.EndpointConfig;
  */
 public class ConfiguredEndpoint
 {
-    /** The instance of the Endpoint */
+    /**
+     * The instance of the Endpoint
+     */
     private Object endpoint;
-    /** The optional instance specific configuration for the Endpoint */
+    /**
+     * The optional instance specific configuration for the Endpoint
+     */
     private final EndpointConfig config;
 
     public ConfiguredEndpoint(Object endpoint, EndpointConfig config)

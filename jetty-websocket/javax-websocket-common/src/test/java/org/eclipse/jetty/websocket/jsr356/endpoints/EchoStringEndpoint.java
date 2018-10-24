@@ -27,7 +27,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 public class EchoStringEndpoint extends AbstractStringEndpoint
 {
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
-    
+
     @Override
     public void onMessage(String message)
     {

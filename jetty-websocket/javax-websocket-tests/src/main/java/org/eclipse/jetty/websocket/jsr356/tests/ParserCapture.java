@@ -34,41 +34,41 @@ public class ParserCapture
     private final Parser parser;
     public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public boolean closed = false;
-    
+
     public ParserCapture(Parser parser)
     {
         this.parser = parser;
     }
-    
+
     public void parse(ByteBuffer buffer)
     {
-        while(buffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             Frame frame = parser.parse(buffer);
-            if (frame==null)
+            if (frame == null)
                 break;
             if (!onFrame(frame))
                 break;
         }
     }
-    
+
     public void assertHasFrame(byte opCode, int expectedCount)
     {
         int count = 0;
-        for(Frame frame: framesQueue)
+        for (Frame frame : framesQueue)
         {
-            if(frame.getOpCode() == opCode)
+            if (frame.getOpCode() == opCode)
                 count++;
         }
         assertThat("Frames[op=" + opCode + "].count", count, is(expectedCount));
     }
-    
+
     @Deprecated
     public BlockingQueue<Frame> getFrames()
     {
         return framesQueue;
     }
-    
+
     public boolean onFrame(Frame frame)
     {
         framesQueue.offer(Frame.copy(frame));

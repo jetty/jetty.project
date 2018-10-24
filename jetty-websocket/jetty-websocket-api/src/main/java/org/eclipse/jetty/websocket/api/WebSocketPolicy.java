@@ -29,7 +29,7 @@ public interface WebSocketPolicy
 
     /**
      * The duration that a websocket may be idle before being closed by the implementation
-     * 
+     *
      * @return the timeout duration
      */
     Duration getIdleTimeout();
@@ -43,28 +43,28 @@ public interface WebSocketPolicy
      * @return the raw network buffer input size.
      */
     int getInputBufferSize();
-    
+
     /**
      * The output (write to network layer) buffer size.
      * <p>
-     *   This is the raw write operation buffer size and has no relationship to the websocket frame.
+     * This is the raw write operation buffer size and has no relationship to the websocket frame.
      * </p>
      *
      * @return the raw network buffer output size.
      */
     int getOutputBufferSize();
-    
+
     /**
      * Get the maximum size of a binary message during parsing.
      * <p>
-     *     This is a memory conservation option, memory over this limit will not be
-     *     allocated by Jetty for handling binary messages.  This applies to individual frames,
-     *     whole message handling, and partial message handling.
+     * This is a memory conservation option, memory over this limit will not be
+     * allocated by Jetty for handling binary messages.  This applies to individual frames,
+     * whole message handling, and partial message handling.
      * </p>
      * <p>
-     *     Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      * </p>
-     * 
+     *
      * @return the maximum size of a binary message
      */
     long getMaxBinaryMessageSize();
@@ -72,14 +72,14 @@ public interface WebSocketPolicy
     /**
      * Get the maximum size of a text message during parsing.
      * <p>
-     *     This is a memory conservation option, memory over this limit will not be
-     *     allocated by Jetty for handling text messages.  This applies to individual frames,
-     *     whole message handling, and partial message handling.
+     * This is a memory conservation option, memory over this limit will not be
+     * allocated by Jetty for handling text messages.  This applies to individual frames,
+     * whole message handling, and partial message handling.
      * </p>
      * <p>
-     *     Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      * </p>
-     * 
+     *
      * @return the maximum size of a text message.
      */
     long getMaxTextMessageSize();
@@ -93,17 +93,15 @@ public interface WebSocketPolicy
 
     /**
      * The input (read from network layer) buffer size.
-     * 
-     * @param size
-     *            the size in bytes
+     *
+     * @param size the size in bytes
      */
     void setInputBufferSize(int size);
 
     /**
      * The output (write to network layer) buffer size.
      *
-     * @param size
-     *            the size in bytes
+     * @param size the size in bytes
      */
     void setOutputBufferSize(int size);
 
@@ -113,8 +111,7 @@ public interface WebSocketPolicy
      * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      * </p>
      *
-     * @param size
-     *            the maximum allowed size of a binary message.
+     * @param size the maximum allowed size of a binary message.
      */
     void setMaxBinaryMessageSize(long size);
 
@@ -123,8 +120,7 @@ public interface WebSocketPolicy
      * <p>
      * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      *
-     * @param size
-     *            the maximum allowed size of a text message.
+     * @param size the maximum allowed size of a text message.
      */
     void setMaxTextMessageSize(long size);
 }

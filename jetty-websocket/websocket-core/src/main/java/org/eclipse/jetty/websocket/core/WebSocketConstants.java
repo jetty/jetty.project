@@ -42,5 +42,6 @@ public final class WebSocketConstants
     public final static byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StandardCharsets.ISO_8859_1);
 
     private WebSocketConstants()
-    {}
+    {
+    }
 }

@@ -35,7 +35,7 @@ public class StreamingEchoSocket
     {
         try (Writer writer = session.getBasicRemote().getSendWriter())
         {
-            IO.copy(reader,writer);
+            IO.copy(reader, writer);
         }
         catch (IOException e)
         {

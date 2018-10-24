@@ -22,11 +22,12 @@ import javax.websocket.CloseReason;
 import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/invalid")
+@ServerEndpoint(value = "/invalid")
 public class InvalidOpenCloseReasonSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter type CloseReason)
+     *
      * @param reason the close reason
      */
     @OnOpen

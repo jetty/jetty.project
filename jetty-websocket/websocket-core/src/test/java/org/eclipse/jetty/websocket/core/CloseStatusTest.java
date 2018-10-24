@@ -44,16 +44,16 @@ public class CloseStatusTest
     public void testAnonymousClose()
     {
         CloseStatus close = new CloseStatus();
-        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NO_CODE));
-        assertThat("close.reason",close.getReason(),nullValue());
+        assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.NO_CODE));
+        assertThat("close.reason", close.getReason(), nullValue());
 
         Frame frame = close.toFrame();
-        assertThat("close frame op code",frame.getOpCode(), Matchers.is(OpCode.CLOSE));
+        assertThat("close frame op code", frame.getOpCode(), Matchers.is(OpCode.CLOSE));
         // should result in no payload
-        assertThat("close frame has payload",frame.hasPayload(),is(false));
-        assertThat("close frame payload length",frame.getPayloadLength(),is(0));
+        assertThat("close frame has payload", frame.hasPayload(), is(false));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
     }
-    
+
     /**
      * A test where NO_CODE (1005) is provided
      */
@@ -61,16 +61,16 @@ public class CloseStatusTest
     public void testNoCode()
     {
         CloseStatus close = new CloseStatus(CloseStatus.NO_CODE);
-        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NO_CODE));
-        assertThat("close.reason",close.getReason(),nullValue());
+        assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.NO_CODE));
+        assertThat("close.reason", close.getReason(), nullValue());
 
         Frame frame = close.toFrame();
-        assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
+        assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
         // should result in no payload
-        assertThat("close frame has payload",frame.hasPayload(),is(false));
-        assertThat("close frame payload length",frame.getPayloadLength(),is(0));
+        assertThat("close frame has payload", frame.hasPayload(), is(false));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
     }
-    
+
     /**
      * A test where NO_CLOSE (1006) is provided
      */
@@ -78,14 +78,14 @@ public class CloseStatusTest
     public void testNoClose()
     {
         CloseStatus close = new CloseStatus(CloseStatus.NO_CLOSE);
-        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NO_CLOSE));
-        assertThat("close.reason",close.getReason(),nullValue());
+        assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.NO_CLOSE));
+        assertThat("close.reason", close.getReason(), nullValue());
 
         Frame frame = close.toFrame();
-        assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
+        assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
         // should result in no payload
-        assertThat("close frame has payload",frame.hasPayload(),is(false));
-        assertThat("close frame payload length",frame.getPayloadLength(),is(0));
+        assertThat("close frame has payload", frame.hasPayload(), is(false));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
     }
 
     /**
@@ -95,14 +95,14 @@ public class CloseStatusTest
     public void testFailedTlsHandshake()
     {
         CloseStatus close = new CloseStatus(CloseStatus.FAILED_TLS_HANDSHAKE);
-        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.FAILED_TLS_HANDSHAKE));
-        assertThat("close.reason",close.getReason(),nullValue());
+        assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.FAILED_TLS_HANDSHAKE));
+        assertThat("close.reason", close.getReason(), nullValue());
 
         Frame frame = close.toFrame();
-        assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
+        assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
         // should result in no payload
-        assertThat("close frame has payload",frame.hasPayload(),is(false));
-        assertThat("close frame payload length",frame.getPayloadLength(),is(0));
+        assertThat("close frame has payload", frame.hasPayload(), is(false));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
     }
 
     /**
@@ -112,14 +112,14 @@ public class CloseStatusTest
     public void testNormal()
     {
         CloseStatus close = new CloseStatus(CloseStatus.NORMAL);
-        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NORMAL));
-        assertThat("close.reason",close.getReason(),nullValue());
+        assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.NORMAL));
+        assertThat("close.reason", close.getReason(), nullValue());
 
         Frame frame = close.toFrame();
-        assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
-        assertThat("close frame payload length",frame.getPayloadLength(),is(2));
+        assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(2));
     }
-    
+
     private ByteBuffer asByteBuffer(int statusCode, String reason)
     {
         int len = 2; // status code length
@@ -137,30 +137,30 @@ public class CloseStatusTest
 
         if (utf != null)
         {
-            buf.put(utf,0,utf.length);
+            buf.put(utf, 0, utf.length);
         }
-        BufferUtil.flipToFlush(buf,0);
-        
+        BufferUtil.flipToFlush(buf, 0);
+
         return buf;
     }
-    
+
     @Test
     public void testFromFrame()
     {
-        ByteBuffer payload = asByteBuffer(CloseStatus.NORMAL,null);
+        ByteBuffer payload = asByteBuffer(CloseStatus.NORMAL, null);
         assertThat("payload length", payload.remaining(), is(2));
         Frame frame = new Frame(OpCode.CLOSE);
         frame.setPayload(payload);
-        
+
         // create from frame
         CloseStatus close = new CloseStatus(frame.getPayload());
-        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NORMAL));
-        assertThat("close.reason",close.getReason(),nullValue());
+        assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.NORMAL));
+        assertThat("close.reason", close.getReason(), nullValue());
 
         // and back again
         frame = close.toFrame();
-        assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
-        assertThat("close frame payload length",frame.getPayloadLength(),is(2));
+        assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(2));
     }
 
     @Test
@@ -168,14 +168,14 @@ public class CloseStatusTest
     {
         int code = CloseStatus.NORMAL;
         String reason = "___The WebSocket Connection Close Reason_ is defined as" +
-                "   the UTF-8-encoded data following the status code (Section 7.4)";
+            "   the UTF-8-encoded data following the status code (Section 7.4)";
 
         String utf4Bytes = "\uD801\uDC00";
 
         assertThat(reason.getBytes().length, lessThan(CloseStatus.MAX_REASON_PHRASE));
-        assertThat((reason+utf4Bytes).getBytes().length, greaterThan(CloseStatus.MAX_REASON_PHRASE));
+        assertThat((reason + utf4Bytes).getBytes().length, greaterThan(CloseStatus.MAX_REASON_PHRASE));
 
-        ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason+utf4Bytes);
+        ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason + utf4Bytes);
         assertThat(bb.limit(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));
 
         byte[] output = Arrays.copyOfRange(bb.array(), 2, bb.limit());
@@ -189,7 +189,7 @@ public class CloseStatusTest
 
         String utf4Bytes = "\uD801\uDC00";
         String reason = utf4Bytes;
-        for (int i=5;i-->0;)
+        for (int i = 5; i-- > 0; )
             reason = reason + reason;
 
         ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason);

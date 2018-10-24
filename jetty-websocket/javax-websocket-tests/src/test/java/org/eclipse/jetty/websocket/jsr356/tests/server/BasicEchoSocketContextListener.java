@@ -46,7 +46,7 @@ public class BasicEchoSocketContextListener implements ServletContextListener
         }
         catch (DeploymentException e)
         {
-            throw new RuntimeException("Unable to add endpoint directly",e);
+            throw new RuntimeException("Unable to add endpoint directly", e);
         }
     }
 }

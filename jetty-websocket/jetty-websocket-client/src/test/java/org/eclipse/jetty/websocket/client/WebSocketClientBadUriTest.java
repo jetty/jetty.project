@@ -44,13 +44,13 @@ public class WebSocketClientBadUriTest
     public static class OpenTrackingSocket
     {
         public CountDownLatch openLatch = new CountDownLatch(1);
-        
+
         @OnWebSocketConnect
         public void onOpen(Session session)
         {
             openLatch.countDown();
         }
-        
+
         public void assertNotOpened()
         {
             assertThat("Open Latch", openLatch.getCount(), greaterThanOrEqualTo(1L));
@@ -60,7 +60,7 @@ public class WebSocketClientBadUriTest
     public static Stream<Arguments> data()
     {
         return Stream.of(
-                // @formatter:off
+            // @formatter:off
                 // - not using right scheme
                 Arguments.of("http://localhost"),
                 Arguments.of("https://localhost"),
@@ -75,23 +75,22 @@ public class WebSocketClientBadUriTest
                 // @formatter:on
         );
     }
-    
 
     private WebSocketClient client;
-    
+
     @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-    
+
     @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testBadURI(String rawUri) throws Exception
@@ -99,11 +98,11 @@ public class WebSocketClientBadUriTest
         URI uri = URI.create(rawUri);
 
         OpenTrackingSocket clientSocket = new OpenTrackingSocket();
-        
+
         try
         {
             client.connect(clientSocket, uri); // should toss exception
-            
+
             fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)

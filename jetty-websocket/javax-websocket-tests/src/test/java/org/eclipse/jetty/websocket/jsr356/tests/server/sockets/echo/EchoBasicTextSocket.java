@@ -29,13 +29,13 @@ import java.io.IOException;
 public class EchoBasicTextSocket
 {
     private Session session;
-    
+
     @OnOpen
     public void onOpen(Session session)
     {
         this.session = session;
     }
-    
+
     @OnMessage
     public void onText(String msg)
     {

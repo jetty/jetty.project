@@ -55,7 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests of a core server with a fake client
- *
  */
 public class WebSocketCloseTest extends WebSocketTester
 {
@@ -64,12 +63,15 @@ public class WebSocketCloseTest extends WebSocketTester
     private WebSocketServer server;
     private Socket client;
 
-    enum State {OPEN, ICLOSED, OCLOSED}
+    enum State
+    {
+        OPEN, ICLOSED, OCLOSED
+    }
 
     @AfterEach
     public void after() throws Exception
     {
-        if (server!=null)
+        if (server != null)
             server.stop();
     }
 
@@ -84,7 +86,7 @@ public class WebSocketCloseTest extends WebSocketTester
                 server.start();
                 client = newClient(server.getLocalPort());
 
-                assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
+                assertTrue(server.handler.opened.await(10, TimeUnit.SECONDS));
 
                 assertThat(server.handler.getCoreSession().toString(), containsString("OPEN"));
                 LOG.info("Server: OPEN");
@@ -99,11 +101,11 @@ public class WebSocketCloseTest extends WebSocketTester
                 server.start();
                 client = newClient(server.getLocalPort());
 
-                assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
+                assertTrue(server.handler.opened.await(10, TimeUnit.SECONDS));
 
                 server.handler.getCoreSession().demand(1);
                 client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.NORMAL), true));
-                Frame frame = serverHandler.receivedFrames.poll(10,TimeUnit.SECONDS);
+                Frame frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
                 assertNotNull(frame);
                 assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
 
@@ -120,7 +122,7 @@ public class WebSocketCloseTest extends WebSocketTester
                 server.start();
                 client = newClient(server.getLocalPort());
 
-                assertTrue(server.handler.opened.await(10,TimeUnit.SECONDS));
+                assertTrue(server.handler.opened.await(10, TimeUnit.SECONDS));
 
                 server.sendFrame(CloseStatus.toFrame(CloseStatus.NORMAL));
                 Frame frame = receiveFrame(client.getInputStream());
@@ -145,8 +147,8 @@ public class WebSocketCloseTest extends WebSocketTester
         assertNotNull(frame);
         assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
 
-        assertTrue(server.handler.closed.await(10,TimeUnit.SECONDS));
-        assertThat(server.handler.closeStatus.getCode(),is(CloseStatus.NORMAL));
+        assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NORMAL));
     }
 
     @Test
@@ -160,14 +162,14 @@ public class WebSocketCloseTest extends WebSocketTester
         assertNotNull(frame);
         assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.SHUTDOWN));
 
-        assertTrue(server.handler.closed.await(10,TimeUnit.SECONDS));
-        assertThat(server.handler.closeStatus.getCode(),is(CloseStatus.SHUTDOWN));
+        assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SHUTDOWN));
     }
 
     @Test
     public void serverFailClose_ICLOSED() throws Exception
     {
-        try(StacklessLogging stackless = new StacklessLogging(WebSocketChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(WebSocketChannel.class))
         {
             setup(State.ICLOSED);
             server.handler.receivedCallback.poll().failed(new Exception("test failure"));
@@ -187,7 +189,7 @@ public class WebSocketCloseTest extends WebSocketTester
         setup(State.OCLOSED);
         server.handler.getCoreSession().demand(1);
         client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.NORMAL), true));
-        assertNotNull(server.handler.receivedFrames.poll(10,TimeUnit.SECONDS));
+        assertNotNull(server.handler.receivedFrames.poll(10, TimeUnit.SECONDS));
         server.handler.receivedCallback.poll().succeeded();
 
         assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
@@ -202,7 +204,7 @@ public class WebSocketCloseTest extends WebSocketTester
         setup(State.OCLOSED);
         server.handler.getCoreSession().demand(1);
         client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.BAD_PAYLOAD), true));
-        assertNotNull(server.handler.receivedFrames.poll(10,TimeUnit.SECONDS));
+        assertNotNull(server.handler.receivedFrames.poll(10, TimeUnit.SECONDS));
         server.handler.receivedCallback.poll().succeeded();
 
         assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
@@ -214,7 +216,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void clientCloseServerFailClose_OCLOSED() throws Exception
     {
-        try(StacklessLogging stackless = new StacklessLogging(WebSocketChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(WebSocketChannel.class))
         {
             setup(State.OCLOSED);
             server.handler.getCoreSession().demand(1);
@@ -377,14 +379,14 @@ public class WebSocketCloseTest extends WebSocketTester
             receivedCallback.offer(callback);
             receivedFrames.offer(Frame.copy(frame));
 
-            if(frame.getOpCode() == OpCode.BINARY)
+            if (frame.getOpCode() == OpCode.BINARY)
                 throw new IllegalArgumentException("onReceiveFrame throws for binary frames");
         }
 
         @Override
         public void onClosed(CloseStatus closeStatus)
         {
-            LOG.info("onClosed {}",closeStatus);
+            LOG.info("onClosed {}", closeStatus);
             this.closeStatus = closeStatus;
             closed.countDown();
         }
@@ -392,7 +394,7 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onError(Throwable cause) throws Exception
         {
-            LOG.info("onError {} ",cause==null?null:cause.toString());
+            LOG.info("onError {} ", cause == null?null:cause.toString());
         }
 
         @Override
@@ -446,7 +448,8 @@ public class WebSocketCloseTest extends WebSocketTester
 
             ContextHandler context = new ContextHandler("/");
             server.setHandler(context);
-            WebSocketNegotiator negotiator =  new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool(), frameHandler);
+            WebSocketNegotiator negotiator = new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(),
+                connector.getByteBufferPool(), frameHandler);
 
             WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);

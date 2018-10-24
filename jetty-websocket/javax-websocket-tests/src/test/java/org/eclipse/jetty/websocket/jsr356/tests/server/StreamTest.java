@@ -84,8 +84,8 @@ public class StreamTest
         FS.ensureEmpty(outputDir);
 
         // Create Server Endpoint with output directory configuration
-        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(UploadSocket.class,"/upload/{filename}")
-                .configurator(new ServerUploadConfigurator(outputDir)).build();
+        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(UploadSocket.class, "/upload/{filename}")
+            .configurator(new ServerUploadConfigurator(outputDir)).build();
         container.addEndpoint(config);
     }
 
@@ -116,7 +116,7 @@ public class StreamTest
     @Test
     public void testUploadLargest() throws Exception
     {
-        assertTimeout(Duration.ofMillis(60000), ()->upload("largest.jpg"));
+        assertTimeout(Duration.ofMillis(60000), () -> upload("largest.jpg"));
     }
 
     private void upload(String filename) throws Exception
@@ -143,21 +143,19 @@ public class StreamTest
 
     /**
      * Verify that the file sha1sum matches the previously calculated sha1sum
-     * 
-     * @param file
-     *            the file to validate
-     * @param sha1File
-     *            the sha1sum file to verify against
+     *
+     * @param file     the file to validate
+     * @param sha1File the sha1sum file to verify against
      */
     private void assertFileUpload(File file, File sha1File) throws IOException, NoSuchAlgorithmException
     {
-        assertThat("Path should exist: " + file,file.exists(),is(true));
-        assertThat("Path should not be a directory:" + file,file.isDirectory(),is(false));
+        assertThat("Path should exist: " + file, file.exists(), is(true));
+        assertThat("Path should not be a directory:" + file, file.isDirectory(), is(false));
 
         String expectedSha1 = Sha1Sum.loadSha1(sha1File);
         String actualSha1 = Sha1Sum.calculate(file);
 
-        assertThat("SHA1Sum of content: " + file,actualSha1,equalToIgnoringCase(expectedSha1));
+        assertThat("SHA1Sum of content: " + file, actualSha1, equalToIgnoringCase(expectedSha1));
     }
 
     @ClientEndpoint
@@ -185,7 +183,7 @@ public class StreamTest
 
         public void awaitClose() throws InterruptedException
         {
-            assertThat("Wait for ClientSocket close success",closeLatch.await(5,TimeUnit.SECONDS),is(true));
+            assertThat("Wait for ClientSocket close success", closeLatch.await(5, TimeUnit.SECONDS), is(true));
         }
 
         @OnError
@@ -217,8 +215,8 @@ public class StreamTest
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            sec.getUserProperties().put(OUTPUT_DIR,this.outputDir);
-            super.modifyHandshake(sec,request,response);
+            sec.getUserProperties().put(OUTPUT_DIR, this.outputDir);
+            super.modifyHandshake(sec, request, response);
         }
     }
 
@@ -240,15 +238,15 @@ public class StreamTest
         @OnMessage
         public void onMessage(InputStream stream, @PathParam("filename") String filename) throws IOException
         {
-            File outputFile = new File(outputDir,filename);
+            File outputFile = new File(outputDir, filename);
             CloseCode closeCode = CloseCodes.NORMAL_CLOSURE;
             String closeReason = "";
             try (FileOutputStream out = new FileOutputStream(outputFile))
             {
-                IO.copy(stream,out);
+                IO.copy(stream, out);
                 if (outputFile.exists())
                 {
-                    closeReason = String.format("Received %,d bytes",outputFile.length());
+                    closeReason = String.format("Received %,d bytes", outputFile.length());
                     if (LOG.isDebugEnabled())
                         LOG.debug(closeReason);
                 }
@@ -265,7 +263,7 @@ public class StreamTest
             }
             finally
             {
-                session.close(new CloseReason(closeCode,closeReason));
+                session.close(new CloseReason(closeCode, closeReason));
             }
         }
 

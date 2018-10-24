@@ -31,31 +31,31 @@ import static org.hamcrest.Matchers.is;
 public class OutgoingFramesCapture implements OutgoingFrames
 {
     public BlockingQueue<Frame> frames = new LinkedBlockingDeque<>();
-    
+
     public void assertFrameCount(int expectedCount)
     {
         assertThat("Frame Count", frames.size(), is(expectedCount));
     }
-    
+
     @Deprecated
     public void assertHasFrame(byte opCode, int expectedCount)
     {
         assertHasOpCount(opCode, expectedCount);
     }
-    
+
     public void assertHasOpCount(byte opCode, int expectedCount)
     {
         assertThat("Frame Count [op=" + opCode + "]", getFrameCount(opCode), is(expectedCount));
     }
-    
+
     public void dump()
     {
-        System.out.printf("Captured %d outgoing writes%n",frames.size());
-        int i=0;
-        for (Frame frame: frames)
+        System.out.printf("Captured %d outgoing writes%n", frames.size());
+        int i = 0;
+        for (Frame frame : frames)
         {
-            System.out.printf("[%3d] %s%n",i++,frame);
-            System.out.printf("      %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.out.printf("[%3d] %s%n", i++, frame);
+            System.out.printf("      %s%n", BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 

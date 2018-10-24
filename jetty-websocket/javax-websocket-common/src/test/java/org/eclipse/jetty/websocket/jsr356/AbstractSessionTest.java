@@ -41,16 +41,16 @@ public abstract class AbstractSessionTest
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
         JavaxWebSocketFrameHandler frameHandler =
-                container.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, null);
+            container.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, null);
         FrameHandler.CoreSession channel = new DummyCoreSession();
         String id = "dummy";
         EndpointConfig endpointConfig = null;
         session = new JavaxWebSocketSession(container,
-                channel,
-                frameHandler,
-                null,
-                id,
-                endpointConfig);
+            channel,
+            frameHandler,
+            null,
+            id,
+            endpointConfig);
         container.addManaged(session);
     }
 

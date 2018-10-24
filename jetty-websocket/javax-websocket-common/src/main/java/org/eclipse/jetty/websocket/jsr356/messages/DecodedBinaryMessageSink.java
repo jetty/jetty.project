@@ -33,9 +33,9 @@ import java.nio.ByteBuffer;
 public class DecodedBinaryMessageSink<T> extends DecodedMessageSink<Decoder.Binary<T>>
 {
     public DecodedBinaryMessageSink(JavaxWebSocketSession session,
-                                    Decoder.Binary<T> decoder,
-                                    MethodHandle methodHandle)
-            throws NoSuchMethodException, IllegalAccessException
+        Decoder.Binary<T> decoder,
+        MethodHandle methodHandle)
+        throws NoSuchMethodException, IllegalAccessException
     {
         super(session, decoder, methodHandle);
     }
@@ -44,8 +44,8 @@ public class DecodedBinaryMessageSink<T> extends DecodedMessageSink<Decoder.Bina
     protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
     {
         return MethodHandles.lookup().findVirtual(DecodedBinaryMessageSink.class,
-                "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
-                .bindTo(this);
+            "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
+            .bindTo(this);
     }
 
     @Override

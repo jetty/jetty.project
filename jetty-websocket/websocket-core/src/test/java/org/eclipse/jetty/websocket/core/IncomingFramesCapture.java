@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.is;
 public class IncomingFramesCapture implements IncomingFrames
 {
     public BlockingQueue<Frame> frames = new LinkedBlockingDeque<>();
-    
+
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
@@ -37,17 +37,17 @@ public class IncomingFramesCapture implements IncomingFrames
         frames.offer(copy);
         callback.succeeded();
     }
-    
+
     public void assertHasOpCount(byte opCode, int expectedCount)
     {
         assertThat("Frame Count [op=" + opCode + "]", getFrameCount(opCode), is(expectedCount));
     }
-    
+
     public void assertFrameCount(int expectedCount)
     {
         assertThat("Frame Count", frames.size(), is(expectedCount));
     }
-    
+
     public int getFrameCount(byte op)
     {
         int count = 0;

@@ -35,7 +35,7 @@ public class MyEchoBinarySocket extends MyEchoSocket
     {
         try
         {
-            getRemote().sendBytes(ByteBuffer.wrap(buf,offset,length));
+            getRemote().sendBytes(ByteBuffer.wrap(buf, offset, length));
         }
         catch (IOException e)
         {

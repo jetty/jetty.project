@@ -22,6 +22,7 @@ import javax.websocket.Decoder;
 
 /**
  * Testing scenario of an extended Decoder interface
+ *
  * @param <T> the decoder type
  */
 public interface ExtDecoder<T> extends Decoder.Text<T>

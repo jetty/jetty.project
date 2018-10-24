@@ -73,15 +73,16 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
         // TODO why doesn't the javax side share this approach?
-        List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>) ctx.getAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
-        if(factories == null)
+        List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>)ctx
+            .getAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
+        if (factories == null)
         {
             factories = new ArrayList<>();
-            ctx.setAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS,factories);
+            ctx.setAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS, factories);
         }
 
-        Executor executor = (Executor) ctx.getAttribute("org.eclipse.jetty.server.Executor");
-        if(executor == null)
+        Executor executor = (Executor)ctx.getAttribute("org.eclipse.jetty.server.Executor");
+        if (executor == null)
         {
             try
             {

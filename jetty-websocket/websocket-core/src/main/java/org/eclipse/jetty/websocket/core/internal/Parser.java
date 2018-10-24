@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.io.Closeable;
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -32,6 +29,9 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
+
+import java.io.Closeable;
+import java.nio.ByteBuffer;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -61,10 +61,9 @@ public class Parser
     private int payloadLength;
     private ByteBuffer aggregate;
 
-    
     public Parser(ByteBufferPool bufferPool)
     {
-        this(bufferPool,true);
+        this(bufferPool, true);
     }
 
     public Parser(ByteBufferPool bufferPool, boolean autoFragment)
@@ -72,7 +71,7 @@ public class Parser
         this.bufferPool = bufferPool;
         this.autoFragment = autoFragment;
     }
-    
+
     public void reset()
     {
         state = State.START;
@@ -82,7 +81,7 @@ public class Parser
         aggregate = null;
         payloadLength = -1;
     }
-    
+
     /**
      * Parse the buffer.
      *
@@ -96,7 +95,7 @@ public class Parser
         {
             // parse through
             while (buffer.hasRemaining())
-            {            
+            {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} Parsing {}", this, BufferUtil.toDetailString(buffer));
 
@@ -105,7 +104,7 @@ public class Parser
                     case START:
                     {
                         // peek at byte
-                        firstByte = buffer.get();                        
+                        firstByte = buffer.get();
                         state = State.PAYLOAD_LEN;
                         break;
                     }
@@ -113,10 +112,10 @@ public class Parser
                     case PAYLOAD_LEN:
                     {
                         byte b = buffer.get();
-                        
-                        if ( (b & 0x80) != 0 )
+
+                        if ((b & 0x80) != 0)
                             mask = new byte[4];
-                        
+
                         payloadLength = (byte)(0x7F & b);
 
                         if (payloadLength == 127) // 0x7F
@@ -133,14 +132,14 @@ public class Parser
                             state = State.PAYLOAD_LEN_BYTES;
                             cursor = 2;
                         }
-                        else if (mask!=null)
+                        else if (mask != null)
                         {
                             state = State.MASK;
                         }
-                        else if (payloadLength==0)
+                        else if (payloadLength == 0)
                         {
                             state = State.START;
-                            return newFrame(firstByte,mask,null,false);
+                            return newFrame(firstByte, mask, null, false);
                         }
                         else
                         {
@@ -156,14 +155,14 @@ public class Parser
                         payloadLength |= (b & 0xFF) << (8 * cursor);
                         if (cursor == 0)
                         {
-                            if (mask!=null)
+                            if (mask != null)
                             {
                                 state = State.MASK;
                             }
-                            else if (payloadLength==0)
+                            else if (payloadLength == 0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte,mask,null,false);
+                                return newFrame(firstByte, mask, null, false);
                             }
                             else
                             {
@@ -177,11 +176,11 @@ public class Parser
                     {
                         if (buffer.remaining() >= 4)
                         {
-                            buffer.get(mask,0,4);
-                            if (payloadLength==0)
+                            buffer.get(mask, 0, 4);
+                            if (payloadLength == 0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte,mask,null,false);
+                                return newFrame(firstByte, mask, null, false);
                             }
                             state = State.PAYLOAD;
                         }
@@ -200,10 +199,10 @@ public class Parser
                         --cursor;
                         if (cursor == 0)
                         {
-                            if (payloadLength==0)
+                            if (payloadLength == 0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte,mask,null,false);
+                                return newFrame(firstByte, mask, null, false);
                             }
                             state = State.PAYLOAD;
                         }
@@ -214,10 +213,10 @@ public class Parser
                     case FRAGMENT:
                     {
                         if (aggregate == null)
-                            checkFrameSize(OpCode.getOpCode(firstByte),payloadLength);
+                            checkFrameSize(OpCode.getOpCode(firstByte), payloadLength);
                         ParsedFrame frame = parsePayload(buffer);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} parsed {}",this,frame);
+                            LOG.debug("{} parsed {}", this, frame);
                         return frame;
                     }
                 }
@@ -226,36 +225,36 @@ public class Parser
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} Parse Error {}",this,BufferUtil.toDetailString(buffer), t);
-            
+                LOG.debug("{} Parse Error {}", this, BufferUtil.toDetailString(buffer), t);
+
             buffer.position(buffer.limit()); // consume remaining
-            
+
             // let session know
             WebSocketException wse;
-            if(t instanceof WebSocketException)
-                wse = (WebSocketException) t;
+            if (t instanceof WebSocketException)
+                wse = (WebSocketException)t;
             else
                 wse = new WebSocketException(t);
-                
+
             throw wse;
         }
         finally
         {
-            if (state==State.START)
+            if (state == State.START)
                 reset();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} Parse exit", this);
         }
-        
+
         return null;
     }
 
-    protected void checkFrameSize(byte opcode,int payloadLength) throws MessageTooLargeException, ProtocolException
+    protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
     {
-        if (OpCode.isControlFrame(opcode) && payloadLength> Frame.MAX_CONTROL_PAYLOAD)
+        if (OpCode.isControlFrame(opcode) && payloadLength > Frame.MAX_CONTROL_PAYLOAD)
             throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
     }
-    
+
     protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
     {
         // Validate OpCode
@@ -270,9 +269,9 @@ public class Parser
 
         return new ParsedFrame(firstByte, mask, payload, releaseable);
     }
-    
+
     private ParsedFrame parsePayload(ByteBuffer buffer)
-    {        
+    {
         if (payloadLength == 0)
             return null;
 
@@ -280,114 +279,112 @@ public class Parser
             return null;
 
         int available = buffer.remaining();
-        
-        
+
         if (aggregate == null)
         {
-            if (available<payloadLength)
+            if (available < payloadLength)
             {
                 // not enough to complete this frame 
-               
+
                 // Can we auto-fragment
                 if (autoFragment && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
                 {
-                    payloadLength-=available;
-                    
+                    payloadLength -= available;
+
                     byte[] next_mask = null;
-                    if (mask!=null)
+                    if (mask != null)
                     {
-                        int shift = available%4;
+                        int shift = available % 4;
                         next_mask = new byte[4];
-                        next_mask[0] = mask[(0+shift)%4];
-                        next_mask[1] = mask[(1+shift)%4];
-                        next_mask[2] = mask[(2+shift)%4];
-                        next_mask[3] = mask[(3+shift)%4];
+                        next_mask[0] = mask[(0 + shift) % 4];
+                        next_mask[1] = mask[(1 + shift) % 4];
+                        next_mask[2] = mask[(2 + shift) % 4];
+                        next_mask[3] = mask[(3 + shift) % 4];
                     }
-                    ParsedFrame frame = newFrame((byte)(firstByte&0x7F),mask,buffer.slice(),false);
+                    ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, buffer.slice(), false);
                     buffer.position(buffer.limit());
                     mask = next_mask;
-                    firstByte=(byte)(0xFF&(firstByte&0xF0 | OpCode.CONTINUATION));
+                    firstByte = (byte)(0xFF & (firstByte & 0xF0 | OpCode.CONTINUATION));
                     state = State.FRAGMENT;
                     return frame;
                 }
-                    
+
                 // No space in the buffer, so we have to copy the partial payload
-                aggregate = bufferPool.acquire(payloadLength,false);
-                BufferUtil.append(aggregate,buffer);
+                aggregate = bufferPool.acquire(payloadLength, false);
+                BufferUtil.append(aggregate, buffer);
                 return null;
             }
-            
-            if (available==payloadLength)
-            {         
+
+            if (available == payloadLength)
+            {
                 // All the available data is for this frame and completes it 
-                ParsedFrame frame = newFrame(firstByte,mask,buffer.slice(),false);
+                ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), false);
                 buffer.position(buffer.limit());
                 state = State.START;
                 return frame;
             }
-            
+
             // The buffer contains all the data for this frame and for subsequent frames
             // Copy the just the first part of the buffer as frame payload
             int limit = buffer.limit();
             int end = buffer.position() + payloadLength;
             buffer.limit(end);
-            ParsedFrame frame = newFrame(firstByte,mask,buffer.slice(),false);
+            ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), false);
             buffer.position(end);
             buffer.limit(limit);
             state = State.START;
             return frame;
-            
+
         }
         else
         {
             int aggregated = aggregate.remaining();
             int expecting = payloadLength - aggregated;
-            
 
             if (available < expecting)
             {
                 // not enough data to complete this frame, just copy it
-                BufferUtil.append(aggregate,buffer);
+                BufferUtil.append(aggregate, buffer);
                 return null;
             }
-            
+
             if (available == expecting)
             {
                 // All the available data is for this frame and completes it
-                BufferUtil.append(aggregate,buffer);
+                BufferUtil.append(aggregate, buffer);
                 state = State.START;
-                return newFrame(firstByte,mask, aggregate,true);
+                return newFrame(firstByte, mask, aggregate, true);
             }
-
 
             // The buffer contains data for this frame and subsequent frames
             // Copy the first part of the buffer to the frame and complete it
             int limit = buffer.limit();
             buffer.limit(buffer.position() + expecting);
-            BufferUtil.append(aggregate,buffer);
+            BufferUtil.append(aggregate, buffer);
             buffer.limit(limit);
             state = State.START;
-            return newFrame(firstByte,mask, aggregate,true);
+            return newFrame(firstByte, mask, aggregate, true);
         }
     }
-    
+
     @Override
     public String toString()
     {
-        return String.format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]",hashCode(),state,cursor,firstByte,mask==null?"-":TypeUtil.toHexString(mask),payloadLength);
-    }    
-    
+        return String
+            .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null?"-":TypeUtil.toHexString(mask), payloadLength);
+    }
+
     public class ParsedFrame extends Frame implements Closeable
     {
         final CloseStatus closeStatus;
         final boolean releaseable;
-        
+
         public ParsedFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
         {
-            super(firstByte,mask,payload);
+            super(firstByte, mask, payload);
             demask();
             this.releaseable = releaseable;
-            if (getOpCode()==OpCode.CLOSE)
+            if (getOpCode() == OpCode.CLOSE)
             {
                 if (hasPayload())
                     closeStatus = new CloseStatus(payload.duplicate());
@@ -406,7 +403,7 @@ public class Parser
             if (releaseable)
                 bufferPool.release(getPayload());
         }
-        
+
         public CloseStatus getCloseStatus()
         {
             return closeStatus;

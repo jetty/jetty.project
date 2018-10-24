@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.containsString;
 public class IdleTimeoutTest
 {
     private static WSServer server;
-    
+
     @BeforeAll
     public static void setupServer() throws Exception
     {
@@ -53,29 +53,29 @@ public class IdleTimeoutTest
         server.copyClass(IdleTimeoutContextListener.class);
         // the annotated socket
         server.copyClass(IdleTimeoutOnOpenSocket.class);
-        
+
         server.start();
-        
+
         WebAppContext webapp = server.createWebAppContext();
         server.deployWebapp(webapp);
         // wsb.dump();
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     private void assertConnectionTimeout(String requestPath) throws Exception
     {
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
-            
+
             session.sendFrames(new Frame(OpCode.TEXT).setPayload("You shouldn't be there"));
-            
+
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CLOSE));
@@ -84,13 +84,13 @@ public class IdleTimeoutTest
             assertThat("Close.reason", closeStatus.getReason(), containsString("Timeout"));
         }
     }
-    
+
     @Test
     public void testAnnotated() throws Exception
     {
         assertConnectionTimeout("/app/idle-onopen-socket");
     }
-    
+
     @Test
     public void testEndpoint() throws Exception
     {

@@ -63,7 +63,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
                 int nextSize = size + payload.remaining();
-                if (maxMessageSize>0 && size>maxMessageSize)
+                if (maxMessageSize > 0 && size > maxMessageSize)
                     throw new MessageTooLargeException("Message size [" + size + "] exceeds maximum size [" + maxMessageSize + "]");
                 size = nextSize;
 

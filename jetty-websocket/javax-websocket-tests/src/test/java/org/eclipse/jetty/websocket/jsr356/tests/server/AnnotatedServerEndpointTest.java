@@ -46,7 +46,7 @@ import java.util.Map;
 public class AnnotatedServerEndpointTest
 {
     private static WSServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -57,69 +57,69 @@ public class AnnotatedServerEndpointTest
         server.copyClass(EchoSocketConfigurator.class);
         server.copyClass(DateDecoder.class);
         server.copyClass(TimeEncoder.class);
-        
+
         server.start();
-        
+
         WebAppContext webapp = server.createWebAppContext();
         server.deployWebapp(webapp);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     private void assertResponse(String message, String expectedText) throws Exception
     {
         Map<String, String> upgradeRequest = UpgradeUtils.newDefaultUpgradeRequestHeaders();
         upgradeRequest.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), "echo");
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(message));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer("/app/echo", upgradeRequest))
         {
             session.sendFrames(send);
             session.expect(expect);
         }
     }
-    
+
     @Test
     public void testConfigurator() throws Exception
     {
         assertResponse("configurator", EchoSocketConfigurator.class.getName());
     }
-    
+
     @Test
     public void testTextMax() throws Exception
     {
         assertResponse("text-max", "111,222");
     }
-    
+
     @Test
     public void testBinaryMax() throws Exception
     {
         assertResponse("binary-max", "333,444");
     }
-    
+
     @Test
     public void testDecoders() throws Exception
     {
         assertResponse("decoders", DateDecoder.class.getName());
     }
-    
+
     @Test
     public void testEncoders() throws Exception
     {
         assertResponse("encoders", TimeEncoder.class.getName());
     }
-    
+
     @Test
     public void testSubProtocols() throws Exception
     {

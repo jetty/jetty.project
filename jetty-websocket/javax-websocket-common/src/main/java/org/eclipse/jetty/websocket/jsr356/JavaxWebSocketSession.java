@@ -73,11 +73,11 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     private JavaxWebSocketBasicRemote basicRemote;
 
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
-                                 FrameHandler.CoreSession coreSession,
-                                 JavaxWebSocketFrameHandler frameHandler,
-                                 Principal upgradeRequestPrincipal,
-                                 String id,
-                                 EndpointConfig endpointConfig)
+        FrameHandler.CoreSession coreSession,
+        JavaxWebSocketFrameHandler frameHandler,
+        Principal upgradeRequestPrincipal,
+        String id,
+        EndpointConfig endpointConfig)
     {
         this.container = container;
         this.coreSession = coreSession;
@@ -85,14 +85,14 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         this.principal = upgradeRequestPrincipal;
         this.id = id;
 
-        this.config = endpointConfig == null ? new BasicEndpointConfig() : endpointConfig;
+        this.config = endpointConfig == null?new BasicEndpointConfig():endpointConfig;
 
         this.availableDecoders = new AvailableDecoders(this.config);
         this.availableEncoders = new AvailableEncoders(this.config);
 
         if (this.config instanceof PathParamProvider)
         {
-            PathParamProvider pathParamProvider = (PathParamProvider) this.config;
+            PathParamProvider pathParamProvider = (PathParamProvider)this.config;
             this.pathParameters = new HashMap<>(pathParamProvider.getPathParams());
         }
         else
@@ -138,7 +138,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
 
         frameHandler.addMessageHandler(this, clazz, handler);
 
-
     }
 
     /**
@@ -147,7 +146,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
      * @see Session#addMessageHandler(MessageHandler)
      * @since JSR356 v1.0
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {
@@ -158,14 +157,14 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         if (MessageHandler.Whole.class.isAssignableFrom(handlerClass))
         {
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Whole.class);
-            addMessageHandler(onMessageClass, (MessageHandler.Whole) handler);
+            addMessageHandler(onMessageClass, (MessageHandler.Whole)handler);
             added = true;
         }
 
         if (MessageHandler.Partial.class.isAssignableFrom(handlerClass))
         {
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Partial.class);
-            addMessageHandler(onMessageClass, (MessageHandler.Partial) handler);
+            addMessageHandler(onMessageClass, (MessageHandler.Partial)handler);
             added = true;
         }
 
@@ -563,7 +562,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public String toString()
     {
         return String.format("%s@%x[%s,%s]", this.getClass().getSimpleName(), this.hashCode(),
-                coreSession.getBehavior(), frameHandler);
+            coreSession.getBehavior(), frameHandler);
     }
 
     protected SharedBlockingCallback getBlocking()

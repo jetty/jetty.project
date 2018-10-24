@@ -22,12 +22,12 @@ import javax.websocket.OnError;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/error/session")
+@ServerEndpoint(value = "/echo/error/session")
 public class BasicErrorSessionSocket extends TrackingSocket
 {
     @OnError
     public void onError(Session session)
     {
-        addEvent("onError(%s)",session);
+        addEvent("onError(%s)", session);
     }
 }

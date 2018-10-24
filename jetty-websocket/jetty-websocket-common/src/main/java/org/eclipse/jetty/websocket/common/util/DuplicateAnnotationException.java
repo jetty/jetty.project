@@ -38,7 +38,7 @@ public class DuplicateAnnotationException extends InvalidWebSocketException
         for (Method method : methods)
         {
             err.append(System.lineSeparator());
-            ReflectUtils.append(err,method);
+            ReflectUtils.append(err, method);
         }
 
         return new DuplicateAnnotationException(err.toString());
@@ -51,6 +51,6 @@ public class DuplicateAnnotationException extends InvalidWebSocketException
 
     public DuplicateAnnotationException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

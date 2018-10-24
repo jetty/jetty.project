@@ -34,21 +34,21 @@ public class ExtensionConfigTest
     private void assertConfig(ExtensionConfig cfg, String expectedName, Map<String, String> expectedParams)
     {
         String prefix = "ExtensionConfig";
-        assertThat(prefix + ".Name",cfg.getName(),is(expectedName));
+        assertThat(prefix + ".Name", cfg.getName(), is(expectedName));
 
         prefix += ".getParameters()";
         Map<String, String> actualParams = cfg.getParameters();
-        assertThat(prefix,actualParams,notNullValue());
-        assertThat(prefix + ".size",actualParams.size(),is(expectedParams.size()));
+        assertThat(prefix, actualParams, notNullValue());
+        assertThat(prefix + ".size", actualParams.size(), is(expectedParams.size()));
 
         for (String expectedKey : expectedParams.keySet())
         {
-            assertThat(prefix + ".containsKey(" + expectedKey + ")",actualParams.containsKey(expectedKey),is(true));
+            assertThat(prefix + ".containsKey(" + expectedKey + ")", actualParams.containsKey(expectedKey), is(true));
 
             String expectedValue = expectedParams.get(expectedKey);
             String actualValue = actualParams.get(expectedKey);
 
-            assertThat(prefix + ".containsKey(" + expectedKey + ")",actualValue,is(expectedValue));
+            assertThat(prefix + ".containsKey(" + expectedKey + ")", actualValue, is(expectedValue));
         }
     }
 
@@ -57,9 +57,9 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("mux; max-channels=4; flow-control");
         Map<String, String> expectedParams = new HashMap<>();
-        expectedParams.put("max-channels","4");
-        expectedParams.put("flow-control",null);
-        assertConfig(cfg,"mux",expectedParams);
+        expectedParams.put("max-channels", "4");
+        expectedParams.put("flow-control", null);
+        assertConfig(cfg, "mux", expectedParams);
     }
 
     @Test
@@ -67,8 +67,8 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("permessage-compress; method=foo");
         Map<String, String> expectedParams = new HashMap<>();
-        expectedParams.put("method","foo");
-        assertConfig(cfg,"permessage-compress",expectedParams);
+        expectedParams.put("method", "foo");
+        assertConfig(cfg, "permessage-compress", expectedParams);
     }
 
     @Test
@@ -76,8 +76,8 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("permessage-compress; method=\"foo; x=10\"");
         Map<String, String> expectedParams = new HashMap<>();
-        expectedParams.put("method","foo; x=10");
-        assertConfig(cfg,"permessage-compress",expectedParams);
+        expectedParams.put("method", "foo; x=10");
+        assertConfig(cfg, "permessage-compress", expectedParams);
     }
 
     @Test
@@ -85,8 +85,8 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("permessage-compress; method=\"foo, bar\"");
         Map<String, String> expectedParams = new HashMap<>();
-        expectedParams.put("method","foo, bar");
-        assertConfig(cfg,"permessage-compress",expectedParams);
+        expectedParams.put("method", "foo, bar");
+        assertConfig(cfg, "permessage-compress", expectedParams);
     }
 
     @Test
@@ -94,8 +94,8 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("permessage-compress; method=\"foo; use_x, foo\"");
         Map<String, String> expectedParams = new HashMap<>();
-        expectedParams.put("method","foo; use_x, foo");
-        assertConfig(cfg,"permessage-compress",expectedParams);
+        expectedParams.put("method", "foo; use_x, foo");
+        assertConfig(cfg, "permessage-compress", expectedParams);
     }
 
     @Test
@@ -103,8 +103,8 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("permessage-compress; method=\"foo; x=\\\"Hello World\\\", bar\"");
         Map<String, String> expectedParams = new HashMap<>();
-        expectedParams.put("method","foo; x=\"Hello World\", bar");
-        assertConfig(cfg,"permessage-compress",expectedParams);
+        expectedParams.put("method", "foo; x=\"Hello World\", bar");
+        assertConfig(cfg, "permessage-compress", expectedParams);
     }
 
     @Test
@@ -112,8 +112,8 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("bar; baz=2");
         Map<String, String> expectedParams = new HashMap<>();
-        expectedParams.put("baz","2");
-        assertConfig(cfg,"bar",expectedParams);
+        expectedParams.put("baz", "2");
+        assertConfig(cfg, "bar", expectedParams);
     }
 
     @Test
@@ -121,16 +121,16 @@ public class ExtensionConfigTest
     {
         ExtensionConfig cfg = ExtensionConfig.parse("foo");
         Map<String, String> expectedParams = new HashMap<>();
-        assertConfig(cfg,"foo",expectedParams);
+        assertConfig(cfg, "foo", expectedParams);
     }
 
     @Test
     public void testParseList_Simple()
     {
         String rawHeaders[] = new String[] {
-                "permessage-compress; client_max_window_bits",
-                "capture; output=\"wscapture.log\"",
-                "identity"
+            "permessage-compress; client_max_window_bits",
+            "capture; output=\"wscapture.log\"",
+            "identity"
         };
 
         List<ExtensionConfig> configs = ExtensionConfig.parseList(rawHeaders);
@@ -148,8 +148,8 @@ public class ExtensionConfigTest
     public void testParseList_Unsplit()
     {
         String rawHeaders[] = new String[] {
-                "permessage-compress; client_max_window_bits, identity",
-                "capture; output=\"wscapture.log\""
+            "permessage-compress; client_max_window_bits, identity",
+            "capture; output=\"wscapture.log\""
         };
 
         List<ExtensionConfig> configs = ExtensionConfig.parseList(rawHeaders);

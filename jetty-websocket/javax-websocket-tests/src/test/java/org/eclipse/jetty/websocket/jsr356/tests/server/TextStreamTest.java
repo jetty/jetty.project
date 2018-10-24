@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -42,6 +30,18 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TextStreamTest
 {
@@ -70,7 +70,7 @@ public class TextStreamTest
     {
         testEcho(1024);
     }
-    
+
     private byte[] newData(int size)
     {
         @SuppressWarnings("SpellCheckingInspection")
@@ -82,11 +82,11 @@ public class TextStreamTest
         }
         return data;
     }
-    
+
     private void testEcho(int size) throws Exception
     {
         byte[] data = newData(size);
-    
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
@@ -95,14 +95,13 @@ public class TextStreamTest
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedMessage));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-    
+
         try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
         {
             fuzzer.sendBulk(send);
             fuzzer.expect(expect);
         }
     }
-
 
     // TODO These tests incorrectly assumes no frame fragmentation.
     // When message fragmentation is implemented in PartialStringMessageSink then update
@@ -121,7 +120,7 @@ public class TextStreamTest
     {
         int size = container.getDefaultMaxTextMessageBufferSize() + 16;
         byte[] data = newData(size);
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
@@ -132,7 +131,8 @@ public class TextStreamTest
 
         // Frames expected are influenced by container.getDefaultMaxTextMessageBufferSize setting
         ByteBuffer frame1 = ByteBuffer.wrap(expectedData, 0, container.getDefaultMaxTextMessageBufferSize());
-        ByteBuffer frame2 = ByteBuffer.wrap(expectedData, container.getDefaultMaxTextMessageBufferSize(), size - container.getDefaultMaxTextMessageBufferSize());
+        ByteBuffer frame2 = ByteBuffer
+            .wrap(expectedData, container.getDefaultMaxTextMessageBufferSize(), size - container.getDefaultMaxTextMessageBufferSize());
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(frame1).setFin(false));
         expect.add(new Frame(OpCode.CONTINUATION).setPayload(frame2).setFin(true));

@@ -39,7 +39,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class EndpointEchoTest
 {
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -47,13 +47,13 @@ public class EndpointEchoTest
         server.start();
         server.getServerContainer().addEndpoint(LocalServer.TextEchoSocket.class);
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     public static class ClientEndpoint extends WSEndpointTracker implements MessageHandler.Whole<String>
     {
         @Override
@@ -62,14 +62,14 @@ public class EndpointEchoTest
             super.onOpen(session, config);
             session.addMessageHandler(this);
         }
-    
+
         @Override
         public void onMessage(String message)
         {
             super.onWsText(message);
         }
     }
-    
+
     @Test
     public void testEchoInstance() throws Exception
     {
@@ -79,13 +79,13 @@ public class EndpointEchoTest
         // Issue connect using instance of class that extends Endpoint
         Session session = container.connectToServer(clientEndpoint, server.getWsUri().resolve("/echo/text"));
         session.getBasicRemote().sendText("Echo");
-        
+
         String resp = clientEndpoint.messageQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("Echo"));
         session.close();
         clientEndpoint.awaitCloseEvent("Client");
     }
-    
+
     @Test
     public void testEchoClassRef() throws Exception
     {
@@ -93,15 +93,15 @@ public class EndpointEchoTest
         // Issue connect using class reference (class extends Endpoint)
         Session session = container.connectToServer(ClientEndpoint.class, server.getWsUri().resolve("/echo/text"));
         session.getBasicRemote().sendText("Echo");
-        
-        JavaxWebSocketSession jsrSession = (JavaxWebSocketSession) session;
+
+        JavaxWebSocketSession jsrSession = (JavaxWebSocketSession)session;
         Object obj = jsrSession.getEndpoint();
-        
+
         assertThat("session.endpoint", obj, Matchers.instanceOf(ClientEndpoint.class));
-        ClientEndpoint endpoint = (ClientEndpoint) obj;
+        ClientEndpoint endpoint = (ClientEndpoint)obj;
         String resp = endpoint.messageQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("Echo"));
-        
+
         session.close();
         endpoint.awaitCloseEvent("Client");
     }

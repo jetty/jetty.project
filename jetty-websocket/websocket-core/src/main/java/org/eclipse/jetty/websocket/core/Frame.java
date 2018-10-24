@@ -64,8 +64,10 @@ public class Frame
         copy.setPayload(BufferUtil.copy(original.getPayload()));
         return copy;
     }
-    
-    /** Maximum size of Control frame, per RFC 6455 */
+
+    /**
+     * Maximum size of Control frame, per RFC 6455
+     */
     public static final int MAX_CONTROL_PAYLOAD = 125;
 
     /**
@@ -81,7 +83,7 @@ public class Frame
      */
     protected byte finRsvOp;
     protected byte[] mask;
-    
+
     /**
      * The payload data.
      * <p>
@@ -91,11 +93,12 @@ public class Frame
 
     /**
      * Construct form opcode
+     *
      * @param opcode the opcode the frame is based on
      */
     public Frame(byte opcode)
     {
-        this((byte)(0x80 | (opcode & 0x0F)),null,null);
+        this((byte)(0x80 | (opcode & 0x0F)), null, null);
     }
 
     public Frame(byte opCode, ByteBuffer payload)
@@ -124,9 +127,9 @@ public class Frame
 
     protected Frame()
     {
-        this(OpCode.UNDEFINED,null,null);
+        this(OpCode.UNDEFINED, null, null);
     }
-    
+
     public Frame(byte finRsvOp, byte[] mask, ByteBuffer payload)
     {
         this.finRsvOp = finRsvOp;
@@ -190,7 +193,7 @@ public class Frame
         {
             return false;
         }
-        if (!Arrays.equals(mask,other.mask))
+        if (!Arrays.equals(mask, other.mask))
         {
             return false;
         }
@@ -240,7 +243,7 @@ public class Frame
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((payload == null)?0: payload.hashCode());
+        result = (prime * result) + ((payload == null)?0:payload.hashCode());
         result = (prime * result) + finRsvOp;
         result = (prime * result) + Arrays.hashCode(mask);
         return result;
@@ -258,7 +261,7 @@ public class Frame
 
     public boolean isMasked()
     {
-        return mask!=null;
+        return mask != null;
     }
 
     public boolean isRsv1()
@@ -308,6 +311,7 @@ public class Frame
      * The provided buffer will be used as is, no copying of bytes performed.
      * <p>
      * The provided buffer should be flipped and ready to READ from.
+     *
      * @param buf the bytebuffer to set
      * @return the frame itself
      */
@@ -357,7 +361,7 @@ public class Frame
 
     public boolean hasRsv()
     {
-        return (finRsvOp & 0x70) !=0;
+        return (finRsvOp & 0x70) != 0;
     }
 
     public void demask()
@@ -367,9 +371,9 @@ public class Frame
             int maskInt = 0;
             for (byte maskByte : mask)
                 maskInt = (maskInt << 8) + (maskByte & 0xFF);
-            
+
             int maskOffset = 0;
-            
+
             int start = payload.position();
             int end = payload.limit();
             int offset = maskOffset;
@@ -378,24 +382,23 @@ public class Frame
             {
                 if (remaining >= 4 && (offset & 3) == 0)
                 {
-                    payload.putInt(start,payload.getInt(start) ^ maskInt);
+                    payload.putInt(start, payload.getInt(start) ^ maskInt);
                     start += 4;
                     offset += 4;
                 }
                 else
                 {
-                    payload.put(start,(byte)(payload.get(start) ^ mask[offset & 3]));
+                    payload.put(start, (byte)(payload.get(start) ^ mask[offset & 3]));
                     ++start;
                     ++offset;
                 }
             }
-            
-            Arrays.fill(mask,(byte)0);
+
+            Arrays.fill(mask, (byte)0);
         }
-        
+
     }
-    
-    
+
     @Override
     public String toString()
     {
@@ -410,9 +413,9 @@ public class Frame
         b.append(((finRsvOp & 0x40) != 0)?'1':'0');
         b.append(((finRsvOp & 0x20) != 0)?'1':'0');
         b.append(((finRsvOp & 0x10) != 0)?'1':'0');
-        b.append(",m=").append(mask==null?"null":TypeUtil.toHexString(mask));
+        b.append(",m=").append(mask == null?"null":TypeUtil.toHexString(mask));
         b.append(']');
-        if (payload!=null)
+        if (payload != null)
             b.append(BufferUtil.toDetailString(payload));
         return b.toString();
     }
@@ -424,14 +427,14 @@ public class Frame
     {
         private ReadOnly(Frame frame)
         {
-            super(frame.finRsvOp,frame.isMasked()?frame.getMask():null,frame.getPayload());
+            super(frame.finRsvOp, frame.isMasked()?frame.getMask():null, frame.getPayload());
         }
 
         @Override
         public ByteBuffer getPayload()
         {
             ByteBuffer buffer = super.getPayload();
-            if(buffer == null)
+            if (buffer == null)
                 return null;
 
             return buffer.asReadOnlyBuffer();

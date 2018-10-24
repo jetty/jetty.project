@@ -51,13 +51,13 @@ public class JsrEchoTest
     public static class EchoBasicTextSocket
     {
         private Session session;
-        
+
         @OnOpen
         public void onOpen(Session session)
         {
             this.session = session;
         }
-        
+
         @OnMessage
         public void onText(String msg)
         {
@@ -79,7 +79,7 @@ public class JsrEchoTest
             }
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/basic-stateless")
     public static class EchoBasicStatelessTextSocket
@@ -105,26 +105,26 @@ public class JsrEchoTest
             }
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/async")
     public static class EchoAsyncTextSocket
     {
         private Session session;
-        
+
         @OnOpen
         public void onOpen(Session session)
         {
             this.session = session;
         }
-        
+
         @OnMessage
         public void onText(String msg)
         {
             session.getAsyncRemote().sendText(msg);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/async-stateless")
     public static class EchoAsyncStatelessSocket
@@ -135,7 +135,7 @@ public class JsrEchoTest
             session.getAsyncRemote().sendText(msg);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint("/echo/text/return")
     public static class EchoReturnTextSocket
@@ -146,28 +146,28 @@ public class JsrEchoTest
             return msg;
         }
     }
-    
+
     private static final List<Class<?>> TESTCLASSES = Arrays.asList(
-            EchoBasicTextSocket.class,
-            EchoBasicStatelessTextSocket.class,
-            EchoAsyncTextSocket.class,
-            EchoAsyncStatelessSocket.class,
-            EchoReturnTextSocket.class);
-    
+        EchoBasicTextSocket.class,
+        EchoBasicStatelessTextSocket.class,
+        EchoAsyncTextSocket.class,
+        EchoAsyncStatelessSocket.class,
+        EchoReturnTextSocket.class);
+
     public static Stream<Arguments> data()
     {
         List<Arguments> data = new ArrayList<>();
-        
+
         for (Class<?> clazz : TESTCLASSES)
         {
             data.add(Arguments.of(clazz.getSimpleName(), clazz));
         }
-        
+
         return data.stream();
     }
-    
+
     private static LocalServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -179,27 +179,27 @@ public class JsrEchoTest
             container.addEndpoint(clazz);
         }
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     public void testTextEcho(String endpointClassname, Class<?> endpointClass) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
-        
+
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-        
+
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);

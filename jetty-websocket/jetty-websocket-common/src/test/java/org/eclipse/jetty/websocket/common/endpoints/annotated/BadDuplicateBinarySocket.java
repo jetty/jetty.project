@@ -31,9 +31,10 @@ public class BadDuplicateBinarySocket
 {
     /**
      * First method
+     *
      * @param payload the payload
-     * @param offset the offset
-     * @param len the len
+     * @param offset  the offset
+     * @param len     the len
      */
     @OnWebSocketMessage
     public void binMe(byte[] payload, int offset, int len)
@@ -43,6 +44,7 @@ public class BadDuplicateBinarySocket
 
     /**
      * Second method (also binary)
+     *
      * @param stream the input stream
      */
     @OnWebSocketMessage
