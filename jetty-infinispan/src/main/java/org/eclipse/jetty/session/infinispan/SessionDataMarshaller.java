@@ -18,24 +18,19 @@
 
 package org.eclipse.jetty.session.infinispan;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.infinispan.protostream.MessageMarshaller;
 
 /**
  * SessionDataMarshaller
  *
  * A marshaller for converting a SessionData object into protobuf format which
- * gives greater control over serialization/deserialization. We use that
- * extra control to ensure that session attributes can be deserialized using
- * either the container class loader or the webapp classloader, as appropriate.
+ * gives greater control over serialization/deserialization. We use that extra
+ * control to ensure that session attributes can be deserialized using either
+ * the container class loader or the webapp classloader, as appropriate.
  */
-public class SessionDataMarshaller implements MessageMarshaller<SessionData>
+public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessionData>
 {
     /**
      * The version of the serializer.
@@ -43,79 +38,69 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
     private static final int VERSION = 0;
 
     @Override
-    public Class<? extends SessionData> getJavaClass()
+    public Class<? extends InfinispanSessionData> getJavaClass()
     {
-        return SessionData.class;
+        return InfinispanSessionData.class;
     }
 
     @Override
     public String getTypeName()
     {
-        return "org_eclipse_jetty_session_infinispan.SessionData";
+        return "org_eclipse_jetty_session_infinispan.InfinispanSessionData";
     }
 
     @Override
-    public SessionData readFrom(ProtoStreamReader in) throws IOException
+    public InfinispanSessionData readFrom(ProtoStreamReader in) throws IOException
     {
-        int version = in.readInt("version");//version of serialized session
-        String id = in.readString("id"); //session id
-        String cpath = in.readString("contextPath"); //context path
-        String vhost = in.readString("vhost"); //first vhost
+        int version = in.readInt("version");// version of serialized session
+        String id = in.readString("id"); // session id
+        String cpath = in.readString("contextPath"); // context path
+        String vhost = in.readString("vhost"); // first vhost
 
-        long accessed = in.readLong("accessed");//accessTime
-        long lastAccessed = in.readLong("lastAccessed"); //lastAccessTime
-        long created = in.readLong("created"); //time created
-        long cookieSet = in.readLong("cookieSet");//time cookie was set
-        String lastNode = in.readString("lastNode"); //name of last node managing
+        long accessed = in.readLong("accessed");// accessTime
+        long lastAccessed = in.readLong("lastAccessed"); // lastAccessTime
+        long created = in.readLong("created"); // time created
+        long cookieSet = in.readLong("cookieSet");// time cookie was set
+        String lastNode = in.readString("lastNode"); // name of last node
+                                                     // managing
 
         long expiry = in.readLong("expiry");
         long maxInactiveMs = in.readLong("maxInactiveMs");
 
-        SessionData sd = new SessionData(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+        InfinispanSessionData sd = new InfinispanSessionData(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+        sd.setCookieSet(cookieSet);
+        sd.setLastNode(lastNode);
+        sd.setExpiry(expiry);
 
         if (version == 0)
         {
             byte[] attributeArray = in.readBytes("attributes");
-            ByteArrayInputStream bais = new ByteArrayInputStream(attributeArray);
-            try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais))
-            {
-                SessionData.deserializeAttributes(sd, ois);
-            }
-            catch(ClassNotFoundException e)
-            {
-                throw new IOException(e);
-            }
-            sd.setCookieSet(cookieSet);
-            sd.setLastNode(lastNode);
-            sd.setExpiry(expiry);
+            sd.setSerializedAttributes(attributeArray);
             return sd;
         }
         else
-            throw new IOException("Unrecognized infinispan session version "+version);
+            throw new IOException("Unrecognized infinispan session version " + version);
     }
 
     @Override
-    public void writeTo(ProtoStreamWriter out, SessionData sdata) throws IOException
+    public void writeTo(ProtoStreamWriter out, InfinispanSessionData sdata) throws IOException
     {
         out.writeInt("version", VERSION);
-        out.writeString("id", sdata.getId()); //session id
-        out.writeString("contextPath", sdata.getContextPath()); //context path
-        out.writeString("vhost", sdata.getVhost()); //first vhost
+        out.writeString("id", sdata.getId()); // session id
+        out.writeString("contextPath", sdata.getContextPath()); // context path
+        out.writeString("vhost", sdata.getVhost()); // first vhost
 
-        out.writeLong("accessed", sdata.getAccessed());//accessTime
-        out.writeLong("lastAccessed", sdata.getLastAccessed()); //lastAccessTime
-        out.writeLong("created", sdata.getCreated()); //time created
-        out.writeLong("cookieSet", sdata.getCookieSet());//time cookie was set
-        out.writeString("lastNode", sdata.getLastNode()); //name of last node managing
+        out.writeLong("accessed", sdata.getAccessed());// accessTime
+        out.writeLong("lastAccessed", sdata.getLastAccessed()); // lastAccessTime
+        out.writeLong("created", sdata.getCreated()); // time created
+        out.writeLong("cookieSet", sdata.getCookieSet());// time cookie was set
+        out.writeString("lastNode", sdata.getLastNode()); // name of last node
+                                                          // managing
 
         out.writeLong("expiry", sdata.getExpiry());
         out.writeLong("maxInactiveMs", sdata.getMaxInactiveMs());
 
-        try (ByteArrayOutputStream bout = new ByteArrayOutputStream();
-             ObjectOutputStream oout = new ObjectOutputStream(bout);)
-        {
-            SessionData.serializeAttributes(sdata, oout);
-            out.writeBytes("attributes", bout.toByteArray());
-        }
+        sdata.serializeAttributes();
+        out.writeBytes("attributes", sdata.getSerializedAttributes());
     }
 }

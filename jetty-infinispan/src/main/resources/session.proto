@@ -1,6 +1,6 @@
 package org_eclipse_jetty_session_infinispan;
 
-message SessionData
+message InfinispanSessionData
 {
     required int32 version = 1;
     required string id = 2;

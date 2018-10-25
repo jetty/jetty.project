@@ -45,7 +45,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
 
-
     /**
      * Clustered cache of sessions
      */
@@ -53,6 +52,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
     
     private int _infinispanIdleTimeoutSec;
+    
+    private boolean _passivating;
     
 
     /**
@@ -77,14 +78,26 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         this._cache = cache;
     }
 
-    
-    
+
+
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
         if (_cache == null)
             throw new IllegalStateException ("No cache");
+
+        try 
+        {
+            _passivating = false;
+            Class<?> remoteClass = Thread.currentThread().getContextClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
+            if (remoteClass.isAssignableFrom(_cache.getClass()))
+                _passivating = true;
+        }
+        catch (ClassNotFoundException e)
+        {
+            //expected if not running with remote cache
+        }
     }
 
 
@@ -97,7 +110,14 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
             if (LOG.isDebugEnabled())
                 LOG.debug("Loading session {} from infinispan", id);
 
-            SessionData sd = (SessionData)_cache.get(getCacheKey(id));
+            InfinispanSessionData sd = (InfinispanSessionData)_cache.get(getCacheKey(id));
+            if (isPassivating() && sd != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Deserializing session attributes for {}", id);
+                sd.deserializeAttributes();
+            }
+
             return sd;
         }
         catch (Exception e)
@@ -192,9 +212,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         //scavenges the session before this timeout occurs, the session will be removed.
         //NOTE: that no session listeners can be called for this.
         if (data.getMaxInactiveMs() > 0 && getInfinispanIdleTimeoutSec() > 0)
-            _cache.put(getCacheKey(id), data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
+            _cache.put(getCacheKey(id), (InfinispanSessionData)data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
         else
-            _cache.put(getCacheKey(id), data);
+            _cache.put(getCacheKey(id),  (InfinispanSessionData)data);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Session {} saved to infinispan, expires {} ", id, data.getExpiry());
@@ -211,19 +231,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean isPassivating()
     {
-        try 
-        {
-           Class<?> remoteClass = Thread.currentThread().getContextClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
-           if (remoteClass.isAssignableFrom(_cache.getClass()))
-           {
-               return true;
-           }
-           return false;
-        }
-        catch (ClassNotFoundException e)
-        {
-            return false;
-        }
+        return _passivating;
     }
     
     
@@ -271,6 +279,13 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         return reference.get();
     }
 
+
+
+    @Override
+    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    {
+        return new InfinispanSessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+    }
 
 
     /**
