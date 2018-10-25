@@ -18,24 +18,23 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Server;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Server;
+import java.io.IOException;
 
 
 /**
- * RequestLogHandler.
- * This handler can be used to wrap an individual context for context logging.
- * To set a {@link RequestLog} instance for the entire {@link Server}, use 
- * {@link Server#setRequestLog(RequestLog)} instead of this handler.
- *
+ * <p>This handler provides an alternate way (other than {@link Server#setRequestLog(RequestLog)})
+ * to log request, that can be applied to a particular handler (eg context).
+ * This handler can be used to wrap an individual context for context logging, or can be listed
+ * prior to a handler.
+ * </p>
  * @see Server#setRequestLog(RequestLog)
  */
 public class RequestLogHandler extends HandlerWrapper
