@@ -198,8 +198,10 @@ public class JettyRunDistro extends JettyRunMojo
     private Random random;
     
     private Path tokenFile;
-    
-    
+
+    @Parameter(property = "jetty.javaPath")
+    private String javaPath;
+
     /** 
      * @see org.eclipse.jetty.maven.plugin.JettyRunMojo#execute()
      */
@@ -492,7 +494,14 @@ public class JettyRunDistro extends JettyRunMojo
     public ProcessBuilder configureCommand()
     {
         List<String> cmd = new ArrayList<>();
-        cmd.add("java");
+        if(StringUtil.isNotBlank( javaPath ))
+        {
+            cmd.add( javaPath );
+        }
+        else
+        {
+            cmd.add( getJavaBin() );
+        }
         cmd.add("-jar");
         cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
         

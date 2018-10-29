@@ -1208,8 +1208,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
-        dump(out, indent, Collections.singleton(new DumpableCollection("streams", streams.values())));
+        dumpBeans(out, indent, new DumpableCollection("streams", streams.values()));
     }
 
     @Override

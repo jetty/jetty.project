@@ -20,11 +20,9 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.URLClassLoader;
-import java.util.Collections;
 
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 
 public class ClassLoaderDump implements Dumpable
 {
@@ -38,7 +36,7 @@ public class ClassLoaderDump implements Dumpable
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
@@ -48,31 +46,34 @@ public class ClassLoaderDump implements Dumpable
             out.append("No ClassLoader\n");
         else if (_loader instanceof Dumpable)
         {
-            ContainerLifeCycle.dump(out,indent,Collections.singleton(_loader));
+            ((Dumpable)_loader).dump(out,indent);
         }
         else if (_loader instanceof URLClassLoader)
         {
-            out.append(String.valueOf(_loader)).append("\n");
+            String loader = _loader.toString();
+            DumpableCollection urls = DumpableCollection.fromArray("URLs", ((URLClassLoader)_loader).getURLs());
             ClassLoader parent = _loader.getParent();
             if (parent==null)
-                ContainerLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()));
+                Dumpable.dumpObjects(out,indent,loader,urls);
             else if (parent == Server.class.getClassLoader())
-                ContainerLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent.toString()));
+                Dumpable.dumpObjects(out,indent,loader,urls,parent.toString());
             else if (parent instanceof Dumpable)
-                ContainerLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent));
+                Dumpable.dumpObjects(out,indent,loader,urls,parent);
             else
-                ContainerLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(new ClassLoaderDump(parent)));
+                Dumpable.dumpObjects(out,indent,loader,urls,new ClassLoaderDump(parent));
         }
         else
         {
-            out.append(String.valueOf(_loader)).append("\n");
+            String loader = _loader.toString();
             ClassLoader parent = _loader.getParent();
+            if (parent==null)
+                Dumpable.dumpObject(out,loader);
             if (parent==Server.class.getClassLoader())
-                ContainerLifeCycle.dump(out,indent,Collections.singleton(parent.toString()));
+                Dumpable.dumpObjects(out,indent,loader,parent.toString());
             else if (parent instanceof Dumpable)
-                ContainerLifeCycle.dump(out,indent,Collections.singleton(parent));
+                Dumpable.dumpObjects(out,indent,loader,parent);
             else if (parent!=null)
-                ContainerLifeCycle.dump(out,indent,Collections.singleton(new ClassLoaderDump(parent)));
+                Dumpable.dumpObjects(out,indent,loader,new ClassLoaderDump(parent));
         }
     }
 }

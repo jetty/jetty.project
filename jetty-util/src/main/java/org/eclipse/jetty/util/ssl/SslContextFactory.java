@@ -76,7 +76,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -355,18 +354,26 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
     
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(String.valueOf(this)).append(" trustAll=").append(Boolean.toString(_trustAll)).append(System.lineSeparator());
-    
         try
         {
-            List<SslSelectionDump> selections = selectionDump();
-            ContainerLifeCycle.dump(out, indent, selections);
+            SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
+            Dumpable.dumpObjects(out, indent, this, "trustAll=" + _trustAll,
+                new SslSelectionDump("Protocol",
+                    sslEngine.getSupportedProtocols(),
+                    sslEngine.getEnabledProtocols(),
+                    getExcludeProtocols(),
+                    getIncludeProtocols()),
+                new SslSelectionDump("Cipher Suite",
+                    sslEngine.getSupportedCipherSuites(),
+                    sslEngine.getEnabledCipherSuites(),
+                    getExcludeCipherSuites(),
+                    getIncludeCipherSuites()));
         }
         catch (NoSuchAlgorithmException ignore)
         {
