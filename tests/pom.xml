@@ -59,6 +59,7 @@
     </pluginManagement>
   </build>
   <modules>
+    <module>jetty-jmh</module>
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-loginservice</module>
