@@ -19,6 +19,13 @@
 
 package org.eclipse.jetty.ant;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import org.eclipse.jetty.ant.types.Connector;
 import org.eclipse.jetty.ant.types.ContextHandlers;
 import org.eclipse.jetty.ant.utils.ServerProxy;
@@ -37,13 +44,6 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.xml.sax.SAXException;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 
 

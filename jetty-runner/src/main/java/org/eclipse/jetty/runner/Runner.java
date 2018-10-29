@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.runner;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -48,15 +57,6 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
 
 /**
  * Runner

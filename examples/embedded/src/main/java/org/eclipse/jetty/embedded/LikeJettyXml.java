@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.lang.management.ManagementFactory;
+
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
 import org.eclipse.jetty.deploy.bindings.DebugListenerBinding;
@@ -45,10 +49,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.webapp.Configuration;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.lang.management.ManagementFactory;
 
 /**
  * Starts the Jetty Distribution's demo-base directory using entirely

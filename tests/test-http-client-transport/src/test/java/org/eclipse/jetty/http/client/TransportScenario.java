@@ -18,6 +18,17 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
+
+import javax.servlet.http.HttpServlet;
+
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -52,16 +63,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import javax.servlet.http.HttpServlet;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
 
 public class TransportScenario
 {

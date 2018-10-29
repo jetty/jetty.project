@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,6 +27,18 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
+
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * {@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.
@@ -286,10 +286,10 @@ public class HttpInput extends ServletInputStream implements Runnable
                     long minimum_data = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
                     if (_contentArrived < minimum_data)
                     {
-                        BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
-                            String.format("Request content data rate < %d B/s", minRequestDataRate));
+                        _channelState.getHttpChannel().getResponse().setStatus(HttpStatus.REQUEST_TIMEOUT_408);
+                        IOException bad = new IOException(String.format("Request content data rate < %d B/s", minRequestDataRate));
                         _channelState.getHttpChannel().abort(bad);
-                        throw bad;
+                        throw new IOException(bad);
                     }
                 }
             }

@@ -18,6 +18,20 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritePendingException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
+
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,19 +43,6 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.WriteListener;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritePendingException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>{@link HttpOutput} implements {@link ServletOutputStream}
