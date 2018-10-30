@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -286,10 +287,10 @@ public class HttpInput extends ServletInputStream implements Runnable
                     long minimum_data = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
                     if (_contentArrived < minimum_data)
                     {
-                        _channelState.getHttpChannel().getResponse().setStatus(HttpStatus.REQUEST_TIMEOUT_408);
-                        IOException bad = new IOException(String.format("Request content data rate < %d B/s", minRequestDataRate));
+                        BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
+                            String.format("Request content data rate < %d B/s", minRequestDataRate));
                         _channelState.getHttpChannel().abort(bad);
-                        throw new IOException(bad);
+                        throw bad;
                     }
                 }
             }
