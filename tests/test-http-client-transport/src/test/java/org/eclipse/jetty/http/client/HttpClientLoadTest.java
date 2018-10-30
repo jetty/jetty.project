@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -199,7 +200,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 //        if (!ssl && random.nextInt(100) < 5)
 //            clientTimeout = random.nextInt(500) + 500;
 
-        int maxContentLength = 1024 * 1024;
+        int maxContentLength = 64 * 1024;
         int contentLength = random.nextInt(maxContentLength) + 1;
 
         test(scenario.getScheme(), host, method.asString(), clientClose, serverClose, clientTimeout, contentLength, true, latch, failures);
@@ -336,14 +337,15 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 response.setHeader("Connection", "close");
         }
 
-        private void sleep(long time)
+        private void sleep(long time) throws InterruptedIOException
         {
             try
             {
                 Thread.sleep(time);
             }
-            catch (InterruptedException ignored)
+            catch (InterruptedException x)
             {
+                throw new InterruptedIOException();
             }
         }
     }
