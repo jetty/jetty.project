@@ -18,15 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.quotes;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
-import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
 import javax.websocket.OnClose;
@@ -36,9 +30,15 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
+import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -119,14 +119,16 @@ public class QuotesDecoderTest
 
         URI wsUri = server.getWsUri().resolve("/quoter");
         QuotesSocket clientSocket = new QuotesSocket(testInfo.getTestMethod().toString());
-        Session clientSession = client.connectToServer(clientSocket, wsUri);
 
-        clientSession.getAsyncRemote().sendText("quotes-ben.txt");
+        try (Session clientSession = client.connectToServer(clientSocket, wsUri))
+        {
+            clientSession.getAsyncRemote().sendText("quotes-ben.txt");
 
-        Quotes quotes = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("Quotes", quotes, notNullValue());
-        assertThat("Quotes Author", quotes.getAuthor(), is("Benjamin Franklin"));
-        assertThat("Quotes Count", quotes.getQuotes().size(), is(3));
+            Quotes quotes = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Quotes", quotes, notNullValue());
+            assertThat("Quotes Author", quotes.getAuthor(), is("Benjamin Franklin"));
+            assertThat("Quotes Count", quotes.getQuotes().size(), is(3));
+        }
     }
 
     @Test
@@ -136,20 +138,21 @@ public class QuotesDecoderTest
 
         URI wsUri = server.getWsUri().resolve("/quoter");
         QuotesSocket clientSocket = new QuotesSocket(testInfo.getTestMethod().toString());
-        Session clientSession = client.connectToServer(clientSocket, wsUri);
+        try(Session clientSession = client.connectToServer(clientSocket, wsUri))
+        {
+            clientSession.getAsyncRemote().sendText("quotes-ben.txt");
+            clientSession.getAsyncRemote().sendText("quotes-twain.txt");
 
-        clientSession.getAsyncRemote().sendText("quotes-ben.txt");
-        clientSession.getAsyncRemote().sendText("quotes-twain.txt");
+            Quotes quotes;
+            quotes = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Quotes", quotes, notNullValue());
+            assertThat("Quotes Author", quotes.getAuthor(), is("Benjamin Franklin"));
+            assertThat("Quotes Count", quotes.getQuotes().size(), is(3));
 
-        Quotes quotes;
-        quotes = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("Quotes", quotes, notNullValue());
-        assertThat("Quotes Author", quotes.getAuthor(), is("Benjamin Franklin"));
-        assertThat("Quotes Count", quotes.getQuotes().size(), is(3));
-
-        quotes = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("Quotes", quotes, notNullValue());
-        assertThat("Quotes Author", quotes.getAuthor(), is("Mark Twain"));
-        assertThat("Quotes Count", quotes.getQuotes().size(), is(4));
+            quotes = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Quotes", quotes, notNullValue());
+            assertThat("Quotes Author", quotes.getAuthor(), is("Mark Twain"));
+            assertThat("Quotes Count", quotes.getQuotes().size(), is(4));
+        }
     }
 }
