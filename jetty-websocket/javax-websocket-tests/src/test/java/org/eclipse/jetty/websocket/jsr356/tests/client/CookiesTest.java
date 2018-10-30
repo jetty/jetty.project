@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
-import org.eclipse.jetty.websocket.jsr356.tests.DummyEndpoint;
-import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.StaticText;
-import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.WholeMessageEcho;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
+import java.net.HttpCookie;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.websocket.ClientEndpointConfig;
@@ -35,11 +32,16 @@ import javax.websocket.Endpoint;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-import java.net.HttpCookie;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+
+import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
+import org.eclipse.jetty.websocket.jsr356.tests.DummyEndpoint;
+import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.StaticText;
+import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.WholeMessageEcho;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -127,26 +129,15 @@ public class CookiesTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow it to stop
 
+        FuturePromise<HandshakeResponse> handshakeResponseFuture = new FuturePromise<>();
+
         ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
         builder.configurator(new ClientEndpointConfig.Configurator()
         {
             @Override
             public void afterResponse(HandshakeResponse response)
             {
-                Map<String, List<String>> headers = response.getHeaders();
-                // Test case insensitivity
-                assertTrue(headers.containsKey("set-cookie"));
-                List<String> values = headers.get("Set-Cookie");
-                assertNotNull(values);
-                assertEquals(1, values.size());
-
-                List<HttpCookie> cookies = HttpCookie.parse(values.get(0));
-                assertEquals(1, cookies.size());
-                HttpCookie cookie = cookies.get(0);
-                assertEquals(cookieName, cookie.getName());
-                assertEquals(cookieValue, cookie.getValue());
-                assertEquals(cookieDomain, cookie.getDomain());
-                assertEquals(cookiePath, cookie.getPath());
+                handshakeResponseFuture.succeeded(response);
             }
         });
         ClientEndpointConfig config = builder.build();
@@ -154,6 +145,30 @@ public class CookiesTest
         Endpoint endPoint = new DummyEndpoint();
 
         Session session = container.connectToServer(endPoint, config, server.getWsUri());
-        session.close();
+
+        // Wait for the handshake response
+        try
+        {
+            HandshakeResponse response = handshakeResponseFuture.get(5, TimeUnit.SECONDS);
+            Map<String, List<String>> headers = response.getHeaders();
+
+            // Test case insensitivity
+            assertTrue(headers.containsKey("Set-Cookie"));
+            List<String> values = headers.get("Set-Cookie");
+            assertNotNull(values);
+            assertEquals(1, values.size());
+
+            List<HttpCookie> cookies = HttpCookie.parse(values.get(0));
+            assertEquals(1, cookies.size());
+            HttpCookie cookie = cookies.get(0);
+            assertEquals(cookieName, cookie.getName());
+            assertEquals(cookieValue, cookie.getValue());
+            assertEquals(cookieDomain, cookie.getDomain());
+            assertEquals(cookiePath, cookie.getPath());
+        }
+        finally
+        {
+            session.close();
+        }
     }
 }
