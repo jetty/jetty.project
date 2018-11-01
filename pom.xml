@@ -122,7 +122,6 @@
     <module>jetty-memcached</module>
     <module>jetty-hazelcast</module>
     <module>jetty-unixsocket</module>
-    <module>jetty-jmh</module>
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>
@@ -277,7 +276,7 @@
             </goals>
             <configuration>
               <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.1</resourceBundle>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.2</resourceBundle>
               </resourceBundles>
             </configuration>
           </execution>
@@ -517,12 +516,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.6.0-SNAPSHOT</version>
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.11.0-SNAPSHOT</version>
+          <version>3.11.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
