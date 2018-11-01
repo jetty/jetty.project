@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -88,7 +87,6 @@ public class Runner
     protected URLClassLoader _classLoader;
     protected Classpath _classpath = new Classpath();
     protected ContextHandlerCollection _contexts;
-    protected RequestLogHandler _logHandler;
     protected String _logFile;
     protected ArrayList<String> _configFiles;
     protected boolean _enableStats=false;
@@ -392,14 +390,6 @@ public class Runner
                             handlers.addHandler(new DefaultHandler());
                         }
 
-                        //ensure a log handler is present
-                        _logHandler = (RequestLogHandler) handlers.getChildHandlerByClass(RequestLogHandler.class);
-                        if (_logHandler == null) 
-                        {
-                            _logHandler = new RequestLogHandler();
-                            handlers.addHandler(_logHandler);
-                        }
-
 
                         //check a connector is configured to listen on
                         Connector[] connectors = _server.getConnectors();
@@ -509,7 +499,7 @@ public class Runner
         {
             NCSARequestLog requestLog = new NCSARequestLog(_logFile);
             requestLog.setExtended(false);
-            _logHandler.setRequestLog(requestLog);
+            _server.setRequestLog(requestLog);
         }
     }
     
