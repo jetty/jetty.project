@@ -170,7 +170,6 @@ public class SessionHandler extends ScopedHandler
         public void onComplete(AsyncEvent event) throws IOException
         {
             //An async request has completed, so we can complete the session
-            complete(Request.getBaseRequest(event.getAsyncContext().getRequest()).getSession(false));
             complete(((HttpServletRequest)event.getAsyncContext().getRequest()).getSession(false));
         }
 
