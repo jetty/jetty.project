@@ -129,7 +129,6 @@ public class CookieCutter
         {
             // Parse the header
             String name = null;
-            String value = null;
 
             Cookie cookie = null;
 
@@ -205,10 +204,9 @@ public class CookieCutter
                                     if (quoted)
                                     {
                                         // must have been a bad internal quote. let's fix as best we can
-                                        unquoted.append(hdr.substring(tokenstart,i));
+                                        unquoted.append(hdr,tokenstart,i--);
                                         inQuoted = true;
                                         quoted = false;
-                                        i--;
                                         continue;
                                     }
                                     if (tokenstart<0)
@@ -219,6 +217,9 @@ public class CookieCutter
                                 // fall through
                             case 0:
                             case ';':
+                            {
+                                String value;
+
                                 if (quoted)
                                 {
                                     value = unquoted.toString();
@@ -273,12 +274,11 @@ public class CookieCutter
                                 }
 
                                 name = null;
-                                value = null;
                                 tokenstart = -1;
                                 invalue=false;
 
-
                                 break;
+                            }
 
                             case '"':
                                 if (tokenstart<0)
@@ -295,10 +295,9 @@ public class CookieCutter
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
-                                    unquoted.append(hdr.substring(tokenstart,i));
+                                    unquoted.append(hdr,tokenstart,i--);
                                     inQuoted = true;
                                     quoted = false;
-                                    i--;
                                     continue;
                                 }
                                 if (tokenstart<0)
@@ -327,18 +326,16 @@ public class CookieCutter
                                     name = tokenend>=tokenstart?hdr.substring(tokenstart, tokenend+1):hdr.substring(tokenstart);
 
                                 tokenstart = -1;
-                                if (c=='=')
-                                    invalue = true;
+                                invalue = true;
                                 break;
 
                             default:
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
-                                    unquoted.append(hdr.substring(tokenstart,i));
+                                    unquoted.append(hdr,tokenstart,i--);
                                     inQuoted = true;
                                     quoted = false;
-                                    i--;
                                     continue;
                                 }
                                 if (tokenstart<0)
