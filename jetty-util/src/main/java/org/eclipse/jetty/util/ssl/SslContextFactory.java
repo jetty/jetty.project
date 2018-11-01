@@ -113,6 +113,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }};
 
     private static final Logger LOG = Log.getLogger(SslContextFactory.class);
+    private static final Logger LOG_CONFIG = LOG.getLogger("config");
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
             (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
@@ -127,6 +128,24 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
     /** String name of keystore password property. */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
+
+    /** Default Excluded Protocols List */
+    private static final String[] DEFAULT_EXCLUDED_PROTOCOLS = {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"};
+
+    /** Default Excluded Cipher Suite List */
+    private static final String[] DEFAULT_EXCLUDED_CIPHER_SUITES = {
+            // Exclude weak / insecure ciphers
+            "^.*_(MD5|SHA|SHA1)$",
+            // Exclude ciphers that don't support forward secrecy
+            "^TLS_RSA_.*$",
+            // The following exclusions are present to cleanup known bad cipher
+            // suites that may be accidentally included via include patterns.
+            // The default enabled cipher list in Java will not include these
+            // (but they are available in the supported list).
+            "^SSL_.*$",
+            "^.*_NULL_.*$",
+            "^.*_anon_.*$"
+    };
 
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
@@ -175,7 +194,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private int _renegotiationLimit = 5;
     private Factory _factory;
     private PKIXCertPathChecker _pkixCertPathChecker;
-    private boolean _warnOnCommonVulnerabilities = true;
 
     /**
      * Construct an instance of SslContextFactory
@@ -211,19 +229,8 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private SslContextFactory(boolean trustAll, String keyStorePath)
     {
         setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-
-        // Exclude weak / insecure ciphers
-        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
-        // Exclude ciphers that don't support forward secrecy
-        addExcludeCipherSuites("^TLS_RSA_.*$");
-        // The following exclusions are present to cleanup known bad cipher
-        // suites that may be accidentally included via include patterns.
-        // The default enabled cipher list in Java will not include these
-        // (but they are available in the supported list).
-        addExcludeCipherSuites("^SSL_.*$");
-        addExcludeCipherSuites("^.*_NULL_.*$");
-        addExcludeCipherSuites("^.*_anon_.*$");
+        setExcludeProtocols(DEFAULT_EXCLUDED_PROTOCOLS);
+        setExcludeCipherSuites(DEFAULT_EXCLUDED_CIPHER_SUITES);
 
         if (keyStorePath != null)
             setKeyStorePath(keyStorePath);
@@ -240,40 +247,35 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             load();
         }
-        if (isWarnOnCommonVulnerabilities())
-            warnOnCommonVulnerabilities();
+
+        secureConfigurationCheck();
     }
 
-    protected void warnOnCommonVulnerabilities()
+    protected void secureConfigurationCheck()
     {
         if (getEndpointIdentificationAlgorithm()==null)
-            LOG.warn("No EndPointIdentificationAlgorithm configured for {}",this);
+            LOG_CONFIG.warn("No EndPointIdentificationAlgorithm configured for {} (applicable only to Clients)",this);
         if (isTrustAll())
-            LOG.warn("Trusting all certificates configured for {}",this);
+            LOG_CONFIG.warn("Trusting all certificates configured for {} (applicable only to Clients)",this);
         if (getSecureRandomAlgorithm()==null)
-            LOG.warn("No SecureRandomAlgorithm configured for {}",this);
+            LOG_CONFIG.warn("No SecureRandomAlgorithm configured for {}",this);
 
         List<String> excluded = Arrays.asList(getExcludeProtocols());
-        for (String protocol : new String[] {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"})
+        for (String protocol : DEFAULT_EXCLUDED_PROTOCOLS)
         {
             if (!excluded.contains(protocol))
-                LOG.warn("Protocol {} not excluded for {}",protocol,this);
+                LOG_CONFIG.warn("Protocol {} not excluded for {}",protocol,this);
         }
 
         SSLEngine engine = _factory._context.createSSLEngine();
         customize(engine);
         for (String suite : engine.getEnabledCipherSuites())
         {
-            if (suite.matches("^.*_(MD5|SHA|SHA1)$"))
-                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
-            if (suite.matches("^TLS_RSA_.*$"))
-                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
-            if (suite.matches("^SSL_.*$"))
-                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
-            if (suite.matches("^.*_NULL_.*$"))
-                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
-            if (suite.matches("^.*_anon_.*$"))
-                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
+            for (String excludedSuiteRegex: DEFAULT_EXCLUDED_CIPHER_SUITES)
+            {
+                if (suite.matches(excludedSuiteRegex))
+                    LOG_CONFIG.warn("Weak cipher suite {} enabled for {}",suite,this);
+            }
         }
     }
 
@@ -1387,24 +1389,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         if (!isStarted())
             throw new IllegalStateException("!STARTED: " + this);
-    }
-
-    /**
-     *
-     * @param warn If true warn on some (not comprehensive) common configuration vulnerabilities
-     */
-    public void setWarnOnCommonVulnerabilities(boolean warn)
-    {
-        _warnOnCommonVulnerabilities = warn;
-    }
-
-    /**
-     * @return true if warning is generated for some common configuration vulnerabilities
-     */
-    @ManagedAttribute("Warn if common vulnerabilities are configured")
-    public boolean isWarnOnCommonVulnerabilities()
-    {
-        return _warnOnCommonVulnerabilities;
     }
 
     /**
