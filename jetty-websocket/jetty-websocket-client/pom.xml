@@ -9,7 +9,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-websocket-client</artifactId>
+  <artifactId>websocket-client</artifactId>
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Client</name>
 
   <properties>

@@ -85,7 +85,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-server</artifactId>
+      <artifactId>websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
