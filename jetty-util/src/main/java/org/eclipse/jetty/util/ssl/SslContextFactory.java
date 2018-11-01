@@ -253,28 +253,30 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
     protected void secureConfigurationCheck()
     {
-        if (getEndpointIdentificationAlgorithm()==null)
-            LOG_CONFIG.warn("No EndPointIdentificationAlgorithm configured for {} (applicable only to Clients)",this);
         if (isTrustAll())
-            LOG_CONFIG.warn("Trusting all certificates configured for {} (applicable only to Clients)",this);
-        if (getSecureRandomAlgorithm()==null)
-            LOG_CONFIG.warn("No SecureRandomAlgorithm configured for {}",this);
-
-        List<String> excluded = Arrays.asList(getExcludeProtocols());
-        for (String protocol : DEFAULT_EXCLUDED_PROTOCOLS)
-        {
-            if (!excluded.contains(protocol))
-                LOG_CONFIG.warn("Protocol {} not excluded for {}",protocol,this);
-        }
+            LOG_CONFIG.warn("Trusting all certificates configured for {}",this);
+        if (getEndpointIdentificationAlgorithm()==null)
+            LOG_CONFIG.warn("No Client EndPointIdentificationAlgorithm configured for {}",this);
 
         SSLEngine engine = _factory._context.createSSLEngine();
         customize(engine);
-        for (String suite : engine.getEnabledCipherSuites())
+        SSLParameters supported = engine.getSSLParameters();
+
+        for (String protocol : supported.getProtocols())
         {
-            for (String excludedSuiteRegex: DEFAULT_EXCLUDED_CIPHER_SUITES)
+            for (String excluded : DEFAULT_EXCLUDED_PROTOCOLS)
+            {
+                if (excluded.equals(protocol))
+                    LOG_CONFIG.warn("Protocol {} not excluded for {}", protocol, this);
+            }
+        }
+
+        for (String suite : supported.getCipherSuites())
+        {
+            for (String excludedSuiteRegex : DEFAULT_EXCLUDED_CIPHER_SUITES)
             {
                 if (suite.matches(excludedSuiteRegex))
-                    LOG_CONFIG.warn("Weak cipher suite {} enabled for {}",suite,this);
+                    LOG_CONFIG.warn("Weak cipher suite {} enabled for {}", suite, this);
             }
         }
     }

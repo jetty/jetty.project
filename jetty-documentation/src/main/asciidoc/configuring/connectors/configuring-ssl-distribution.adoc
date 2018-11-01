@@ -32,7 +32,7 @@ For the default SSL support, simply activate the `ssl` link:#startup-modules[mod
 $ cd /path/to/mybase
 $ java -jar ${JETTY_HOME}/start.jar --add-to-startd=ssl
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini1v
 INFO : Base directory was modified
 $ tree
 .
@@ -57,8 +57,6 @@ jetty.sslContext.keyStorePath::
   Sets the location of the `keystore` that you configured with your certificates.
 jetty.sslContext.keyStorePassword::
   Sets the Password for the `keystore`.
-jetty.sslContext.warnOnCommonVulnerabilities::
-  Produces warnings when weak cipher suites are enabled; defaults to `true`.
 
 [[jetty-conscrypt-distribution]]
 ==== Conscrypt SSL Configuration
