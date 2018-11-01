@@ -38,6 +38,8 @@ $ java -jar start.jar
 
 You can point a browser at this server at link:http://localhost:8080[].
 However, as there are no webapps deployed in the `$JETTY_HOME` directory, you will see a 404 error page served by Jetty.
+To stop the server, press `CTRL` + `c` or `CTRL` + `z` in your terminal.
+
 *Note* the `HomeBaseWarning` - it is *not* recommended to run Jetty from the `$JETTY_HOME` directory.
 Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
 

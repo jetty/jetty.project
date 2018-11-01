@@ -32,6 +32,7 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -45,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  * @param <T> the type of holder
  */
 @ManagedObject("Holder - a container for servlets and the like")
-public class Holder<T> extends BaseHolder<T>
+public abstract class Holder<T> extends BaseHolder<T>
 {
     private static final Logger LOG = Log.getLogger(Holder.class);
 
@@ -186,15 +187,6 @@ public class Holder<T> extends BaseHolder<T>
     public boolean isAsyncSupported()
     {
         return _asyncSupported;
-    }
-
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        super.dump(out,indent);
-        ContainerLifeCycle.dump(out,indent,_initParams.entrySet());
     }
 
     /* ------------------------------------------------------------ */

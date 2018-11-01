@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.util;
 
+import org.eclipse.jetty.util.component.Dumpable;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -28,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class AttributesMap implements Attributes
+public class AttributesMap implements Attributes, Dumpable
 {
     private final AtomicReference<ConcurrentMap<String, Object>> _map = new AtomicReference<>();
 
@@ -147,5 +150,17 @@ public class AttributesMap implements Attributes
             String name = e.nextElement();
             setAttribute(name, attributes.getAttribute(name));
         }
+    }
+
+    @Override
+    public String dump()
+    {
+        return Dumpable.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out,indent,String.format("%s@%x",this.getClass().getSimpleName(),hashCode()),map());
     }
 }

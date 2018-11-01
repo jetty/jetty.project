@@ -35,25 +35,23 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
     static class CaptionedList extends ArrayList<String> implements Dumpable
     {
         private final String caption;
-        
+
         public CaptionedList(String caption)
         {
             this.caption = caption;
         }
-        
+
         @Override
         public String dump()
         {
-            return ContainerLifeCycle.dump(SslSelectionDump.CaptionedList.this);
+            return Dumpable.dump(SslSelectionDump.CaptionedList.this);
         }
-        
+
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            out.append(caption);
-            out.append(" (size=").append(Integer.toString(size())).append(")");
-            out.append(System.lineSeparator());
-            ContainerLifeCycle.dump(out, indent, this);
+            Object[] array = toArray();
+            Dumpable.dumpObjects(out, indent, caption + " size="+array.length, array);
         }
     }
     
@@ -161,7 +159,7 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
     
     @Override

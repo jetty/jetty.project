@@ -285,7 +285,7 @@
             </goals>
             <configuration>
               <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.1</resourceBundle>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.2</resourceBundle>
               </resourceBundles>
             </configuration>
           </execution>
@@ -309,7 +309,7 @@
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
                   <Bundle-Name>${project.name}</Bundle-Name>
                   <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
-                  <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+                  <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
                   <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
                 </manifestEntries>
@@ -490,7 +490,7 @@
               <manifestEntries>
                 <Automatic-Module-Name>${jpms-module-name}</Automatic-Module-Name>
                 <Implementation-Version>${project.version}</Implementation-Version>
-                <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
+                <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
                 <url>${jetty.url}</url>
               </manifestEntries>
             </archive>
@@ -514,63 +514,6 @@
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
             </links>
-            <tags>
-              <tag>
-                <name>org.apache.xbean.XBean</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>phase</name>
-                <placement>t</placement>
-                <head>Phase:</head>
-              </tag>
-              <tag>
-                <name>goal</name>
-                <placement>t</placement>
-                <head>Goal:</head>
-              </tag>
-              <tag>
-                <name>description</name>
-                <placement>a</placement>
-                <head>Description:</head>
-              </tag>
-              <tag>
-                <name>parameter</name>
-                <placement>f</placement>
-                <head>Parameter:</head>
-              </tag>
-              <tag>
-                <name>required</name>
-                <placement>f</placement>
-                <head>Required:</head>
-              </tag>
-              <tag>
-                <name>readonly</name>
-                <placement>f</placement>
-                <head>Read-Only:</head>
-              </tag>
-              <tag>
-                <name>execute</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresDependencyResolution</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresProject</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>threadSafe</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-            </tags>
           </configuration>
         </plugin>
         <plugin>
@@ -581,12 +524,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.10.0</version>
+          <version>3.11.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
