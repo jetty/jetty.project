@@ -38,10 +38,7 @@ import org.infinispan.protostream.SerializationContext;
  * Converts sessions saved in the old serialization
  * format into the new protobuf-based serialization.
  * 
- * NOTE that if the old session attributes contained any
- * jetty server classes (as would be the case if the session
- * was authenticated) then the session can't be loaded and
- * converted.  Use the -Dverbose=true system property to
+ * Use the -Dverbose=true system property to
  * print out more information about conversion failures.
  *
  */
@@ -52,6 +49,7 @@ public class InfinispanSessionLegacyConverter
     RemoteCacheManager _legacyManager;
     RemoteCache<String,SessionData> _legacyCache;
     boolean _verbose = false;
+ 
 
     public InfinispanSessionLegacyConverter (String cacheName)
     throws Exception
