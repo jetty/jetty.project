@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -44,14 +36,24 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.session.FileSessionDataStore;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
+import org.eclipse.jetty.server.session.FileSessionDataStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Disabled;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Disabled("Not a test case")
 public class TestServer
@@ -62,7 +64,12 @@ public class TestServer
     {
         ((StdErrLog)Log.getLog()).setSource(false);
 
-        String jetty_root = "../../..";
+        // TODO don't depend on this file structure
+        Path jetty_root = FileSystems.getDefault().getPath(".").toAbsolutePath().normalize();
+        if (!Files.exists(jetty_root.resolve("VERSION.txt")))
+            jetty_root = FileSystems.getDefault().getPath("../../..").toAbsolutePath().normalize();
+        if (!Files.exists(jetty_root.resolve("VERSION.txt")))
+            throw new IllegalArgumentException(jetty_root.toString());
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -112,7 +119,7 @@ public class TestServer
         // Setup context
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_root + "/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/realm.properties");
+        login.setConfig(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/realm.properties").toString());
         server.addBean(login);
 
         File log=File.createTempFile("jetty-yyyy_mm_dd", "log");
@@ -125,7 +132,7 @@ public class TestServer
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
-        webapp.setResourceBase("./src/main/webapp");
+        webapp.setResourceBase(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
         webapp.setAttribute("testAttribute","testValue");
         File sessiondir=File.createTempFile("sessions",null);
         if (sessiondir.exists())
@@ -141,12 +148,13 @@ public class TestServer
         contexts.addHandler(webapp);
 
         ContextHandler srcroot = new ContextHandler();
-        srcroot.setResourceBase(".");
+        srcroot.setResourceBase(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src").toString());
         srcroot.setHandler(new ResourceHandler());
         srcroot.setContextPath("/src");
         contexts.addHandler(srcroot);
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 

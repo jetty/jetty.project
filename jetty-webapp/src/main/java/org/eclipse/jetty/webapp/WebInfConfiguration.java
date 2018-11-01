@@ -159,8 +159,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
 
-    
-    
     /**
      * Find jars and directories that are on the container's classpath
      * and apply an optional filter. The filter is a pattern applied to the
@@ -177,15 +175,15 @@ public class WebInfConfiguration extends AbstractConfiguration
      * @param context the WebAppContext being deployed
      * @throws Exception if unable to apply optional filtering on the container's classpath
      */
-    public void findAndFilterContainerPaths (final WebAppContext context)
-    throws Exception
+    public void findAndFilterContainerPaths (final WebAppContext context) throws Exception
     {
         //assume the target jvm is the same as that running
-        int targetPlatform = JavaVersion.VERSION.getPlatform();
+        int currentPlatform = JavaVersion.VERSION.getPlatform();
         //allow user to specify target jvm different to current runtime
+        int targetPlatform = currentPlatform;
         Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
         if (target!=null)
-            targetPlatform = Integer.valueOf(target.toString()).intValue();
+            targetPlatform = Integer.parseInt(target.toString());
         
         //Apply an initial name filter to the jars to select which will be eventually
         //scanned for META-INF info and annotations. The filter is based on inclusion patterns.
@@ -199,7 +197,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         List<URI> containerUris = new ArrayList<>();
         
-        while (loader != null && (loader instanceof URLClassLoader))
+        while (loader instanceof URLClassLoader)
         {
             URL[] urls = ((URLClassLoader)loader).getURLs();
             if (urls != null)
@@ -219,12 +217,13 @@ public class WebInfConfiguration extends AbstractConfiguration
             loader = loader.getParent();
         }
         
-        if (LOG.isDebugEnabled()) LOG.debug("Matching container urls {}", containerUris);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Matching container urls {}", containerUris);
         containerPathNameMatcher.match(containerUris);
 
         //if running on jvm 9 or above, we we won't be able to look at the application classloader
         //to extract urls, so we need to examine the classpath instead.
-        if (JavaVersion.VERSION.getPlatform() >= 9)
+        if (currentPlatform >= 9)
         {
             tmp = System.getProperty("java.class.path");
             if (tmp != null)
@@ -236,7 +235,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                     File f = new File(entry);
                     cpUris.add(f.toURI());
                 }
-                if (LOG.isDebugEnabled()) LOG.debug("Matching java.class.path {}", cpUris);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Matching java.class.path {}", cpUris);
                 containerPathNameMatcher.match(cpUris);
             }
         }
@@ -253,28 +253,33 @@ public class WebInfConfiguration extends AbstractConfiguration
             {
                 List<URI> moduleUris = new ArrayList<>();
                 String[] entries = tmp.split(File.pathSeparator);
-                for (String entry:entries)
+                for (String entry : entries)
                 {
-                    File dir = new File(entry);
-                    File[] files = dir.listFiles();
-                    if (files != null)
+                    File file = new File(entry);
+                    if (file.isDirectory())
                     {
-                        for (File f:files)
+                        File[] files = file.listFiles();
+                        if (files != null)
                         {
-                            moduleUris.add(f.toURI());
+                            for (File f : files)
+                                moduleUris.add(f.toURI());
                         }
                     }
-                        
+                    else
+                    {
+                        moduleUris.add(file.toURI());
+                    }
                 }
-                if (LOG.isDebugEnabled()) LOG.debug("Matching jdk.module.path {}", moduleUris);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Matching jdk.module.path {}", moduleUris);
                 containerPathNameMatcher.match(moduleUris);
             }
         }
         
-        if (LOG.isDebugEnabled()) LOG.debug("Container paths selected:{}", context.getMetaData().getContainerResources());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Container paths selected:{}", context.getMetaData().getContainerResources());
     }
-    
-    
+
     /**
      * Finds the jars that are either physically or virtually in
      * WEB-INF/lib, and applies an optional filter to their full

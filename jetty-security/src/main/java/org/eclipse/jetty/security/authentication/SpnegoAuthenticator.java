@@ -35,6 +35,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
+/**
+ * @deprecated use {@link ConfigurableSpnegoAuthenticator} instead.
+ */
+@Deprecated
 public class SpnegoAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(SpnegoAuthenticator.class);
@@ -45,7 +49,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
     }
 
     /**
-     * Allow for a custom authMethod value to be set for instances where SPENGO may not be appropriate
+     * Allow for a custom authMethod value to be set for instances where SPNEGO may not be appropriate
      * @param authMethod the auth method
      */
     public SpnegoAuthenticator( String authMethod )
@@ -96,7 +100,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
                  return Authentication.UNAUTHENTICATED;
              }
 
-            LOG.debug("SpengoAuthenticator: sending challenge");
+            LOG.debug("Sending challenge");
             res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HttpHeader.NEGOTIATE.asString());
             res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return Authentication.SEND_CONTINUE;

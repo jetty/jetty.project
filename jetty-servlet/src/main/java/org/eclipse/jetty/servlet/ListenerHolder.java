@@ -21,54 +21,116 @@ package org.eclipse.jetty.servlet;
 
 import java.util.EventListener;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
 /**
  * ListenerHolder
  *
- * Specialization of AbstractHolder for servlet listeners. This
+ * Specialization of BaseHolder for servlet listeners. This
  * allows us to record where the listener originated - web.xml,
  * annotation, api etc.
  */
 public class ListenerHolder extends BaseHolder<EventListener>
 {
     private EventListener _listener;
+    private boolean _initialized = false;
     
 
+    public ListenerHolder ()
+    {
+        this (Source.EMBEDDED);
+    }
+    
     public ListenerHolder(Source source)
     {
         super(source);
     }
-   
-    
-    public void setListener(EventListener listener)
-    {
-        _listener = listener;
-        setClassName(listener.getClass().getName());
-        setHeldClass(listener.getClass());
-        _extInstance=true;
-    }
 
+    public ListenerHolder(Class<? extends EventListener> listenerClass)
+    {
+        super(Source.EMBEDDED);
+        setHeldClass(listenerClass);
+    }
+   
     public EventListener getListener()
     {
         return _listener;
+    }
+
+    /**
+     * Set an explicit instance. In this case,
+     * just like ServletHolder and FilterHolder,
+     * the listener will not be introspected for
+     * annotations like Resource etc.
+     * 
+     * @param listener
+     */
+    public void setListener (EventListener listener)
+    {
+        _listener = listener;
+        _extInstance=true;
+        setHeldClass(_listener.getClass());
+    }
+
+
+    public void initialize (ServletContext context) throws Exception
+    {
+        if (!_initialized)
+        {
+            initialize();
+
+            if (_listener == null)
+            {
+                //create an instance of the listener and decorate it
+                try
+                {                    
+                    _listener = (context instanceof ServletContextHandler.Context)
+                            ?((ServletContextHandler.Context)context).createListener(getHeldClass())
+                            :getHeldClass().getDeclaredConstructor().newInstance();
+
+                }
+                catch (ServletException se)
+                {
+                    Throwable cause = se.getRootCause();
+                    if (cause instanceof InstantiationException)
+                        throw (InstantiationException)cause;
+                    if (cause instanceof IllegalAccessException)
+                        throw (IllegalAccessException)cause;
+                    throw se;
+                }
+            }
+            _initialized = true;
+        }
     }
 
 
     @Override
     public void doStart() throws Exception
     {
-        //Listeners always have an instance eagerly created, it cannot be deferred to the doStart method
-        if (_listener == null)
-            throw new IllegalStateException("No listener instance");
-        
         super.doStart();
+        if (!java.util.EventListener.class.isAssignableFrom(_class))
+        {
+            String msg = _class+" is not a java.util.EventListener";
+            super.stop();
+            throw new IllegalStateException(msg);
+        }
     }
 
+
+
+    @Override
+    public void doStop() throws Exception
+    {
+        super.doStop();
+        if (!_extInstance)
+            _listener = null;
+        _initialized = false;
+    }
 
     @Override
     public String toString()
     {
-        return super.toString()+(_listener == null?"":": "+getClassName());
-    }
-    
-    
+        return super.toString()+": "+getClassName();
+    } 
 }

@@ -51,23 +51,24 @@ public class TestGetContent
             if (Boolean.getBoolean( "helloServlet" ))
             {
                 String response = httpClient.GET( "http://localhost:" + port + "/hello?name=beer" ).getContentAsString();
-                assertEquals( "Hello beer", response.trim() );
+                assertEquals( "Hello beer", response.trim(), "it test " + System.getProperty( "maven.it.name" ) );
                 response = httpClient.GET( "http://localhost:" + port + "/hello?name=foo" ).getContentAsString();
-                assertEquals( "Hello foo", response.trim() );
+                assertEquals( "Hello foo", response.trim(), "it test " + System.getProperty( "maven.it.name" )  );
                 System.out.println( "helloServlet" );
             }
             if (Boolean.getBoolean( "pingServlet" ))
             {
-                System.out.println( "pingServlet ok" );
-                String response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
-                assertEquals( "pong beer", response.trim() );
                 System.out.println( "pingServlet" );
+                String response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
+                assertEquals( "pong beer", response.trim(), "it test " + System.getProperty( "maven.it.name" )  );
+                System.out.println( "pingServlet ok" );
             }
             String contentCheck = System.getProperty( "contentCheck" );
             if(StringUtils.isNotBlank( contentCheck ) )
             {
                 String response = httpClient.GET( "http://localhost:" + port ).getContentAsString();
-                assertTrue(response.contains(contentCheck), "response not contentCheck: " + contentCheck + ", response:" + response);
+                assertTrue(response.contains(contentCheck), "it test " + System.getProperty( "maven.it.name" )
+                    + ", response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println( "contentCheck" );
             }
         }

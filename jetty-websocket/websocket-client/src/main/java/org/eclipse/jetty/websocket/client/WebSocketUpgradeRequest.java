@@ -415,6 +415,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         this.localEndpoint = this.wsClient.getEventDriverFactory().wrap(localEndpoint);
 
         this.fut = new CompletableFuture<Session>();
+
+        getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
     }
 
     private final String genRandomKey()
@@ -504,7 +506,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             }
 
             Throwable failure = result.getFailure();
-            if ((failure instanceof java.net.ConnectException) || (failure instanceof UpgradeException))
+            if ((failure instanceof java.io.IOException) || (failure instanceof UpgradeException))
             {
                 // handle as-is
                 handleException(failure);
@@ -519,7 +521,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI,responseStatusCode,responseLine));
+            handleException(new UpgradeException(requestURI,responseStatusCode,"Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
 

@@ -42,7 +42,6 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -176,7 +175,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean isRemotelyClosed()
     {
-        return closeState.get() == CloseState.REMOTELY_CLOSED;
+        CloseState state = closeState.get();
+        return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING;
     }
 
     public boolean isLocallyClosed()
@@ -615,7 +615,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
@@ -627,13 +627,14 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b/%b,%s,age=%d,attachment=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getId(),
                 sendWindow,
                 recvWindow,
-                isReset(),
+                localReset,
+                remoteReset,
                 closeState,
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStamp),
                 attachment);

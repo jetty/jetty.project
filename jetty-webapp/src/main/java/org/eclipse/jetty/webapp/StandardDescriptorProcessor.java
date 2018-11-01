@@ -1900,28 +1900,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //Servlet Spec 3.0 p 74
                 //Duplicate listener declarations don't result in duplicate listener instances
-                EventListener[] listeners=context.getEventListeners();
-                if (listeners!=null)
+                for (ListenerHolder holder : context.getServletHandler().getListeners())
                 {
-                    for (EventListener l : listeners)
-                    {
-                        if (l.getClass().getName().equals(className))
-                            return;
-                    }
+                    if (holder.getClassName().equals(className))
+                        return;
                 }
 
                 ((WebDescriptor)descriptor).addClassName(className);
-
-                Class<? extends EventListener> listenerClass = (Class<? extends EventListener>)context.loadClass(className);
-                listener = newListenerInstance(context,listenerClass, descriptor);
-                if (!(listener instanceof EventListener))
-                {
-                    LOG.warn("Not an EventListener: " + listener);
-                    return;
-                }
-                context.addEventListener(listener);
+                
+                ListenerHolder h = context.getServletHandler().newListenerHolder(new Source (Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
+                h.setClassName(className);
+                context.getServletHandler().addListener(h);
                 context.getMetaData().setOrigin(className+".listener", descriptor);
-
             }
         }
         catch (Exception e)
@@ -1959,15 +1949,5 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         ((ConstraintAware)context.getSecurityHandler()).setDenyUncoveredHttpMethods(true);
-    }
-
-    public EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz, Descriptor descriptor) throws Exception
-    {
-        ListenerHolder h = context.getServletHandler().newListenerHolder(new Source (Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
-        EventListener l = context.getServletContext().createInstance(clazz);
-        h.setListener(l);
-        context.getServletHandler().addListener(h);
-        return l;
-
     }
 }

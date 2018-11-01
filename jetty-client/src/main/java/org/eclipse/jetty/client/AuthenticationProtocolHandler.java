@@ -49,7 +49,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     private final int maxContentLength;
     private final ResponseNotifier notifier;
 
-    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+\\/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
+    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
@@ -121,7 +121,6 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
         return headerInfos;
     }
-
 
     private class AuthenticationListener extends BufferingResponseListener
     {
@@ -225,13 +224,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 copyIfAbsent(request, newRequest, HttpHeader.AUTHORIZATION);
                 copyIfAbsent(request, newRequest, HttpHeader.PROXY_AUTHORIZATION);
 
-                newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult));
-
+                AfterAuthenticationListener listener = new AfterAuthenticationListener(authnResult);
                 Connection connection = (Connection)request.getAttributes().get(Connection.class.getName());
                 if (connection != null)
-                    connection.send(newRequest, null);
+                    connection.send(newRequest, listener);
                 else
-                    newRequest.send(null);
+                    newRequest.send(listener);
             }
             catch (Throwable x)
             {
@@ -296,6 +294,22 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 }
             }
             return result;
+        }
+    }
+
+    private class AfterAuthenticationListener extends Response.Listener.Adapter
+    {
+        private final Authentication.Result authenticationResult;
+
+        private AfterAuthenticationListener(Authentication.Result authenticationResult)
+        {
+            this.authenticationResult = authenticationResult;
+        }
+
+        @Override
+        public void onSuccess(Response response)
+        {
+            client.getAuthenticationStore().addAuthenticationResult(authenticationResult);
         }
     }
 }

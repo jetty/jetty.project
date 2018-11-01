@@ -108,7 +108,7 @@ public class HttpRequest implements Request
             headers.put(userAgentField);
     }
 
-    protected HttpConversation getConversation()
+    public HttpConversation getConversation()
     {
         return conversation;
     }

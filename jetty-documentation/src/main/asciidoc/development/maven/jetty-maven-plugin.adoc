@@ -624,6 +624,9 @@ Only relevant if `waitForChild` is `false`.
 forkWebXml::
 Default is `target/fork-web.xml`.
 This is the name of the file into which jetty generates the effective web.xml for use by the child process.
+javaPath::
+Default will be your `${java.home}/bin/java`
+This the java executable used to start the child process
 
 The following `jetty:run` parameters are NOT applicable:
 
@@ -715,6 +718,9 @@ maxChildCheckInterval::
 Default value 100.
 This is the interval in milliseconds between checks to see if the child started correctly.
 Only applicable if `waitForChild` is `false`.
+javaPath::
+Default will be your `${java.home}/bin/java`
+This the java executable used to start the child process
 
 ____
 [NOTE]

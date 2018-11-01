@@ -31,14 +31,27 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
-    <surefire.version>2.22.0</surefire.version>
-    <junit.version>5.3.0</junit.version>
-    <maven-plugin-tools.version>3.5.2</maven-plugin-tools.version>
+    <junit.version>5.3.1</junit.version>
     <maven.version>3.5.0</maven.version>
+    <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
+    <weld.version>2.4.5.Final</weld.version>
+    <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
     <unix.socket.tmp></unix.socket.tmp>
+    <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
+    <jetty.testtracker.log>false</jetty.testtracker.log>
+    <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
+
+    <!-- some maven plugins versions -->
+    <maven.surefire.version>2.22.1</maven.surefire.version>
+    <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
+    <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
+    <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
+    <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
+    <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
 
     <!-- testing -->
-    <jetty.test.version>5.0</jetty.test.version>
+    <jetty.test.version>5.1</jetty.test.version>
   </properties>
 
   <licenses>
@@ -262,6 +275,7 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-remote-resources-plugin</artifactId>
         <executions>
           <execution>
@@ -271,7 +285,7 @@
             </goals>
             <configuration>
               <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.1</resourceBundle>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.2</resourceBundle>
               </resourceBundles>
             </configuration>
           </execution>
@@ -279,6 +293,7 @@
       </plugin>
       <!-- The source maven plugin creates the source bundle and adds manifest -->
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <inherited>true</inherited>
         <executions>
@@ -294,7 +309,7 @@
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
                   <Bundle-Name>${project.name}</Bundle-Name>
                   <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
-                  <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+                  <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
                   <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
                 </manifestEntries>
@@ -421,7 +436,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>${maven.compiler.plugin.version}</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -430,7 +445,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>${maven.dependency.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -453,14 +468,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>${surefire.version}</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.junit.jupiter</groupId>
-              <artifactId>junit-jupiter-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-          </dependencies>
+          <version>${maven.surefire.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -480,8 +488,9 @@
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
               <manifestEntries>
+                <Automatic-Module-Name>${jpms-module-name}</Automatic-Module-Name>
                 <Implementation-Version>${project.version}</Implementation-Version>
-                <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
+                <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
                 <url>${jetty.url}</url>
               </manifestEntries>
             </archive>
@@ -505,63 +514,6 @@
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
             </links>
-            <tags>
-              <tag>
-                <name>org.apache.xbean.XBean</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>phase</name>
-                <placement>t</placement>
-                <head>Phase:</head>
-              </tag>
-              <tag>
-                <name>goal</name>
-                <placement>t</placement>
-                <head>Goal:</head>
-              </tag>
-              <tag>
-                <name>description</name>
-                <placement>a</placement>
-                <head>Description:</head>
-              </tag>
-              <tag>
-                <name>parameter</name>
-                <placement>f</placement>
-                <head>Parameter:</head>
-              </tag>
-              <tag>
-                <name>required</name>
-                <placement>f</placement>
-                <head>Required:</head>
-              </tag>
-              <tag>
-                <name>readonly</name>
-                <placement>f</placement>
-                <head>Read-Only:</head>
-              </tag>
-              <tag>
-                <name>execute</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresDependencyResolution</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresProject</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>threadSafe</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-            </tags>
           </configuration>
         </plugin>
         <plugin>
@@ -572,12 +524,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.10.0</version>
+          <version>3.11.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -597,7 +549,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>${maven.resources.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -619,12 +571,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>${maven.source.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>${surefire.version}</version>
+          <version>${maven.surefire.version}</version>
           <configuration>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
@@ -634,13 +586,15 @@
             <systemPropertyVariables>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
               <unix.socket.tmp>${unix.socket.tmp}</unix.socket.tmp>
+              <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
+              <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
           </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>${maven.war.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -923,7 +877,7 @@
       <dependency>
          <groupId>javax.servlet</groupId>
          <artifactId>javax.servlet-api</artifactId>
-         <version>3.1.0</version>
+         <version>${javax.servlet.api.version}</version>
       </dependency>
       <dependency>
          <groupId>javax.websocket</groupId>
@@ -948,6 +902,16 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-commons</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-analysis</artifactId>
         <version>${asm.version}</version>
       </dependency>
       <dependency>
@@ -992,7 +956,7 @@
       <dependency>
         <groupId>javax.transaction</groupId>
         <artifactId>javax.transaction-api</artifactId>
-        <version>1.2</version>
+        <version>1.3</version>
         <scope>provided</scope>
       </dependency>
       <!-- maven deps -->
@@ -1014,12 +978,12 @@
       <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
         <artifactId>maven-plugin-tools-api</artifactId>
-        <version>${maven-plugin-tools.version}</version>
+        <version>${maven.plugin-tools.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
         <artifactId>maven-plugin-annotations</artifactId>
-        <version>${maven-plugin-tools.version}</version>
+        <version>${maven.plugin-tools.version}</version>
         <scope>provided</scope>
       </dependency>
       <!-- Old Deps -->
@@ -1031,7 +995,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-perf-helper</artifactId>
-        <version>1.0.5</version>
+        <version>${jetty.perf-helper.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -1773,6 +1737,30 @@
       </properties>
     </profile>
     <profile>
+      <id>8u191</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_191</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u192</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_192</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
       <id>jdk9</id>
       <activation>
         <jdk>[1.9,)</jdk>
@@ -1787,6 +1775,69 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>snapshot-repositories</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+          <id>jetty-snapshots</id>
+          <name>jetty-snapshots</name>
+          <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>apache.snapshots</id>
+          <url>https://repository.apache.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>oss.snapshots</id>
+          <name>OSS Snapshots</name>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>jetty.snapshots</id>
+          <name>Jetty Snapshots</name>
+          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+    </profile>
+    <profile>
+      <id>cbi-repository</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>cbi-releases</id>
+          <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
     </profile>
   </profiles>
 
@@ -1884,65 +1935,6 @@
     <name>Webtide</name>
     <url>https://webtide.com</url>
   </organization>
-
-  <!-- SNAPSHOT Repository is only for temporary usage.
-       This configuration should not be checked in, as it
-       can result in bad success on CI. -->
-  <!--
-  <repositories>
-    <repository>
-      <id>jetty-snapshots</id>
-      <name>jetty-snapshots</name>
-      <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-   -->
-  <repositories>
-    <repository>
-      <id>apache.snapshots</id>
-      <url>https://repository.apache.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>oss.snapshots</id>
-      <name>OSS Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jetty.snapshots</id>
-      <name>Jetty Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-        <id>cbi-releases</id>
-        <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
-        <snapshots>
-            <enabled>false</enabled>
-        </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
 
   <distributionManagement>
     <repository>

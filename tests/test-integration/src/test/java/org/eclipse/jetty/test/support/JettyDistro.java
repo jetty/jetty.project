@@ -258,7 +258,7 @@ public class JettyDistro
      */
     public JettyDistro(Class<?> clazz, String artifact) throws IOException
     {
-        this.jettyHomeDir = MavenTestingUtils.getTargetTestingDir(clazz,"jettyHome");
+        this.jettyHomeDir = MavenTestingUtils.getTargetTestingPath(clazz,"jettyHome").toFile();
         if (artifact != null)
         {
             this.artifactName = artifact;

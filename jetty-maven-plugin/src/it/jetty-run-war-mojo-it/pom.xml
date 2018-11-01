@@ -1,85 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.eclipse.jetty.its.jetty-run-war-mojo-it</groupId>
-    <artifactId>jetty-simple-project</artifactId>
+  <parent>
+    <groupId>org.eclipse.jetty.its</groupId>
+    <artifactId>it-parent-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>pom</packaging>
+  </parent>
 
-    <name>Jetty :: Simple</name>
+  <groupId>org.eclipse.jetty.its.jetty-run-war-mojo-it</groupId>
+  <artifactId>jetty-simple-project</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
-        <maven-war-plugin-version>3.0.0</maven-war-plugin-version>
-        <jetty.version>@project.version@</jetty.version>
-    </properties>
+  <name>Jetty :: Simple</name>
 
-    <modules>
-        <module>jetty-simple-base</module>
-        <module>jetty-simple-webapp</module>
-    </modules>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <java.version>1.8</java.version>
+    <jetty.version>@project.version@</jetty.version>
+  </properties>
 
-    <dependencyManagement>
-        <dependencies>
+  <modules>
+    <module>jetty-simple-base</module>
+    <module>jetty-simple-webapp</module>
+  </modules>
 
-            <dependency>
-                <groupId>org.eclipse.jetty.its.jetty-run-war-mojo-it</groupId>
-                <artifactId>jetty-simple-base</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>javax.servlet-api</artifactId>
-                <version>3.1.0</version>
-                <type>jar</type>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>1.7.21</version>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>2.5</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-servlet</artifactId>
-                <version>${jetty.version}</version>
-            </dependency>
-
-        </dependencies>
-    </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.5.1</version>
-                    <configuration>
-                        <target>1.8</target>
-                        <source>1.8</source>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>jetty-maven-plugin</artifactId>
-                   <version>${jetty.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.its.jetty-run-war-mojo-it</groupId>
+        <artifactId>jetty-simple-base</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
 </project>

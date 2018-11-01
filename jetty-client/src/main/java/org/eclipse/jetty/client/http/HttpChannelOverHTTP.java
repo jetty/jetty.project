@@ -110,16 +110,16 @@ public class HttpChannelOverHTTP extends HttpChannel
             
             // Upgrade Response
             HttpRequest request = exchange.getRequest();
-            if (request instanceof HttpConnectionUpgrader)
+            HttpConnectionUpgrader upgrader = (HttpConnectionUpgrader) request.getConversation().getAttribute(HttpConnectionUpgrader.class.getName());
+            if (upgrader != null)
             {
-                HttpConnectionUpgrader listener = (HttpConnectionUpgrader)request;
                 try
                 {
-                    listener.upgrade(response,getHttpConnection());
+                    upgrader.upgrade(response, getHttpConnection());
                 }
                 catch (Throwable x)
                 {
-                    return new Result(result,x);
+                    return new Result(result, x);
                 }
             }
         }

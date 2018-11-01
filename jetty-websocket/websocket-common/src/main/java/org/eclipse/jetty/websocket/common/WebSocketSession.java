@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
@@ -279,26 +281,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpThis(out);
-        out.append(indent).append(" +- incomingHandler : ");
-        if (incomingHandler instanceof Dumpable)
-        {
-            ((Dumpable)incomingHandler).dump(out,indent + "    ");
-        }
-        else
-        {
-            out.append(incomingHandler.toString()).append(System.lineSeparator());
-        }
-
-        out.append(indent).append(" +- outgoingHandler : ");
-        if (outgoingHandler instanceof Dumpable)
-        {
-            ((Dumpable)outgoingHandler).dump(out,indent + "    ");
-        }
-        else
-        {
-            out.append(outgoingHandler.toString()).append(System.lineSeparator());
-        }
+        dumpBeans(out,indent,
+            DumpableCollection.from("incoming", incomingHandler),
+            DumpableCollection.from("outgoing", outgoingHandler));
     }
 
     @Override
@@ -620,7 +605,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("open -> {}",dump());
+                LOG.debug("[{}] open -> {}",getPolicy().getBehavior(),dump());
             }
             
             if(openFuture != null)

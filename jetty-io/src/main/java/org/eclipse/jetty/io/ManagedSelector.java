@@ -296,8 +296,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             String keysAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             if (keys==null)
                 keys = Collections.singletonList("No dump keys retrieved");
-            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("updates @ "+updatesAt, updates),
-                    new DumpableCollection("keys @ "+keysAt, keys)));
+
+            dumpBeans(out, indent,
+                new DumpableCollection("updates @ "+updatesAt, updates),
+                new DumpableCollection("keys @ "+keysAt, keys));
         }
         else
         {
@@ -451,12 +453,15 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                closeNoExceptions(_selector);
                 _selector = null;
                 if (isRunning())
                     LOG.warn(x);
                 else
+                {
+                    LOG.warn(x.toString());
                     LOG.debug(x);
+                }
+                closeNoExceptions(_selector);
             }
             return false;
         }
@@ -540,7 +545,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
      */
     public interface SelectorUpdate
     {
-        public void update(Selector selector);
+        void update(Selector selector);
     }
 
     private class Start implements SelectorUpdate
@@ -564,8 +569,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         public void update(Selector selector)
         {
             Set<SelectionKey> selector_keys = selector.keys();
-            List<String> list = new ArrayList<>(selector_keys.size()+1);
-            list.add(selector + " keys=" + selector_keys.size());
+            List<String> list = new ArrayList<>(selector_keys.size());
             for (SelectionKey key : selector_keys)
             {
                     if (key==null)

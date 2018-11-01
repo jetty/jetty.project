@@ -215,59 +215,59 @@ public class ContainerLifeCycleTest
         a0.addBean(aa0);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " +? ContainerLife");
+        dump = check(dump, "+?ContainerLife");
 
         ContainerLifeCycle aa1 = new ContainerLifeCycle();
         a0.addBean(aa1);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " +? ContainerLife");
-        dump = check(dump, " +? ContainerLife");
+        dump = check(dump, "+?ContainerLife");
+        dump = check(dump, "+?ContainerLife");
         dump = check(dump, "");
 
         ContainerLifeCycle aa2 = new ContainerLifeCycle();
         a0.addBean(aa2, false);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " +? ContainerLife");
-        dump = check(dump, " +? ContainerLife");
-        dump = check(dump, " +~ ContainerLife");
+        dump = check(dump, "+?ContainerLife");
+        dump = check(dump, "+?ContainerLife");
+        dump = check(dump, "+~ContainerLife");
         dump = check(dump, "");
 
         aa1.start();
         a0.start();
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " +~ ContainerLife");
-        dump = check(dump, " +~ ContainerLife");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "+~ContainerLife");
+        dump = check(dump, "+~ContainerLife");
         dump = check(dump, "");
 
         a0.manage(aa1);
         a0.removeBean(aa2);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " += ContainerLife");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "+=ContainerLife");
         dump = check(dump, "");
 
         ContainerLifeCycle aaa0 = new ContainerLifeCycle();
         aa0.addBean(aaa0);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   +~ Container");
-        dump = check(dump, " += ContainerLife");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +~Container");
+        dump = check(dump, "+=ContainerLife");
         dump = check(dump, "");
 
         ContainerLifeCycle aa10 = new ContainerLifeCycle();
         aa1.addBean(aa10, true);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   +~ Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, "     += Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +~Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "  +=Container");
         dump = check(dump, "");
 
         final ContainerLifeCycle a1 = new ContainerLifeCycle();
@@ -280,63 +280,70 @@ public class ContainerLifeCycleTest
             @Override
             public void dump(Appendable out, String indent) throws IOException
             {
-                out.append(this.toString()).append("\n");
-                dump(out, indent, TypeUtil.asList(new Object[]{a1, a2}), TypeUtil.asList(new Object[]{a3, a4}));
+                Dumpable.dumpObjects(out, indent, this.toString(), TypeUtil.asList(new Object[]{a1, a2}), TypeUtil.asList(new Object[]{a3, a4}));
             }
         };
         a0.addBean(aa, true);
+
+
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   +~ Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   += Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +~Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +=Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "  +>java.util.Arrays$ArrayList");
+        dump = check(dump, "  | +:ContainerLifeCycle");
+        dump = check(dump, "  | +:ContainerLifeCycle");
+        dump = check(dump, "  +>java.util.Arrays$ArrayList");
+        dump = check(dump, "    +:ContainerLifeCycle");
+        dump = check(dump, "    +:ContainerLifeCycle");
         dump = check(dump, "");
 
         a2.addBean(aa0, true);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   +~ Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   += Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     |   += Conta");
-        dump = check(dump, "     |       +~ C");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +~Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +=Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "  +>java.util.Arrays$ArrayList");
+        dump = check(dump, "  | +:ContainerLifeCycle");
+        dump = check(dump, "  | +:ContainerLifeCycle");
+        dump = check(dump, "  |   +=Conta");
+        dump = check(dump, "  |     +~C");
+        dump = check(dump, "  +>java.util.Arrays$ArrayList");
+        dump = check(dump, "    +:ContainerLifeCycle");
+        dump = check(dump, "    +:ContainerLifeCycle");
         dump = check(dump, "");
 
         a2.unmanage(aa0);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   +~ Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   += Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     |   +~ Conta");
-        dump = check(dump, "     +- Container");
-        dump = check(dump, "     +- Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +~Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +=Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "  +>java.util.Arrays$ArrayList");
+        dump = check(dump, "  | +:ContainerLifeCycle");
+        dump = check(dump, "  | +:ContainerLifeCycle");
+        dump = check(dump, "  |   +~Conta");
+        dump = check(dump, "  +>java.util.Arrays$ArrayList");
+        dump = check(dump, "    +:ContainerLifeCycle");
+        dump = check(dump, "    +:ContainerLifeCycle");
         dump = check(dump, "");
 
         a0.unmanage(aa);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   +~ Container");
-        dump = check(dump, " += ContainerLife");
-        dump = check(dump, " |   += Container");
-        dump = check(dump, " +~ ContainerLife");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +~Container");
+        dump = check(dump, "+=ContainerLife");
+        dump = check(dump, "| +=Container");
+        dump = check(dump, "+~ContainerLife");
         dump = check(dump, "");
     }
 
