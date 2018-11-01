@@ -32,7 +32,7 @@ For the default SSL support, simply activate the `ssl` link:#startup-modules[mod
 $ cd /path/to/mybase
 $ java -jar ${JETTY_HOME}/start.jar --add-to-startd=ssl
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini1v
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
 INFO : Base directory was modified
 $ tree
 .
