@@ -148,7 +148,7 @@
     <dependency>
      <groupId>org.apache.aries.spifly</groupId>
       <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
-      <version>1.0.10</version>
+      <version>1.0.15-SNAPSHOT</version>
      <scope>test</scope>
     </dependency>
     <dependency>
