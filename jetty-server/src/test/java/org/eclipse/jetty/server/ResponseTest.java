@@ -944,7 +944,7 @@ public class ResponseTest
     public void testAddCookieComplianceRFC2965() throws Exception
     {
         Response response = getResponse();
-        response.getHttpChannel().getHttpConfiguration().setCookieCompliance(CookieCompliance.RFC2965);
+        response.getHttpChannel().getHttpConfiguration().setSetCookieCompliance(CookieCompliance.RFC2965);
 
         Cookie cookie = new Cookie("name", "value");
         cookie.setDomain("domain");
