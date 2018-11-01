@@ -761,12 +761,15 @@ public class Request implements HttpServletRequest
         }
 
         _cookiesExtracted = true;
-        
-        for (String c : metadata.getFields().getValuesList(HttpHeader.COOKIE))
+
+        for (HttpField field : metadata.getFields())
         {
-            if (_cookies == null)
-                _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
-            _cookies.addCookieField(c);
+            if (field.getHeader()==HttpHeader.COOKIE)
+            {
+                if (_cookies==null)
+                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
+                _cookies.addCookieField(field.getValue());
+            }
         }
 
         //Javadoc for Request.getCookies() stipulates null for no cookies

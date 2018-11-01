@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.FileSessionDataStore;
@@ -109,9 +108,8 @@ public class TestServer
         // Handlers
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
-        { contexts, new DefaultHandler(), requestLogHandler });
+        { contexts, new DefaultHandler() });
 
         // Add restart handler to test the ability to save sessions and restart
         RestartHandler restart = new RestartHandler();
@@ -127,7 +125,7 @@ public class TestServer
         File log=File.createTempFile("jetty-yyyy_mm_dd", "log");
         NCSARequestLog requestLog = new NCSARequestLog(log.toString());
         requestLog.setExtended(false);
-        requestLogHandler.setRequestLog(requestLog);
+        server.setRequestLog(requestLog);
 
         server.setStopAtShutdown(true);
 
