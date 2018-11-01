@@ -37,16 +37,17 @@ import java.util.Map;
  * This is the receiver of Parsed Frames.  It is implemented by the Application (or Application API layer or Framework)
  * as the primary API to/from the Core websocket implementation.   The instance to be used for each websocket connection
  * is instantiated by the application, either:
+ * </p>
  * <ul>
  * <li>On the server, the application layer must provide a {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator} instance
  * to negotiate and accept websocket connections, which will return the FrameHandler instance to use from
  * {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator#negotiate(Negotiation)}.</li>
  * <li>On the client, the application returns the FrameHandler instance to user from the {@link UpgradeRequest}
- * instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(UpgradeRequest)} method/</li>.
+ * instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(UpgradeRequest)} method/</li>
  * </ul>
- * </p>
  * <p>
- * Once instantiated the FrameHandler follows is used as follows
+ * Once instantiated the FrameHandler follows is used as follows:
+ * </p>
  * <ul>
  * <li>The {@link #onOpen(CoreSession)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
  * to obtain information about the connection and to send frames</li>
@@ -59,11 +60,9 @@ import java.util.Map;
  * <li>The {@link #onClosed(CloseStatus)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
  * will indicate the nature of the close.</li>
  * </ul>
- * </p>
  */
 public interface FrameHandler extends IncomingFrames
 {
-
     // TODO: have conversation about "throws Exception" vs "throws WebSocketException" vs "throws Throwable" in below signatures.
 
     /**

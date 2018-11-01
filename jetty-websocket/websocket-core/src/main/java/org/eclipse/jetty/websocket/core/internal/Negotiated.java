@@ -124,7 +124,6 @@ public class Negotiated
      *
      * @param uri the input URI
      * @return the WebSocket scheme URI for the input URI.
-     * @throws URISyntaxException if unable to convert the input URI
      */
     public static URI toWebsocket(final URI uri)
     {

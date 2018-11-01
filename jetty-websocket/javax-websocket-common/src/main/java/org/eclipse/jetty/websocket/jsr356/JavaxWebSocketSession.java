@@ -210,7 +210,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
      * based message handling methods.
      *
      * @param obj the return object
-     * @return the same return object (to satisfy {@link java.lang.invoke.MethodHandles#filterReturnValue(MethodHandle, MethodHandle)} rules
      */
     @SuppressWarnings("unused") // used by JavaxWebSocketFrameHandlerFactory via MethodHandle
     public void filterReturnType(Object obj)
