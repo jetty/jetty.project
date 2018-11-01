@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
 
 import javax.servlet.http.HttpServlet;
 
@@ -56,6 +57,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -75,6 +77,7 @@ public class TransportScenario
     protected String servletPath = "/servlet";
     protected HttpClient client;
     protected Path sockFile;
+    protected final BlockingQueue<String> requestLog= new BlockingArrayQueue<>();
 
     public TransportScenario(final Transport transport) throws IOException
     {
@@ -320,7 +323,15 @@ public class TransportScenario
         server.addBean(mbeanContainer);
         connector = newServerConnector(server);
         server.addConnector(connector);
+
+        server.setRequestLog((request, response) ->
+        {
+            int status = response.getCommittedMetaData().getStatus();
+            requestLog.offer(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
+        });
+
         server.setHandler(handler);
+
         try
         {
             server.start();
@@ -375,4 +386,6 @@ public class TransportScenario
             }
         }
     }
+
+
 }
