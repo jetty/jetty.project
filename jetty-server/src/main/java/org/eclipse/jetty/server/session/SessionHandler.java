@@ -243,6 +243,7 @@ public class SessionHandler extends ScopedHandler
 
     protected Scheduler _scheduler;
     protected boolean _ownScheduler = false;
+    protected final SessionAsyncListener _sessionAsyncListener = new SessionAsyncListener();
     
 
 
@@ -373,7 +374,7 @@ public class SessionHandler extends ScopedHandler
     {
         if (request.isAsyncStarted() && request.getDispatcherType() == DispatcherType.REQUEST)
         {
-            request.getAsyncContext().addListener(new SessionAsyncListener());
+            request.getAsyncContext().addListener(_sessionAsyncListener);
         }
         else
         {
