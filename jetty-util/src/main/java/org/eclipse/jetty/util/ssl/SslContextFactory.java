@@ -175,6 +175,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private int _renegotiationLimit = 5;
     private Factory _factory;
     private PKIXCertPathChecker _pkixCertPathChecker;
+    private boolean _warnOnCommonVulnerabilities = true;
 
     /**
      * Construct an instance of SslContextFactory
@@ -238,6 +239,41 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         synchronized (this)
         {
             load();
+        }
+        if (isWarnOnCommonVulnerabilities())
+            warnOnCommonVulnerabilities();
+    }
+
+    protected void warnOnCommonVulnerabilities()
+    {
+        if (getEndpointIdentificationAlgorithm()==null)
+            LOG.warn("No EndPointIdentificationAlgorithm configured for {}",this);
+        if (isTrustAll())
+            LOG.warn("Trusting all certificates configured for {}",this);
+        if (getSecureRandomAlgorithm()==null)
+            LOG.warn("No SecureRandomAlgorithm configured for {}",this);
+
+        List<String> excluded = Arrays.asList(getExcludeProtocols());
+        for (String protocol : new String[] {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"})
+        {
+            if (!excluded.contains(protocol))
+                LOG.warn("Protocol {} not excluded for {}",protocol,this);
+        }
+
+        SSLEngine engine = _factory._context.createSSLEngine();
+        customize(engine);
+        for (String suite : engine.getEnabledCipherSuites())
+        {
+            if (suite.matches("^.*_(MD5|SHA|SHA1)$"))
+                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
+            if (suite.matches("^TLS_RSA_.*$"))
+                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
+            if (suite.matches("^SSL_.*$"))
+                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
+            if (suite.matches("^.*_NULL_.*$"))
+                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
+            if (suite.matches("^.*_anon_.*$"))
+                LOG.warn("Weak cipher suite {} enabled for {}",suite,this);
         }
     }
 
@@ -1064,8 +1100,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     /**
-     * When set to "HTTPS" hostname verification will be enabled
-     *
+     * When set to "HTTPS" hostname verification will be enabled.
+     * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIndentificationAlgorithm
+     * is not set.
      * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm
      */
     public void setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm)
@@ -1350,6 +1387,24 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         if (!isStarted())
             throw new IllegalStateException("!STARTED: " + this);
+    }
+
+    /**
+     *
+     * @param warn If true warn on some (not comprehensive) common configuration vulnerabilities
+     */
+    public void setWarnOnCommonVulnerabilities(boolean warn)
+    {
+        _warnOnCommonVulnerabilities = warn;
+    }
+
+    /**
+     * @return true if warning is generated for some common configuration vulnerabilities
+     */
+    @ManagedAttribute("Warn if common vulnerabilities are configured")
+    public boolean isWarnOnCommonVulnerabilities()
+    {
+        return _warnOnCommonVulnerabilities;
     }
 
     /**
