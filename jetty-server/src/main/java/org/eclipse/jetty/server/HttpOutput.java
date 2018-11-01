@@ -25,6 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -934,7 +935,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
         if (_flushed < minFlushed)
-            throw new IOException(String.format("Response content data rate < %d B/s", minDataRate));
+        {
+            IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
+            _channel.abort(ioe);
+            throw ioe;
+        }
     }
 
     public void recycle()

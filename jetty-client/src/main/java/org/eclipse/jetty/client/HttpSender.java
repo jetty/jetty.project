@@ -579,14 +579,14 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             // respect to concurrency between request and response.
             Result result = exchange.terminateRequest();
             terminateRequest(exchange, failure, result);
+            return true;
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Concurrent failure: request termination skipped, performed by helpers");
+            return false;
         }
-
-        return true;
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)

@@ -47,7 +47,6 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -209,9 +208,7 @@ public class LikeJettyXml
         requestLog.setExtended(true);
         requestLog.setLogCookies(false);
         requestLog.setLogTimeZone("GMT");
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
-        requestLogHandler.setRequestLog(requestLog);
-        handlers.addHandler(requestLogHandler);
+        server.setRequestLog(requestLog);
 
 
         // === jetty-lowresources.xml ===

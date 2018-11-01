@@ -53,14 +53,12 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpChannel.Listener;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -99,15 +97,13 @@ public class AsyncServletTest
 
         _log=new ArrayList<>();
         RequestLog log=new Log();
-        RequestLogHandler logHandler = new RequestLogHandler();
-        logHandler.setRequestLog(log);
-        _server.setHandler(logHandler);
+        _server.setRequestLog(log);
         _expectedLogs=1;
         _expectedCode="200 ";
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/ctx");
-        logHandler.setHandler(context);
+        _server.setHandler(context);
         context.addEventListener(new DebugListener());
         
         _errorHandler = new ErrorPageErrorHandler();

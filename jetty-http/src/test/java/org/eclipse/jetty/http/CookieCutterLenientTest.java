@@ -145,7 +145,12 @@ public class CookieCutterLenientTest
             Arguments.of("GAPS=1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-", "GAPS", "1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-"),
 
             // Strong abuse of cookie spec (lots of tspecials)
-            Arguments.of("$Version=0; rToken=F_TOKEN''!--\"</a>=&{()}", "rToken", "F_TOKEN''!--\"</a>=&{()}")
+            Arguments.of("$Version=0; rToken=F_TOKEN''!--\"</a>=&{()}", "rToken", "F_TOKEN''!--\"</a>=&{()}"),
+
+            // Commas that were not commas
+            Arguments.of("name=foo,bar","name","foo,bar"),
+            Arguments.of("name=foo , bar","name","foo , bar"),
+            Arguments.of("name=foo , bar, bob","name","foo , bar, bob")
         );
     }
     

@@ -80,7 +80,7 @@
  javax.servlet.http;version="[3.1,4.1)",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
- org.objectweb.asm;version=4;resolution:=optional,
+ org.objectweb.asm;version="5";resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
