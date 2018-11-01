@@ -41,6 +41,7 @@ public class QuotedCSV implements Iterable<String>
     public static final String ABNF_REQUIRED_QUOTING = "\"'\\\n\r\t\f\b%+ ;=,";
 
     /**
+     * Join a list into Quoted CSV string
      * @param values A list of values
      * @return A Quoted Comma Separated Value list
      */
@@ -64,6 +65,11 @@ public class QuotedCSV implements Iterable<String>
         return ret.toString();
     }
 
+    /**
+     * Join a list into Quoted CSV string
+     * @param values A list of values
+     * @return A Quoted Comma Separated Value list
+     */
     public static String join(String... values)
     {
         if (values == null)
@@ -83,10 +89,11 @@ public class QuotedCSV implements Iterable<String>
     }
 
     /**
+     * Join a list into Quoted CSV StringBuilder
+     * @param builder A builder to join the list into
      * @param values A list of values
-     * @return A Quoted Comma Separated Value list
      */
-    public static void join(StringBuilder ret, List<String> values)
+    public static void join(StringBuilder builder, List<String> values)
     {
         if (values == null || values.isEmpty())
             return;
@@ -96,10 +103,10 @@ public class QuotedCSV implements Iterable<String>
         for (String value : values)
         {
             if (needsDelim)
-                ret.append(", ");
+                builder.append(", ");
             else
                 needsDelim = true;
-            QuotedStringTokenizer.quoteIfNeeded(ret, value, ABNF_REQUIRED_QUOTING);
+            QuotedStringTokenizer.quoteIfNeeded(builder, value, ABNF_REQUIRED_QUOTING);
         }
     }
 

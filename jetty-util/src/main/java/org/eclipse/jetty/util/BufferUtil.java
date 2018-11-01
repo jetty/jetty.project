@@ -419,8 +419,6 @@ public class BufferUtil
     /** Append bytes to a buffer.
      * @param to Buffer is flush mode
      * @param s String to append as UTF8
-     * @param off offset into byte
-     * @param len length to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
      */
     public static void append(ByteBuffer to, String s) throws BufferOverflowException
