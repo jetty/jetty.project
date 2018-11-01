@@ -1914,6 +1914,8 @@ public class HttpParser
         }
 
         /**
+         * @param status The status to send
+         * @param reason The reason for the bad message
          * @deprecated use {@link #badMessage(BadMessageException)} instead
          */
         @Deprecated

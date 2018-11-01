@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -312,7 +311,7 @@ public class ContextHandlerCollection extends HandlerCollection
         
         Set<String> getContextPaths()
         {
-            Set<String> set = new HashSet<String>();
+            Set<String> set = new HashSet<>();
             for (ContextHandler context:_contexts)
                 set.add(context.getContextPath());
             return set;

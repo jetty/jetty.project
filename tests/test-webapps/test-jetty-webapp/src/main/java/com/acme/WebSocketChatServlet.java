@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -65,8 +64,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     @Override
     public void configure(WebSocketServletFactory factory)
     {
-        factory.register(ChatWebSocket.class);
-        factory.setCreator(this);
+        factory.addMapping(factory.parsePathSpec("/"), this);
     }
 
     /* ------------------------------------------------------------ */

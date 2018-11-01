@@ -20,10 +20,15 @@ package org.eclipse.jetty.http;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.isEmptyString;
+import static org.hamcrest.Matchers.nullValue;
 
 import org.hamcrest.Matchers;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
 
 public class QuotedCSVTest
 {
@@ -151,5 +156,15 @@ public class QuotedCSVTest
         assertThat(QuotedCSV.unquote("\"\\\"foo\""),is("\"foo"));
         assertThat(QuotedCSV.unquote("\\foo"),is("\\foo"));
     }
-    
+
+    @Test
+    public void testJoin()
+    {
+        assertThat(QuotedCSV.join((String)null),nullValue());
+        assertThat(QuotedCSV.join(Collections.emptyList()),isEmptyString());
+        assertThat(QuotedCSV.join(Collections.singletonList("hi")),is("hi"));
+        assertThat(QuotedCSV.join("hi","ho"),is("hi, ho"));
+        assertThat(QuotedCSV.join("h i","h,o"),is("\"h i\", \"h,o\""));
+        assertThat(QuotedCSV.join("h\"i","h\to"),is("\"h\\\"i\", \"h\\to\""));
+    }
 }

@@ -382,7 +382,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-server</artifactId>
+        <artifactId>jetty-websocket-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>

@@ -54,10 +54,9 @@ public class WebSocketServer
     public static class EchoServlet extends WebSocketServlet
     {
         @Override
-        public void configure( WebSocketServletFactory factory )
+        public void configure(WebSocketServletFactory factory)
         {
-            // Register the echo websocket with the basic WebSocketCreator
-            factory.register(EchoSocket.class);
+            factory.addMapping(factory.parsePathSpec("/"), (req,res)->new EchoSocket());
         }
     }
 
