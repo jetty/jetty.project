@@ -27,6 +27,9 @@
   </pluginRepositories>
 
   <properties>
+    <compiler.source>11</compiler.source>
+    <compiler.target>11</compiler.target>
+    <compiler.release>11</compiler.release>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
@@ -429,9 +432,9 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.plugin.version}</version>
           <configuration>
-            <source>11</source>
-            <target>11</target>
-            <release>11</release>
+            <source>${compiler.source}</source>
+            <target>${compiler.target}</target>
+            <release>${compiler.release}</release>
           </configuration>
         </plugin>
         <plugin>
