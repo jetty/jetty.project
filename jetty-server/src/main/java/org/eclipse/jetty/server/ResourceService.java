@@ -226,7 +226,7 @@ public class ResourceService
 
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);        
         
-        boolean endsWithSlash=(pathInfo==null?servletPath:pathInfo).endsWith(URIUtil.SLASH);
+        boolean endsWithSlash=(pathInfo==null?(_pathInfoOnly?"":servletPath):pathInfo).endsWith(URIUtil.SLASH);
         boolean checkPrecompressedVariants=_precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges==null;
         
         HttpContent content=null;
@@ -373,7 +373,7 @@ public class ResourceService
         throws ServletException, IOException
     {                
         // Redirect to directory
-        if (!endsWithSlash || (pathInContext.length()==1 && request.getAttribute("org.eclipse.jetty.server.nullPathInfo")!=null))
+        if (!endsWithSlash)
         {
             StringBuffer buf=request.getRequestURL();
             synchronized(buf)
