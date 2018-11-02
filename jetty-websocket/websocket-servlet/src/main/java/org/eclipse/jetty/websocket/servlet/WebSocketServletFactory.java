@@ -18,77 +18,96 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.time.Duration;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-
-/**
- * Basic WebSocketServletFactory for working with Jetty-based WebSocketServlets
- */
 public interface WebSocketServletFactory
 {
-    class Loader
-    {
-        final static String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
-        
-        public static WebSocketServletFactory load(ServletContext ctx, WebSocketPolicy policy)
-        {
-            try
-            {
-                Class<? extends WebSocketServletFactory> wsClazz =
-                        (Class<? extends WebSocketServletFactory>) Class.forName(DEFAULT_IMPL,true,Thread.currentThread().getContextClassLoader());
-                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{ServletContext.class, WebSocketPolicy.class});
-                return ctor.newInstance(ctx, policy);
-            }
-            catch (ClassNotFoundException e)
-            {
-                throw new RuntimeException("Unable to load " + DEFAULT_IMPL, e);
-            }
-            catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e)
-            {
-                throw new RuntimeException("Unable to instantiate " + DEFAULT_IMPL, e);
-            }
-        }
-    }
-    
-    boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
-    boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
-    void start() throws Exception;
-    void stop() throws Exception;
-    
-    WebSocketCreator getCreator();
-    
-    ExtensionFactory getExtensionFactory();
-    
+    void addFrameHandlerFactory(WebSocketServletFrameHandlerFactory frameHandlerFactory);
+
     /**
-     * Get the base policy in use for WebSockets.
+     * add a WebSocket mapping to a provided {@link WebSocketCreator}.
      * <p>
-     * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
+     * If mapping is added before this configuration is started, then it is persisted through
+     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     * this configuration is stopped.
+     * </p>
      *
-     * @return the base policy
+     * @param pathSpec the pathspec to respond on
+     * @param creator  the WebSocketCreator to use
+     * @since 10.0
      */
-    WebSocketPolicy getPolicy();
-    
-    boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response);
-    
+    void addMapping(PathSpec pathSpec, WebSocketCreator creator);
+
+    Duration getDefaultIdleTimeout();
+
+    void setDefaultIdleTimeout(Duration duration);
+
+    int getDefaultInputBufferSize();
+
+    void setDefaultInputBufferSize(int bufferSize);
+
+    long getDefaultMaxAllowedFrameSize();
+
+    void setDefaultMaxAllowedFrameSize(long maxFrameSize);
+
+    long getDefaultMaxBinaryMessageSize();
+
+    void setDefaultMaxBinaryMessageSize(long bufferSize);
+
+    long getDefaultMaxTextMessageSize();
+
+    void setDefaultMaxTextMessageSize(long bufferSize);
+
+    int getDefaultOutputBufferSize();
+
+    void setDefaultOutputBufferSize(int bufferSize);
+
     /**
-     * Register a websocket class pojo with the default {@link WebSocketCreator}.
-     * <p>
-     * Note: only required if using the default {@link WebSocketCreator} provided by this factory.
+     * Returns the creator for the given path spec.
      *
-     * @param websocketPojo the class to instantiate for each incoming websocket upgrade request.
+     * @param pathSpec the pathspec to respond on
+     * @return the websocket creator if path spec exists, or null
      */
-    void register(Class<?> websocketPojo);
-    
-    void setCreator(WebSocketCreator creator);
+    WebSocketCreator getMapping(PathSpec pathSpec);
+
+    /**
+     * Get the MappedResource for the given target path.
+     *
+     * @param target the target path
+     * @return the MappedResource if matched, or null if not matched.
+     */
+    WebSocketCreator getMatch(String target);
+
+    boolean isAutoFragment();
+
+    void setAutoFragment(boolean autoFragment);
+
+    /**
+     * Parse a PathSpec string into a PathSpec instance.
+     * <p>
+     * Recognized Path Spec syntaxes:
+     * </p>
+     * <dl>
+     * <dt><code>/path/to</code> or <code>/</code> or <code>*.ext</code> or <code>servlet|{spec}</code></dt>
+     * <dd>Servlet Syntax</dd>
+     * <dt><code>^{spec}</code> or <code>regex|{spec}</code></dt>
+     * <dd>Regex Syntax</dd>
+     * <dt><code>uri-template|{spec}</code></dt>
+     * <dd>URI Template (see JSR356 and RFC6570 level 1)</dd>
+     * </dl>
+     *
+     * @param rawSpec the raw path spec as String to parse.
+     * @return the {@link PathSpec} implementation for the rawSpec
+     */
+    PathSpec parsePathSpec(String rawSpec);
+
+    /**
+     * Removes the mapping based on the given path spec.
+     *
+     * @param pathSpec the pathspec to respond on
+     * @return true if underlying mapping were altered, false otherwise
+     */
+    boolean removeMapping(PathSpec pathSpec);
 }

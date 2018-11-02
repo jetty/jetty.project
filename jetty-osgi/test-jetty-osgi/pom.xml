@@ -258,13 +258,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-api</artifactId>
+      <artifactId>jetty-websocket-api</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-common</artifactId>
+      <artifactId>jetty-websocket-common</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>

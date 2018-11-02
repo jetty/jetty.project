@@ -199,16 +199,16 @@ public class HttpGeneratorServerTest
         head = BufferUtil.toString(header);
         BufferUtil.clear(header);
         assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, containsString("Server: Jetty(9.x.x)"));
-        assertThat(head, containsString("X-Powered-By: Jetty(9.x.x)"));
+        assertThat(head, containsString("Server: Jetty(10.x.x)"));
+        assertThat(head, containsString("X-Powered-By: Jetty(10.x.x)"));
         gen.reset();
         gen.generateResponse(infoF, false, header, null, null, true);
         head = BufferUtil.toString(header);
         BufferUtil.clear(header);
         assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(9.x.x)")));
+        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
         assertThat(head, containsString("Server: SomeServer"));
-        assertThat(head, containsString("X-Powered-By: Jetty(9.x.x)"));
+        assertThat(head, containsString("X-Powered-By: Jetty(10.x.x)"));
         assertThat(head, containsString("X-Powered-By: SomePower"));
         gen.reset();
 
@@ -217,16 +217,16 @@ public class HttpGeneratorServerTest
         head = BufferUtil.toString(header);
         BufferUtil.clear(header);
         assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(9.x.x)")));
-        assertThat(head, not(containsString("X-Powered-By: Jetty(9.x.x)")));
+        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
+        assertThat(head, not(containsString("X-Powered-By: Jetty(10.x.x)")));
         gen.reset();
         gen.generateResponse(infoF, false, header, null, null, true);
         head = BufferUtil.toString(header);
         BufferUtil.clear(header);
         assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(9.x.x)")));
+        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
         assertThat(head, containsString("Server: SomeServer"));
-        assertThat(head, not(containsString("X-Powered-By: Jetty(9.x.x)")));
+        assertThat(head, not(containsString("X-Powered-By: Jetty(10.x.x)")));
         assertThat(head, containsString("X-Powered-By: SomePower"));
         gen.reset();
     }

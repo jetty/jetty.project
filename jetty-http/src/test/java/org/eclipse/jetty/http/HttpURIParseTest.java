@@ -108,10 +108,10 @@ public class HttpURIParseTest
         // File reference
         Arguments.of("file:///path/info","file",null,null,"/path/info",null,null,null),
         Arguments.of("file:/path/info","file",null,null,"/path/info",null,null,null),
-        
-        // Bad URI (no scheme, no host, no path) 
+
+        // Bad URI (no scheme, no host, no path)
         Arguments.of("//",null,null,null,null,null,null,null),
-        
+
         // Simple localhost references
         Arguments.of("http://localhost/","http","localhost",null,"/",null,null,null),
         Arguments.of("http://localhost:8080/", "http", "localhost","8080","/", null, null,null),

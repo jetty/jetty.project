@@ -860,9 +860,9 @@ public class HttpGenerator
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
     private static final byte[][] SEND = new byte[][]{
             new byte[0],
-            StringUtil.getBytes("Server: Jetty(9.x.x)\015\012"),
-        StringUtil.getBytes("X-Powered-By: Jetty(9.x.x)\015\012"),
-        StringUtil.getBytes("Server: Jetty(9.x.x)\015\012X-Powered-By: Jetty(9.x.x)\015\012")
+            StringUtil.getBytes("Server: Jetty(10.x.x)\015\012"),
+        StringUtil.getBytes("X-Powered-By: Jetty(10.x.x)\015\012"),
+        StringUtil.getBytes("Server: Jetty(10.x.x)\015\012X-Powered-By: Jetty(10.x.x)\015\012")
     };
 
     /* ------------------------------------------------------------------------------- */

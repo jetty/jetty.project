@@ -34,7 +34,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BufferUtilTest
 {
@@ -331,6 +336,27 @@ public class BufferUtilTest
         assertThat("result", result, containsString("\\x7f"));
     }
 
+    @Test
+    public void testCopyIndirect()
+    {
+        ByteBuffer b = BufferUtil.toBuffer("Hello World");
+        ByteBuffer c = BufferUtil.copy(b);
+        assertEquals("Hello World",BufferUtil.toString(c));
+        assertFalse(c.isDirect());
+        assertThat(b,not(sameInstance(c)));
+        assertThat(b.array(),not(sameInstance(c.array())));
+    }
+
+    @Test
+    public void testCopyDirect()
+    {
+        ByteBuffer b = BufferUtil.allocateDirect(11);
+        BufferUtil.append(b,"Hello World");
+        ByteBuffer c = BufferUtil.copy(b);
+        assertEquals("Hello World",BufferUtil.toString(c));
+        assertTrue(c.isDirect());
+        assertThat(b,not(sameInstance(c)));
+    }
 
     private void testWriteToWithBufferThatDoesNotExposeArray(int capacity) throws IOException
     {

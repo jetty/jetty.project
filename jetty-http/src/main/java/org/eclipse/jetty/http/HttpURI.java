@@ -788,11 +788,18 @@ public class HttpURI
         _query=query;
         _uri=null;
     }
-    
+
     /* ------------------------------------------------------------ */
-    public URI toURI() throws URISyntaxException
+    public URI toURI()
     {
-        return new URI(_scheme,null,_host,_port,_path,_query==null?null:UrlEncoded.decodeString(_query),_fragment);
+        try
+        {
+            return new URI(_scheme,null,_host,_port,_path,_query==null?null:UrlEncoded.decodeString(_query),_fragment);
+        }
+        catch(URISyntaxException x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 
     /* ------------------------------------------------------------ */

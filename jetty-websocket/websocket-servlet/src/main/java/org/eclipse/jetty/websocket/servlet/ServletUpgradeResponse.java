@@ -18,261 +18,164 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketConstants;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import java.util.stream.Collectors;
 
 /**
  * Servlet Specific UpgradeResponse implementation.
  */
-public class ServletUpgradeResponse implements UpgradeResponse
+public class ServletUpgradeResponse
 {
-    private HttpServletResponse response;
-    private boolean extensionsNegotiated = false;
-    private boolean subprotocolNegotiated = false;
-    private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private List<ExtensionConfig> extensions = new ArrayList<>();
-    private boolean success = false;
-    private int status;
-    
-    public ServletUpgradeResponse(HttpServletResponse response)
+    private final HttpServletResponse response;
+    private final Negotiation negotiation;
+
+    public ServletUpgradeResponse(Negotiation negotiation)
     {
-        this.response = response;
+        this.negotiation = negotiation;
+        this.response = negotiation.getResponse();
+        Objects.requireNonNull(response, "HttpServletResponse must not be null");
     }
-    
-    @Override
+
     public void addHeader(String name, String value)
     {
-        if (value!=null)
+        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
         {
-            List<String> values = headers.get(name);
-            if (values==null)
-            {
-                values = new ArrayList<>();
-                headers.put(name,values);
-            }
-            values.add(value);
+            setAcceptedSubProtocol(value); // Can only be one, so set
+            return;
         }
+
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name) && getExtensions() != null)
+        {
+            // Move any extensions configs to the headers
+            response.addHeader(name, ExtensionConfig.toHeaderValue(getExtensions()));
+            setExtensions(null);
+        }
+
+        response.addHeader(name, value);
     }
 
-    @Override
     public void setHeader(String name, String value)
     {
-        // remove from the real response
-        if (response!=null)
-            response.setHeader(name,null);
 
-       
-        List<String> values = headers.get(name);
-        if (values==null)
+        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
         {
-            values = new ArrayList<>();
-            headers.put(name,values);
-        }
-        else
-            values.clear();
-        values.add(value);
-    }
-    
-    public void complete()
-    {
-        if (response==null)
+            setAcceptedSubProtocol(value);
             return;
+        }
 
-        // Take a copy of all the real response headers
-        Map<String, Collection<String>> real = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String name : response.getHeaderNames())
-        {
-            real.put(name,response.getHeaders(name));
-        }
-        
-        // Transfer all headers to the real HTTP response
-        for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
-        {
-            for (String value : entry.getValue())
-            {
-                response.addHeader(entry.getKey(), value);
-            }
-        }
-        
-        // Prepend the real headers to the copy headers
-        for (Map.Entry<String, Collection<String>> entry : real.entrySet())
-        {
-            String name = entry.getKey();
-            Collection<String> prepend = entry.getValue();
-            List<String> values = headers.getOrDefault(name,new ArrayList<>());
-            values.addAll(0,prepend);
-            headers.put(name, values);
-        }
-        
-        status = response.getStatus();
-        response = null;
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+            setExtensions(null);
+
+        response.setHeader(name, value);
     }
-    
-    @Override
+
+    public void setHeader(String name, List<String> values)
+    {
+        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
+        {
+            if (values == null || values.isEmpty())
+                setAcceptedSubProtocol(null);
+            else if (values.size() == 1)
+                setAcceptedSubProtocol(values.get(0));
+            else
+                throw new IllegalArgumentException("multiple subprotocols");
+        }
+
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+        {
+            setExtensions(null);
+            response.setHeader(name, null);
+            values.forEach(value -> addHeader(name, value));
+            return;
+        }
+
+        response.setHeader(name, null); // clear it out first
+        values.forEach(value -> response.addHeader(name, value));
+    }
+
     public String getAcceptedSubProtocol()
     {
-        return getHeader(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL);
+        return getHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
     }
-    
-    @Override
+
     public List<ExtensionConfig> getExtensions()
     {
-        return extensions;
+        return negotiation.getNegotiatedExtensions();
     }
-    
-    @Override
+
     public String getHeader(String name)
     {
-        if (response!=null)
-        {
-            String value = response.getHeader(name);
-            if (value!=null)
-                return value;
-        }
-        List<String> values = headers.get(name);
-        if (values!=null && !values.isEmpty())
-            return values.get(0);
-        return null;
+        return response.getHeader(name);
     }
-    
-    @Override
+
     public Set<String> getHeaderNames()
     {
-        if (response==null)
-            return headers.keySet();
-        
-        Set<String> h = new HashSet<>(response.getHeaderNames());
-        h.addAll(headers.keySet());
-        return h;
+        return Collections.unmodifiableSet(new HashSet<>(response.getHeaderNames()));
     }
-    
-    @Override
-    public Map<String, List<String>> getHeaders()
+
+    public Map<String, List<String>> getHeadersMap()
     {
-        return headers;
+        Map<String, List<String>> headers = response.getHeaderNames().stream()
+            .collect(Collectors.toMap((name) -> name,
+                (name) -> new ArrayList<>(response.getHeaders(name))));
+        return Collections.unmodifiableMap(headers);
     }
-    
-    @Override
+
     public List<String> getHeaders(String name)
     {
-        if (response==null)
-            return headers.get(name);
-        
-        List<String> values = new ArrayList<>(response.getHeaders(name));
-        values.addAll(headers.get(name));
-        return values.isEmpty()?null:values;
+        return Collections.unmodifiableList(new ArrayList<>(response.getHeaders(name)));
     }
-    
-    @Override
+
     public int getStatusCode()
     {
-        if (response!=null)
-            return response.getStatus();
-        return status;
+        return response.getStatus();
     }
-    
-    @Override
-    public String getStatusReason()
-    {
-        throw new UnsupportedOperationException("Servlet's do not support Status Reason");
-    }
-    
+
     public boolean isCommitted()
     {
-        if (response != null)
-        {
-            return response.isCommitted();
-        }
-        // True in all other cases
-        return true;
+        return response.isCommitted();
     }
-    
-    public boolean isExtensionsNegotiated()
-    {
-        return extensionsNegotiated;
-    }
-    
-    public boolean isSubprotocolNegotiated()
-    {
-        return subprotocolNegotiated;
-    }
-    
-    @Override
-    public boolean isSuccess()
-    {
-        return success;
-    }
-    
+
     public void sendError(int statusCode, String message) throws IOException
     {
-        setSuccess(false);
-        HttpServletResponse r = response;
-        complete();
-        r.sendError(statusCode, message);
-        r.flushBuffer();
+        response.sendError(statusCode, message);
+        response.flushBuffer();
     }
-    
-    @Override
+
     public void sendForbidden(String message) throws IOException
     {
-        setSuccess(false);
-        HttpServletResponse r = response;
-        complete();
-        r.sendError(HttpServletResponse.SC_FORBIDDEN, message);
-        r.flushBuffer();
+        sendError(HttpServletResponse.SC_FORBIDDEN, message);
     }
-    
-    @Override
+
     public void setAcceptedSubProtocol(String protocol)
     {
-        response.setHeader(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, protocol);
-        subprotocolNegotiated = true;
+        negotiation.setSubprotocol(protocol);
     }
-    
-    @Override
+
     public void setExtensions(List<ExtensionConfig> configs)
     {
-        this.extensions.clear();
-        this.extensions.addAll(configs);
-        String value = ExtensionConfig.toHeaderValue(configs);
-        response.setHeader(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS, value);
-        extensionsNegotiated = true;
+        negotiation.setNegotiatedExtensions(configs);
     }
-    
-    @Override
+
     public void setStatusCode(int statusCode)
     {
-        if (response!=null)
-            response.setStatus(statusCode);
+        response.setStatus(statusCode);
     }
-    
-    @Override
-    public void setStatusReason(String statusReason)
-    {
-        throw new UnsupportedOperationException("Servlet's do not support Status Reason");
-    }
-    
-    @Override
-    public void setSuccess(boolean success)
-    {
-        this.success = success;
-    }
-    
-    @Override
+
     public String toString()
     {
-        return String.format("r=%s s=%d h=%s",response,status,headers);
+        return String.format("UpgradeResponse=%s", response);
     }
 }
