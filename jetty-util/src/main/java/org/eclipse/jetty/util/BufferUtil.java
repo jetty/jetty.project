@@ -416,7 +416,7 @@ public class BufferUtil
     }
     
     /* ------------------------------------------------------------ */
-    /** Append bytes to a buffer.
+    /** Append a string to a buffer.
      * @param to Buffer is flush mode
      * @param s String to append as UTF8
      * @throws BufferOverflowException if unable to append buffer due to space limits

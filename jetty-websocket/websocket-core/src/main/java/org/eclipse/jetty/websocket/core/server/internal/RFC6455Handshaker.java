@@ -170,7 +170,7 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         Negotiated negotiated = new Negotiated(
-            baseRequest.getHttpURI().asURI(),
+            baseRequest.getHttpURI().toURI(),
             subprotocol,
             baseRequest.isSecure(),
             negotiation.getExtensionStack(),
