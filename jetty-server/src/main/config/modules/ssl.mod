@@ -59,6 +59,10 @@ basehome:modules/ssl/keystore|etc/keystore
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
 
+## The Endpoint Identification Algorithm
+## Same as javax.net.ssl.SSLParameters#setEndpointIdentificationAlgorithm(String)
+#jetty.sslContext.endpointIdentificationAlgorithm=HTTPS
+
 ## SSL JSSE Provider
 # jetty.sslContext.provider=
 
