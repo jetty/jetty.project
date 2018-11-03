@@ -229,29 +229,28 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             return -1;
 
         int pos=BufferUtil.flipToFill(buffer);
+        int filled;
         try
         {
-            int filled = _channel.read(buffer);
-            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
-                LOG.debug("filled {} {}", filled, this);
-
+            filled = _channel.read(buffer);
             if (filled>0)
                 notIdle();
             else if (filled==-1)
                 shutdownInput();
-
-            return filled;
         }
         catch(IOException e)
         {
             LOG.debug(e);
             shutdownInput();
-            return -1;
+            filled = -1;
         }
         finally
         {
             BufferUtil.flipToFlush(buffer,pos);
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("filled {} {}", filled, BufferUtil.toDetailString(buffer));
+        return filled;
     }
 
     @Override
