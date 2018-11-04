@@ -504,6 +504,19 @@ public class Request implements HttpServletRequest
             {
                 maxFormContentSize = _context.getContextHandler().getMaxFormContentSize();
                 maxFormKeys = _context.getContextHandler().getMaxFormKeys();
+
+                if (maxFormContentSize < 0)
+                {
+                    String str = _context.getInitParameter("org.eclipse.jetty.server.Request.maxFormContentSize");
+                    if (str != null)
+                        maxFormContentSize = Integer.parseInt(str.trim());
+                }
+                if (maxFormKeys < 0)
+                {
+                    String str = _context.getInitParameter("org.eclipse.jetty.server.Request.maxFormKeys");
+                    if (str != null)
+                        maxFormKeys = Integer.parseInt(str.trim());
+                }
             }
 
             if (maxFormContentSize < 0)
