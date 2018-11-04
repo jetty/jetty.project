@@ -42,17 +42,23 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -97,6 +103,49 @@ public class WebAppContextTest
         assertEquals(1, listeners.size());
     }
     
+    @Test
+    public void testMaxFormParamsViaContextParams() throws Exception
+    {
+        // Initialize a WebAppContext
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Resource webapp = new PathResource(testWebappDir);
+        WebAppContext context = new WebAppContext();
+        context.setBaseResource(webapp);
+        context.setContextPath("/test");
+
+        // Load a web.xml setting org.eclipse.jetty.server.Request.maxFormContentSize to 100
+        File webMaxForm = MavenTestingUtils.getTestResourceFile("web_maxform.xml");
+        context.getMetaData().setWebXml(Resource.newResource(webMaxForm));
+
+        Server server = new Server();
+        context.setServer(server);
+        server.setHandler(context);
+
+        context.setSessionHandler(new SessionHandler()
+        {
+            @Override
+            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.extractFormParameters(new MultiMap<>());
+            }
+        });
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+        server.start();
+
+        // Generate a Form request exceeding maxFormContentSize
+        String content = "name1=test&name2=test2&name3=&name4=test";
+        String request = "POST /test/dsd HTTP/1.1\r\n" + //
+                "Host: whatever\r\n" + //
+                "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" + //
+                "Content-Length: " + 300 + "\r\n" + //
+                "Connection: close\r\n" + "\r\n" + content;
+
+        String res = connector.getResponse(request);
+        assertTrue(res.contains("Form too large"));
+
+    }
     
     
     @Test
