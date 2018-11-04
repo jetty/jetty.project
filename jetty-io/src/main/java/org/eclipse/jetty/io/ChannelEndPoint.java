@@ -237,7 +237,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                 notIdle();
             else if (filled==-1)
                 shutdownInput();
-
         }
         catch(IOException e)
         {
