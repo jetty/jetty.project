@@ -135,12 +135,16 @@ public class WebAppContextTest
         server.start();
 
         // Generate a Form request exceeding maxFormContentSize
-        String content = "name1=test&name2=test2&name3=&name4=test";
-        String request = "POST /test/dsd HTTP/1.1\r\n" + //
+        int contentLength = 300;
+        StringBuilder content = new StringBuilder();
+        for (int i = 0; i < contentLength; i++)
+            content.append("a");
+
+        String request = "POST /test/form HTTP/1.1\r\n" + //
                 "Host: whatever\r\n" + //
                 "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" + //
-                "Content-Length: " + 300 + "\r\n" + //
-                "Connection: close\r\n" + "\r\n" + content;
+                "Content-Length: " + contentLength + "\r\n" + //
+                "Connection: close\r\n" + "\r\n" + content.toString();
 
         String res = connector.getResponse(request);
         assertTrue(res.contains("Form too large"));
