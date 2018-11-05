@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.hpack;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -79,7 +80,7 @@ public class HuffmanTest
         assertThrows(IllegalArgumentException.class,
                 () -> Huffman.octetsNeeded(s));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(BufferOverflowException.class,
                 () -> Huffman.encode(BufferUtil.allocate(32), s));
     }
 }
