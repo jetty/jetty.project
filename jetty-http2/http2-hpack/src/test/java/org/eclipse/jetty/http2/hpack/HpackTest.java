@@ -19,10 +19,9 @@
 package org.eclipse.jetty.http2.hpack;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.ByteBuffer;
@@ -51,7 +50,7 @@ public class HpackTest
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096,8192);
-        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        ByteBuffer buffer = BufferUtil.allocateDirect(16*1024);
         
         HttpFields fields0 = new HttpFields();
         fields0.add(HttpHeader.CONTENT_TYPE,"text/html");
@@ -104,7 +103,7 @@ public class HpackTest
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096,164);
-        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        ByteBuffer buffer = BufferUtil.allocateDirect(16*1024);
         
         HttpFields fields0 = new HttpFields();
         fields0.add("1234567890","1234567890123456789012345678901234567890");
@@ -144,7 +143,7 @@ public class HpackTest
     {
         HpackEncoder encoder = new HpackEncoder(200,200);
         HpackDecoder decoder = new HpackDecoder(200,1024);
-        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        ByteBuffer buffer = BufferUtil.allocateDirect(16*1024);
         
         HttpFields fields0 = new HttpFields();
         fields0.add("123456789012345678901234567890123456788901234567890","value");
