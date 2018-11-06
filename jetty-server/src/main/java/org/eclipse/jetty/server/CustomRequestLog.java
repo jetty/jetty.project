@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -286,18 +284,16 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     private String _logTimeZone = "GMT";
 
     private final MethodHandle _logHandle;
-    private final String _format;
 
     public CustomRequestLog(String formatString)
     {
         try
         {
-            _format = formatString;
             _logHandle = getLogHandle(formatString);
         }
         catch (Throwable t)
         {
-            throw new IllegalStateException();
+            throw new IllegalStateException(t);
         }
     }
 
@@ -549,119 +545,71 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         b.append(request.getRemoteAddr());
     }
 
-    public static void main(String[] args) throws Throwable
+
+    //TODO add response to signature
+    private static final MethodType LOG_TYPE = methodType(Void.TYPE, StringBuilder.class, Request.class);
+
+    private MethodHandle getLogHandle(String formatString) throws Throwable
     {
-        Request request = new Request(null, null);
-
-
-        String formatString = "clientIP: %a | ";
-        MethodHandle logHandle = getLogHandle(formatString);
-
-
-        StringBuilder b = new StringBuilder();
-        logHandle.invoke(b, request);
-        System.err.println(b.toString());
-
-    }
-
-    private static MethodHandle getLogHandle(String formatString) throws NoSuchMethodException, IllegalAccessException
-    {
-        //TODO add response to signature
-        MethodType logType = methodType(Void.TYPE, StringBuilder.class, Request.class);
         MethodHandle append = MethodHandles.lookup().findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
         MethodHandle logHandle = dropArguments(append.bindTo("\n"), 1, Request.class);
-
-        for (Token s : tokenize(formatString))
-        {
-            if (s.isLiteralString())
-            {
-                logHandle = foldArguments(logHandle, dropArguments(append.bindTo(s.literal), 1, Request.class));
-            }
-            else
-            {
-                switch (s.code)
-                {
-
-                    case "a":
-                    {
-                        String method = "logClientIP";
-                        MethodHandle specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                        logHandle = foldArguments(logHandle, specificHandle);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return logHandle;
-    }
-
-    private static List<Token> tokenize(String value)
-    {
-        List<Token> tokens = new ArrayList<>();
 
         final Pattern PERCENT_CODE = Pattern.compile("(?<remaining>.*)%(?:\\{(?<arg>[^{}]+)})?(?<code>[a-zA-Z%])");
         final Pattern LITERAL = Pattern.compile("(?<remaining>.*%(?:\\{[^{}]+})?[a-zA-Z%])(?<literal>.*)");
 
-        while(value.length()>0)
+        String remaining = formatString;
+        while(remaining.length()>0)
         {
-            Matcher m = PERCENT_CODE.matcher(value);
-            Matcher m2 = LITERAL.matcher(value);
+            Matcher m = PERCENT_CODE.matcher(remaining);
             if (m.matches())
             {
                 String code = m.group("code");
                 String arg = m.group("arg");
 
-                tokens.add(new Token(code, arg));
-                value = m.group("remaining");
+                logHandle = updateLogHandle(logHandle, code, arg);
+                remaining = m.group("remaining");
                 continue;
             }
 
+            Matcher m2 = LITERAL.matcher(remaining);
             String literal;
             if (m2.matches())
             {
                 literal = m2.group("literal");
-                value = m2.group("remaining");
+                remaining = m2.group("remaining");
             }
             else
             {
-                literal = value;
-                value = "";
+                literal = remaining;
+                remaining = "";
             }
-            tokens.add(new Token(literal));
-
+            logHandle = updateLogHandle(logHandle, append, literal);
         }
-        return tokens;
+
+        return logHandle;
     }
 
 
-
-
-    private static class Token
+    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
     {
-        public boolean isLiteralString()
-        {
-            return(literal != null);
-        }
+        return foldArguments(logHandle, dropArguments(append.bindTo(literal), 1, Request.class));
+    }
 
-        public boolean isPercentCode()
-        {
-            return(code != null);
-        }
 
-        public String code = null;
-        public String arg = null;
-        public String literal = null;
-
-        public Token(String code, String arg)
+    private MethodHandle updateLogHandle(MethodHandle logHandle, String code, String arg) throws Throwable
+    {
+        switch (code)
         {
-            this.code = code;
-            this.arg = arg;
-        }
+            case "a":
+            {
+                String method = "logClientIP";
+                MethodHandle specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, LOG_TYPE);
+                return foldArguments(logHandle, specificHandle);
+            }
 
-        public Token(String literal)
-        {
-            this.literal = literal;
+            default:
+                LOG.warn("Unsupported code %{}", code);
+                return logHandle;
         }
     }
 }
