@@ -1032,7 +1032,7 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.19</version>
+        <version>0.20</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
