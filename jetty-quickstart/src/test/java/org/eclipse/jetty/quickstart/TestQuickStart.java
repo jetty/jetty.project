@@ -22,6 +22,8 @@ package org.eclipse.jetty.quickstart;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ListenerHolder;
@@ -53,7 +55,6 @@ public class TestQuickStart
     @Test
     public void testProgrammaticOverrideOfDefaultServletMapping() throws Exception
     {
-        
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
         
@@ -81,7 +82,7 @@ public class TestQuickStart
         QuickStartWebApp webapp = new QuickStartWebApp();
         webapp.setResourceBase(testDir.getAbsolutePath());
         webapp.setMode(QuickStartConfiguration.Mode.QUICKSTART);
-        webapp.setClassLoader(Thread.currentThread().getContextClassLoader()); //only necessary for junit testing
+        webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         server.setHandler(webapp);
         
         server.start();
@@ -90,7 +91,47 @@ public class TestQuickStart
         ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getResource();
         assertNotNull(sh);
         assertEquals("foo", sh.getName());
+
         server.stop();
     }
 
+    @Test
+    public void testDefaultContextPath() throws Exception
+    {
+        File quickstartXml = new File(webInf, "quickstart-web.xml");
+        assertFalse(quickstartXml.exists());
+
+        Server server = new Server();
+
+        // generate a quickstart-web.xml
+        QuickStartWebApp quickstart = new QuickStartWebApp();
+        quickstart.setResourceBase(testDir.getAbsolutePath());
+        quickstart.setMode(QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setGenerateOrigin(true);
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setContextPath("/foo");
+        server.setHandler(quickstart);
+        server.start();
+
+        assertEquals("/foo", quickstart.getContextPath());
+        assertFalse(quickstart.isContextPathDefault());
+        server.stop();
+
+        assertTrue(quickstartXml.exists());
+
+        // quick start
+        QuickStartWebApp webapp = new QuickStartWebApp();
+        webapp.setResourceBase(testDir.getAbsolutePath());
+        webapp.setMode(QuickStartConfiguration.Mode.QUICKSTART);
+        webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
+        server.setHandler(webapp);
+
+        server.start();
+
+        // verify the context path is the default-context-path
+        assertEquals("/thisIsTheDefault", webapp.getContextPath());
+        assertTrue(webapp.isContextPathDefault());
+
+        server.stop();
+    }
 }
