@@ -341,7 +341,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
             StringBuilder sb = _buffers.get();
             sb.setLength(0);
 
-            _logHandle.invoke(sb, request);
+            _logHandle.invoke(sb, request, response);
 
             String log = sb.toString();
             write(log);
@@ -540,19 +540,17 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         append(buf, s);
     }
 
-    public static void logClientIP(StringBuilder b, Request request)
+    public static void logClientIP(StringBuilder b, Request request, Response response)
     {
         b.append(request.getRemoteAddr());
     }
 
-
-    //TODO add response to signature
-    private static final MethodType LOG_TYPE = methodType(Void.TYPE, StringBuilder.class, Request.class);
+    private static final MethodType LOG_TYPE = methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class);
 
     private MethodHandle getLogHandle(String formatString) throws Throwable
     {
         MethodHandle append = MethodHandles.lookup().findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
-        MethodHandle logHandle = dropArguments(append.bindTo("\n"), 1, Request.class);
+        MethodHandle logHandle = dropArguments(dropArguments(append.bindTo("\n"), 1, Request.class), 2, Response.class);
 
         final Pattern PERCENT_CODE = Pattern.compile("(?<remaining>.*)%(?:\\{(?<arg>[^{}]+)})?(?<code>[a-zA-Z%])");
         final Pattern LITERAL = Pattern.compile("(?<remaining>.*%(?:\\{[^{}]+})?[a-zA-Z%])(?<literal>.*)");
@@ -592,7 +590,8 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
     {
-        return foldArguments(logHandle, dropArguments(append.bindTo(literal), 1, Request.class));
+        return foldArguments(logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
+
     }
 
 
