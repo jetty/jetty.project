@@ -62,10 +62,10 @@ patch-module: servlet.api=lib/jetty-schemas-3.1.jar
 ## Maximum number of error dispatches to prevent looping
 # jetty.httpConfig.maxErrorDispatches=10
 
-## Cookie compliance mode for parsing: RFC2965, RFC6265
+## Cookie compliance mode for parsing Cookie headers: RFC2965, RFC6265
 # jetty.httpConfig.cookieCompliance=RFC6265
 
-## Cookie compliance mode for generating: RFC2965, RFC6265
+## Cookie compliance mode for generating Set-Cookie: RFC2965, RFC6265
 # jetty.httpConfig.setCookieCompliance=RFC6265
 
 ## multipart/form-data compliance mode of: LEGACY(slow), RFC7578(fast)

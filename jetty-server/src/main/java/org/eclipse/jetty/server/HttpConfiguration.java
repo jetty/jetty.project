@@ -536,7 +536,8 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for parsing received cookies
+     * @see #getSetCookieCompliance()
+     * @return The CookieCompliance used for parsing <code>Cookie</code> headers.
      */
     public CookieCompliance getCookieCompliance()
     {
@@ -544,18 +545,27 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for generating set cookies
+     * @see #getCookieCompliance()
+     * @return The CookieCompliance used for generating <code>Set-Cookie</code> headers
      */
     public CookieCompliance getSetCookieCompliance()
     {
         return _setCookieCompliance;
     }
-    
+
+    /**
+     * @see #setCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for parsing <code>Cookie</code> headers.
+     */
     public void setCookieCompliance(CookieCompliance cookieCompliance)
     {
         _cookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
     }
 
+    /**
+     * @see #setSetCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for generating <code>Set-Cookie</code> headers
+     */
     public void setSetCookieCompliance(CookieCompliance cookieCompliance)
     {
         _setCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
