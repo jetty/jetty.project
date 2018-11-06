@@ -57,6 +57,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-servlet</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -89,10 +94,6 @@
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-mock-resources</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>javax.transaction-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

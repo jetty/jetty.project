@@ -1,5 +1,0 @@
-org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension
-org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension
-org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension
-org.eclipse.jetty.websocket.common.extensions.compress.DeflateFrameExtension
-org.eclipse.jetty.websocket.common.extensions.compress.XWebkitDeflateFrameExtension

@@ -294,7 +294,7 @@ abstract public class WriteFlusher
             else
                 fail(callback);
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             if (DEBUG)
                 LOG.debug("write exception", e);
@@ -366,7 +366,7 @@ abstract public class WriteFlusher
             else
                 fail(callback);
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             if (DEBUG)
                 LOG.debug("completeWrite exception", e);
@@ -468,7 +468,10 @@ abstract public class WriteFlusher
                 case IDLE:
                 case FAILED:
                     if (DEBUG)
-                        LOG.debug("ignored: " + this, cause);
+                    {
+                        LOG.debug("ignored: {} {}", cause, this);
+                        LOG.ignore(cause);
+                    }
                     return false;
 
                 case PENDING:

@@ -36,7 +36,6 @@ def getFullBuild(jdk, os, mainJdk) {
             sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Djetty.testtracker.log=true -Pmongodb -Dunix.socket.tmp=" + env.JENKINS_HOME
             // Javadoc only
             sh "mvn -V -B javadoc:javadoc -T6 -e -Dmaven.test.failure.ignore=false"
-
           }
         }
 
@@ -77,6 +76,20 @@ def getFullBuild(jdk, os, mainJdk) {
         step([$class        : 'WarningsPublisher',
               consoleParsers: consoleParsers])
       }
+
+      /* Deprecated in Jetty build, will be removed in future.
+      stage ("Compact3 - ${jdk}") {
+        withMaven(
+            maven: mvnName,
+            jdk: "$jdk",
+            publisherStrategy: 'EXPLICIT',
+            globalMavenSettingsConfig: settingsName,
+            mavenOpts: mavenOpts,
+            mavenLocalRepo: localRepo) {
+          sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T6"
+        }
+      }
+      */
     }
   }
 }

@@ -93,6 +93,7 @@
             </goals>
             <configuration>
               <jettyBase>${basedir}/src/base</jettyBase>
+              <javaPath>${java.home}/bin/java</javaPath>
               <jettyProperties>
                 <jettyProperty>jetty.server.dumpAfterStart=true</jettyProperty>
                 <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>

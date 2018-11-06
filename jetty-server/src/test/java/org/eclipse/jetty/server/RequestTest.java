@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -28,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -635,7 +635,7 @@ public class RequestTest
         };
 
         //Send a request with encoded form content
-        String request="GET / HTTP/1.1\r\n"+
+        String request="POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: application/x-www-form-urlencoded; charset=utf-8\n"+
         "Content-Length: 10\n"+
@@ -647,6 +647,34 @@ public class RequestTest
         String responses=_connector.getResponse(request);
         assertThat(responses,startsWith("HTTP/1.1 200"));
     }
+
+
+    @Test
+    public void testEncodedNotParams() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                return request.getParameter("param")==null;
+            }
+        };
+
+        //Send a request with encoded form content
+        String request="POST / HTTP/1.1\r\n"+
+            "Host: whatever\r\n"+
+            "Content-Type: application/octet-stream\n"+
+            "Content-Length: 10\n"+
+            "Content-Encoding: gzip\n"+
+            "Connection: close\n"+
+            "\n"+
+            "0123456789\n";
+
+        String responses=_connector.getResponse(request);
+        assertThat(responses,startsWith("HTTP/1.1 200"));
+    }
+
 
     @Test
     public void testInvalidHostHeader() throws Exception
@@ -1816,7 +1844,7 @@ public class RequestTest
             ((Request)request).setHandled(true);
 
             if (request.getContentLength()>0
-                    && !MimeTypes.Type.FORM_ENCODED.asString().equals(request.getContentType())
+                    && !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString())
                     && !request.getContentType().startsWith("multipart/form-data"))
                 _content=IO.toString(request.getInputStream());
 

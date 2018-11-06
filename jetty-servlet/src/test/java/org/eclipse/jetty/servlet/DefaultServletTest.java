@@ -555,6 +555,14 @@ public class DefaultServletTest
         altholder.setInitParameter("welcomeServlets", "false");
         altholder.setInitParameter("gzip", "false");
 
+        ServletHolder otherholder = context.addServlet(DefaultServlet.class, "/other/*");
+        otherholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+        otherholder.setInitParameter("pathInfoOnly", "true");
+        otherholder.setInitParameter("dirAllowed", "true");
+        otherholder.setInitParameter("redirectWelcome", "false");
+        otherholder.setInitParameter("welcomeServlets", "false");
+        otherholder.setInitParameter("gzip", "false");
+
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
@@ -566,6 +574,12 @@ public class DefaultServletTest
 
         String rawResponse;
         HttpTester.Response response;
+
+        // Test other redirect
+        rawResponse = connector.getResponse("GET /context/other HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/"));
 
         // Test alt default
         rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");

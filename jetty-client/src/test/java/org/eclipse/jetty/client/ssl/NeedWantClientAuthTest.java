@@ -110,7 +110,7 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
+                .timeout(10, TimeUnit.SECONDS)
                 .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -149,11 +149,11 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
+                .timeout(10, TimeUnit.SECONDS)
                 .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -192,7 +192,7 @@ public class NeedWantClientAuthTest
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
+                .timeout(10, TimeUnit.SECONDS)
                 .send(result ->
                 {
                     if (result.isFailed())
@@ -203,8 +203,8 @@ public class NeedWantClientAuthTest
                     }
                 });
 
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -240,10 +240,10 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
+                .timeout(10, TimeUnit.SECONDS)
                 .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
     }
 }

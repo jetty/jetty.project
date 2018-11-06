@@ -31,6 +31,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.util.MultiMap;
+
 /** 
  * Test Servlet Sessions.
  */
@@ -83,6 +85,7 @@ public class SessionDump extends HttpServlet
                 session = request.getSession(true);
                 session.setAttribute("test","value");
                 session.setAttribute("obj", new ObjectAttributeValue(System.currentTimeMillis()));
+                session.setAttribute("WEBCL", new MultiMap());
             }
             else if (session!=null)
             {
@@ -140,6 +143,8 @@ public class SessionDump extends HttpServlet
         }
         else
         {
+            if (session.getAttribute("WEBCL") == null)
+                session.setAttribute("WEBCL", new MultiMap());
             try
             {
                 out.println("<b>ID:</b> "+session.getId()+"<br/>");

@@ -273,7 +273,7 @@ public abstract class Utf8Appendable
         }
     }
 
-    protected void checkState()
+    public void checkState()
     {
         if (!isUtf8SequenceComplete())
         {

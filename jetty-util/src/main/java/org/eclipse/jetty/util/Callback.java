@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -110,7 +111,44 @@ public interface Callback extends Invocable
         };
     }
 
-    class Nested implements Callback
+    static Callback from(Runnable success, Consumer<Throwable> failure)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                success.run();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                failure.accept(x);
+            }
+        };
+    }
+    
+    class Completing implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            completed();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            completed();
+        }
+        
+        public void completed()
+        {
+        }  
+    }
+        
+    class Nested extends Completing
     {
         private final Callback callback;
 
@@ -132,13 +170,27 @@ public interface Callback extends Invocable
         @Override
         public void succeeded()
         {
-            callback.succeeded();
+            try
+            {
+                callback.succeeded();
+            }
+            finally
+            {
+                completed();
+            }
         }
 
         @Override
         public void failed(Throwable x)
         {
-            callback.failed(x);
+            try
+            {
+                callback.failed(x);
+            }
+            finally
+            {
+                completed();
+            }
         }
 
         @Override

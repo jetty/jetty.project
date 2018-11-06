@@ -37,6 +37,9 @@
   </pluginRepositories>
 
   <properties>
+    <compiler.source>11</compiler.source>
+    <compiler.target>11</compiler.target>
+    <compiler.release>11</compiler.release>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
@@ -51,7 +54,7 @@
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.1.4</conscrypt.version>
-    <asm.version>7.0-beta</asm.version>
+    <asm.version>7.0</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
@@ -132,7 +135,6 @@
     <module>jetty-memcached</module>
     <module>jetty-hazelcast</module>
     <module>jetty-unixsocket</module>
-    <module>jetty-jmh</module>
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>
@@ -287,7 +289,7 @@
             </goals>
             <configuration>
               <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.1</resourceBundle>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.2</resourceBundle>
               </resourceBundles>
             </configuration>
           </execution>
@@ -440,9 +442,9 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.plugin.version}</version>
           <configuration>
-            <source>11</source>
-            <target>11</target>
-            <release>11</release>
+            <source>${compiler.source}</source>
+            <target>${compiler.target}</target>
+            <release>${compiler.release}</release>
           </configuration>
         </plugin>
         <plugin>
@@ -533,12 +535,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.6.0-SNAPSHOT</version>
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.11.0-SNAPSHOT</version>
+          <version>3.11.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

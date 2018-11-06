@@ -46,7 +46,6 @@ public abstract class CookieCutter
         {
             // Parse the header
             String name = null;
-            String value = null;
 
             String cookieName = null;
             String cookieValue = null;
@@ -61,11 +60,11 @@ public abstract class CookieCutter
             boolean escaped=false;
             int tokenstart=-1;
             int tokenend=-1;
-            for (int i = 0, length = hdr.length(), last=length-1; i < length; i++)
+            for (int i = 0, length = hdr.length(); i <= length; i++)
             {
-                char c = hdr.charAt(i);
+                char c = i==length?0:hdr.charAt(i);
 
-                // System.err.printf("i=%d c=%s v=%b q=%b e=%b u=%s s=%d e=%d%n" ,i,""+c,invalue,inQuoted,escaped,unquoted,tokenstart,tokenend);
+                // System.err.printf("i=%d/%d c=%s v=%b q=%b/%b e=%b u=%s s=%d e=%d \t%s=%s%n" ,i,length,c==0?"|":(""+c),invalue,inQuoted,quoted,escaped,unquoted,tokenstart,tokenend,name,value);
 
                 // Handle quoted values for name or value
                 if (inQuoted)
@@ -73,52 +72,39 @@ public abstract class CookieCutter
                     if (escaped)
                     {
                         escaped=false;
-                        unquoted.append(c);
+                        if (c>0)
+                            unquoted.append(c);
+                        else
+                        {
+                            unquoted.setLength(0);
+                            inQuoted = false;
+                            i--;
+                        }
                         continue;
                     }
 
                     switch (c)
                     {
                         case '"':
-                            inQuoted=false;
-                            if (i==last)
-                            {
-                                value = unquoted.toString();
-                                unquoted.setLength(0);
-                            }
-                            else
-                            {
-                                quoted=true;
-                                tokenstart=i;
-                                tokenend=-1;
-                            }
+                            inQuoted = false;
+                            quoted = true;
+                            tokenstart = i;
+                            tokenend = -1;
                             break;
 
                         case '\\':
-                            if (i==last)
-                            {
-                                unquoted.setLength(0);
-                                inQuoted = false;
-                                i--;
-                            }
-                            else
-                            {
-                                escaped=true;
-                            }
+                            escaped = true;
                             continue;
 
+                        case 0:
+                            // unterminated quote, let's ignore quotes
+                            unquoted.setLength(0);
+                            inQuoted = false;
+                            i--;
+                            continue;
+                            
                         default:
-                            if (i==last)
-                            {
-                                // unterminated quote, let's ignore quotes
-                                unquoted.setLength(0);
-                                inQuoted = false;
-                                i--;
-                            }
-                            else
-                            {
-                                unquoted.append(c);
-                            }
+                            unquoted.append(c);
                             continue;
                     }
                 }
@@ -134,21 +120,90 @@ public abstract class CookieCutter
                             case '\t':
                                 break;
 
+                            case ',':
+                                if (_compliance!=CookieCompliance.RFC2965)
+                                {
+                                    if (quoted)
+                                    {
+                                        // must have been a bad internal quote. let's fix as best we can
+                                        unquoted.append(hdr,tokenstart,i--);
+                                        inQuoted = true;
+                                        quoted = false;
+                                        continue;
+                                    }
+                                    if (tokenstart<0)
+                                        tokenstart = i;
+                                    tokenend=i;
+                                    continue;
+                                }
+                                // fall through
+                            case 0:
                             case ';':
+                            {
+                                String value;
+
                                 if (quoted)
                                 {
                                     value = unquoted.toString();
                                     unquoted.setLength(0);
                                     quoted = false;
                                 }
-                                else if(tokenstart>=0 && tokenend>=0)
-                                    value = hdr.substring(tokenstart, tokenend+1);
+                                else if(tokenstart>=0)
+                                    value = tokenend>=tokenstart?hdr.substring(tokenstart, tokenend+1):hdr.substring(tokenstart);
                                 else
                                     value = "";
 
+                                try
+                                {
+                                    if (name.startsWith("$"))
+                                    {
+                                        if (_compliance==CookieCompliance.RFC2965)
+                                        {
+                                            String lowercaseName = name.toLowerCase(Locale.ENGLISH);
+                                            switch(lowercaseName)
+                                            {
+                                                case "$path":
+                                                    cookiePath = value;
+                                                    break;
+                                                case "$domain":
+                                                    cookieDomain = value;
+                                                    break;
+                                                case "$port":
+                                                    cookieComment = "$port="+value;
+                                                    break;
+                                                case "$version":
+                                                    cookieVersion = Integer.parseInt(value);
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // This is a new cookie, so add the completed last cookie if we have one
+                                        if (cookieName!=null)
+                                        {
+                                            addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
+                                            cookieDomain = null;
+                                            cookiePath = null;
+                                            cookieComment = null;
+                                        }
+                                        cookieName = name;
+                                        cookieValue = value;
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    LOG.debug(e);
+                                }
+
+                                name = null;
                                 tokenstart = -1;
                                 invalue=false;
+
                                 break;
+                            }
 
                             case '"':
                                 if (tokenstart<0)
@@ -165,20 +220,14 @@ public abstract class CookieCutter
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
-                                    unquoted.append(hdr.substring(tokenstart,i));
+                                    unquoted.append(hdr,tokenstart,i--);
                                     inQuoted = true;
                                     quoted = false;
-                                    i--;
                                     continue;
                                 }
                                 if (tokenstart<0)
-                                    tokenstart=i;
+                                    tokenstart = i;
                                 tokenend=i;
-                                if (i==last)
-                                {
-                                    value = hdr.substring(tokenstart, tokenend+1);
-                                    break;
-                                }
                                 continue;
                         }
                     }
@@ -191,21 +240,6 @@ public abstract class CookieCutter
                             case '\t':
                                 continue;
 
-                            case ';':
-                                if (quoted)
-                                {
-                                    name = unquoted.toString();
-                                    unquoted.setLength(0);
-                                    quoted = false;
-                                }
-                                else if(tokenstart>=0 && tokenend>=0)
-                                {
-                                    name = hdr.substring(tokenstart, tokenend+1);
-                                }
-
-                                tokenstart = -1;
-                                break;
-
                             case '=':
                                 if (quoted)
                                 {
@@ -213,99 +247,28 @@ public abstract class CookieCutter
                                     unquoted.setLength(0);
                                     quoted = false;
                                 }
-                                else if(tokenstart>=0 && tokenend>=0)
-                                {
-                                    name = hdr.substring(tokenstart, tokenend+1);
-                                }
+                                else if(tokenstart>=0)
+                                    name = tokenend>=tokenstart?hdr.substring(tokenstart, tokenend+1):hdr.substring(tokenstart);
+
                                 tokenstart = -1;
-                                invalue=true;
+                                invalue = true;
                                 break;
 
                             default:
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
-                                    unquoted.append(hdr.substring(tokenstart,i));
+                                    unquoted.append(hdr,tokenstart,i--);
                                     inQuoted = true;
                                     quoted = false;
-                                    i--;
                                     continue;
                                 }
                                 if (tokenstart<0)
                                     tokenstart=i;
                                 tokenend=i;
-                                if (i==last)
-                                    break;
                                 continue;
                         }
                     }
-                }
-
-                if (invalue && i==last && value==null)
-                {
-                    if (quoted)
-                    {
-                        value = unquoted.toString();
-                        unquoted.setLength(0);
-                        quoted = false;
-                    }
-                    else if(tokenstart>=0 && tokenend>=0)
-                    {
-                        value = hdr.substring(tokenstart, tokenend+1);
-                    }
-                    else
-                        value = "";
-                }
-
-                // If after processing the current character we have a value and a name, then it is a cookie
-                if (name!=null && value!=null)
-                {
-                    try
-                    {
-                        if (name.startsWith("$"))
-                        {
-                            String lowercaseName = name.toLowerCase(Locale.ENGLISH);
-                            if (_compliance==CookieCompliance.RFC6265)
-                            {
-                                // Ignore
-                            }
-                            else if ("$path".equals(lowercaseName))
-                            {
-                                cookiePath = value;
-                            }
-                            else if ("$domain".equals(lowercaseName))
-                            {
-                                cookieDomain = value;
-                            }
-                            else if ("$port".equals(lowercaseName))
-                            {
-                                cookieComment = (cookieComment==null?"$port=":", $port=")+value;
-                            }
-                            else if ("$version".equals(lowercaseName))
-                            {
-                                cookieVersion = Integer.parseInt(value);
-                            }
-                        }
-                        else
-                        {
-                            if (cookieName!=null)
-                            {
-                                addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
-                                cookieDomain = null;
-                                cookiePath = null;
-                                cookieComment = null;
-                            }
-                            cookieName = name;
-                            cookieValue = value;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.debug(e);
-                    }
-
-                    name = null;
-                    value = null;
                 }
             }
 

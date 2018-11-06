@@ -452,23 +452,21 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractContentParameters()
     {
-        // Content cannot be encoded
-        if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
-            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
-        
         String contentType = getContentType();
         if (contentType == null || contentType.isEmpty())
             _contentParameters=NO_PARAMS;
         else
         {
             _contentParameters=new MultiMap<>();
-            contentType = HttpFields.valueParameters(contentType, null);
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == __NONE)
             {
+                contentType = HttpFields.valueParameters(contentType, null);
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
+                    if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
+                        throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
                     extractFormParameters(_contentParameters);
                 }
                 else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&
@@ -477,6 +475,8 @@ public class Request implements HttpServletRequest
                 {
                     try
                     {
+                        if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
+                            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
                         getParts(_contentParameters);
                     }
                     catch (IOException | ServletException e)
@@ -487,7 +487,6 @@ public class Request implements HttpServletRequest
                 }
             }
         }
-
     }
 
     /* ------------------------------------------------------------ */
@@ -762,12 +761,15 @@ public class Request implements HttpServletRequest
         }
 
         _cookiesExtracted = true;
-        
-        for (String c : metadata.getFields().getValuesList(HttpHeader.COOKIE))
+
+        for (HttpField field : metadata.getFields())
         {
-            if (_cookies == null)
-                _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
-            _cookies.addCookieField(c);
+            if (field.getHeader()==HttpHeader.COOKIE)
+            {
+                if (_cookies==null)
+                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
+                _cookies.addCookieField(field.getValue());
+            }
         }
 
         //Javadoc for Request.getCookies() stipulates null for no cookies
