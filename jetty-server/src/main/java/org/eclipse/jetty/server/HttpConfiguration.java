@@ -571,14 +571,10 @@ public class HttpConfiguration implements Dumpable
         _setCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
     }
 
+    @Deprecated
     public boolean isCookieCompliance(CookieCompliance compliance)
     {
         return _cookieCompliance.equals(compliance);
-    }
-
-    public boolean isSetCookieCompliance(CookieCompliance compliance)
-    {
-        return _setCookieCompliance.equals(compliance);
     }
 
     /**
