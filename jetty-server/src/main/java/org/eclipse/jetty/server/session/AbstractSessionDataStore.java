@@ -22,6 +22,7 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -53,6 +54,16 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      * @throws Exception if unable to store data
      */
     public abstract void doStore(String id, SessionData data, long lastSaveTime) throws Exception;
+    
+    /**
+     * Load the session from persistent store.
+     * 
+     * @param id the id of the session to load
+     * @return the re-inflated session
+     * 
+     * @throws Exception if unable to load the session
+     */
+    public abstract SessionData doLoad (String id) throws Exception;
 
    
     /**
@@ -64,10 +75,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      */
     public abstract Set<String> doGetExpired (Set<String> candidates);
 
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
     @Override
     public void initialize (SessionContext context) throws Exception
     {
@@ -76,47 +83,84 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         _context = context;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
-     */
+    
+    
+    @Override
+    public SessionData load(String id) throws Exception
+    {
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        
+        Runnable r = new Runnable()
+        {
+            @Override
+            public void run ()
+            {
+                try
+                {
+                    reference.set(doLoad(id));
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        };
+
+        _context.run(r);
+        if (exception.get() != null)
+            throw exception.get();
+        
+        return reference.get();
+    }
+
+
     @Override
     public void store(String id, SessionData data) throws Exception
     {
         if (data == null)
             return;
 
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
-        long lastSave = data.getLastSaved();
-        long savePeriodMs = (_savePeriodSec <=0? 0: TimeUnit.SECONDS.toMillis(_savePeriodSec));
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id,data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis()-lastSave));
-
-        //save session if attribute changed or never been saved or time between saves exceeds threshold
-        if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis()-lastSave) > savePeriodMs))
+        Runnable r = new Runnable()
         {
-            //set the last saved time to now
-            data.setLastSaved(System.currentTimeMillis());
-            try
+            @Override
+            public void run ()
             {
-                //call the specific store method, passing in previous save time
-                doStore(id, data, lastSave);
-                data.setDirty(false); //only undo the dirty setting if we saved it
-            }
-            catch (Exception e)
-            {
-                //reset last save time if save failed
-                data.setLastSaved(lastSave);
-                throw e;
-            }
-        }
+                long lastSave = data.getLastSaved();
+                long savePeriodMs = (_savePeriodSec <=0? 0: TimeUnit.SECONDS.toMillis(_savePeriodSec));
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id,data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis()-lastSave));
+
+                //save session if attribute changed or never been saved or time between saves exceeds threshold
+                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis()-lastSave) > savePeriodMs))
+                {
+                    //set the last saved time to now
+                    data.setLastSaved(System.currentTimeMillis());
+                    try
+                    {
+                        //call the specific store method, passing in previous save time
+                        doStore(id, data, lastSave);
+                        data.setDirty(false); //only undo the dirty setting if we saved it
+                    }
+                    catch (Exception e)
+                    {
+                        //reset last save time if save failed
+                        data.setLastSaved(lastSave);
+                        exception.set(e);
+                    }
+                }
+            };
+        };
+
+        _context.run(r);
+        if (exception.get() != null)
+            throw exception.get();
     }
     
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(java.util.Set)
-     */
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
@@ -131,11 +175,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     }
 
 
-
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
-     */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
@@ -201,10 +240,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         _savePeriodSec = savePeriodSec;
     }
 
-
-    /** 
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

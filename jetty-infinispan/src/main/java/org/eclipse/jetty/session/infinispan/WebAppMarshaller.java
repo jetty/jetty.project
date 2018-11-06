@@ -49,6 +49,7 @@ import org.jboss.marshalling.ContextClassResolver;
  * &lt;/Call&gt;
  *
  */
+@Deprecated
 public class WebAppMarshaller extends AbstractJBossMarshaller 
 {
 

@@ -59,6 +59,15 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
     }
 
 
+    @Override
+    public UserIdentity getUserIdentity()
+    {
+        if (_userIdentity == null)
+            throw new IllegalStateException("!UserIdentity");
+        return super.getUserIdentity();
+    }
+
+
     private void readObject(ObjectInputStream stream)
         throws IOException, ClassNotFoundException
     {
@@ -66,10 +75,17 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
 
         SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
         if (security==null)
-            throw new IllegalStateException("!SecurityHandler");
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("!SecurityHandler");
+            return;
+        }
+
         LoginService login_service=security.getLoginService();
         if (login_service==null)
-            throw new IllegalStateException("!LoginService");
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("!LoginService");
+            return;
+        }
 
         _userIdentity=login_service.login(_name,_credentials, null);
         LOG.debug("Deserialized and relogged in {}",this);
