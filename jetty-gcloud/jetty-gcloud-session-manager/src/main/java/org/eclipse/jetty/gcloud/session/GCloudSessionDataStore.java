@@ -22,9 +22,7 @@ package org.eclipse.jetty.gcloud.session;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
@@ -324,18 +322,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             _lastSaved = lastSaved;
         }
 
-        /** 
-         * @see java.lang.Object#toString()
-         */
+
         @Override
         public String toString()
         {
             return String.format("%s==%s:%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",this.getClass().getName(),
                                  _kind,_accessed,_attributes,_contextPath,_cookieSetTime,_createTime,_expiry,_id,_lastAccessed,_lastNode,_maxInactive,_vhost);
         }
-        
-        
-        
+ 
     }
     
     
@@ -437,9 +431,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         return _maxRetries;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStart()
-     */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -466,9 +458,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         super.doStart();
     }
 
-    /** 
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
+
     @Override
     protected void doStop() throws Exception
     {
@@ -501,12 +491,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
-     */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
         if (LOG.isDebugEnabled()) LOG.debug("Loading session {} from DataStore", id);
 
@@ -529,9 +515,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
-     */
+
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -540,9 +524,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         return true;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
+
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -701,9 +683,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -766,6 +745,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
     }
     
+    
     /**
      * Check to see if the given time is in the past.
      * 
@@ -780,9 +760,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             return timestamp < System.currentTimeMillis(); 
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
-     */
+
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
@@ -874,6 +852,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             return false;
         }
     }
+    
+    
     /**
      * Generate a gcloud datastore Entity from SessionData
      * @param session the session data
@@ -889,28 +869,27 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         Entity entity = null;
         
         //serialize the attribute map
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(session.getAllAttributes());
-        oos.flush();
-        
-        //turn a session into an entity         
-        entity = Entity.newBuilder(key)
-                .set(_model.getId(), session.getId())
-                .set(_model.getContextPath(), session.getContextPath())
-                .set(_model.getVhost(), session.getVhost())
-                .set(_model.getAccessed(), session.getAccessed())
-                .set(_model.getLastAccessed(), session.getLastAccessed())
-                .set(_model.getCreateTime(), session.getCreated())
-                .set(_model.getCookieSetTime(), session.getCookieSet())
-                .set(_model.getLastNode(),session.getLastNode())
-                .set(_model.getExpiry(), session.getExpiry())
-                .set(_model.getMaxInactive(), session.getMaxInactiveMs())
-                .set(_model.getLastSaved(), session.getLastSaved())
-                .set(_model.getAttributes(), BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build()).build();
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos))
+        {
+            SessionData.serializeAttributes(session, oos);
 
-                 
-        return entity;
+            //turn a session into an entity         
+            entity = Entity.newBuilder(key)
+                    .set(_model.getId(), session.getId())
+                    .set(_model.getContextPath(), session.getContextPath())
+                    .set(_model.getVhost(), session.getVhost())
+                    .set(_model.getAccessed(), session.getAccessed())
+                    .set(_model.getLastAccessed(), session.getLastAccessed())
+                    .set(_model.getCreateTime(), session.getCreated())
+                    .set(_model.getCookieSetTime(), session.getCookieSet())
+                    .set(_model.getLastNode(),session.getLastNode())
+                    .set(_model.getExpiry(), session.getExpiry())
+                    .set(_model.getMaxInactive(), session.getMaxInactiveMs())
+                    .set(_model.getLastSaved(), session.getLastSaved())
+                    .set(_model.getAttributes(), BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build()).build();
+            return entity;
+        }
     }
     
     /**
@@ -924,79 +903,51 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         if (entity == null)
             return null;
 
-        final AtomicReference<SessionData> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-        Runnable load = new Runnable()
-        {
-            @Override
-            public void run ()
-            {
-                try
-                {
-                    //turn an Entity into a Session
-                    String id = entity.getString(_model.getId());
-                    String contextPath = entity.getString(_model.getContextPath());
-                    String vhost = entity.getString(_model.getVhost());
-                    long accessed = entity.getLong(_model.getAccessed());
-                    long lastAccessed = entity.getLong(_model.getLastAccessed());
-                    long createTime = entity.getLong(_model.getCreateTime());
-                    long cookieSet = entity.getLong(_model.getCookieSetTime());
-                    String lastNode = entity.getString(_model.getLastNode());
+        //turn an Entity into a Session
+        String id = entity.getString(_model.getId());
+        String contextPath = entity.getString(_model.getContextPath());
+        String vhost = entity.getString(_model.getVhost());
+        long accessed = entity.getLong(_model.getAccessed());
+        long lastAccessed = entity.getLong(_model.getLastAccessed());
+        long createTime = entity.getLong(_model.getCreateTime());
+        long cookieSet = entity.getLong(_model.getCookieSetTime());
+        String lastNode = entity.getString(_model.getLastNode());
 
-                    long lastSaved = 0;
-                    //for compatibility with previously saved sessions, lastSaved may not be present
-                    try
-                    {
-                        lastSaved = entity.getLong(_model.getLastSaved());
-                    }
-                    catch (DatastoreException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    long expiry = entity.getLong(_model.getExpiry());
-                    long maxInactive = entity.getLong(_model.getMaxInactive());
-                    Blob blob = (Blob) entity.getBlob(_model.getAttributes());
-
-                    SessionData session = newSessionData (id, createTime, accessed, lastAccessed, maxInactive);
-                    session.setLastNode(lastNode);
-                    session.setContextPath(contextPath);
-                    session.setVhost(vhost);
-                    session.setCookieSet(cookieSet);
-                    session.setLastNode(lastNode);
-                    session.setLastSaved(lastSaved);
-                    session.setExpiry(expiry);
-                    try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
-                    {
-                        Object o = ois.readObject();
-                        session.putAllAttributes((Map<String,Object>)o);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new UnreadableSessionDataException (id, _context, e);
-                    }
-                    reference.set(session);
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
-            }
-        };
-        
-        //ensure this runs in the context classloader
-       _context.run(load);
-    
-        if (exception.get() != null)
+        long lastSaved = 0;
+        //for compatibility with previously saved sessions, lastSaved may not be present
+        try
         {
-            throw exception.get();
+            lastSaved = entity.getLong(_model.getLastSaved());
         }
-        
-        return reference.get();
+        catch (DatastoreException e)
+        {
+            LOG.ignore(e);
+        }
+        long expiry = entity.getLong(_model.getExpiry());
+        long maxInactive = entity.getLong(_model.getMaxInactive());
+        Blob blob = (Blob) entity.getBlob(_model.getAttributes());
+
+        SessionData session = newSessionData (id, createTime, accessed, lastAccessed, maxInactive);
+        session.setLastNode(lastNode);
+        session.setContextPath(contextPath);
+        session.setVhost(vhost);
+        session.setCookieSet(cookieSet);
+        session.setLastNode(lastNode);
+        session.setLastSaved(lastSaved);
+        session.setExpiry(expiry);
+        try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
+        {
+            SessionData.deserializeAttributes(session, ois);
+        }
+        catch (Exception e)
+        {
+            throw new UnreadableSessionDataException (id, _context, e);
+        }
+        return session;
+
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
+
     @ManagedAttribute(value="does gcloud serialize session data", readonly=true)
     @Override
     public boolean isPassivating()
@@ -1005,14 +956,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
-     */
     @Override
     public String toString()
     {
         return String.format("%s[namespace=%s,backoff=%d,maxRetries=%d,maxResults=%d,indexes=%b]",super.toString(), _namespace, _backoff, _maxRetries, _maxResults,_indexesPresent);
     }
-    
     
 }

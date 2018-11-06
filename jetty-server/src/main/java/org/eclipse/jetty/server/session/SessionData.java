@@ -23,9 +23,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -56,6 +58,85 @@ public class SessionData implements Serializable
     protected Map<String,Object> _attributes;
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
+    
+    
+    /**
+     * Serialize the attribute map of the session. 
+     * 
+     * This special handling allows us to record which classloader should be used to load the value of the
+     * attribute: either the container classloader (which could be the application loader ie null, or jetty's
+     * startjar loader) or the webapp's classloader.
+     * 
+     * @param data the SessionData for which to serialize the attributes
+     * @param out the stream to which to serialize
+     * @throws IOException
+     */
+    public static void serializeAttributes (SessionData data, java.io.ObjectOutputStream out)
+    throws IOException
+    {
+        int entries = data._attributes.size();
+        out.writeObject(entries);
+        for (Entry<String,Object> entry: data._attributes.entrySet())
+        {
+            out.writeUTF(entry.getKey());     
+            ClassLoader loader = entry.getValue().getClass().getClassLoader();
+            boolean isServerLoader = false;
+
+            if (loader == Thread.currentThread().getContextClassLoader()) //is it the webapp classloader?
+                isServerLoader = false;
+            else if (loader == Thread.currentThread().getContextClassLoader().getParent() || loader == SessionData.class.getClassLoader() || loader == null) // is it the container loader?
+                isServerLoader = true;
+            else
+                throw new IOException ("Unknown loader"); // we don't know what loader to use
+            
+            out.writeBoolean(isServerLoader);
+            out.writeObject(entry.getValue());
+        }
+    }
+    
+    /**
+     * De-serialize the attribute map of a session.
+     * 
+     * When the session was serialized, we will have recorded which classloader should be used to
+     * recover the attribute value. The classloader could be the container classloader, or the
+     * webapp classloader.
+     * 
+     * @param data the SessionData for which to deserialize the attribute map
+     * @param in the serialized stream
+     * @throws IOException
+     * @throws ClassNotFoundException 
+     */
+    public static void deserializeAttributes (SessionData data, java.io.ObjectInputStream in)
+    throws IOException, ClassNotFoundException
+    {
+        Object o = in.readObject();
+        if (o instanceof Integer)
+        {
+            //new serialization was used
+            if (!(ClassLoadingObjectInputStream.class.isAssignableFrom(in.getClass())))
+                throw new IOException ("Not ClassLoadingObjectInputStream");
+
+            data._attributes = new ConcurrentHashMap<>();
+            int entries = ((Integer)o).intValue();
+            for (int i=0; i < entries; i++)
+            {
+                String name = in.readUTF(); //attribute name
+                boolean isServerClassLoader = in.readBoolean(); //use server or webapp classloader to load
+
+                Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader?SessionData.class.getClassLoader():Thread.currentThread().getContextClassLoader());
+                data._attributes.put(name, value);
+            }
+        }
+        else
+        {
+            LOG.info("Legacy serialization detected for {}", data.getId());
+            //legacy serialization was used, we have just deserialized the 
+            //entire attribute map
+            data._attributes = new ConcurrentHashMap<String, Object>();
+            data.putAllAttributes((Map<String,Object>)o);
+        }
+    }
+    
     
     public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
@@ -335,24 +416,21 @@ public class SessionData implements Serializable
         out.writeUTF(_id); //session id
         out.writeUTF(_contextPath); //context path
         out.writeUTF(_vhost); //first vhost
-
         out.writeLong(_accessed);//accessTime
         out.writeLong(_lastAccessed); //lastAccessTime
         out.writeLong(_created); //time created
         out.writeLong(_cookieSet);//time cookie was set
         out.writeUTF(_lastNode); //name of last node managing
-  
         out.writeLong(_expiry); 
         out.writeLong(_maxInactiveMs);
-        out.writeObject(_attributes);
+        serializeAttributes(this, out);
     }
     
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
     {
         _id = in.readUTF();
         _contextPath = in.readUTF();
-        _vhost = in.readUTF();
-        
+        _vhost = in.readUTF(); 
         _accessed = in.readLong();//accessTime
         _lastAccessed = in.readLong(); //lastAccessTime
         _created = in.readLong(); //time created
@@ -360,7 +438,7 @@ public class SessionData implements Serializable
         _lastNode = in.readUTF(); //last managing node
         _expiry = in.readLong(); 
         _maxInactiveMs = in.readLong();
-        _attributes = (Map<String,Object>)in.readObject();
+        deserializeAttributes(this, in);
     }
     
     public boolean isExpiredAt (long time)

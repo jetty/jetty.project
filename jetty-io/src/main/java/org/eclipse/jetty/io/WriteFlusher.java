@@ -294,7 +294,7 @@ abstract public class WriteFlusher
             else
                 fail(callback);
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             if (DEBUG)
                 LOG.debug("write exception", e);
@@ -366,7 +366,7 @@ abstract public class WriteFlusher
             else
                 fail(callback);
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             if (DEBUG)
                 LOG.debug("completeWrite exception", e);

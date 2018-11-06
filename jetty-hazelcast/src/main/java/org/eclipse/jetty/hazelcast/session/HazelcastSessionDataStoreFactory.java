@@ -23,10 +23,12 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -68,7 +70,12 @@ public class HazelcastSessionDataStoreFactory
                 {
                     if ( configurationLocation == null )
                     {
-                        hazelcastInstance = HazelcastClient.newHazelcastClient( new ClientConfig() );
+                        ClientConfig config = new ClientConfig();
+                        SerializerConfig sc = new SerializerConfig().
+                                setImplementation(new SessionDataSerializer()).
+                                setTypeClass(SessionData.class);
+                        config.getSerializationConfig().addSerializerConfig(sc);
+                        hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                     }
                     else
                     {
@@ -82,7 +89,12 @@ public class HazelcastSessionDataStoreFactory
                     Config config;
                     if ( configurationLocation == null )
                     {
+                        
+                        SerializerConfig sc = new SerializerConfig().
+                                setImplementation(new SessionDataSerializer()).
+                                setTypeClass(SessionData.class);
                         config = new Config();
+                        config.getSerializationConfig().addSerializerConfig(sc);
                         // configure a default Map if null
                         if ( mapConfig == null )
                         {
