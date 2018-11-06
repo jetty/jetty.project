@@ -26,13 +26,14 @@ Effectively this means that you have to stop Jetty to update a file.
 
 ==== Remedy
 
-Jetty provides a configuration switch for the DefaultServlet that enables or disables the use of memory-mapped files.
+Jetty provides a configuration switch for the `DefaultServlet` that enables or disables the use of memory-mapped files.
 If you are running on Windows and are having file-locking problems, you should set this switch to disable memory-mapped file buffers.
 Use one of the following options to configure the switch.
 
 ===== Using override-web.xml
 
-An <<override-web-xml, override-web.xml>> file can be placed in your webapp's WEB-INF directory to change the default setting of the DefaultServlet for memory-mapped file buffers. Create an override-web.xml file with appropriate headers for your version of the servlet specification, and place the following inside the <web-app> element:
+An <<override-web-xml, override-web.xml>> file can be placed in your webapp's `WEB-INF` directory to change the default setting of the `DefaultServlet` for memory-mapped file buffers. 
+Create an `override-web.xml` file with appropriate headers for your version of the servlet specification, and place the following inside the `<web-app>` element:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -45,7 +46,7 @@ An <<override-web-xml, override-web.xml>> file can be placed in your webapp's WE
  </servlet>
 ----
 
-===== Using a context xml file
+===== Using a Context XML File
 
 You can create or update a context xml file that configures your webapp to apply the setting to disable memory-mapped file buffers.
 Add the following to your context xml file:
@@ -59,10 +60,10 @@ Add the following to your context xml file:
 ----
 
 
-===== Using the jetty maven plugin
+===== Using the Jetty Maven Plugin
 
 If you don't want to use either of the other two solutions, you can configure the plugin directly to disable memory-mapped file buffers.
-Add the following to the plugin's configuration under the <webApp> element:
+Add the following to the plugin's configuration under the `<webApp>` element:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -76,7 +77,7 @@ Add the following to the plugin's configuration under the <webApp> element:
 ==== Alternate Remedy
 
 You can force a `WebAppContext` to always copy a web app directory on deployment.
-The base directory of your web app (ie the root directory where your static content exists) will be copied to the link:#ref-temporary-directories[temp directory].
+The base directory of your web app (i.e. the root directory where your static content exists) will be copied to the link:#ref-temporary-directories[temp directory].
 Configure this in an xml file like so:
 
 [source, xml, subs="{sub-order}"]
