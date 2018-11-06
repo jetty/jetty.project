@@ -247,7 +247,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             // Save the old idle timeout to restore it.
             EndPoint endPoint = getEndPoint();
             idleTimeout = endPoint.getIdleTimeout();
-            endPoint.setIdleTimeout(request.getIdleTimeout());
+            long requestIdleTimeout = request.getIdleTimeout();
+            if (requestIdleTimeout >= 0)
+                endPoint.setIdleTimeout(requestIdleTimeout);
 
             // One channel per connection, just delegate the send.
             return send(channel, exchange);

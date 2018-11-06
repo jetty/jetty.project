@@ -158,19 +158,12 @@ public class SessionHandler extends ScopedHandler
      * has its session completed as the request exits the context.
      */
     public class SessionAsyncListener implements AsyncListener
-    {
-        private Session _session;
-        
-        public SessionAsyncListener(Session session)
-        {
-           _session = session;
-        }
-
+    {        
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
             //An async request has completed, so we can complete the session
-            complete(((HttpServletRequest)event.getAsyncContext().getRequest()).getSession(false));
+            complete(Request.getBaseRequest(event.getAsyncContext().getRequest()).getSession(false));
         }
 
         @Override
@@ -182,7 +175,7 @@ public class SessionHandler extends ScopedHandler
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            complete(((HttpServletRequest)event.getAsyncContext().getRequest()).getSession(false));
+            complete(Request.getBaseRequest(event.getAsyncContext().getRequest()).getSession(false));
         }
 
         @Override
@@ -190,7 +183,6 @@ public class SessionHandler extends ScopedHandler
         {
            event.getAsyncContext().addListener(this);
         }
-        
     }
 
     static final HttpSessionContext __nullSessionContext=new HttpSessionContext()
@@ -251,6 +243,7 @@ public class SessionHandler extends ScopedHandler
 
     protected Scheduler _scheduler;
     protected boolean _ownScheduler = false;
+    protected final SessionAsyncListener _sessionAsyncListener = new SessionAsyncListener();
     
 
 
@@ -381,7 +374,7 @@ public class SessionHandler extends ScopedHandler
     {
         if (request.isAsyncStarted() && request.getDispatcherType() == DispatcherType.REQUEST)
         {
-            request.getAsyncContext().addListener(new SessionAsyncListener(session));
+            request.getAsyncContext().addListener(_sessionAsyncListener);
         }
         else
         {

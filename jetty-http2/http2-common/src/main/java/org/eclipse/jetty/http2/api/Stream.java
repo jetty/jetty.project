@@ -163,6 +163,13 @@ public interface Stream
          */
         public void onData(Stream stream, DataFrame frame, Callback callback);
 
+        /**
+         * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
+         *
+         * @param stream the stream
+         * @param frame  the RST_FRAME received
+         * @param callback the callback to complete when the reset has been handled
+         */
         public default void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             try
@@ -214,9 +221,26 @@ public interface Stream
             return true;
         }
 
+        /**
+         * <p>Callback method invoked when the stream failed.</p>
+         *
+         * @param stream the stream
+         * @param error  the error code
+         * @param reason the error reason, or null
+         * @param callback the callback to complete when the failure has been handled
+         */
         public default void onFailure(Stream stream, int error, String reason, Callback callback)
         {
             callback.succeeded();
+        }
+
+        /**
+         * <p>Callback method invoked after the stream has been closed.</p>
+         *
+         * @param stream the stream
+         */
+        public default void onClosed(Stream stream)
+        {
         }
 
         /**

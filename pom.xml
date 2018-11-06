@@ -14,6 +14,8 @@
   <inceptionYear>1995</inceptionYear>
 
   <properties>
+    <compiler.source>1.8</compiler.source>
+    <compiler.target>1.8</compiler.target>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
@@ -26,7 +28,7 @@
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.1.4</conscrypt.version>
-    <asm.version>6.2</asm.version>
+    <asm.version>7.0</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
@@ -438,8 +440,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.plugin.version}</version>
           <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
+            <source>${compiler.source}</source>
+            <target>${compiler.target}</target>
           </configuration>
         </plugin>
         <plugin>

@@ -772,6 +772,12 @@ Both `setIncludeCipherSuites` and `setExcludeCipherSuites` can be fed by the exa
 
 If you have a need to adjust the Includes or Excludes, then this is best done with a custom XML that configures the `SslContextFactory` to suit your needs.
 
+____
+[NOTE]
+Jetty *does* allow users to enable weak/deprecated cipher suites (or even no cipher suites at all).
+By default, if you have these suites enabled warning messages will appear in the server logs.
+____
+
 To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can be any name, just avoid prefixing it with "jetty-").
 
 [source, xml, subs="{sub-order}"]
@@ -820,7 +826,7 @@ ____
 
 ____
 [TIP]
-You can enable the `org.eclipse.jetty.util.ssl` named logger at DEBUG level to see what the list of selected Protocols and Cipher suites are at startup of Jetty.
+You can enable the `org.eclipse.jetty.util.ssl` named logger at `DEBUG` level to see what the list of selected Protocols and Cipher suites are at startup of Jetty.
 ____
 
 Additional Include / Exclude examples:
