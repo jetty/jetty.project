@@ -26,86 +26,58 @@ Effectively this means that you have to stop Jetty to update a file.
 
 ==== Remedy
 
-Jetty provides a configuration switch in the `webdefault.xml` file for the DefaultServlet that enables or disables the use of memory-mapped files.
+Jetty provides a configuration switch for the `DefaultServlet` that enables or disables the use of memory-mapped files.
 If you are running on Windows and are having file-locking problems, you should set this switch to disable memory-mapped file buffers.
+Use one of the following options to configure the switch.
 
-The default `webdefault.xml` file is found in the jetty distribution under the `etc/` directory or in the `jetty-webapp-${VERSION}.jar` artifact at `org/eclipse/jetty/webapp/webdefault.xml`.
-Edit the file in the distribution or extract it to a convenient disk location and edit it to change `useFileMappedBuffer` to false.
-The easiest option is to simply edit the default file contained in the jetty distribution itself.
+===== Using override-web.xml
 
-[source, xml, subs="{sub-order}"]
-----
-<init-param>
-   <param-name>useFileMappedBuffer</param-name>
-   <param-value>true</param-value> <!-- change to false -->
- </init-param>
- 
-    
-----
-
-Make sure to apply your custom `webdefault.xml` file to all of your webapps.
-You can do that by changing the configuration of the Deployment Manager in `etc/jetty-deploy.xml`.
+An <<override-web-xml, override-web.xml>> file can be placed in your webapp's `WEB-INF` directory to change the default setting of the `DefaultServlet` for memory-mapped file buffers. 
+Create an `override-web.xml` file with appropriate headers for your version of the servlet specification, and place the following inside the `<web-app>` element:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Call id="webappprovider" name="addAppProvider">
-  <Arg>
-    <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-      .
-      .
-      <!-- this should be the new custom webdefault.xml or change should be made in this file -->
-      <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
-      <Set name="scanInterval">1</Set>
-      <Set name="extractWars">true</Set>
-      .
-      .
-    </New>
-  </Arg>
-</Call>
-
-    
-----
-
-Alternatively, if you have individually configured your webapps with context xml files, you need to call the `WebAppContext.setDefaultsDescriptor(String path)` method:
-
-[source, xml, subs="{sub-order}"]
-----
-<New id="myWebAppContext"  class="org.eclipse.jetty.webapp.WebAppContext">
-  <Set name="contextPath">/</Set>
-  <Set name="war">./webapps/fredapp</Set>
-  <Set name="defaultsDescriptor">/home/fred/jetty/mywebdefaults.xml</Set>
-  .
-  .
-</New>
-
-    
-----
-
-Instead, you could redefine the DefaultServlet in your web.xml file, making sure to set useFileMappedBuffer to false:
-
-[source, xml, subs="{sub-order}"]
-----
-<web-app ...>
- ...
  <servlet>
-     <servlet-name>Default</servlet-name>
-     <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
-     <init-param>
-       <param-name>useFileMappedBuffer</param-name>
-       <param-value>false</param-value>
-     </init-param>
-     <load-on-startup>0</load-on-startup>
-   </servlet>
- ...
- </web-app>
- 
-    
+   <servlet-name>default</servlet-name>
+   <init-param>
+     <param-name>useFileMappedBuffer</param-name>
+     <param-value>false</param-value>
+   </init-param>
+ </servlet>
 ----
+
+===== Using a Context XML File
+
+You can create or update a context xml file that configures your webapp to apply the setting to disable memory-mapped file buffers.
+Add the following to your context xml file:
+
+[source, xml, subs="{sub-order}"]
+----
+  <Call name="setInitParameter">
+      <Arg>org.eclipse.jetty.servlet.Default.useFileMappedBuffer</Arg>
+      <Arg>false</Arg>
+  </Call>
+----
+
+
+===== Using the Jetty Maven Plugin
+
+If you don't want to use either of the other two solutions, you can configure the plugin directly to disable memory-mapped file buffers.
+Add the following to the plugin's configuration under the `<webApp>` element:
+
+[source, xml, subs="{sub-order}"]
+----
+  <_initParams>
+          <org.eclipse.jetty.servlet.Default.useFileMappedBuffer>false</org.eclipse.jetty.servlet.Default.useFileMappedBuffer>
+  </_initParams>
+----
+
+
 
 ==== Alternate Remedy
 
 You can force a `WebAppContext` to always copy a web app directory on deployment.
-The base directory of your web app (ie the root directory where your static content exists) will be copied to the link:#ref-temporary-directories[temp directory].
+The base directory of your web app (i.e. the root directory where your static content exists) will be copied to the link:#ref-temporary-directories[temp directory].
 Configure this in an xml file like so:
 
 [source, xml, subs="{sub-order}"]
@@ -117,7 +89,6 @@ Configure this in an xml file like so:
   .
   .
 </New>
-    
 ----
 
 ____
