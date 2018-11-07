@@ -16,16 +16,24 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.client {
-    exports org.eclipse.jetty.client;
-    exports org.eclipse.jetty.client.api;
-    exports org.eclipse.jetty.client.util;
-    exports org.eclipse.jetty.client.jmx to org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.client.http;
+import javax.servlet.ServletContainerInitializer;
 
+import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.websocket.server.JettyWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+
+module org.eclipse.jetty.websocket.server {
+    exports org.eclipse.jetty.websocket.server;
+
+    requires javax.servlet.api;
     requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.http;
-    requires static java.security.jgss;
-    requires static org.eclipse.jetty.jmx;
+    requires org.eclipse.jetty.servlet;
+    requires org.eclipse.jetty.webapp;
+    requires org.eclipse.jetty.websocket.api;
+    requires org.eclipse.jetty.websocket.core;
+    requires org.eclipse.jetty.websocket.common;
+    requires org.eclipse.jetty.websocket.servlet;
+
+    provides ServletContainerInitializer with JettyWebSocketServletContainerInitializer;
+    provides Configuration with JettyWebSocketConfiguration;
 }

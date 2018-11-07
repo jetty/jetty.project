@@ -16,16 +16,13 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.client {
-    exports org.eclipse.jetty.client;
-    exports org.eclipse.jetty.client.api;
-    exports org.eclipse.jetty.client.util;
-    exports org.eclipse.jetty.client.jmx to org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.client.http;
+import org.eclipse.jetty.websocket.api.extensions.Extension;
 
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.http;
-    requires static java.security.jgss;
-    requires static org.eclipse.jetty.jmx;
+module org.eclipse.jetty.websocket.api {
+    exports org.eclipse.jetty.websocket.api;
+    exports org.eclipse.jetty.websocket.api.annotations;
+    exports org.eclipse.jetty.websocket.api.extensions;
+    exports org.eclipse.jetty.websocket.api.util;
+
+    uses Extension;
 }
