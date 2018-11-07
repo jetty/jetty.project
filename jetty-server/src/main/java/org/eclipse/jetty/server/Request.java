@@ -767,7 +767,7 @@ public class Request implements HttpServletRequest
             if (field.getHeader()==HttpHeader.COOKIE)
             {
                 if (_cookies==null)
-                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
+                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
                 _cookies.addCookieField(field.getValue());
             }
         }
@@ -2043,7 +2043,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies == null)
-            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
+            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
         _cookies.setCookies(cookies);
     }
 
