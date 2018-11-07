@@ -64,7 +64,8 @@
       <Set name="maxErrorDispatches"><Property name="jetty.httpConfig.maxErrorDispatches" default="10"/></Set>
       <Set name="blockingTimeout"><Property deprecated="jetty.httpConfig.blockingTimeout" name="jetty.httpConfig.blockingTimeout.DEPRECATED" default="-1"/></Set>
       <Set name="persistentConnectionsEnabled"><Property name="jetty.httpConfig.persistentConnectionsEnabled" default="true"/></Set>
-      <Set name="cookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.cookieCompliance" default="RFC6265"/></Arg></Call></Set>
+      <Set name="requestCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.requestCookieCompliance" deprecated="jetty.httpConfig.cookieCompliance" default="RFC6265"/></Arg></Call></Set>
+      <Set name="responseCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.responseCookieCompliance" default="RFC6265"/></Arg></Call></Set>
       <Set name="multiPartFormDataCompliance"><Call class="org.eclipse.jetty.server.MultiPartFormDataCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.multiPartFormDataCompliance" default="RFC7578"/></Arg></Call></Set>
     </New>
 
