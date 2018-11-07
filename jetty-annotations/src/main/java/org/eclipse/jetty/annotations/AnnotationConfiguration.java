@@ -79,9 +79,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */  
     public static final boolean DEFAULT_MULTI_THREADED = true;
     
-    protected List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<AbstractDiscoverableAnnotationHandler>();
+    protected final List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<>();
     protected ClassInheritanceHandler _classInheritanceHandler;
-    protected List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<ContainerInitializerAnnotationHandler>();
+    protected final List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<>();
    
     protected List<ParserTask> _parserTasks;
 
@@ -318,29 +318,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN);
         _sciExcludePattern = (tmp==null?null:Pattern.compile(tmp));
     }
-
    
     public void addDiscoverableAnnotationHandler(AbstractDiscoverableAnnotationHandler handler)
     {
         _discoverableAnnotationHandlers.add(handler);
     }
 
-    @Override
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-        context.removeAttribute(CLASS_INHERITANCE_MAP);
-        context.removeAttribute(CONTAINER_INITIALIZERS);
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(CONTAINER_INITIALIZER_STARTER);
-        if (starter != null)
-        {
-            context.removeBean(starter);
-            context.removeAttribute(CONTAINER_INITIALIZER_STARTER);
-        }
-        
-        if (_loadedInitializers != null)
-            _loadedInitializers.reload();
-    }
-    
     /** 
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -386,15 +369,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void postConfigure(WebAppContext context) throws Exception
     {
         Map<String, Set<String>> classMap = (ClassInheritanceMap)context.getAttribute(CLASS_INHERITANCE_MAP);
-        List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
-        
-        context.removeAttribute(CLASS_INHERITANCE_MAP);
         if (classMap != null)
             classMap.clear();
-        
-        context.removeAttribute(CONTAINER_INITIALIZERS);
+        context.removeAttribute(CLASS_INHERITANCE_MAP);
+
+        List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
         if (initializers != null)
             initializers.clear();
+        context.removeAttribute(CONTAINER_INITIALIZERS);
         
         if (_discoverableAnnotationHandlers != null)
             _discoverableAnnotationHandlers.clear();
@@ -408,7 +390,17 @@ public class AnnotationConfiguration extends AbstractConfiguration
             _parserTasks.clear();
             _parserTasks = null;
         }
-        
+
+        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(CONTAINER_INITIALIZER_STARTER);
+        if (starter != null)
+        {
+            context.removeBean(starter);
+            context.removeAttribute(CONTAINER_INITIALIZER_STARTER);
+        }
+
+        if (_loadedInitializers != null)
+            _loadedInitializers.reload();
+
         super.postConfigure(context);
     }
     
