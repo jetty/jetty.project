@@ -72,8 +72,8 @@ public class HttpConfiguration implements Dumpable
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
-    private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
-    private CookieCompliance _setCookieCompliance = CookieCompliance.RFC6265;
+    private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
+    private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
     private boolean _notifyRemoteAsyncErrors = true;
 
@@ -136,8 +136,8 @@ public class HttpConfiguration implements Dumpable
         _maxErrorDispatches=config._maxErrorDispatches;
         _minRequestDataRate=config._minRequestDataRate;
         _minResponseDataRate=config._minResponseDataRate;
-        _cookieCompliance=config._cookieCompliance;
-        _setCookieCompliance=config._setCookieCompliance;
+        _requestCookieCompliance =config._requestCookieCompliance;
+        _responseCookieCompliance =config._responseCookieCompliance;
         _notifyRemoteAsyncErrors=config._notifyRemoteAsyncErrors;
     }
     
@@ -536,45 +536,57 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @see #getSetCookieCompliance()
-     * @return The CookieCompliance used for parsing <code>Cookie</code> headers.
+     * @see #getResponseCookieCompliance()
+     * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
      */
+    public CookieCompliance getRequestCookieCompliance()
+    {
+        return _requestCookieCompliance;
+    }
+
+    /**
+     * @see #getRequestCookieCompliance()
+     * @return The CookieCompliance used for generating response <code>Set-Cookie</code> headers
+     */
+    public CookieCompliance getResponseCookieCompliance()
+    {
+        return _responseCookieCompliance;
+    }
+
+    /**
+     * @see #setRequestCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for parsing request <code>Cookie</code> headers.
+     */
+    public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _requestCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+    }
+
+    /**
+     * @see #setResponseCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for generating response <code>Set-Cookie</code> headers
+     */
+    public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _responseCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+    }
+
+    @Deprecated
+    public void setCookieCompliance(CookieCompliance compliance)
+    {
+        setRequestCookieCompliance(compliance);
+    }
+
+    @Deprecated
     public CookieCompliance getCookieCompliance()
     {
-        return _cookieCompliance;
-    }
-
-    /**
-     * @see #getCookieCompliance()
-     * @return The CookieCompliance used for generating <code>Set-Cookie</code> headers
-     */
-    public CookieCompliance getSetCookieCompliance()
-    {
-        return _setCookieCompliance;
-    }
-
-    /**
-     * @see #setCookieCompliance(CookieCompliance)
-     * @param cookieCompliance The CookieCompliance to use for parsing <code>Cookie</code> headers.
-     */
-    public void setCookieCompliance(CookieCompliance cookieCompliance)
-    {
-        _cookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
-    }
-
-    /**
-     * @see #setSetCookieCompliance(CookieCompliance)
-     * @param cookieCompliance The CookieCompliance to use for generating <code>Set-Cookie</code> headers
-     */
-    public void setSetCookieCompliance(CookieCompliance cookieCompliance)
-    {
-        _setCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+        return getRequestCookieCompliance();
     }
 
     @Deprecated
     public boolean isCookieCompliance(CookieCompliance compliance)
     {
-        return _cookieCompliance.equals(compliance);
+        return _requestCookieCompliance.equals(compliance);
     }
 
     /**
@@ -637,8 +649,8 @@ public class HttpConfiguration implements Dumpable
             "maxErrorDispatches=" + _maxErrorDispatches,
             "minRequestDataRate=" + _minRequestDataRate,
             "minResponseDataRate=" + _minResponseDataRate,
-            "cookieCompliance=" + _cookieCompliance,
-            "setCookieCompliance=" + _setCookieCompliance,
+            "cookieCompliance=" + _requestCookieCompliance,
+            "setRequestCookieCompliance=" + _responseCookieCompliance,
             "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors
         );
     }
