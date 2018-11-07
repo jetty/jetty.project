@@ -44,6 +44,5 @@ module org.eclipse.jetty.webapp {
             org.eclipse.jetty.webapp.ServletsConfiguration,
             org.eclipse.jetty.webapp.WebAppConfiguration,
             org.eclipse.jetty.webapp.WebInfConfiguration,
-            org.eclipse.jetty.webapp.WebSocketConfiguration,
             org.eclipse.jetty.webapp.WebXmlConfiguration;
 }
