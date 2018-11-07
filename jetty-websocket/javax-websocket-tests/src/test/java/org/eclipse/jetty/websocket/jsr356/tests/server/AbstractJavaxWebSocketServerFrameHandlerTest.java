@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.websocket.EndpointConfig;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -25,13 +30,9 @@ import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreatorMapping;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-
-import javax.websocket.EndpointConfig;
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
 {

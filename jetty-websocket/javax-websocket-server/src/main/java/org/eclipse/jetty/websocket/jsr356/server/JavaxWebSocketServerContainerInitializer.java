@@ -18,15 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -39,9 +33,16 @@ import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreatorMapping;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
 @HandlesTypes({ ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class })
 public class JavaxWebSocketServerContainerInitializer implements ServletContainerInitializer

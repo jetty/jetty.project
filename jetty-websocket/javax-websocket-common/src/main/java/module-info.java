@@ -16,13 +16,16 @@
 //  ========================================================================
 //
 
-import org.eclipse.jetty.websocket.api.extensions.Extension;
+module org.eclipse.jetty.websocket.javax.common {
+    exports org.eclipse.jetty.websocket.jsr356;
+    exports org.eclipse.jetty.websocket.jsr356.decoders;
+    exports org.eclipse.jetty.websocket.jsr356.encoders;
+    exports org.eclipse.jetty.websocket.jsr356.messages;
+    exports org.eclipse.jetty.websocket.jsr356.util;
 
-module org.eclipse.jetty.websocket.jetty.api {
-    exports org.eclipse.jetty.websocket.api;
-    exports org.eclipse.jetty.websocket.api.annotations;
-    exports org.eclipse.jetty.websocket.api.extensions;
-    exports org.eclipse.jetty.websocket.api.util;
-
-    uses Extension;
+    requires javax.websocket.api;
+    requires org.eclipse.jetty.util;
+    requires org.eclipse.jetty.http;
+    requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.websocket.core;
 }

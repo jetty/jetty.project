@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.websocket.client {
+module org.eclipse.jetty.websocket.jetty.client {
     exports org.eclipse.jetty.websocket.client;
 
     requires org.eclipse.jetty.util;
@@ -24,7 +24,7 @@ module org.eclipse.jetty.websocket.client {
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.client;
     requires static org.eclipse.jetty.xml;
-    requires org.eclipse.jetty.websocket.api;
+    requires org.eclipse.jetty.websocket.jetty.api;
     requires org.eclipse.jetty.websocket.core;
-    requires org.eclipse.jetty.websocket.common;
+    requires org.eclipse.jetty.websocket.jetty.common;
 }

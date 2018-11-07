@@ -17,23 +17,31 @@
 //
 
 import javax.servlet.ServletContainerInitializer;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.websocket.server.JettyWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketConfiguration;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 
-module org.eclipse.jetty.websocket.jetty.server {
-    exports org.eclipse.jetty.websocket.server;
+module org.eclipse.jetty.websocket.javax.server {
+    exports org.eclipse.jetty.websocket.jsr356.server;
 
     requires javax.servlet.api;
+    requires javax.websocket.api;
     requires org.eclipse.jetty.util;
+    requires org.eclipse.jetty.http;
+    requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.client;
+    requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.servlet;
     requires org.eclipse.jetty.webapp;
-    requires org.eclipse.jetty.websocket.jetty.api;
     requires org.eclipse.jetty.websocket.core;
-    requires org.eclipse.jetty.websocket.jetty.common;
+    requires org.eclipse.jetty.websocket.javax.common;
+    requires org.eclipse.jetty.websocket.javax.client;
     requires org.eclipse.jetty.websocket.servlet;
 
-    provides ServletContainerInitializer with JettyWebSocketServletContainerInitializer;
-    provides Configuration with JettyWebSocketConfiguration;
+    provides ServletContainerInitializer with JavaxWebSocketServerContainerInitializer;
+    provides ServerEndpointConfig.Configurator with ContainerDefaultConfigurator;
+    provides Configuration with JavaxWebSocketConfiguration;
 }
