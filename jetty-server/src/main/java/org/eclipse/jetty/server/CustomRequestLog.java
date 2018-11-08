@@ -43,156 +43,134 @@ import static java.lang.invoke.MethodHandles.foldArguments;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
- * todo support modifiers
  <table>
  <tr>
  <td width="20%"><b>Format String</b></td>
  <td><b>Description</b></td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td>%%</td>
  <td>The percent sign.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%a</td>
  <td>Client IP address of the request.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%{c}a</td>
  <td>Underlying peer IP address of the connection.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%A</td>
  <td>Local IP-address.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%B</td>
  <td>Size of response in bytes, excluding HTTP headers.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%b</td>
  <td>Size of response in bytes, excluding HTTP headers. In CLF format, i.e. a '-' rather than a 0 when no bytes are sent.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%{VARNAME}C</td>
  <td>The contents of cookie VARNAME in the request sent to the server. Only version 0 cookies are fully supported.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%D</td>
  <td>The time taken to serve the request, in microseconds.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%{VARNAME}e</td>
  <td>The contents of the environment variable VARNAME.</td>
  </tr>
 
- <!-- Can Do - getRealPath>
  <tr>
  <td valign="top">%f</td>
  <td>Filename.</td>
  </tr>
 
- <!-- Can Do todo fix javadoc>
  <tr>
  <td valign="top">%h</td>
- <td>Remote hostname. Will log the IP address if HostnameLookups is set to Off, which is the default. If it logs the hostname for only a few hosts, you probably have access control directives mentioning them by name. See the Require host documentation.</td>
+ <td>Remote hostname. Will log a dotted-string form of the IP if the Hostname cannot be resolved.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%H</td>
  <td>The request protocol.</td>
  </tr>
 
- <!-- Can Do todo rewrite javadoc>
  <tr>
  <td valign="top">%{VARNAME}i</td>
- <td>The contents of VARNAME: header line(s) in the request sent to the server. Changes made by other modules (e.g. mod_headers) affect this. If you're interested in what the request header was prior to when most modules would have modified it, use mod_setenvif to copy the header into an internal environment variable and log that value with the %{VARNAME}e described above.</td>
+ <td>The contents of VARNAME: header line(s) in the request sent to the server.</td>
  </tr>
 
- <!-- Can Do - number of requests on this connection? http2>
  <tr>
  <td valign="top">%k</td>
- <td>Number of keepalive requests handled on this connection. Interesting if KeepAlive is being used, so that, for example, a '1' means the first keepalive request after the initial one, '2' the second, etc...; otherwise this is always 0 (indicating the initial request).</td>
+ <td>Number of keepalive requests handled on this connection.
+ Interesting if KeepAlive is being used, so that, for example, a '1' means the first keepalive request
+ after the initial one, '2' the second, etc...; otherwise this is always 0 (indicating the initial request).</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%m</td>
  <td>The request method.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%{VARNAME}o</td>
  <td>The contents of VARNAME: header line(s) in the response.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%p</td>
  <td>The canonical port of the server serving the request.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%{format}p</td>
- <td>The canonical port of the server serving the request, or the server's actual port, or the client's actual port. Valid formats are canonical, local, or remote.</td>
+ <td>The canonical port of the server serving the request, or the server's actual port, or the client's actual port.
+ Valid formats are canonical, local, or remote.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%q</td>
  <td>The query string (prepended with a ? if a query string exists, otherwise an empty string).</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%r</td>
  <td>First line of request.</td>
  </tr>
 
- <!-- Might be able to do - servlet name, is this availible?>
  <tr>
  <td valign="top">%R</td>
  <td>The handler generating the response (if any).</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%s</td>
  <td>Response status.</td>
  </tr>
 
- <!-- Can Do>
- <tr>
- <td valign="top">%t</td>
- <td>Time the request was received, in the format [18/Sep/2011:19:18:28 -0400]. The last number indicates the timezone offset from GMT</td>
- </tr>
-
- <!-- Can Do todo merge these with optional format parameter rather than listing twice>
  <tr>
  <td valign="top">%{format}t</td>
  <td>
- The time, in the form given by format, which should be in an extended strftime(3) format (potentially localized). If the format starts with begin: (default) the time is taken at the beginning of the request processing. If it starts with end: it is the time when the log entry gets written, close to the end of the request processing.
+ The time, in the form given by an optional format, parameter (default format [18/Sep/2011:19:18:28 -0400] where
+ the last number indicates the timezone offset from GMT.)
+ <br><br>
+ The format parameter should be in an extended strftime(3) format (potentially localized).
+ If the format starts with begin: (default) the time is taken at the beginning of the request processing.
+ If it starts with end: it is the time when the log entry gets written, close to the end of the request processing.
 
  <br><br>In addition to the formats supported by strftime(3), the following format tokens are supported:
 
@@ -208,37 +186,33 @@ import static java.lang.invoke.MethodType.methodType;
  </td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%T</td>
  <td>The time taken to serve the request, in seconds.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%{UNIT}T</td>
- <td>The time taken to serve the request, in a time unit given by UNIT. Valid units are ms for milliseconds, us for microseconds, and s for seconds. Using s gives the same result as %T without any format; using us gives the same result as %D. Combining %T with a unit is available in 2.4.13 and later.</td>
+ <td>The time taken to serve the request, in a time unit given by UNIT.
+ Valid units are ms for milliseconds, us for microseconds, and s for seconds.
+ Using s gives the same result as %T without any format; using us gives the same result as %D.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%u</td>
  <td>Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).</td>
  </tr>
 
- <!-- Can Do this is the URI>
  <tr>
  <td valign="top">%U</td>
  <td>The URL path requested, not including any query string.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%v</td>
  <td>The canonical ServerName of the server serving the request.</td>
  </tr>
 
- <!-- Can Do>
  <tr>
  <td valign="top">%X</td>
  <td>
@@ -250,31 +224,26 @@ import static java.lang.invoke.MethodType.methodType;
  </td>
  </tr>
 
- <!-- Might be able to do>
  <tr>
  <td valign="top">%I</td>
- <td>Bytes received, including request and headers. Cannot be zero. You need to enable mod_logio to use this.</td>
+ <td>Bytes received, including request and headers. Cannot be zero.</td>
  </tr>
 
- <!-- Might be able to do - dont know if we know how big headers are>
  <tr>
  <td valign="top">%O</td>
- <td>Bytes sent, including headers. May be zero in rare cases such as when a request is aborted before a response is sent. You need to enable mod_logio to use this.</td>
+ <td>Bytes sent, including headers. May be zero in rare cases such as when a request is aborted before a response is sent.</td>
  </tr>
 
- <!-- Might be able to do>
  <tr>
  <td valign="top">%S</td>
- <td>Bytes transferred (received and sent), including request and headers, cannot be zero. This is the combination of %I and %O. You need to enable mod_logio to use this.</td>
+ <td>Bytes transferred (received and sent), including request and headers, cannot be zero. This is the combination of %I and %O.</td>
  </tr>
 
- <!-- Should be able to do>
  <tr>
  <td valign="top">%{VARNAME}^ti</td>
  <td>The contents of VARNAME: trailer line(s) in the request sent to the server.</td>
  </tr>
 
- <!-- Should be able to do>
  <tr>
  <td>%{VARNAME}^to</td>
  <td>The contents of VARNAME: trailer line(s) in the response sent from the server.</td>
@@ -1023,7 +992,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     public static void logFilename(StringBuilder b, Request request, Response response)
     {
-        //TODO probably wrong
+        //TODO probably wrong, getRealPath?
         append(b, request.getContextPath());
     }
 
@@ -1045,7 +1014,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     public static void logKeepAliveRequests(StringBuilder b, Request request, Response response)
     {
-        //todo verify this
+        //todo verify this "number of requests on this connection? what about http2?"
         b.append(request.getHttpChannel().getRequests());
     }
 
@@ -1081,7 +1050,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     public static void logQueryString(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getQueryString());
+        append(b, "?"+request.getQueryString());
     }
 
     public static void logRequestFirstLine(StringBuilder b, Request request, Response response)
@@ -1092,8 +1061,8 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     public static void logRequestHandler(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        //todo verify
+        append(b, request.getServletName());
     }
 
     public static void logResponseStatus(StringBuilder b, Request request, Response response)

@@ -309,7 +309,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /path?queryString HTTP/1.0\n\n");
         String log = _log.entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("QueryString: queryString\n"));
+        assertThat(log, is("QueryString: ?queryString\n"));
     }
 
     @Test
