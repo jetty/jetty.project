@@ -22,10 +22,15 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -38,152 +43,152 @@ import static java.lang.invoke.MethodHandles.foldArguments;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
+ * todo support modifiers
  <table>
  <tr>
  <td width="20%"><b>Format String</b></td>
  <td><b>Description</b></td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td>%%</td>
  <td>The percent sign.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%a</td>
  <td>Client IP address of the request.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%{c}a</td>
  <td>Underlying peer IP address of the connection.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%A</td>
  <td>Local IP-address.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%B</td>
  <td>Size of response in bytes, excluding HTTP headers.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%b</td>
  <td>Size of response in bytes, excluding HTTP headers. In CLF format, i.e. a '-' rather than a 0 when no bytes are sent.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%{VARNAME}C</td>
  <td>The contents of cookie VARNAME in the request sent to the server. Only version 0 cookies are fully supported.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%D</td>
  <td>The time taken to serve the request, in microseconds.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%{VARNAME}e</td>
  <td>The contents of the environment variable VARNAME.</td>
  </tr>
 
+ <!-- Can Do - getRealPath>
  <tr>
  <td valign="top">%f</td>
  <td>Filename.</td>
  </tr>
 
+ <!-- Can Do todo fix javadoc>
  <tr>
  <td valign="top">%h</td>
  <td>Remote hostname. Will log the IP address if HostnameLookups is set to Off, which is the default. If it logs the hostname for only a few hosts, you probably have access control directives mentioning them by name. See the Require host documentation.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%H</td>
  <td>The request protocol.</td>
  </tr>
 
+ <!-- Can Do todo rewrite javadoc>
  <tr>
  <td valign="top">%{VARNAME}i</td>
  <td>The contents of VARNAME: header line(s) in the request sent to the server. Changes made by other modules (e.g. mod_headers) affect this. If you're interested in what the request header was prior to when most modules would have modified it, use mod_setenvif to copy the header into an internal environment variable and log that value with the %{VARNAME}e described above.</td>
  </tr>
 
+ <!-- Can Do - number of requests on this connection? http2>
  <tr>
  <td valign="top">%k</td>
  <td>Number of keepalive requests handled on this connection. Interesting if KeepAlive is being used, so that, for example, a '1' means the first keepalive request after the initial one, '2' the second, etc...; otherwise this is always 0 (indicating the initial request).</td>
  </tr>
 
- <tr>
- <td valign="top">%l</td>
- <td>Remote logname (from identd, if supplied). This will return a dash unless mod_ident is present and IdentityCheck is set On.</td>
- </tr>
-
- <tr>
- <td valign="top">%L</td>
- <td>The request log ID from the error log (or '-' if nothing has been logged to the error log for this request). Look for the matching error log line to see what request caused what error.</td>
- </tr>
-
+ <!-- Can Do>
  <tr>
  <td valign="top">%m</td>
  <td>The request method.</td>
  </tr>
 
- <tr>
- <td valign="top">%{VARNAME}n</td>
- <td>The contents of note VARNAME from another module.</td>
- </tr>
-
+ <!-- Can Do>
  <tr>
  <td valign="top">%{VARNAME}o</td>
- <td>The contents of VARNAME: header line(s) in the reply.</td>
+ <td>The contents of VARNAME: header line(s) in the response.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%p</td>
  <td>The canonical port of the server serving the request.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%{format}p</td>
  <td>The canonical port of the server serving the request, or the server's actual port, or the client's actual port. Valid formats are canonical, local, or remote.</td>
  </tr>
 
- <tr>
- <td valign="top">%P</td>
- <td>The process ID of the child that serviced the request.</td>
- </tr>
-
- <tr>
- <td valign="top">%{format}P</td>
- <td>The process ID or thread ID of the child that serviced the request. Valid formats are pid, tid, and hextid. hextid requires APR 1.2.0 or higher.</td>
- </tr>
-
+ <!-- Can Do>
  <tr>
  <td valign="top">%q</td>
  <td>The query string (prepended with a ? if a query string exists, otherwise an empty string).</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%r</td>
  <td>First line of request.</td>
  </tr>
 
+ <!-- Might be able to do - servlet name, is this availible?>
  <tr>
  <td valign="top">%R</td>
  <td>The handler generating the response (if any).</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%s</td>
- <td>Status. For requests that have been internally redirected, this is the status of the original request. Use %>s for the final status.</td>
+ <td>Response status.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%t</td>
  <td>Time the request was received, in the format [18/Sep/2011:19:18:28 -0400]. The last number indicates the timezone offset from GMT</td>
  </tr>
 
+ <!-- Can Do todo merge these with optional format parameter rather than listing twice>
  <tr>
  <td valign="top">%{format}t</td>
  <td>
@@ -203,64 +208,73 @@ import static java.lang.invoke.MethodType.methodType;
  </td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%T</td>
  <td>The time taken to serve the request, in seconds.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%{UNIT}T</td>
  <td>The time taken to serve the request, in a time unit given by UNIT. Valid units are ms for milliseconds, us for microseconds, and s for seconds. Using s gives the same result as %T without any format; using us gives the same result as %D. Combining %T with a unit is available in 2.4.13 and later.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%u</td>
  <td>Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).</td>
  </tr>
 
+ <!-- Can Do this is the URI>
  <tr>
  <td valign="top">%U</td>
  <td>The URL path requested, not including any query string.</td>
  </tr>
 
+ <!-- Can Do>
  <tr>
  <td valign="top">%v</td>
  <td>The canonical ServerName of the server serving the request.</td>
  </tr>
 
- <tr>
- <td valign="top">%V</td>
- <td>The server name according to the UseCanonicalName setting.</td>
- </tr>
-
+ <!-- Can Do>
  <tr>
  <td valign="top">%X</td>
- <td>Connection status when response is completed:
+ <td>
+ Connection status when response is completed:
+ <pre>
  X = Connection aborted before the response completed.
  + = Connection may be kept alive after the response is sent.
- - = Connection will be closed after the response is sent.</td>
+ - = Connection will be closed after the response is sent.</pre>
+ </td>
  </tr>
 
+ <!-- Might be able to do>
  <tr>
  <td valign="top">%I</td>
  <td>Bytes received, including request and headers. Cannot be zero. You need to enable mod_logio to use this.</td>
  </tr>
 
+ <!-- Might be able to do - dont know if we know how big headers are>
  <tr>
  <td valign="top">%O</td>
  <td>Bytes sent, including headers. May be zero in rare cases such as when a request is aborted before a response is sent. You need to enable mod_logio to use this.</td>
  </tr>
 
+ <!-- Might be able to do>
  <tr>
  <td valign="top">%S</td>
  <td>Bytes transferred (received and sent), including request and headers, cannot be zero. This is the combination of %I and %O. You need to enable mod_logio to use this.</td>
  </tr>
 
+ <!-- Should be able to do>
  <tr>
  <td valign="top">%{VARNAME}^ti</td>
  <td>The contents of VARNAME: trailer line(s) in the request sent to the server.</td>
  </tr>
 
+ <!-- Should be able to do>
  <tr>
  <td>%{VARNAME}^to</td>
  <td>The contents of VARNAME: trailer line(s) in the response sent from the server.</td>
@@ -540,20 +554,14 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         append(buf, s);
     }
 
-    public static void logClientIP(StringBuilder b, Request request, Response response)
-    {
-        b.append(request.getRemoteAddr());
-    }
-
-    private static final MethodType LOG_TYPE = methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class);
 
     private MethodHandle getLogHandle(String formatString) throws Throwable
     {
         MethodHandle append = MethodHandles.lookup().findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
         MethodHandle logHandle = dropArguments(dropArguments(append.bindTo("\n"), 1, Request.class), 2, Response.class);
 
-        final Pattern PERCENT_CODE = Pattern.compile("(?<remaining>.*)%(?:\\{(?<arg>[^{}]+)})?(?<code>[a-zA-Z%])");
-        final Pattern LITERAL = Pattern.compile("(?<remaining>.*%(?:\\{[^{}]+})?[a-zA-Z%])(?<literal>.*)");
+        final Pattern PERCENT_CODE = Pattern.compile("(?<remaining>.*)%(?<modifiers>!?[0-9,]+)?(?:\\{(?<arg>[^{}]+)})?(?<code>[a-zA-Z%])");
+        final Pattern LITERAL = Pattern.compile("(?<remaining>.*%(?:!?[0-9,]+)?(?:\\{[^{}]+})?[a-zA-Z%])(?<literal>.*)");
 
         String remaining = formatString;
         while(remaining.length()>0)
@@ -563,8 +571,21 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
             {
                 String code = m.group("code");
                 String arg = m.group("arg");
+                String modifierString = m.group("modifiers");
+                Boolean negated = false;
 
-                logHandle = updateLogHandle(logHandle, code, arg);
+                if (modifierString != null)
+                {
+                    if (modifierString.startsWith("!"))
+                    {
+                        modifierString = modifierString.substring(1);
+                        negated = true;
+                    }
+                }
+
+                List<String> modifiers = new QuotedCSV(modifierString).getValues();
+
+                logHandle = updateLogHandle(logHandle, append, code, arg, modifiers, negated);
                 remaining = m.group("remaining");
                 continue;
             }
@@ -591,24 +612,564 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
     {
         return foldArguments(logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
-
     }
 
 
-    private MethodHandle updateLogHandle(MethodHandle logHandle, String code, String arg) throws Throwable
+    //TODO use integer comparisons instead of strings
+    private static boolean modify(List<String> modifiers, Boolean negated, StringBuilder b, Request request, Response response)
     {
+        String responseCode = Integer.toString(response.getStatus());
+        if (negated)
+        {
+            return(!modifiers.contains(responseCode));
+        }
+        else
+        {
+            return(modifiers.contains(responseCode));
+        }
+    }
+
+    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String code, String arg, List<String> modifiers, boolean negated) throws Throwable
+    {
+        MethodType logType = methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class);
+        MethodType logTypeArg = methodType(Void.TYPE, String.class, StringBuilder.class, Request.class, Response.class);
+
+        MethodHandle specificHandle;
         switch (code)
         {
+            case "%":
+            {
+                //TODO problems handling "%%a" as parsing starts from right and will first interpret "%a" rather than %%
+                specificHandle = dropArguments(dropArguments(append.bindTo("%"), 1, Request.class), 2, Response.class);
+                break;
+            }
+
             case "a":
             {
-                String method = "logClientIP";
-                MethodHandle specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, LOG_TYPE);
-                return foldArguments(logHandle, specificHandle);
+                String method;
+
+                if (arg != null)
+                {
+                    if (!arg.equals("c")) //todo illegal argument?
+                        LOG.warn("Argument of %a which is not 'c'");
+
+                    method = "logConnectionIP";
+                }
+                else
+                {
+                    method = "logClientIP";
+                }
+
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
             }
+
+            case "A":
+            {
+                String method = "logLocalIP";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "B":
+            {
+                String method = "logResponseSize";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "b":
+            {
+                String method = "logResponseSizeCLF";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "C":
+            {
+                if (arg == null || arg.isEmpty())
+                    throw new IllegalArgumentException("No arg for %C");
+
+                String method = "logRequestCookie";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = specificHandle.bindTo(arg);
+                break;
+            }
+
+            case "D":
+            {
+                String method = "logLatencyMicroseconds";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "e":
+            {
+                if (arg == null || arg.isEmpty())
+                    throw new IllegalArgumentException("No arg for %e");
+
+                String method = "logEnvironmentVar";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = specificHandle.bindTo(arg);
+                break;
+            }
+
+            case "f":
+            {
+                String method = "logFilename";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "h":
+            {
+                String method = "logRemoteHostName";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "H":
+            {
+                String method = "logRequestProtocol";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "i":
+            {
+                if (arg == null || arg.isEmpty())
+                    throw new IllegalArgumentException("No arg for %i");
+
+                String method = "logRequestHeader";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = specificHandle.bindTo(arg);
+                break;
+            }
+
+            case "k":
+            {
+                String method = "logKeepAliveRequests";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "m":
+            {
+                String method = "logRequestMethod";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "o":
+            {
+                if (arg == null || arg.isEmpty())
+                    throw new IllegalArgumentException("No arg for %o");
+
+                String method = "logResponseHeader";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = specificHandle.bindTo(arg);
+                break;
+            }
+
+            case "p":
+            {
+                if (arg == null || arg.isEmpty())
+                    arg = "canonical";
+
+                String method;
+                switch (arg)
+                {
+                    case "canonical":
+                        method = "logCanonicalPort";
+                        break;
+
+                    case "local":
+                        method = "logLocalPort";
+                        break;
+
+                    case "remote":
+                        method = "logRemotePort";
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Invalid arg for %p");
+                }
+
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "q":
+            {
+                String method = "logQueryString";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "r":
+            {
+                String method = "logRequestFirstLine";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "R":
+            {
+                String method = "logRequestHandler";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "s":
+            {
+                String method = "logUrlRequestPath";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "t":
+            {
+                //todo is this correctly supporting the right formats
+                DateCache logDateCache;
+                if (arg == null || arg.isEmpty())
+                    logDateCache = new DateCache(_logDateFormat, _logLocale , _logTimeZone);
+                else
+                    logDateCache = new DateCache(arg, _logLocale , _logTimeZone);
+
+                String method = "logRequestTime";
+                MethodType logTypeDateCache = methodType(Void.TYPE, DateCache.class, StringBuilder.class, Request.class, Response.class);
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeDateCache);
+                specificHandle = specificHandle.bindTo(logDateCache);
+                break;
+            }
+
+
+            case "T":
+            {
+                if (arg == null)
+                    arg = "s";
+
+                String method;
+                switch (arg)
+                {
+                    case "s":
+                        method = "logLatencySeconds";
+                        break;
+                    case "us":
+                        method = "logLatencyMicroseconds";
+                        break;
+                    case "ms":
+                        method = "logLatencyMilliseconds";
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid arg for %T");
+                }
+
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "u":
+            {
+                String method = "logRequestAuthentication";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "U":
+            {
+                String method = "logResponseStatus";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "v":
+            {
+                String method = "logServerName";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "X":
+            {
+                String method = "logConnectionStatus";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "I":
+            {
+                String method = "logBytesReceived";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "O":
+            {
+                String method = "logBytesSent";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "S":
+            {
+                String method = "logBytesTransferred";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+
+            case "ti":
+            {
+                if (arg == null || arg.isEmpty())
+                    throw new IllegalArgumentException("No arg for %ti");
+
+                String method = "logRequestTrailerLines";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = specificHandle.bindTo(arg);
+                break;
+            }
+
+
+            case "to":
+            {
+                if (arg == null || arg.isEmpty())
+                    throw new IllegalArgumentException("No arg for %to");
+
+                String method = "logResponseTrailerLines";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = specificHandle.bindTo(arg);
+                break;
+            }
+
 
             default:
                 LOG.warn("Unsupported code %{}", code);
                 return logHandle;
         }
+
+        if (modifiers != null && !modifiers.isEmpty())
+        {
+            MethodHandle modifierTest = MethodHandles.lookup().findStatic(CustomRequestLog.class, "modify", methodType(Boolean.TYPE, List.class, Boolean.class, StringBuilder.class, Request.class, Response.class));
+
+            MethodHandle dash = updateLogHandle(logHandle, append, "-");
+            MethodHandle log = foldArguments(logHandle, specificHandle);
+            modifierTest = modifierTest.bindTo(modifiers).bindTo(negated);
+
+            return MethodHandles.guardWithTest(modifierTest, log, dash);
+        }
+
+        return foldArguments(logHandle, specificHandle);
+    }
+
+
+
+
+
+    //-----------------------------------------------------------------------------------//
+
+
+    public static void logClientIP(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getRemoteAddr());
+    }
+
+    public static void logConnectionIP(StringBuilder b, Request request, Response response)
+    {
+        //todo don't think this is correct
+        append(b, request.getHeader(HttpHeader.X_FORWARDED_FOR.toString()));
+    }
+
+    public static void logLocalIP(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getLocalAddr());
+    }
+
+    public static void logResponseSize(StringBuilder b, Request request, Response response)
+    {
+        long written = response.getHttpChannel().getBytesWritten();
+        b.append(Long.toString(written));
+    }
+
+    public static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
+    {
+        long written = response.getHttpChannel().getBytesWritten();
+        b.append((written==0) ? "-" : Long.toString(written));
+    }
+
+    public static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
+    {
+        //todo should this be logging full cookie or its value, can you log multiple cookies, can multiple cookies have the same name
+        for (Cookie c : request.getCookies())
+        {
+            if (arg.equals(c.getName()))
+            {
+                b.append(c.getValue());
+                return;
+            }
+        }
+
+        b.append("-");
+    }
+
+    public static void logEnvironmentVar(String arg, StringBuilder b, Request request, Response response)
+    {
+        append(b, System.getenv(arg));
+    }
+
+    public static void logFilename(StringBuilder b, Request request, Response response)
+    {
+        //TODO probably wrong
+        append(b, request.getContextPath());
+    }
+
+    public static void logRemoteHostName(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getRemoteHost());
+    }
+
+    public static void logRequestProtocol(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getProtocol());
+    }
+
+    public static void logRequestHeader(String arg, StringBuilder b, Request request, Response response)
+    {
+        //TODO does this need to do multiple headers 'request.getHeaders(arg)'
+        append(b, request.getHeader(arg));
+    }
+
+    public static void logKeepAliveRequests(StringBuilder b, Request request, Response response)
+    {
+        //todo verify this
+        b.append(request.getHttpChannel().getRequests());
+    }
+
+    public static void logRequestMethod(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getMethod());
+    }
+
+    public static void logResponseHeader(String arg, StringBuilder b, Request request, Response response)
+    {
+        //TODO does this need to do multiple headers 'Response.getHeaders(arg)'
+        append(b, response.getHeader(arg));
+    }
+
+
+    public static void logCanonicalPort(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logLocalPort(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logRemotePort(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logQueryString(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getQueryString());
+    }
+
+    public static void logRequestFirstLine(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logRequestHandler(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logResponseStatus(StringBuilder b, Request request, Response response)
+    {
+        b.append(response.getStatus());
+    }
+
+    public static void logRequestTime(DateCache dateCache, StringBuilder b, Request request, Response response)
+    {
+        b.append(dateCache.format(request.getTimeStamp()));
+    }
+
+    public static void logLatencyMicroseconds(StringBuilder b, Request request, Response response)
+    {
+        long latency = System.currentTimeMillis() - request.getTimeStamp();
+        b.append(TimeUnit.MILLISECONDS.toMicros(latency));
+    }
+
+    public static void logLatencyMilliseconds(StringBuilder b, Request request, Response response)
+    {
+        long latency = System.currentTimeMillis() - request.getTimeStamp();
+        b.append(latency);
+    }
+
+    public static void logLatencySeconds(StringBuilder b, Request request, Response response)
+    {
+        long latency = System.currentTimeMillis() - request.getTimeStamp();
+        b.append(TimeUnit.MILLISECONDS.toSeconds(latency));
+    }
+
+    public static void logRequestAuthentication(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logUrlRequestPath(StringBuilder b, Request request, Response response)
+    {
+        //todo verify if this contains the query string
+        append(b, request.getRequestURI());
+    }
+
+    public static void logServerName(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getServerName());
+    }
+
+    public static void logConnectionStatus(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logBytesReceived(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logBytesSent(StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logBytesTransferred(StringBuilder b, Request request, Response response)
+    {
+        //todo implement: bytesTransferred = bytesReceived+bytesSent
+        append(b, "?");
+    }
+
+    public static void logRequestTrailerLines(String arg, StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
+    }
+
+    public static void logResponseTrailerLines(String arg, StringBuilder b, Request request, Response response)
+    {
+        //todo implement
+        append(b, "?");
     }
 }
