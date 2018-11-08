@@ -293,7 +293,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     private transient PathMappings<String> _ignorePathMap;
     private boolean _preferProxiedForAddress;
     private transient DateCache _logDateCache;
-    private String _logDateFormat = "dd/MMM/yyyy:HH:mm:ss Z";
+    private String _logDateFormat = "dd/MMM/yyyy:HH:mm:ss ZZZ";
     private Locale _logLocale = Locale.getDefault();
     private String _logTimeZone = "GMT";
 
@@ -305,9 +305,13 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         {
             _logHandle = getLogHandle(formatString);
         }
-        catch (Throwable t)
+        catch (NoSuchMethodException e)
         {
-            throw new IllegalStateException(t);
+            throw new IllegalStateException(e);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 
@@ -555,7 +559,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     }
 
 
-    private MethodHandle getLogHandle(String formatString) throws Throwable
+    private MethodHandle getLogHandle(String formatString) throws NoSuchMethodException, IllegalAccessException
     {
         MethodHandle append = MethodHandles.lookup().findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
         MethodHandle logHandle = dropArguments(dropArguments(append.bindTo("\n"), 1, Request.class), 2, Response.class);
@@ -629,7 +633,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         }
     }
 
-    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String code, String arg, List<String> modifiers, boolean negated) throws Throwable
+    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String code, String arg, List<String> modifiers, boolean negated) throws NoSuchMethodException, IllegalAccessException
     {
         MethodType logType = methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class);
         MethodType logTypeArg = methodType(Void.TYPE, String.class, StringBuilder.class, Request.class, Response.class);
@@ -822,7 +826,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
             case "s":
             {
-                String method = "logUrlRequestPath";
+                String method = "logResponseStatus";
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
@@ -878,7 +882,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
             case "U":
             {
-                String method = "logResponseStatus";
+                String method = "logUrlRequestPath";
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
@@ -1082,8 +1086,8 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     public static void logRequestFirstLine(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        //todo is there a better way to do this
+        append(b, request.getMethod() + " " + request.getOriginalURI() + " " + request.getProtocol());
     }
 
     public static void logRequestHandler(StringBuilder b, Request request, Response response)
@@ -1116,6 +1120,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     public static void logLatencySeconds(StringBuilder b, Request request, Response response)
     {
+        //todo should this give decimal places
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(TimeUnit.MILLISECONDS.toSeconds(latency));
     }
