@@ -1067,7 +1067,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             Collections.sort(server_classes);
         }
         
-        dumpBeans(out,indent,
+        dumpObjects(out,indent,
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Systemclasses "+this,system_classes),
             new DumpableCollection("Serverclasses "+this,server_classes),

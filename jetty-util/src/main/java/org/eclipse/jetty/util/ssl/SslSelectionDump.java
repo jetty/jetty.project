@@ -165,7 +165,7 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent);
+        dumpObjects(out, indent);
     }
     
     @Override
