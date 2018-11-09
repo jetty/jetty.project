@@ -53,7 +53,7 @@
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
 
     <!-- testing -->
-    <jetty.test.version>5.1</jetty.test.version>
+    <jetty.test.version>5.2</jetty.test.version>
   </properties>
 
   <licenses>
@@ -925,7 +925,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-schemas</artifactId>
-        <version>3.1</version>
+        <version>3.1.1</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
