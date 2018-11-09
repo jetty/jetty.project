@@ -101,8 +101,8 @@ public class TestJettyOSGiBootWebAppAsService
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
-        //TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
+        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
 

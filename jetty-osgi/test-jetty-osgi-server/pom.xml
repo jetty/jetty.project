@@ -15,7 +15,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
