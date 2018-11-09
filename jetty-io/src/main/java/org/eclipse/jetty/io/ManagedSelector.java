@@ -31,7 +31,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
@@ -297,13 +296,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (keys==null)
                 keys = Collections.singletonList("No dump keys retrieved");
 
-            dumpBeans(out, indent,
+            dumpObjects(out, indent,
                 new DumpableCollection("updates @ "+updatesAt, updates),
                 new DumpableCollection("keys @ "+keysAt, keys));
         }
         else
         {
-            dumpBeans(out, indent);
+            dumpObjects(out, indent);
         }
     }
 

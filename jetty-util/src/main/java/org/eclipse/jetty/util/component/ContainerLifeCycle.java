@@ -658,7 +658,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out,indent);
+        dumpObjects(out,indent);
     }
 
     /**
@@ -671,51 +671,15 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         dump(out, "");
     }
 
-    /**
-     * Dump just this object, but not it's children.  Typically used to
-     * implement {@link #dump(Appendable, String)}
-     * @param out The appendable to dump to
-     * @throws IOException May be thrown by the Appendable
-     */
-    @Deprecated
-    protected void dumpThis(Appendable out) throws IOException
-    {
-        out.append(String.valueOf(this)).append(" - ").append(getState()).append("\n");
-    }
-
-
     /** Dump this object, it's contained beans and additional items to an Appendable
      * @param out The appendable to dump to
      * @param indent The indent to apply after any new lines
      * @param items Additional items to be dumped as contained.
      * @throws IOException May be thrown by the Appendable
      */
-    protected void dumpBeans(Appendable out, String indent, Object... items) throws IOException
+    protected void dumpObjects(Appendable out, String indent, Object... items) throws IOException
     {
         Dumpable.dumpObjects(out,indent,this, items);
-    }
-
-    @Deprecated
-    public static void dump(Appendable out, String indent, Collection<?>... collections) throws IOException
-    {
-        if (collections.length == 0)
-            return;
-        int size = 0;
-        for (Collection<?> c : collections)
-            size += c.size();
-        if (size == 0)
-            return;
-
-        int i = 0;
-        for (Collection<?> c : collections)
-        {
-            for (Object o : c)
-            {
-                i++;
-                out.append(indent).append(" +- ");
-                Dumpable.dumpObjects(out,indent + (i<size ? " |  " : "    "), o);
-            }
-        }
     }
 
     enum Managed { POJO, MANAGED, UNMANAGED, AUTO }

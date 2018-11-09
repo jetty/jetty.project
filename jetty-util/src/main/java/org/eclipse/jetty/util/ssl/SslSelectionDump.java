@@ -165,12 +165,12 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent);
+        dumpObjects(out, indent);
     }
-    
+
     @Override
-    protected void dumpThis(Appendable out) throws IOException
+    public String toString()
     {
-        out.append(type).append(" Selections").append(System.lineSeparator());
+        return String.format("%s Selections", type);
     }
 }

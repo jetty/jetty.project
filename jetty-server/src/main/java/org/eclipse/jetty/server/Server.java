@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -725,7 +724,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpBeans(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()),_attributes);
+        dumpObjects(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()),_attributes);
     }
 
     /* ------------------------------------------------------------ */
