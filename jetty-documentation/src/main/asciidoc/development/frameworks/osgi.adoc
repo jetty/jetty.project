@@ -55,7 +55,7 @@ You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty
 [cols=",,",options="header",]
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
-|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.0.1.jar |org.apache.aries.spifly.dynamic.bundle
+|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.1.jar |org.apache.aries.spifly.dynamic.bundle
 |https://repo1.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven central]
 |org.apache.aries:org.apache.aries.util-1.0.1.jar |org.apache.aries.util
 |https://repo1.maven.org/maven2/org/apache/aries/org.apache.aries.util/[Maven
@@ -835,14 +835,14 @@ In order to use them with Jetty in OSGi, you will need to deploy some extra jars
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
 |The link:#spifly[spifly jars] | |
-|org.ow2.asm:asm-5.0.1.jar |org.objectweb.asm
+|org.ow2.asm:asm-7.0.jar |org.objectweb.asm
 |https://repo1.maven.org/maven2/org/ow2/asm/asm[Maven central]
 
-|org.ow2.asm:asm-commons-5.0.1.jar |org.objectweb.asm.commons
+|org.ow2.asm:asm-commons-7.0.jar |org.objectweb.asm.commons
 |https://repo1.maven.org/maven2/org/ow2/asm/asm-commons[Maven central]
 
-|org.ow2.asm:asm-tree-5.0.1.jar |org.objectweb.asm.tree
-|https://repo1.maven.org/maven2/org/ow2/asm/asm-tree[Maven central]
+|org.ow2.asm:asm-util-7.0.jar |org.objectweb.asm.util
+|https://repo1.maven.org/maven2/org/ow2/asm/asm-util[Maven central]
 
 |javax.annotation:javax.annotation-api-1.2.jar |javax.annotation-api
 |https://repo1.maven.org/maven2/javax/annotation/javax.annotation-api/[Maven
