@@ -222,7 +222,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         String mName = pName + ".jmx." + cName + "MBean";
         try
         {
-            Class<?> mbeanClass = Loader.loadClass(mName);
+            Class<?> mbeanClass = Loader.loadClass(klass, mName);
             Constructor<?> constructor = ModelMBean.class.isAssignableFrom(mbeanClass)
                     ? mbeanClass.getConstructor()
                     : mbeanClass.getConstructor(Object.class);
