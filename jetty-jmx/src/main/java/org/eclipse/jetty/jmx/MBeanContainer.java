@@ -217,8 +217,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
     private static Constructor<?> findConstructor(Class<?> klass)
     {
-        String pName = klass.getPackage().getName();
-        String cName = klass.getName().substring(pName.length() + 1);
+        Package pkg = klass.getPackage();
+        if (pkg == null)
+            return null;
+        String pName = pkg.getName();
+        String cName = klass.getName().substring(pName.isEmpty() ? 0 : pName.length() + 1);
         String mName = pName + ".jmx." + cName + "MBean";
         try
         {
@@ -310,12 +313,19 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             // No override of the mbean's ObjectName, so make a generic one.
             if (objectName == null)
             {
+                Class<?> klass = obj.getClass();
+                while (klass.isArray())
+                    klass = klass.getComponentType();
+
                 // If no explicit domain, create one.
                 String domain = _domain;
                 if (domain == null)
-                    domain = obj.getClass().getPackage().getName();
+                {
+                    Package pkg = klass.getPackage();
+                    domain = pkg == null ? "" : pkg.getName();
+                }
 
-                String type = obj.getClass().getName().toLowerCase(Locale.ENGLISH);
+                String type = klass.getName().toLowerCase(Locale.ENGLISH);
                 int dot = type.lastIndexOf('.');
                 if (dot >= 0)
                     type = type.substring(dot + 1);

@@ -71,13 +71,6 @@ public class ObjectMBeanUtilTest
     }
 
     @Test
-    public void testMbeanForNullCheck()
-    {
-        Object mBean = container.mbeanFor(null);
-        assertNull(mBean, "As we are passing null value the output should be null");
-    }
-
-    @Test
     public void testGetAttributeMBeanException() throws Exception
     {
         Attribute attribute = new Attribute("doodle4", "charu");
@@ -151,7 +144,7 @@ public class ObjectMBeanUtilTest
     }
 
     @Test
-    public void testSetAttributesForCollectionTypeAttribue() throws Exception
+    public void testSetAttributesForCollectionTypeAttribute() throws Exception
     {
         ArrayList<Derived> aliasNames = new ArrayList<>(Arrays.asList(getArrayTypeAttribute()));
 
@@ -231,7 +224,7 @@ public class ObjectMBeanUtilTest
         ReflectionException e = assertThrows(ReflectionException.class, () ->
                 objectMBean.invoke("good", new Object[0], new String[]{"int aone"}));
 
-        assertNotNull(e, "An ReflectionException must have occurred by now as we cannot call a methow with wrong signature");
+        assertNotNull(e, "A ReflectionException must have occurred by now as we cannot call a method with wrong signature");
     }
 
     @Test
