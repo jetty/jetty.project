@@ -112,21 +112,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // with a more automatic distributed mechanism
     public final static String[] __dftSystemClasses =
     {
-        "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "org.xml.",                         // needed by javax.xml
-        "org.w3c.",                         // needed by javax.xml
-        "org.eclipse.jetty.jmx.",           // webapp cannot change jmx classes
-        "org.eclipse.jetty.util.annotation.",  // webapp cannot change jmx annotations
-        "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
-        "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
-        "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
-        "org.eclipse.jetty.websocket.",     // webapp cannot change / replace websocket classes
-        "org.eclipse.jetty.util.log.",      // webapp should use server log
-        "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
-        "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
-        "org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
-        "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
+        "java.",                                             // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+        "javax.",                                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+        "org.xml.",                                          // needed by javax.xml
+        "org.w3c.",                                          // needed by javax.xml
+        "org.eclipse.jetty.jmx.",                            // webapp cannot change jmx classes
+        "org.eclipse.jetty.util.annotation.",                // webapp cannot change jmx annotations
+        "org.eclipse.jetty.continuation.",                   // webapp cannot change continuation classes
+        "org.eclipse.jetty.jndi.",                           // webapp cannot change naming classes
+        "org.eclipse.jetty.jaas.",                           // webapp cannot change jaas classes
+        "org.eclipse.jetty.websocket.",                      // webapp cannot change / replace websocket classes
+        "org.eclipse.jetty.util.log.",                       // webapp should use server log
+        "org.eclipse.jetty.servlet.DefaultServlet",          // webapp cannot change default servlets
+        "org.eclipse.jetty.jsp.JettyJspServlet",             // webapp cannot change jetty jsp servlet
+        "org.eclipse.jetty.servlets.PushCacheFilter",        // must be loaded by container classpath
+        "org.eclipse.jetty.servlets.PushSessionCacheFilter", // must be loaded by container classpath
+        "org.graalvm."                                       // Graal VM classes
     } ;
 
     // Server classes are classes that are hidden from being

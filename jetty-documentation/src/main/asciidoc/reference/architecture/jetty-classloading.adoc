@@ -99,6 +99,7 @@ The default system classes are:
 |org.eclipse.jetty.jaas. |Webapp can see and not change JAAS classes.
 |org.eclipse.jetty.websocket. |WebSocket is a Jetty extension.
 |org.eclipse.jetty.servlet.DefaultServlet |Webapp can see and not change default servlet.
+|org.graalvm. |Graal VM classes.
 |=======================================================================
 
 Absolute classname can be passed, names ending with `.` are treated as packages names, and names starting with `-` are treated as negative matches and must be listed before any enclosing packages.
