@@ -38,7 +38,7 @@
     <logback.version>1.2.3</logback.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.0</servlet.api.version>
-    <servlet.schema.version>4.0.0</servlet.schema.version>
+    <servlet.schema.version>4.0.2</servlet.schema.version>
     <jsp.version>8.5.33</jsp.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
@@ -67,7 +67,7 @@
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
 
     <!-- testing -->
-    <jetty.test.version>5.1</jetty.test.version>
+    <jetty.test.version>5.2</jetty.test.version>
   </properties>
 
   <licenses>

@@ -24,6 +24,7 @@ import javax.management.Attribute;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
+import javax.management.ObjectName;
 
 import com.acme.Derived;
 import com.acme.Managed;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,6 +54,46 @@ public class ObjectMBeanTest
     {
         container.destroy();
         container = null;
+    }
+
+    @Test
+    public void testMBeanForNull()
+    {
+        Object mBean = container.mbeanFor(null);
+        assertNull(mBean);
+    }
+
+    @Test
+    public void testMBeanForString()
+    {
+        String obj = "foo";
+        Object mbean = container.mbeanFor(obj);
+        assertNotNull(mbean);
+        container.beanAdded(null, obj);
+        ObjectName objectName = container.findMBean(obj);
+        assertNotNull(objectName);
+    }
+
+    @Test
+    public void testMBeanForStringArray()
+    {
+        String[] obj = {"a", "b"};
+        Object mbean = container.mbeanFor(obj);
+        assertNotNull(mbean);
+        container.beanAdded(null, obj);
+        ObjectName objectName = container.findMBean(obj);
+        assertNotNull(objectName);
+    }
+
+    @Test
+    public void testMBeanForIntArray()
+    {
+        int[] obj = {0, 1, 2};
+        Object mbean = container.mbeanFor(obj);
+        assertNotNull(mbean);
+        container.beanAdded(null, obj);
+        ObjectName objectName = container.findMBean(obj);
+        assertNotNull(objectName);
     }
 
     @Test
