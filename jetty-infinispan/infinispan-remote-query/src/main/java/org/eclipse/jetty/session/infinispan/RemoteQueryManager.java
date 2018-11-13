@@ -47,7 +47,7 @@ public class RemoteQueryManager implements QueryManager
     {              
         // TODO can the QueryFactory be created only once
         QueryFactory qf = Search.getQueryFactory(_cache);
-        Query q = qf.from(SessionData.class).select("id").having("expiry").lte(time).build();
+        Query q = qf.from(InfinispanSessionData.class).select("id").having("expiry").lte(time).build();
         
         List<Object[]> list = q.list(); 
         Set<String> ids = new HashSet<>();
