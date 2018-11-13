@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
@@ -180,7 +181,6 @@ public class HttpClient extends ContainerLifeCycle
     public HttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
     {
         this.transport = transport;
-        transport.setHttpClient(this);
         addBean(transport);
 
         if (sslContextFactory == null)
@@ -192,7 +192,12 @@ public class HttpClient extends ContainerLifeCycle
         addBean(sslContextFactory);
         addBean(handlers);
         addBean(decoderFactories);
-        addBean(new DumpableCollection("requestListeners", requestListeners));
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent, new DumpableCollection("requestListeners", requestListeners));
     }
 
     public HttpClientTransport getTransport()
@@ -241,6 +246,7 @@ public class HttpClient extends ContainerLifeCycle
         cookieManager = newCookieManager();
         cookieStore = cookieManager.getCookieStore();
 
+        transport.setHttpClient(this);
         super.doStart();
     }
 
