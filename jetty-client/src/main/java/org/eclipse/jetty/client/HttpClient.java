@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
@@ -70,6 +71,7 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -180,12 +182,23 @@ public class HttpClient extends ContainerLifeCycle
     public HttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
     {
         this.transport = transport;
+        addBean(transport);
+
         if (sslContextFactory == null)
         {
             sslContextFactory = new SslContextFactory(false);
             sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         }
         this.sslContextFactory = sslContextFactory;
+        addBean(sslContextFactory);
+        addBean(handlers);
+        addBean(decoderFactories);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent, new DumpableCollection("requestListeners", requestListeners));
     }
 
     public HttpClientTransport getTransport()
@@ -205,38 +218,24 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        // TODO use #addBean in constructor?
-        if (sslContextFactory != null)
-            addBean(sslContextFactory);
-
         if (executor == null)
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
             threadPool.setName(name);
-            executor = threadPool;
+            setExecutor(threadPool);
         }
-        // TODO use #updateBean in #setExecutor
-        addBean(executor);
-        
+
         if (byteBufferPool == null)
-            byteBufferPool = new MappedByteBufferPool(2048,
-                executor instanceof ThreadPool.SizedThreadPool
-                    ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads()/2
-                    : ProcessorUtils.availableProcessors()*2);
-        // TODO use #updateBean in #setByteBufferPool?
-        addBean(byteBufferPool);
+            setByteBufferPool(new MappedByteBufferPool(2048,
+                    executor instanceof ThreadPool.SizedThreadPool
+                            ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
+                            : ProcessorUtils.availableProcessors() * 2));
 
         if (scheduler == null)
-            scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
-        // TODO use #updateBean in #setScheduler?
-        addBean(scheduler);
-
-        transport.setHttpClient(this);
-        addBean(transport);
+            setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
 
         if (resolver == null)
-            resolver = new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout());
-        addBean(resolver);
+            setSocketAddressResolver(new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout()));
 
         handlers.put(new ContinueProtocolHandler());
         handlers.put(new RedirectProtocolHandler(this));
@@ -248,6 +247,7 @@ public class HttpClient extends ContainerLifeCycle
         cookieManager = newCookieManager();
         cookieStore = cookieManager.getCookieStore();
 
+        transport.setHttpClient(this);
         super.doStart();
     }
 
@@ -650,6 +650,9 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
+        if (isStarted())
+            LOG.warn("Calling setByteBufferPool() while started is deprecated");
+        updateBean(this.byteBufferPool, byteBufferPool);
         this.byteBufferPool = byteBufferPool;
     }
 
@@ -801,8 +804,9 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setExecutor(Executor executor)
     {
-        if (isRunning())
-            LOG.warn("setExecutor called when in {} state",getState());
+        if (isStarted())
+            LOG.warn("Calling setExecutor() while started is deprecated");
+        updateBean(this.executor, executor);
         this.executor = executor;
     }
 
@@ -819,6 +823,9 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setScheduler(Scheduler scheduler)
     {
+        if (isStarted())
+            LOG.warn("Calling setScheduler() while started is deprecated");
+        updateBean(this.scheduler, scheduler);
         this.scheduler = scheduler;
     }
 
@@ -835,6 +842,9 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setSocketAddressResolver(SocketAddressResolver resolver)
     {
+        if (isStarted())
+            LOG.warn("Calling setSocketAddressResolver() while started is deprecated");
+        updateBean(this.resolver, resolver);
         this.resolver = resolver;
     }
 

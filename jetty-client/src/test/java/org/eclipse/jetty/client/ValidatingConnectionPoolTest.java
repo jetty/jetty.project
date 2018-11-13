@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -43,13 +42,13 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 {
     @Override
-    protected void startClient(final Scenario scenario) throws Exception
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
     {
         long timeout = 1000;
-        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(1);
         transport.setConnectionPoolFactory(destination ->
                 new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
-        startClient(scenario, transport);
+
+        return super.newHttpClient(scenario, transport);
     }
 
     @ParameterizedTest

@@ -1493,10 +1493,14 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
             if (!_enabled)
                 throw new UnsupportedOperationException();
-            super.addListener(t);
+
+
+            checkListener(t.getClass());
+            
             ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAVAX_API);
             holder.setListener(t);
             getServletHandler().addListener(holder);
+            addProgrammaticListener(t);
         }
 
         @Override
