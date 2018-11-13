@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.nio.file.Path;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
@@ -64,17 +67,30 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startClient(final Scenario scenario) throws Exception
     {
-        startClient(scenario, new HttpClientTransportOverHTTP(1));
+        startClient(scenario, null,null);
     }
 
-    protected void startClient(final Scenario scenario, HttpClientTransport transport) throws Exception
+    protected void startClient(final Scenario scenario, HttpClientTransport transport, Consumer<HttpClient> config) throws Exception
     {
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        client = new HttpClient(transport, scenario.newSslContextFactory());
-        client.setExecutor(clientThreads);
+        if (transport==null)
+            transport = new HttpClientTransportOverHTTP(1);
+
+        QueuedThreadPool executor = new QueuedThreadPool();
+        executor.setName("client");
+        Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
+        client = newHttpClient(scenario, transport);
+        client.setExecutor(executor);
+        client.setScheduler(scheduler);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
+        if (config!=null)
+            config.accept(client);
+
         client.start();
+    }
+
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
+    {
+        return new HttpClient(transport, scenario.newSslContextFactory());
     }
 
     @AfterEach
