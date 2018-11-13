@@ -19,7 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.nio.file.Path;
-import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -67,30 +67,30 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startClient(final Scenario scenario) throws Exception
     {
-        startClient(scenario, new HttpClientTransportOverHTTP(1));
+        startClient(scenario, null,null);
     }
 
-    protected void startClient(final Scenario scenario, HttpClientTransport transport) throws Exception
+    protected void startClient(final Scenario scenario, HttpClientTransport transport, Consumer<HttpClient> config) throws Exception
     {
         if (transport==null)
             transport = new HttpClientTransportOverHTTP(1);
 
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
+        QueuedThreadPool executor = new QueuedThreadPool();
+        executor.setName("client");
         Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
-        client = newHttpClient(scenario, transport, clientThreads, scheduler, null);
+        client = newHttpClient(scenario, transport);
+        client.setExecutor(executor);
+        client.setScheduler(scheduler);
+        client.setSocketAddressResolver(new SocketAddressResolver.Sync());
+        if (config!=null)
+            config.accept(client);
+
         client.start();
     }
 
-    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport, Executor executor, Scheduler scheduler, SocketAddressResolver resolver)
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
     {
-        HttpClient client = new HttpClient(transport, scenario.newSslContextFactory());
-        client.setExecutor(executor);
-        client.setScheduler(scheduler);
-        if (resolver==null)
-            resolver = new SocketAddressResolver.Sync();
-        client.setSocketAddressResolver(resolver);
-        return client;
+        return new HttpClient(transport, scenario.newSslContextFactory());
     }
 
     @AfterEach

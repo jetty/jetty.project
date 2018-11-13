@@ -54,7 +54,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -100,7 +99,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -113,41 +111,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 {
     public WorkDir testdir;
 
-    public boolean asyncResolver = false;
-
-    @Override
-    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport, Executor executor, Scheduler scheduler, SocketAddressResolver resolver)
-    {
-        if (asyncResolver && resolver==null)
-        {
-            resolver = new SocketAddressResolver.Async(executor, scheduler, 5000)
-            {
-                @Override
-                public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
-                {
-                    super.resolve(host, port, new Promise<List<InetSocketAddress>>()
-                    {
-                        @Override
-                        public void succeeded(List<InetSocketAddress> result)
-                        {
-                            // Add as first address an invalid address so that we test
-                            // that the connect operation iterates over the addresses.
-                            result.add(0, new InetSocketAddress("idontexist", port));
-                            promise.succeeded(result);
-                        }
-
-                        @Override
-                        public void failed(Throwable x)
-                        {
-                            promise.failed(x);
-                        }
-                    });
-                }
-            };
-        }
-
-        return super.newHttpClient(scenario, transport, executor, scheduler, resolver);
-    }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
@@ -918,8 +881,34 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testConnectHostWithMultipleAddresses(Scenario scenario) throws Exception
     {
-        asyncResolver = true;
-        start(scenario, new EmptyServerHandler());
+        startServer(scenario, new EmptyServerHandler());
+        startClient(scenario, null, client ->
+        {
+            client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), 5000)
+            {
+                @Override
+                public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+                {
+                    super.resolve(host, port, new Promise<List<InetSocketAddress>>()
+                    {
+                        @Override
+                        public void succeeded(List<InetSocketAddress> result)
+                        {
+                            // Add as first address an invalid address so that we test
+                            // that the connect operation iterates over the addresses.
+                            result.add(0, new InetSocketAddress("idontexist", port));
+                            promise.succeeded(result);
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            promise.failed(x);
+                        }
+                    });
+                }
+            });
+        });
 
         // If no exceptions the test passes.
         client.newRequest("localhost", connector.getLocalPort())

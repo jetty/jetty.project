@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -31,31 +30,25 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 {
     @Override
-    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport, Executor executor, Scheduler scheduler, SocketAddressResolver resolver)
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
     {
-        if (transport==null)
-            transport = new HttpClientTransportOverHTTP(1);
-
         long timeout = 1000;
         transport.setConnectionPoolFactory(destination ->
                 new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
 
-        return super.newHttpClient(scenario, transport, executor, scheduler, resolver);
+        return super.newHttpClient(scenario, transport);
     }
 
     @ParameterizedTest
