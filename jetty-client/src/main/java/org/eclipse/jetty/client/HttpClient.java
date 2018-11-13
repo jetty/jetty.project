@@ -218,27 +218,20 @@ public class HttpClient extends ContainerLifeCycle
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
             threadPool.setName(name);
-            executor = threadPool;
-            addBean(executor);
+            setExecutor(threadPool);
         }
 
         if (byteBufferPool == null)
-        {
-            byteBufferPool = new MappedByteBufferPool(2048,
+            setByteBufferPool(new MappedByteBufferPool(2048,
                     executor instanceof ThreadPool.SizedThreadPool
                             ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
-                            : ProcessorUtils.availableProcessors() * 2);
-            addBean(byteBufferPool);
-        }
+                            : ProcessorUtils.availableProcessors() * 2));
 
         if (scheduler == null)
             setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
 
         if (resolver == null)
-        {
-            resolver = new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout());
-            addBean(resolver);
-        }
+            setSocketAddressResolver(new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout()));
 
         handlers.put(new ContinueProtocolHandler());
         handlers.put(new RedirectProtocolHandler(this));
@@ -652,7 +645,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
-        if (isRunning())
+        if (isStarted())
             throw new IllegalStateException(getState());
         updateBean(this.byteBufferPool, byteBufferPool);
         this.byteBufferPool = byteBufferPool;
@@ -806,7 +799,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setExecutor(Executor executor)
     {
-        if (isRunning())
+        if (isStarted())
             throw new IllegalStateException(getState());
         updateBean(this.executor, executor);
         this.executor = executor;
@@ -844,7 +837,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setSocketAddressResolver(SocketAddressResolver resolver)
     {
-        if (isRunning())
+        if (isStarted())
             throw new IllegalStateException(getState());
         updateBean(this.resolver, resolver);
         this.resolver = resolver;
