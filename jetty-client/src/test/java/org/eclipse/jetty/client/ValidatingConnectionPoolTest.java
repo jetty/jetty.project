@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -50,12 +49,11 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
     public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport, Executor executor, Scheduler scheduler, SocketAddressResolver resolver)
     {
         if (transport==null)
-        {
-            long timeout = 1000;
             transport = new HttpClientTransportOverHTTP(1);
-            transport.setConnectionPoolFactory(destination ->
+
+        long timeout = 1000;
+        transport.setConnectionPoolFactory(destination ->
                 new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
-        }
 
         return super.newHttpClient(scenario, transport, executor, scheduler, resolver);
     }
