@@ -97,9 +97,6 @@ public class CustomRequestLogTest
     }
 
 
-
-
-
     @Test
     public void testDoublePercent() throws Exception
     {
@@ -507,29 +504,7 @@ public class CustomRequestLogTest
     }
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
 
     private class Log extends CustomRequestLog
     {

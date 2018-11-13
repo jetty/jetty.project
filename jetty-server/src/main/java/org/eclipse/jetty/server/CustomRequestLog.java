@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -533,53 +535,103 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         MethodHandle append = MethodHandles.lookup().findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
         MethodHandle logHandle = dropArguments(dropArguments(append.bindTo("\n"), 1, Request.class), 2, Response.class);
 
-        final Pattern PERCENT_CODE = Pattern.compile("(?<remaining>.*)%(?<modifiers>!?[0-9,]+)?(?:\\{(?<arg>[^{}]+)})?(?<code>[a-zA-Z%])");
-        final Pattern LITERAL = Pattern.compile("(?<remaining>.*%(?:!?[0-9,]+)?(?:\\{[^{}]+})?[a-zA-Z%])(?<literal>.*)");
+        List<Token> tokens = getTokens(formatString);
+        Collections.reverse(tokens);
 
-        String remaining = formatString;
-        while(remaining.length()>0)
+        for (Token t : tokens)
         {
-            Matcher m = PERCENT_CODE.matcher(remaining);
-            if (m.matches())
-            {
-                String code = m.group("code");
-                String arg = m.group("arg");
-                String modifierString = m.group("modifiers");
-                Boolean negated = false;
-
-                if (modifierString != null)
-                {
-                    if (modifierString.startsWith("!"))
-                    {
-                        modifierString = modifierString.substring(1);
-                        negated = true;
-                    }
-                }
-
-                List<String> modifiers = new QuotedCSV(modifierString).getValues();
-
-                logHandle = updateLogHandle(logHandle, append, code, arg, modifiers, negated);
-                remaining = m.group("remaining");
-                continue;
-            }
-
-            Matcher m2 = LITERAL.matcher(remaining);
-            String literal;
-            if (m2.matches())
-            {
-                literal = m2.group("literal");
-                remaining = m2.group("remaining");
-            }
+            if (t.isLiteralString())
+                logHandle = updateLogHandle(logHandle, append, t.literal);
             else
-            {
-                literal = remaining;
-                remaining = "";
-            }
-            logHandle = updateLogHandle(logHandle, append, literal);
+                logHandle = updateLogHandle(logHandle, append, t.code, t.arg, t.modifiers, t.negated);
         }
 
         return logHandle;
     }
+
+
+    private static List<Token> getTokens(String formatString)
+    {
+        final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)");
+
+        List<Token> tokens = new ArrayList<>();
+        String remaining = formatString;
+        while(remaining.length()>0)
+        {
+            Matcher m = PATTERN.matcher(remaining);
+            if (m.matches())
+            {
+                if (m.group("CODE") != null)
+                {
+                    String code = m.group("CODE");
+                    String arg = m.group("ARG");
+                    String modifierString = m.group("MOD");
+
+                    Boolean negated = false;
+                    if (modifierString != null)
+                    {
+                        if (modifierString.startsWith("!"))
+                        {
+                            modifierString = modifierString.substring(1);
+                            negated = true;
+                        }
+                    }
+
+                    List<String> modifiers = new QuotedCSV(modifierString).getValues();
+                    tokens.add(new Token(code, arg, modifiers, negated));
+                }
+                else if (m.group("LITERAL") != null)
+                {
+                    String literal = m.group("LITERAL");
+                    tokens.add(new Token(literal));
+                }
+                else
+                {
+                    throw new IllegalStateException("formatString parsing error");
+                }
+
+                remaining = m.group("REMAINING");
+            }
+            else
+            {
+                throw new IllegalArgumentException("Invalid format string");
+            }
+        }
+
+        return tokens;
+    }
+
+
+    private static class Token
+    {
+        public boolean isLiteralString()
+        {
+            return(literal != null);
+        }
+        public boolean isPercentCode()
+        {
+            return(code != null);
+        }
+        public String code = null;
+        public String arg = null;
+        public List<String> modifiers = null;
+        public boolean negated = false;
+
+        public String literal = null;
+
+        public Token(String code, String arg, List<String> modifiers, boolean negated)
+        {
+            this.code = code;
+            this.arg = arg;
+            this.modifiers = modifiers;
+            this.negated = negated;
+        }
+        public Token(String literal)
+        {
+            this.literal = literal;
+        }
+    }
+
 
 
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
@@ -607,12 +659,12 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         MethodType logType = methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class);
         MethodType logTypeArg = methodType(Void.TYPE, String.class, StringBuilder.class, Request.class, Response.class);
 
+        //TODO should we throw IllegalArgumentExceptions when given arguments for codes which do not take them 
         MethodHandle specificHandle;
         switch (code)
         {
             case "%":
             {
-                //TODO problems handling "%%a" as parsing starts from right and will first interpret "%a" rather than %%
                 specificHandle = dropArguments(dropArguments(append.bindTo("%"), 1, Request.class), 2, Response.class);
                 break;
             }
@@ -623,8 +675,8 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
                 if (arg != null)
                 {
-                    if (!arg.equals("c")) //todo illegal argument?
-                        LOG.warn("Argument of %a which is not 'c'");
+                    if (!arg.equals("c"))
+                        throw new IllegalArgumentException("Argument of %a which is not 'c'");
 
                     method = "logConnectionIP";
                 }
@@ -917,8 +969,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
 
             default:
-                LOG.warn("Unsupported code %{}", code);
-                return logHandle;
+                throw new IllegalArgumentException("Unsupported code %" + code);
         }
 
         if (modifiers != null && !modifiers.isEmpty())
@@ -942,35 +993,35 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     //-----------------------------------------------------------------------------------//
 
 
-    public static void logClientIP(StringBuilder b, Request request, Response response)
+    private static void logClientIP(StringBuilder b, Request request, Response response)
     {
         append(b, request.getRemoteAddr());
     }
 
-    public static void logConnectionIP(StringBuilder b, Request request, Response response)
+    private static void logConnectionIP(StringBuilder b, Request request, Response response)
     {
         //todo don't think this is correct
         append(b, request.getHeader(HttpHeader.X_FORWARDED_FOR.toString()));
     }
 
-    public static void logLocalIP(StringBuilder b, Request request, Response response)
+    private static void logLocalIP(StringBuilder b, Request request, Response response)
     {
         append(b, request.getLocalAddr());
     }
 
-    public static void logResponseSize(StringBuilder b, Request request, Response response)
+    private static void logResponseSize(StringBuilder b, Request request, Response response)
     {
         long written = response.getHttpChannel().getBytesWritten();
         b.append(Long.toString(written));
     }
 
-    public static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
+    private static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
     {
         long written = response.getHttpChannel().getBytesWritten();
         b.append((written==0) ? "-" : Long.toString(written));
     }
 
-    public static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
+    private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
         //todo should this be logging full cookie or its value, can you log multiple cookies, can multiple cookies have the same name
         for (Cookie c : request.getCookies())
@@ -985,163 +1036,163 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         b.append("-");
     }
 
-    public static void logEnvironmentVar(String arg, StringBuilder b, Request request, Response response)
+    private static void logEnvironmentVar(String arg, StringBuilder b, Request request, Response response)
     {
         append(b, System.getenv(arg));
     }
 
-    public static void logFilename(StringBuilder b, Request request, Response response)
+    private static void logFilename(StringBuilder b, Request request, Response response)
     {
         //TODO probably wrong, getRealPath?
         append(b, request.getContextPath());
     }
 
-    public static void logRemoteHostName(StringBuilder b, Request request, Response response)
+    private static void logRemoteHostName(StringBuilder b, Request request, Response response)
     {
         append(b, request.getRemoteHost());
     }
 
-    public static void logRequestProtocol(StringBuilder b, Request request, Response response)
+    private static void logRequestProtocol(StringBuilder b, Request request, Response response)
     {
         append(b, request.getProtocol());
     }
 
-    public static void logRequestHeader(String arg, StringBuilder b, Request request, Response response)
+    private static void logRequestHeader(String arg, StringBuilder b, Request request, Response response)
     {
         //TODO does this need to do multiple headers 'request.getHeaders(arg)'
         append(b, request.getHeader(arg));
     }
 
-    public static void logKeepAliveRequests(StringBuilder b, Request request, Response response)
+    private static void logKeepAliveRequests(StringBuilder b, Request request, Response response)
     {
         //todo verify this "number of requests on this connection? what about http2?"
         b.append(request.getHttpChannel().getRequests());
     }
 
-    public static void logRequestMethod(StringBuilder b, Request request, Response response)
+    private static void logRequestMethod(StringBuilder b, Request request, Response response)
     {
         append(b, request.getMethod());
     }
 
-    public static void logResponseHeader(String arg, StringBuilder b, Request request, Response response)
+    private static void logResponseHeader(String arg, StringBuilder b, Request request, Response response)
     {
         //TODO does this need to do multiple headers 'Response.getHeaders(arg)'
         append(b, response.getHeader(arg));
     }
 
 
-    public static void logCanonicalPort(StringBuilder b, Request request, Response response)
+    private static void logCanonicalPort(StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logLocalPort(StringBuilder b, Request request, Response response)
+    private static void logLocalPort(StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logRemotePort(StringBuilder b, Request request, Response response)
+    private static void logRemotePort(StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logQueryString(StringBuilder b, Request request, Response response)
+    private static void logQueryString(StringBuilder b, Request request, Response response)
     {
         append(b, "?"+request.getQueryString());
     }
 
-    public static void logRequestFirstLine(StringBuilder b, Request request, Response response)
+    private static void logRequestFirstLine(StringBuilder b, Request request, Response response)
     {
         //todo is there a better way to do this
         append(b, request.getMethod() + " " + request.getOriginalURI() + " " + request.getProtocol());
     }
 
-    public static void logRequestHandler(StringBuilder b, Request request, Response response)
+    private static void logRequestHandler(StringBuilder b, Request request, Response response)
     {
         //todo verify
         append(b, request.getServletName());
     }
 
-    public static void logResponseStatus(StringBuilder b, Request request, Response response)
+    private static void logResponseStatus(StringBuilder b, Request request, Response response)
     {
         b.append(response.getStatus());
     }
 
-    public static void logRequestTime(DateCache dateCache, StringBuilder b, Request request, Response response)
+    private static void logRequestTime(DateCache dateCache, StringBuilder b, Request request, Response response)
     {
         b.append(dateCache.format(request.getTimeStamp()));
     }
 
-    public static void logLatencyMicroseconds(StringBuilder b, Request request, Response response)
+    private static void logLatencyMicroseconds(StringBuilder b, Request request, Response response)
     {
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(TimeUnit.MILLISECONDS.toMicros(latency));
     }
 
-    public static void logLatencyMilliseconds(StringBuilder b, Request request, Response response)
+    private static void logLatencyMilliseconds(StringBuilder b, Request request, Response response)
     {
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(latency);
     }
 
-    public static void logLatencySeconds(StringBuilder b, Request request, Response response)
+    private static void logLatencySeconds(StringBuilder b, Request request, Response response)
     {
         //todo should this give decimal places
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(TimeUnit.MILLISECONDS.toSeconds(latency));
     }
 
-    public static void logRequestAuthentication(StringBuilder b, Request request, Response response)
+    private static void logRequestAuthentication(StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logUrlRequestPath(StringBuilder b, Request request, Response response)
+    private static void logUrlRequestPath(StringBuilder b, Request request, Response response)
     {
         //todo verify if this contains the query string
         append(b, request.getRequestURI());
     }
 
-    public static void logServerName(StringBuilder b, Request request, Response response)
+    private static void logServerName(StringBuilder b, Request request, Response response)
     {
         append(b, request.getServerName());
     }
 
-    public static void logConnectionStatus(StringBuilder b, Request request, Response response)
+    private static void logConnectionStatus(StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logBytesReceived(StringBuilder b, Request request, Response response)
+    private static void logBytesReceived(StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logBytesSent(StringBuilder b, Request request, Response response)
+    private static void logBytesSent(StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logBytesTransferred(StringBuilder b, Request request, Response response)
+    private static void logBytesTransferred(StringBuilder b, Request request, Response response)
     {
         //todo implement: bytesTransferred = bytesReceived+bytesSent
         append(b, "?");
     }
 
-    public static void logRequestTrailerLines(String arg, StringBuilder b, Request request, Response response)
+    private static void logRequestTrailerLines(String arg, StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
     }
 
-    public static void logResponseTrailerLines(String arg, StringBuilder b, Request request, Response response)
+    private static void logResponseTrailerLines(String arg, StringBuilder b, Request request, Response response)
     {
         //todo implement
         append(b, "?");
