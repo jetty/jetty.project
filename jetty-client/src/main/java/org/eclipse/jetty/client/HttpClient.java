@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
@@ -71,7 +70,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -646,7 +644,7 @@ public class HttpClient extends ContainerLifeCycle
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
         if (isStarted())
-            throw new IllegalStateException(getState());
+            LOG.warn("Calling setByteBufferPool() while started is deprecated");
         updateBean(this.byteBufferPool, byteBufferPool);
         this.byteBufferPool = byteBufferPool;
     }
@@ -800,7 +798,7 @@ public class HttpClient extends ContainerLifeCycle
     public void setExecutor(Executor executor)
     {
         if (isStarted())
-            throw new IllegalStateException(getState());
+            LOG.warn("Calling setExecutor() while started is deprecated");
         updateBean(this.executor, executor);
         this.executor = executor;
     }
@@ -819,7 +817,7 @@ public class HttpClient extends ContainerLifeCycle
     public void setScheduler(Scheduler scheduler)
     {
         if (isStarted())
-            throw new IllegalStateException(getState());
+            LOG.warn("Calling setScheduler() while started is deprecated");
         updateBean(this.scheduler, scheduler);
         this.scheduler = scheduler;
     }
@@ -838,7 +836,7 @@ public class HttpClient extends ContainerLifeCycle
     public void setSocketAddressResolver(SocketAddressResolver resolver)
     {
         if (isStarted())
-            throw new IllegalStateException(getState());
+            LOG.warn("Calling setSocketAddressResolver() while started is deprecated");
         updateBean(this.resolver, resolver);
         this.resolver = resolver;
     }
