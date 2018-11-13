@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -43,10 +44,12 @@ import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,10 +58,11 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 {
     @Override
-    public void start(Scenario scenario, Handler handler) throws Exception
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport, Executor executor, Scheduler scheduler, SocketAddressResolver resolver)
     {
-        super.start(scenario, handler);
+        HttpClient client = super.newHttpClient(scenario, transport, executor, scheduler, resolver);
         client.setStrictEventOrdering(false);
+        return client;
     }
 
     @ParameterizedTest

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.nio.file.Path;
+import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
@@ -69,12 +72,25 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startClient(final Scenario scenario, HttpClientTransport transport) throws Exception
     {
+        if (transport==null)
+            transport = new HttpClientTransportOverHTTP(1);
+
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(transport, scenario.newSslContextFactory());
-        client.setExecutor(clientThreads);
-        client.setSocketAddressResolver(new SocketAddressResolver.Sync());
+        Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
+        client = newHttpClient(scenario, transport, clientThreads, scheduler, null);
         client.start();
+    }
+
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport, Executor executor, Scheduler scheduler, SocketAddressResolver resolver)
+    {
+        HttpClient client = new HttpClient(transport, scenario.newSslContextFactory());
+        client.setExecutor(executor);
+        client.setScheduler(scheduler);
+        if (resolver==null)
+            resolver = new SocketAddressResolver.Sync();
+        client.setSocketAddressResolver(resolver);
+        return client;
     }
 
     @AfterEach
