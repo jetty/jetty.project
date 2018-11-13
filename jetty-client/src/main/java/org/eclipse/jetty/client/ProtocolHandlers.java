@@ -103,6 +103,6 @@ public class ProtocolHandlers implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this.toString(), handlers);
+        Dumpable.dumpObjects(out, indent, this, handlers);
     }
 }
