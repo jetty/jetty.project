@@ -57,7 +57,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "javadoc:javadoc")
+            mavenBuild("jdk8", "install javadoc:javadoc -DskipTests")
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
           }
         }
@@ -66,7 +66,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "-Pcompact3 package")
+            mavenBuild("jdk8", "-Pcompact3 install -DskipTests")
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
           }
         }
@@ -75,7 +75,15 @@ pipeline {
   }
 }
 
-
+/**
+ * To other developers, if you are using this method above, please use the following syntax.
+ *
+ * mavenBuild("<jdk>", "<profiles> <goals> <plugins> <properties>"
+ *
+ * @param jdk the jdk tool name (in jenkins) to use for this build
+ * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
+ * @return the Jenkinsfile step representing a maven build
+ */
 def mavenBuild(jdk, cmdline) {
   def mvnName = 'maven3.5'
   def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
