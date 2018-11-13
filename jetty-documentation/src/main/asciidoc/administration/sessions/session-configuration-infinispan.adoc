@@ -179,3 +179,44 @@ In a clustered environment, there is a risk of the last access time of the sessi
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
 ____
+
+==== Converting session format for jetty-9.4.13
+
+From jetty-9.4.13 onwards, we have changed the format of the serialized session when using a remote cache (ie using hotrod).
+Prior to release 9.4.13 we used the default Infinispan serialization, however this was not able to store sufficient information to allow jetty to properly deserialize session attributes in all circumstances.
+See issue https://github.com/eclipse/jetty.project/issues/2919 for more background.
+
+We have provided a conversion program which will convert any sessions stored in Infinispan to the new format.
+____
+[IMPORTANT]
+We recommend that you backup your stored sessions before running the conversion program.
+____
+
+How to use the converter:
+
+[source, screen, subs="{sub-order}"]
+----
+java -cp servlet-api-3.1.jar:jetty-util-9.4.13.jar:jetty-server-9.4.13.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-9.4.13.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
+
+Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true|false] <cache-name> [check]
+----
+
+The classpath::
+Must contain the servlet-api, jetty-util, jetty-server, jetty-infinispan and infinispan-remote jars. If your sessions contain attributes that use application classes, you will also need to also put those classes onto the classpath. If your session has been authenticated, you may also need to include the jetty-security and jetty-http jars on the classpath.
+Parameters::
+When used with no arguments the usage message is printed. When used with the `cache-name` parameter the conversion is performed. When used with both `cache-name` and `check` parameters, sessions are checked for whether or not they are converted.
+
+ -Dhost:::  you can optionally provide a system property with the address of your remote Infinispan server. Defaults to the localhost.
+ -Dverbose::: defaults to false. If true, prints more comprehensive stacktrace information about failures. Useful to diagnose why a session is not converted.
+ cache-name::: the name of the remote cache containing your sessions. This is mandatory.
+ check::: the optional check command will verify sessions have been converted. Use it _after_ doing the conversion.
+
+To perform the conversion, run the InfinispanSessionLegacyConverter with just the `cache-name`, and optionally the `host` system property.
+The following command will attempt to convert all sessions in the cached named `my-remote-cache` on the machine `myhost`, ensuring that application classes in the `/my/custom/classes` directory are on the classpath:
+
+[source, screen, subs="{sub-order}"]
+----
+java -cp servlet-api-3.1.jar:jetty-util-9.4.13.jar:jetty-server-9.4.13.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-9.4.13.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
+----
+
+If the converter fails to convert a session, an error message and stacktrace will be printed and the conversion will abort. The failed session should be untouched, however _it is prudent to take a backup of your cache before attempting the conversion_.

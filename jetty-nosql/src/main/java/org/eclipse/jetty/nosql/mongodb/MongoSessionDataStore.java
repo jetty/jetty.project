@@ -19,15 +19,19 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
@@ -86,9 +90,9 @@ import com.mongodb.WriteResult;
  * </pre>
  * <p>
  * In MongoDB, the nesting level is indicated by "." separators for the key name. Thus to
- * interact with a session attribute, the key is composed of:
- * <code>"context".unique_context_name.attribute_name</code>
- *  Eg  <code>"context"."0_0_0_0:_testA"."A"</code>
+ * interact with session fields, the key is composed of:
+ * <code>"context".unique_context_name.field_name</code>
+ *  Eg  <code>"context"."0_0_0_0:_testA"."lastSaved"</code>
  *  
  * 
  */
@@ -127,6 +131,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     
     
     public final static String __LAST_ACCESSED = "lastAccessed";
+    
+    public final static String __ATTRIBUTES = "attributes";
     
     /**
      * Time this session will expire, based on last access time and maxIdle
@@ -178,107 +184,98 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
     
   
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
-     */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
-        final AtomicReference<SessionData> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-        Runnable r = new Runnable()
+        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
+
+        try
         {
-            @Override
-            public void run ()
+            if (LOG.isDebugEnabled())
+                LOG.debug("id={} loaded={}", id, sessionDocument);
+
+            if (sessionDocument == null)
+                return null;
+
+            Boolean valid = (Boolean)sessionDocument.get(__VALID);   
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("id={} valid={}", id, valid);
+            if (valid == null || !valid)
+                return null;
+
+            Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
+            Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
+            String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
+            byte[] attributes = (byte[])MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__ATTRIBUTES));
+
+            Long created = (Long)sessionDocument.get(__CREATED);
+            Long accessed = (Long)sessionDocument.get(__ACCESSED);
+            Long lastAccessed = (Long)sessionDocument.get(__LAST_ACCESSED);
+            Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
+            Long expiry = (Long)sessionDocument.get(__EXPIRY);          
+
+            NoSqlSessionData data = null;
+
+            // get the session for the context
+            DBObject sessionSubDocumentForContext = (DBObject)MongoUtils.getNestedValue(sessionDocument,getContextField());
+
+            if (LOG.isDebugEnabled()) LOG.debug("attrs {}", sessionSubDocumentForContext);
+
+            if (sessionSubDocumentForContext != null)
             {
-                try
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session {} present for context {}", id, _context);
+
+                //only load a session if it exists for this context
+                data = (NoSqlSessionData)newSessionData(id, created, accessed, (lastAccessed == null? accessed:lastAccessed), maxInactive);
+                data.setVersion(version);
+                data.setExpiry(expiry);
+                data.setContextPath(_context.getCanonicalContextPath());
+                data.setVhost(_context.getVhost());
+                data.setLastSaved(lastSaved);
+                data.setLastNode(lastNode);
+                
+                if (attributes == null)
                 {
-                    DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("id={} loaded={}", id, sessionDocument);
-                    
-                    if (sessionDocument == null)
-                        return;
-
-                    Boolean valid = (Boolean)sessionDocument.get(__VALID);   
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("id={} valid={}", id, valid);
-                    if (valid == null || !valid)
-                        return;
-
-                    Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
-                    Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
-                    String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
-
-                    Long created = (Long)sessionDocument.get(__CREATED);
-                    Long accessed = (Long)sessionDocument.get(__ACCESSED);
-                    Long lastAccessed = (Long)sessionDocument.get(__LAST_ACCESSED);
-                    Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
-                    Long expiry = (Long)sessionDocument.get(__EXPIRY);          
-                    
-                    NoSqlSessionData data = null;
-
-                    // get the session for the context
-                    DBObject sessionSubDocumentForContext = (DBObject)MongoUtils.getNestedValue(sessionDocument,getContextField());
-
-                    if (LOG.isDebugEnabled()) LOG.debug("attrs {}", sessionSubDocumentForContext);
-
-                    if (sessionSubDocumentForContext != null)
+                    //legacy attribute storage format: the attributes are all fields in the document
+                    Map<String, Object> map = new HashMap<>();
+                    for (String name : sessionSubDocumentForContext.keySet())
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Session {} present for context {}", id, _context);
-
-                        //only load a session if it exists for this context
-                        data = (NoSqlSessionData)newSessionData(id, created, accessed, (lastAccessed == null? accessed:lastAccessed), maxInactive);
-                        data.setVersion(version);
-                        data.setExpiry(expiry);
-                        data.setContextPath(_context.getCanonicalContextPath());
-                        data.setVhost(_context.getVhost());
-                        data.setLastSaved(lastSaved);
-                        data.setLastNode(lastNode);
-
-                        HashMap<String, Object> attributes = new HashMap<>();
-                        for (String name : sessionSubDocumentForContext.keySet())
-                        {
-                            //skip special metadata attribute which is not one of the actual session attributes
-                            if ( __METADATA.equals(name) )
-                                continue;         
-                            String attr = MongoUtils.decodeName(name);
-                            Object value = MongoUtils.decodeValue(sessionSubDocumentForContext.get(name));
-                            attributes.put(attr,value);
-                        }
-
-                        data.putAllAttributes(attributes);
+                        //skip special metadata attribute which is not one of the actual session attributes
+                        if ( __METADATA.equals(name) )
+                            continue;         
+                        String attr = MongoUtils.decodeName(name);
+                        Object value = MongoUtils.decodeValue(sessionSubDocumentForContext.get(name));
+                        map.put(attr,value);
                     }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Session  {} not present for context {}", id, _context);        
-                    }
-
-                    reference.set(data);
+                    data.putAllAttributes(map);
                 }
-                catch (Exception e)
+                else
                 {
-                    exception.set(new UnreadableSessionDataException(id, _context, e));
+                    //attributes have special serialized format
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
+                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);)
+                    {
+                        SessionData.deserializeAttributes(data, ois);
+                    }
                 }
             }
-        };
-        
-        _context.run(r);
-        
-        if (exception.get() != null)
-            throw exception.get();
-        
-        return reference.get();
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session  {} not present for context {}", id, _context);        
+            }
+
+            return data;
+        }
+        catch (Exception e)
+        {
+            throw (new UnreadableSessionDataException(id, _context, e));
+        }
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(String)
-     */
+
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -290,7 +287,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
          * associated with this session
          */
         BasicDBObject mongoKey = new BasicDBObject(__ID, id);
-        
+
         //DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version_1);
         DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
 
@@ -336,9 +333,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     
     
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -371,9 +365,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -459,9 +450,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         return expiredSessions;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
+
     public void initialize (SessionContext context) throws Exception
     {
         if (isStarted())
@@ -470,9 +459,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         ensureIndexes();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long) 
-     */
+
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {   
@@ -483,7 +470,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         BasicDBObject update = new BasicDBObject();
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
-        BasicDBObject unsets = new BasicDBObject();
+       
         
         Object version = ((NoSqlSessionData)data).getVersion();
         
@@ -532,29 +519,17 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         sets.put(__ACCESSED, data.getAccessed());
         sets.put(__LAST_ACCESSED, data.getLastAccessed());
-
-        Set<String> names = ((NoSqlSessionData)data).takeDirtyAttributes();
-
-        if (lastSaveTime <= 0)
-        {         
-            names.addAll(((NoSqlSessionData)data).getAllAttributeNames()); // note dirty may include removed names
-        }
-
-
-        for (String name : names)
+        
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos);)
         {
-            Object value = data.getAttribute(name);
-            if (value == null)
-                unsets.put(getContextField() + "." + MongoUtils.encodeName(name),1);
-            else
-                sets.put(getContextField() + "." + MongoUtils.encodeName(name), MongoUtils.encodeName(value));
+            SessionData.serializeAttributes(data, oos);       
+            sets.put(getContextSubfield(__ATTRIBUTES), baos.toByteArray());
         }
 
         // Do the upsert
         if (!sets.isEmpty())
             update.put("$set",sets);
-        if (!unsets.isEmpty())
-            update.put("$unset",unsets);
 
         WriteResult res = _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
         if (LOG.isDebugEnabled())
@@ -584,9 +559,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         //TODO perhaps index on expiry time?
     }
 
-
-
-    /*------------------------------------------------------------ */
     private String getContextField ()
     {
         return __CONTEXT + "." + getCanonicalContextId();
@@ -613,9 +585,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
     
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
     @ManagedAttribute(value="does store serialize sessions", readonly=true)
     @Override
     public boolean isPassivating()
@@ -624,14 +593,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
-     */
+
     @Override
     public String toString()
     {
         return String.format("%s[collection=%s]", super.toString(),getDBCollection());
     }
 
-    
 }

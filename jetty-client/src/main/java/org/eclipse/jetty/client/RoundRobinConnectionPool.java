@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 
 @ManagedObject
 public class RoundRobinConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable
@@ -192,8 +192,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
         {
             connections = new ArrayList<>(entries);
         }
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, connections);
+        Dumpable.dumpObjects(out, indent, out, connections);
     }
 
     @Override

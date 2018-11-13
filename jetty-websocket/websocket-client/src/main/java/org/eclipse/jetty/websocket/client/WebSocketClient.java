@@ -603,9 +603,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     }
 
     /**
-     * @param bindAddress
-     *            the address to bind to
-     * @deprecated (this is a bad bad bad typo) use {@link #setBindAddress(SocketAddress)} instead
+     * @param bindAddress the address to bind to
+     * @deprecated (this is a bad bad bad typo) use {@link HttpClient#setBindAddress(SocketAddress)}
+     * on instance passed to {@link #WebSocketClient(HttpClient)}
      */
     @Deprecated
     public void setBindAdddress(SocketAddress bindAddress)
@@ -613,11 +613,23 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         setBindAddress(bindAddress);
     }
 
+
+    /**
+     * @param bindAddress the address to bind to
+     * @deprecated Use {@link HttpClient#setBindAddress(SocketAddress)}
+     * on instance passed to {@link #WebSocketClient(HttpClient)}
+     */
+    @Deprecated
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.httpClient.setBindAddress(bindAddress);
     }
 
+    /**
+     * @param bufferPool The buffer pool
+     * @deprecated Use {@link HttpClient#setByteBufferPool(ByteBufferPool)}
+     * on the instance passed to {@link #WebSocketClient(HttpClient)}
+     */
     public void setBufferPool(ByteBufferPool bufferPool)
     {
         this.httpClient.setByteBufferPool(bufferPool);
@@ -625,15 +637,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Set the timeout for connecting to the remote server.
-     *
-     * @param ms
-     *            the timeout in milliseconds
+     * @param ms the timeout in millisecondspool
+     * @deprecated Use {@link HttpClient#setConnectTimeout(long)}
+     * on the instance passed to {@link #WebSocketClient(HttpClient)}
      */
     public void setConnectTimeout(long ms)
     {
         this.httpClient.setConnectTimeout(ms);
     }
 
+    /**
+     * @param cookieStore The cookie store
+     * @deprecated Use {@link HttpClient#setCookieStore(CookieStore)} on the HttpClient instance passed
+     * to {@link #WebSocketClient(HttpClient)}
+     */
+    @Deprecated
     public void setCookieStore(CookieStore cookieStore)
     {
         this.httpClient.setCookieStore(cookieStore);
@@ -655,6 +673,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.httpClient.setDispatchIO(dispatchIO);
     }
 
+    /**
+     * @param executor The executor to use
+     * @deprecated Use {@link HttpClient#setExecutor(Executor)}
+     * on the instance passed to {@link #WebSocketClient(HttpClient)}
+     */
+    @Deprecated
     public void setExecutor(Executor executor)
     {
         this.httpClient.setExecutor(executor);
@@ -680,8 +704,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * <p>
      * Existing connections will not have their max idle timeout adjusted.
      *
-     * @param ms
-     *            the timeout in milliseconds
+     * @param ms the timeout in milliseconds
      */
     public void setMaxIdleTimeout(long ms)
     {
@@ -692,13 +715,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public void setMaxTextMessageBufferSize(int max)
     {
         getPolicy().setMaxTextMessageBufferSize(max);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpThis(out);
-        dump(out,indent,getOpenSessions());
     }
 
     public HttpClient getHttpClient()

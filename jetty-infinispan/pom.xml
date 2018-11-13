@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -16,7 +16,6 @@
     <infinispan.version>9.1.0.Final</infinispan.version>
     <infinispan7.version>7.1.1.Final</infinispan7.version>
   </properties>
-
   <modules>
     <module>infinispan-common</module>
     <module>infinispan-7</module>
@@ -25,5 +24,4 @@
     <module>infinispan-embedded-query</module>
     <module>infinispan-remote-query</module>
   </modules>
-
 </project>

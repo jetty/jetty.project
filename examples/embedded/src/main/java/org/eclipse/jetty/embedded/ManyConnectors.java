@@ -137,7 +137,7 @@ public class ManyConnectors
 
         // Start the server
         server.start();
-        
+        server.dumpStdErr();
         server.join();
     }
 }

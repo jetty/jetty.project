@@ -33,28 +33,20 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class NullSessionDataStore extends AbstractSessionDataStore
 {
     
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
-     */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
         return null;
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#newSessionData(java.lang.String, long, long, long, long)
-     */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
-     */
+
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -62,9 +54,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
-     */
+
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
@@ -72,9 +62,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
  
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
+
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -82,9 +70,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
+
     @ManagedAttribute(value="does this store serialize sessions", readonly=true)
     @Override
     public boolean isPassivating()
@@ -93,9 +79,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
+
     @Override
     public boolean exists(String id)
     {

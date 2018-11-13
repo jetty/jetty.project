@@ -76,7 +76,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -114,6 +113,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }};
 
     private static final Logger LOG = Log.getLogger(SslContextFactory.class);
+    private static final Logger LOG_CONFIG = LOG.getLogger("config");
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
             (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
@@ -128,6 +128,24 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
     /** String name of keystore password property. */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
+
+    /** Default Excluded Protocols List */
+    private static final String[] DEFAULT_EXCLUDED_PROTOCOLS = {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"};
+
+    /** Default Excluded Cipher Suite List */
+    private static final String[] DEFAULT_EXCLUDED_CIPHER_SUITES = {
+            // Exclude weak / insecure ciphers
+            "^.*_(MD5|SHA|SHA1)$",
+            // Exclude ciphers that don't support forward secrecy
+            "^TLS_RSA_.*$",
+            // The following exclusions are present to cleanup known bad cipher
+            // suites that may be accidentally included via include patterns.
+            // The default enabled cipher list in Java will not include these
+            // (but they are available in the supported list).
+            "^SSL_.*$",
+            "^.*_NULL_.*$",
+            "^.*_anon_.*$"
+    };
 
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
@@ -211,19 +229,8 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private SslContextFactory(boolean trustAll, String keyStorePath)
     {
         setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-
-        // Exclude weak / insecure ciphers
-        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
-        // Exclude ciphers that don't support forward secrecy
-        addExcludeCipherSuites("^TLS_RSA_.*$");
-        // The following exclusions are present to cleanup known bad cipher
-        // suites that may be accidentally included via include patterns.
-        // The default enabled cipher list in Java will not include these
-        // (but they are available in the supported list).
-        addExcludeCipherSuites("^SSL_.*$");
-        addExcludeCipherSuites("^.*_NULL_.*$");
-        addExcludeCipherSuites("^.*_anon_.*$");
+        setExcludeProtocols(DEFAULT_EXCLUDED_PROTOCOLS);
+        setExcludeCipherSuites(DEFAULT_EXCLUDED_CIPHER_SUITES);
 
         if (keyStorePath != null)
             setKeyStorePath(keyStorePath);
@@ -239,6 +246,38 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         synchronized (this)
         {
             load();
+        }
+
+        secureConfigurationCheck();
+    }
+
+    protected void secureConfigurationCheck()
+    {
+        if (isTrustAll())
+            LOG_CONFIG.warn("Trusting all certificates configured for {}",this);
+        if (getEndpointIdentificationAlgorithm()==null)
+            LOG_CONFIG.warn("No Client EndPointIdentificationAlgorithm configured for {}",this);
+
+        SSLEngine engine = _factory._context.createSSLEngine();
+        customize(engine);
+        SSLParameters supported = engine.getSSLParameters();
+
+        for (String protocol : supported.getProtocols())
+        {
+            for (String excluded : DEFAULT_EXCLUDED_PROTOCOLS)
+            {
+                if (excluded.equals(protocol))
+                    LOG_CONFIG.warn("Protocol {} not excluded for {}", protocol, this);
+            }
+        }
+
+        for (String suite : supported.getCipherSuites())
+        {
+            for (String excludedSuiteRegex : DEFAULT_EXCLUDED_CIPHER_SUITES)
+            {
+                if (suite.matches(excludedSuiteRegex))
+                    LOG_CONFIG.warn("Weak cipher suite {} enabled for {}", suite, this);
+            }
         }
     }
 
@@ -355,18 +394,26 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
     
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(String.valueOf(this)).append(" trustAll=").append(Boolean.toString(_trustAll)).append(System.lineSeparator());
-    
         try
         {
-            List<SslSelectionDump> selections = selectionDump();
-            ContainerLifeCycle.dump(out, indent, selections);
+            SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
+            Dumpable.dumpObjects(out, indent, this, "trustAll=" + _trustAll,
+                new SslSelectionDump("Protocol",
+                    sslEngine.getSupportedProtocols(),
+                    sslEngine.getEnabledProtocols(),
+                    getExcludeProtocols(),
+                    getIncludeProtocols()),
+                new SslSelectionDump("Cipher Suite",
+                    sslEngine.getSupportedCipherSuites(),
+                    sslEngine.getEnabledCipherSuites(),
+                    getExcludeCipherSuites(),
+                    getIncludeCipherSuites()));
         }
         catch (NoSuchAlgorithmException ignore)
         {
@@ -1057,8 +1104,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     /**
-     * When set to "HTTPS" hostname verification will be enabled
-     *
+     * When set to "HTTPS" hostname verification will be enabled.
+     * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIndentificationAlgorithm
+     * is not set.
      * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm
      */
     public void setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm)
@@ -1147,7 +1195,8 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     }
                 }
 
-                if (!_certWilds.isEmpty() || _certHosts.size()>1)
+                // Is SNI needed to select a certificate?
+                if (!_certWilds.isEmpty() || _certHosts.size()>1 || _certHosts.size()==1 && _aliasX509.size()>1)
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {

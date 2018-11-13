@@ -53,7 +53,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -313,12 +312,9 @@ public class ServletRequestLogTest
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
-        RequestLogHandler requestLog = new RequestLogHandler();
         CaptureLog captureLog = new CaptureLog();
-        requestLog.setRequestLog(captureLog);
+        server.setRequestLog(captureLog);
 
-        handlers.addHandler(requestLog);
-        
         // Lastly, the behavior as defined by deployment of a webapp
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -404,12 +400,9 @@ public class ServletRequestLogTest
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
-        RequestLogHandler requestLog = new RequestLogHandler();
         CaptureLog captureLog = new CaptureLog();
-        requestLog.setRequestLog(captureLog);
+        server.setRequestLog(captureLog);
 
-        handlers.addHandler(requestLog);
-        
         // Lastly, the behavior as defined by deployment of a webapp
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -493,12 +486,9 @@ public class ServletRequestLogTest
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
-        RequestLogHandler requestLog = new RequestLogHandler();
         CaptureLog captureLog = new CaptureLog();
-        requestLog.setRequestLog(captureLog);
+        server.setRequestLog(captureLog);
 
-        handlers.addHandler(requestLog);
-        
         // Lastly, the behavior as defined by deployment of a webapp
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -587,14 +577,9 @@ public class ServletRequestLogTest
 
         // Next the proposed behavioral change to etc/jetty-requestlog.xml
         // the id="RequestLog"
-        RequestLogHandler requestLog = new RequestLogHandler();
         CaptureLog captureLog = new CaptureLog();
-        requestLog.setRequestLog(captureLog);
-        
-        Handler origServerHandler = server.getHandler();
-        requestLog.setHandler(origServerHandler);
-        server.setHandler(requestLog);
-        
+        server.setRequestLog(captureLog);
+
         // Lastly, the behavior as defined by deployment of a webapp
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);

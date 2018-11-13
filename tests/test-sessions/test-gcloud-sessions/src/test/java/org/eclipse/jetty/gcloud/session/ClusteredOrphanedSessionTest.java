@@ -45,15 +45,9 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     @AfterAll
     public static void tearDown () throws Exception
     {
+        __testSupport.deleteSessions();
         __testSupport.tearDown();
     }
-
-    @AfterAll
-    public static void teardown () throws Exception
-    {
-        __testSupport.deleteSessions();
-    }
-    
 
 
     /** 

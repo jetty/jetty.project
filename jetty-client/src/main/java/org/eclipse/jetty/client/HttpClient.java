@@ -204,6 +204,7 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStart() throws Exception
     {
+        // TODO use #addBean in constructor?
         if (sslContextFactory != null)
             addBean(sslContextFactory);
 
@@ -213,6 +214,7 @@ public class HttpClient extends ContainerLifeCycle
             threadPool.setName(name);
             executor = threadPool;
         }
+        // TODO use #updateBean in #setExecutor
         addBean(executor);
         
         if (byteBufferPool == null)
@@ -220,10 +222,12 @@ public class HttpClient extends ContainerLifeCycle
                 executor instanceof ThreadPool.SizedThreadPool
                     ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads()/2
                     : ProcessorUtils.availableProcessors()*2);
+        // TODO use #updateBean in #setByteBufferPool?
         addBean(byteBufferPool);
 
         if (scheduler == null)
             scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
+        // TODO use #updateBean in #setScheduler?
         addBean(scheduler);
 
         transport.setHttpClient(this);
@@ -796,6 +800,8 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setExecutor(Executor executor)
     {
+        if (isRunning())
+            LOG.warn("setExecutor called when in {} state",getState());
         this.executor = executor;
     }
 

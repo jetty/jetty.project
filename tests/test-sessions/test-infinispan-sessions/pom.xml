@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.14-SNAPSHOT</version>
   </parent>
   <artifactId>test-infinispan-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
@@ -127,14 +127,12 @@
      <version>4.1.0.Final</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-jdk14</artifactId>
       <version>1.7.25</version>
       <scope>test</scope>
     </dependency>
-    
   </dependencies>
   <profiles>
     <!-- to test hotrod, configure a cache called "remote-session-test" -->

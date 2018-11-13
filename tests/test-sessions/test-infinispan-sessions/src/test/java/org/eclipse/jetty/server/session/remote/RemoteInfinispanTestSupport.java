@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Properties;
 
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.RemoteCache;
@@ -133,7 +134,8 @@ public class RemoteInfinispanTestSupport
         if (obj == null)
             return false;
         
-        SessionData saved = (SessionData)obj;
+        InfinispanSessionData saved = (InfinispanSessionData)obj;
+        saved.deserializeAttributes();
         
         assertEquals(data.getId(), saved.getId());
         assertEquals(data.getContextPath(), saved.getContextPath());

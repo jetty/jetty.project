@@ -34,22 +34,26 @@ public class DumpableCollection implements Dumpable
         _collection=collection;
     }
 
-    public DumpableCollection(String name,Object... items)
+    public static DumpableCollection fromArray(String name, Object[] array)
     {
-        this(name, items==null?Collections.emptyList():Arrays.asList(items));
+        return new DumpableCollection(name,array==null?Collections.emptyList():Arrays.asList(array));
+    }
+
+    public static DumpableCollection from(String name, Object... items)
+    {
+        return new DumpableCollection(name,items==null?Collections.emptyList():Arrays.asList(items));
     }
 
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(_name).append(System.lineSeparator());
-        if (_collection!=null)
-            ContainerLifeCycle.dump(out,indent,_collection);
+        Object[] array = _collection.toArray();
+        Dumpable.dumpObjects(out,indent,_name + " size="+array.length, array);
     }
 }

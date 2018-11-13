@@ -35,7 +35,6 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -115,13 +114,12 @@ public class ManyHandlers
         HandlerWrapper wrapper = new WelcomeWrapHandler();
         Handler hello = new HelloHandler();
         Handler dft = new DefaultHandler();
-        RequestLogHandler requestLog = new RequestLogHandler();
 
         // configure request logging
         File requestLogFile = File.createTempFile("demo", "log");
         NCSARequestLog ncsaLog = new NCSARequestLog(
                 requestLogFile.getAbsolutePath());
-        requestLog.setRequestLog(ncsaLog);
+        server.setRequestLog(ncsaLog);
 
         // create the handler collections
         HandlerCollection handlers = new HandlerCollection();
@@ -129,20 +127,8 @@ public class ManyHandlers
 
         // link them all together
         wrapper.setHandler(hello);
-        list.setHandlers(new Handler[] { param, new GzipHandler(), dft });
-        handlers.setHandlers(new Handler[] { list, requestLog });
-
-        // Handler tree looks like the following
-        // <pre>
-        // Server
-        // + HandlerCollection
-        // . + HandlerList
-        // . | + param (ParamHandler)
-        // . | + wrapper (WelcomeWrapHandler)
-        // . | | \ hello (HelloHandler)
-        // . | \ dft (DefaultHandler)
-        // . \ requestLog (RequestLogHandler)
-        // </pre>
+        list.setHandlers(new Handler[] { param, new GzipHandler() });
+        handlers.setHandlers(new Handler[] { list, dft });
 
         server.setHandler(handlers);
 

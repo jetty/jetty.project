@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -26,15 +27,17 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -296,11 +299,28 @@ public class ServerConnectorTest
         server.stop();
         
         assertThat(connector.getTransport(),Matchers.nullValue());
-        
-        
-        
-        
-        
-        
+    }
+
+    @Test
+    public void testBindToAddressWhichIsInUse() throws Exception
+    {
+        try (ServerSocket socket = new ServerSocket(0))
+        {
+            final int port = socket.getLocalPort();
+
+            Server server = new Server();
+            ServerConnector connector = new ServerConnector(server);
+            connector.setPort(port);
+            server.addConnector(connector);
+
+            HandlerList handlers = new HandlerList();
+            handlers.addHandler(new DefaultHandler());
+
+            server.setHandler(handlers);
+
+            IOException x = assertThrows(IOException.class, () -> server.start());
+            assertThat(x.getCause(), instanceOf(BindException.class));
+            assertThat(x.getMessage(), containsString("0.0.0.0:" + port));
+        }
     }
 }

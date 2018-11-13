@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -628,6 +627,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void setAttribute(String name, Object attribute)
     {
+        // TODO this is a crude way to get attribute values managed by JMX.
         Object old=_attributes.getAttribute(name);
         updateBean(old,attribute);        
         _attributes.setAttribute(name, attribute);
@@ -690,7 +690,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpBeans(out,indent,Collections.singleton(new ClassLoaderDump(this.getClass().getClassLoader())));
+        dumpObjects(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()),_attributes);
     }
 
     /* ------------------------------------------------------------ */

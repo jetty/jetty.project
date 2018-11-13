@@ -44,7 +44,6 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -60,7 +59,7 @@ public class LikeJettyXml
     public static void main( String[] args ) throws Exception
     {
         // Path to as-built jetty-distribution directory
-        String jettyHomeBuild = "../../jetty-distribution/target/distribution";
+        String jettyHomeBuild = "jetty-distribution/target/distribution";
         
         // Find jetty home and base directories
         String homePath = System.getProperty("jetty.home", jettyHomeBuild);
@@ -214,9 +213,7 @@ public class LikeJettyXml
         requestLog.setExtended(true);
         requestLog.setLogCookies(false);
         requestLog.setLogTimeZone("GMT");
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
-        requestLogHandler.setRequestLog(requestLog);
-        handlers.addHandler(requestLogHandler);
+        server.setRequestLog(requestLog);
 
 
         // === jetty-lowresources.xml ===

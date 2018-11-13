@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import com.hazelcast.core.IMap;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
@@ -28,10 +31,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import com.hazelcast.core.IMap;
 
 /**
  * Session data stored in Hazelcast
@@ -52,36 +52,24 @@ public class HazelcastSessionDataStore
     }
 
     @Override
-    public SessionData load( String id )
-        throws Exception
+    public SessionData doLoad( String id )
+            throws Exception
     {
-
-        final AtomicReference<SessionData> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-
-        //ensure the load runs in the context classloader scope
-        _context.run( () -> {
-            try
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug( "Loading session {} from hazelcast", id );
-
-                SessionData sd = sessionDataMap.get( getCacheKey( id ) );
-                reference.set(sd);
-            }
-            catch (Exception e)
-            {
-                exception.set(new UnreadableSessionDataException(id, _context, e));
-            }
-        } );
-
-        if (exception.get() != null)
+        try
         {
-            throw exception.get();
+            if (LOG.isDebugEnabled())
+                LOG.debug( "Loading session {} from hazelcast", id );
+
+            SessionData sd = sessionDataMap.get( getCacheKey( id ) );
+            return sd;
         }
-        return reference.get();
+        catch (Exception e)
+        {
+            throw new UnreadableSessionDataException(id, _context, e);
+        }
     }
 
+    
     @Override
     public boolean delete( String id )
         throws Exception

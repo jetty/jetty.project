@@ -481,33 +481,38 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted() && !_request.isHandled())
+                        try
                         {
-                            _response.sendError(HttpStatus.NOT_FOUND_404);
-                        }
-                        else
-                        {
-                            // RFC 7230, section 3.3.
-                            int status = _response.getStatus();
-                            boolean hasContent = !(_request.isHead() ||
+                            if (!_response.isCommitted() && !_request.isHandled())
+                            {
+                                _response.sendError(HttpStatus.NOT_FOUND_404);
+                            }
+                            else
+                            {
+                                // RFC 7230, section 3.3.
+                                int status = _response.getStatus();
+                                boolean hasContent = !(_request.isHead() ||
                                     HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
                                     HttpStatus.isInformational(status) ||
                                     status == HttpStatus.NO_CONTENT_204 ||
                                     status == HttpStatus.NOT_MODIFIED_304);
-                            if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                            {
-                                if (isCommitted())
-                                    abort(new IOException("insufficient content written"));
-                                else
-                                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500,"insufficient content written");
+                                if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                                {
+                                    if (isCommitted())
+                                        abort(new IOException("insufficient content written"));
+                                    else
+                                        _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "insufficient content written");
+                                }
                             }
+                            _response.closeOutput();
+
                         }
-                        _response.closeOutput();
-                        _request.setHandled(true);
-
-                        _state.onComplete();
-
-                        onCompleted();
+                        finally
+                        {
+                            _request.setHandled(true);
+                            _state.onComplete();
+                            onCompleted();
+                        }
 
                         break loop;
                     }
@@ -883,7 +888,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
-        _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
     }
 
@@ -1221,18 +1225,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private class CommitCallback extends Callback.Nested
     {
         private final ByteBuffer _content;
+        private final int _length;
         private final boolean _complete;
 
         private CommitCallback(Callback callback, ByteBuffer content, boolean complete)
         {
             super(callback);
-            this._content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
-            this._complete = complete;
+            _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
+            _length = _content.remaining();
+            _complete = complete;
         }
 
         @Override
         public void succeeded()
         {
+            _written += _length;
             super.succeeded();
             notifyResponseCommit(_request);
             if (_content.hasRemaining())
@@ -1294,18 +1301,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private class ContentCallback extends Callback.Nested
     {
         private final ByteBuffer _content;
+        private final int _length;
         private final boolean _complete;
 
         private ContentCallback(Callback callback, ByteBuffer content, boolean complete)
         {
             super(callback);
-            this._content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
-            this._complete = complete;
+            _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
+            _length = _content.remaining();
+            _complete = complete;
         }
 
         @Override
         public void succeeded()
         {
+            _written += _length;
             super.succeeded();
             if (_content.hasRemaining())
                 notifyResponseContent(_request, _content);

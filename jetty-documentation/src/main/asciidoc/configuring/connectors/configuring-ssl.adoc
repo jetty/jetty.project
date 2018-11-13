@@ -754,11 +754,14 @@ New cipher suites are always being developed to stay ahead of attacks.
 It's only a matter of time before the best of suites is exploited though, and making sure your server is up-to-date in this regard is paramount for any implementation.
 As an example, to avoid the BEAST attack it is necessary to configure a specific set of cipher suites. This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
 
-____
-[NOTE]
 It's crucial that you use the _exact_ names of the cipher suites as used/known by the JDK.
 You can get them by obtaining an instance of SSLEngine and call `getSupportedCipherSuites()`.
 Tools like https://www.ssllabs.com/[ssllabs.com] might report slightly different names which will be ignored.
+
+____
+[IMPORTANT]
+It is important to stay up-to-date with the latest supported cipher suites.
+Be sure to consult Oracle's link:https://java.com/en/jre-jdk-cryptoroadmap.html[JRE and JDK Cryptographic Roadmap] frequently for recent and upcoming changes to supported ciphers.
 ____
 
 ____
@@ -769,8 +772,13 @@ Just overwrite the two present JAR files in `<JRE_HOME>/lib/security/`.
 ____
 
 Both `setIncludeCipherSuites` and `setExcludeCipherSuites` can be fed by the exact cipher suite name used in the JDK or by using regular expressions.
-
 If you have a need to adjust the Includes or Excludes, then this is best done with a custom XML that configures the `SslContextFactory` to suit your needs.
+
+____
+[NOTE]
+Jetty *does* allow users to enable weak/deprecated cipher suites (or even no cipher suites at all).
+By default, if you have these suites enabled warning messages will appear in the server logs.
+____
 
 To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can be any name, just avoid prefixing it with "jetty-").
 
@@ -820,7 +828,7 @@ ____
 
 ____
 [TIP]
-You can enable the `org.eclipse.jetty.util.ssl` named logger at DEBUG level to see what the list of selected Protocols and Cipher suites are at startup of Jetty.
+You can enable the `org.eclipse.jetty.util.ssl` named logger at `DEBUG` level to see what the list of selected Protocols and Cipher suites are at startup of Jetty.
 ____
 
 Additional Include / Exclude examples:
@@ -973,7 +981,7 @@ Specifically, you will want to look for the `SslConnectionFactory` portion of th
 ...
 ----
 
-In the example above you can see both the enabled/disabled protocols and included/excluded ciper suites.
+In the example above you can see both the enabled/disabled protocols and included/excluded cipher suites.
 For disabled or excluded protocols and ciphers, the reason they are disabled is given - either due to JVM restrictions, configuration or both.
 As a reminder, when configuring your includes/excludes, *excludes always win*.
 

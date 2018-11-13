@@ -23,6 +23,7 @@ import java.util.Hashtable;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -67,6 +68,16 @@ public class Activator implements BundleActivator
         });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
+        //server.setDumpAfterStart(true);
+
+        Configuration.ClassList list = new Configuration.ClassList(new String[] {"org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
+                                                                   "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                                                                   "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                                                                   "org.eclipse.jetty.webapp.FragmentConfiguration",
+                                                                   "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"});
+        server.addBean(list);
+        server.setAttribute("org.eclipse.jetty.webapp.configuration", list);
+        list.setServerDefault(server);
 
         Dictionary serverProps = new Hashtable();
         //define the unique name of the server instance
