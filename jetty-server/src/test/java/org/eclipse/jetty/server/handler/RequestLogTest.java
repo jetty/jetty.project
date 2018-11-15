@@ -329,9 +329,12 @@ public class RequestLogTest
         data.add(new Object[] { new ResponseSendErrorHandler(), "/sendError", "\"GET /sendError HTTP/1.0\" 599" });
         data.add(new Object[] { new ServletExceptionHandler(), "/sex", "\"GET /sex HTTP/1.0\" 500" });
         data.add(new Object[] { new IOExceptionHandler(), "/ioex", "\"GET /ioex HTTP/1.0\" 500" });
+        data.add(new Object[] { new IOExceptionPartialHandler(), "/ioex", "\"GET /ioex HTTP/1.0\" 200" });
         data.add(new Object[] { new RuntimeExceptionHandler(), "/rtex", "\"GET /rtex HTTP/1.0\" 500" });
         data.add(new Object[] { new BadMessageHandler(), "/bad", "\"GET /bad HTTP/1.0\" 499" });
         data.add(new Object[] { new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 488" });
+        data.add(new Object[] { new AbortPartialHandler(), "/bad", "\"GET /bad HTTP/1.0\" 200" });
+
 
         return data.stream().map(Arguments::of);
     }
@@ -623,6 +626,20 @@ public class RequestLogTest
         }
     }
 
+    private static class IOExceptionPartialHandler extends AbstractTestHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentType("text/plain");
+            response.setContentLength(100);
+            response.getOutputStream().println("You were expecting maybe a ");
+            response.flushBuffer();
+            throw new IOException("expected");
+        }
+    }
+
     private static class RuntimeExceptionHandler extends AbstractTestHandler
     {
         @Override
@@ -649,6 +666,20 @@ public class RequestLogTest
             BadMessageException bad = new BadMessageException(488);
             baseRequest.getHttpChannel().abort(bad);
             throw bad;
+        }
+    }
+
+    private static class AbortPartialHandler extends AbstractTestHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentType("text/plain");
+            response.setContentLength(100);
+            response.getOutputStream().println("You were expecting maybe a ");
+            response.flushBuffer();
+            baseRequest.getHttpChannel().abort(new Throwable("bomb"));
         }
     }
 
