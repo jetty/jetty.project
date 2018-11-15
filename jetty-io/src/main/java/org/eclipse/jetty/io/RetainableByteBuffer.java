@@ -16,27 +16,32 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ReferencedBuffer implements Retainable
+/**
+ * A Retainable ByteBuffer.
+ * <p>Acquires a ByteBuffer from a {@link ByteBufferPool} and maintains a reference count that is
+ * initially 1, incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
+ * is released to the pool when the reference count is decremented to 0.</p>
+ */
+public class RetainableByteBuffer implements Retainable
 {
     private final ByteBufferPool pool;
     private final ByteBuffer buffer;
     private final AtomicInteger references;
 
-    public ReferencedBuffer(ByteBufferPool pool, int size)
+    public RetainableByteBuffer(ByteBufferPool pool, int size)
     {
         this(pool, size, false);
     }
 
-    public ReferencedBuffer(ByteBufferPool pool, int size, boolean direct)
+    public RetainableByteBuffer(ByteBufferPool pool, int size, boolean direct)
     {
         this.pool = pool;
         this.buffer = pool.acquire(size, direct);
@@ -71,12 +76,20 @@ public class ReferencedBuffer implements Retainable
         int ref = references.decrementAndGet();
         if (ref == 0)
             pool.release(buffer);
+        else if (ref < 0 )
+            throw new IllegalStateException("already released");
+
         return ref;
+    }
+
+    public boolean hasRemaining()
+    {
+        return buffer.hasRemaining();
     }
 
     public boolean isEmpty()
     {
-        return BufferUtil.isEmpty(buffer);
+        return !buffer.hasRemaining();
     }
 
     @Override
@@ -84,5 +97,4 @@ public class ReferencedBuffer implements Retainable
     {
         return BufferUtil.toDetailString(buffer) + ":r=" + getReferences();
     }
-
 }
