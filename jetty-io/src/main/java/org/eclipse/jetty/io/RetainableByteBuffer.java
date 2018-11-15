@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Retainable;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Retainable;
 
 /**
  * A Retainable ByteBuffer.
@@ -95,6 +95,6 @@ public class RetainableByteBuffer implements Retainable
     @Override
     public String toString()
     {
-        return BufferUtil.toDetailString(buffer) + ":r=" + getReferences();
+        return String.format("RBB@%x{%s,r=%d}",hashCode(),BufferUtil.toDetailString(buffer),getReferences());
     }
 }
