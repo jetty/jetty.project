@@ -173,7 +173,7 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
         }
         
-        if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
+        if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
             addSetRFC2965Cookie(
                 cookie.getName(),
                 cookie.getValue(),
@@ -218,7 +218,7 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
         }
 
-        if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
+        if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
             addSetRFC2965Cookie(cookie.getName(),
                 cookie.getValue(),
                 cookie.getDomain(),

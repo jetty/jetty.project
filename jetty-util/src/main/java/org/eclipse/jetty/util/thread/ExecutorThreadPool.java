@@ -388,7 +388,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         List<Runnable> jobs = Collections.emptyList();
         if (isDetailedDump())
             jobs = new ArrayList<>(_executor.getQueue());
-        dumpBeans(out, indent, threads, new DumpableCollection("jobs", jobs));
+        dumpObjects(out, indent, threads, new DumpableCollection("jobs", jobs));
     }
 
     @Override

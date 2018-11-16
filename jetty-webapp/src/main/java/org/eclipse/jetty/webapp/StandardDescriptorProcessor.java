@@ -1967,9 +1967,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         if (!(descriptor instanceof FragmentDescriptor))
         {
+            String path = node.toString(false, true);
+            context.setAttribute("default-context-path", path);
             if (context.isContextPathDefault())
             {
-                context.setContextPath(node.toString(false, true));
+                context.setDefaultContextPath(path);
                 context.getMetaData().setOrigin("default-context-path", descriptor);
             }
         }

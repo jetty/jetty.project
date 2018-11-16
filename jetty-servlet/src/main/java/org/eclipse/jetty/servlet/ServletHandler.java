@@ -136,7 +136,7 @@ public class ServletHandler extends ScopedHandler
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out,indent,
+        dumpObjects(out,indent,
             DumpableCollection.fromArray("listeners "+this,_listeners),
             DumpableCollection.fromArray("filters "+this,_filters),
             DumpableCollection.fromArray("filterMappings "+this,_filterMappings),

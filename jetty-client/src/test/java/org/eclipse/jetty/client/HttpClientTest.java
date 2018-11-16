@@ -111,6 +111,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 {
     public WorkDir testdir;
 
+
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testStoppingClosesConnections(Scenario scenario) throws Exception
@@ -880,31 +881,33 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testConnectHostWithMultipleAddresses(Scenario scenario) throws Exception
     {
-        start(scenario, new EmptyServerHandler());
-
-        client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), client.getConnectTimeout())
+        startServer(scenario, new EmptyServerHandler());
+        startClient(scenario, null, client ->
         {
-            @Override
-            public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+            client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), 5000)
             {
-                super.resolve(host, port, new Promise<List<InetSocketAddress>>()
+                @Override
+                public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
                 {
-                    @Override
-                    public void succeeded(List<InetSocketAddress> result)
+                    super.resolve(host, port, new Promise<List<InetSocketAddress>>()
                     {
-                        // Add as first address an invalid address so that we test
-                        // that the connect operation iterates over the addresses.
-                        result.add(0, new InetSocketAddress("idontexist", port));
-                        promise.succeeded(result);
-                    }
+                        @Override
+                        public void succeeded(List<InetSocketAddress> result)
+                        {
+                            // Add as first address an invalid address so that we test
+                            // that the connect operation iterates over the addresses.
+                            result.add(0, new InetSocketAddress("idontexist", port));
+                            promise.succeeded(result);
+                        }
 
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        promise.failed(x);
-                    }
-                });
-            }
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            promise.failed(x);
+                        }
+                    });
+                }
+            });
         });
 
         // If no exceptions the test passes.

@@ -203,6 +203,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         //the META-INF/resources discovered
         addContextParamFromAttribute(context,out,MetaInfConfiguration.METAINF_RESOURCES,normalizer);
 
+        // the default-context-path, if presernt
+        String defaultContextPath = (String) context.getAttribute("default-context-path");
+        if (defaultContextPath != null) out.tag("default-context-path", defaultContextPath);
 
         //add the name of the origin attribute, if it is being used
         if (_generateOrigin)

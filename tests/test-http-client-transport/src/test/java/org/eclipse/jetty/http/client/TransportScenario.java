@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
 
 import javax.servlet.http.HttpServlet;
 
@@ -270,20 +271,29 @@ public class TransportScenario
         else
             setConnectionIdleTimeout(idleTimeout);
     }
-
     public void start(Handler handler) throws Exception
     {
+        start(handler,null);
+    }
+
+    public void start(Handler handler, Consumer<HttpClient> config) throws Exception
+    {
         startServer(handler);
-        startClient();
+        startClient(config);
     }
 
     public void start(HttpServlet servlet) throws Exception
     {
         startServer(servlet);
-        startClient();
+        startClient(null);
     }
 
     public void startClient() throws Exception
+    {
+        startClient(null);
+    }
+
+    public void startClient(Consumer<HttpClient> config) throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
@@ -291,6 +301,10 @@ public class TransportScenario
         client = newHttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
+
+        if (config!=null)
+            config.accept(client);
+
         client.start();
         if (server != null)
             server.addBean(client);

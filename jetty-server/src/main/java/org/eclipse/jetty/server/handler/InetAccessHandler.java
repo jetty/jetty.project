@@ -138,7 +138,7 @@ public class InetAccessHandler extends HandlerWrapper
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent,
+        dumpObjects(out, indent,
             DumpableCollection.from("included",_set.getIncluded()),
             DumpableCollection.from("excluded",_set.getExcluded()));
     }

@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -65,7 +66,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private boolean fillingAndParsing;
 
     // Read / Parse variables
-    private ReferencedBuffer networkBuffer;
+    private RetainableByteBuffer networkBuffer;
 
     /**
      * Create a WSConnection.
@@ -189,7 +190,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        final ReferencedBuffer referenced = frame.hasPayload() && !frame.isReleaseable()?networkBuffer:null;
+        final RetainableByteBuffer referenced = frame.hasPayload() && !frame.isReleaseable()?networkBuffer:null;
         if (referenced != null)
             referenced.retain();
 
@@ -230,7 +231,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         synchronized (this)
         {
             if (networkBuffer == null)
-                networkBuffer = new ReferencedBuffer(bufferPool, getInputBufferSize());
+                networkBuffer = new RetainableByteBuffer(bufferPool, getInputBufferSize());
         }
     }
 
@@ -245,7 +246,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 throw new IllegalStateException();
 
             networkBuffer.release();
-            networkBuffer = new ReferencedBuffer(bufferPool, getInputBufferSize());
+            networkBuffer = new RetainableByteBuffer(bufferPool, getInputBufferSize());
         }
     }
 
@@ -256,7 +257,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (networkBuffer == null)
                 throw new IllegalStateException();
 
-            if (networkBuffer.getBuffer().hasRemaining())
+            if (networkBuffer.hasRemaining())
                 throw new IllegalStateException();
 
             networkBuffer.release();
@@ -454,7 +455,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             synchronized (this)
             {
-                networkBuffer = new ReferencedBuffer(bufferPool, prefilled.remaining());
+                networkBuffer = new RetainableByteBuffer(bufferPool, prefilled.remaining());
             }
             ByteBuffer buffer = networkBuffer.getBuffer();
             BufferUtil.clearToFill(buffer);

@@ -1,5 +1,52 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.14.v20181114 - 14 November 2018
+ + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
+ + 3103 HttpClientLoadTest reports a leak in byte buffer
+ + 3104 Align jetty-schemas version within apache-jsp module as well
+
+jetty-9.4.13.v20181111 - 11 November 2018
+ + 2191 JPMS Support
+ + 2431 Upgrade to Junit 5
+ + 2691 LdapLoginModule does not find accounts in subtrees
+ + 2702 ArithmeticException in Credentials.stringEquals and .byteEquals
+ + 2718 NPE using more than one Endpoint.publish
+ + 2727 Cleanup behavior of JMX MBean discovery
+ + 2740 Ensure OSGiWebappClassLoader uses bundleloader for all loadClass
+   methods
+ + 2787 Use status code from nested BadMessageException wrapped in
+   ServletException
+ + 2796 HTTP/2 max local stream count exceeded when request fails
+ + 2834 Support Java 11 bytecode during annotation scanning
+ + 2865 Update to apache jasper 8.5.33
+ + 2868 Adding SPNEGO authentication support for Jetty Client
+ + 2871 HTTP/2 Server reads -1 after client resets stream
+ + 2875 Fix WebSocketClient.connect() hang when attempting to connect at an
+   invalid websocket endpoint
+ + 2886 SNI matching does not work in certain cases when there is only one CN
+   certificate in the keystore
+ + 2901 Introduce HttpConnectionUpgrader as a conversation component in
+   HttpClient
+ + 2903 Avoid Listener instantiation during QuickStart generation
+ + 2906 jetty-maven-plugin run goal adds output directory of reactor project
+   dependencies to classpath without regard for scope
+ + 2912 Requests handled with GzipHandler should remove Content-Encoding and
+   Content-Length headers
+ + 2913 Remove reliance on sun.reflect.Reflection to be compatible with Java 11
+ + 2936 Error during initial RequestDispatch with bad request query results in
+   failure for ErrorHandler to process
+ + 2941 Upgrade to ASM 7 to support Java 11 bytecode
+ + 2954 Improve cause reporting for HttpClient failures
+ + 2970 Ensure HttpChannel.onComplete is always called
+ + 3018 Improve error handling and logging of min data rate violations
+ + 3023 Wrong non-redirect behaviour with "null" path info
+ + 3030 Enforce Content-Encoding check only on parameter extraction
+ + 3041 Cookies parsing in RFC2965 should allow deprecated comma separators
+ + 3049 Warn on common SslContextFactory problematic configurations
+ + 3054 Update OSGi to ASM 7
+ + 3090 MBeanContainer throws NPE for arrays
+ + 3092 Wrong classloader used to load *MBean classes
+
 jetty-9.4.12.v20180830 - 30 August 2018
  + 300 Implement Deflater / Inflater Object Pool
  + 307 Monitor contention in AbstractNCSARequestLog
@@ -19,7 +66,7 @@ jetty-9.4.12.v20180830 - 30 August 2018
  + 2398 MultiPartFormInputStream parsing should default to UTF-8, but allowed
    to be overridden by Request.setCharacterEncoding()
  + 2468 EWYK concurrent produce can fail SSL connections
- + 2501 Include accepting connections in connection limit.
+ + 2501 Include accepting connections in connection limit
  + 2530 Client waits forever for cancelled large uploads
  + 2560 Review PathResource exception handling
  + 2565 HashLoginService silently ignores file:/ config paths from 9.3.x
@@ -33,7 +80,7 @@ jetty-9.4.12.v20180830 - 30 August 2018
    beans
  + 2662 Remove unnecessary boxing conversions
  + 2663 Guard Throwable.addSuppressed() calls
- + 2672 Max local stream count exceeded for HttpClient with HTTP/2 transport  
+ + 2672 Max local stream count exceeded for HttpClient with HTTP/2 transport
  + 2675 Demo rewrite rules prevent URL Session tracking
  + 2677 Decode URI before matching against "/favicon.ico"
  + 2679 HTTP/2 Spec Compliance
