@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.fcgi.client {
+module org.eclipse.jetty.fcgi.client
+{
     exports org.eclipse.jetty.fcgi;
     exports org.eclipse.jetty.fcgi.client.http;
     exports org.eclipse.jetty.fcgi.generator to org.eclipse.jetty.fcgi.server;

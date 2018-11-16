@@ -19,7 +19,8 @@
 import org.eclipse.jetty.alpn.conscrypt.server.ConscryptServerALPNProcessor;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
 
-module org.eclipse.jetty.alpn.conscrypt.server {
+module org.eclipse.jetty.alpn.conscrypt.server
+{
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.alpn.server;

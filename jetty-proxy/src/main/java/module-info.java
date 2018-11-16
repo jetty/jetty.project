@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.proxy {
+module org.eclipse.jetty.proxy
+{
     exports org.eclipse.jetty.proxy;
 
     requires javax.servlet.api;

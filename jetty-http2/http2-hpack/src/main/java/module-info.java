@@ -19,7 +19,8 @@
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http2.hpack.HpackFieldPreEncoder;
 
-module org.eclipse.jetty.http2.hpack {
+module org.eclipse.jetty.http2.hpack
+{
     exports org.eclipse.jetty.http2.hpack;
 
     requires org.eclipse.jetty.util;

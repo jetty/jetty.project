@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.http2.common {
+module org.eclipse.jetty.http2.common
+{
     exports org.eclipse.jetty.http2;
     exports org.eclipse.jetty.http2.api;
     exports org.eclipse.jetty.http2.api.server;

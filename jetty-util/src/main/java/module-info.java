@@ -18,7 +18,8 @@
 
 import org.eclipse.jetty.util.security.CredentialProvider;
 
-module org.eclipse.jetty.util {
+module org.eclipse.jetty.util
+{
     exports org.eclipse.jetty.util;
     exports org.eclipse.jetty.util.annotation;
     exports org.eclipse.jetty.util.component;

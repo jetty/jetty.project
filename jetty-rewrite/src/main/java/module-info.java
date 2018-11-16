@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.rewrite {
+module org.eclipse.jetty.rewrite
+{
     exports org.eclipse.jetty.rewrite;
     exports org.eclipse.jetty.rewrite.handler;
 

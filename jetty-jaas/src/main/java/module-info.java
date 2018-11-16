@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.jaas {
+module org.eclipse.jetty.jaas
+{
     exports org.eclipse.jetty.jaas;
     exports org.eclipse.jetty.jaas.callback;
     exports org.eclipse.jetty.jaas.spi;

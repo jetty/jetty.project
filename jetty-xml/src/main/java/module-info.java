@@ -18,7 +18,8 @@
 
 import org.eclipse.jetty.xml.ConfigurationProcessorFactory;
 
-module org.eclipse.jetty.xml {
+module org.eclipse.jetty.xml
+{
     exports org.eclipse.jetty.xml;
 
     requires java.xml;

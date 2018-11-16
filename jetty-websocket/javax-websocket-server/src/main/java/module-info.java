@@ -24,7 +24,8 @@ import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketConfiguration;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 
-module org.eclipse.jetty.websocket.javax.server {
+module org.eclipse.jetty.websocket.javax.server
+{
     exports org.eclipse.jetty.websocket.jsr356.server;
 
     requires javax.servlet.api;

@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.fcgi.server {
+module org.eclipse.jetty.fcgi.server
+{
     exports org.eclipse.jetty.fcgi.server;
     exports org.eclipse.jetty.fcgi.server.proxy;
 

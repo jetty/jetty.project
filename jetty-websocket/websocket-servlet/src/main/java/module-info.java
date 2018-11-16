@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.websocket.servlet {
+module org.eclipse.jetty.websocket.servlet
+{
     exports org.eclipse.jetty.websocket.servlet;
 
     requires javax.servlet.api;

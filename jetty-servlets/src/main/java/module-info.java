@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.servlets {
+module org.eclipse.jetty.servlets
+{
     exports org.eclipse.jetty.servlets;
 
     requires static javax.servlet.api;

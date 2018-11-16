@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.util.ajax {
+module org.eclipse.jetty.util.ajax
+{
     exports org.eclipse.jetty.util.ajax;
 
     requires org.eclipse.jetty.util;

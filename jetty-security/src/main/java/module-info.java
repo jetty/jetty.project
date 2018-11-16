@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.security {
+module org.eclipse.jetty.security
+{
     exports org.eclipse.jetty.security;
     exports org.eclipse.jetty.security.authentication;
 

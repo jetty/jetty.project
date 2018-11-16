@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.websocket.javax.common {
+module org.eclipse.jetty.websocket.javax.common
+{
     exports org.eclipse.jetty.websocket.jsr356;
     exports org.eclipse.jetty.websocket.jsr356.decoders;
     exports org.eclipse.jetty.websocket.jsr356.encoders;

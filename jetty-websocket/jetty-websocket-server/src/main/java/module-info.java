@@ -22,7 +22,8 @@ import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.websocket.server.JettyWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 
-module org.eclipse.jetty.websocket.jetty.server {
+module org.eclipse.jetty.websocket.jetty.server
+{
     exports org.eclipse.jetty.websocket.server;
 
     requires javax.servlet.api;

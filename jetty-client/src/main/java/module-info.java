@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.client {
+module org.eclipse.jetty.client
+{
     exports org.eclipse.jetty.client;
     exports org.eclipse.jetty.client.api;
     exports org.eclipse.jetty.client.util;

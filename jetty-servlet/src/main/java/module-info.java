@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.servlet {
+module org.eclipse.jetty.servlet
+{
     exports org.eclipse.jetty.servlet;
     exports org.eclipse.jetty.servlet.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.servlet.listener;

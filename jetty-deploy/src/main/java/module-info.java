@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.deploy {
+module org.eclipse.jetty.deploy
+{
     exports org.eclipse.jetty.deploy;
     exports org.eclipse.jetty.deploy.bindings;
     exports org.eclipse.jetty.deploy.jmx to org.eclipse.jetty.jmx;

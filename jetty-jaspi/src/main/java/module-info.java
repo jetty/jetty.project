@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.security.jaspi {
+module org.eclipse.jetty.security.jaspi
+{
     exports org.eclipse.jetty.security.jaspi;
     exports org.eclipse.jetty.security.jaspi.callback;
     exports org.eclipse.jetty.security.jaspi.modules;

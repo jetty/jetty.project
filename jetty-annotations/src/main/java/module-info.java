@@ -21,7 +21,8 @@ import javax.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 
-module org.eclipse.jetty.annotations {
+module org.eclipse.jetty.annotations
+{
     exports org.eclipse.jetty.annotations;
 
     requires java.naming;

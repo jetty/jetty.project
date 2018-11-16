@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.http2.http.client.transport {
+module org.eclipse.jetty.http2.http.client.transport
+{
     exports org.eclipse.jetty.http2.client.http;
 
     requires org.eclipse.jetty.util;

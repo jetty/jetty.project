@@ -19,7 +19,8 @@
 import org.eclipse.jetty.http.Http1FieldPreEncoder;
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 
-module org.eclipse.jetty.http {
+module org.eclipse.jetty.http
+{
     exports org.eclipse.jetty.http;
     exports org.eclipse.jetty.http.pathmap;
 

@@ -22,7 +22,8 @@ import org.apache.juli.logging.Log;
 import org.eclipse.jetty.apache.jsp.JettyJasperInitializer;
 import org.eclipse.jetty.apache.jsp.JuliLog;
 
-module org.eclipse.jetty.apache.jsp {
+module org.eclipse.jetty.apache.jsp
+{
     exports org.eclipse.jetty.jsp;
     exports org.eclipse.jetty.apache.jsp;
 

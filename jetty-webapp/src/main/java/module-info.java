@@ -18,7 +18,8 @@
 
 import org.eclipse.jetty.webapp.Configuration;
 
-module org.eclipse.jetty.webapp {
+module org.eclipse.jetty.webapp
+{
     exports org.eclipse.jetty.webapp;
 
     requires java.instrument;

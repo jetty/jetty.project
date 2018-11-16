@@ -18,7 +18,8 @@
 
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
 
-module org.eclipse.jetty.alpn.server {
+module org.eclipse.jetty.alpn.server
+{
     exports org.eclipse.jetty.alpn.server;
 
     requires org.eclipse.jetty.util;

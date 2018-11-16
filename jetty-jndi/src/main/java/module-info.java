@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.jndi {
+module org.eclipse.jetty.jndi
+{
     exports org.eclipse.jetty.jndi;
     exports org.eclipse.jetty.jndi.factories;
     exports org.eclipse.jetty.jndi.java;

@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.io {
+module org.eclipse.jetty.io
+{
     exports org.eclipse.jetty.io;
     exports org.eclipse.jetty.io.ssl;
 

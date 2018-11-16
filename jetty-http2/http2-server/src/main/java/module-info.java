@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.http2.server {
+module org.eclipse.jetty.http2.server
+{
     exports org.eclipse.jetty.http2.server;
 
     requires org.eclipse.jetty.util;

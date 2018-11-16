@@ -19,7 +19,8 @@
 import org.eclipse.jetty.alpn.java.server.JDK9ServerALPNProcessor;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
 
-module org.eclipse.jetty.alpn.java.server {
+module org.eclipse.jetty.alpn.java.server
+{
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.alpn.server;

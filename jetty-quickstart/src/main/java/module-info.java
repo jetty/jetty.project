@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.quickstart {
+module org.eclipse.jetty.quickstart
+{
     exports org.eclipse.jetty.quickstart;
 
     requires javax.servlet.api;

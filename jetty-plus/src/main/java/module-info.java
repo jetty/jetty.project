@@ -20,7 +20,8 @@ import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 
-module org.eclipse.jetty.plus {
+module org.eclipse.jetty.plus
+{
     exports org.eclipse.jetty.plus.annotation;
     exports org.eclipse.jetty.plus.jndi;
     exports org.eclipse.jetty.plus.security;

@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-module org.eclipse.jetty.jmx {
+module org.eclipse.jetty.jmx
+{
     exports org.eclipse.jetty.jmx;
 
     requires transitive java.management;

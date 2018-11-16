@@ -19,7 +19,8 @@
 import org.eclipse.jetty.spring.SpringConfigurationProcessorFactory;
 import org.eclipse.jetty.xml.ConfigurationProcessorFactory;
 
-module org.eclipse.jetty.spring {
+module org.eclipse.jetty.spring
+{
     exports org.eclipse.jetty.spring;
 
     requires org.eclipse.jetty.util;
