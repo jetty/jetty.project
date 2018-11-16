@@ -323,13 +323,13 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (networkBuffer == null)
                 throw new IllegalStateException();
 
-            if (networkBuffer.isEmpty() || shutdown || failed)
-            {
-                networkBuffer.release();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released {}", networkBuffer);
-                networkBuffer = null;
-            }
+            if (networkBuffer.hasRemaining() && !shutdown && !failed)
+                throw new IllegalStateException();
+
+            networkBuffer.release();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Released {}", networkBuffer);
+            networkBuffer = null;
         }
 
         @Override
