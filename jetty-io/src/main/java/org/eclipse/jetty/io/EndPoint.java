@@ -136,6 +136,8 @@ public interface EndPoint extends Closeable
      */
     boolean isOutputShutdown();
 
+    void shutdownInput();
+
     /* ------------------------------------------------------------ */
     /** Test if the input is shutdown.
      * The input is shutdown if an EOF has been read while doing

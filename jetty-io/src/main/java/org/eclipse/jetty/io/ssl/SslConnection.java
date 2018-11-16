@@ -579,6 +579,7 @@ public class SslConnection extends AbstractConnection
                             switch (unwrap)
                             {
                                 case CLOSED:
+                                    getEndPoint().shutdownInput();
                                     return filled = -1;
                                     
                                 case BUFFER_UNDERFLOW:

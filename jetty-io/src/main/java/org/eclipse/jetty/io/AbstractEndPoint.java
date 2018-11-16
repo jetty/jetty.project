@@ -60,7 +60,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         super(scheduler);
     }
 
-    protected final void shutdownInput()
+    @Override
+    public final void shutdownInput()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("shutdownInput {}",this);
