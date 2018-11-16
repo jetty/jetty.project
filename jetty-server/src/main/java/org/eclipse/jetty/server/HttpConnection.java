@@ -441,6 +441,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _chunk=null;
         _generator.reset();
 
+        // if Input is shutdown, shutdown output
+        if (getEndPoint().isInputShutdown())
+            getEndPoint().shutdownOutput();
+
         // if we are not called from the onfillable thread, schedule completion
         if (getCurrentConnection()!=this)
         {

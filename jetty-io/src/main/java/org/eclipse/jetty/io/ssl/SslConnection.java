@@ -579,9 +579,11 @@ public class SslConnection extends AbstractConnection
                             switch (unwrap)
                             {
                                 case CLOSED:
-                                    getEndPoint().shutdownInput();
+                                    // TLS is closed, try to read TCP close else fake a TCP shutdownInput
+                                    if (net_filled>=0 && getEndPoint().fill(BufferUtil.EMPTY_BUFFER)>=0)
+                                        getEndPoint().shutdownInput();
                                     return filled = -1;
-                                    
+
                                 case BUFFER_UNDERFLOW:
                                     if (net_filled > 0)
                                         continue; // try filling some more

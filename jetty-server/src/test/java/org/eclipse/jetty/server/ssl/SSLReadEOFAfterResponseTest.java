@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,9 +45,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // Only in JDK 11 is possible to use SSLSocket.shutdownOutput().
 @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
@@ -103,6 +103,8 @@ public class SSLReadEOFAfterResponseTest
             SSLContext sslContext = sslContextFactory.getSslContext();
             try (Socket client = sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
             {
+                client.setSoTimeout(5 * idleTimeout);
+
                 OutputStream output = client.getOutputStream();
                 String request = "" +
                         "POST / HTTP/1.1\r\n" +
@@ -119,7 +121,6 @@ public class SSLReadEOFAfterResponseTest
                 while (true)
                 {
                     int read = input.read();
-                    System.err.println("read = " + (char)read);
                     assertThat(read, Matchers.greaterThanOrEqualTo(0));
                     if (read == '\r' || read == '\n')
                         ++crlfs;
@@ -131,11 +132,12 @@ public class SSLReadEOFAfterResponseTest
                 for (byte b : bytes)
                     assertEquals(b, input.read());
 
+
                 // Shutdown the output so the server reads the TLS close_notify.
                 client.shutdownOutput();
+                // client.close();
 
                 // The connection should now be idle timed out by the server.
-                client.setSoTimeout(5 * idleTimeout);
                 int read = input.read();
                 assertEquals(-1, read);
             }
