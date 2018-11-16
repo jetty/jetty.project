@@ -256,7 +256,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                         if (task != null)
                             return task;
 
-                        // If more references that 1(ie just us), don't refill into buffer and risk compaction.
+                        // If more references than 1 (ie not just us), don't refill into buffer and risk compaction.
                         if (networkBuffer.getReferences() > 1)
                             reacquireNetworkBuffer();
                     }
@@ -293,7 +293,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             }
         }
 
-
         private void acquireNetworkBuffer()
         {
             if (networkBuffer == null)
@@ -317,7 +316,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (LOG.isDebugEnabled())
                 LOG.debug("Reacquired {}<-{}", networkBuffer, old);
             networkBuffer = new NetworkBuffer();
-
         }
 
         private void releaseNetworkBuffer()
@@ -325,15 +323,14 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (networkBuffer == null)
                 throw new IllegalStateException();
 
-            if (networkBuffer.hasRemaining())
-                throw new IllegalStateException();
-
-            networkBuffer.release();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Released {}", networkBuffer);
-            networkBuffer = null;
+            if (networkBuffer.isEmpty() || shutdown || failed)
+            {
+                networkBuffer.release();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released {}", networkBuffer);
+                networkBuffer = null;
+            }
         }
-
 
         @Override
         public String toString()

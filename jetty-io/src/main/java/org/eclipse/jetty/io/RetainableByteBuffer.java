@@ -95,6 +95,6 @@ public class RetainableByteBuffer implements Retainable
     @Override
     public String toString()
     {
-        return String.format("RBB@%x{%s,r=%d}",hashCode(),BufferUtil.toDetailString(buffer),getReferences());
+        return String.format("%s@%x{%s,r=%d}", getClass().getSimpleName(), hashCode(), BufferUtil.toDetailString(buffer), getReferences());
     }
 }
