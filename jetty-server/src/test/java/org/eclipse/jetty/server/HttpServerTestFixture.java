@@ -27,6 +27,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -183,6 +184,42 @@ public class HttpServerTestFixture
             baseRequest.setHandled(true);
             response.setStatus(200);
             response.getOutputStream().print("Hello world\r\n");
+        }
+    }
+
+
+    protected static class ReadExactHandler extends AbstractHandler.ErrorDispatchHandler
+    {
+        @Override
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            int len = request.getContentLength();
+            if (len<0)
+                throw new IllegalStateException();
+            byte[] content = new byte[len];
+            int offset = 0;
+            while (offset<len)
+            {
+                int read = request.getInputStream().read(content,offset,len-offset);
+                if (read<0)
+                    break;
+                offset+=read;
+            }
+            response.setStatus(200);
+            String reply = "Read " + offset + "\r\n";
+            response.setContentLength(reply.length());
+            response.getOutputStream().write(reply.getBytes(StandardCharsets.ISO_8859_1));
+        }
+
+        @Override
+        protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            System.err.println("ERROR: "+request.getAttribute(RequestDispatcher.ERROR_MESSAGE));
+            Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+            if (th!=null)
+                th.printStackTrace();
+            super.doError(target, baseRequest, request, response);
         }
     }
     

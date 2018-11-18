@@ -263,14 +263,24 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
-                else
+                else if (filled==0)
                 {
-                    if (filled <= 0)
+                    fillInterested();
+                    break;
+                }
+                else if (filled<0)
+                {
+                    switch(_channel.getState().getState())
                     {
-                        if (filled == 0)
-                            fillInterested();
-                        break;
+                        case COMPLETING:
+                        case COMPLETED:
+                        case IDLE:
+                        case THROWN:
+                        case ASYNC_ERROR:
+                            getEndPoint().shutdownOutput();
+                            break;
                     }
+                    break;
                 }
             }
         }
@@ -310,16 +320,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
         if (BufferUtil.isEmpty(_requestBuffer))
         {
-            // Can we fill?
-            if(getEndPoint().isInputShutdown())
-            {
-                // No pretend we read -1
-                _parser.atEOF();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled -1 {}",this,BufferUtil.toDetailString(_requestBuffer));
-                return -1;
-            }
-
             // Get a buffer
             // We are not in a race here for the request buffer as we have not yet received a request,
             // so there are not an possible legal threads calling #parseContent or #completed.
@@ -440,10 +440,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _bufferPool.release(_chunk);
         _chunk=null;
         _generator.reset();
-
-        // if Input is shutdown, shutdown output
-        if (getEndPoint().isInputShutdown())
-            getEndPoint().shutdownOutput();
 
         // if we are not called from the onfillable thread, schedule completion
         if (getCurrentConnection()!=this)

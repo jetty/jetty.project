@@ -645,12 +645,6 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
-        public void shutdownInput()
-        {
-            _endp.shutdownInput();
-        }
-
-        @Override
         public boolean isInputShutdown()
         {
             return _endp.isInputShutdown();
