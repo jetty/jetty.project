@@ -81,12 +81,10 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
             {
                 MetaData metaData = _context.getMetaData();           
                 if (metaData.getOrigin(clazz.getName()+".listener") == Origin.NotSet)
-                {
-                    java.util.EventListener listener = (java.util.EventListener)_context.getServletContext().createInstance(clazz); 
+                {     
                     ListenerHolder h = _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz.getName()));
-                    h.setListener(listener);
+                    h.setHeldClass(clazz);
                     _context.getServletHandler().addListener(h);
-                    _context.addEventListener(listener);
                 }
             }
             else

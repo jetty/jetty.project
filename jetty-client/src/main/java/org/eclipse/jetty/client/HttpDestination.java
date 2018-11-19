@@ -22,7 +22,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
@@ -472,8 +471,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
-        ContainerLifeCycle.dump(out, indent, Collections.singleton(new DumpableCollection("exchanges", exchanges)));
+        dumpObjects(out, indent, new DumpableCollection("exchanges", exchanges));
     }
 
     public String asString()

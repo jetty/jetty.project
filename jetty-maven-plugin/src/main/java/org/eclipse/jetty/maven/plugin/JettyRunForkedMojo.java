@@ -44,6 +44,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -151,7 +152,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
      * pom has an explicit dependency on it.
      */
     private boolean hasSlf4jDeps;
-    
+
+    @Parameter(property = "jetty.javaPath")
+    private String javaPath;
 
     /**
      * ShutdownThread
@@ -271,7 +274,14 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 tpool.stop();
             
             List<String> cmd = new ArrayList<>();
-            cmd.add(getJavaBin());
+            if( StringUtil.isNotBlank( javaPath ))
+            {
+                cmd.add( javaPath );
+            }
+            else
+            {
+                cmd.add( getJavaBin() );
+            }
             
             if (jvmArgs != null)
             {
@@ -307,7 +317,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
             cmd.add("--props");
             cmd.add(props.getAbsolutePath());
             
-            String token = createToken();
             Path tokenFile = target.toPath().resolve(createToken()+".txt");
             cmd.add("--token");
             cmd.add(tokenFile.toAbsolutePath().toString());
@@ -508,46 +517,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return classPath.toString();
     }
 
-    
 
-    
-    /**
-     * @return
-     */
-    private String getJavaBin()
-    {
-        String javaexes[] = new String[]
-        { "java", "java.exe" };
-
-        File javaHomeDir = new File(System.getProperty("java.home"));
-        for (String javaexe : javaexes)
-        {
-            File javabin = new File(javaHomeDir,fileSeparators("bin/" + javaexe));
-            if (javabin.exists() && javabin.isFile())
-            {
-                return javabin.getAbsolutePath();
-            }
-        }
-
-        return "java";
-    }
-    
-    public static String fileSeparators(String path)
-    {
-        StringBuilder ret = new StringBuilder();
-        for (char c : path.toCharArray())
-        {
-            if ((c == '/') || (c == '\\'))
-            {
-                ret.append(File.separatorChar);
-            }
-            else
-            {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
-    }
 
     public static String pathSeparators(String path)
     {

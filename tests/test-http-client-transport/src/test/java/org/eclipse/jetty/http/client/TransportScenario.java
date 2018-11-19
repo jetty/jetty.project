@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
 
 import javax.servlet.http.HttpServlet;
 
@@ -56,6 +58,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -75,6 +78,7 @@ public class TransportScenario
     protected String servletPath = "/servlet";
     protected HttpClient client;
     protected Path sockFile;
+    protected final BlockingQueue<String> requestLog= new BlockingArrayQueue<>();
 
     public TransportScenario(final Transport transport) throws IOException
     {
@@ -267,20 +271,29 @@ public class TransportScenario
         else
             setConnectionIdleTimeout(idleTimeout);
     }
-
     public void start(Handler handler) throws Exception
     {
+        start(handler,null);
+    }
+
+    public void start(Handler handler, Consumer<HttpClient> config) throws Exception
+    {
         startServer(handler);
-        startClient();
+        startClient(config);
     }
 
     public void start(HttpServlet servlet) throws Exception
     {
         startServer(servlet);
-        startClient();
+        startClient(null);
     }
 
     public void startClient() throws Exception
+    {
+        startClient(null);
+    }
+
+    public void startClient(Consumer<HttpClient> config) throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
@@ -288,6 +301,10 @@ public class TransportScenario
         client = newHttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
+
+        if (config!=null)
+            config.accept(client);
+
         client.start();
         if (server != null)
             server.addBean(client);
@@ -320,7 +337,15 @@ public class TransportScenario
         server.addBean(mbeanContainer);
         connector = newServerConnector(server);
         server.addConnector(connector);
+
+        server.setRequestLog((request, response) ->
+        {
+            int status = response.getCommittedMetaData().getStatus();
+            requestLog.offer(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
+        });
+
         server.setHandler(handler);
+
         try
         {
             server.start();
@@ -375,4 +400,6 @@ public class TransportScenario
             }
         }
     }
+
+
 }

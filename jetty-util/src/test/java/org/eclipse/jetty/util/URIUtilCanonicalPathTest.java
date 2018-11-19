@@ -119,7 +119,7 @@ public class URIUtilCanonicalPathTest
         ArrayList<Arguments> ret = new ArrayList<>();
         for(String[] args: canonical)
         {
-            ret.add(Arguments.of(args));
+            ret.add(Arguments.of((Object[])args));
         }
         return ret.stream();
     }

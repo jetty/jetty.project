@@ -20,9 +20,14 @@ package org.eclipse.jetty.http.client;
 
 import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -56,10 +61,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -616,6 +621,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         int bytesPerSecond = 20;
+        scenario.requestLog.clear();
         scenario.httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         scenario.start(new AbstractHandler.ErrorDispatchHandler()
@@ -643,13 +649,15 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         });
 
         DeferredContentProvider contentProvider = new DeferredContentProvider();
-        CountDownLatch resultLatch = new CountDownLatch(1);
+        BlockingQueue<Object> results = new BlockingArrayQueue<>();
         scenario.client.newRequest(scenario.newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
-                    if (result.getResponse().getStatus() == HttpStatus.REQUEST_TIMEOUT_408)
-                        resultLatch.countDown();
+                    if (result.isFailed())
+                        results.offer(result.getFailure());
+                    else
+                        results.offer(result.getResponse().getStatus());
                 });
 
         for (int i = 0; i < 3; ++i)
@@ -659,9 +667,17 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         }
         contentProvider.close();
 
+        assertThat(scenario.requestLog.poll(5,TimeUnit.SECONDS), containsString(" 408"));
+
         // Request should timeout.
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+
+        Object result = results.poll(5, TimeUnit.SECONDS);
+        assertNotNull(result);
+        if (result instanceof Integer)
+            assertThat((Integer)result,is(408));
+        else
+            assertThat(result,instanceOf(Throwable.class));
     }
 
     @ParameterizedTest

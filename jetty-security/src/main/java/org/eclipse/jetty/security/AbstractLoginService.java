@@ -153,7 +153,7 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
     @Override
     public String toString()
     {
-        return this.getClass().getSimpleName()+"["+_name+"]";
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), _name);
     }
 
     

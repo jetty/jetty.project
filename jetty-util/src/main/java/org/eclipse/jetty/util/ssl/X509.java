@@ -20,9 +20,9 @@ package org.eclipse.jetty.util.ssl;
 
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -62,16 +62,15 @@ public class X509
 
     private final X509Certificate _x509;
     private final String _alias;
-    private final List<String> _hosts=new ArrayList<>();
-    private final List<String> _wilds=new ArrayList<>();
+    private final Set<String> _hosts=new LinkedHashSet<>();
+    private final Set<String> _wilds=new LinkedHashSet<>();
 
     public X509(String alias,X509Certificate x509) throws CertificateParsingException, InvalidNameException
     {
-        _alias=alias;
+        _alias = alias;
         _x509 = x509;
 
         // Look for alternative name extensions
-        boolean named=false;
         Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
         if (altNames!=null)
         {
@@ -83,28 +82,22 @@ public class X509
                     if (LOG.isDebugEnabled())
                         LOG.debug("Certificate SAN alias={} CN={} in {}",alias,cn,this);
                     if (cn!=null)
-                    {
-                        named=true;
                         addName(cn);
-                    }
                 }
             }
         }
 
         // If no names found, look up the CN from the subject
-        if (!named)
+        LdapName name=new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
+        for (Rdn rdn : name.getRdns())
         {
-            LdapName name=new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
-            for (Rdn rdn : name.getRdns())
+            if (rdn.getType().equalsIgnoreCase("CN"))
             {
-                if (rdn.getType().equalsIgnoreCase("CN"))
-                {
-                    String cn = rdn.getValue().toString();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Certificate CN alias={} CN={} in {}",alias,cn,this);
-                    if (cn!=null && cn.contains(".") && !cn.contains(" "))
-                        addName(cn);
-                }
+                String cn = rdn.getValue().toString();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Certificate CN alias={} CN={} in {}",alias,cn,this);
+                if (cn!=null && cn.contains(".") && !cn.contains(" "))
+                    addName(cn);
             }
         }
     }
@@ -130,12 +123,12 @@ public class X509
 
     public Set<String> getHosts()
     {
-        return new HashSet<>(_hosts);
+        return Collections.unmodifiableSet(_hosts);
     }
 
     public Set<String> getWilds()
     {
-        return new HashSet<>(_wilds);
+        return Collections.unmodifiableSet(_wilds);
     }
 
     public boolean matches(String host)

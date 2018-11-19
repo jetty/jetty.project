@@ -201,7 +201,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
-    private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
@@ -257,10 +256,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out,indent,Collections.singletonList(new ClassLoaderDump(getClassLoader())),
-                Collections.singletonList(new DumpableCollection("Handler attributes " + this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("Context attributes " + this,((Context)getServletContext()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("Initparams " + this,getInitParams().entrySet())));
+        dumpObjects(out, indent,
+            new ClassLoaderDump(getClassLoader()),
+            new DumpableCollection("eventListeners " + this, _eventListeners),
+            new DumpableCollection("handler attributes " + this, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
+            new DumpableCollection("context attributes " + this, ((Context)getServletContext()).getAttributeEntrySet()),
+            new DumpableCollection("initparams " + this,getInitParams().entrySet()));
     }
 
     /* ------------------------------------------------------------ */
@@ -677,7 +678,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _durableListeners.add(listener);
 
         if (listener instanceof ContextScopeListener)
+        {
             _contextListeners.add((ContextScopeListener)listener);
+            if (__context.get()!=null)
+                ((ContextScopeListener)listener).enterScope(__context.get(),null,"Listener registered");
+        }
 
         if (listener instanceof ServletContextListener)
             _servletContextListeners.add((ServletContextListener)listener);
@@ -1553,10 +1558,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setManagedAttribute(String name, Object value)
     {
-        Object old = _managedAttributes.put(name,value);
-        updateBean(old,value);
     }
 
     /* ------------------------------------------------------------ */

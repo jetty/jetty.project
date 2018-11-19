@@ -43,7 +43,6 @@ import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -55,10 +54,11 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 {
     @Override
-    public void start(Scenario scenario, Handler handler) throws Exception
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
     {
-        super.start(scenario, handler);
+        HttpClient client = super.newHttpClient(scenario, transport);
         client.setStrictEventOrdering(false);
+        return client;
     }
 
     @ParameterizedTest

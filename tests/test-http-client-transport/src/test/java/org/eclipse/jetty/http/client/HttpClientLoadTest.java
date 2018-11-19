@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +30,11 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -85,11 +85,12 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     public void testIterative(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new LoadHandler());
-
-        scenario.client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-        scenario.client.setMaxConnectionsPerDestination(32768);
-        scenario.client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        scenario.start(new LoadHandler(), client ->
+        {
+            client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+            client.setMaxConnectionsPerDestination(32768);
+            client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        });
 
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
         int runs = 1;
@@ -130,11 +131,13 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     public void testConcurrent(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new LoadHandler());
+        scenario.start(new LoadHandler(), client ->
+        {
+            client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+            client.setMaxConnectionsPerDestination(32768);
+            client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        });
 
-        scenario.client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-        scenario.client.setMaxConnectionsPerDestination(32768);
-        scenario.client.setMaxRequestsQueuedPerDestination(1024 * 1024);
 
         int runs = 1;
         int iterations = 256;
@@ -186,7 +189,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         // Choose a random method
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
 
-        boolean ssl = scenario.isTransportSecure();
+        boolean ssl = scenario.transport.isTlsBased();
 
         // Choose randomly whether to close the connection on the client or on the server
         boolean clientClose = false;
@@ -196,13 +199,17 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         if (!ssl && random.nextInt(100) < 5)
             serverClose = true;
 
+        long clientTimeout = 0;
+//        if (!ssl && random.nextInt(100) < 5)
+//            clientTimeout = random.nextInt(500) + 500;
+
         int maxContentLength = 64 * 1024;
         int contentLength = random.nextInt(maxContentLength) + 1;
 
-        test(scenario.getScheme(), host, method.asString(), clientClose, serverClose, contentLength, true, latch, failures);
+        test(scenario.getScheme(), host, method.asString(), clientClose, serverClose, clientTimeout, contentLength, true, latch, failures);
     }
 
-    private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)
+    private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, long clientTimeout, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)
     {
         long requestId = requestCount.incrementAndGet();
         Request request = scenario.client.newRequest(host, scenario.getNetworkConnectorLocalPortInt().orElse(0))
@@ -214,6 +221,12 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             request.header(HttpHeader.CONNECTION, "close");
         else if (serverClose)
             request.header("X-Close", "true");
+
+        if (clientTimeout > 0)
+        {
+            request.header("X-Timeout", String.valueOf(clientTimeout));
+            request.idleTimeout(clientTimeout, TimeUnit.MILLISECONDS);
+        }
 
         switch (method)
         {
@@ -254,12 +267,18 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             {
                 if (result.isFailed())
                 {
-                    result.getFailure().printStackTrace();
-                    failures.add("Result failed " + result);
+                    Throwable failure = result.getFailure();
+                    if (!(clientTimeout > 0 && failure instanceof TimeoutException))
+                    {
+                        failure.printStackTrace();
+                        failures.add("Result failed " + result);
+                    }
                 }
-
-                if (checkContentLength && contentLength.get() != 0)
-                    failures.add("Content length mismatch " + contentLength);
+                else
+                {
+                    if (checkContentLength && contentLength.get() != 0)
+                        failures.add("Content length mismatch " + contentLength);
+                }
 
                 requestLatch.countDown();
                 latch.countDown();
@@ -288,8 +307,14 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     private class LoadHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
+            baseRequest.setHandled(true);
+
+            String timeout = request.getHeader("X-Timeout");
+            if (timeout != null)
+                sleep(2 * Integer.parseInt(timeout));
+
             String method = request.getMethod().toUpperCase(Locale.ENGLISH);
             switch (method)
             {
@@ -313,8 +338,18 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
             if (Boolean.parseBoolean(request.getHeader("X-Close")))
                 response.setHeader("Connection", "close");
+        }
 
-            baseRequest.setHandled(true);
+        private void sleep(long time) throws InterruptedIOException
+        {
+            try
+            {
+                Thread.sleep(time);
+            }
+            catch (InterruptedException x)
+            {
+                throw new InterruptedIOException();
+            }
         }
     }
 
@@ -329,8 +364,9 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
 
         @Override
-        public Connector newServerConnector( Server server) throws Exception {
-            if (transport == UNIX_SOCKET)
+        public Connector newServerConnector( Server server)
+        {
+            if (transport == Transport.UNIX_SOCKET)
             {
                 UnixSocketConnector
                         unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));

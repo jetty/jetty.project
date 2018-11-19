@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -353,23 +352,27 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
                         @Override
                         public void dump(Appendable out, String indent) throws IOException
                         {
-                            out.append(String.valueOf(thread.getId()))
+                            StringBuilder b = new StringBuilder();
+                            b.append(String.valueOf(thread.getId()))
                                     .append(" ")
                                     .append(thread.getName())
                                     .append(" p=").append(String.valueOf(thread.getPriority()))
                                     .append(" ")
                                     .append(known)
                                     .append(thread.getState().toString());
+
+
                             if (isDetailedDump())
                             {
-                                out.append(System.lineSeparator());
                                 if (known.isEmpty())
-                                    ContainerLifeCycle.dump(out, indent, Arrays.asList(frames));
+                                    Dumpable.dumpObjects(out, indent, b.toString(), (Object[])frames);
+                                else
+                                    Dumpable.dumpObject(out, b.toString());
                             }
                             else
                             {
-                                out.append(" @ ").append(frames.length > 0 ? String.valueOf(frames[0]) : "<no_stack_frames>")
-                                        .append(System.lineSeparator());
+                                b.append(" @ ").append(frames.length > 0 ? String.valueOf(frames[0]) : "<no_stack_frames>");
+                                Dumpable.dumpObject(out, b.toString());
                             }
                         }
 
@@ -385,7 +388,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         List<Runnable> jobs = Collections.emptyList();
         if (isDetailedDump())
             jobs = new ArrayList<>(_executor.getQueue());
-        dumpBeans(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs - size=" + jobs.size(), jobs)));
+        dumpObjects(out, indent, threads, new DumpableCollection("jobs", jobs));
     }
 
     @Override

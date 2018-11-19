@@ -36,6 +36,10 @@ import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
 
+/**
+ * @deprecated use {@link ConfigurableSpnegoLoginService} instead
+ */
+@Deprecated
 public class SpnegoLoginService extends AbstractLifeCycle implements LoginService
 {
     private static final Logger LOG = Log.getLogger(SpnegoLoginService.class);
