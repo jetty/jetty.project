@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server; 
 
+import java.io.IOException;
+
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 /** 
@@ -28,7 +30,6 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
  */
 public interface RequestLog
 {
-    /* ------------------------------------------------------------ */
     /**
      * @param request The request to log.
      * @param response The response to log.  Note that for some requests
@@ -37,5 +38,29 @@ public interface RequestLog
      * log information it is best to consult {@link Response#getCommittedMetaData()}
      * and {@link Response#getHttpChannel()} directly.
      */
-    public void log(Request request, Response response);
+    void log(Request request, Response response);
+
+    interface Writer
+    {
+        void write(String requestEntry) throws IOException;
+    }
+
+    class Collection implements RequestLog
+    {
+        private final RequestLog[] _logs;
+
+        public Collection(RequestLog... logs)
+        {
+            _logs = logs;
+        }
+
+        @Override
+        public void log(Request request, Response response)
+        {
+            for (RequestLog log : _logs)
+            {
+                log.log(request, response);
+            }
+        }
+    }
 }

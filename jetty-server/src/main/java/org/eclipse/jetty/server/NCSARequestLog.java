@@ -19,13 +19,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.TimeZone;
 
 import org.eclipse.jetty.util.RolloverFileOutputStream;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -36,18 +32,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * Format (single log format). This log format can be output by most web
  * servers, and almost all web log analysis software can understand these
  * formats.
+ * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#NCSA_FORMAT} with a {@link RequestLogWriter}
  */
+@Deprecated
 @ManagedObject("NCSA standard format request log")
 public class NCSARequestLog extends AbstractNCSARequestLog
 {
-    private String _filename;
-    private boolean _append;
-    private int _retainDays;
-    private boolean _closeOut;
-    private String _filenameDateFormat = null;
-    private transient OutputStream _out;
-    private transient OutputStream _fileOut;
-    private transient Writer _writer;
+    private final RequestLogWriter _requestLogWriter;
 
     /* ------------------------------------------------------------ */
     /**
@@ -55,9 +46,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public NCSARequestLog()
     {
-        setExtended(true);
-        _append = true;
-        _retainDays = 31;
+        this((String)null);
     }
 
     /* ------------------------------------------------------------ */
@@ -70,10 +59,18 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public NCSARequestLog(String filename)
     {
+        this(new RequestLogWriter(filename));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Create request log object with specified output file name.
+     */
+    public NCSARequestLog(RequestLogWriter writer)
+    {
+        super(writer);
+        _requestLogWriter = writer;
         setExtended(true);
-        _append = true;
-        _retainDays = 31;
-        setFilename(filename);
     }
 
     /* ------------------------------------------------------------ */
@@ -87,13 +84,15 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setFilename(String filename)
     {
-        if (filename != null)
-        {
-            filename = filename.trim();
-            if (filename.length() == 0)
-                filename = null;
-        }
-        _filename = filename;
+        _requestLogWriter.setFilename(filename);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setLogTimeZone(String tz)
+    {
+        super.setLogTimeZone(tz);
+        _requestLogWriter.setTimeZone(tz);
     }
 
     /* ------------------------------------------------------------ */
@@ -105,7 +104,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
     @ManagedAttribute("file of log")
     public String getFilename()
     {
-        return _filename;
+        return _requestLogWriter.getFileName();
     }
     
     /* ------------------------------------------------------------ */
@@ -118,16 +117,14 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public String getDatedFilename()
     {
-        if (_fileOut instanceof RolloverFileOutputStream)
-            return ((RolloverFileOutputStream)_fileOut).getDatedFilename();
-        return null;
+        return _requestLogWriter.getDatedFilename();
     }
 
     /* ------------------------------------------------------------ */
     @Override
     protected boolean isEnabled()
     {
-        return (_fileOut != null);
+        return _requestLogWriter.isEnabled();
     }
 
     /* ------------------------------------------------------------ */
@@ -138,7 +135,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setRetainDays(int retainDays)
     {
-        _retainDays = retainDays;
+        _requestLogWriter.setRetainDays(retainDays);
     }
 
     /* ------------------------------------------------------------ */
@@ -150,7 +147,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
     @ManagedAttribute("number of days that log files are kept")
     public int getRetainDays()
     {
-        return _retainDays;
+        return _requestLogWriter.getRetainDays();
     }
 
     /* ------------------------------------------------------------ */
@@ -162,7 +159,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setAppend(boolean append)
     {
-        _append = append;
+        _requestLogWriter.setAppend(append);
     }
 
     /* ------------------------------------------------------------ */
@@ -174,7 +171,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
     @ManagedAttribute("existing log files are appends to the new one")
     public boolean isAppend()
     {
-        return _append;
+        return _requestLogWriter.isAppend();
     }
 
     /* ------------------------------------------------------------ */
@@ -186,7 +183,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setFilenameDateFormat(String logFileDateFormat)
     {
-        _filenameDateFormat = logFileDateFormat;
+        _requestLogWriter.setFilenameDateFormat(logFileDateFormat);
     }
 
     /* ------------------------------------------------------------ */
@@ -197,21 +194,14 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public String getFilenameDateFormat()
     {
-        return _filenameDateFormat;
+        return _requestLogWriter.getFilenameDateFormat();
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void write(String requestEntry) throws IOException
     {
-        synchronized(this)
-        {
-            if (_writer==null)
-                return;
-            _writer.write(requestEntry);
-            _writer.write(StringUtil.__LINE_SEPARATOR);
-            _writer.flush();
-        }
+        _requestLogWriter.write(requestEntry);
     }
     
     /* ------------------------------------------------------------ */
@@ -223,21 +213,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
     @Override
     protected synchronized void doStart() throws Exception
     {
-        if (_filename != null)
-        {
-            _fileOut = new RolloverFileOutputStream(_filename,_append,_retainDays,TimeZone.getTimeZone(getLogTimeZone()),_filenameDateFormat,null);
-            _closeOut = true;
-            LOG.info("Opened " + getDatedFilename());
-        }
-        else
-            _fileOut = System.err;
-
-        _out = _fileOut;
-
-        synchronized(this)
-        {
-            _writer = new OutputStreamWriter(_out);
-        }
         super.doStart();
     }
 
@@ -253,29 +228,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         synchronized (this)
         {
             super.doStop();
-            try
-            {
-                if (_writer != null)
-                    _writer.flush();
-            }
-            catch (IOException e)
-            {
-                LOG.ignore(e);
-            }
-            if (_out != null && _closeOut)
-                try
-                {
-                    _out.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.ignore(e);
-                }
-
-            _out = null;
-            _fileOut = null;
-            _closeOut = false;
-            _writer = null;
         }
     }
 }

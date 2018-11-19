@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -37,20 +36,16 @@ import org.eclipse.jetty.util.log.Logger;
  * Configuration options allow a choice between the standard Common Log Format (as used in the 3 log format) and the
  * Combined Log Format (single log format). This log format can be output by most web servers, and almost all web log
  * analysis software can understand these formats.
+ * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#NCSA_FORMAT} with a {@link RequestLog.Writer}
  */
-public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implements RequestLog
+@Deprecated
+public abstract class AbstractNCSARequestLog extends ContainerLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(AbstractNCSARequestLog.class);
 
-    private static ThreadLocal<StringBuilder> _buffers = new ThreadLocal<StringBuilder>()
-    {
-        @Override
-        protected StringBuilder initialValue()
-        {
-            return new StringBuilder(256);
-        }
-    };
+    private static ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
 
+    protected final RequestLog.Writer _requestLogWriter;
 
     private String[] _ignorePaths;
     private boolean _extended;
@@ -64,7 +59,11 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     private Locale _logLocale = Locale.getDefault();
     private String _logTimeZone = "GMT";
 
-    /* ------------------------------------------------------------ */
+    protected AbstractNCSARequestLog(RequestLog.Writer requestLogWriter)
+    {
+        this._requestLogWriter = requestLogWriter;
+        addBean(_requestLogWriter);
+    }
 
     /**
      * Is logging enabled
@@ -72,16 +71,15 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      */
     protected abstract boolean isEnabled();
 
-    /* ------------------------------------------------------------ */
-
     /**
      * Write requestEntry out. (to disk or slf4j log)
      * @param requestEntry the request entry
      * @throws IOException if unable to write the entry
      */
-    public abstract void write(String requestEntry) throws IOException;
-
-    /* ------------------------------------------------------------ */
+    public void write(String requestEntry) throws IOException
+    {
+        _requestLogWriter.write(requestEntry);
+    }
 
     private void append(StringBuilder buf,String s)
     {

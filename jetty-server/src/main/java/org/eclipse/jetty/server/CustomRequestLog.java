@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -27,16 +26,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -83,7 +83,10 @@ import static java.lang.invoke.MethodType.methodType;
 
  <tr>
  <td valign="top">%{VARNAME}C</td>
- <td>The contents of cookie VARNAME in the request sent to the server. Only version 0 cookies are fully supported.</td>
+ <td>
+ The contents of cookie VARNAME in the request sent to the server. Only version 0 cookies are fully supported.
+ Optional VARNAME parameter, without this parameter %C will log all cookies from the request.
+ </td>
  </tr>
 
  <tr>
@@ -201,8 +204,11 @@ import static java.lang.invoke.MethodType.methodType;
  </tr>
 
  <tr>
- <td valign="top">%u</td>
- <td>Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).</td>
+ <td valign="top">%{d}u</td>
+ <td>
+ Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).
+ Optional parameter d, with this parameter deferred authentication will also be checked.
+ </td>
  </tr>
 
  <tr>
@@ -228,17 +234,17 @@ import static java.lang.invoke.MethodType.methodType;
 
  <tr>
  <td valign="top">%I</td>
- <td>Bytes received, including request and headers. Cannot be zero.</td>
+ <td>Bytes received.</td>
  </tr>
 
  <tr>
  <td valign="top">%O</td>
- <td>Bytes sent, including headers. May be zero in rare cases such as when a request is aborted before a response is sent.</td>
+ <td>Bytes sent.</td>
  </tr>
 
  <tr>
  <td valign="top">%S</td>
- <td>Bytes transferred (received and sent), including request and headers, cannot be zero. This is the combination of %I and %O.</td>
+ <td>Bytes transferred (received and sent). This is the combination of %I and %O.</td>
  </tr>
 
  <tr>
@@ -253,25 +259,29 @@ import static java.lang.invoke.MethodType.methodType;
 
  </table>
  */
-public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
+public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(CustomRequestLog.class);
+
+    //TODO previous NCSA format includes "" in the append, so %C would print out "cookies" if cookies exist and - without the "" if they do not
+    public static final String NCSA_FORMAT = "%a - %u %t \"%r\" %s %B \"%{Referer}i\" \"%{User-Agent}i\" \"%C\"";
 
     private static ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
 
     private String[] _ignorePaths;
-    private boolean _extended;
     private transient PathMappings<String> _ignorePathMap;
-    private boolean _preferProxiedForAddress;
-    private transient DateCache _logDateCache;
-    private String _logDateFormat = "dd/MMM/yyyy:HH:mm:ss ZZZ";
+    private final static String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
     private Locale _logLocale = Locale.getDefault();
     private String _logTimeZone = "GMT";
 
+    private RequestLog.Writer _requestLogWriter;
     private final MethodHandle _logHandle;
 
-    public CustomRequestLog(String formatString)
+    public CustomRequestLog(RequestLog.Writer writer, String formatString)
     {
+        _requestLogWriter = writer;
+        addBean(_requestLogWriter);
+
         try
         {
             _logHandle = getLogHandle(formatString);
@@ -286,31 +296,6 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         }
     }
 
-    /* ------------------------------------------------------------ */
-
-    /**
-     * Is logging enabled
-     * @return true if logging is enabled
-     */
-    protected boolean isEnabled()
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-
-    /**
-     * Write requestEntry out. (to disk or slf4j log)
-     * @param requestEntry the request entry
-     * @throws IOException if unable to write the entry
-     */
-    protected void write(String requestEntry) throws IOException
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-
-
     /**
      * Writes the request and response information to the output stream.
      *
@@ -324,16 +309,13 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
             if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
                 return;
 
-            if (!isEnabled())
-                return;
-
             StringBuilder sb = _buffers.get();
             sb.setLength(0);
 
             _logHandle.invoke(sb, request, response);
 
             String log = sb.toString();
-            write(log);
+            _requestLogWriter.write(log);
         }
         catch (Throwable e)
         {
@@ -346,16 +328,23 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
      * @param request The request to extract from
      * @return The string to log for authenticated user.
      */
-    protected String getAuthentication(Request request)
+    protected static String getAuthentication(Request request, boolean checkDeferred)
     {
         Authentication authentication = request.getAuthentication();
 
+        String name = null;
+
+        boolean deferred = false;
+        if (checkDeferred && authentication instanceof  Authentication.Deferred)
+        {
+            authentication = ((Authentication.Deferred)authentication).authenticate(request);
+            deferred = true;
+        }
+
         if (authentication instanceof Authentication.User)
-            return ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
+            name = ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
 
-        // TODO extract the user name if it is Authentication.Deferred and return as '?username'
-
-        return null;
+        return (name==null) ? null : (deferred ? ("?"+name):name);
     }
 
     /**
@@ -379,49 +368,6 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /**
-     * Controls whether the actual IP address of the connection or the IP address from the X-Forwarded-For header will
-     * be logged.
-     *
-     * @param preferProxiedForAddress true - IP address from header will be logged, false - IP address from the
-     *                                connection will be logged
-     */
-    public void setPreferProxiedForAddress(boolean preferProxiedForAddress)
-    {
-        _preferProxiedForAddress = preferProxiedForAddress;
-    }
-
-    /**
-     * Retrieved log X-Forwarded-For IP address flag.
-     *
-     * @return value of the flag
-     */
-    public boolean getPreferProxiedForAddress()
-    {
-        return _preferProxiedForAddress;
-    }
-
-    /**
-     * Set the extended request log format flag.
-     *
-     * @param extended true - log the extended request information, false - do not log the extended request information
-     */
-    public void setExtended(boolean extended)
-    {
-        _extended = extended;
-    }
-
-    /**
-     * Retrieve the extended request log format flag.
-     *
-     * @return value of the flag
-     */
-    @ManagedAttribute("use extended NCSA format")
-    public boolean isExtended()
-    {
-        return _extended;
-    }
-
-    /**
      * Set up request logging and open log file.
      *
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -429,11 +375,6 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     @Override
     protected synchronized void doStart() throws Exception
     {
-        if (_logDateFormat != null)
-        {
-            _logDateCache = new DateCache(_logDateFormat, _logLocale ,_logTimeZone);
-        }
-
         if (_ignorePaths != null && _ignorePaths.length > 0)
         {
             _ignorePathMap = new PathMappings<>();
@@ -444,34 +385,6 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
             _ignorePathMap = null;
 
         super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        _logDateCache = null;
-        super.doStop();
-    }
-
-    /**
-     * Set the timestamp format for request log entries in the file. If this is not set, the pre-formated request
-     * timestamp is used.
-     *
-     * @param format timestamp format string
-     */
-    public void setLogDateFormat(String format)
-    {
-        _logDateFormat = format;
-    }
-
-    /**
-     * Retrieve the timestamp format string for request log entries.
-     *
-     * @return timestamp format string.
-     */
-    public String getLogDateFormat()
-    {
-        return _logDateFormat;
     }
 
     /**
@@ -529,7 +442,6 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         append(buf, s);
     }
 
-
     private MethodHandle getLogHandle(String formatString) throws NoSuchMethodException, IllegalAccessException
     {
         MethodHandle append = MethodHandles.lookup().findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
@@ -548,7 +460,6 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
         return logHandle;
     }
-
 
     private static List<Token> getTokens(String formatString)
     {
@@ -604,14 +515,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static class Token
     {
-        public boolean isLiteralString()
-        {
-            return(literal != null);
-        }
-        public boolean isPercentCode()
-        {
-            return(code != null);
-        }
+        //todo make final
         public String code = null;
         public String arg = null;
         public List<String> modifiers = null;
@@ -629,6 +533,15 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         public Token(String literal)
         {
             this.literal = literal;
+        }
+
+        public boolean isLiteralString()
+        {
+            return(literal != null);
+        }
+        public boolean isPercentCode()
+        {
+            return(code != null);
         }
     }
 
@@ -665,6 +578,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         {
             case "%":
             {
+                //todo use literal
                 specificHandle = dropArguments(dropArguments(append.bindTo("%"), 1, Request.class), 2, Response.class);
                 break;
             }
@@ -713,11 +627,16 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
             case "C":
             {
                 if (arg == null || arg.isEmpty())
-                    throw new IllegalArgumentException("No arg for %C");
-
-                String method = "logRequestCookie";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
-                specificHandle = specificHandle.bindTo(arg);
+                {
+                    String method = "logRequestCookies";
+                    specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                }
+                else
+                {
+                    String method = "logRequestCookie";
+                    specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
+                    specificHandle = specificHandle.bindTo(arg);
+                }
                 break;
             }
 
@@ -857,7 +776,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
                 //todo is this correctly supporting the right formats
                 DateCache logDateCache;
                 if (arg == null || arg.isEmpty())
-                    logDateCache = new DateCache(_logDateFormat, _logLocale , _logTimeZone);
+                    logDateCache = new DateCache(DEFAULT_DATE_FORMAT, _logLocale , _logTimeZone);
                 else
                     logDateCache = new DateCache(arg, _logLocale , _logTimeZone);
 
@@ -896,7 +815,12 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
             case "u":
             {
-                String method = "logRequestAuthentication";
+                String method;
+                if (arg == null || arg.isEmpty())
+                    method = "logRequestAuthenticationWithDeferred";
+                else
+                    method = "logRequestAuthentication";
+
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
@@ -949,24 +873,22 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     throw new IllegalArgumentException("No arg for %ti");
 
-                String method = "logRequestTrailerLines";
+                String method = "logRequestTrailer";
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
                 specificHandle = specificHandle.bindTo(arg);
                 break;
             }
-
 
             case "to":
             {
                 if (arg == null || arg.isEmpty())
                     throw new IllegalArgumentException("No arg for %to");
 
-                String method = "logResponseTrailerLines";
+                String method = "logResponseTrailer";
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logTypeArg);
                 specificHandle = specificHandle.bindTo(arg);
                 break;
             }
-
 
             default:
                 throw new IllegalArgumentException("Unsupported code %" + code);
@@ -1000,8 +922,7 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logConnectionIP(StringBuilder b, Request request, Response response)
     {
-        //todo don't think this is correct
-        append(b, request.getHeader(HttpHeader.X_FORWARDED_FOR.toString()));
+        append(b, request.getHttpChannel().getEndPoint().getRemoteAddress().getAddress().getHostAddress());
     }
 
     private static void logLocalIP(StringBuilder b, Request request, Response response)
@@ -1012,18 +933,20 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
     private static void logResponseSize(StringBuilder b, Request request, Response response)
     {
         long written = response.getHttpChannel().getBytesWritten();
-        b.append(Long.toString(written));
+        b.append(written);
     }
 
     private static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
     {
         long written = response.getHttpChannel().getBytesWritten();
-        b.append((written==0) ? "-" : Long.toString(written));
+        if (written==0)
+            b.append('-');
+        else
+            b.append(written);
     }
 
     private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
-        //todo should this be logging full cookie or its value, can you log multiple cookies, can multiple cookies have the same name
         for (Cookie c : request.getCookies())
         {
             if (arg.equals(c.getName()))
@@ -1033,7 +956,25 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
             }
         }
 
-        b.append("-");
+        b.append('-');
+    }
+
+    private static void logRequestCookies(StringBuilder b, Request request, Response response)
+    {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookies.length == 0)
+            b.append("-");
+        else
+        {
+            for (int i = 0; i < cookies.length; i++)
+            {
+                if (i != 0)
+                    b.append(';');
+                b.append(cookies[i].getName());
+                b.append('=');
+                b.append(cookies[i].getValue());
+            }
+        }
     }
 
     private static void logEnvironmentVar(String arg, StringBuilder b, Request request, Response response)
@@ -1043,8 +984,8 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logFilename(StringBuilder b, Request request, Response response)
     {
-        //TODO probably wrong, getRealPath?
-        append(b, request.getContextPath());
+        //TODO verify
+        append(b, request.getServletContext().getRealPath(request.getPathInfo()));
     }
 
     private static void logRemoteHostName(StringBuilder b, Request request, Response response)
@@ -1059,14 +1000,16 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logRequestHeader(String arg, StringBuilder b, Request request, Response response)
     {
-        //TODO does this need to do multiple headers 'request.getHeaders(arg)'
         append(b, request.getHeader(arg));
     }
 
     private static void logKeepAliveRequests(StringBuilder b, Request request, Response response)
     {
-        //todo verify this "number of requests on this connection? what about http2?"
-        b.append(request.getHttpChannel().getRequests());
+        long requests = request.getHttpChannel().getConnection().getMessagesIn();
+        if (requests >= 0)
+            b.append(requests);
+        else
+            b.append('-');
     }
 
     private static void logRequestMethod(StringBuilder b, Request request, Response response)
@@ -1076,27 +1019,22 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logResponseHeader(String arg, StringBuilder b, Request request, Response response)
     {
-        //TODO does this need to do multiple headers 'Response.getHeaders(arg)'
         append(b, response.getHeader(arg));
     }
 
-
     private static void logCanonicalPort(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        b.append(request.getServerPort());
     }
 
     private static void logLocalPort(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        b.append(request.getLocalPort());
     }
 
     private static void logRemotePort(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        b.append(request.getRemotePort());
     }
 
     private static void logQueryString(StringBuilder b, Request request, Response response)
@@ -1106,8 +1044,11 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logRequestFirstLine(StringBuilder b, Request request, Response response)
     {
-        //todo is there a better way to do this
-        append(b, request.getMethod() + " " + request.getOriginalURI() + " " + request.getProtocol());
+        append(b, request.getMethod());
+        b.append(" ");
+        append(b, request.getOriginalURI());
+        b.append(" ");
+        append(b, request.getProtocol());
     }
 
     private static void logRequestHandler(StringBuilder b, Request request, Response response)
@@ -1118,16 +1059,20 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logResponseStatus(StringBuilder b, Request request, Response response)
     {
-        b.append(response.getStatus());
+        //todo can getCommittedMetaData be null? check what happens when its aborted
+        b.append(response.getCommittedMetaData().getStatus());
     }
 
     private static void logRequestTime(DateCache dateCache, StringBuilder b, Request request, Response response)
     {
-        b.append(dateCache.format(request.getTimeStamp()));
+        b.append('[');
+        append(b, dateCache.format(request.getTimeStamp()));
+        b.append(']');
     }
 
     private static void logLatencyMicroseconds(StringBuilder b, Request request, Response response)
     {
+        //todo can we use nanotime?
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(TimeUnit.MILLISECONDS.toMicros(latency));
     }
@@ -1140,20 +1085,22 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logLatencySeconds(StringBuilder b, Request request, Response response)
     {
-        //todo should this give decimal places
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(TimeUnit.MILLISECONDS.toSeconds(latency));
     }
 
     private static void logRequestAuthentication(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        append(b, getAuthentication(request, false));
+    }
+
+    private static void logRequestAuthenticationWithDeferred(StringBuilder b, Request request, Response response)
+    {
+        append(b, getAuthentication(request, true));
     }
 
     private static void logUrlRequestPath(StringBuilder b, Request request, Response response)
     {
-        //todo verify if this contains the query string
         append(b, request.getRequestURI());
     }
 
@@ -1164,19 +1111,18 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
 
     private static void logConnectionStatus(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        b.append(request.getHttpChannel().isResponseCompleted() ?  (request.getHttpChannel().isPersistent() ? '+' : '-') : 'X');
     }
 
     private static void logBytesReceived(StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        //todo should this be content received rather than consumed
+        b.append(request.getHttpInput().getContentConsumed());
     }
 
     private static void logBytesSent(StringBuilder b, Request request, Response response)
     {
-        //todo implement
+        //todo redirect to logResponseSize
         append(b, "?");
     }
 
@@ -1186,15 +1132,28 @@ public class CustomRequestLog extends AbstractLifeCycle implements RequestLog
         append(b, "?");
     }
 
-    private static void logRequestTrailerLines(String arg, StringBuilder b, Request request, Response response)
+    private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        HttpFields trailers = request.getTrailers();
+        if (trailers != null)
+            append(b, trailers.get(arg));
+        else
+            b.append('-');
     }
 
-    private static void logResponseTrailerLines(String arg, StringBuilder b, Request request, Response response)
+    private static void logResponseTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        //todo implement
-        append(b, "?");
+        Supplier<HttpFields> supplier = response.getTrailers();
+        if (supplier != null)
+        {
+            HttpFields trailers = supplier.get();
+
+            if (trailers != null)
+                append(b, trailers.get(arg));
+            else
+                b.append('-');
+        }
+        else
+            b.append("-");
     }
 }
