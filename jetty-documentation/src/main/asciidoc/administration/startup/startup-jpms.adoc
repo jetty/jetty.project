@@ -19,16 +19,17 @@
 [[startup-jpms]]
 === Startup using the Java Platform Module System (JPMS)
 
-Jetty modules also act ass automatic https://en.wikipedia.org/wiki/Java_Platform_Module_System[JPMS] modules via the `Automatic-Module-Name` attribute in the jar's `MANIFEST.MF` file.
+Jetty modules also act as automatic https://en.wikipedia.org/wiki/Java_Platform_Module_System[JPMS] modules via the `Automatic-Module-Name` attribute in the jar's `MANIFEST.MF` file.
 
 This makes possible to run Jetty from the module-path, rather than the class-path.
 
-We recommend using JDK 11 or greater due to the fact that JDK 11 removed all the "enterprise" modules from the JDK.
+We recommend using JDK 11 or greater due to the fact that JDK 11 removed all the "enterprise" modules from the JDK,
+and therefore it guarantees a more stable platform to base your application's dependencies on.
 The classes in these "enterprise" modules were bundled with JDK 8, and present in "enterprise" modules in JDK 9 and JDK 10.
 With JDK 11, these "enterprise" classes are either not available in the JDK (because their corresponding module was removed), or they are present in a different module.
 
 Because some of these "enterprise" classes are required by Jetty or by applications running in Jetty, it is better to use a stable source for those classes - in this case by using JDK 11
-or greater.
+or greater, and explicitly referencing the "enterprise" classes as dependencies, rather than assuming they are bundled with the JDK.
 
 [[jpms-module-path]]
 ==== Starting Jetty on the module-path
@@ -53,7 +54,6 @@ The server then starts Jetty on the module-path using the `--jpms` option.
 ----
 [NOTE]
 When running on the module-path using the `--jpms` option, the Jetty start mechanism will fork a second JVM passing it the right JVM options to run on the module-path.
-
 You will have two JVMs running: one that runs `start.jar` and one that runs Jetty on the module-path.
 ----
 
@@ -64,7 +64,7 @@ If you are interested in the details of how the command line to run Jetty on the
 $ java -jar $JETTY_HOME/start.jar --jpms --dry-run
 ....
 
-This will give an out put looking something like this (broken in sections for clarity):
+This will give an output looking something like this (broken in sections for clarity):
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -155,4 +155,38 @@ patch-module: <module>=<file>(:<file>)*
 add-opens: <module>/<package>=<target-module>(,<target-module>)*
 add-exports: <module>/<package>=<target-module>(,<target-module>)*
 add-reads: <module>=<target-module>(,<target-module>)*
+....
+
+[[jpms-module-path-alternative]]
+==== Alternative way to start Jetty on the module-path
+
+The section above uses the `--jpms` command line option to start Jetty on the module-path.
+An alternative way of achieving the same result is to use a Jetty module, `$JETTY_BASE/modules/jpms.mod`,
+that specifies that you want to run using JPMS (and possibly add some JPMS specific configuration).
+
+[source, screen, subs="{sub-order}"]
+.jpms.mod
+....
+[ini]
+--jpms
+
+[jpms]
+# Additional JPMS configuration.
+....
+
+The `[ini]` section is equivalent to passing the `--jpms` option to the command line.
+The `[jpms]` section (see also the link:#jpms-advanced-config[advanced JPMS configuration section])
+allows you specify additional JPMS configuration.
+
+[source, screen, subs="{sub-order}"]
+....
+$ mkdir jetty-base-jpms
+$ cd jetty-base-jpms
+$ mkdir modules
+# Copy the jpms.mod file above into the $JETTY_BASE/modules/ directory.
+$ cp /tmp/jpms.mod modules/
+# Add both the http and the jpms modules.
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http,jpms
+# Jetty will start on the module-path.
+$ java -jar $JETTY_HOME/start.jar
 ....

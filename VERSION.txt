@@ -1,4 +1,9 @@
-jetty-9.4.14-SNAPSHOT
+jetty-9.4.15-SNAPSHOT
+
+jetty-9.4.14.v20181114 - 14 November 2018
+ + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
+ + 3103 HttpClientLoadTest reports a leak in byte buffer
+ + 3104 Align jetty-schemas version within apache-jsp module as well
 
 jetty-9.4.13.v20181111 - 11 November 2018
  + 2191 JPMS Support

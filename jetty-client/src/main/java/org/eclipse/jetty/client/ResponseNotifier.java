@@ -30,7 +30,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -122,13 +121,8 @@ public class ResponseNotifier
         else
         {
             CountingCallback counter = new CountingCallback(callback, contentListeners.size());
-            Retainable retainable = callback instanceof Retainable ? (Retainable)callback : null;
             for (Response.AsyncContentListener listener : contentListeners)
-            {
-                if (retainable != null)
-                    retainable.retain();
                 notifyContent(listener, response, buffer.slice(), counter);
-            }
         }
     }
 
