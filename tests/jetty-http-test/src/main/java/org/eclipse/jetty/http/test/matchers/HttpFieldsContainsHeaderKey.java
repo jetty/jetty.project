@@ -16,60 +16,43 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.matchers;
+package org.eclipse.jetty.http.test.matchers;
 
-import java.util.Locale;
-
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Description;
+import org.hamcrest.Factory;
+import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-public class HttpFieldsContainsHeaderValue extends TypeSafeMatcher<HttpFields>
+public class HttpFieldsContainsHeaderKey extends TypeSafeMatcher<HttpFields>
 {
     private final String keyName;
-    private final String value;
 
-    public HttpFieldsContainsHeaderValue(String keyName, String value)
+    public HttpFieldsContainsHeaderKey(String keyName)
     {
         this.keyName = keyName;
-        this.value = value;
     }
 
-    public HttpFieldsContainsHeaderValue(HttpHeader header, String value)
+    public HttpFieldsContainsHeaderKey(HttpHeader header)
     {
-        this(header.asString(), value);
+        this.keyName = header.asString();
     }
 
     @Override
     public void describeTo(Description description)
     {
-        description.appendText("expecting http header ").appendValue(keyName).appendText(" with value ").appendValue(value);
+        description.appendText("expecting http field name ").appendValue(keyName);
     }
 
     @Override
     protected boolean matchesSafely(HttpFields fields)
     {
-        HttpField field = fields.getField(this.keyName);
-        if (field == null)
-            return false;
+        return fields.containsKey(this.keyName);
+    }
 
-        // Use HttpField.contains() logic
-        if (field.contains(this.value))
-            return true;
-
-        // Simple equals
-        if(this.value == field.getValue())
-            return true;
-
-        // Try individual value logic
-        String lcValue = this.value.toLowerCase(Locale.ENGLISH);
-        for (String value : field.getValues())
-        {
-            if (value.toLowerCase(Locale.ENGLISH).contains(lcValue))
-                return true;
-        }
-        return false;
+    @Factory
+    public static Matcher<HttpFields> containsKey(String keyName) {
+        return new HttpFieldsContainsHeaderKey(keyName);
     }
 }

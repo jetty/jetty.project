@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.jsp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -36,7 +32,7 @@ import javax.servlet.jsp.JspFactory;
 import org.apache.jasper.runtime.JspFactoryImpl;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
-import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.test.HttpTester;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -46,6 +42,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestJettyJspServlet

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.http.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,16 +26,26 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * A HTTP Testing helper class.
- * 
+ * <p>
  * Example usage:
  * <pre>
  *        try(Socket socket = new Socket("www.google.com",80))
@@ -48,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
  *          request.put("Content-Type","application/x-www-form-urlencoded");
  *          request.setContent("q=jetty%20server");
  *          ByteBuffer output = request.generate();
- *          
+ *
  *          socket.getOutputStream().write(output.array(),output.arrayOffset()+output.position(),output.remaining());
  *          HttpTester.Input input = HttpTester.from(socket.getInputStream());
  *          HttpTester.Response response = HttpTester.parseResponse(input);
@@ -62,14 +72,14 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpTester
 {
     private final static Logger LOG = Log.getLogger(HttpTester.class);
-    
+
     private HttpTester()
     {
     }
 
     public static Request newRequest()
     {
-        Request r=new Request();
+        Request r = new Request();
         r.setMethod(HttpMethod.GET.asString());
         r.setURI("/");
         r.setVersion(HttpVersion.HTTP_1_1);
@@ -78,92 +88,91 @@ public class HttpTester
 
     public static Request parseRequest(String request)
     {
-        Request r=new Request();
-        HttpParser parser =new HttpParser(r);
+        Request r = new Request();
+        HttpParser parser = new HttpParser(r);
         parser.parseNext(BufferUtil.toBuffer(request));
         return r;
     }
 
     public static Request parseRequest(ByteBuffer request)
     {
-        Request r=new Request();
-        HttpParser parser =new HttpParser(r);
+        Request r = new Request();
+        HttpParser parser = new HttpParser(r);
         parser.parseNext(request);
         return r;
     }
-    
+
     public static Response parseResponse(String response)
     {
-        Response r=new Response();
-        HttpParser parser =new HttpParser(r);
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
         parser.parseNext(BufferUtil.toBuffer(response));
         return r;
     }
 
     public static Response parseResponse(ByteBuffer response)
     {
-        Response r=new Response();
-        HttpParser parser =new HttpParser(r);
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
         parser.parseNext(response);
         return r;
     }
-    
+
     public static Response parseResponse(InputStream responseStream) throws IOException
     {
         ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
         IO.copy(responseStream, contentStream);
-        
-        Response r=new Response();
-        HttpParser parser =new HttpParser(r);
+
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
         parser.parseNext(ByteBuffer.wrap(contentStream.toByteArray()));
         return r;
     }
-    
+
     public abstract static class Input
     {
         protected final ByteBuffer _buffer;
-        protected boolean _eof=false;
+        protected boolean _eof = false;
         protected HttpParser _parser;
 
         public Input()
         {
             this(BufferUtil.allocate(8192));
         }
-        
+
         Input(ByteBuffer buffer)
         {
             _buffer = buffer;
         }
-        
+
         public ByteBuffer getBuffer()
         {
             return _buffer;
         }
-        
+
         public void setHttpParser(HttpParser parser)
         {
-            _parser=parser;
+            _parser = parser;
         }
-        
+
         public HttpParser getHttpParser()
         {
             return _parser;
         }
-        
+
         public HttpParser takeHttpParser()
         {
-            HttpParser p=_parser;
-            _parser=null;
+            HttpParser p = _parser;
+            _parser = null;
             return p;
         }
-        
+
         public boolean isEOF()
         {
             return BufferUtil.isEmpty(_buffer) && _eof;
         }
-        
-        public abstract int fillBuffer() throws IOException; 
-        
+
+        public abstract int fillBuffer() throws IOException;
     }
 
     public static Input from(final ByteBuffer data)
@@ -173,7 +182,7 @@ public class HttpTester
             @Override
             public int fillBuffer() throws IOException
             {
-                _eof=true;
+                _eof = true;
                 return -1;
             }
         };
@@ -187,16 +196,16 @@ public class HttpTester
             public int fillBuffer() throws IOException
             {
                 BufferUtil.compact(_buffer);
-                int len=in.read(_buffer.array(),_buffer.arrayOffset()+_buffer.limit(),BufferUtil.space(_buffer));
-                if (len<0)
-                    _eof=true;
+                int len = in.read(_buffer.array(), _buffer.arrayOffset() + _buffer.limit(), BufferUtil.space(_buffer));
+                if (len < 0)
+                    _eof = true;
                 else
-                    _buffer.limit(_buffer.limit()+len);
+                    _buffer.limit(_buffer.limit() + len);
                 return len;
             }
         };
     }
-    
+
     public static Input from(final ReadableByteChannel in)
     {
         return new Input()
@@ -205,37 +214,37 @@ public class HttpTester
             public int fillBuffer() throws IOException
             {
                 BufferUtil.compact(_buffer);
-                int pos=BufferUtil.flipToFill(_buffer);
-                int len=in.read(_buffer);
-                if (len<0)
-                    _eof=true;
-                BufferUtil.flipToFlush(_buffer,pos);
+                int pos = BufferUtil.flipToFill(_buffer);
+                int len = in.read(_buffer);
+                if (len < 0)
+                    _eof = true;
+                BufferUtil.flipToFlush(_buffer, pos);
                 return len;
             }
         };
     }
-    
+
     public static Response parseResponse(Input in) throws IOException
     {
         Response r;
-        HttpParser parser=in.takeHttpParser();
-        if (parser==null)
+        HttpParser parser = in.takeHttpParser();
+        if (parser == null)
         {
-            r=new Response();
+            r = new Response();
             parser = new HttpParser(r);
         }
         else
-            r=(Response)parser.getHandler();
-        
+            r = (Response)parser.getHandler();
+
         parseResponse(in, parser, r);
-    
-        if(r.isComplete())
+
+        if (r.isComplete())
             return r;
-    
+
         in.setHttpParser(parser);
         return null;
     }
-    
+
     public static void parseResponse(Input in, Response response) throws IOException
     {
         HttpParser parser = in.takeHttpParser();
@@ -244,24 +253,24 @@ public class HttpTester
             parser = new HttpParser(response);
         }
         parseResponse(in, parser, response);
-    
+
         if (!response.isComplete())
             in.setHttpParser(parser);
     }
-    
+
     private static void parseResponse(Input in, HttpParser parser, Response r) throws IOException
     {
         ByteBuffer buffer = in.getBuffer();
-        
-        while(true)
+
+        while (true)
         {
             if (BufferUtil.hasContent(buffer))
                 if (parser.parseNext(buffer))
                     break;
-            int len=in.fillBuffer();
-            if (len==0)
+            int len = in.fillBuffer();
+            if (len == 0)
                 break;
-            if (len<=0)
+            if (len <= 0)
             {
                 parser.atEOF();
                 parser.parseNext(buffer);
@@ -273,15 +282,15 @@ public class HttpTester
     public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
     {
         boolean _earlyEOF;
-        boolean _complete=false;
+        boolean _complete = false;
         ByteArrayOutputStream _content;
-        HttpVersion _version=HttpVersion.HTTP_1_0;
+        HttpVersion _version = HttpVersion.HTTP_1_0;
 
         public boolean isComplete()
         {
             return _complete;
         }
-        
+
         public HttpVersion getVersion()
         {
             return _version;
@@ -294,14 +303,14 @@ public class HttpTester
 
         public void setVersion(HttpVersion version)
         {
-            _version=version;
+            _version = version;
         }
 
         public void setContent(byte[] bytes)
         {
             try
             {
-                _content=new ByteArrayOutputStream();
+                _content = new ByteArrayOutputStream();
                 _content.write(bytes);
             }
             catch (IOException e)
@@ -314,7 +323,7 @@ public class HttpTester
         {
             try
             {
-                _content=new ByteArrayOutputStream();
+                _content = new ByteArrayOutputStream();
                 _content.write(StringUtil.getBytes(content));
             }
             catch (IOException e)
@@ -327,7 +336,7 @@ public class HttpTester
         {
             try
             {
-                _content=new ByteArrayOutputStream();
+                _content = new ByteArrayOutputStream();
                 _content.write(BufferUtil.toArray(content));
             }
             catch (IOException e)
@@ -338,28 +347,28 @@ public class HttpTester
 
         public byte[] getContentBytes()
         {
-            if (_content==null)
+            if (_content == null)
                 return null;
             return _content.toByteArray();
         }
 
         public String getContent()
         {
-            if (_content==null)
+            if (_content == null)
                 return null;
-            byte[] bytes=_content.toByteArray();
+            byte[] bytes = _content.toByteArray();
 
-            String content_type=get(HttpHeader.CONTENT_TYPE);
-            String encoding=MimeTypes.getCharsetFromContentType(content_type);
-            Charset charset=encoding==null?StandardCharsets.UTF_8:Charset.forName(encoding);
+            String content_type = get(HttpHeader.CONTENT_TYPE);
+            String encoding = MimeTypes.getCharsetFromContentType(content_type);
+            Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
 
-            return new String(bytes,charset);
+            return new String(bytes, charset);
         }
-        
+
         @Override
         public void parsedHeader(HttpField field)
         {
-            add(field.getName(),field.getValue());
+            add(field.getName(), field.getValue());
         }
 
         @Override
@@ -367,18 +376,18 @@ public class HttpTester
         {
             return false;
         }
-        
+
         @Override
         public boolean messageComplete()
         {
-            _complete=true;
+            _complete = true;
             return true;
         }
 
         @Override
         public boolean headerComplete()
         {
-            _content=new ByteArrayOutputStream();
+            _content = new ByteArrayOutputStream();
             return false;
         }
 
@@ -387,12 +396,12 @@ public class HttpTester
         {
             _earlyEOF = true;
         }
-    
+
         public boolean isEarlyEOF()
         {
             return _earlyEOF;
         }
-    
+
         @Override
         public boolean content(ByteBuffer ref)
         {
@@ -423,28 +432,29 @@ public class HttpTester
                 // System.err.println(info);
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteBuffer header=null;
-                ByteBuffer chunk=null;
-                ByteBuffer content=_content==null?null:ByteBuffer.wrap(_content.toByteArray());
+                ByteBuffer header = null;
+                ByteBuffer chunk = null;
+                ByteBuffer content = _content == null ? null : ByteBuffer.wrap(_content.toByteArray());
 
 
-                loop: while(!generator.isEnd())
+                loop:
+                while (!generator.isEnd())
                 {
-                    HttpGenerator.Result result =  info instanceof MetaData.Request
-                        ?generator.generateRequest((MetaData.Request)info,header,chunk,content,true)
-                        :generator.generateResponse((MetaData.Response)info,false,header,chunk,content,true);
-                    switch(result)
+                    HttpGenerator.Result result = info instanceof MetaData.Request
+                            ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
+                            : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
+                    switch (result)
                     {
                         case NEED_HEADER:
-                            header=BufferUtil.allocate(8192);
+                            header = BufferUtil.allocate(8192);
                             continue;
 
                         case NEED_CHUNK:
-                            chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                            chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
                             continue;
 
                         case NEED_CHUNK_TRAILER:
-                            chunk=BufferUtil.allocate(8192);
+                            chunk = BufferUtil.allocate(8192);
                             continue;
 
                         case NEED_INFO:
@@ -479,8 +489,8 @@ public class HttpTester
             {
                 throw new RuntimeException(e);
             }
-
         }
+
         abstract public MetaData getInfo();
 
         @Override
@@ -488,7 +498,6 @@ public class HttpTester
         {
             return 0;
         }
-
     }
 
     public static class Request extends Message implements HttpParser.RequestHandler
@@ -499,9 +508,9 @@ public class HttpTester
         @Override
         public boolean startRequest(String method, String uri, HttpVersion version)
         {
-            _method=method;
-            _uri=uri.toString();
-            _version=version;
+            _method = method;
+            _uri = uri;
+            _version = version;
             return false;
         }
 
@@ -517,29 +526,29 @@ public class HttpTester
 
         public void setMethod(String method)
         {
-            _method=method;
+            _method = method;
         }
 
         public void setURI(String uri)
         {
-            _uri=uri;
+            _uri = uri;
         }
 
         @Override
         public MetaData.Request getInfo()
         {
-            return new MetaData.Request(_method,new HttpURI(_uri),_version,this,_content==null?0:_content.size());
+            return new MetaData.Request(_method, new HttpURI(_uri), _version, this, _content == null ? 0 : _content.size());
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s %s %s\n%s\n",_method,_uri,_version,super.toString());
+            return String.format("%s %s %s\n%s\n", _method, _uri, _version, super.toString());
         }
 
         public void setHeader(String name, String value)
         {
-            put(name,value);
+            put(name, value);
         }
     }
 
@@ -551,9 +560,9 @@ public class HttpTester
         @Override
         public boolean startResponse(HttpVersion version, int status, String reason)
         {
-            _version=version;
-            _status=status;
-            _reason=reason;
+            _version = version;
+            _status = status;
+            _reason = reason;
             return false;
         }
 
@@ -570,13 +579,13 @@ public class HttpTester
         @Override
         public MetaData.Response getInfo()
         {
-            return new MetaData.Response(_version,_status,_reason,this,_content==null?-1:_content.size());
+            return new MetaData.Response(_version, _status, _reason, this, _content == null ? -1 : _content.size());
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s %s %s\n%s\n",_version,_status,_reason,super.toString());
+            return String.format("%s %s %s\n%s\n", _version, _status, _reason, super.toString());
         }
     }
 }

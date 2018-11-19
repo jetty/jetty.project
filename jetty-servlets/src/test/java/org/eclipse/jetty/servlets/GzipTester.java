@@ -43,8 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.HttpTester.Response;
+import org.eclipse.jetty.http.test.HttpTester;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -118,7 +117,7 @@ public class GzipTester
         return tester.getConnector().getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().getOutputBufferSize();
     }
     
-    public ContentMetadata getResponseMetadata(Response response) throws Exception
+    public ContentMetadata getResponseMetadata(HttpTester.Response response) throws Exception
     {
         long size = response.getContentBytes().length;
 

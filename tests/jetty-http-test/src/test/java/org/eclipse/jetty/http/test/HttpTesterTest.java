@@ -16,11 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+package org.eclipse.jetty.http.test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,11 +26,18 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class HttpTesterTest
 {
-
     public void testExampleUsage() throws Exception
     {
         try(Socket socket = new Socket("www.google.com",80))
@@ -70,11 +73,11 @@ public class HttpTesterTest
             "Host: localhost\r\n"+
             "\r\n"
         );
-        assertThat(request.getMethod(),is("GET"));
-        assertThat(request.getUri(),is("/uri"));
-        assertThat(request.getVersion(),is(HttpVersion.HTTP_1_0));
-        assertThat(request.get(HttpHeader.HOST),is("localhost"));
-        assertThat(request.getContent(),is(""));
+        MatcherAssert.assertThat(request.getMethod(),is("GET"));
+        MatcherAssert.assertThat(request.getUri(),is("/uri"));
+        MatcherAssert.assertThat(request.getVersion(),is(HttpVersion.HTTP_1_0));
+        MatcherAssert.assertThat(request.get(HttpHeader.HOST),is("localhost"));
+        MatcherAssert.assertThat(request.getContent(),is(""));
     }
     
     @Test
@@ -88,11 +91,11 @@ public class HttpTesterTest
             "Host: localhost\r\n"+
             "\r\n"
         );
-        assertThat(request.getMethod(),is("GET"));
-        assertThat(request.getUri(),is("/uri"));
-        assertThat(request.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(request.get(HttpHeader.HOST),is("localhost"));
-        assertThat(request.getContent(),is(""));
+        MatcherAssert.assertThat(request.getMethod(),is("GET"));
+        MatcherAssert.assertThat(request.getUri(),is("/uri"));
+        MatcherAssert.assertThat(request.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(request.get(HttpHeader.HOST),is("localhost"));
+        MatcherAssert.assertThat(request.getContent(),is(""));
     }
 
     
@@ -112,11 +115,11 @@ public class HttpTesterTest
             "Host: localhost\r\n"+
             "\r\n"
         );
-        assertThat(request.getMethod(),is("POST"));
-        assertThat(request.getUri(),is("/uri"));
-        assertThat(request.getVersion(),is(HttpVersion.HTTP_1_0));
-        assertThat(request.get(HttpHeader.HOST),is("localhost"));
-        assertThat(request.getContent(),is("0123456789ABCDEF"));
+        MatcherAssert.assertThat(request.getMethod(),is("POST"));
+        MatcherAssert.assertThat(request.getUri(),is("/uri"));
+        MatcherAssert.assertThat(request.getVersion(),is(HttpVersion.HTTP_1_0));
+        MatcherAssert.assertThat(request.get(HttpHeader.HOST),is("localhost"));
+        MatcherAssert.assertThat(request.getContent(),is("0123456789ABCDEF"));
         
     }
     
@@ -138,14 +141,13 @@ public class HttpTesterTest
             "Host: localhost\r\n"+
             "\r\n"
         );
-        assertThat(request.getMethod(),is("POST"));
-        assertThat(request.getUri(),is("/uri"));
-        assertThat(request.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(request.get(HttpHeader.HOST),is("localhost"));
-        assertThat(request.getContent(),is("0123456789ABCDEF"));
+        MatcherAssert.assertThat(request.getMethod(),is("POST"));
+        MatcherAssert.assertThat(request.getUri(),is("/uri"));
+        MatcherAssert.assertThat(request.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(request.get(HttpHeader.HOST),is("localhost"));
+        MatcherAssert.assertThat(request.getContent(),is("0123456789ABCDEF"));
         
     }
-    
 
     @Test
     public void testResponseEOFBuffer()
@@ -158,11 +160,11 @@ public class HttpTesterTest
             "0123456789ABCDEF"
         );
 
-        assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(response.getStatus(),is(200));
-        assertThat(response.getReason(),is("OK"));
-        assertThat(response.get("Header"),is("value"));
-        assertThat(response.getContent(),is("0123456789ABCDEF")); 
+        MatcherAssert.assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getReason(),is("OK"));
+        MatcherAssert.assertThat(response.get("Header"),is("value"));
+        MatcherAssert.assertThat(response.getContent(),is("0123456789ABCDEF"));
     }
     
     @Test
@@ -178,11 +180,11 @@ public class HttpTesterTest
             "\r\n"
         );
 
-        assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(response.getStatus(),is(200));
-        assertThat(response.getReason(),is("OK"));
-        assertThat(response.get("Header"),is("value"));
-        assertThat(response.getContent(),is("0123456789ABCDEF")); 
+        MatcherAssert.assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getReason(),is("OK"));
+        MatcherAssert.assertThat(response.get("Header"),is("value"));
+        MatcherAssert.assertThat(response.getContent(),is("0123456789ABCDEF"));
     }
     
     @Test
@@ -203,11 +205,11 @@ public class HttpTesterTest
             "\r\n"
         );
 
-        assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(response.getStatus(),is(200));
-        assertThat(response.getReason(),is("OK"));
-        assertThat(response.get("Header"),is("value"));
-        assertThat(response.getContent(),is("0123456789ABCDEF")); 
+        MatcherAssert.assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getReason(),is("OK"));
+        MatcherAssert.assertThat(response.get("Header"),is("value"));
+        MatcherAssert.assertThat(response.getContent(),is("0123456789ABCDEF"));
     }
 
     @Test
@@ -235,18 +237,18 @@ public class HttpTesterTest
         
         HttpTester.Response response = HttpTester.parseResponse(in);
         
-        assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(response.getStatus(),is(200));
-        assertThat(response.getReason(),is("OK"));
-        assertThat(response.get("Header"),is("value"));
-        assertThat(response.getContent(),is("0123456789ABCDEF")); 
+        MatcherAssert.assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getReason(),is("OK"));
+        MatcherAssert.assertThat(response.get("Header"),is("value"));
+        MatcherAssert.assertThat(response.getContent(),is("0123456789ABCDEF"));
         
         response = HttpTester.parseResponse(in);
-        assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(response.getStatus(),is(400));
-        assertThat(response.getReason(),is("OK"));
-        assertThat(response.get("Next"),is("response"));
-        assertThat(response.getContent(),is("0123456789ABCDEF"));    
+        MatcherAssert.assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(response.getStatus(),is(400));
+        MatcherAssert.assertThat(response.getReason(),is("OK"));
+        MatcherAssert.assertThat(response.get("Next"),is("response"));
+        MatcherAssert.assertThat(response.getContent(),is("0123456789ABCDEF"));
     }
     
     @Test
@@ -291,14 +293,13 @@ public class HttpTesterTest
             "0123456789"
             ).getBytes(StandardCharsets.ISO_8859_1)
         );
-        
-        
+
         response = HttpTester.parseResponse(in);
-        assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(response.getStatus(),is(200));
-        assertThat(response.getReason(),is("OK"));
-        assertThat(response.get("Header"),is("value"));
-        assertThat(response.getContent(),is("0123456789ABCDEF")); 
+        MatcherAssert.assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getReason(),is("OK"));
+        MatcherAssert.assertThat(response.get("Header"),is("value"));
+        MatcherAssert.assertThat(response.getContent(),is("0123456789ABCDEF"));
         
         response = HttpTester.parseResponse(in);
         assertThat(response,nullValue());
@@ -309,15 +310,10 @@ public class HttpTesterTest
         );
         
         response = HttpTester.parseResponse(in);
-        assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
-        assertThat(response.getStatus(),is(400));
-        assertThat(response.getReason(),is("OK"));
-        assertThat(response.get("Next"),is("response"));
-        assertThat(response.getContent(),is("0123456789ABCDEF"));    
+        MatcherAssert.assertThat(response.getVersion(),is(HttpVersion.HTTP_1_1));
+        MatcherAssert.assertThat(response.getStatus(),is(400));
+        MatcherAssert.assertThat(response.getReason(),is("OK"));
+        MatcherAssert.assertThat(response.get("Next"),is("response"));
+        MatcherAssert.assertThat(response.getContent(),is("0123456789ABCDEF"));
     }
-    
-    
-    
-    
-
 }

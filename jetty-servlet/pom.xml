@@ -15,31 +15,10 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
-    <jetty-http-tests-jar>${settings.localRepository}/org/eclipse/jetty/jetty-http/${project.version}/jetty-http-${project.version}-tests.jar</jetty-http-tests-jar>
   </properties>
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <compilerArgs>
-            <arg>--patch-module</arg>
-            <arg>org.eclipse.jetty.http=${jetty-http-tests-jar}</arg>
-            <arg>--add-reads</arg>
-            <arg>org.eclipse.jetty.http=ALL-UNNAMED</arg>
-          </compilerArgs>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine}
-            --patch-module org.eclipse.jetty.http=${jetty-http-tests-jar}
-          </argLine>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -81,10 +60,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http</artifactId>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-http-test</artifactId>
       <version>${project.version}</version>
-      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
   </dependencies>

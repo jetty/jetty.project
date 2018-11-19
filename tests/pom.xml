@@ -60,6 +60,7 @@
   </build>
   <modules>
     <module>jetty-jmh</module>
+    <module>jetty-http-test</module>
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-loginservice</module>

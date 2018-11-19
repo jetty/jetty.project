@@ -103,10 +103,9 @@
       <type>pom</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http</artifactId>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-http-test</artifactId>
       <version>${project.version}</version>
-      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.test.HttpTester;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import java.io.IOException;
-import java.util.List;
-
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
-import org.junit.jupiter.api.Test;
 
 public class HttpResponseTesterTest
 {

@@ -16,10 +16,10 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.http.test.matchers;
 
-import org.eclipse.jetty.http.matchers.HttpFieldsContainsHeaderValue;
-import org.eclipse.jetty.http.matchers.HttpFieldsContainsHeaderKey;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 
