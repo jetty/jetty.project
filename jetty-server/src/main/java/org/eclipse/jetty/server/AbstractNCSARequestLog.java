@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#NCSA_FORMAT} with a {@link RequestLog.Writer}
  */
 @Deprecated
-public abstract class AbstractNCSARequestLog extends ContainerLifeCycle implements RequestLog
+public class AbstractNCSARequestLog extends ContainerLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(AbstractNCSARequestLog.class);
 
@@ -59,7 +59,7 @@ public abstract class AbstractNCSARequestLog extends ContainerLifeCycle implemen
     private Locale _logLocale = Locale.getDefault();
     private String _logTimeZone = "GMT";
 
-    protected AbstractNCSARequestLog(RequestLog.Writer requestLogWriter)
+    public AbstractNCSARequestLog(RequestLog.Writer requestLogWriter)
     {
         this._requestLogWriter = requestLogWriter;
         addBean(_requestLogWriter);
@@ -69,7 +69,10 @@ public abstract class AbstractNCSARequestLog extends ContainerLifeCycle implemen
      * Is logging enabled
      * @return true if logging is enabled
      */
-    protected abstract boolean isEnabled();
+    protected boolean isEnabled()
+    {
+        return true;
+    }
 
     /**
      * Write requestEntry out. (to disk or slf4j log)
