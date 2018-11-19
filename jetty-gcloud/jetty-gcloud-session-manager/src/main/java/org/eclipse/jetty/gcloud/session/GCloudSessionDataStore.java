@@ -615,9 +615,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     
     
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
-        //Get sessions managed by any node that expired before the given time limit
+        // Get sessions managed by any node that expired at or before the given
+        // time limit
         Set<String> expired = new HashSet<String>();
         try
         {    

@@ -115,7 +115,7 @@ public class DeleteUnloadableSessionTest
         }
 
         @Override
-        public Set<String> doGetOldExpired(long timeLimit)
+        public Set<String> doGetExpired(long timeLimit)
         {
             return Collections.emptySet();
         }

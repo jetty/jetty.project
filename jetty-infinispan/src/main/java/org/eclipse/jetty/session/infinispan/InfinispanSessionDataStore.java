@@ -190,7 +190,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     
 
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
         // TODO
         return Collections.emptySet();
@@ -201,8 +201,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public void cleanOrphans(long timeLimit)
     {
-        //Implemented by setting a timeout on the items that are put in infinispan. After
-        //the item has been inactive for the timeout, infinispan will delete it.
+        // TODO
     }
 
 

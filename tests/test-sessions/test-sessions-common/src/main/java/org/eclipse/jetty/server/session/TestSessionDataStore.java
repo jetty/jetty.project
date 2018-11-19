@@ -105,7 +105,7 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
         Set<String> set =  new HashSet<>();
         

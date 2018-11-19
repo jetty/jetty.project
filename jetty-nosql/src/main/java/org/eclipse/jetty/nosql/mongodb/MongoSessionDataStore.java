@@ -418,14 +418,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     
 
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
-        //now ask mongo to find sessions last managed by any nodes that expired a while ago 
+        // now ask mongo to find sessions for this context, last managed by any
+        // node, that expired before timeLimit
         Set<String> expiredSessions = new HashSet<>();
 
         BasicDBObject query = new BasicDBObject();
         BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
-        BasicDBObject lt = new BasicDBObject (__EXPIRY, new BasicDBObject("$lt", timeLimit));
+        BasicDBObject lt = new BasicDBObject(__EXPIRY, new BasicDBObject("$le", timeLimit));
         BasicDBList list = new BasicDBList();
         list.add(gt);
         list.add(lt);

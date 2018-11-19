@@ -78,29 +78,30 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     
     
     /**
-     * Implemented by subclasses to find sessions for this context in the store that
-     * expired at or before the timeLimit and thus not being actively managed by
-     * any node. This method is only called periodically (the period
+     * Implemented by subclasses to find sessions for this context in the store
+     * that expired at or before the timeLimit and thus not being actively
+     * managed by any node. This method is only called periodically (the period
      * is configurable) to avoid putting too much load on the store.
      * 
-     * @param timeLimit the upper limit of expiry times to check. Sessions
-     * expired at or before this time will match.
+     * @param before the upper limit of expiry times to check. Sessions expired
+     *            at or before this timestamp will match.
      * 
-     * @return the empty set if there are no sessions expired as at the timeLimit, or
-     * otherwise a set of session ids.
+     * @return the empty set if there are no sessions expired as at the time, or
+     *         otherwise a set of session ids.
      */
-    public abstract Set<String> doGetOldExpired (long timeLimit);
+    public abstract Set<String> doGetExpired (long before);
     
     
     /**
      * Implemented by subclasses to delete sessions for other contexts that
-     * expired at or before the timeLimit. These are 'orphaned' sessions
-     * that are no longer being actively managed by any node. These are 
-     * explicitly sessions that do NOT belong to this context (other mechanisms
-     * such as doGetOrphanedExpired take care of those). As they don't belong
-     * to this context, they could not be loaded by us.
+     * expired at or before the timeLimit. These are 'orphaned' sessions that
+     * are no longer being actively managed by any node. These are explicitly
+     * sessions that do NOT belong to this context (other mechanisms such as
+     * doGetExpired take care of those). As they don't belong to this context,
+     * they could not be loaded by us.
      * 
-     * This is called only periodically to avoid placing excessive load on the store.
+     * This is called only periodically to avoid placing excessive load on the
+     * store.
      * 
      * @param timeLimit
      */
@@ -195,54 +196,55 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
-        //always verify the set of candidates we've been given
+        // 1. always verify the set of candidates we've been given
         //by the sessioncache
         Set<String> expired = doGetExpired (candidates);
 
         long now = System.currentTimeMillis();
 
-        //only periodically check the backing store to find other sessions
-        //in this context that expired long ago (ie not being actively managed
+        // 2. check the backing store to find other sessions
+        // in THIS context that expired long ago (ie cannot be actively managed
         //by any node)
-        long expiryTimeLimit = 0;
-        //if first check then find sessions that expired 3 grace periods ago.
-        //this ensures that on startup we don't find sessions that are expired
-        //but being managed by another node.
-        if (_lastExpiryCheckTime <= 0)
-            expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec*3);
-        else
+        try
         {
-            //only do the check once every gracePeriod to avoid expensive searches
-            if (now > (_lastExpiryCheckTime+TimeUnit.SECONDS.toMillis(_gracePeriodSec)))
-                expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec);
-        }
-        if (expiryTimeLimit > 0)
-        {   
-            if (LOG.isDebugEnabled()) LOG.debug("Searching for old expired sessions for context {}", _context.getCanonicalContextPath());
-            try
+            long expiryTimeLimit = 0;
+
+            // if we have never checked for old expired sessions, then only find
+            // those that are very old
+            if (_lastExpiryCheckTime <= 0)
+                expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec * 3);
+            else
             {
-                expired.addAll(doGetOldExpired(expiryTimeLimit));
+                // only do the check once every gracePeriod to avoid expensive
+                // searches
+                if (now > (_lastExpiryCheckTime + TimeUnit.SECONDS.toMillis(_gracePeriodSec)))
+                    expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec);
             }
-            finally
-            {
-                _lastExpiryCheckTime = now;
-            }
+            if (LOG.isDebugEnabled()) LOG.debug("Searching for sessions expired before {} for context {}", expiryTimeLimit, _context.getCanonicalContextPath());
+            expired.addAll(doGetExpired(expiryTimeLimit));
         }
-        //periodically comb the backing store to delete sessions for other
-        //other contexts that expired a long time ago (ie not being actively
+        finally
+        {
+            _lastExpiryCheckTime = now;
+        }
+
+
+        // 3. Periodically comb the backing store to delete sessions for OTHER
+        // contexts that expired a long time ago (ie not being actively
         //managed by any node).
-        if (_lastOrphanSweepTime > 0 && (now > (_lastOrphanSweepTime+TimeUnit.SECONDS.toMillis(10*_gracePeriodSec))))
-        {   
-            try
+        try
+        {
+            if (now > (_lastOrphanSweepTime + TimeUnit.SECONDS.toMillis(10 * _gracePeriodSec)))
             {
                 if (LOG.isDebugEnabled()) LOG.debug("Cleaning orphans");
                 cleanOrphans(now - TimeUnit.SECONDS.toMillis(10*_gracePeriodSec));
             }
-            finally
-            {
-                _lastOrphanSweepTime = now;            
-            }
         }
+        finally
+        {
+            _lastOrphanSweepTime = now;
+        }
+
         return expired;
     }
 
