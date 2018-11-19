@@ -69,12 +69,6 @@ public class MockEndPoint implements EndPoint
     }
 
     @Override
-    public void shutdownInput()
-    {
-        throw new UnsupportedOperationException(NOT_SUPPORTED);
-    }
-
-    @Override
     public boolean isInputShutdown()
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);
