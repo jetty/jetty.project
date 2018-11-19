@@ -767,7 +767,7 @@ public class HttpParser
                             
                         case LF:
                             setState(State.HEADER);
-                            handle=_responseHandler.startResponse(_version, _responseStatus, null)||handle;
+                            handle |= _responseHandler.startResponse(_version, _responseStatus, null);
                             break;
                             
                         default:
@@ -789,7 +789,7 @@ public class HttpParser
                             handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                             setState(State.END);
                             BufferUtil.clear(buffer);
-                            handle= handleHeaderContentMessage() || handle;
+                            handle |= handleHeaderContentMessage();
                             break;
 
                         case ALPHA:
@@ -865,7 +865,7 @@ public class HttpParser
                             if (_responseHandler!=null)
                             {
                                 setState(State.HEADER);
-                                handle=_responseHandler.startResponse(_version, _responseStatus, null)||handle;
+                                handle |= _responseHandler.startResponse(_version, _responseStatus, null);
                             }
                             else
                             {
@@ -876,7 +876,7 @@ public class HttpParser
                                 handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                                 setState(State.END);
                                 BufferUtil.clear(buffer);
-                                handle= handleHeaderContentMessage() || handle;
+                                handle |= handleHeaderContentMessage();
                             }
                             break;
                             
@@ -905,7 +905,7 @@ public class HttpParser
 
                             setState(State.HEADER);
 
-                            handle=_requestHandler.startRequest(_methodString,_uri.toString(), _version)||handle;
+                            handle |= _requestHandler.startRequest(_methodString,_uri.toString(), _version);
                             continue;
 
                         case ALPHA:
@@ -927,7 +927,7 @@ public class HttpParser
                         case LF:
                             String reason=takeString();
                             setState(State.HEADER);
-                            handle=_responseHandler.startResponse(_version, _responseStatus, reason)||handle;
+                            handle |= _responseHandler.startResponse(_version, _responseStatus, reason);
                             continue;
 
                         case ALPHA:
