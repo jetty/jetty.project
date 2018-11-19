@@ -860,14 +860,15 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     
     
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
         Set<String> expired = new HashSet<>();
         //Get sessions for my context but managed by any node that expired at or before the timeLimit   
         try (Connection connection = _dbAdaptor.getConnection())
         {
             connection.setAutoCommit(true);
-            try (PreparedStatement selectExpiredSessions = _sessionTableSchema.getExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), timeLimit ))
+            try (PreparedStatement selectExpiredSessions = _sessionTableSchema.getExpiredSessionsStatement(connection, _context.getCanonicalContextPath(),
+                                                                                                           _context.getVhost(), timeLimit))
             {
                 if (LOG.isDebugEnabled()) 
                     LOG.debug("{}- Searching for sessions for context {} expired before {}",_context.getWorkerName(),_context.getCanonicalContextPath(), timeLimit);

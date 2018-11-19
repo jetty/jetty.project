@@ -163,7 +163,7 @@ public class HazelcastSessionDataStore
     
     
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
         // TODO
         return Collections.emptySet();

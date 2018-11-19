@@ -72,7 +72,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
 
 
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
         return Collections.emptySet();
     }
@@ -101,7 +101,5 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     {
         //noop
     }
-
-
 
 }

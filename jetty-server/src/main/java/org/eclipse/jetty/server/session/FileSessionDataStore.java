@@ -191,18 +191,18 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
 
     @Override
-    public Set<String> doGetOldExpired(long timeLimit)
+    public Set<String> doGetExpired(long timeLimit)
     {
-        final long now = System.currentTimeMillis();
         HashSet<String> expired = new HashSet<>();
 
-        //iterate over the files and work out which have expired
+        // iterate over the files and work out which expired at or
+        // before the time limit
         for (String filename:_sessionFileMap.values())
         {
             try
             {
                 long expiry = getExpiryFromFilename(filename);
-                if (expiry > 0 && expiry < timeLimit)
+                if (expiry > 0 && expiry <= timeLimit)
                     expired.add(getIdFromFilename(filename));
             }
             catch (Exception e)
@@ -228,13 +228,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
 
     /**
-     * Check all session files that do not belong to this context and
-     * remove any that expired long ago (ie at least 5 gracePeriods ago).
+     * Check all session files that do not belong to this context and remove any
+     * that expired at or before the time limit.
      */
     public void sweepDisk(long timeLimit)
     {
-        //iterate over the files in the store dir and check expiry times
-        
+        // iterate over the files in the store dir and check expiry times
         if (LOG.isDebugEnabled()) LOG.debug("Sweeping {} for old session files", _storeDir);
         try
         {
