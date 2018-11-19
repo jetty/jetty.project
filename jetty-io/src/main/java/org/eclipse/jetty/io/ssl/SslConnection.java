@@ -515,6 +515,7 @@ public class SslConnection extends AbstractConnection
                                     if (_flushState == FlushState.IDLE && flush(BufferUtil.EMPTY_BUFFER))
                                     {
                                         if (_sslEngine.isInboundDone())
+                                            // TODO this is probably a JVM bug, work around it by -1
                                             return -1;
                                         continue;
                                     }
@@ -1150,7 +1151,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isInputShutdown()
         {
-            return getEndPoint().isInputShutdown() || isInboundDone();
+            return BufferUtil.isEmpty(_decryptedInput) && (getEndPoint().isInputShutdown() || isInboundDone());
         }
 
         private boolean isInboundDone()

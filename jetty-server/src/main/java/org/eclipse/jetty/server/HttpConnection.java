@@ -279,6 +279,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         case ASYNC_ERROR:
                             getEndPoint().shutdownOutput();
                             break;
+                        default:
+                            break;
                     }
                     break;
                 }
@@ -411,13 +413,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_input.isAsync())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("unconsumed async input {}", this);
+                    LOG.debug("{}unconsumed input {}",_parser.isChunking()?"Possible ":"", this);
                 _channel.abort(new IOException("unconsumed input"));
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("unconsumed input {}", this);
+                    LOG.debug("{}unconsumed input {}",_parser.isChunking()?"Possible ":"", this);
                 // Complete reading the request
                 if (!_input.consumeAll())
                     _channel.abort(new IOException("unconsumed input"));

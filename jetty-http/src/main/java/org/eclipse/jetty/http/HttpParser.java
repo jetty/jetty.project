@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpComplianceSection.MULTIPLE_CONTENT_LENGTHS;
-import static org.eclipse.jetty.http.HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
@@ -35,6 +32,9 @@ import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.http.HttpComplianceSection.MULTIPLE_CONTENT_LENGTHS;
+import static org.eclipse.jetty.http.HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 
 
 /* ------------------------------------------------------------ */
@@ -1660,14 +1660,16 @@ public class HttpParser
                         _contentPosition += _contentChunk.remaining();
                         buffer.position(buffer.position()+_contentChunk.remaining());
 
-                        if (_handler.content(_contentChunk))
-                            return true;
+                        boolean handle = _handler.content(_contentChunk);
 
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
-                            return handleContentMessage();
+                            boolean handleContent = handleContentMessage();
+                            return handle || handleContent;
                         }
+                        else if (handle)
+                            return true;
                     }
                     break;
                 }

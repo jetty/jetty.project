@@ -190,11 +190,23 @@ public class HttpServerTestFixture
 
     protected static class ReadExactHandler extends AbstractHandler.ErrorDispatchHandler
     {
+        private int expected;
+
+        public ReadExactHandler()
+        {
+            this(-1);
+        }
+
+        public ReadExactHandler(int expected)
+        {
+            this.expected = expected;
+        }
+
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            int len = request.getContentLength();
+            int len = expected<0?request.getContentLength():expected;
             if (len<0)
                 throw new IllegalStateException();
             byte[] content = new byte[len];
