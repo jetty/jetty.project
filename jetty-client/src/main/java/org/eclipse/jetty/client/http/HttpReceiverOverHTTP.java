@@ -271,8 +271,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             @Override
             public void succeeded()
             {
+                boolean messageComplete = !handlingContent.compareAndSet(ContentState.CONTENT, ContentState.IDLE);
                 super.succeeded();
-                if (!handlingContent.compareAndSet(ContentState.CONTENT, ContentState.IDLE))
+                if (messageComplete)
                     messageComplete();
             }
 
