@@ -55,11 +55,8 @@ You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty
 [cols=",,",options="header",]
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
-|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.0.1.jar |org.apache.aries.spifly.dynamic.bundle
+|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.1.jar |org.apache.aries.spifly.dynamic.bundle
 |https://repo1.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven central]
-|org.apache.aries:org.apache.aries.util-1.0.1.jar |org.apache.aries.util
-|https://repo1.maven.org/maven2/org/apache/aries/org.apache.aries.util/[Maven
-central]
 |=======================================================================
 
 ____
@@ -835,13 +832,13 @@ In order to use them with Jetty in OSGi, you will need to deploy some extra jars
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
 |The link:#spifly[spifly jars] | |
-|org.ow2.asm:asm-5.0.1.jar |org.objectweb.asm
+|org.ow2.asm:asm-7.0.jar |org.objectweb.asm
 |https://repo1.maven.org/maven2/org/ow2/asm/asm[Maven central]
 
-|org.ow2.asm:asm-commons-5.0.1.jar |org.objectweb.asm.commons
+|org.ow2.asm:asm-commons-7.0.jar |org.objectweb.asm.commons
 |https://repo1.maven.org/maven2/org/ow2/asm/asm-commons[Maven central]
 
-|org.ow2.asm:asm-tree-5.0.1.jar |org.objectweb.asm.tree
+|org.ow2.asm:asm-tree-7.0.jar |org.objectweb.asm.tree
 |https://repo1.maven.org/maven2/org/ow2/asm/asm-tree[Maven central]
 
 |javax.annotation:javax.annotation-api-1.2.jar |javax.annotation-api
@@ -1099,32 +1096,31 @@ You should see output similar to this on the console, using the `felix:lb` comma
 ....
     ID|State      |Level|Name
     0|Active     |    0|System Bundle (4.4.1)
-    1|Active     |    1|ASM (5.0.1)
-    2|Active     |    1|ASM commons classes (5.0.1)
-    3|Active     |    1|ASM Tree class visitor (5.0.1)
+    1|Active     |    1|ASM (7.0)
+    2|Active     |    1|ASM commons classes (7.0)
+    3|Active     |    1|ASM Tree class visitor (7.0)
     4|Active     |    1|geronimo-jta_1.1_spec (1.1.1)
     5|Active     |    1|javax.annotation API (1.2.0)
     6|Active     |    1|javax.mail bundle from Glassfish (1.4.1.v201005082020)
     7|Active     |    1|Java Server Pages Standard Tag Library API Bundle (1.2.0.v201105211821)
     8|Active     |    1|JavaServer Pages (TM) TagLib Implementation (1.2.2)
-    9|Active     |    1|Jetty :: Servlet Annotations (9.2.4.SNAPSHOT)
-   10|Active     |    1|Jetty :: Deployers (9.2.4.SNAPSHOT)
-   11|Active     |    1|Jetty :: Http Utility (9.2.4.SNAPSHOT)
-   12|Active     |    1|Jetty :: IO Utility (9.2.4.SNAPSHOT)
-   13|Active     |    1|Jetty :: JNDI Naming (9.2.4.SNAPSHOT)
-   14|Active     |    1|Jetty :: OSGi :: Boot (9.2.4.SNAPSHOT)
-   15|Resolved   |    1|Jetty-OSGi-Jasper Integration (9.2.4.SNAPSHOT)
-   16|Active     |    1|Jetty Servlet API and Schemas for OSGi (3.1.0.SNAPSHOT)
-   17|Active     |    1|Jetty :: Plus (9.2.4.SNAPSHOT)
-   18|Active     |    1|Jetty :: Security (9.2.4.SNAPSHOT)
-   19|Active     |    1|Jetty :: Server Core (9.2.4.SNAPSHOT)
-   20|Active     |    1|Jetty :: Servlet Handling (9.2.4.SNAPSHOT)
-   21|Active     |    1|Jetty :: Utility Servlets and Filters (9.2.4.SNAPSHOT)
-   22|Active     |    1|Jetty :: Utilities (9.2.4.SNAPSHOT)
-   23|Active     |    1|Jetty :: Webapp Application Support (9.2.4.SNAPSHOT)
-   24|Active     |    1|Jetty :: XML utilities (9.2.4.SNAPSHOT)
-   25|Active     |    1|Apache Aries SPI Fly Dynamic Weaving Bundle (1.0.1)
-   26|Active     |    1|Apache Aries Util (1.0.0)
+    9|Active     |    1|Jetty :: Servlet Annotations (9.4.14)
+   10|Active     |    1|Jetty :: Deployers (9.4.14)
+   11|Active     |    1|Jetty :: Http Utility (9.4.14)
+   12|Active     |    1|Jetty :: IO Utility (9.4.14)
+   13|Active     |    1|Jetty :: JNDI Naming (9.4.14)
+   14|Active     |    1|Jetty :: OSGi :: Boot (9.4.14)
+   15|Resolved   |    1|Jetty-OSGi-Jasper Integration (9.4.14)
+   16|Active     |    1|Jetty Servlet API and Schemas for OSGi (3.1.0)
+   17|Active     |    1|Jetty :: Plus (9.4.14)
+   18|Active     |    1|Jetty :: Security (9.4.14)
+   19|Active     |    1|Jetty :: Server Core (9.4.14)
+   20|Active     |    1|Jetty :: Servlet Handling (9.4.14)
+   21|Active     |    1|Jetty :: Utility Servlets and Filters (9.4.14)
+   22|Active     |    1|Jetty :: Utilities (9.4.14)
+   23|Active     |    1|Jetty :: Webapp Application Support (9.4.14)
+   24|Active     |    1|Jetty :: XML utilities (9.4.14)
+   25|Active     |    1|Apache Aries SPI Fly Dynamic Weaving Bundle (1.1)
    27|Active     |    1|Apache Felix Bundle Repository (2.0.2)
    28|Active     |    1|Apache Felix Configuration Admin Service (1.8.0)
    29|Active     |    1|Apache Felix EventAdmin (1.3.2)
@@ -1132,10 +1128,10 @@ You should see output similar to this on the console, using the `felix:lb` comma
    31|Active     |    1|Apache Felix Gogo Runtime (0.12.1)
    32|Active     |    1|Apache Felix Gogo Shell (0.10.0)
    33|Active     |    1|Apache Felix Log Service (1.0.1)
-   34|Active     |    1|Jetty :: Apache JSP (9.2.4.SNAPSHOT)
+   34|Active     |    1|Jetty :: Apache JSP (9.4.14)
    35|Active     |    1|Eclipse Compiler for Java(TM) (3.8.2.v20130121-145325)
-   36|Active     |    1|Mortbay EL API and Implementation (8.0.9)
-   37|Active     |    1|Mortbay Jasper (8.0.9)
+   36|Active     |    1|Mortbay EL API and Implementation (8.5.33.1)
+   37|Active     |    1|Mortbay Jasper (8.5.33.1)
 ....
 
 ===== Eclipse
