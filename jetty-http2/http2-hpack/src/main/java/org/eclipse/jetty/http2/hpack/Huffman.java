@@ -287,6 +287,7 @@ public class Huffman
     };
 
     static final int[][] LCCODES = new int[CODES.length][];
+    static final char EOS = 256;
     
     // Huffman decode tree stored in a flattened char array for good 
     // locality of reference.
@@ -344,27 +345,21 @@ public class Huffman
         }
     }
 
-    public static String decode(ByteBuffer buffer)
+    public static String decode(ByteBuffer buffer) throws HpackException.CompressionException
     {  
         return decode(buffer,buffer.remaining());
     }
 
-    public static String decode(ByteBuffer buffer,int length)
+    public static String decode(ByteBuffer buffer, int length) throws HpackException.CompressionException
     {        
         StringBuilder out = new StringBuilder(length*2);
         int node = 0;
         int current = 0;
         int bits = 0;
-        
-        byte[] array = buffer.array();
-        int position=buffer.position();
-        int start=buffer.arrayOffset()+position;
-        int end=start+length;
-        buffer.position(position+length);
-        
-        for (int i=start; i<end; i++)
+
+        for (int i=0; i<length; i++)
         {
-            int b = array[i]&0xFF;
+            int b = buffer.get()&0xFF;
             current = (current << 8) | b;
             bits += 8;
             while (bits >= 8) 
@@ -373,6 +368,9 @@ public class Huffman
                 node = tree[node*256+c];
                 if (rowbits[node]!=0) 
                 {
+                    if(rowsym[node] == EOS)
+                        throw new HpackException.CompressionException("EOS in content");
+
                     // terminal node
                     out.append(rowsym[node]);
                     bits -= rowbits[node];
@@ -389,17 +387,29 @@ public class Huffman
         while (bits > 0) 
         {
             int c = (current << (8 - bits)) & 0xFF;
+            int lastNode = node;
             node = tree[node*256+c];
-            if (rowbits[node]==0 || rowbits[node] > bits) 
+
+            if (rowbits[node]==0 || rowbits[node] > bits)
+            {
+                int requiredPadding = 0;
+                for(int i=0; i<bits; i++)
+                    requiredPadding = (requiredPadding << 1) | 1;
+
+                if((c>>(8-bits)) != requiredPadding)
+                    throw new HpackException.CompressionException("Incorrect padding");
+
+                node = lastNode;
                 break;
-            
-            if (rowbits[node]==0)
-                throw new IllegalStateException();
-            
+            }
+
             out.append(rowsym[node]);
             bits -= rowbits[node];
             node = 0;
         }
+
+        if(node != 0)
+            throw new HpackException.CompressionException("Bad termination");
 
         return out.toString();
     }
@@ -443,10 +453,6 @@ public class Huffman
     {
         long current = 0;
         int n = 0;
-
-        byte[] array = buffer.array();
-        int p=buffer.arrayOffset()+buffer.position();
-
         int len = s.length();
         for (int i=0;i<len;i++)
         {
@@ -463,18 +469,17 @@ public class Huffman
             while (n >= 8) 
             {
                 n -= 8;
-                array[p++]=(byte)(current >> n);
+                buffer.put((byte)(current >> n));
             }
         }
 
-        if (n > 0) 
+        if (n > 0)
         {
-          current <<= (8 - n);
-          current |= (0xFF >>> n); 
-          array[p++]=(byte)current;
+            current <<= (8 - n);
+            current |= (0xFF >>> n);
+            buffer.put((byte)(current));
         }
-        
-        buffer.position(p-buffer.arrayOffset());
+
     }
 
 }

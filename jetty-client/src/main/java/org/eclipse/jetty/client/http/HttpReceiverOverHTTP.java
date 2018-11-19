@@ -218,7 +218,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public int getHeaderCacheSize()
     {
         // TODO get from configuration
-        return 256;
+        return 4096;
     }
 
     @Override
@@ -346,7 +346,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             HttpResponse response = exchange.getResponse();
             response.status(failure.getCode()).reason(failure.getReason());
-            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response));
+            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response, failure));
         }
     }
 

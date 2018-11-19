@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.util;
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-/**  Date Format Cache.
+/**
+ * Date Format Cache.
  * Computes String representations of Dates and caches
  * the results so that subsequent requests within the same second
  * will be fast.
@@ -43,8 +47,9 @@ public class DateCache
     
     private final String _formatString;
     private final String _tzFormatString;
-    private final SimpleDateFormat _tzFormat;
-    private final Locale _locale ;
+    private final DateTimeFormatter _tzFormat;
+    private final Locale _locale;
+    private final ZoneId _zoneId;
     
     private volatile Tick _tick;
 
@@ -138,14 +143,14 @@ public class DateCache
    
         if( _locale != null ) 
         {
-            _tzFormat=new SimpleDateFormat(_tzFormatString,_locale);
+            _tzFormat=DateTimeFormatter.ofPattern(_tzFormatString,_locale);
         }
         else 
         {
-            _tzFormat=new SimpleDateFormat(_tzFormatString);
+            _tzFormat=DateTimeFormatter.ofPattern(_tzFormatString);
         }
-        _tzFormat.setTimeZone(tz);
-        
+        _zoneId = tz.toZoneId();
+        _tzFormat.withZone(_zoneId);
         _tick=null;
     }
     
@@ -153,7 +158,7 @@ public class DateCache
     /* ------------------------------------------------------------ */
     public TimeZone getTimeZone()
     {
-        return _tzFormat.getTimeZone();
+        return TimeZone.getTimeZone(_zoneId);
     }
 
 
@@ -171,11 +176,7 @@ public class DateCache
         // Is this the cached time
         if (tick==null || seconds!=tick._seconds)
         {
-            // It's a cache miss
-            synchronized (this)
-            {
-                return _tzFormat.format(inDate);
-            }
+            return ZonedDateTime.ofInstant(inDate.toInstant(),_zoneId).format( _tzFormat );
         }
         
         return tick._string;
@@ -198,11 +199,7 @@ public class DateCache
         if (tick==null || seconds!=tick._seconds)
         {
             // It's a cache miss
-            Date d = new Date(inDate);
-            synchronized (this)
-            {
-                return _tzFormat.format(d);
-            }
+            return ZonedDateTime.ofInstant(Instant.ofEpochMilli(inDate),_zoneId).format( _tzFormat );
         }
         
         return tick._string;
@@ -245,17 +242,16 @@ public class DateCache
     {
         long seconds = now / 1000;
 
-        // Synchronize to protect _tzFormat
-        synchronized (this)
+        Tick tick=_tick;
+        // recheck the tick, to save multiple formats
+        if (tick==null || tick._seconds!=seconds)
         {
-            // recheck the tick, to save multiple formats
-            if (_tick==null || _tick._seconds!=seconds)
-            {
-                String s= _tzFormat.format(new Date(now));
-                return _tick=new Tick(seconds,s);
-            }
-            return _tick;
+            String s = ZonedDateTime.ofInstant(Instant.now(),_zoneId).format(_tzFormat);
+            _tick=new Tick(seconds,s);
+            tick=_tick;
         }
+        return tick;
+
     }
 
     /* ------------------------------------------------------------ */

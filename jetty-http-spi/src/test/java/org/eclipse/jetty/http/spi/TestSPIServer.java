@@ -25,7 +25,7 @@ import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -45,7 +45,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 
@@ -71,12 +71,7 @@ public class TestSPIServer
             server = new JettyHttpServerProvider().createHttpServer(null, 10);
 
             final HttpContext httpContext = server.createContext("/",
-                                                                 new HttpHandler()
-            {
-
-                @Override
-                public void handle(HttpExchange exchange) throws IOException
-                {
+                exchange -> {
                     Headers responseHeaders = exchange.getResponseHeaders();
                     responseHeaders.set("Content-Type","text/plain");
                     exchange.sendResponseHeaders(200,0);
@@ -93,8 +88,6 @@ public class TestSPIServer
                         responseBody.write(s.getBytes());
                     }
                     responseBody.close();
-
-                }
             });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")
@@ -161,12 +154,7 @@ public class TestSPIServer
                                                                     InetSocketAddress("localhost", 0), 10);
 
             final HttpContext httpContext = server.createContext("/",
-                                                                 new HttpHandler()
-            {
-
-                @Override
-                public void handle(HttpExchange exchange) throws IOException
-                {
+                exchange -> {
                     Headers responseHeaders = exchange.getResponseHeaders();
                     responseHeaders.set("Content-Type","text/plain");
                     exchange.sendResponseHeaders(200,0);
@@ -183,8 +171,6 @@ public class TestSPIServer
                         responseBody.write(s.getBytes());
                     }
                     responseBody.close();
-
-                }
             });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")

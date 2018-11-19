@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -41,19 +50,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.junit.Assert;
-import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 
 public class IOTest
 {
@@ -66,7 +67,7 @@ public class IOTest
 
         IO.copy(in, out);
 
-        assertEquals("copyThread", out.toString(), "The quick brown fox jumped over the lazy dog");
+        assertEquals(out.toString(), "The quick brown fox jumped over the lazy dog", "copyThread");
     }
 
     @Test
@@ -142,7 +143,7 @@ public class IOTest
             // and the server output is not shutdown
             assertFalse(server.isOutputShutdown());
 
-            // until we explictly shut it down
+            // until we explicitly shut it down
             server.shutdownOutput();
 
             // and now we can't write
@@ -168,7 +169,7 @@ public class IOTest
             // but not the other end
             assertFalse(server.isClosed());
 
-            // which has to be closed explictly
+            // which has to be closed explicitly
             server.close();
             assertTrue(server.isClosed());
         }
@@ -183,11 +184,9 @@ public class IOTest
             try (Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket())
             {
                 client.setSoTimeout(1000);
-                client.setSoLinger(false, -1);
                 try (Socket server = connector.accept().socket())
                 {
                     server.setSoTimeout(1000);
-                    server.setSoLinger(false, -1);
 
                     // Write from client to server
                     client.getOutputStream().write(1);
@@ -228,7 +227,7 @@ public class IOTest
                     catch (Exception e)
                     {
                         e.printStackTrace();
-                        assertTrue(OS.IS_OSX);
+                        assertTrue( OS.MAC.isCurrentOs());
                     }
                 }
             }
@@ -245,11 +244,9 @@ public class IOTest
             try (Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket())
             {
                 client.setSoTimeout(1000);
-                client.setSoLinger(false, -1);
                 try (Socket server = connector.accept().socket())
                 {
                     server.setSoTimeout(1000);
-                    server.setSoLinger(false, -1);
 
                     // Write from client to server
                     client.getOutputStream().write(1);
@@ -292,15 +289,11 @@ public class IOTest
                     client.getOutputStream().write(1);
 
                     // Client eventually sees Broken Pipe
-                    try
-                    {
-                        for (int i = 0; i < 100000; i++)
+                    assertThrows(IOException.class, ()->{
+                        int i = 0;
+                        for (i = 0; i < 100000; i++)
                             client.getOutputStream().write(1);
-                        Assert.fail();
-                    }
-                    catch (IOException expected)
-                    {
-                    }
+                    });
                 }
             }
         }
@@ -316,11 +309,9 @@ public class IOTest
             try (Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket())
             {
                 client.setSoTimeout(2000);
-                client.setSoLinger(false, -1);
                 try (Socket server = connector.accept().socket())
                 {
                     server.setSoTimeout(2000);
-                    server.setSoLinger(false, -1);
 
                     // Write from client to server
                     client.getOutputStream().write(1);
@@ -446,7 +437,7 @@ public class IOTest
         reading.get(5, TimeUnit.SECONDS);
         read.flip();
 
-        Assert.assertEquals(ByteBuffer.wrap(data), read);
+        assertEquals(ByteBuffer.wrap(data), read);
     }
 
     @Test

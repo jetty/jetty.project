@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -59,8 +61,8 @@ import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
@@ -99,14 +101,14 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         for (WebSocketFrame actual : capture.getFrames())
         {
             String prefix = "Frame[" + i + "]";
-            Assert.assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
-            Assert.assertThat(prefix + ".fin", actual.isFin(), is(true));
-            Assert.assertThat(prefix + ".rsv1", actual.isRsv1(), is(false)); // RSV1 should be unset at this point
-            Assert.assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
-            Assert.assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
+            assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
+            assertThat(prefix + ".fin", actual.isFin(), is(true));
+            assertThat(prefix + ".rsv1", actual.isRsv1(), is(false)); // RSV1 should be unset at this point
+            assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+            assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
             ByteBuffer expected = BufferUtil.toBuffer(expectedTextDatas[i], StandardCharsets.UTF_8);
-            Assert.assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+            assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
             i++;
         }
@@ -243,7 +245,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         List<String> actual = capture.getCaptured();
 
-        Assert.assertThat("Compressed Payloads", actual, contains(expected));
+        assertThat("Compressed Payloads", actual, contains(expected));
     }
 
     private void init(DeflateFrameExtension ext)
@@ -292,7 +294,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         String actual = TypeUtil.toHexString(compressed);
         String expected = "CaCc4bCbB70200"; // what pywebsocket produces
 
-        Assert.assertThat("Compressed data", actual, is(expected));
+        assertThat("Compressed data", actual, is(expected));
     }
 
     @Test
@@ -332,10 +334,10 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         byte outbuf[] = new byte[64];
         int len = inflater.inflate(outbuf);
         inflater.end();
-        Assert.assertThat("Inflated length", len, greaterThan(4));
+        assertThat("Inflated length", len, greaterThan(4));
 
         String actual = StringUtil.toUTF8String(outbuf, 0, len);
-        Assert.assertThat("Inflated text", actual, is("info:"));
+        assertThat("Inflated text", actual, is("info:"));
     }
 
     @Test
@@ -446,6 +448,6 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         frame.setFin(true);
         clientExtension.outgoingFrame(frame, null, BatchMode.OFF);
 
-        Assert.assertArrayEquals(input, result.toByteArray());
+        assertArrayEquals(input, result.toByteArray());
     }
 }

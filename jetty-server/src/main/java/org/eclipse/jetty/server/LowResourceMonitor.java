@@ -18,6 +18,17 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,64 +38,45 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.ThreadPool;
-
 
 /**
- * A monitor for low resources
- * <p>
- * An instance of this class will monitor all the connectors of a server (or a set of connectors
- * configured with {@link #setMonitoredConnectors(Collection)}) for a low resources state.
- * <p>
- * Low resources can be detected by:
+ *
+ * A monitor for low resources, low resources can be detected by:
  * <ul>
  * <li>{@link ThreadPool#isLowOnThreads()} if {@link Connector#getExecutor()} is
  * an instance of {@link ThreadPool} and {@link #setMonitorThreads(boolean)} is true.</li>
  * <li>If {@link #setMaxMemory(long)} is non zero then low resources is detected if the JVMs
  * {@link Runtime} instance has {@link Runtime#totalMemory()} minus {@link Runtime#freeMemory()}
  * greater than {@link #getMaxMemory()}</li>
- * <li>If {@link #setMaxConnections(int)} is non zero then low resources is dected if the total number
- * of connections exceeds {@link #getMaxConnections()}</li>
+ * <li>If {@link #setMaxConnections(int)} is non zero then low resources is detected if the total number
+ * of connections exceeds {@link #getMaxConnections()}.  This feature is deprecated and replaced by
+ * {@link ConnectionLimit}</li>
  * </ul>
- * <p>
- * Once low resources state is detected, the cause is logged and all existing connections returned
- * by {@link Connector#getConnectedEndPoints()} have {@link EndPoint#setIdleTimeout(long)} set
- * to {@link #getLowResourcesIdleTimeout()}.  New connections are not affected, however if the low
- * resources state persists for more than {@link #getMaxLowResourcesTime()}, then the
- * {@link #getLowResourcesIdleTimeout()} to all connections again.  Once the low resources state is
- * cleared, the idle timeout is reset to the connector default given by {@link Connector#getIdleTimeout()}.
- * <p>
- * If {@link #setAcceptingInLowResources(boolean)} is set to false (Default is true), then no new connections 
- * are accepted when in low resources state.
+ *
  */
 @ManagedObject ("Monitor for low resource conditions and activate a low resource mode if detected")
-public class LowResourceMonitor extends AbstractLifeCycle
+public class LowResourceMonitor extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(LowResourceMonitor.class);
-    private final Server _server;
+
+    protected final Server _server;
     private Scheduler _scheduler;
     private Connector[] _monitoredConnectors;
     private Set<AbstractConnector> _acceptingConnectors = new HashSet<>();
     private int _period=1000;
-    private int _maxConnections;
-    private long _maxMemory;
+
+
     private int _lowResourcesIdleTimeout=1000;
     private int _maxLowResourcesTime=0;
-    private boolean _monitorThreads=true;
+
     private final AtomicBoolean _low = new AtomicBoolean();
-    private String _cause;
+
     private String _reasons;
+
     private long _lowStarted;
     private boolean _acceptingInLowResources = true;
+
+    private Set<LowResourceCheck> _lowResourceChecks = new HashSet<>();
 
     private final Runnable _monitor = new Runnable()
     {
@@ -94,14 +86,86 @@ public class LowResourceMonitor extends AbstractLifeCycle
             if (isRunning())
             {
                 monitor();
-                _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
+                _scheduler.schedule( _monitor, _period, TimeUnit.MILLISECONDS);
             }
         }
     };
 
     public LowResourceMonitor(@Name("server") Server server)
     {
-        _server=server;
+        _server = server;
+    }
+
+    @ManagedAttribute("True if low available threads status is monitored")
+    public boolean getMonitorThreads()
+    {
+        return !getBeans(ConnectorsThreadPoolLowResourceCheck.class).isEmpty();
+    }
+
+    /**
+     * @param monitorThreads If true, check connectors executors to see if they are
+     * {@link ThreadPool} instances that are low on threads.
+     */
+    public void setMonitorThreads(boolean monitorThreads)
+    {
+        if(monitorThreads)
+            // already configured?
+            if ( !getMonitorThreads() ) addLowResourceCheck( new ConnectorsThreadPoolLowResourceCheck() );
+        else
+            getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
+    }
+
+    /**
+     * @return The maximum connections allowed for the monitored connectors before low resource handling is activated
+     * @deprecated Replaced by ConnectionLimit
+     */
+    @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
+    @Deprecated
+    public int getMaxConnections()
+    {
+        for(MaxConnectionsLowResourceCheck lowResourceCheck : getBeans(MaxConnectionsLowResourceCheck.class))
+        {
+            if (lowResourceCheck.getMaxConnections()>0)
+            {
+                return lowResourceCheck.getMaxConnections();
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * @param maxConnections The maximum connections before low resources state is triggered
+     * @deprecated Replaced by ConnectionLimit
+     */
+    @Deprecated
+    public void setMaxConnections(int maxConnections)
+    {
+        if (maxConnections>0)
+        {
+            if (getBeans(MaxConnectionsLowResourceCheck.class).isEmpty())
+            {
+                addLowResourceCheck(new MaxConnectionsLowResourceCheck(maxConnections));
+            } else
+            {
+                getBeans(MaxConnectionsLowResourceCheck.class).forEach( c -> c.setMaxConnections( maxConnections ) );
+            }
+        }
+        else
+        {
+            getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
+        }
+    }
+
+
+    @ManagedAttribute("The reasons the monitored connectors are low on resources")
+    public String getReasons()
+    {
+        return _reasons;
+    }
+
+    protected void setReasons(String reasons)
+    {
+        _reasons = reasons;
     }
 
     @ManagedAttribute("Are the monitored connectors low on resources?")
@@ -110,10 +174,20 @@ public class LowResourceMonitor extends AbstractLifeCycle
         return _low.get();
     }
 
+    protected boolean enableLowOnResources(boolean expectedValue, boolean newValue)
+    {
+        return _low.compareAndSet(expectedValue, newValue);
+    }
+
     @ManagedAttribute("The reason(s) the monitored connectors are low on resources")
     public String getLowResourcesReasons()
     {
         return _reasons;
+    }
+
+    protected void setLowResourcesReasons(String reasons)
+    {
+        _reasons = reasons;
     }
 
     @ManagedAttribute("Get the timestamp in ms since epoch that low resources state started")
@@ -122,12 +196,17 @@ public class LowResourceMonitor extends AbstractLifeCycle
         return _lowStarted;
     }
 
+    public void setLowResourcesStarted(long lowStarted)
+    {
+        _lowStarted = lowStarted;
+    }
+
     @ManagedAttribute("The monitored connectors. If null then all server connectors are monitored")
     public Collection<Connector> getMonitoredConnectors()
     {
         if (_monitoredConnectors==null)
             return Collections.emptyList();
-        return Arrays.asList(_monitoredConnectors);
+        return Arrays.asList( _monitoredConnectors);
     }
 
     /**
@@ -141,6 +220,13 @@ public class LowResourceMonitor extends AbstractLifeCycle
             _monitoredConnectors = monitoredConnectors.toArray(new Connector[monitoredConnectors.size()]);
     }
 
+    protected Connector[] getMonitoredOrServerConnectors()
+    {
+        if (_monitoredConnectors!=null && _monitoredConnectors.length>0)
+            return _monitoredConnectors;
+        return _server.getConnectors();
+    }
+
     @ManagedAttribute("If false, new connections are not accepted while in low resources")
     public boolean isAcceptingInLowResources()
     {
@@ -151,7 +237,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
     {
         _acceptingInLowResources = acceptingInLowResources;
     }
-    
+
     @ManagedAttribute("The monitor period in ms")
     public int getPeriod()
     {
@@ -164,49 +250,6 @@ public class LowResourceMonitor extends AbstractLifeCycle
     public void setPeriod(int periodMS)
     {
         _period = periodMS;
-    }
-
-    @ManagedAttribute("True if low available threads status is monitored")
-    public boolean getMonitorThreads()
-    {
-        return _monitorThreads;
-    }
-
-    /**
-     * @param monitorThreads If true, check connectors executors to see if they are
-     * {@link ThreadPool} instances that are low on threads.
-     */
-    public void setMonitorThreads(boolean monitorThreads)
-    {
-        _monitorThreads = monitorThreads;
-    }
-
-    @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
-    public int getMaxConnections()
-    {
-        return _maxConnections;
-    }
-
-    /**
-     * @param maxConnections The maximum connections before low resources state is triggered
-     */
-    public void setMaxConnections(int maxConnections)
-    {
-        _maxConnections = maxConnections;
-    }
-
-    @ManagedAttribute("The maximum memory (in bytes) that can be used before low resources is triggered.  Memory used is calculated as (totalMemory-freeMemory).")
-    public long getMaxMemory()
-    {
-        return _maxMemory;
-    }
-
-    /**
-     * @param maxMemoryBytes The maximum memory in bytes in use before low resources is triggered.
-     */
-    public void setMaxMemory(long maxMemoryBytes)
-    {
-        _maxMemory = maxMemoryBytes;
     }
 
     @ManagedAttribute("The idletimeout in ms to apply to all existing connections when low resources is detected")
@@ -237,6 +280,99 @@ public class LowResourceMonitor extends AbstractLifeCycle
         _maxLowResourcesTime = maxLowResourcesTimeMS;
     }
 
+    @ManagedAttribute("The maximum memory (in bytes) that can be used before low resources is triggered.  Memory used is calculated as (totalMemory-freeMemory).")
+    public long getMaxMemory()
+    {
+        Collection<MemoryLowResourceCheck> beans = getBeans(MemoryLowResourceCheck.class);
+        if(beans.isEmpty())
+        {
+            return 0;
+        }
+        return beans.stream().findFirst().get().getMaxMemory();
+    }
+
+    /**
+     * @param maxMemoryBytes The maximum memory in bytes in use before low resources is triggered.
+     */
+    public void setMaxMemory(long maxMemoryBytes)
+    {
+        if(maxMemoryBytes<=0)
+        {
+            return;
+        }
+        Collection<MemoryLowResourceCheck> beans = getBeans(MemoryLowResourceCheck.class);
+        if(beans.isEmpty())
+            addLowResourceCheck( new MemoryLowResourceCheck( maxMemoryBytes ) );
+        else
+            beans.forEach( lowResourceCheck -> lowResourceCheck.setMaxMemory( maxMemoryBytes ) );
+    }
+
+    public Set<LowResourceCheck> getLowResourceChecks()
+    {
+        return _lowResourceChecks;
+    }
+
+    public void setLowResourceChecks( Set<LowResourceCheck> lowResourceChecks )
+    {
+        updateBeans(_lowResourceChecks.toArray(),lowResourceChecks.toArray());
+        this._lowResourceChecks = lowResourceChecks;
+    }
+
+    public void addLowResourceCheck( LowResourceCheck lowResourceCheck )
+    {
+        addBean(lowResourceCheck);
+        this._lowResourceChecks.add(lowResourceCheck);
+    }
+
+    protected void monitor()
+    {
+
+        String reasons=null;
+
+
+        for(LowResourceCheck lowResourceCheck : _lowResourceChecks)
+        {
+            if(lowResourceCheck.isLowOnResources())
+            {
+                reasons = lowResourceCheck.toString();
+                break;
+            }
+        }
+
+        if (reasons!=null)
+        {
+            // Log the reasons if there is any change in the cause
+            if (!reasons.equals(getReasons()))
+            {
+                LOG.warn("Low Resources: {}",reasons);
+                setReasons(reasons);
+            }
+
+            // Enter low resources state?
+            if (enableLowOnResources(false,true))
+            {
+                setLowResourcesReasons(reasons);
+                setLowResourcesStarted(System.currentTimeMillis());
+                setLowResources();
+            }
+
+            // Too long in low resources state?
+            if ( getMaxLowResourcesTime()>0 && (System.currentTimeMillis()-getLowResourcesStarted())>getMaxLowResourcesTime())
+                setLowResources();
+        }
+        else
+        {
+            if (enableLowOnResources(true,false))
+            {
+                LOG.info("Low Resources cleared");
+                setLowResourcesReasons(null);
+                setLowResourcesStarted(0);
+                setReasons(null);
+                clearLowResources();
+            }
+        }
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -247,6 +383,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
             _scheduler=new LRMScheduler();
             _scheduler.start();
         }
+
         super.doStart();
 
         _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
@@ -255,92 +392,9 @@ public class LowResourceMonitor extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        if (_scheduler instanceof LRMScheduler)
+        if (_scheduler instanceof LRMScheduler )
             _scheduler.stop();
         super.doStop();
-    }
-
-    protected Connector[] getMonitoredOrServerConnectors()
-    {
-        if (_monitoredConnectors!=null && _monitoredConnectors.length>0)
-            return _monitoredConnectors;
-        return _server.getConnectors();
-    }
-
-    protected void monitor()
-    {
-        String reasons=null;
-        String cause="";
-        int connections=0;
-
-        ThreadPool serverThreads = _server.getThreadPool();
-        if (_monitorThreads && serverThreads.isLowOnThreads())
-        {
-            reasons=low(reasons,"Server low on threads: "+serverThreads);
-            cause+="S";
-        }
-
-        for(Connector connector : getMonitoredOrServerConnectors())
-        {
-            connections+=connector.getConnectedEndPoints().size();
-
-            Executor executor = connector.getExecutor();
-            if (executor instanceof ThreadPool && executor!=serverThreads)
-            {
-                ThreadPool connectorThreads=(ThreadPool)executor;
-                if (_monitorThreads && connectorThreads.isLowOnThreads())
-                {
-                    reasons=low(reasons,"Connector low on threads: "+connectorThreads);
-                    cause+="T";
-                }
-            }
-        }
-
-        if (_maxConnections>0 && connections>_maxConnections)
-        {
-            reasons=low(reasons,"Max Connections exceeded: "+connections+">"+_maxConnections);
-            cause+="C";
-        }
-
-        long memory=Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory();
-        if (_maxMemory>0 && memory>_maxMemory)
-        {
-            reasons=low(reasons,"Max memory exceeded: "+memory+">"+_maxMemory);
-            cause+="M";
-        }
-
-        if (reasons!=null)
-        {
-            // Log the reasons if there is any change in the cause
-            if (!cause.equals(_cause))
-            {
-                LOG.warn("Low Resources: {}",reasons);
-                _cause=cause;
-            }
-
-            // Enter low resources state?
-            if (_low.compareAndSet(false,true))
-            {
-                _reasons=reasons;
-                _lowStarted=System.currentTimeMillis();
-                setLowResources();
-            }
-
-            // Too long in low resources state?
-            if (_maxLowResourcesTime>0 && (System.currentTimeMillis()-_lowStarted)>_maxLowResourcesTime)
-                setLowResources();
-        }
-        else
-        {
-            if (_low.compareAndSet(true,false))
-            {
-                LOG.info("Low Resources cleared");
-                _reasons=null;
-                _lowStarted=0;
-                _cause=null;
-                clearLowResources();
-            }
-        }
     }
 
     protected void setLowResources()
@@ -356,8 +410,8 @@ public class LowResourceMonitor extends AbstractLifeCycle
                     c.setAccepting(false);
                 }
             }
-            
-            for (EndPoint endPoint : connector.getConnectedEndPoints())
+
+            for ( EndPoint endPoint : connector.getConnectedEndPoints())
                 endPoint.setIdleTimeout(_lowResourcesIdleTimeout);
         }
     }
@@ -369,7 +423,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
             for (EndPoint endPoint : connector.getConnectedEndPoints())
                 endPoint.setIdleTimeout(connector.getIdleTimeout());
         }
-        
+
         for (AbstractConnector connector : _acceptingConnectors)
         {
             connector.setAccepting(true);
@@ -377,15 +431,219 @@ public class LowResourceMonitor extends AbstractLifeCycle
         _acceptingConnectors.clear();
     }
 
-    private String low(String reasons, String newReason)
+    protected String low(String reasons, String newReason)
     {
         if (reasons==null)
             return newReason;
         return reasons+", "+newReason;
     }
 
-
     private static class LRMScheduler extends ScheduledExecutorScheduler
     {
     }
+
+    interface LowResourceCheck
+    {
+        boolean isLowOnResources();
+
+        String getReason();
+    }
+
+    //------------------------------------------------------
+    // default implementations for backward compat
+    //------------------------------------------------------
+
+    public class MainThreadPoolLowResourceCheck implements LowResourceCheck
+    {
+        private String reason;
+
+        public MainThreadPoolLowResourceCheck()
+        {
+            // no op
+        }
+
+        @Override
+        public boolean isLowOnResources()
+        {
+            ThreadPool serverThreads = _server.getThreadPool();
+            if (serverThreads.isLowOnThreads())
+            {
+                reason="Server low on threads: "+serverThreads;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Check if the server ThreadPool is lowOnThreads";
+        }
+    }
+
+    public class ConnectorsThreadPoolLowResourceCheck implements LowResourceCheck
+    {
+        private String reason;
+
+        public ConnectorsThreadPoolLowResourceCheck()
+        {
+            // no op
+        }
+
+        @Override
+        public boolean isLowOnResources()
+        {
+            ThreadPool serverThreads = _server.getThreadPool();
+            if(serverThreads.isLowOnThreads())
+            {
+                reason ="Server low on threads: "+serverThreads.getThreads()+", idleThreads:"+serverThreads.getIdleThreads();
+                return true;
+            }
+            for(Connector connector : getMonitoredConnectors())
+            {
+                Executor executor = connector.getExecutor();
+                if (executor instanceof ThreadPool && executor!=serverThreads)
+                {
+                    ThreadPool connectorThreads=(ThreadPool)executor;
+                    if (connectorThreads.isLowOnThreads())
+                    {
+                        reason ="Connector low on threads: "+connectorThreads;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Check if the ThreadPool from monitored connectors are lowOnThreads and if all connections number is higher than the allowed maxConnection";
+        }
+    }
+
+    @ManagedObject("Check max allowed connections on connectors")
+    public class MaxConnectionsLowResourceCheck implements LowResourceCheck
+    {
+        private String reason;
+        private int maxConnections;
+
+        public MaxConnectionsLowResourceCheck(int maxConnections)
+        {
+            this.maxConnections = maxConnections;
+        }
+
+        /**
+         * @return The maximum connections allowed for the monitored connectors before low resource handling is activated
+         * @deprecated Replaced by ConnectionLimit
+         */
+        @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
+        @Deprecated
+        public int getMaxConnections()
+        {
+            return maxConnections;
+        }
+
+        /**
+         * @param maxConnections The maximum connections before low resources state is triggered
+         * @deprecated Replaced by ConnectionLimit
+         */
+        @Deprecated
+        public void setMaxConnections(int maxConnections)
+        {
+            if (maxConnections>0)
+                LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
+            this.maxConnections = maxConnections;
+        }
+
+        @Override
+        public boolean isLowOnResources()
+        {
+            int connections=0;
+            for(Connector connector : getMonitoredConnectors())
+            {
+                connections+=connector.getConnectedEndPoints().size();
+            }
+            if (maxConnections>0 && connections>maxConnections)
+            {
+                reason ="Max Connections exceeded: "+connections+">"+maxConnections;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "All connections number is higher than the allowed maxConnection";
+        }
+    }
+
+    public class MemoryLowResourceCheck implements LowResourceCheck
+    {
+        private String reason;
+        private long maxMemory;
+
+        public MemoryLowResourceCheck(long maxMemory)
+        {
+            this.maxMemory = maxMemory;
+        }
+
+        @Override
+        public boolean isLowOnResources()
+        {
+            long memory=Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory();
+            if (maxMemory>0 && memory>maxMemory)
+            {
+                reason = "Max memory exceeded: "+memory+">"+maxMemory;
+                return true;
+            }
+            return false;
+        }
+
+        public long getMaxMemory()
+        {
+            return maxMemory;
+        }
+
+        /**
+         * @param maxMemoryBytes The maximum memory in bytes in use before low resources is triggered.
+         */
+        public void setMaxMemory( long maxMemoryBytes )
+        {
+            this.maxMemory = maxMemoryBytes;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Check if used memory is higher than the allowed max memory";
+        }
+    }
+
+
 }

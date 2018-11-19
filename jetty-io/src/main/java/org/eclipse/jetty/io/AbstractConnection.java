@@ -40,7 +40,7 @@ public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
-    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
+    private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
     private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
@@ -59,13 +59,13 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void addListener(Listener listener)
     {
-        listeners.add(listener);
+        _listeners.add(listener);
     }
 
     @Override
     public void removeListener(Listener listener)
     {
-        listeners.remove(listener);
+        _listeners.remove(listener);
     }
 
     public int getInputBufferSize()
@@ -198,8 +198,20 @@ public abstract class AbstractConnection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen {}", this);
 
-        for (Listener listener : listeners)
+        for (Listener listener : _listeners)
+            onOpened(listener);
+    }
+
+    private void onOpened(Listener listener)
+    {
+        try
+        {
             listener.onOpened(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
     }
 
     @Override
@@ -208,8 +220,20 @@ public abstract class AbstractConnection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("onClose {}",this);
 
-        for (Listener listener : listeners)
+        for (Listener listener : _listeners)
+            onClosed(listener);
+    }
+
+    private void onClosed(Listener listener)
+    {
+        try
+        {
             listener.onClosed(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
     }
 
     @Override
@@ -263,7 +287,7 @@ public abstract class AbstractConnection implements Connection
     @Override
     public final String toString()
     {
-        return String.format("%s<-%s",toConnectionString(),getEndPoint());
+        return String.format("%s@%h::%s",getClass().getSimpleName(),this,getEndPoint());
     }
 
     public String toConnectionString()

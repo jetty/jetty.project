@@ -18,16 +18,17 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -37,50 +38,51 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
 
-@RunWith(value = Parameterized.class)
 public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
 {
     private final String CONTEXT_ATTRIBUTE = getClass().getName() + ".asyncContext";
-    private boolean dispatch; // if true we dispatch, otherwise we complete
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data()
+    public static Stream<Arguments> httpVersions()
     {
-        Object[][] data = new Object[][]{{HttpVersion.HTTP_1_0.asString(), true}, {HttpVersion.HTTP_1_0.asString(),
-                false}, {HttpVersion.HTTP_1_1.asString(), true}, {HttpVersion.HTTP_1_1.asString(), false}};
-        return Arrays.asList(data);
+        // boolean dispatch - if true we dispatch, otherwise we complete
+        final boolean DISPATCH = true;
+        final boolean COMPLETE = false;
+
+        List<Arguments> ret = new ArrayList<>();
+        ret.add(Arguments.of(HttpVersion.HTTP_1_0, DISPATCH));
+        ret.add(Arguments.of(HttpVersion.HTTP_1_0, COMPLETE));
+        ret.add(Arguments.of(HttpVersion.HTTP_1_1, DISPATCH));
+        ret.add(Arguments.of(HttpVersion.HTTP_1_1, COMPLETE));
+        return ret.stream();
     }
 
-    public HttpManyWaysToAsyncCommitBadBehaviourTest(String httpVersion, boolean dispatch)
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerSetsHandledAndWritesSomeContent(HttpVersion httpVersion, boolean dispatch) throws Exception
     {
-        super(httpVersion);
-        this.httpVersion = httpVersion;
-        this.dispatch = dispatch;
-    }
-
-    @Test
-    public void testHandlerSetsHandledAndWritesSomeContent() throws Exception
-    {
-        server.setHandler(new SetHandledWriteSomeDataHandler(false));
+        server.setHandler(new SetHandledWriteSomeDataHandler(false, dispatch));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code is 500", response.getStatus(), is(500));
     }
 
     private class SetHandledWriteSomeDataHandler extends ThrowExceptionOnDemandHandler
     {
-        private SetHandledWriteSomeDataHandler(boolean throwException)
+        private final boolean dispatch;
+
+        private SetHandledWriteSomeDataHandler(boolean throwException, boolean dispatch)
         {
             super(throwException);
+            this.dispatch = dispatch;
         }
 
         @Override

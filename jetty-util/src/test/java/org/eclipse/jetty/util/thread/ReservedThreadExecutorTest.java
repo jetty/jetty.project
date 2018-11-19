@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.util.thread;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.CountDownLatch;
@@ -25,15 +30,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class ReservedThreadExecutorTest
 {
@@ -54,7 +55,7 @@ public class ReservedThreadExecutorTest
     private TestExecutor _executor;
     private ReservedThreadExecutor _reservedExecutor;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         System.gc();
@@ -63,7 +64,7 @@ public class ReservedThreadExecutorTest
         _reservedExecutor.start();
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         _reservedExecutor.stop();
@@ -173,7 +174,7 @@ public class ReservedThreadExecutorTest
         {
             long elapsed = System.nanoTime() - started;
             if (elapsed > TimeUnit.SECONDS.toNanos(10))
-                Assert.fail();
+                fail("Took too long");
             Thread.sleep(10);
         }
         assertThat(_reservedExecutor.getAvailable(), is(size));
@@ -222,7 +223,7 @@ public class ReservedThreadExecutorTest
         }
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void stressTest() throws Exception
     {

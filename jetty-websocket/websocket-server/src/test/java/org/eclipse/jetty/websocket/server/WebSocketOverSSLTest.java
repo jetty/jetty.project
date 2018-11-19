@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
@@ -34,10 +35,9 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class WebSocketOverSSLTest
 {
@@ -47,7 +47,7 @@ public class WebSocketOverSSLTest
 
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new SessionServlet());
@@ -55,7 +55,7 @@ public class WebSocketOverSSLTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
@@ -68,7 +68,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testEcho() throws Exception
     {
-        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
@@ -91,7 +91,7 @@ public class WebSocketOverSSLTest
 
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<String> captured = clientSocket.messages;
-            Assert.assertThat("Text Message",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(msg));
+            assertThat("Text Message",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(msg));
 
             // Shutdown the socket
             clientSocket.close();
@@ -109,7 +109,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testServerSessionIsSecure() throws Exception
     {
-        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
@@ -132,7 +132,7 @@ public class WebSocketOverSSLTest
 
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<String> captured = clientSocket.messages;
-            Assert.assertThat("Server.session.isSecure",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is("session.isSecure=true"));
+            assertThat("Server.session.isSecure",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is("session.isSecure=true"));
 
             // Shutdown the socket
             clientSocket.close();
@@ -150,7 +150,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testServerSessionRequestURI() throws Exception
     {
-        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
@@ -174,7 +174,7 @@ public class WebSocketOverSSLTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<String> captured = clientSocket.messages;
             String expected = String.format("session.upgradeRequest.requestURI=%s",requestUri.toASCIIString());
-            Assert.assertThat("session.upgradeRequest.requestURI",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(expected));
+            assertThat("session.upgradeRequest.requestURI",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(expected));
 
             // Shutdown the socket
             clientSocket.close();

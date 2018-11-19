@@ -31,9 +31,6 @@ basehome:modules/ssl/keystore|etc/keystore
 ## Connector idle timeout in milliseconds
 # jetty.ssl.idleTimeout=30000
 
-## Connector socket linger time in seconds (-1 to disable)
-# jetty.ssl.soLingerTime=-1
-
 ## Number of acceptors (-1 picks default based on number of cores)
 # jetty.ssl.acceptors=-1
 
@@ -61,6 +58,10 @@ basehome:modules/ssl/keystore|etc/keystore
 ### SslContextFactory Configuration
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
+
+## The Endpoint Identification Algorithm
+## Same as javax.net.ssl.SSLParameters#setEndpointIdentificationAlgorithm(String)
+#jetty.sslContext.endpointIdentificationAlgorithm=HTTPS
 
 ## SSL JSSE Provider
 # jetty.sslContext.provider=

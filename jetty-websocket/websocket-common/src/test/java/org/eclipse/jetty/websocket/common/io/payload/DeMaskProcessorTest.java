@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.io.payload;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -32,8 +33,8 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class DeMaskProcessorTest
 {
@@ -93,17 +94,17 @@ public class DeMaskProcessorTest
         slice1.limit(slicePoint);
         slice2.position(slicePoint);
 
-        Assert.assertThat("Slices are setup right",slice1.remaining() + slice2.remaining(),is(messageSize));
+        assertThat("Slices are setup right",slice1.remaining() + slice2.remaining(),is(messageSize));
 
         demask.process(slice1);
         demask.process(slice2);
         
         LOG.debug("Post-Processed: {}",Hex.asHex(payload));
 
-        Assert.assertThat("Payload.remaining",payload.remaining(),is(messageSize));
+        assertThat("Payload.remaining",payload.remaining(),is(messageSize));
         for (int i = payload.position(); i < payload.limit(); i++)
         {
-            Assert.assertThat("payload[" + i + "]",payload.get(i),is(msgChar));
+            assertThat("payload[" + i + "]",payload.get(i),is(msgChar));
         }
     }
 }

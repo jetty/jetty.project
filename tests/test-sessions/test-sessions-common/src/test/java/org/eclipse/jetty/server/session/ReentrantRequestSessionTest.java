@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -34,8 +34,8 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.junit.jupiter.api.Test;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Test;
 
 
 /**
@@ -61,10 +61,10 @@ public class ReentrantRequestSessionTest
         
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        
+
         TestContextScopeListener scopeListener = new TestContextScopeListener();
         context.addEventListener(scopeListener);
-        
+
         try
         {
             server.start();
@@ -82,10 +82,10 @@ public class ReentrantRequestSessionTest
                 
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                   
+
                 //ensure request fully finished processing
                 latch.await(5, TimeUnit.SECONDS);
-                
+
                 //make a request that will make a simultaneous request for the same session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
                 request.header("Cookie", sessionCookie);

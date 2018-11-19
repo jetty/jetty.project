@@ -170,7 +170,7 @@ Note: order presented here is how they would appear on the classpath.
 13:          {VERSION} | ${jetty.home}/lib/jetty-jndi-{VERSION}.jar
 14:      1.1.0.v201105071233 | ${jetty.home}/lib/jndi/javax.activation-1.1.0.v201105071233.jar
 15:      1.4.1.v201005082020 | ${jetty.home}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
-16:                      1.2 | ${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
+16:                      1.3 | ${jetty.home}/lib/jndi/javax.transaction-api-1.3.jar
 17:          {VERSION} | ${jetty.home}/lib/jetty-rewrite-{VERSION}.jar
 18:          {VERSION} | ${jetty.home}/lib/jetty-security-{VERSION}.jar
 19:          {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar

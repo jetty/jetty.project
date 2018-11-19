@@ -20,13 +20,12 @@ package org.eclipse.jetty.websocket.common.io;
 
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.rules.TestName;
 
 public class CloseableLocalWebSocketSession extends LocalWebSocketSession implements AutoCloseable
 {
-    public CloseableLocalWebSocketSession(WebSocketContainerScope containerScope, TestName testname, EventDriver driver)
+    public CloseableLocalWebSocketSession(WebSocketContainerScope containerScope, String id, EventDriver driver)
     {
-        super(containerScope, testname, driver);
+        super(containerScope, id, driver);
         // LifeCycle start
         try
         {

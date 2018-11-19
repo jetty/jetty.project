@@ -22,8 +22,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +35,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.Arrays;
-import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,55 +58,96 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 
 /**
  * HttpServer Tester.
  */
 public class SelectChannelServerSslTest extends HttpServerTestBase
 {
-    static SSLContext __sslContext;
+    private SSLContext _sslContext;
+
+    public SelectChannelServerSslTest()
     {
         _scheme="https";
+    }
+
+    @BeforeEach
+    public void init() throws Exception
+    {
+        String keystorePath = MavenTestingUtils.getTestResourcePath("keystore").toString();
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        sslContextFactory.setTrustStorePath(keystorePath);
+        sslContextFactory.setTrustStorePassword("storepwd");
+        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+        ServerConnector connector = new ServerConnector(_server, null, null, pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
+        SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
+        secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
+        httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
+
+        startServer(connector);
+
+        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
+        {
+            keystore.load(stream, "storepwd".toCharArray());
+        }
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keystore);
+        _sslContext = SSLContext.getInstance("TLS");
+        _sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+
+        try
+        {
+            // Client configuration in case we use HttpsURLConnection.
+            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, SslContextFactory.TRUST_ALL_CERTS, null);
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
-        Socket socket =  __sslContext.getSocketFactory().createSocket(host,port);
+        Socket socket = _sslContext.getSocketFactory().createSocket(host,port);
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
-        socket.setSoLinger(false,0);
         return socket;
     }
 
     @Override
+    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testFullMethod() throws Exception
     {
-        // Don't run on Windows (buggy JVM)
-        Assume.assumeTrue(!OS.IS_WINDOWS);
-        
         try
         {
             super.testFullMethod();
         }
         catch (SocketException e)
         {
-            // TODO This needs to be investigated #2244 
+            // TODO This needs to be investigated #2244
             Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
         }
         catch (SSLException e)
         {
-            // TODO This needs to be investigated #2244 
+            // TODO This needs to be investigated #2244
             if (e.getCause() instanceof SocketException)
                 Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
             else
@@ -115,10 +156,9 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     }
 
     @Override
+    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testFullURI() throws Exception
     {
-        // Don't run on Windows (buggy JVM)
-        Assume.assumeTrue(!OS.IS_WINDOWS);
         try
         {
             super.testFullURI();
@@ -133,49 +173,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     public void testFullHeader() throws Exception
     {
         super.testFullHeader();
-    }
-
-    @Before
-    public void init() throws Exception
-    {
-        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath);
-        sslContextFactory.setTrustStorePassword("storepwd");
-        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        
-        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-        ServerConnector connector = new ServerConnector(_server,(Executor)null,(Scheduler)null,pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory,httpConnectionFactory));
-        SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
-        secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
-        httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
-        
-        startServer(connector);
-
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keystore);
-        __sslContext = SSLContext.getInstance("TLS");
-        __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-
-        try
-        {
-            HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -240,12 +237,12 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
     @Override
     @Test
-    @Ignore("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
+    @Disabled("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
             "but shutdownOutput() is needed by the test.")
     public void testInterruptedRequest(){}
 
     @Override
-    @Ignore
+    @Disabled
     public void testAvailable() throws Exception
     {
     }

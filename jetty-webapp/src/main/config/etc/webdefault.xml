@@ -95,9 +95,10 @@
  *                    found ending with ".gz" (default false) 
  *                    (deprecated: use precompressed)
  *                    
- *  precompressed     If set to a comma separated list of file extensions, these
- *                    indicate compressed formats that are known to map to a mime-type
- *                    that may be listed in a requests Accept-Encoding header.
+ *  precompressed     If set to a comma separated list of encoding types (that may be
+ *                    listed in a requests Accept-Encoding header) to file
+ *                    extension mappings to look for and serve. For example:
+ *                    "br=.br,gzip=.gz,bzip2=.bz".
  *                    If set to a boolean True, then a default set of compressed formats
  *                    will be used, otherwise no precompressed formats.
  *
@@ -115,9 +116,6 @@
  *
  *  stylesheet        Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
- *
- *  aliases           If True, aliases of resources are allowed (eg. symbolic
- *                    links and caps variations). May bypass security constraints.
  *                    
  *  etags             If True, weak etags will be generated and handled.
  *
@@ -134,15 +132,17 @@
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
  *
+ * encodingHeaderCacheSize
+ *                    Max entries in a cache of ACCEPT-ENCODING headers.
+ *
+ * otherGzipFileExtensions  
+ *                    defaults to .svgz but a comma separated list of gzip equivalent file extensions can be supplied
+ *
  -->
  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet>
     <servlet-name>default</servlet-name>
     <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
-    <init-param>
-      <param-name>aliases</param-name>
-      <param-value>false</param-value>
-    </init-param>
     <init-param>
       <param-name>acceptRanges</param-name>
       <param-value>true</param-value>
@@ -171,12 +171,6 @@
       <param-name>maxCachedFiles</param-name>
       <param-value>2048</param-value>
     </init-param>
-    <!--
-    <init-param>
-      <param-name>precompressed</param-name>
-      <param-value>gzip,br</param-value>
-    </init-param>
-    -->
     <init-param>
       <param-name>etags</param-name>
       <param-value>false</param-value>
@@ -185,18 +179,6 @@
       <param-name>useFileMappedBuffer</param-name>
       <param-value>true</param-value>
     </init-param>
-    <!--
-    <init-param>
-      <param-name>resourceCache</param-name>
-      <param-value>resourceCache</param-value>
-    </init-param>
-    -->
-    <!--
-    <init-param>
-      <param-name>cacheControl</param-name>
-      <param-value>max-age=3600,public</param-value>
-    </init-param>
-    -->
     <load-on-startup>0</load-on-startup>
   </servlet>
 

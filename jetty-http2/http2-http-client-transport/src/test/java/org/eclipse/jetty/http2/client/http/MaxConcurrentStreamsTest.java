@@ -18,33 +18,67 @@
 
 package org.eclipse.jetty.http2.client.http;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-import org.junit.Assert;
-import org.junit.Test;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class MaxConcurrentStreamsTest extends AbstractTest
 {
     private void start(int maxConcurrentStreams, Handler handler) throws Exception
+    {
+        startServer(maxConcurrentStreams, handler);
+        prepareClient();
+        client.start();
+    }
+
+    private void startServer(int maxConcurrentStreams, Handler handler) throws Exception
     {
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
         http2.setMaxConcurrentStreams(maxConcurrentStreams);
         prepareServer(http2);
         server.setHandler(handler);
         server.start();
-        prepareClient();
-        client.start();
     }
 
     @Test
@@ -85,7 +119,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                 });
 
         // When the first request returns, the second must be sent.
-        Assert.assertTrue(latch.await(5 * sleep, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * sleep, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -104,7 +138,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                                 .path("/" + i + "_" + j)
                                 .timeout(5, TimeUnit.SECONDS)
                                 .send();
-                        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                        assertEquals(HttpStatus.OK_200, response.getStatus());
                     }
                     catch (Throwable x)
                     {
@@ -112,6 +146,85 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                     }
                 })
         );
+    }
+
+    @Test
+    public void testSmallMaxConcurrentStreamsExceededOnClient() throws Exception
+    {
+        int maxConcurrentStreams = 1;
+        startServer(maxConcurrentStreams, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                sleep(1000);
+            }
+        });
+
+        String scheme = "http";
+        String host = "localhost";
+        int port = connector.getLocalPort();
+
+        AtomicInteger connections = new AtomicInteger();
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Throwable> failures = new ArrayList<>();
+        client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
+        {
+            @Override
+            protected void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+            {
+                super.connect(sslContextFactory, address, new Wrapper(listener)
+                {
+                    @Override
+                    public void onSettings(Session session, SettingsFrame frame)
+                    {
+                        // Send another request to simulate a request being
+                        // sent concurrently with connection establishment.
+                        // Sending this request will trigger the creation of
+                        // another connection since maxConcurrentStream=1.
+                        if (connections.incrementAndGet() == 1)
+                        {
+                            client.newRequest(host, port)
+                                    .path("/2")
+                                    .send(result ->
+                                    {
+                                        if (result.isSucceeded())
+                                        {
+                                            Response response2 = result.getResponse();
+                                            if (response2.getStatus() == HttpStatus.OK_200)
+                                                latch.countDown();
+                                            else
+                                                failures.add(new HttpResponseException("", response2));
+                                        }
+                                        else
+                                        {
+                                            failures.add(result.getFailure());
+                                        }
+                                    });
+                        }
+                        super.onSettings(session, frame);
+                    }
+                }, promise, context);
+            }
+        }, null);
+        QueuedThreadPool clientExecutor = new QueuedThreadPool();
+        clientExecutor.setName("client");
+        client.setExecutor(clientExecutor);
+        client.start();
+
+        // This request will be queued and establish the connection,
+        // which will trigger the send of the second request.
+        ContentResponse response1 = client.newRequest(host, port)
+                .path("/1")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+        assertTrue(latch.await(5, TimeUnit.SECONDS), failures.toString());
+        assertEquals(2, connections.get());
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertEquals(2, connectionPool.getConnectionCount());
     }
 
     @Test
@@ -152,10 +265,10 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // The last exchange should remain in the queue.
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)client.getDestination("http", "localhost", connector.getLocalPort());
-        Assert.assertEquals(1, destination.getHttpExchanges().size());
-        Assert.assertEquals(path, destination.getHttpExchanges().peek().getRequest().getPath());
+        assertEquals(1, destination.getHttpExchanges().size());
+        assertEquals(path, destination.getHttpExchanges().peek().getRequest().getPath());
 
-        Assert.assertTrue(latch.await(5 * sleep, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * sleep, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -183,7 +296,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // Must be able to send another request.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort()).path("/check").send();
 
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -211,7 +324,83 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         }
 
         // The requests should be processed in parallel, not sequentially.
-        Assert.assertTrue(latch.await(maxConcurrent * sleep / 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(maxConcurrent * sleep / 2, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testManyConcurrentRequestsWithSmallConcurrentStreams() throws Exception
+    {
+        byte[] data = new byte[64 * 1024];
+        start(1, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.getOutputStream().write(data);
+            }
+        });
+
+        client.setMaxConnectionsPerDestination(32768);
+        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+
+        int parallelism = 16;
+        int runs = 1;
+        int iterations = 256;
+        int total = parallelism * runs * iterations;
+        CountDownLatch latch = new CountDownLatch(total);
+        Queue<Result> failures = new ConcurrentLinkedQueue<>();
+        ForkJoinPool pool = new ForkJoinPool(parallelism);
+        pool.submit(() -> IntStream.range(0, parallelism).parallel().forEach(i ->
+            IntStream.range(0, runs).forEach(j ->
+            {
+                for (int k = 0; k < iterations; ++k)
+                {
+                    client.newRequest("localhost", connector.getLocalPort())
+                            .path("/" + i + "_" + j + "_" + k)
+                            .send(result ->
+                            {
+                                if (result.isFailed())
+                                    failures.offer(result);
+                                latch.countDown();
+                            });
+              }
+            })));
+
+        assertTrue(latch.await(total * 10, TimeUnit.MILLISECONDS));
+        assertTrue(failures.isEmpty(), failures.toString());
+    }
+
+    @Test
+    public void testTwoStreamsFirstTimesOut() throws Exception
+    {
+        long timeout = 1000;
+        start(1, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                if (target.endsWith("/1"))
+                    sleep(2 * timeout);
+            }
+        });
+        client.setMaxConnectionsPerDestination(1);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .path("/1")
+                .timeout(timeout, TimeUnit.MILLISECONDS)
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        latch.countDown();
+                });
+
+        ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort())
+                .path("/2")
+                .send();
+
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
+        assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
     }
 
     private void primeConnection() throws Exception
@@ -231,6 +420,64 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         catch (InterruptedException x)
         {
             throw new RuntimeException(x);
+        }
+    }
+
+    private static class Wrapper implements Session.Listener
+    {
+        private final Session.Listener listener;
+
+        private Wrapper(Session.Listener listener)
+        {
+            this.listener = listener;
+        }
+
+        @Override
+        public Map<Integer, Integer> onPreface(Session session)
+        {
+            return listener.onPreface(session);
+        }
+
+        @Override
+        public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+        {
+            return listener.onNewStream(stream, frame);
+        }
+
+        @Override
+        public void onSettings(Session session, SettingsFrame frame)
+        {
+            listener.onSettings(session, frame);
+        }
+
+        @Override
+        public void onPing(Session session, PingFrame frame)
+        {
+            listener.onPing(session, frame);
+        }
+
+        @Override
+        public void onReset(Session session, ResetFrame frame)
+        {
+            listener.onReset(session, frame);
+        }
+
+        @Override
+        public void onClose(Session session, GoAwayFrame frame)
+        {
+            listener.onClose(session, frame);
+        }
+
+        @Override
+        public boolean onIdleTimeout(Session session)
+        {
+            return listener.onIdleTimeout(session);
+        }
+
+        @Override
+        public void onFailure(Session session, Throwable failure)
+        {
+            listener.onFailure(session, failure);
         }
     }
 }

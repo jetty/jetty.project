@@ -36,7 +36,6 @@ import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
-import org.junit.rules.TestName;
 
 public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames, ConnectionStateListener
 {
@@ -61,11 +60,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         this.ioState.addListener(this);
     }
 
-    public LocalWebSocketConnection(TestName testname, ByteBufferPool bufferPool)
-    {
-        this(testname.getMethodName(),bufferPool);
-    }
-    
     @Override
     public Executor getExecutor()
     {

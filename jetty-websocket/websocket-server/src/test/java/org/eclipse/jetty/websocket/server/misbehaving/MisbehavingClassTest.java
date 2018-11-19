@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.server.misbehaving;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,9 +38,9 @@ import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Testing badly behaving Socket class implementations to get the best
@@ -52,7 +52,7 @@ public class MisbehavingClassTest
     private static BadSocketsServlet badSocketsServlet;
     private static BlockheadClient client;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         badSocketsServlet = new BadSocketsServlet();
@@ -60,13 +60,13 @@ public class MisbehavingClassTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -74,7 +74,7 @@ public class MisbehavingClassTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();
@@ -126,7 +126,7 @@ public class MisbehavingClassTest
 
         Future<BlockheadConnection> connFut = request.sendAsync();
 
-        try (StacklessLogging scope = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class, WebSocketSession.class);
+        try (StacklessLogging ignore = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class, WebSocketSession.class);
              BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();

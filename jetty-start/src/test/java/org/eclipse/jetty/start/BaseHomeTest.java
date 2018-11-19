@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -34,8 +35,8 @@ import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class BaseHomeTest
 {
@@ -60,7 +61,7 @@ public class BaseHomeTest
                 System.out.printf(" %s%n",path);
             }
         }
-        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+        assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
     
     public static void assertPathList(BaseHome hb, String message, List<String> expected, List<Path> paths)
@@ -84,7 +85,7 @@ public class BaseHomeTest
                 System.out.printf(" %s%n",path);
             }
         }
-        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+        assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
 
     public static void assertFileList(BaseHome hb, String message, List<String> expected, List<File> files)
@@ -94,7 +95,7 @@ public class BaseHomeTest
         {
             actual.add(hb.toShortForm(file));
         }
-        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+        assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
 
     @Test
@@ -109,10 +110,10 @@ public class BaseHomeTest
         Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);
-        Assert.assertThat("Reference",ref,startsWith("${jetty.home}"));
+        assertThat("Reference",ref,startsWith("${jetty.home}"));
 
         String contents = IO.readToString(startIni.toFile());
-        Assert.assertThat("Contents",contents,containsString("Home Ini"));
+        assertThat("Contents",contents,containsString("Home Ini"));
     }
 
     @Test
@@ -132,7 +133,7 @@ public class BaseHomeTest
         expected.add("${jetty.home}/start.d/jsp.ini");
         expected.add("${jetty.home}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
-        FSTest.toOsSeparators(expected);
+        FSTest.toFsSeparators(expected);
 
         assertPathList(hb,"Paths found",expected,paths);
     }
@@ -154,7 +155,7 @@ public class BaseHomeTest
         expected.add("${jetty.home}/start.d/jsp.ini");
         expected.add("${jetty.home}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
-        FSTest.toOsSeparators(expected);
+        FSTest.toFsSeparators(expected);
 
         assertPathList(hb,"Paths found",expected,paths);
     }
@@ -179,7 +180,7 @@ public class BaseHomeTest
         expected.add("${jetty.base}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
         expected.add("${jetty.base}/start.d/myapp.ini");
-        FSTest.toOsSeparators(expected);
+        FSTest.toFsSeparators(expected);
 
         assertPathList(hb,"Paths found",expected,paths);
     }
@@ -188,8 +189,8 @@ public class BaseHomeTest
     public void testDefault() throws IOException
     {
         BaseHome bh = new BaseHome();
-        Assert.assertThat("Home",bh.getHome(),notNullValue());
-        Assert.assertThat("Base",bh.getBase(),notNullValue());
+        assertThat("Home",bh.getHome(),notNullValue());
+        assertThat("Base",bh.getBase(),notNullValue());
     }
 
     @Test
@@ -206,9 +207,9 @@ public class BaseHomeTest
         Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);
-        Assert.assertThat("Reference",ref,startsWith("${jetty.base}"));
+        assertThat("Reference",ref,startsWith("${jetty.base}"));
 
         String contents = IO.readToString(startIni.toFile());
-        Assert.assertThat("Contents",contents,containsString("Base Ini"));
+        assertThat("Contents",contents,containsString("Base Ini"));
     }
 }

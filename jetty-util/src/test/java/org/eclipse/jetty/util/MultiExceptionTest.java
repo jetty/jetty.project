@@ -18,13 +18,16 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.Assert;
-import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
 
 
 public class MultiExceptionTest
@@ -38,8 +41,9 @@ public class MultiExceptionTest
         me.ifExceptionThrow();
         me.ifExceptionThrowMulti();
         me.ifExceptionThrowRuntime();
-        
-        assertEquals("Stack trace should not be filled out", 0, me.getStackTrace().length);
+        me.ifExceptionThrowSuppressed();
+
+        assertEquals(0, me.getStackTrace().length, "Stack trace should not be filled out");
     }
 
     @Test
@@ -51,6 +55,7 @@ public class MultiExceptionTest
 
         assertEquals(1,me.size());
 
+        // TODO: convert to assertThrows chain
         try
         {
             me.ifExceptionThrow();
@@ -81,6 +86,16 @@ public class MultiExceptionTest
             assertTrue(e.getCause()==io);
         }
 
+        try
+        {
+            me.ifExceptionThrowSuppressed();
+            assertTrue(false);
+        }
+        catch(IOException e)
+        {
+            assertTrue(e==io);
+        }
+
         me = new MultiException();
         RuntimeException run = new RuntimeException("one");
         me.add(run);
@@ -94,26 +109,38 @@ public class MultiExceptionTest
         {
             assertTrue(run==e);
         }
-        
-        assertEquals("Stack trace should not be filled out", 0, me.getStackTrace().length);
+
+        assertEquals(0, me.getStackTrace().length, "Stack trace should not be filled out");
     }
 
-    private MultiException multiExceptionWithTwo() {
+    private MultiException multiExceptionWithIoRt() {
         MultiException me = new MultiException();
         IOException io = new IOException("one");
-        RuntimeException run = new RuntimeException("one");
+        RuntimeException run = new RuntimeException("two");
         me.add(io);
         me.add(run);
         assertEquals(2,me.size());
-        
-        assertEquals("Stack trace should not be filled out", 0, me.getStackTrace().length);
+
+        assertEquals(0, me.getStackTrace().length, "Stack trace should not be filled out");
         return me;
     }
-    
+
+    private MultiException multiExceptionWithRtIo() {
+        MultiException me = new MultiException();
+        RuntimeException run = new RuntimeException("one");
+        IOException io = new IOException("two");
+        me.add(run);
+        me.add(io);
+        assertEquals(2,me.size());
+
+        assertEquals(0, me.getStackTrace().length, "Stack trace should not be filled out");
+        return me;
+    }
+
     @Test
     public void testTwo() throws Exception
     {
-        MultiException me = multiExceptionWithTwo();
+        MultiException me = multiExceptionWithIoRt();
         try
         {
             me.ifExceptionThrow();
@@ -125,7 +152,7 @@ public class MultiExceptionTest
             assertTrue(e.getStackTrace().length > 0);
         }
 
-        me = multiExceptionWithTwo();
+        me = multiExceptionWithIoRt();
         try
         {
             me.ifExceptionThrowMulti();
@@ -137,7 +164,7 @@ public class MultiExceptionTest
             assertTrue(e.getStackTrace().length > 0);
         }
 
-        me = multiExceptionWithTwo();
+        me = multiExceptionWithIoRt();
         try
         {
             me.ifExceptionThrowRuntime();
@@ -149,11 +176,7 @@ public class MultiExceptionTest
             assertTrue(e.getStackTrace().length > 0);
         }
 
-        RuntimeException run = new RuntimeException("one");
-        me = new MultiException();
-        me.add(run);
-        me.add(run);
-
+        me = multiExceptionWithRtIo();
         try
         {
             me.ifExceptionThrowRuntime();
@@ -161,9 +184,21 @@ public class MultiExceptionTest
         }
         catch(RuntimeException e)
         {
-            assertTrue(e.getCause() instanceof MultiException);
-            Assert.assertEquals(e.getCause().getCause(), run);
+            assertThat(e.getCause(), instanceOf(MultiException.class));
             assertTrue(e.getStackTrace().length > 0);
+        }
+
+        me = multiExceptionWithRtIo();
+        try
+        {
+            me.ifExceptionThrowSuppressed();
+            assertTrue(false);
+        }
+        catch(RuntimeException e)
+        {
+            assertThat(e.getCause(), is(nullValue()));
+            assertEquals(1,e.getSuppressed().length,1);
+            assertEquals(IOException.class,e.getSuppressed()[0].getClass());
         }
     }
     
@@ -176,13 +211,13 @@ public class MultiExceptionTest
         me.add(io);
         me.add(run);
 
-        
+
         try {
             me.ifExceptionThrow();
         } catch (MultiException e) {
             assertEquals(io,e.getCause());
             assertEquals(2,e.size());
         }
-        
+
     }
 }

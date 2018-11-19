@@ -21,14 +21,14 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test the JettyServerEndpointConfigurator impl.

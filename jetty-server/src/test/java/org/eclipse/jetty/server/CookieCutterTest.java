@@ -19,17 +19,14 @@
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class CookieCutterTest
 {
     private Cookie[] parseCookieHeaders(CookieCompliance compliance,String... headers)
@@ -142,17 +139,22 @@ public class CookieCutterTest
      * Example from RFC2965
      */
     @Test
-    @Ignore("comma separation no longer supported by new RFC6265")
     public void testRFC2965_CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
                 "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
-        
+
+
+        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
+
+        cookies = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
+        assertThat("Cookies.length", cookies.length, is(2));
+        assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
     }
     
     /**

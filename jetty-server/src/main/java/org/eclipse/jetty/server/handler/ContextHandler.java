@@ -21,12 +21,12 @@ package org.eclipse.jetty.server.handler;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -76,7 +76,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
@@ -202,7 +201,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
-    private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
@@ -258,10 +256,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out,indent,Collections.singletonList(new ClassLoaderDump(getClassLoader())),
-                Collections.singletonList(new DumpableCollection("Handler attributes " + this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("Context attributes " + this,((Context)getServletContext()).getAttributeEntrySet())),
-                Collections.singletonList(new DumpableCollection("Initparams " + this,getInitParams().entrySet())));
+        dumpObjects(out, indent,
+            new ClassLoaderDump(getClassLoader()),
+            new DumpableCollection("eventListeners " + this, _eventListeners),
+            new DumpableCollection("handler attributes " + this, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
+            new DumpableCollection("context attributes " + this, ((Context)getServletContext()).getAttributeEntrySet()),
+            new DumpableCollection("initparams " + this,getInitParams().entrySet()));
     }
 
     /* ------------------------------------------------------------ */
@@ -678,7 +678,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _durableListeners.add(listener);
 
         if (listener instanceof ContextScopeListener)
+        {
             _contextListeners.add((ContextScopeListener)listener);
+            if (__context.get()!=null)
+                ((ContextScopeListener)listener).enterScope(__context.get(),null,"Listener registered");
+        }
 
         if (listener instanceof ServletContextListener)
             _servletContextListeners.add((ServletContextListener)listener);
@@ -968,6 +972,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStop() throws Exception
     {
+        // Should we attempt a graceful shutdown?
+        MultiException mex = null;
+
+        if (getStopTimeout()>0)
+        {
+            try
+            {
+                doShutdown(null);
+            }
+            catch (MultiException e)
+            {
+                mex = e;
+            }
+        }
+        
         _availability = Availability.UNAVAILABLE;
 
         ClassLoader old_classloader = null;
@@ -1013,6 +1032,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
             _programmaticListeners.clear();
         }
+        catch(Throwable x)
+        {
+            if (mex==null)
+                mex = new MultiException();
+            mex.add(x);
+        }
         finally
         {
             __context.set(old_context);
@@ -1021,9 +1046,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // reset the classloader
             if ((old_classloader == null || (old_classloader != old_webapploader)) && current_thread != null)
                 current_thread.setContextClassLoader(old_classloader);
-        }
 
-        _scontext.clearAttributes();
+            _scontext.clearAttributes();
+        }
+        
+        if (mex!=null)
+            mex.ifExceptionThrow();
     }
 
     /* ------------------------------------------------------------ */
@@ -1500,7 +1528,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /*
-     * Set a context attribute. Attributes set via this API cannot be overriden by the ServletContext.setAttribute API. Their lifecycle spans the stop/start of
+     * Set a context attribute. Attributes set via this API cannot be overridden by the ServletContext.setAttribute API. Their lifecycle spans the stop/start of
      * a context. No attribute listener events are triggered by this API.
      *
      * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
@@ -1530,10 +1558,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setManagedAttribute(String name, Object value)
     {
-        Object old = _managedAttributes.put(name,value);
-        updateBean(old,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -2562,35 +2589,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             // no security manager just return the classloader
             if (!_usingSecurityManager)
+            {
                 return _classLoader;
+            }
             else
             {
                 // check to see if the classloader of the caller is the same as the context
-                // classloader, or a parent of it
-                try
+                // classloader, or a parent of it, as required by the javadoc specification.
+
+                // Wrap in a PrivilegedAction so that only Jetty code will require the
+                // "createSecurityManager" permission, not also application code that calls this method.
+                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
+                ClassLoader callerLoader = caller.getCallerClassLoader(2);
+                while (callerLoader != null)
                 {
-                    Class<?> reflect = Loader.loadClass("sun.reflect.Reflection");
-                    Method getCallerClass = reflect.getMethod("getCallerClass",Integer.TYPE);
-                    Class<?> caller = (Class<?>)getCallerClass.invoke(null,2);
-
-                    boolean ok = false;
-                    ClassLoader callerLoader = caller.getClassLoader();
-                    while (!ok && callerLoader != null)
-                    {
-                        if (callerLoader == _classLoader)
-                            ok = true;
-                        else
-                            callerLoader = callerLoader.getParent();
-                    }
-
-                    if (ok)
+                    if (callerLoader == _classLoader)
                         return _classLoader;
+                    else
+                        callerLoader = callerLoader.getParent();
                 }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to check classloader of caller",e);
-                }
-
                 AccessController.checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
             }
@@ -3059,5 +3076,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          *            A request that is applicable to the scope, or null
          */
         void exitScope(Context context, Request request);
+    }
+
+    private static class Caller extends SecurityManager
+    {
+        public ClassLoader getCallerClassLoader(int depth)
+        {
+            if (depth < 0)
+                return null;
+            Class<?>[] classContext = getClassContext();
+            if (classContext.length <= depth)
+                return null;
+            return classContext[depth].getClassLoader();
+        }
     }
 }

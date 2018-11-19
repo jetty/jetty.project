@@ -18,9 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.annotations.BadBinarySignatureSocket;
@@ -33,8 +37,8 @@ import org.eclipse.jetty.websocket.common.annotations.MyEchoSocket;
 import org.eclipse.jetty.websocket.common.annotations.MyStatelessEchoSocket;
 import org.eclipse.jetty.websocket.common.annotations.NoopSocket;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import examples.AnnotatedBinaryArraySocket;
 import examples.AnnotatedBinaryStreamSocket;
@@ -45,15 +49,15 @@ public class JettyAnnotatedScannerTest
 {
     private void assertHasEventMethod(String message, CallableMethod actual)
     {
-        Assert.assertThat(message + " CallableMethod",actual,notNullValue());
+        assertThat(message + " CallableMethod",actual,notNullValue());
 
-        Assert.assertThat(message + " CallableMethod.pojo",actual.getPojo(),notNullValue());
-        Assert.assertThat(message + " CallableMethod.method",actual.getMethod(),notNullValue());
+        assertThat(message + " CallableMethod.pojo",actual.getPojo(),notNullValue());
+        assertThat(message + " CallableMethod.method",actual.getMethod(),notNullValue());
     }
 
     private void assertNoEventMethod(String message, CallableMethod actual)
     {
-        Assert.assertThat(message + " CallableMethod",actual,nullValue());
+        assertThat(message + " CallableMethod",actual,nullValue());
     }
 
     /**
@@ -63,17 +67,13 @@ public class JettyAnnotatedScannerTest
     public void testAnnotatedBadDuplicateBinarySocket()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
-        try
-        {
+
+        InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, ()-> {
             // Should toss exception
             impl.scan(BadDuplicateBinarySocket.class);
-            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
-        }
-        catch (InvalidWebSocketException e)
-        {
-            // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketMessage declaration"));
-        }
+        });
+        // Validate that we have clear error message to the developer
+        assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketMessage declaration"));
     }
 
     /**
@@ -83,17 +83,12 @@ public class JettyAnnotatedScannerTest
     public void testAnnotatedBadDuplicateFrameSocket()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
-        try
-        {
+        InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, ()-> {
             // Should toss exception
             impl.scan(BadDuplicateFrameSocket.class);
-            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
-        }
-        catch (InvalidWebSocketException e)
-        {
-            // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketFrame"));
-        }
+        });
+        // Validate that we have clear error message to the developer
+        assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketFrame"));
     }
 
     /**
@@ -103,17 +98,12 @@ public class JettyAnnotatedScannerTest
     public void testAnnotatedBadSignature_NonVoidReturn()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
-        try
-        {
+        InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, ()-> {
             // Should toss exception
             impl.scan(BadBinarySignatureSocket.class);
-            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
-        }
-        catch (InvalidWebSocketException e)
-        {
-            // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),containsString("must be void"));
-        }
+        });
+        // Validate that we have clear error message to the developer
+        assertThat(e.getMessage(),containsString("must be void"));
     }
 
     /**
@@ -123,17 +113,12 @@ public class JettyAnnotatedScannerTest
     public void testAnnotatedBadSignature_Static()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
-        try
-        {
+        InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, ()-> {
             // Should toss exception
             impl.scan(BadTextSignatureSocket.class);
-            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
-        }
-        catch (InvalidWebSocketException e)
-        {
-            // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),containsString("may not be static"));
-        }
+        });
+        // Validate that we have clear error message to the developer
+        assertThat(e.getMessage(),containsString("may not be static"));
     }
 
     /**
@@ -147,7 +132,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = AnnotatedBinaryArraySocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertHasEventMethod(classId + ".onBinary",metadata.onBinary);
         assertHasEventMethod(classId + ".onClose",metadata.onClose);
@@ -156,8 +141,8 @@ public class JettyAnnotatedScannerTest
         assertNoEventMethod(classId + ".onText",metadata.onText);
         assertNoEventMethod(classId + ".onFrame",metadata.onFrame);
 
-        Assert.assertFalse(classId + ".onBinary.isSessionAware",metadata.onBinary.isSessionAware());
-        Assert.assertFalse(classId + ".onBinary.isStreaming",metadata.onBinary.isStreaming());
+        assertFalse(metadata.onBinary.isSessionAware(),classId + ".onBinary.isSessionAware");
+        assertFalse(metadata.onBinary.isStreaming(),classId + ".onBinary.isStreaming");
     }
 
     /**
@@ -171,7 +156,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = AnnotatedBinaryStreamSocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertHasEventMethod(classId + ".onBinary",metadata.onBinary);
         assertHasEventMethod(classId + ".onClose",metadata.onClose);
@@ -180,8 +165,8 @@ public class JettyAnnotatedScannerTest
         assertNoEventMethod(classId + ".onText",metadata.onText);
         assertNoEventMethod(classId + ".onFrame",metadata.onFrame);
 
-        Assert.assertFalse(classId + ".onBinary.isSessionAware",metadata.onBinary.isSessionAware());
-        Assert.assertTrue(classId + ".onBinary.isStreaming",metadata.onBinary.isStreaming());
+        assertFalse(metadata.onBinary.isSessionAware(),classId + ".onBinary.isSessionAware");
+        assertTrue(metadata.onBinary.isStreaming(),classId + ".onBinary.isStreaming");
     }
 
     /**
@@ -195,7 +180,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = MyEchoBinarySocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertHasEventMethod(classId + ".onBinary",metadata.onBinary);
         assertHasEventMethod(classId + ".onClose",metadata.onClose);
@@ -216,7 +201,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = MyEchoSocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertNoEventMethod(classId + ".onBinary",metadata.onBinary);
         assertHasEventMethod(classId + ".onClose",metadata.onClose);
@@ -237,7 +222,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = MyStatelessEchoSocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertNoEventMethod(classId + ".onBinary",metadata.onBinary);
         assertNoEventMethod(classId + ".onClose",metadata.onClose);
@@ -246,8 +231,8 @@ public class JettyAnnotatedScannerTest
         assertHasEventMethod(classId + ".onText",metadata.onText);
         assertNoEventMethod(classId + ".onFrame",metadata.onFrame);
 
-        Assert.assertTrue(classId + ".onText.isSessionAware",metadata.onText.isSessionAware());
-        Assert.assertFalse(classId + ".onText.isStreaming",metadata.onText.isStreaming());
+        assertTrue(metadata.onText.isSessionAware(),classId + ".onText.isSessionAware");
+        assertFalse(metadata.onText.isStreaming(),classId + ".onText.isStreaming");
     }
 
     /**
@@ -261,7 +246,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = NoopSocket.class.getSimpleName();
 
-        Assert.assertThat("Methods for " + classId,metadata,notNullValue());
+        assertThat("Methods for " + classId,metadata,notNullValue());
 
         assertNoEventMethod(classId + ".onBinary",metadata.onBinary);
         assertNoEventMethod(classId + ".onClose",metadata.onClose);
@@ -282,7 +267,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = FrameSocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertNoEventMethod(classId + ".onBinary",metadata.onBinary);
         assertNoEventMethod(classId + ".onClose",metadata.onClose);
@@ -303,7 +288,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = AnnotatedTextSocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertNoEventMethod(classId + ".onBinary",metadata.onBinary);
         assertHasEventMethod(classId + ".onClose",metadata.onClose);
@@ -312,8 +297,8 @@ public class JettyAnnotatedScannerTest
         assertHasEventMethod(classId + ".onText",metadata.onText);
         assertNoEventMethod(classId + ".onFrame",metadata.onFrame);
 
-        Assert.assertFalse(classId + ".onText.isSessionAware",metadata.onText.isSessionAware());
-        Assert.assertFalse(classId + ".onText.isStreaming",metadata.onText.isStreaming());
+        assertFalse(metadata.onText.isSessionAware(),classId + ".onText.isSessionAware");
+        assertFalse(metadata.onText.isStreaming(),classId + ".onText.isStreaming");
     }
 
     /**
@@ -327,7 +312,7 @@ public class JettyAnnotatedScannerTest
 
         String classId = AnnotatedTextStreamSocket.class.getSimpleName();
 
-        Assert.assertThat("EventMethods for " + classId,metadata,notNullValue());
+        assertThat("EventMethods for " + classId,metadata,notNullValue());
 
         assertNoEventMethod(classId + ".onBinary",metadata.onBinary);
         assertHasEventMethod(classId + ".onClose",metadata.onClose);
@@ -336,7 +321,7 @@ public class JettyAnnotatedScannerTest
         assertHasEventMethod(classId + ".onText",metadata.onText);
         assertNoEventMethod(classId + ".onFrame",metadata.onFrame);
 
-        Assert.assertFalse(classId + ".onText.isSessionAware",metadata.onText.isSessionAware());
-        Assert.assertTrue(classId + ".onText.isStreaming",metadata.onText.isStreaming());
+        assertFalse(metadata.onText.isSessionAware(),classId + ".onText.isSessionAware");
+        assertTrue(metadata.onText.isStreaming(),classId + ".onText.isStreaming");
     }
 }

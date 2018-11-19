@@ -18,11 +18,19 @@
 
 package org.eclipse.jetty.unixsocket;
 
-import java.io.File;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
@@ -36,50 +44,55 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 
+@EnabledOnOs({LINUX, MAC})
 public class UnixSocketTest
 {
+    private static final Logger log = Log.getLogger(UnixSocketTest.class);
 
-    private Logger log = Log.getLogger( getClass() );
+    private Server server;
+    private HttpClient httpClient;
+    private Path sockFile;
 
-    Server server;
-    HttpClient httpClient;
-    Path sockFile;
-
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         server = null;
         httpClient = null;
-        sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
-        Files.deleteIfExists(sockFile);
+        String unixSocketTmp = System.getProperty( "unix.socket.tmp" );
+        if(StringUtil.isNotBlank( unixSocketTmp ) )
+        {
+            sockFile = Files.createTempFile( Paths.get(unixSocketTmp), "unix", ".sock" );
+        } else {
+            sockFile = Files.createTempFile("unix", ".sock" );
+        }
+        assertTrue(Files.deleteIfExists(sockFile),"temp sock file cannot be deleted");
+
     }
     
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         if (httpClient!=null)
             httpClient.stop();
         if (server!=null)
             server.stop();
-        Files.deleteIfExists(sockFile);
+        // Force delete, this will fail if UnixSocket was not closed properly in the implementation
+        FS.delete( sockFile);
     }
     
     @Test
     public void testUnixSocket() throws Exception
     {
-        Assume.assumeTrue(OS.IS_UNIX);
-
         server = new Server();
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -130,27 +143,19 @@ public class UnixSocketTest
 
         log.debug( "response from server: {}", contentResponse.getContentAsString() );
 
-        Assert.assertTrue(contentResponse.getContentAsString().contains( "Hello World" ));
+        assertThat(contentResponse.getContentAsString(), containsString( "Hello World" ));
     }
 
-    
     @Test
     public void testNotLocal() throws Exception
     {        
         httpClient = new HttpClient( new HttpClientTransportOverUnixSockets( sockFile.toString() ), null );
         httpClient.start();
         
-        try
-        {
+        ExecutionException e = assertThrows(ExecutionException.class, ()->{
             httpClient.newRequest( "http://google.com" ).send();
-            Assert.fail();
-        }
-        catch(ExecutionException e)
-        {
-            Throwable cause = e.getCause();
-            Assert.assertTrue(cause instanceof IOException);
-            Assert.assertThat(cause.getMessage(),Matchers.containsString("UnixSocket cannot connect to google.com"));
-        }
-
+        });
+        assertThat(e.getCause(), instanceOf(IOException.class));
+        assertThat(e.getCause().getMessage(),containsString("UnixSocket cannot connect to google.com"));
     }
 }

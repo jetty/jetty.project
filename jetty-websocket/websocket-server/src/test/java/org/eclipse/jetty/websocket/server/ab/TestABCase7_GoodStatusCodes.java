@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -30,26 +30,22 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test Good Close Status Codes
  */
-@RunWith(value = Parameterized.class)
 public class TestABCase7_GoodStatusCodes extends AbstractABCase
 {
     private static final Logger LOG = Log.getLogger(TestABCase7_GoodStatusCodes.class);
 
-    @Parameters(name = "{1} / {0}")
-    public static Collection<Object[]> data()
+    public static Stream<Arguments> statusCodes()
     {
         // The various Good UTF8 sequences as a String (hex form)
         List<Object[]> data = new ArrayList<>();
 
-        // @formatter:off
         data.add(new Object[] { "7.7.1", 1000 });
         data.add(new Object[] { "7.7.2", 1001 });
         data.add(new Object[] { "7.7.3", 1002 });
@@ -66,25 +62,17 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         data.add(new Object[] { "7.7.11", 3999 });
         data.add(new Object[] { "7.7.12", 4000 });
         data.add(new Object[] { "7.7.13", 4999 });
-        // @formatter:on
 
-        return data;
-    }
-
-    private final int statusCode;
-
-    public TestABCase7_GoodStatusCodes(String testId, int statusCode)
-    {
-        LOG.debug("Test ID: {}",testId);
-        this.statusCode = statusCode;
+        return data.stream().map(Arguments::of);
     }
 
     /**
      * just the close code, no reason
      * @throws Exception on test failure
      */
-    @Test
-    public void testStatusCode() throws Exception
+    @ParameterizedTest
+    @MethodSource("statusCodes")
+    public void testStatusCode(String testId, int statusCode) throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
@@ -111,8 +99,9 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
      * the good close code, with reason
      * @throws Exception on test failure
      */
-    @Test
-    public void testStatusCodeWithReason() throws Exception
+    @ParameterizedTest
+    @MethodSource("statusCodes")
+    public void testStatusCodeWithReason(String testId, int statusCode) throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         payload.putChar((char)statusCode);

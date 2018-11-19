@@ -76,7 +76,7 @@ public class HttpRequest implements Request
     private String query;
     private String method = HttpMethod.GET.asString();
     private HttpVersion version = HttpVersion.HTTP_1_1;
-    private long idleTimeout;
+    private long idleTimeout = -1;
     private long timeout;
     private long timeoutAt;
     private ContentProvider content;
@@ -99,7 +99,6 @@ public class HttpRequest implements Request
         extractParams(query);
 
         followRedirects(client.isFollowRedirects());
-        idleTimeout = client.getIdleTimeout();
         HttpField acceptEncodingField = client.getAcceptEncodingField();
         if (acceptEncodingField != null)
             headers.put(acceptEncodingField);
@@ -108,7 +107,7 @@ public class HttpRequest implements Request
             headers.put(userAgentField);
     }
 
-    protected HttpConversation getConversation()
+    public HttpConversation getConversation()
     {
         return conversation;
     }

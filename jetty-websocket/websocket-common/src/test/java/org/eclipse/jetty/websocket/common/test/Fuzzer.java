@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -42,7 +43,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.junit.Assert;
+
 
 /**
  * Fuzzing utility for the AB tests.
@@ -68,7 +69,6 @@ public class Fuzzer implements AutoCloseable
     private final Fuzzed testcase;
     private final BlockheadClient client;
     private final Generator generator;
-    private final String testname;
     private BlockheadConnection clientConnection;
     private SendMode sendMode = SendMode.BULK;
     private int slowSendSegmentSize = 5;
@@ -88,7 +88,6 @@ public class Fuzzer implements AutoCloseable
         client.start();
 
         this.generator = testcase.getLaxGenerator();
-        this.testname = testcase.getTestMethodName();
     }
 
     public ByteBuffer asNetworkBuffer(List<WebSocketFrame> send)
@@ -133,7 +132,6 @@ public class Fuzzer implements AutoCloseable
     {
         BlockheadClientRequest request = this.client.newWsRequest(testcase.getServerURI());
         request.idleTimeout(2, TimeUnit.SECONDS);
-        request.header("X-TestCase", testname);
         Future<BlockheadConnection> connFut = request.sendAsync();
 
         try
@@ -185,18 +183,18 @@ public class Fuzzer implements AutoCloseable
 
             LOG.debug("{} {}",prefix,actual);
 
-            Assert.assertThat(prefix, actual, is(notNullValue()));
-            Assert.assertThat(prefix + ".opcode",OpCode.name(actual.getOpCode()),is(OpCode.name(expected.getOpCode())));
+            assertThat(prefix, actual, is(notNullValue()));
+            assertThat(prefix + ".opcode",OpCode.name(actual.getOpCode()),is(OpCode.name(expected.getOpCode())));
             prefix += "/" + actual.getOpCode();
             if (expected.getOpCode() == OpCode.CLOSE)
             {
                 CloseInfo expectedClose = new CloseInfo(expected);
                 CloseInfo actualClose = new CloseInfo(actual);
-                Assert.assertThat(prefix + ".statusCode",actualClose.getStatusCode(),is(expectedClose.getStatusCode()));
+                assertThat(prefix + ".statusCode",actualClose.getStatusCode(),is(expectedClose.getStatusCode()));
             }
             else
             {
-                Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.getPayloadLength()));
+                assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.getPayloadLength()));
                 ByteBufferAssert.assertEquals(prefix + ".payload",expected.getPayload(),actual.getPayload());
             }
         }
@@ -224,7 +222,7 @@ public class Fuzzer implements AutoCloseable
 
     public void send(ByteBuffer buf) throws IOException
     {
-        Assert.assertThat("Client connected",clientConnection.isOpen(),is(true));
+        assertThat("Client connected",clientConnection.isOpen(),is(true));
         LOG.debug("Sending bytes {}",BufferUtil.toDetailString(buf));
         if (sendMode == SendMode.SLOW)
         {
@@ -243,8 +241,8 @@ public class Fuzzer implements AutoCloseable
 
     public void send(List<WebSocketFrame> send) throws IOException
     {
-        Assert.assertThat("Client connected",clientConnection.isOpen(),is(true));
-        LOG.debug("[{}] Sending {} frames (mode {})",testname,send.size(),sendMode);
+        assertThat("Client connected",clientConnection.isOpen(),is(true));
+        LOG.debug("Sending {} frames (mode {})",send.size(),sendMode);
         if ((sendMode == SendMode.BULK) || (sendMode == SendMode.SLOW))
         {
             int buflen = 0;
@@ -317,7 +315,7 @@ public class Fuzzer implements AutoCloseable
             // early socket close can propagate back to the client
             // before it has a chance to finish writing out the
             // remaining frame octets
-            Assert.assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
+            assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
         }
     }
 

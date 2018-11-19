@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.junit.Assert;
+
 
 @WebSocket
 public class TrackingInputStreamSocket
@@ -64,13 +65,13 @@ public class TrackingInputStreamSocket
 
     public void assertCloseCode(int expectedCode) throws InterruptedException
     {
-        Assert.assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
-        Assert.assertThat("Close Code",closeCode,is(expectedCode));
+        assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
+        assertThat("Close Code",closeCode,is(expectedCode));
     }
 
     private void assertCloseReason(String expectedReason)
     {
-        Assert.assertThat("Close Reason",closeMessage.toString(),is(expectedReason));
+        assertThat("Close Reason",closeMessage.toString(),is(expectedReason));
     }
 
     @OnWebSocketClose
@@ -107,6 +108,6 @@ public class TrackingInputStreamSocket
 
     public void waitForClose(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
-        Assert.assertThat("Client Socket Closed",closeLatch.await(timeoutDuration,timeoutUnit),is(true));
+        assertThat("Client Socket Closed",closeLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
 }

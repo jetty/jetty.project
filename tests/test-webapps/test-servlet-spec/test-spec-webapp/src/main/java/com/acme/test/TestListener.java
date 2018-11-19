@@ -117,6 +117,9 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
+        if (sce.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectTest") != null)
+            throw new IllegalStateException("TestListener already initialized");
+        
         sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectTest", Boolean.valueOf(maxAmount != null));
         
         //Can't add a ServletContextListener from a ServletContextListener even if it is declared in web.xml

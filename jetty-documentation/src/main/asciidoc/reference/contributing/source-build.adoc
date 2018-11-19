@@ -49,7 +49,7 @@ Files associated with the development of Jetty -- code styles, formatting, iplog
 
 ==== Build
 
-Jetty requires the use of Java 7 and the latest releases are always recommended to build.
+Jetty requires the use of Java 8 and the latest releases are always recommended to build.
 
 Jetty uses http://maven.apache.org/[Apache Maven 3] for managing its build and primary project metadata.
 

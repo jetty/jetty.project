@@ -8,6 +8,9 @@
              <Arg><Property name="jetty.session.jdbc.driverClass"/></Arg>
              <Arg><Property name="jetty.session.jdbc.driverUrl"/></Arg>
          </Call>
+         <Set name="blobType"><Property name="jetty.session.jdbc.blobType"/></Set>
+         <Set name="longType"><Property name="jetty.session.jdbc.longType"/></Set>
+         <Set name="stringType"><Property name="jetty.session.jdbc.stringType"/></Set>
     </New>
 
 </Configure>

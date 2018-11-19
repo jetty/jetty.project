@@ -30,8 +30,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
-import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -41,10 +39,8 @@ public class ResponseNotifier
 
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
+        for (Response.ResponseListener listener : listeners)
         {
-            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.BeginListener)
                 notifyBegin((Response.BeginListener)listener, response);
         }
@@ -65,10 +61,8 @@ public class ResponseNotifier
     public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
     {
         boolean result = true;
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
+        for (Response.ResponseListener listener : listeners)
         {
-            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.HeaderListener)
                 result &= notifyHeader((Response.HeaderListener)listener, response, field);
         }
@@ -90,10 +84,8 @@ public class ResponseNotifier
 
     public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
     {
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
+        for (Response.ResponseListener listener : listeners)
         {
-            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.HeadersListener)
                 notifyHeaders((Response.HeadersListener)listener, response);
         }
@@ -129,14 +121,8 @@ public class ResponseNotifier
         else
         {
             CountingCallback counter = new CountingCallback(callback, contentListeners.size());
-            Retainable retainable = callback instanceof Retainable ? (Retainable)callback : null;
             for (Response.AsyncContentListener listener : contentListeners)
-            {
-                ByteBuffer slice = buffer.slice();
-                if (retainable != null)
-                    retainable.retain();
-                listener.onContent(response, slice, counter);
-            }
+                notifyContent(listener, response, buffer.slice(), counter);
         }
     }
 
@@ -154,10 +140,8 @@ public class ResponseNotifier
 
     public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
     {
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
+        for (Response.ResponseListener listener : listeners)
         {
-            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.SuccessListener)
                 notifySuccess((Response.SuccessListener)listener, response);
         }
@@ -177,10 +161,8 @@ public class ResponseNotifier
 
     public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
+        for (Response.ResponseListener listener : listeners)
         {
-            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.FailureListener)
                 notifyFailure((Response.FailureListener)listener, response, failure);
         }
@@ -200,10 +182,8 @@ public class ResponseNotifier
 
     public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
     {
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
+        for (Response.ResponseListener listener : listeners)
         {
-            Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.CompleteListener)
                 notifyComplete((Response.CompleteListener)listener, result);
         }
@@ -261,52 +241,5 @@ public class ResponseNotifier
     {
         forwardFailure(listeners, response, responseFailure);
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
-    }
-
-    private class ContentCallback extends IteratingNestedCallback
-    {
-        private final List<Response.ResponseListener> listeners;
-        private final Response response;
-        private final ByteBuffer buffer;
-        private int index;
-
-        private ContentCallback(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
-        {
-            super(callback);
-            this.listeners = listeners;
-            this.response = response;
-            // Slice the buffer to avoid that listeners peek into data they should not look at.
-            this.buffer = buffer.slice();
-        }
-
-        @Override
-        protected Action process() throws Exception
-        {
-            if (index == listeners.size())
-                return Action.SUCCEEDED;
-
-            Response.ResponseListener listener = listeners.get(index);
-            if (listener instanceof Response.AsyncContentListener)
-            {
-                // The buffer was sliced, so we always clear it
-                // (clear => position=0, limit=capacity) before
-                // passing it to the listener that may consume it.
-                buffer.clear();
-                ResponseNotifier.this.notifyContent((Response.AsyncContentListener)listener, response, buffer, this);
-                return Action.SCHEDULED;
-            }
-            else
-            {
-                succeeded();
-                return Action.SCHEDULED;
-            }
-        }
-
-        @Override
-        public void succeeded()
-        {
-            ++index;
-            super.succeeded();
-        }
     }
 }

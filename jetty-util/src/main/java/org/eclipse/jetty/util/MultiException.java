@@ -55,15 +55,15 @@ public class MultiException extends Exception
         super(DEFAULT_MESSAGE);
         this.nested = new ArrayList<>(nested);
         
-        if(nested.size() > 0) {
+        if (nested.size() > 0)
             initCause(nested.get(0));
-        }
-        
-        for(Throwable t : nested) {
-            this.addSuppressed(t);
+
+        for (Throwable t : nested)
+        {
+            if (t != this)
+                addSuppressed(t);
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     public void add(Throwable e)
@@ -176,6 +176,36 @@ public class MultiException extends Exception
         }
     }
 
+
+    /* ------------------------------------------------------------ */
+    /** Throw an Exception, potentially with suppress.
+     * If this multi exception is empty then no action is taken. If the first
+     * exception added is an Error or Exception, then it is throw with 
+     * any additional exceptions added as suppressed. Otherwise a MultiException
+     * is thrown, with all exceptions added as suppressed.
+     * @exception Exception the Error or Exception if at least one is added.
+     */
+    public void ifExceptionThrowSuppressed()
+        throws Exception
+    {
+        if(nested == null || nested.size()==0)
+            return;
+        
+        Throwable th=nested.get(0);
+        if (!Error.class.isInstance(th) && !Exception.class.isInstance(th))
+            th = new MultiException(Collections.emptyList());
+
+        for (Throwable s : nested)
+        {
+            if (s!=th)
+                th.addSuppressed(s);
+        }
+        if (Error.class.isInstance(th))
+            throw (Error)th;
+        throw (Exception)th;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

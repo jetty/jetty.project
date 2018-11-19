@@ -235,22 +235,16 @@ public abstract class AbstractLifeCycle implements LifeCycle
         @Override public void lifeCycleStopping(LifeCycle event) {}
     }
     
-    /**
-     * A LifeCycle Listener that will call stop if any failures are notified.
-     */
-    public static final LifeCycle.Listener STOP_ON_FAILURE = new AbstractLifeCycleListener()
+    @Override
+    public String toString()
     {
-        @Override 
-        public void lifeCycleFailure(LifeCycle lifecycle, Throwable cause) 
+        Class<?> clazz = getClass();
+        String name = clazz.getSimpleName();
+        if ((name==null || name.length()==0) && clazz.getSuperclass()!=null)
         {
-            try
-            {
-                lifecycle.stop();
-            }
-            catch(Exception e)
-            {
-                cause.addSuppressed(e);
-            }
+            clazz = clazz.getSuperclass();
+            name = clazz.getSimpleName();
         }
-    };
+        return String.format("%s@%x{%s}",name,hashCode(),getState());
+    }
 }

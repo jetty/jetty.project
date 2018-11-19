@@ -18,30 +18,25 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(AdvancedRunner.class)
-public class QueuedThreadPoolTest
+
+public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 {
-    final AtomicInteger _jobs=new AtomicInteger();
+    private final AtomicInteger _jobs=new AtomicInteger();
 
-    class RunningJob implements Runnable
+    private class RunningJob implements Runnable
     {
         private final CountDownLatch _run = new CountDownLatch(1);
         private final CountDownLatch _stopping = new CountDownLatch(1);
@@ -72,11 +67,9 @@ public class QueuedThreadPoolTest
             if (!_stopped.await(10,TimeUnit.SECONDS))
                 throw new IllegalStateException();
         }
-    };
-
+    }
 
     @Test
-    @Slow
     public void testThreadPool() throws Exception
     {
         QueuedThreadPool tp= new QueuedThreadPool();
@@ -96,7 +89,7 @@ public class QueuedThreadPoolTest
         waitForThreads(tp,2);
         waitForIdle(tp,2);
 
-        // Run a single job
+        // Run job0
         RunningJob job0=new RunningJob();
         tp.execute(job0);
         assertTrue(job0._run.await(10,TimeUnit.SECONDS));
@@ -151,29 +144,22 @@ public class QueuedThreadPoolTest
                 
         waitForThreads(tp,2);
         waitForIdle(tp,2);
-        
     }
 
     @Test
-    @Slow
     public void testShrink() throws Exception
     {
         final AtomicInteger sleep = new AtomicInteger(100);
-        Runnable job = new Runnable()
+        Runnable job = () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    Thread.sleep(sleep.get());
-                }
-                catch(Exception e)
-                {
-                    e.printStackTrace();
-                }
+                Thread.sleep(sleep.get());
             }
-
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }
         };
 
         QueuedThreadPool tp= new QueuedThreadPool();
@@ -211,13 +197,16 @@ public class QueuedThreadPoolTest
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setStopTimeout(500);
         tp.start();
-        tp.execute(new Runnable(){
-            @Override
-            public void run () {
-                while (true) {
-                    try {
-                        Thread.sleep(10000);
-                    } catch (InterruptedException ie) {}
+        tp.execute(() ->
+        {
+            while (true)
+            {
+                try
+                {
+                    Thread.sleep(10000);
+                }
+                catch (InterruptedException expected)
+                {
                 }
             }
         });
@@ -229,7 +218,6 @@ public class QueuedThreadPoolTest
         assertTrue(afterStop - beforeStop < 1000);
     }
 
-
     private void waitForIdle(QueuedThreadPool tp, int idle)
     {
         long now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -240,11 +228,12 @@ public class QueuedThreadPoolTest
             {
                 Thread.sleep(50);
             }
-            catch(InterruptedException e)
-            {}
+            catch(InterruptedException ignored)
+            {
+            }
             now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
-        Assert.assertEquals(idle, tp.getIdleThreads());
+        assertEquals(idle, tp.getIdleThreads());
     }
 
     private void waitForThreads(QueuedThreadPool tp, int threads)
@@ -257,8 +246,9 @@ public class QueuedThreadPoolTest
             {
                 Thread.sleep(50);
             }
-            catch(InterruptedException e)
-            {}
+            catch(InterruptedException ignored)
+            {
+            }
             now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         assertEquals(threads,tp.getThreads());
@@ -274,10 +264,10 @@ public class QueuedThreadPoolTest
         tp.start();
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-            tp.execute(new Runnable(){ @Override public void run () { throw new IllegalStateException(); } });
-            tp.execute(new Runnable(){ @Override public void run () { throw new Error(); } });
-            tp.execute(new Runnable(){ @Override public void run () { throw new RuntimeException(); } });
-            tp.execute(new Runnable(){ @Override public void run () { throw new ThreadDeath(); } });
+            tp.execute(() -> { throw new IllegalStateException(); });
+            tp.execute(() -> { throw new Error(); });
+            tp.execute(() -> { throw new RuntimeException(); });
+            tp.execute(() -> { throw new ThreadDeath(); });
             
             Thread.sleep(100);
             assertThat(tp.getThreads(),greaterThanOrEqualTo(5));
@@ -293,21 +283,23 @@ public class QueuedThreadPoolTest
         pool.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        pool.execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                latch.countDown();
-            }
-        });
+        pool.execute(latch::countDown);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testConstructorMinMaxThreadsValidation()
     {
-        new QueuedThreadPool(4, 8);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new QueuedThreadPool(4, 8);
+        });
     }
+
+    @Override
+    protected SizedThreadPool newPool(int max)
+    {
+        return new QueuedThreadPool(max);
+    }
+    
 }

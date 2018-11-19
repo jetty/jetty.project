@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -63,7 +62,9 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * Runner
  * <p>
  * Combine jetty classes into a single executable jar and run webapps based on the args to it.
+ * @deprecated No replacement provided or available.  Migrate to jetty-home (and use {@code ${jetty.base}} directory).
  */
+@Deprecated
 public class Runner
 {
     private static final Logger LOG = Log.getLogger(Runner.class);
@@ -86,7 +87,6 @@ public class Runner
     protected URLClassLoader _classLoader;
     protected Classpath _classpath = new Classpath();
     protected ContextHandlerCollection _contexts;
-    protected RequestLogHandler _logHandler;
     protected String _logFile;
     protected ArrayList<String> _configFiles;
     protected boolean _enableStats=false;
@@ -390,14 +390,6 @@ public class Runner
                             handlers.addHandler(new DefaultHandler());
                         }
 
-                        //ensure a log handler is present
-                        _logHandler = (RequestLogHandler) handlers.getChildHandlerByClass(RequestLogHandler.class);
-                        if (_logHandler == null) 
-                        {
-                            _logHandler = new RequestLogHandler();
-                            handlers.addHandler(_logHandler);
-                        }
-
 
                         //check a connector is configured to listen on
                         Connector[] connectors = _server.getConnectors();
@@ -507,7 +499,7 @@ public class Runner
         {
             NCSARequestLog requestLog = new NCSARequestLog(_logFile);
             requestLog.setExtended(false);
-            _logHandler.setRequestLog(requestLog);
+            _server.setRequestLog(requestLog);
         }
     }
     
@@ -553,6 +545,10 @@ public class Runner
 
     public static void main(String[] args)
     {
+        System.err.println("WARNING: jetty-runner is deprecated.");
+        System.err.println("         See Jetty Documentation for startup options");
+        System.err.println("         https://www.eclipse.org/jetty/documentation/");
+
         Runner runner = new Runner();
 
         try

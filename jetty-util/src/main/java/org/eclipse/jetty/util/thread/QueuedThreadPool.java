@@ -20,8 +20,6 @@ package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -117,7 +115,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         _jobs=queue;
         _threadGroup=threadGroup;
-        setThreadPoolBudget(new ThreadPoolBudget(this,_minThreads));
+        setThreadPoolBudget(new ThreadPoolBudget(this));
     }
 
     @Override
@@ -257,6 +255,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public void setMaxThreads(int maxThreads)
     {
+        if (_budget!=null)
+            _budget.check(maxThreads);
         _maxThreads = maxThreads;
         if (_minThreads > _maxThreads)
             _minThreads = _maxThreads;
@@ -496,7 +496,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @ManagedAttribute("number of busy threads in the pool")
     public int getBusyThreads()
     {
-        return getThreads() - getIdleThreads();
+        int reserved = _tryExecutor instanceof ReservedThreadExecutor ? ((ReservedThreadExecutor)_tryExecutor).getAvailable() : 0;
+        return getThreads() - getIdleThreads() - reserved;
     }
     
     /**
@@ -535,7 +536,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 thread.setPriority(getThreadsPriority());
                 thread.setName(_name + "-" + thread.getId());
                 _threads.add(thread);
-
+                _lastShrink.set(System.nanoTime());
                 thread.start();
                 started = true;
                 --threadsToStart;
@@ -602,12 +603,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     @Override
                     public void dump(Appendable out, String indent) throws IOException
                     {
-                        out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(known).append(thread.getState().toString());
-                        if (thread.getPriority()!=Thread.NORM_PRIORITY)
-                            out.append(" prio=").append(String.valueOf(thread.getPriority()));
-                        out.append(System.lineSeparator());
+                        String s = thread.getId()+" "+thread.getName()+" "+thread.getState()+" "+thread.getPriority();
                         if (known.length()==0)
-                            ContainerLifeCycle.dump(out, indent, Arrays.asList(trace));
+                            Dumpable.dumpObjects(out, indent, s, (Object[])trace);
+                        else
+                            Dumpable.dumpObjects(out, indent, s);
                     }
 
                     @Override
@@ -624,11 +624,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
         }
 
-        List<Runnable> jobs = Collections.emptyList();
         if (isDetailedDump())
-            jobs = new ArrayList<>(getQueue());
-
-        dumpBeans(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs - size=" + jobs.size(), jobs)));
+        {
+            List<Runnable> jobs = new ArrayList<>(getQueue());
+            dumpObjects(out, indent, new DumpableCollection("threads", threads), new DumpableCollection("jobs", jobs));
+        }
+        else
+        {
+            dumpObjects(out, indent, new DumpableCollection("threads", threads));
+        }
     }
 
     @Override
@@ -668,19 +672,20 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     startThreads(1);
                 }
 
-                loop: while (isRunning())
+                loop:
+                while (isRunning())
                 {
                     // Job loop
                     while (job != null && isRunning())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("run {}",job);
+                            LOG.debug("run {}", job);
                         runJob(job);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("ran {}",job);
+                            LOG.debug("ran {}", job);
                         if (Thread.interrupted())
                         {
-                            ignore=true;
+                            ignore = true;
                             break loop;
                         }
                         job = _jobs.poll();
@@ -707,7 +712,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                                     {
                                         if (_lastShrink.compareAndSet(last, now) && _threadsStarted.compareAndSet(size, size - 1))
                                         {
-                                            shrink=true;
+                                            shrink = true;
                                             break loop;
                                         }
                                     }
@@ -727,7 +732,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             catch (InterruptedException e)
             {
-                ignore=true;
+                ignore = true;
                 LOG.ignore(e);
             }
             catch (Throwable e)
@@ -739,9 +744,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 if (!shrink && isRunning())
                 {
                     if (!ignore)
-                        LOG.warn("Unexpected thread death: {} in {}",this,QueuedThreadPool.this);
+                        LOG.warn("Unexpected thread death: {} in {}", this, QueuedThreadPool.this);
                     // This is an unexpected thread death!
-                    if (_threadsStarted.decrementAndGet()<getMaxThreads())
+                    if (_threadsStarted.decrementAndGet() < getMaxThreads())
                         startThreads(1);
                 }
                 removeThread(Thread.currentThread());

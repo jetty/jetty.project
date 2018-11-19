@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -101,24 +102,27 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         connection.release(this);
     }
 
-    @Override
-    public boolean abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure)
+    void onStreamClosed(IStream stream)
     {
-        Stream stream = getStream();
-        boolean aborted = super.abort(exchange, requestFailure, responseFailure);
-        if (aborted)
-        {
-            if (stream != null)
-                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        }
-        return aborted;
+        connection.onStreamClosed(stream, this);
     }
 
     @Override
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
-        release();
+        if (result.isSucceeded())
+        {
+            release();
+        }
+        else
+        {
+            Stream stream = getStream();
+            if (stream != null)
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), new ReleaseCallback());
+            else
+                release();
+        }
     }
 
     @Override
@@ -128,5 +132,28 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                 super.toString(),
                 sender,
                 receiver);
+    }
+
+    private class ReleaseCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            release();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            release();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
     }
 }

@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class HeaderRegexRuleTest extends AbstractRuleTestCase
 {
 
     private HeaderRegexRule _rule;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         start(false);

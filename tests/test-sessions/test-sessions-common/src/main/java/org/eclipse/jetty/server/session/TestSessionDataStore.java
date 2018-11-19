@@ -19,10 +19,11 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * TestSessionDataStore
@@ -32,10 +33,11 @@ import java.util.Set;
  */
 public class TestSessionDataStore extends AbstractSessionDataStore
 {
-    public Map<String,SessionData> _map = new HashMap<>();
-    public boolean _passivating;
+    public Map<String,SessionData> _map = new ConcurrentHashMap<>();
+    public AtomicInteger _numSaves = new AtomicInteger(0);
 
-    
+    public final boolean _passivating;
+
     public TestSessionDataStore ()
     {
         _passivating = false;
@@ -61,7 +63,7 @@ public class TestSessionDataStore extends AbstractSessionDataStore
 
 
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData doLoad(String id) throws Exception
     {
         SessionData sd = _map.get(id);
         if (sd == null)
@@ -82,6 +84,7 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
+        _numSaves.addAndGet(1);
         _map.put(id,  data);
     }
 

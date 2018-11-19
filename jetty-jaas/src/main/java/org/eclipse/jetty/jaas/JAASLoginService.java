@@ -32,6 +32,7 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.Configuration;
+import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import javax.servlet.ServletRequest;
@@ -278,9 +279,14 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 
             return _identityService.newUserIdentity(subject,userPrincipal,getGroups(subject));
         }
+        catch (FailedLoginException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Login failed", e);
+        }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.ignore(e);
         }
         return null;
     }

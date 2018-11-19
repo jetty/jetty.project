@@ -19,16 +19,17 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * TestQuickStart
@@ -41,7 +42,7 @@ public class TestQuickStart
     File webInf;
     
     
-    @Before
+    @BeforeEach
     public void setUp()
     {
         testDir = MavenTestingUtils.getTargetTestingDir("foo");
@@ -69,8 +70,10 @@ public class TestQuickStart
         ServletHolder fooHolder = new ServletHolder();
         fooHolder.setServlet(new FooServlet());
         fooHolder.setName("foo");
-        quickstart.getServletHandler().addServlet(fooHolder);   
-        quickstart.addEventListener(new FooContextListener());      
+        quickstart.getServletHandler().addServlet(fooHolder);
+        ListenerHolder lholder = new ListenerHolder();
+        lholder.setListener(new FooContextListener());
+        quickstart.getServletHandler().addListener(lholder);
         server.setHandler(quickstart);
         server.start();
         server.stop();

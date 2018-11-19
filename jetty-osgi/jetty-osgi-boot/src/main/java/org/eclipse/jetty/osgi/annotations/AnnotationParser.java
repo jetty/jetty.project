@@ -49,7 +49,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
     
     public AnnotationParser(int javaPlatform)
     {
-        super(javaPlatform, Opcodes.ASM5);
+        super(javaPlatform, Opcodes.ASM7);
     }
     
     /**

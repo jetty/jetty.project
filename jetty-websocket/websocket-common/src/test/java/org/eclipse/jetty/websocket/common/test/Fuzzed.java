@@ -27,6 +27,4 @@ public interface Fuzzed
     URI getServerURI();
 
     Generator getLaxGenerator();
-
-    String getTestMethodName();
 }

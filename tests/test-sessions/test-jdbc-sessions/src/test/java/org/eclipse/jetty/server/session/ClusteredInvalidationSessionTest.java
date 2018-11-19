@@ -19,8 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * ClusteredInvalidationSessionTest
@@ -29,7 +28,7 @@ public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidat
 {
 
     
-    @After
+    @AfterEach
     public void tearDown() throws Exception 
     {
         JdbcTestHelper.shutdown(null);

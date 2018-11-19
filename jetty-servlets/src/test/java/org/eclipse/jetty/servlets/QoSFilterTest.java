@@ -19,7 +19,8 @@
 package org.eclipse.jetty.servlets;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URL;
@@ -47,10 +48,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class QoSFilterTest
 {
@@ -62,7 +64,7 @@ public class QoSFilterTest
     private final int NUM_LOOPS = 6;
     private final int MAX_QOS = 4;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _tester = new ServletTester();
@@ -78,7 +80,7 @@ public class QoSFilterTest
         _tester.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _tester.stop();
@@ -104,6 +106,7 @@ public class QoSFilterTest
             assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(NUM_CONNECTIONS));
     }
 
+    @Disabled("Issue #2627")
     @Test
     public void testBlockingQosFilter() throws Exception
     {
@@ -126,7 +129,7 @@ public class QoSFilterTest
         if (TestServlet.__maxSleepers < MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            Assert.assertEquals(TestServlet.__maxSleepers, MAX_QOS);
+            assertEquals(TestServlet.__maxSleepers, MAX_QOS);
     }
 
     @Test
@@ -151,7 +154,7 @@ public class QoSFilterTest
         if (TestServlet.__maxSleepers < MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            Assert.assertEquals(TestServlet.__maxSleepers, MAX_QOS);
+            assertEquals(TestServlet.__maxSleepers, MAX_QOS);
     }
 
     private void rethrowExceptions(List<Future<Void>> futures) throws Exception

@@ -33,7 +33,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -69,9 +68,8 @@ public class ServerSupport
             throw new IllegalArgumentException ("Server is null");
 
         DefaultHandler defaultHandler = new DefaultHandler();
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
         if (requestLog != null)
-            requestLogHandler.setRequestLog(requestLog);
+            server.setRequestLog(requestLog);
 
         ContextHandlerCollection contexts = findContextHandlerCollection(server);
         if (contexts == null)
@@ -82,7 +80,7 @@ public class ServerSupport
             {
                 handlers = new HandlerCollection();               
                 server.setHandler(handlers);                            
-                handlers.setHandlers(new Handler[]{contexts, defaultHandler, requestLogHandler});
+                handlers.setHandlers(new Handler[]{contexts, defaultHandler});
             }
             else
             {

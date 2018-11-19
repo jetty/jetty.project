@@ -18,26 +18,26 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Response;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class HpackTest
 {
@@ -46,11 +46,11 @@ public class HpackTest
     final static HttpField Date = new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
     
     @Test
-    public void encodeDecodeResponseTest()
+    public void encodeDecodeResponseTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096,8192);
-        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        ByteBuffer buffer = BufferUtil.allocateDirect(16*1024);
         
         HttpFields fields0 = new HttpFields();
         fields0.add(HttpHeader.CONTENT_TYPE,"text/html");
@@ -95,15 +95,15 @@ public class HpackTest
         Response decoded1 = (Response)decoder.decode(buffer);
 
         assertMetadataSame(original1,decoded1);
-        Assert.assertEquals("custom-key",decoded1.getFields().getField("Custom-Key").getName());
+        assertEquals("custom-key",decoded1.getFields().getField("Custom-Key").getName());
     }
     
     @Test
-    public void encodeDecodeTooLargeTest()
+    public void encodeDecodeTooLargeTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096,164);
-        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        ByteBuffer buffer = BufferUtil.allocateDirect(16*1024);
         
         HttpFields fields0 = new HttpFields();
         fields0.add("1234567890","1234567890123456789012345678901234567890");
@@ -129,20 +129,21 @@ public class HpackTest
         try
         {
             decoder.decode(buffer);
-            Assert.fail();
+            fail();
         }
-        catch(BadMessageException e)
+        catch(HpackException.SessionException e)
         {
-            assertEquals(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,e.getCode());
+            assertThat(e.getMessage(),containsString("Header too large"));
         }
+
     }
 
     @Test
-    public void evictReferencedFieldTest()
+    public void evictReferencedFieldTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(200,200);
         HpackDecoder decoder = new HpackDecoder(200,1024);
-        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        ByteBuffer buffer = BufferUtil.allocateDirect(16*1024);
         
         HttpFields fields0 = new HttpFields();
         fields0.add("123456789012345678901234567890123456788901234567890","value");

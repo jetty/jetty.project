@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
@@ -52,8 +56,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class PushCacheFilterTest extends AbstractTest
 {
@@ -128,7 +132,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         // Request again the primary resource, we should get the secondary resource pushed.
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
@@ -175,8 +179,8 @@ public class PushCacheFilterTest extends AbstractTest
                 };
             }
         });
-        Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -232,7 +236,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         // Request again the primary resource, we should not get the secondary resource pushed.
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
@@ -263,8 +267,8 @@ public class PushCacheFilterTest extends AbstractTest
                     primaryResponseLatch.countDown();
             }
         });
-        Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -318,7 +322,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         // Request again the primary resource, we should get the secondary resource pushed.
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
@@ -352,8 +356,8 @@ public class PushCacheFilterTest extends AbstractTest
             }
         });
         // We should not receive pushed data that we reset.
-        Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure the session is sane by requesting the secondary resource.
         HttpFields secondaryFields = new HttpFields();
@@ -370,7 +374,7 @@ public class PushCacheFilterTest extends AbstractTest
                     secondaryResponseLatch.countDown();
             }
         });
-        Assert.assertTrue(secondaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(secondaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -420,7 +424,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(1000);
 
@@ -452,8 +456,8 @@ public class PushCacheFilterTest extends AbstractTest
                 };
             }
         });
-        Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -543,7 +547,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(1000);
 
@@ -567,7 +571,7 @@ public class PushCacheFilterTest extends AbstractTest
             {
                 // The stream id of the PUSH_PROMISE must
                 // always be a client stream and therefore odd.
-                Assert.assertEquals(1, frame.getStreamId() & 1);
+                assertEquals(1, frame.getStreamId() & 1);
                 return new Adapter()
                 {
                     @Override
@@ -596,9 +600,9 @@ public class PushCacheFilterTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(primaryPushesLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertFalse(recursiveLatch.await(1, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(primaryPushesLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(recursiveLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure that explicitly requesting a secondary resource, we get the tertiary pushed.
         CountDownLatch secondaryResponseLatch = new CountDownLatch(1);
@@ -630,8 +634,8 @@ public class PushCacheFilterTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(secondaryPushLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(secondaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(secondaryPushLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(secondaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -706,7 +710,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(1000);
 
@@ -731,8 +735,8 @@ public class PushCacheFilterTest extends AbstractTest
                 return null;
             }
         });
-        Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -793,7 +797,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(1000);
 
@@ -807,9 +811,9 @@ public class PushCacheFilterTest extends AbstractTest
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
             {
                 MetaData metaData = frame.getMetaData();
-                Assert.assertTrue(metaData instanceof MetaData.Request);
+                assertTrue(metaData instanceof MetaData.Request);
                 MetaData.Request pushedRequest = (MetaData.Request)metaData;
-                Assert.assertEquals(contextPath + servletPath + secondaryResource, pushedRequest.getURI().getPathQuery());
+                assertEquals(contextPath + servletPath + secondaryResource, pushedRequest.getURI().getPathQuery());
                 return new Adapter()
                 {
                     @Override
@@ -832,8 +836,8 @@ public class PushCacheFilterTest extends AbstractTest
                     primaryResponseLatch.countDown();
             }
         });
-        Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -887,7 +891,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         // Request again the primary resource with POST, we should not get the secondary resource pushed.
         primaryRequest = newRequest("POST", primaryResource, primaryFields);
@@ -918,8 +922,8 @@ public class PushCacheFilterTest extends AbstractTest
                     primaryResponseLatch.countDown();
             }
         });
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -982,7 +986,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         // Request again the primary resource, we should not get the secondary resource pushed.
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
@@ -1005,7 +1009,7 @@ public class PushCacheFilterTest extends AbstractTest
                     primaryResponseLatch.countDown();
             }
         });
-        Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
-        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -25,14 +26,14 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class PrimitiveDecoderMetadataSetTest
 {
     private void assertClassEquals(String msg, Class<?> actual, Class<?> expected)
     {
-        Assert.assertThat(msg,actual.getName(),is(expected.getName()));
+        assertThat(msg,actual.getName(),is(expected.getName()));
     }
 
     private void assertDecoderType(Class<? extends Decoder> expectedDecoder, MessageType expectedMsgType, Class<?> type)
@@ -40,10 +41,10 @@ public class PrimitiveDecoderMetadataSetTest
         PrimitiveDecoderMetadataSet primitives = new PrimitiveDecoderMetadataSet();
         DecoderMetadata metadata = primitives.getMetadataByType(type);
         String prefix = String.format("Metadata By Type [%s]",type.getName());
-        Assert.assertThat(prefix,metadata,notNullValue());
+        assertThat(prefix,metadata,notNullValue());
 
         assertClassEquals(prefix + ".coderClass",metadata.getCoderClass(),expectedDecoder);
-        Assert.assertThat(prefix + ".messageType",metadata.getMessageType(),is(expectedMsgType));
+        assertThat(prefix + ".messageType",metadata.getMessageType(),is(expectedMsgType));
     }
 
     @Test

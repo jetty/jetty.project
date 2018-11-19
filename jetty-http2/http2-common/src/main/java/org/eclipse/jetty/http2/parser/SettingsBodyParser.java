@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,16 +33,25 @@ import org.eclipse.jetty.util.log.Logger;
 public class SettingsBodyParser extends BodyParser
 {
     private static final Logger LOG = Log.getLogger(SettingsBodyParser.class);
+
+    private final int maxKeys;
     private State state = State.PREPARE;
     private int cursor;
     private int length;
     private int settingId;
     private int settingValue;
+    private int keys;
     private Map<Integer, Integer> settings;
 
     public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
+        this(headerParser, listener, SettingsFrame.DEFAULT_MAX_KEYS);
+    }
+
+    public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener, int maxKeys)
+    {
         super(headerParser, listener);
+        this.maxKeys = maxKeys;
     }
 
     protected void reset()
@@ -54,10 +64,15 @@ public class SettingsBodyParser extends BodyParser
         settings = null;
     }
 
+    public int getMaxKeys()
+    {
+        return maxKeys;
+    }
+
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        onSettings(new HashMap<>());
+        onSettings(buffer, new HashMap<>());
     }
 
     @Override
@@ -116,11 +131,12 @@ public class SettingsBodyParser extends BodyParser
                         settingValue = buffer.getInt();
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("setting %d=%d",settingId, settingValue));
-                        settings.put(settingId, settingValue);
+                        if (!onSetting(buffer, settings, settingId, settingValue))
+                            return false;
                         state = State.SETTING_ID;
                         length -= 4;
                         if (length == 0)
-                            return onSettings(settings);
+                            return onSettings(buffer, settings);
                     }
                     else
                     {
@@ -142,10 +158,11 @@ public class SettingsBodyParser extends BodyParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("setting %d=%d",settingId, settingValue));
-                        settings.put(settingId, settingValue);
+                        if (!onSetting(buffer, settings, settingId, settingValue))
+                            return false;
                         state = State.SETTING_ID;
                         if (length == 0)
-                            return onSettings(settings);
+                            return onSettings(buffer, settings);
                     }
                     break;
                 }
@@ -158,8 +175,30 @@ public class SettingsBodyParser extends BodyParser
         return false;
     }
 
-    protected boolean onSettings(Map<Integer, Integer> settings)
+    protected boolean onSetting(ByteBuffer buffer, Map<Integer, Integer> settings, int key, int value)
     {
+        ++keys;
+        if (keys > getMaxKeys())
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame");
+        settings.put(key, value);
+        return true;
+    }
+
+    protected boolean onSettings(ByteBuffer buffer, Map<Integer, Integer> settings)
+    {
+        Integer enablePush = settings.get(SettingsFrame.ENABLE_PUSH);
+        if (enablePush != null && enablePush != 0 && enablePush != 1)
+            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_enable_push");
+
+        Integer initialWindowSize = settings.get(SettingsFrame.INITIAL_WINDOW_SIZE);
+        // Values greater than Integer.MAX_VALUE will overflow to negative.
+        if (initialWindowSize != null && initialWindowSize < 0)
+            return connectionFailure(buffer, ErrorCode.FLOW_CONTROL_ERROR.code, "invalid_settings_initial_window_size");
+
+        Integer maxFrameLength = settings.get(SettingsFrame.MAX_FRAME_SIZE);
+        if (maxFrameLength != null && (maxFrameLength < Frame.DEFAULT_MAX_LENGTH || maxFrameLength > Frame.MAX_MAX_LENGTH))
+            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
+
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
         reset();
         notifySettings(frame);
@@ -185,7 +224,7 @@ public class SettingsBodyParser extends BodyParser
             }
 
             @Override
-            protected boolean onSettings(Map<Integer, Integer> settings)
+            protected boolean onSettings(ByteBuffer buffer, Map<Integer, Integer> settings)
             {
                 frameRef.set(new SettingsFrame(settings, false));
                 return true;

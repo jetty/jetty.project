@@ -18,13 +18,18 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -38,18 +43,21 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
-    private final Connection.Listener connectionListener = new ConnectionListener();
+    private final HTTP2SessionContainer sessionContainer = new HTTP2SessionContainer();
     private final HttpConfiguration httpConfiguration;
     private int maxDynamicTableSize = 4096;
     private int initialSessionRecvWindow = 1024 * 1024;
     private int initialStreamRecvWindow = 512 * 1024;
     private int maxConcurrentStreams = 128;
     private int maxHeaderBlockFragment = 0;
+    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
+    private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
 
@@ -64,6 +72,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         for (String p:protocols)
             if (!HTTP2ServerConnection.isSupportedProtocol(p))
                 throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: "+p);
+        addBean(sessionContainer);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
         setInputBufferSize(Frame.DEFAULT_MAX_LENGTH + Frame.HEADER_LENGTH);
@@ -145,6 +154,28 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.streamIdleTimeout = streamIdleTimeout;
     }
 
+    @ManagedAttribute("The max frame length in bytes")
+    public int getMaxFrameLength()
+    {
+        return maxFrameLength;
+    }
+
+    public void setMaxFrameLength(int maxFrameLength)
+    {
+        this.maxFrameLength = maxFrameLength;
+    }
+
+    @ManagedAttribute("The max number of keys in all SETTINGS frames")
+    public int getMaxSettingsKeys()
+    {
+        return maxSettingsKeys;
+    }
+
+    public void setMaxSettingsKeys(int maxSettingsKeys)
+    {
+        this.maxSettingsKeys = maxSettingsKeys;
+    }
+
     /**
      * @return -1
      * @deprecated feature removed, no replacement
@@ -205,9 +236,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
 
         ServerParser parser = newServerParser(connector, session);
+        parser.setMaxFrameLength(getMaxFrameLength());
+        parser.setMaxSettingsKeys(getMaxSettingsKeys());
+
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
-        connection.addListener(connectionListener);
+        connection.addListener(sessionContainer);
         return configure(connection, connector, endPoint);
     }
 
@@ -218,18 +252,54 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 
-    private class ConnectionListener implements Connection.Listener
+    @ManagedObject("The container of HTTP/2 sessions")
+    public static class HTTP2SessionContainer implements Connection.Listener, Dumpable
     {
+        private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
+
         @Override
         public void onOpened(Connection connection)
         {
-            addManaged((LifeCycle)((HTTP2Connection)connection).getSession());
+            Session session = ((HTTP2Connection)connection).getSession();
+            sessions.add(session);
+            LifeCycle.start(session);
         }
 
         @Override
         public void onClosed(Connection connection)
         {
-            removeBean(((HTTP2Connection)connection).getSession());
+            Session session = ((HTTP2Connection)connection).getSession();
+            if (sessions.remove(session))
+                LifeCycle.stop(session);
+        }
+
+        public Set<Session> getSessions()
+        {
+            return new HashSet<>(sessions);
+        }
+
+        @ManagedAttribute(value = "The number of HTTP/2 sessions", readonly = true)
+        public int getSize()
+        {
+            return sessions.size();
+        }
+
+        @Override
+        public String dump()
+        {
+            return Dumpable.dump(this);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out,indent,this, sessions);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[size=%d]", getClass().getSimpleName(), hashCode(), getSize());
         }
     }
 }

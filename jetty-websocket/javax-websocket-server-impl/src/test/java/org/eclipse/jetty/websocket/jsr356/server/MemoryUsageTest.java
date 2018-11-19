@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
 import java.lang.management.ManagementFactory;
@@ -40,10 +41,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MemoryUsageTest
 {
@@ -51,7 +51,7 @@ public class MemoryUsageTest
     private ServerConnector connector;
     private WebSocketContainer client;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception
     {
         server = new Server();
@@ -68,7 +68,7 @@ public class MemoryUsageTest
         client = ContainerProvider.getWebSocketContainer();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         server.stop();
@@ -119,7 +119,7 @@ public class MemoryUsageTest
 
         // Assume no more than 25 KiB per session pair (client and server).
         long expected = 25 * 1024 * sessionCount;
-        Assert.assertThat("heap used", heapUsed,lessThan(expected));
+        assertThat("heap used", heapUsed,lessThan(expected));
     }
 
     private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>

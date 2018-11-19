@@ -49,29 +49,22 @@ public class MemcachedTestHelper
         private int _loadCount = 0;
         
         
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-         */
         @Override
         public boolean isPassivating()
         {
             return true;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-         */
+
         @Override
         public boolean exists(String id) throws Exception
         {
             return _store.get(id) != null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataMap#load(java.lang.String)
-         */
+
         @Override
-        public SessionData load(String id) throws Exception
+        public SessionData doLoad(String id) throws Exception
         {
             _loadCount++;
             return _store.get(id);
@@ -87,18 +80,12 @@ public class MemcachedTestHelper
             return _loadCount;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataMap#delete(java.lang.String)
-         */
         @Override
         public boolean delete(String id) throws Exception
         {
             return (_store.remove(id) != null);
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
-         */
         @Override
         public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
         {
@@ -106,9 +93,6 @@ public class MemcachedTestHelper
             
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doGetExpired(java.util.Set)
-         */
         @Override
         public Set<String> doGetExpired(Set<String> candidates)
         {

@@ -78,6 +78,7 @@ public class HTTP2ClientSession extends HTTP2Session
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
 
+        // HEADERS can be received for normal and pushed responses.
         int streamId = frame.getStreamId();
         IStream stream = getStream(streamId);
         if (stream != null)
@@ -96,7 +97,23 @@ public class HTTP2ClientSession extends HTTP2Session
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
+                LOG.debug("Stream #{} not found", streamId);
+            if (isClientStream(streamId))
+            {
+                // Normal stream.
+                // Headers or trailers arriving after
+                // the stream has been reset are ignored.
+                if (!isLocalStreamClosed(streamId))
+                    onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_headers_frame");
+            }
+            else
+            {
+                // Pushed stream.
+                // Headers or trailers arriving after
+                // the stream has been reset are ignored.
+                if (!isRemoteStreamClosed(streamId))
+                    onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_headers_frame");
+            }
         }
     }
 
@@ -117,9 +134,12 @@ public class HTTP2ClientSession extends HTTP2Session
         else
         {
             IStream pushStream = createRemoteStream(pushStreamId);
-            pushStream.process(frame, Callback.NOOP);
-            Stream.Listener listener = notifyPush(stream, pushStream, frame);
-            pushStream.setListener(listener);
+            if (pushStream != null)
+            {
+                pushStream.process(frame, Callback.NOOP);
+                Stream.Listener listener = notifyPush(stream, pushStream, frame);
+                pushStream.setListener(listener);
+            }
         }
     }
 

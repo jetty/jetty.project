@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.cdi.websocket;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -37,19 +37,19 @@ public class CheckSocket extends WebSocketAdapter
     private static final Logger LOG = Log.getLogger(CheckSocket.class);
     private CountDownLatch closeLatch = new CountDownLatch(1);
     private CountDownLatch openLatch = new CountDownLatch(1);
-    private EventQueue<String> textMessages = new EventQueue<>();
+    public LinkedBlockingQueue<String> textMessages = new LinkedBlockingQueue<>();
 
     public void awaitClose(int timeout, TimeUnit timeunit) throws InterruptedException
     {
-        assertTrue("Timeout waiting for close",closeLatch.await(timeout,timeunit));
+        assertTrue(closeLatch.await(timeout,timeunit), "Timeout waiting for close");
     }
 
     public void awaitOpen(int timeout, TimeUnit timeunit) throws InterruptedException
     {
-        assertTrue("Timeout waiting for open",openLatch.await(timeout,timeunit));
+        assertTrue(openLatch.await(timeout,timeunit), "Timeout waiting for open");
     }
 
-    public EventQueue<String> getTextMessages()
+    public LinkedBlockingQueue<String> getTextMessages()
     {
         return textMessages;
     }

@@ -370,7 +370,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private MultiMap<String> getParameters()
     {
-        if (!_contentParamsExtracted) 
+        if (!_contentParamsExtracted)
         {
             // content parameters need boolean protection as they can only be read
             // once, but may be reset to null by a reset
@@ -411,7 +411,7 @@ public class Request implements HttpServletRequest
             _parameters=_contentParameters;
         else if (isNoParams(_contentParameters) || _contentParameters.size()==0)
             _parameters=_queryParameters;
-        else
+        else if(_parameters == null)
         {
             _parameters = new MultiMap<>();
             _parameters.addAllValues(_queryParameters);
@@ -461,13 +461,15 @@ public class Request implements HttpServletRequest
         else
         {
             _contentParameters=new MultiMap<>();
-            contentType = HttpFields.valueParameters(contentType, null);
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == __NONE)
             {
+                contentType = HttpFields.valueParameters(contentType, null);
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
+                    if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
+                        throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
                     extractFormParameters(_contentParameters);
                 }
                 else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&
@@ -476,6 +478,8 @@ public class Request implements HttpServletRequest
                 {
                     try
                     {
+                        if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
+                            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
                         getParts(_contentParameters);
                     }
                     catch (IOException | ServletException e)
@@ -486,7 +490,6 @@ public class Request implements HttpServletRequest
                 }
             }
         }
-
     }
 
     /* ------------------------------------------------------------ */
@@ -515,7 +518,7 @@ public class Request implements HttpServletRequest
                 }
                 else if (obj instanceof String)
                 {
-                    maxFormContentSize = Integer.valueOf((String)obj);
+                    maxFormContentSize = Integer.parseInt((String)obj);
                 }
             }
 
@@ -531,7 +534,7 @@ public class Request implements HttpServletRequest
                 }
                 else if (obj instanceof String)
                 {
-                    maxFormKeys = Integer.valueOf((String)obj);
+                    maxFormKeys = Integer.parseInt((String)obj);
                 }
             }
 
@@ -761,12 +764,15 @@ public class Request implements HttpServletRequest
         }
 
         _cookiesExtracted = true;
-        
-        for (String c : metadata.getFields().getValuesList(HttpHeader.COOKIE))
+
+        for (HttpField field : metadata.getFields())
         {
-            if (_cookies == null)
-                _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getCookieCompliance());
-            _cookies.addCookieField(c);
+            if (field.getHeader()==HttpHeader.COOKIE)
+            {
+                if (_cookies==null)
+                    _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
+                _cookies.addCookieField(field.getValue());
+            }
         }
 
         //Javadoc for Request.getCookies() stipulates null for no cookies
@@ -2051,7 +2057,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies == null)
-            _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getCookieCompliance());
+            _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
         _cookies.setCookies(cookies);
     }
 
@@ -2349,11 +2355,16 @@ public class Request implements HttpServletRequest
                 }
             }
 
-            // charset should be:
-            //  1. the charset set in the parts content type; else
-            //  2. the default charset set in the _charset_ part; else
-            //  3. the default charset set in the request.setCharacterEncoding; else
-            //  4. the default charset set to UTF_8
+            /*
+            Select Charset to use for this part. (NOTE: charset behavior is for the part value only and not the part header/field names)
+                1. Use the part specific charset as provided in that part's Content-Type header; else
+                2. Use the overall default charset. Determined by:
+                    a. if part name _charset_ exists, use that part's value.
+                    b. if the request.getCharacterEncoding() returns a value, use that.
+                        (note, this can be either from the charset field on the request Content-Type
+                        header, or from a manual call to request.setCharacterEncoding())
+                    c. use utf-8.
+             */
             Charset defaultCharset;
             if (_charset_ != null)
                 defaultCharset = Charset.forName(_charset_);
@@ -2440,8 +2451,6 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public void mergeQueryParameters(String oldQuery,String newQuery, boolean updateQueryString)
     {
-        // TODO  This is seriously ugly
-
         MultiMap<String> newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
         if (newQuery!=null)
@@ -2454,7 +2463,14 @@ public class Request implements HttpServletRequest
         if (oldQueryParams == null && oldQuery != null)
         {
             oldQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding());
+            try
+            {
+                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding()); 
+            }
+            catch(Throwable th)
+            {
+                throw new BadMessageException(400,"Bad query encoding",th);
+            }
         }
 
         MultiMap<String> mergedQueryParams;

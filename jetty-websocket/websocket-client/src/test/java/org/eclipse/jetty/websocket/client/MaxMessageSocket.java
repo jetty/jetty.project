@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -32,7 +34,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.junit.Assert;
+
 
 @WebSocket(maxTextMessageSize = 100*1024)
 public class MaxMessageSocket
@@ -75,7 +77,7 @@ public class MaxMessageSocket
     public void onError(Throwable cause)
     {
         LOG.debug("onWebSocketError",cause);
-        Assert.assertThat("Error capture",errorQueue.offer(cause),is(true));
+        assertThat("Error capture",errorQueue.offer(cause),is(true));
     }
 
     public Session getSession()
@@ -85,18 +87,18 @@ public class MaxMessageSocket
 
     public void awaitConnect(int duration, TimeUnit unit) throws InterruptedException
     {
-        Assert.assertThat("Client Socket connected",openLatch.await(duration,unit),is(true));
+        assertThat("Client Socket connected",openLatch.await(duration,unit),is(true));
     }
     
     public void waitForMessage(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
         LOG.debug("Waiting for message");
-        Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
+        assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
     
     public void assertMessage(String expected)
     {
         String actual = messageQueue.poll();
-        Assert.assertEquals("Message",expected,actual);
+        assertEquals(expected, actual, "Message");
     }
 }

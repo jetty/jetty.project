@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,10 +44,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  */
@@ -57,7 +57,7 @@ public class SslUploadTest
     private static ServerConnector connector;
     private static int total;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
@@ -78,7 +78,7 @@ public class SslUploadTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -86,7 +86,7 @@ public class SslUploadTest
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void test() throws Exception
     {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());

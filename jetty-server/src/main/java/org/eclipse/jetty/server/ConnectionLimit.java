@@ -18,47 +18,66 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.channels.SelectableChannel;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Connection.Listener;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>A Connection Listener that limits the number of Connections.</p>
+ * <p>A Listener that limits the number of Connections.</p>
  * <p>This listener applies a limit to the number of connections, which when 
  * exceeded results in  a call to {@link AbstractConnector#setAccepting(boolean)} 
  * to prevent further connections being received.  It can be applied to an
- * entire server or to a specific connector.
+ * entire server or to a specific connector by adding it via {@link Container#addBean(Object)}
  * </p>
+ * <p>
+ * <b>Usage:</b>
+ * </p>
+ * <pre>
+ *   Server server = new Server();
+ *   server.addBean(new ConnectionLimit(5000,server));
+ *   ...
+ *   server.start();
+ * </pre>
+ * @see LowResourceMonitor
  * @see Connection.Listener
+ * @see SelectorManager.AcceptListener
  */
 @ManagedObject
-public class ConnectionLimit extends AbstractLifeCycle implements Listener
+public class ConnectionLimit extends AbstractLifeCycle implements Listener, SelectorManager.AcceptListener
 {
     private static final Logger LOG = Log.getLogger(ConnectionLimit.class);
     
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();
+    private final Set<SelectableChannel> _accepting = new HashSet<>();
     private int _connections;
     private int _maxConnections;
-    private boolean _accepting = true;
+    private long _idleTimeout;
+    private boolean _limiting = false;
 
-    public ConnectionLimit(int maxConnections, Server server)
+    public ConnectionLimit(@Name("maxConnections") int maxConnections, @Name("server") Server server)
     {
         _maxConnections = maxConnections;
         _server = server;
     }
     
-    public ConnectionLimit(int maxConnections, Connector...connectors)
+    public ConnectionLimit(@Name("maxConnections") int maxConnections, @Name("connectors") Connector...connectors)
     {
-        _maxConnections = maxConnections;
-        _server = null;
+        this(maxConnections, (Server)null);
         for (Connector c: connectors)
         {
             if (c instanceof AbstractConnector)
@@ -67,84 +86,188 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener
                 LOG.warn("Connector {} is not an AbstractConnection. Connections not limited",c);
         }
     }
-    
-    @ManagedAttribute("The maximum number of connections allowed")
-    public synchronized int getMaxConnections()
+
+    /**
+     * @return If &gt;= 0, the endpoint idle timeout in ms to apply when the connection limit is reached
+     */
+    @ManagedAttribute("The endpoint idle timeout in ms to apply when the connection limit is reached")
+    public long getIdleTimeout()
     {
-        return _maxConnections;
+        return _idleTimeout;
+    }
+
+    /**
+     * @param idleTimeout If &gt;= 0 the endpoint idle timeout in ms to apply when the connection limit is reached
+     */
+    public void setIdleTimeout(long idleTimeout)
+    {
+        _idleTimeout = idleTimeout;
+    }
+
+    @ManagedAttribute("The maximum number of connections allowed")
+    public int getMaxConnections()
+    {
+        synchronized (this)
+        {
+            return _maxConnections;
+        }
     }
     
-    public synchronized void setMaxConnections(int max)
+    public void setMaxConnections(int max)
     {
-        _maxConnections = max;
+        synchronized (this)
+        {
+            _maxConnections = max;
+        }
     }
 
     @ManagedAttribute("The current number of connections ")
-    public synchronized int getConnections()
+    public int getConnections()
     {
-        return _connections;
+        synchronized (this)
+        {
+            return _connections;
+        }
     }
     
     @Override
-    protected synchronized void doStart() throws Exception
+    protected void doStart() throws Exception
     {
-        if (_server!=null)
+        synchronized (this)
         {
-            for (Connector c: _server.getConnectors())
+            if (_server != null)
             {
-                if (c instanceof AbstractConnector)
-                    _connectors.add((AbstractConnector)c);
-                else
-                    LOG.warn("Connector {} is not an AbstractConnection. Connections not limited",c);
+                for (Connector c : _server.getConnectors())
+                {
+                    if (c instanceof AbstractConnector)
+                        _connectors.add((AbstractConnector)c);
+                    else
+                        LOG.warn("Connector {} is not an AbstractConnector. Connections not limited",c);
+                }
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("ConnectionLimit {} for {}",_maxConnections,_connectors);
+            _connections = 0;
+            _limiting = false;
+            for (AbstractConnector c : _connectors)
+                c.addBean(this);
+        }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        synchronized (this)
+        {
+            for (AbstractConnector c : _connectors)
+                c.removeBean(this);
+            _connections = 0;
+            if (_server != null)
+                _connectors.clear();
+        }   
+    }
+    
+    protected void check()
+    {
+        if ( (_accepting.size()+_connections) >= _maxConnections)
+        {
+            if (!_limiting)
+            {
+                _limiting = true;
+                LOG.info("Connection Limit({}) reached for {}",_maxConnections,_connectors);
+                limit();
             }
         }
+        else
+        {
+            if (_limiting)
+            {
+                _limiting = false;
+                LOG.info("Connection Limit({}) cleared for {}",_maxConnections,_connectors);
+                unlimit();
+            }
+        }
+    }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("ConnectionLimit {} for {}",_maxConnections,_connectors);
-        
-        _connections = 0;
-        _accepting = true;
-        
+    protected void limit()
+    {
         for (AbstractConnector c : _connectors)
-            c.addBean(this);
+        {
+            c.setAccepting(false);
+
+            if (_idleTimeout>0)
+            {
+                for (EndPoint endPoint : c.getConnectedEndPoints())
+                    endPoint.setIdleTimeout(_idleTimeout);
+            }
+        }
+    }
+    
+    protected void unlimit()
+    {
+        for (AbstractConnector c : _connectors)
+        {
+            c.setAccepting(true);
+
+            if (_idleTimeout>0)
+            {
+                for (EndPoint endPoint : c.getConnectedEndPoints())
+                    endPoint.setIdleTimeout(c.getIdleTimeout());
+            }
+        }
+    }    
+
+    @Override
+    public void onAccepting(SelectableChannel channel)
+    {
+        synchronized (this)
+        {
+            _accepting.add(channel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("onAccepting ({}+{}) < {} {}",_accepting.size(),_connections,_maxConnections,channel);
+            check();
+        }
     }
 
     @Override
-    protected synchronized void doStop() throws Exception
+    public void onAcceptFailed(SelectableChannel channel, Throwable cause)
     {
-        for (AbstractConnector c : _connectors)
-            c.removeBean(this);
-        _connections = 0;
-        if (_server!=null)
-            _connectors.clear();   
+        synchronized (this)
+        {
+            _accepting.remove(channel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("onAcceptFailed ({}+{}) < {} {} {}",_accepting.size(),_connections,_maxConnections,channel,cause);
+            check();
+        }
+    }
+
+    @Override
+    public void onAccepted(SelectableChannel channel)
+    {
     }
     
     @Override
-    public synchronized void onOpened(Connection connection)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onOpen {} < {} {}",_connections, _maxConnections, connection);
-        if ( ++_connections >= _maxConnections && _accepting)
-        {
-            _accepting = false;
-            LOG.info("Connection Limit({}) reached for {}",_maxConnections,_connectors);
-            for (AbstractConnector c : _connectors)
-                c.setAccepting(false);
+    public void onOpened(Connection connection)
+    {        
+        synchronized (this)
+        {        
+            _accepting.remove(connection.getEndPoint().getTransport());
+            _connections++;
+            if (LOG.isDebugEnabled())
+                LOG.debug("onOpened ({}+{}) < {} {}",_accepting.size(),_connections,_maxConnections,connection);
+            check();
         }
     }
 
     @Override
-    public synchronized void onClosed(Connection connection)
+    public void onClosed(Connection connection)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onClosed {} < {} {}",_connections, _maxConnections, connection);
-        if ( --_connections < _maxConnections && !_accepting)
+        synchronized (this)
         {
-            _accepting = true;
-            LOG.info("Connection Limit({}) cleared for {}",_maxConnections,_connectors);
-            for (AbstractConnector c : _connectors)
-                c.setAccepting(true);
+            _connections--;
+            if (LOG.isDebugEnabled())
+                LOG.debug("onClosed ({}+{}) < {} {}",_accepting.size(),_connections,_maxConnections,connection);
+            check();
         }
     }
-
 }

@@ -208,7 +208,7 @@ public class Log
             log_class = StdErrLog.class;
             LOG = new StdErrLog();
 
-            Boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
+            boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
             if(announce)
             {
                 LOG.debug("Logging to {} via {}", LOG, log_class.getName());

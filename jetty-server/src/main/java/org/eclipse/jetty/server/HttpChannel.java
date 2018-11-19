@@ -34,6 +34,8 @@ import java.util.function.Supplier;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -133,6 +135,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state;
     }
 
+    public boolean addListener(Listener listener)
+    {
+        return _listeners.add(listener);
+    }
+    
+    public boolean removeListener(Listener listener)
+    {
+        return _listeners.remove(listener);
+    }
+    
     public long getBytesWritten()
     {
         return _written;
@@ -428,7 +440,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             }
                             else
                             {
-                                if (failure != x)
+                                if (x != failure)
                                     failure.addSuppressed(x);
                                 minimalErrorResponse(failure);
                             }
@@ -469,33 +481,38 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted() && !_request.isHandled())
+                        try
                         {
-                            _response.sendError(HttpStatus.NOT_FOUND_404);
-                        }
-                        else
-                        {
-                            // RFC 7230, section 3.3.
-                            int status = _response.getStatus();
-                            boolean hasContent = !(_request.isHead() ||
+                            if (!_response.isCommitted() && !_request.isHandled())
+                            {
+                                _response.sendError(HttpStatus.NOT_FOUND_404);
+                            }
+                            else
+                            {
+                                // RFC 7230, section 3.3.
+                                int status = _response.getStatus();
+                                boolean hasContent = !(_request.isHead() ||
                                     HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
                                     HttpStatus.isInformational(status) ||
                                     status == HttpStatus.NO_CONTENT_204 ||
                                     status == HttpStatus.NOT_MODIFIED_304);
-                            if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                            {
-                                if (isCommitted())
-                                    abort(new IOException("insufficient content written"));
-                                else
-                                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500,"insufficient content written");
+                                if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                                {
+                                    if (isCommitted())
+                                        abort(new IOException("insufficient content written"));
+                                    else
+                                        _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "insufficient content written");
+                                }
                             }
+                            _response.closeOutput();
+
                         }
-                        _response.closeOutput();
-                        _request.setHandled(true);
-
-                        _state.onComplete();
-
-                        onCompleted();
+                        finally
+                        {
+                            _request.setHandled(true);
+                            _state.onComplete();
+                            onCompleted();
+                        }
 
                         break loop;
                     }
@@ -552,19 +569,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     protected void handleException(Throwable failure)
     {
-        // Unwrap wrapping Jetty exceptions.
-        if (failure instanceof RuntimeIOException)
-            failure = failure.getCause();
+        // Unwrap wrapping Jetty and Servlet exceptions.
+        Throwable quiet = unwrap(failure, QuietException.class);
+        Throwable no_stack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
 
-        if (failure instanceof QuietException || !getServer().isRunning())
+        if (quiet!=null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
         }
-        else if (failure instanceof BadMessageException | failure instanceof IOException | failure instanceof TimeoutException)
+        else if (no_stack!=null)
         {
             // No stack trace unless there is debug turned on
-            LOG.warn("{} {}",_request.getRequestURI(), failure.toString()); 
+            LOG.warn("{} {}",_request.getRequestURI(), no_stack.toString()); 
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
         }
@@ -579,25 +596,54 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable e)
         {
-            failure.addSuppressed(e);
+            if (e != failure)
+                failure.addSuppressed(e);
             LOG.warn("ERROR dispatch failed", failure);
             // Try to send a minimal response.
             minimalErrorResponse(failure);
         }
     }
 
+    /** Unwrap failure causes to find target class
+     * @param failure The throwable to have its causes unwrapped
+     * @param targets Exception classes that we should not unwrap
+     * @return A target throwable or null
+     */
+    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
+    {
+        while (failure!=null)
+        {
+            for (Class<?> x : targets)
+                if (x.isInstance(failure))
+                    return failure;
+            failure = failure.getCause();
+        }
+        return null;        
+    }
+    
     private void minimalErrorResponse(Throwable failure)
     {
         try
-        {
-            Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        {        
+            int code = 500;
+            Integer status=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+            if (status!=null)
+                code = status.intValue();
+            else
+            {
+                Throwable cause = unwrap(failure,BadMessageException.class);
+                if (cause instanceof BadMessageException)
+                    code = ((BadMessageException)cause).getCode();
+            }
+            
             _response.reset(true);
-            _response.setStatus(code == null ? 500 : code);
+            _response.setStatus(code);
             _response.flushBuffer();
         }
         catch (Throwable x)
         {
-            failure.addSuppressed(x);
+            if (x != failure)
+                failure.addSuppressed(x);
             abort(failure);
         }
     }
@@ -842,7 +888,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
-        _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
     }
 
@@ -1180,18 +1225,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private class CommitCallback extends Callback.Nested
     {
         private final ByteBuffer _content;
+        private final int _length;
         private final boolean _complete;
 
         private CommitCallback(Callback callback, ByteBuffer content, boolean complete)
         {
             super(callback);
-            this._content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
-            this._complete = complete;
+            _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
+            _length = _content.remaining();
+            _complete = complete;
         }
 
         @Override
         public void succeeded()
         {
+            _written += _length;
             super.succeeded();
             notifyResponseCommit(_request);
             if (_content.hasRemaining())
@@ -1253,18 +1301,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private class ContentCallback extends Callback.Nested
     {
         private final ByteBuffer _content;
+        private final int _length;
         private final boolean _complete;
 
         private ContentCallback(Callback callback, ByteBuffer content, boolean complete)
         {
             super(callback);
-            this._content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
-            this._complete = complete;
+            _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
+            _length = _content.remaining();
+            _complete = complete;
         }
 
         @Override
         public void succeeded()
         {
+            _written += _length;
             super.succeeded();
             if (_content.hasRemaining())
                 notifyResponseContent(_request, _content);

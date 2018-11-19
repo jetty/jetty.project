@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.acme.DispatchServlet;
 
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.hamcrest.Matchers;
-import org.junit.Test;
-
-import com.acme.DispatchServlet;
+import org.junit.jupiter.api.Test;
 
 /**
  * Simple tests against DispatchServlet.
@@ -91,8 +91,8 @@ public class DispatchServletTest
 
         String msg = "Response code on SelfRefDoS";
 
-        assertFalse(msg + " should not be code 500.",response.startsWith("HTTP/1.1 500 "));
-        assertTrue(msg + " should return error code 403 (Forbidden)", response.startsWith("HTTP/1.1 403 "));
+        assertFalse(response.startsWith("HTTP/1.1 500 "),msg + " should not be code 500.");
+        assertTrue(response.startsWith("HTTP/1.1 403 "),msg + " should return error code 403 (Forbidden)");
     }
 
     @Test
@@ -134,11 +134,11 @@ public class DispatchServletTest
             msg.append("Response code on nested \"").append(selfRef).append("\"");
             msg.append(" (depth:").append(nestedDepth).append(")");
 
-            assertFalse(msg + " should not be code 413 (Request Entity Too Large)," +
-                    "the nestedDepth in the TestCase is too large (reduce it)",
-                    response.startsWith("HTTP/1.1 413 "));
+            assertFalse(response.startsWith("HTTP/1.1 413 "),
+                    msg + " should not be code 413 (Request Entity Too Large)," +
+                            "the nestedDepth in the TestCase is too large (reduce it)");
 
-            assertFalse(msg + " should not be code 500.", response.startsWith("HTTP/1.1 500 "));
+            assertFalse(response.startsWith("HTTP/1.1 500 "), msg + " should not be code 500.");
             assertThat(response,Matchers.startsWith("HTTP/1.1 403 "));
         }
     }

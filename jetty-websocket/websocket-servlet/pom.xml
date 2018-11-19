@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-parent</artifactId>
-        <version>9.4.11-SNAPSHOT</version>
+        <version>9.4.15-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -33,7 +33,7 @@
                         <Bundle-Description>Websocket Servlet Interface</Bundle-Description>
                         <Bundle-Classpath />
                         <_nouses>true</_nouses>
-                        <DynamicImport-Package>org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.websocket.server;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>

@@ -114,8 +114,6 @@ name;;
 The name of the connector, which is useful for link:#serving-webapp-from-particular-port[configuring contexts to respond only on particular connectors].
 idleTimeout;;
 Maximum idle time for a connection.
-soLinger;;
-The socket linger time.
 +
 You could instead configure the connectors in a standard link:#jetty-xml-config[jetty xml config file] and put its location into the `jettyXml` parameter.
 Note that since Jetty 9.0 it is no longer possible to configure a link:#maven-config-https[https connector] directly in the pom.xml: you need to link:#maven-config-https[use jetty xml config files to do it].
@@ -215,7 +213,7 @@ Below is the relevant section taken from link:{GITBROWSEURL}/jetty-server/src/ma
       <Set name="responseHeaderSize"><Property name="jetty.httpConfig.responseHeaderSize" deprecated="jetty.response.header.size" default="8192" /></Set>
       <Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion" deprecated="jetty.send.server.version" default="true" /></Set>
       <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader" deprecated="jetty.send.date.header" default="false" /></Set>
-      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="512" /></Set>
+      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="4096" /></Set>
       <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent" deprecated="jetty.delayDispatchUntilContent" default="true"/></Set>
       <Set name="maxErrorDispatches"><Property name="jetty.httpConfig.maxErrorDispatches" default="10"/></Set>
       <Set name="blockingTimeout"><Property name="jetty.httpConfig.blockingTimeout" default="-1"/></Set>
@@ -626,6 +624,9 @@ Only relevant if `waitForChild` is `false`.
 forkWebXml::
 Default is `target/fork-web.xml`.
 This is the name of the file into which jetty generates the effective web.xml for use by the child process.
+javaPath::
+Default will be your `${java.home}/bin/java`
+This the java executable used to start the child process
 
 The following `jetty:run` parameters are NOT applicable:
 
@@ -717,6 +718,9 @@ maxChildCheckInterval::
 Default value 100.
 This is the interval in milliseconds between checks to see if the child started correctly.
 Only applicable if `waitForChild` is `false`.
+javaPath::
+Default will be your `${java.home}/bin/java`
+This the java executable used to start the child process
 
 ____
 [NOTE]

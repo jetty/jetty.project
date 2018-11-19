@@ -45,6 +45,18 @@ tags: [connector]
 Modules for tag 'connector':
 ----------------------------
 
+     Module: acceptratelimit
+           : Enable a server wide accept rate limit
+       Tags: connector
+     Depend: server
+        XML: etc/jetty-acceptratelimit.xml
+
+     Module: connectionlimit
+           : Enable a server wide connection limit
+       Tags: connector
+     Depend: server
+        XML: etc/jetty-connectionlimit.xml
+
      Module: http
            : Enables a HTTP connector on the server.
            : By default HTTP/1 is support, but HTTP2C can
@@ -52,7 +64,6 @@ Modules for tag 'connector':
        Tags: connector, http
      Depend: server
         XML: etc/jetty-http.xml
-    Enabled: ${jetty.base}/start.ini
 
      Module: http-forwarded
            : Adds a forwarded request customizer to the HTTP Connector
@@ -236,9 +247,6 @@ For example, if we examine the `http.ini` file in our `start.d` directory create
 ## Connector idle timeout in milliseconds
 # jetty.http.idleTimeout=30000
 
-## Connector socket linger time in seconds (-1 to disable)
-# jetty.http.soLingerTime=-1
-
 ## Number of acceptors (-1 picks default based on number of cores)
 # jetty.http.acceptors=-1
 
@@ -287,6 +295,20 @@ Editing these module files is the recommended way to edit the configuration of y
 Making changes to the associated Jetty XML file for connectors is *not* recommended, and is for advanced users only.
 If you do wish to edit Jetty XML, please see our section on managing link:#[Jetty Home and Jetty Base] to ensure your Jetty Home remains a standard of truth for your implementation.
 ____
+
+==== Limiting Connections
+
+Jetty also provides the means by which to limit connections to the server and/or contexts.
+This is provided by two different modules in the distribution.
+
+`connectionlimit`::
+Applies a limit to the number of connections.
+If this limit is exceeded, new connections are suspended for the time specified (in milliseconds).
+`acceptratelimit`::
+Limits the rate at which new connections are accepted.
+If this limit is exceeded, new connections are suspended for the time specified (in milliseconds).
+
+As with the modules listed above, these can be enabled by adding `--add-to-start=<module-name>` to the command line.
 
 ==== Advanced Configuration
 
@@ -385,9 +407,6 @@ Because the exact interpretation is deployment dependent, it is best to keep thi
 
 |reuseAddress |Allow the server socket to be rebound even if in http://www.ssfnet.org/Exchange/tcp/tcpTutorialNotes.html[TIME_WAIT].
 For servers it is typically OK to leave this as the default true.
-
-|soLingerTime |A value greater than zero sets the socket http://stackoverflow.com/questions/3757289/tcp-option-so-linger-zero-when-its-required[SO_LINGER] value in milliseconds.
-Jetty attempts to gently close all TCP/IP connections with proper half close semantics, so a linger timeout should not be required and thus the default is -1.
 |=======================================================================
 
 [[jetty-connectors-http-configuration]]
@@ -436,7 +455,7 @@ This example HttpConfiguration may be used by reference to the ID "`httpConfig`"
 This same `httpConfig` is referenced by the link:{JDURL}/org/eclipse/jetty/server/handler/SecuredRedirectHandler.html[`SecuredRedirectHandler`] when redirecting secure requests.
 Please note that if your `httpConfig` does not include a `secureScheme` or `securePort` or there is no `HttpConfiguration` present these types of secured requests will be returned a `403` error.
 
-For SSL based connectors (in `jetty-https.xml` and `jetty-http2.xml`), the common "`httpConfig`" instance is used as the basis to create an SSL specific configuration with ID "`sslHttpConfig`":
+For SSL-based connectors (in `jetty-https.xml` and `jetty-http2.xml`), the common "`httpConfig`" instance is used as the basis to create an SSL specific configuration with ID "`sslHttpConfig`":
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -462,7 +481,7 @@ Read more about SSL keystores in link:#configuring-ssl[Configuring SSL].
 Often a Connector needs to be configured to accept connections from an intermediary such as a Reverse Proxy and/or Load Balancer deployed in front of the server.
 In such environments, the TCP/IP connection terminating on the server does not originate from the client, but from the intermediary, so that the Remote IP and port number can be reported incorrectly in logs and in some circumstances the incorrect server address and port may be used.
 
-Thus Intermediaries typically implement one of several de facto standards to communicate to the server information about the orginal client connection terminating on the intermediary.
+Thus Intermediaries typically implement one of several de facto standards to communicate to the server information about the original client connection terminating on the intermediary.
 Jetty supports the `X-Forwarded-For` header and the http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms as described below.
 
 ____

@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HttpStatusCodeTest
 {
     @Test
     public void testInvalidGetCode()
     {
-        assertNull("Invalid code: 800", HttpStatus.getCode(800));
-        assertNull("Invalid code: 190", HttpStatus.getCode(190));
+        assertNull(HttpStatus.getCode(800), "Invalid code: 800");
+        assertNull(HttpStatus.getCode(190), "Invalid code: 190");
     }
     
     

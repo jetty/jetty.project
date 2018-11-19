@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,19 +32,19 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class StatisticsHandlerTest
 {
@@ -53,7 +54,7 @@ public class StatisticsHandlerTest
     private LatchHandler _latchHandler;
     private StatisticsHandler _statsHandler;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
@@ -70,7 +71,7 @@ public class StatisticsHandlerTest
         _latchHandler.setHandler(_statsHandler);
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         _server.stop();
@@ -85,7 +86,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
             {
                 request.setHandled(true);
                 try
@@ -97,7 +98,7 @@ public class StatisticsHandlerTest
                 catch (Exception x)
                 {
                     Thread.currentThread().interrupt();
-                    throw (IOException)new IOException().initCause(x);
+                    throw new IOException(x);
                 }
             }
         });
@@ -182,7 +183,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
             {
                 request.setHandled(true);
                 try
@@ -193,7 +194,7 @@ public class StatisticsHandlerTest
                 catch (Exception x)
                 {
                     Thread.currentThread().interrupt();
-                    throw (IOException)new IOException().initCause(x);
+                    throw new IOException(x);
                 }
             }
         });
@@ -245,7 +246,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
             {
                 request.setHandled(true);
                 try
@@ -306,22 +307,22 @@ public class StatisticsHandlerTest
         asyncHolder.get().addListener(new AsyncListener()
         {
             @Override
-            public void onTimeout(AsyncEvent event) throws IOException
+            public void onTimeout(AsyncEvent event)
             {
             }
 
             @Override
-            public void onStartAsync(AsyncEvent event) throws IOException
+            public void onStartAsync(AsyncEvent event)
             {
             }
 
             @Override
-            public void onError(AsyncEvent event) throws IOException
+            public void onError(AsyncEvent event)
             {
             }
 
             @Override
-            public void onComplete(AsyncEvent event) throws IOException
+            public void onComplete(AsyncEvent event)
             {
                 try
                 {
@@ -375,7 +376,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
             {
                 request.setHandled(true);
                 try
@@ -428,23 +429,23 @@ public class StatisticsHandlerTest
         asyncHolder.get().addListener(new AsyncListener()
         {
             @Override
-            public void onTimeout(AsyncEvent event) throws IOException
+            public void onTimeout(AsyncEvent event)
             {
                 event.getAsyncContext().complete();
             }
 
             @Override
-            public void onStartAsync(AsyncEvent event) throws IOException
+            public void onStartAsync(AsyncEvent event)
             {
             }
 
             @Override
-            public void onError(AsyncEvent event) throws IOException
+            public void onError(AsyncEvent event)
             {
             }
 
             @Override
-            public void onComplete(AsyncEvent event) throws IOException
+            public void onComplete(AsyncEvent event)
             {
                 try
                 {
@@ -491,7 +492,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
             {
                 request.setHandled(true);
                 try
@@ -550,22 +551,22 @@ public class StatisticsHandlerTest
         asyncHolder.get().addListener(new AsyncListener()
         {
             @Override
-            public void onTimeout(AsyncEvent event) throws IOException
+            public void onTimeout(AsyncEvent event)
             {
             }
 
             @Override
-            public void onStartAsync(AsyncEvent event) throws IOException
+            public void onStartAsync(AsyncEvent event)
             {
             }
 
             @Override
-            public void onError(AsyncEvent event) throws IOException
+            public void onError(AsyncEvent event)
             {
             }
 
             @Override
-            public void onComplete(AsyncEvent event) throws IOException
+            public void onComplete(AsyncEvent event)
             {
                 try
                 {
@@ -599,6 +600,53 @@ public class StatisticsHandlerTest
         assertTrue(_statsHandler.getDispatchedTimeTotal() < _statsHandler.getRequestTimeTotal());
         assertEquals(_statsHandler.getDispatchedTimeTotal(), _statsHandler.getDispatchedTimeMax());
         assertEquals(_statsHandler.getDispatchedTimeTotal(), _statsHandler.getDispatchedTimeMean(), 0.01);
+    }
+
+    @Test
+    public void testAsyncRequestWithShutdown() throws Exception
+    {
+        long delay = 500;
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                new Thread(() ->
+                {
+                    try
+                    {
+                        Thread.sleep(delay);
+                        asyncContext.complete();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                        asyncContext.complete();
+                    }
+                }).start();
+                serverLatch.countDown();
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
+        _connector.executeRequest(request);
+
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+
+        Future<Void> shutdown = _statsHandler.shutdown();
+        assertFalse(shutdown.isDone());
+
+        Thread.sleep(delay / 2);
+        assertFalse(shutdown.isDone());
+
+        Thread.sleep(delay);
+        assertTrue(shutdown.isDone());
     }
 
     /**

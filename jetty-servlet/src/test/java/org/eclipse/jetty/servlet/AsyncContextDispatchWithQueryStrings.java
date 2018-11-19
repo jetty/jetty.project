@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
@@ -36,9 +36,9 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * This tests verifies that merging of queryStrings works when dispatching
@@ -50,7 +50,7 @@ public class AsyncContextDispatchWithQueryStrings
     private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
     private LocalConnector _connector = new LocalConnector(_server);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception 
     {
         _connector.setIdleTimeout(30000);
@@ -80,7 +80,7 @@ public class AsyncContextDispatchWithQueryStrings
         assertThat(responseString,startsWith("HTTP/1.1 200"));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception 
     {
         _server.stop();

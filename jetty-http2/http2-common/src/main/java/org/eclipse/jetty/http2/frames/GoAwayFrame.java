@@ -76,11 +76,10 @@ public class GoAwayFrame extends Frame
     @Override
     public String toString()
     {
-        ErrorCode errorCode = ErrorCode.from(error);
         return String.format("%s,%d/%s/%s/%s",
                 super.toString(),
                 lastStreamId,
-                errorCode != null ? errorCode.toString() : String.valueOf(error),
+                ErrorCode.toString(error, null),
                 tryConvertPayload(),
                 closeState);
     }
