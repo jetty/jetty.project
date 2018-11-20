@@ -120,13 +120,28 @@ public class HttpTester
 
     public static Response parseResponse(InputStream responseStream) throws IOException
     {
-        ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
-        IO.copy(responseStream, contentStream);
+        Response r=new Response();
+        HttpParser parser =new HttpParser(r);
 
-        Response r = new Response();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(ByteBuffer.wrap(contentStream.toByteArray()));
-        return r;
+        // Read and parse a character at a time so we never can read more than we should.
+        byte[] array = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(array);
+        buffer.limit(1);
+
+        while(true)
+        {
+            buffer.position(1);
+            int l = responseStream.read(array);
+            if (l<0)
+                parser.atEOF();
+            else
+                buffer.position(0);
+
+            if (parser.parseNext(buffer))
+                return r;
+            else if (l<0)
+                return null;
+        }
     }
 
     public abstract static class Input
