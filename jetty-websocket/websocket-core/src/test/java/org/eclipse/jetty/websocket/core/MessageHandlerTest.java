@@ -64,7 +64,7 @@ public class MessageHandlerTest
         demanding = false;
         demand = 0;
 
-        session = new DummyCoreSession()
+        session = new CoreSession.Empty()
         {
             private ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 

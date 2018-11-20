@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.common.message.StringMessageSink;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.DummyCoreSession;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -37,7 +25,18 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-public class OutgoingMessageCapture extends DummyCoreSession implements FrameHandler.CoreSession
+import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.common.message.StringMessageSink;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+
+public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty implements FrameHandler.CoreSession
 {
     private static final Logger LOG = Log.getLogger(OutgoingMessageCapture.class);
 

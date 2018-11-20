@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -36,20 +43,12 @@ import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeResponse;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
@@ -72,7 +71,14 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
-    private FrameHandler.CoreSession channel = new DummyCoreSession(Behavior.CLIENT);
+    private FrameHandler.CoreSession channel = new FrameHandler.CoreSession.Empty()
+    {
+        @Override
+        public Behavior getBehavior()
+        {
+            return Behavior.CLIENT;
+        }
+    };
 
     private JettyWebSocketFrameHandler newLocalFrameHandler(Object wsEndpoint)
     {

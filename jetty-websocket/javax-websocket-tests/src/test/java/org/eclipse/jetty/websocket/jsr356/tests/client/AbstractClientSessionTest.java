@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import org.eclipse.jetty.websocket.core.DummyCoreSession;
+import javax.websocket.EndpointConfig;
+
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
@@ -31,8 +32,6 @@ import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyEndpoint;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-
-import javax.websocket.EndpointConfig;
 
 public abstract class AbstractClientSessionTest
 {
@@ -49,7 +48,7 @@ public abstract class AbstractClientSessionTest
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
         JavaxWebSocketFrameHandler frameHandler =
             container.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, null);
-        FrameHandler.CoreSession channel = new DummyCoreSession();
+        FrameHandler.CoreSession channel = new FrameHandler.CoreSession.Empty();
         String id = "dummy";
         EndpointConfig endpointConfig = null;
         session = new JavaxWebSocketSession(container,

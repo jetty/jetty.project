@@ -18,10 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.PathParam;
+import javax.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.DummyCoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
@@ -30,17 +42,6 @@ import org.eclipse.jetty.websocket.jsr356.UpgradeResponse;
 import org.eclipse.jetty.websocket.jsr356.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.io.Reader;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +57,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
 
         // Establish endpoint function
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request, response, futureSession);
-        frameHandler.onOpen(new DummyCoreSession());
+        frameHandler.onOpen(new FrameHandler.CoreSession.Empty());
         func.accept(frameHandler);
         return socket;
     }
