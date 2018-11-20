@@ -909,7 +909,6 @@ public class Session implements SessionHandler.SessionIf
             //if the session was not already invalid, or in process of being invalidated, do invalidate
             if (result)
             {
-                //tell id mgr to remove session from all contexts
                 try
                 {
                     //do the invalidation
@@ -923,7 +922,6 @@ public class Session implements SessionHandler.SessionIf
                 //tell id mgr to remove sessions with same id from all contexts
                 _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
             }
-
         }
         catch (Exception e)
         {

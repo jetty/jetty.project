@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
+import static java.lang.Math.round;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,8 +66,6 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-
-import static java.lang.Math.round;
 
 /* ------------------------------------------------------------ */
 /**
@@ -1264,9 +1264,12 @@ public class SessionHandler extends ScopedHandler
     
     /* ------------------------------------------------------------ */
     /**
-     * Called when a session has expired.
+     * Called by SessionIdManager to remove a session that has been invalidated,
+     * either by this context or another context. Also called by
+     * SessionIdManager when a session has expired in either this context or
+     * another context.
      * 
-     * @param id the id to invalidate
+     * @param id the session id to invalidate
      */
     public void invalidate (String id)
     {
@@ -1276,7 +1279,8 @@ public class SessionHandler extends ScopedHandler
 
         try
         {            
-            //Remove the Session object from the session store and any backing data store
+            // Remove the Session object from the session cache and any backing
+            // data store
             Session session = _sessionCache.delete(id);
             if (session != null)
             {
