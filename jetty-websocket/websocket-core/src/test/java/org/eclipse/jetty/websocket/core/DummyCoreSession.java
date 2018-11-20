@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
-
 import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
 
 public class DummyCoreSession implements FrameHandler.CoreSession
 {

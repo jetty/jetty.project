@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.DummyCoreSession;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -139,7 +139,7 @@ public class MessageWriterTest
         assertThat("Message[0].length", message.length(), is(testSize));
     }
 
-    public static class FrameCapture extends DummyCoreSession
+    public static class FrameCapture extends FrameHandler.CoreSession.Empty
     {
         public BlockingQueue<Frame> frames = new LinkedBlockingQueue<>();
 
@@ -151,7 +151,7 @@ public class MessageWriterTest
         }
     }
 
-    public static class WholeMessageCapture extends DummyCoreSession
+    public static class WholeMessageCapture extends FrameHandler.CoreSession.Empty
     {
         public BlockingQueue<String> messages = new LinkedBlockingQueue<>();
 
