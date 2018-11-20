@@ -107,11 +107,11 @@ public class TestOSGiUtil
         String mavenRepoPath = System.getProperty( "mavenRepoPath" );
         if (!StringUtil.isBlank(mavenRepoPath))
             res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-osgi-servlet-api" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-osgi-servlet-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "javax.annotation" ).artifactId( "javax.annotation-api" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.apache.geronimo.specs" ).artifactId( "geronimo-jta_1.1_spec" ).version("1.1.1").start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-util" ).versionAsInProject().start());
@@ -128,13 +128,15 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-jndi" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-plus" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-annotations" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-api" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-common" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-core" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-api" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-common" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-client" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "javax.websocket" ).artifactId( "javax.websocket-api" ).versionAsInProject().noStart());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-client-impl").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId( "javax.websocket" ).artifactId( "javax.websocket-api" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-common").versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-client-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-server-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
         return res;

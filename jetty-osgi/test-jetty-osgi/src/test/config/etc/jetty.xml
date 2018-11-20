@@ -57,7 +57,8 @@
       <Set name="persistentConnectionsEnabled"><Property name="jetty.httpConfig.persistentConnectionsEnabled" default="true"/></Set>
       <Set name="requestCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.requestCookieCompliance" deprecated="jetty.httpConfig.cookieCompliance" default="RFC6265"/></Arg></Call></Set>
       <Set name="responseCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.responseCookieCompliance" default="RFC6265"/></Arg></Call></Set>
-      <Set name="multiPartFormDataCompliance"><Call class="org.eclipse.jetty.server.MultiPartFormDataCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.multiPartFormDataCompliance" default="RFC7578"/></Arg></Call></Set>
+      <Set name="multiPartFormDataCompliance"><Call class="org.eclipse.jetty.http.MultiPartFormDataCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.multiPartFormDataCompliance" default="RFC7578"/></Arg></Call></Set>
+
     </New>
  
 

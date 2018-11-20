@@ -48,8 +48,8 @@
     <logback.version>1.2.3</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <servlet.api.version>4.0.0</servlet.api.version>
-    <servlet.schema.version>4.0.2</servlet.schema.version>
+    <servlet.api.version>4.0.1</servlet.api.version>
+    <servlet.schema.version>4.0.3</servlet.schema.version>
     <jsp.version>8.5.33</jsp.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
@@ -654,6 +654,7 @@
               <Bundle-Copyright>Copyright (c) 2008-2018 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
+              <_noee>true</_noee>
             </instructions>
           </configuration>
         </plugin>
