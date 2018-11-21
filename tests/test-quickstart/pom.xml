@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -44,7 +44,6 @@
     <dependency>
       <groupId>javax.transaction</groupId>
       <artifactId>javax.transaction-api</artifactId>
-      <version>1.2</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
@@ -139,7 +138,7 @@
         <executions>
           <execution>
             <id>copy</id>
-            <phase>generate-resources</phase>
+            <phase>process-test-classes</phase>
             <goals>
               <goal>copy</goal>
             </goals>

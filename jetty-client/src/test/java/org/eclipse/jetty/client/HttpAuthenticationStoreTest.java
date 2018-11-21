@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.net.URI;
 
 import org.eclipse.jetty.client.api.Authentication;
@@ -25,8 +27,8 @@ import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DigestAuthentication;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class HttpAuthenticationStoreTest
 {
@@ -41,7 +43,7 @@ public class HttpAuthenticationStoreTest
         store.addAuthentication(new BasicAuthentication(uri1, realm, "user", "password"));
 
         Authentication result = store.findAuthentication("Basic", uri2, realm);
-        Assert.assertNotNull(result);
+        assertNotNull(result);
 
         store.clearAuthentications();
 
@@ -50,7 +52,7 @@ public class HttpAuthenticationStoreTest
         uri2 = URI.create("https://server:443/path");
         store.addAuthentication(new DigestAuthentication(uri1, realm, "user", "password"));
         result = store.findAuthentication("Digest", uri2, realm);
-        Assert.assertNotNull(result);
+        assertNotNull(result);
     }
 
     @Test
@@ -74,7 +76,7 @@ public class HttpAuthenticationStoreTest
 
         URI uri2 = URI.create("http://host");
         Authentication.Result result = store.findAuthenticationResult(uri2);
-        Assert.assertNotNull(result);
+        assertNotNull(result);
 
         store.clearAuthenticationResults();
 
@@ -95,6 +97,6 @@ public class HttpAuthenticationStoreTest
 
         uri2 = URI.create("https://server:443/path");
         result = store.findAuthenticationResult(uri2);
-        Assert.assertNotNull(result);
+        assertNotNull(result);
     }
 }

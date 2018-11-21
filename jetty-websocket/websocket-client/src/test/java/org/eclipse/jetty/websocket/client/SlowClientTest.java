@@ -19,7 +19,8 @@
 package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -35,19 +36,19 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class SlowClientTest
 {
     private static BlockheadServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
@@ -55,20 +56,20 @@ public class SlowClientTest
         client.start();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -125,7 +126,7 @@ public class SlowClientTest
             serverConn.write(respClose);
 
             // Verify server response
-            Assert.assertTrue("Client Socket Closed", tsocket.closeLatch.await(3, TimeUnit.MINUTES));
+            assertTrue(tsocket.closeLatch.await(3, TimeUnit.MINUTES), "Client Socket Closed");
             tsocket.assertCloseCode(StatusCode.NORMAL);
         }
     }

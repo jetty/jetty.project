@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * ClusteredSessionScavengingTest
@@ -35,7 +35,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     }
 
     
-    @After
+    @AfterEach
     public void tearDown() throws Exception 
     {
         JdbcTestHelper.shutdown(null);

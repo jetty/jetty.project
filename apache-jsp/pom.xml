@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>apache-jsp</artifactId>
@@ -10,7 +10,8 @@
   <url>http://www.eclipse.org/jetty</url>
   <packaging>jar</packaging>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.${project.artifactId}</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.apache-jsp</bundle-symbolic-name>
+    <jpms-module-name>${project.groupId}.apache.jsp</jpms-module-name>
   </properties>
   <build>
     <plugins>
@@ -103,6 +104,13 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <version>${project.version}</version>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -18,18 +18,21 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -41,87 +44,69 @@ import org.eclipse.jetty.server.handler.gzip.AsyncTimeoutDispatchWrite;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipTester;
 import org.eclipse.jetty.server.handler.gzip.GzipTester.ContentMetadata;
-import org.eclipse.jetty.server.handler.gzip.TestDirContentServlet;
 import org.eclipse.jetty.server.handler.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test the GzipFilter support when under several layers of Filters.
  */
-@RunWith(Parameterized.class)
-@Ignore
+@ExtendWith(WorkDirExtension.class)
 public class GzipFilterLayeredTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
-    
     private static final HttpConfiguration defaultHttp = new HttpConfiguration();
     private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
     private static final int SMALL = defaultHttp.getOutputBufferSize() / 4;
     private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
     private static final boolean EXPECT_COMPRESSED = true;
 
-    @Parameters(name = "{0} bytes - {1} - compressed({2}) - filter({3}) - servlet({4}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> scenarios()
     {
-        List<Object[]> ret = new ArrayList<Object[]>();
-        
-        Class<?> gzipFilters[] = new Class<?>[] { GzipFilter.class, AsyncGzipFilter.class };
-        Class<?> contentServlets[] = new Class<?>[] { 
-                TestServletLengthStreamTypeWrite.class, 
-                AsyncTimeoutDispatchWrite.Default.class,
-                AsyncTimeoutDispatchWrite.Passed.class,
-                AsyncTimeoutCompleteWrite.Default.class,
-                AsyncTimeoutCompleteWrite.Passed.class,
-                AsyncScheduledDispatchWrite.Default.class,
-                AsyncScheduledDispatchWrite.Passed.class,
-                };
+        List<Arguments> ret = new ArrayList<>();
+
+        List<Class<?>> gzipFilters = new ArrayList<>();
+        gzipFilters.add(GzipFilter.class);
+        gzipFilters.add(AsyncGzipFilter.class);
+
+        List<Class<?>> contentServlets = new ArrayList<>();
+        contentServlets.add(TestServletLengthStreamTypeWrite.class);
+        contentServlets.add(AsyncTimeoutDispatchWrite.Default.class);
+        contentServlets.add(AsyncTimeoutDispatchWrite.Passed.class);
+        contentServlets.add(AsyncTimeoutCompleteWrite.Default.class);
+        contentServlets.add(AsyncTimeoutCompleteWrite.Passed.class);
+        contentServlets.add(AsyncScheduledDispatchWrite.Default.class);
+        contentServlets.add(AsyncScheduledDispatchWrite.Passed.class);
 
         for (Class<?> contentServlet: contentServlets)
         {
             for (Class<?> gzipFilter : gzipFilters)
             {
-                ret.add(new Object[] { 0, "empty.txt", !EXPECT_COMPRESSED, gzipFilter, contentServlet });
-                ret.add(new Object[] { TINY, "file-tiny.txt", !EXPECT_COMPRESSED, gzipFilter, contentServlet });
-                ret.add(new Object[] { SMALL, "file-small.txt", EXPECT_COMPRESSED, gzipFilter, contentServlet });
-                ret.add(new Object[] { LARGE, "file-large.txt", EXPECT_COMPRESSED, gzipFilter, contentServlet });
-                ret.add(new Object[] { LARGE, "file-large.mp3", !EXPECT_COMPRESSED, gzipFilter, contentServlet });
+                ret.add(Arguments.of(new Scenario(0, "empty.txt", !EXPECT_COMPRESSED, gzipFilter, contentServlet)));
+                ret.add(Arguments.of(new Scenario(TINY, "file-tiny.txt", !EXPECT_COMPRESSED, gzipFilter, contentServlet)));
+                ret.add(Arguments.of(new Scenario(SMALL, "file-small.txt", EXPECT_COMPRESSED, gzipFilter, contentServlet)));
+                ret.add(Arguments.of(new Scenario(LARGE, "file-large.txt", EXPECT_COMPRESSED, gzipFilter, contentServlet)));
+                ret.add(Arguments.of(new Scenario(LARGE, "file-large.mp3", !EXPECT_COMPRESSED, gzipFilter, contentServlet)));
             }
         }
 
-        return ret;
+        return ret.stream();
     }
 
-    @Parameter(0)
-    public int fileSize;
-    @Parameter(1)
-    public String fileName;
-    @Parameter(2)
-    public boolean expectCompressed;
-    @Parameter(3)
-    public Class<? extends GzipFilter> gzipFilterClass;
-    @Parameter(4)
-    public Class<? extends TestDirContentServlet> contentServletClass;
-
-    @Rule
-    public TestingDir testingdir = new TestingDir();
+    public WorkDir testingdir;
     
-    @Test
-    public void testGzipDos() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testGzipDos(Scenario scenario) throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir, GzipHandler.GZIP);
+        GzipTester tester = new GzipTester(testingdir.getEmptyPathDir(), GzipHandler.GZIP);
         
         // Add Gzip Filter first
-        FilterHolder gzipHolder = new FilterHolder(gzipFilterClass);
+        FilterHolder gzipHolder = new FilterHolder(scenario.gzipFilterClass);
         gzipHolder.setAsyncSupported(true);
         tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
@@ -133,12 +118,12 @@ public class GzipFilterLayeredTest
         tester.addFilter(manipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         
         // Add content servlet
-        tester.setContentServlet(contentServletClass);
+        tester.setContentServlet(scenario.contentServletClass);
         
         try
         {
-            String testFilename = String.format("GzipDos-%s-%s",contentServletClass.getSimpleName(),fileName);
-            File testFile = tester.prepareServerFile(testFilename,fileSize);
+            String testFilename = String.format("GzipDos-%s-%s",scenario.contentServletClass.getSimpleName(),scenario.fileName);
+            File testFile = tester.prepareServerFile(testFilename,scenario.fileSize);
             
             tester.start();
             
@@ -146,7 +131,7 @@ public class GzipFilterLayeredTest
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
             
-            if (expectCompressed)
+            if (scenario.expectCompressed)
             {
                 // Must be gzip compressed
                 assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
@@ -154,18 +139,19 @@ public class GzipFilterLayeredTest
             
             // Uncompressed content Size
             ContentMetadata content = tester.getResponseMetadata(response);
-            assertThat("(Uncompressed) Content Length", content.size, is((long)fileSize));
+            assertThat("(Uncompressed) Content Length", content.size, is((long)scenario.fileSize));
         }
         finally
         {
             tester.stop();
         }
     }
-    
-    @Test
-    public void testDosGzip() throws Exception
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testDosGzip(Scenario scenario) throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir, GzipHandler.GZIP);
+        GzipTester tester = new GzipTester(testingdir.getPath(), GzipHandler.GZIP);
         
         // Add (DoSFilter-like) manip filter
         FilterHolder manipHolder = new FilterHolder(AsyncManipFilter.class);
@@ -173,19 +159,19 @@ public class GzipFilterLayeredTest
         tester.addFilter(manipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         
         // Add Gzip Filter first (in chain of DosFilter)
-        FilterHolder gzipHolder = new FilterHolder(gzipFilterClass);
+        FilterHolder gzipHolder = new FilterHolder(scenario.gzipFilterClass);
         gzipHolder.setAsyncSupported(true);
         tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         gzipHolder.setInitParameter("mimeTypes","text/plain");
 
         // Add content servlet
-        tester.setContentServlet(contentServletClass);
+        tester.setContentServlet(scenario.contentServletClass);
         
         try
         {
-            String testFilename = String.format("DosGzip-%s-%s",contentServletClass.getSimpleName(),fileName);
-            File testFile = tester.prepareServerFile(testFilename,fileSize);
+            String testFilename = String.format("DosGzip-%s-%s",scenario.contentServletClass.getSimpleName(),scenario.fileName);
+            File testFile = tester.prepareServerFile(testFilename,scenario.fileSize);
             
             tester.start();
             
@@ -193,7 +179,7 @@ public class GzipFilterLayeredTest
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
             
-            if (expectCompressed)
+            if (scenario.expectCompressed)
             {
                 // Must be gzip compressed
                 assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
@@ -204,11 +190,37 @@ public class GzipFilterLayeredTest
             
             // Uncompressed content Size
             ContentMetadata content = tester.getResponseMetadata(response);
-            assertThat("(Uncompressed) Content Length", content.size, is((long)fileSize));
+            assertThat("(Uncompressed) Content Length", content.size, is((long)scenario.fileSize));
         }
         finally
         {
             tester.stop();
+        }
+    }
+
+    public static class Scenario
+    {
+        public int fileSize;
+        public String fileName;
+        public boolean expectCompressed;
+        public Class<? extends Filter> gzipFilterClass;
+        public Class<? extends Servlet> contentServletClass;
+
+        public Scenario(int fileSize, String fileName, boolean expectCompressed, Class<?> gzipFilterClass, Class<?> contentServletClass)
+        {
+            this.fileSize = fileSize;
+            this.fileName = fileName;
+            this.expectCompressed = expectCompressed;
+            this.gzipFilterClass = (Class<? extends Filter>) gzipFilterClass;
+            this.contentServletClass = (Class<? extends Servlet>) contentServletClass;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%,d bytes - %s - compressed(%b) - filter(%s) - servlet(%s)",
+                    fileSize, fileName, expectCompressed, gzipFilterClass, contentServletClass
+            );
         }
     }
 }    

@@ -22,7 +22,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
@@ -426,16 +425,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
         if (getHttpExchanges().isEmpty())
         {
-            if (getHttpClient().isRemoveIdleDestinations() && connectionPool.isEmpty())
-            {
-                // There is a race condition between this thread removing the destination
-                // and another thread queueing a request to this same destination.
-                // If this destination is removed, but the request queued, a new connection
-                // will be opened, the exchange will be executed and eventually the connection
-                // will idle timeout and be closed. Meanwhile a new destination will be created
-                // in HttpClient and will be used for other requests.
-                getHttpClient().removeDestination(this);
-            }
+            tryRemoveIdleDestination();
         }
         else
         {
@@ -460,13 +450,28 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         // The call to Request.abort() will remove the exchange from the exchanges queue.
         for (HttpExchange exchange : new ArrayList<>(exchanges))
             exchange.getRequest().abort(cause);
+        if (exchanges.isEmpty())
+            tryRemoveIdleDestination();
+    }
+
+    private void tryRemoveIdleDestination()
+    {
+        if (getHttpClient().isRemoveIdleDestinations() && connectionPool.isEmpty())
+        {
+            // There is a race condition between this thread removing the destination
+            // and another thread queueing a request to this same destination.
+            // If this destination is removed, but the request queued, a new connection
+            // will be opened, the exchange will be executed and eventually the connection
+            // will idle timeout and be closed. Meanwhile a new destination will be created
+            // in HttpClient and will be used for other requests.
+            getHttpClient().removeDestination(this);
+        }
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
-        ContainerLifeCycle.dump(out, indent, Collections.singleton(new DumpableCollection("exchanges", exchanges)));
+        dumpObjects(out, indent, new DumpableCollection("exchanges", exchanges));
     }
 
     public String asString()

@@ -62,22 +62,21 @@ public class PathWatcherDemo implements PathWatcher.Listener
     {
         PathWatcher watcher = new PathWatcher();
         //watcher.addListener(new PathWatcherDemo());
-        watcher.addListener (new PathWatcher.EventListListener(){
-
-            @Override
-            public void onPathWatchEvents(List<PathWatchEvent> events)
-            {
-               if (events == null)
-                   LOG.warn("Null events received");
-               if (events.isEmpty())
-                   LOG.warn("Empty events received");
-               
+        watcher.addListener ((PathWatcher.EventListListener) events -> {
+           if (events == null)
+           {
+               LOG.warn("Null events received");
+           }
+           else if (events.isEmpty())
+           {
+               LOG.warn("Empty events received");
+           }
+           else
+           {
                LOG.info("Bulk notification received");
-               for (PathWatchEvent e:events)
+               for (PathWatchEvent e : events)
                    onPathWatchEvent(e);
-                
-            }
-            
+           }
         });
         
         watcher.setNotifyExistingOnStart(false);

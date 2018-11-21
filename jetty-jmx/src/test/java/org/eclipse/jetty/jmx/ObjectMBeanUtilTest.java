@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.jmx;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,204 +29,130 @@ import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ReflectionException;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import com.acme.Derived;
 import com.acme.DerivedExtended;
 import com.acme.DerivedManaged;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ObjectMBeanUtilTest
 {
-
     private ObjectMBean objectMBean;
-
     private DerivedExtended derivedExtended;
-
     private MBeanContainer container;
-
     private MBeanInfo objectMBeanInfo;
-
-    private Object mBean;
-
-    private String value;
-
     private Attribute attribute;
-
-    private AttributeList attributes;
-
     private ObjectMBean mBeanDerivedManaged;
-
-    private Derived[] derivedes;
-
-    private ArrayList<Derived> aliasNames;
-
     private DerivedManaged derivedManaged;
 
-    private static final int EMPTY = 0;
-
-    @BeforeClass
-    public static void beforeClass()
-    {
-        Logger ombLog = Log.getLogger(ObjectMBean.class);
-        if (ombLog instanceof StdErrLog && !ombLog.isDebugEnabled())
-            ((StdErrLog)ombLog).setHideStacks(true);
-    }
-
-    @AfterClass
-    public static void afterClass()
-    {
-        Logger ombLog = Log.getLogger(ObjectMBean.class);
-        if (ombLog instanceof StdErrLog)
-            ((StdErrLog)ombLog).setHideStacks(false);
-    }
-
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        derivedExtended = new DerivedExtended();
-        objectMBean = new ObjectMBean(derivedExtended);
         container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        objectMBean.setMBeanContainer(container);
+        derivedExtended = new DerivedExtended();
+        objectMBean = (ObjectMBean)container.mbeanFor(derivedExtended);
         objectMBeanInfo = objectMBean.getMBeanInfo();
     }
 
     @Test
     public void testBasicOperations()
     {
-        assertEquals("Managed objects should be equal",derivedExtended,objectMBean.getManagedObject());
-        assertNull("This method call always returns null in the actual code",objectMBean.getObjectName());
-        assertNull("This method call always returns null in the actual code",objectMBean.getObjectNameBasis());
-        assertNull("This method call always returns null in the actual code",objectMBean.getObjectContextBasis());
-        assertEquals("Mbean container should be equal",container,objectMBean.getMBeanContainer());
-        assertEquals("Mbean description must be equal to : Test the mbean extended stuff","Test the mbean extended stuff",objectMBeanInfo.getDescription());
+        assertEquals(derivedExtended, objectMBean.getManagedObject(), "Managed objects should be equal");
+        assertNull(objectMBean.getObjectName(), "This method call always returns null in the actual code");
+        assertNull(objectMBean.getObjectNameBasis(), "This method call always returns null in the actual code");
+        assertNull(objectMBean.getObjectContextBasis(), "This method call always returns null in the actual code");
+        assertEquals(container, objectMBean.getMBeanContainer(), "Mbean container should be equal");
+        assertEquals("Test the mbean extended stuff", objectMBeanInfo.getDescription(), "Mbean description must be equal to : Test the mbean extended stuff");
     }
 
     @Test
-    public void testMbeanForNullCheck()
+    public void testGetAttributeMBeanException() throws Exception
     {
-        // when
-        mBean = ObjectMBean.mbeanFor(null);
-
-        // then
-        assertNull("As we are passing null value the output should be null",mBean);
-    }
-
-    @Test(expected = ReflectionException.class)
-    public void testGetAttributeReflectionException() throws Exception
-    {
-        // given
-        setUpGetAttribute("doodle4","charu");
-
-        // when
-        objectMBean.getAttribute("doodle4");
-
-        // then
-        fail("An InvocationTargetException must have occurred by now as doodle4() internally throwing exception");
-    }
-
-    private void setUpGetAttribute(String property, String value) throws Exception
-    {
-        Attribute attribute = new Attribute(property,value);
+        Attribute attribute = new Attribute("doodle4", "charu");
         objectMBean.setAttribute(attribute);
+
+        MBeanException e = assertThrows(MBeanException.class, () -> objectMBean.getAttribute("doodle4"));
+
+        assertNotNull(e, "An InvocationTargetException must have occurred by now as doodle4() internally throwing exception");
     }
 
-    @Test(expected = AttributeNotFoundException.class)
-    public void testGetAttributeAttributeNotFoundException() throws Exception
+    @Test
+    public void testGetAttributeAttributeNotFoundException()
     {
-        // when
-        objectMBean.getAttribute("ffname");
+        AttributeNotFoundException e = assertThrows(AttributeNotFoundException.class, () -> objectMBean.getAttribute("ffname"));
 
-        // then
-        fail("An AttributeNotFoundException must have occurred by now as there is no " + "attribute with the name ffname in bean");
+        assertNotNull(e, "An AttributeNotFoundException must have occurred by now as there is no attribute with the name ffname in bean");
     }
 
     @Test
     public void testSetAttributeWithCorrectAttrName() throws Exception
     {
-        // given
-        setUpGetAttribute("fname","charu");
-
-        // when
-        value = (String)objectMBean.getAttribute("fname");
-
-        // then
-        assertEquals("Attribute(fname) value must be equl to charu","charu",value);
-    }
-
-    @Test(expected = AttributeNotFoundException.class)
-    public void testSetAttributeNullCheck() throws Exception
-    {
-        // given
-        objectMBean.setAttribute(null);
-
-        // when
-        objectMBean.getAttribute(null);
-
-        // then
-        fail("An AttributeNotFoundException must have occurred by now as there is no attribute with the name null");
-    }
-
-    @Test(expected = AttributeNotFoundException.class)
-    public void testSetAttributeAttributeWithWrongAttrName() throws Exception
-    {
-        // given
-        attribute = new Attribute("fnameee","charu");
-
-        // when
+        Attribute attribute = new Attribute("fname", "charu");
         objectMBean.setAttribute(attribute);
 
-        // then
-        fail("An AttributeNotFoundException must have occurred by now as there is no attribute " + "with the name ffname in bean");
+        String value = (String)objectMBean.getAttribute("fname");
+
+        assertEquals("charu", value, "Attribute(fname) value must be equal to charu");
     }
 
     @Test
-    public void testSetAttributesWithCorrectValues() throws Exception
+    public void testSetAttributeNullCheck() throws Exception
     {
-        // given
-        attributes = getAttributes("fname","vijay");
-        attributes = objectMBean.setAttributes(attributes);
+        objectMBean.setAttribute(null);
 
-        // when
-        attributes = objectMBean.getAttributes(new String[]
-        { "fname" });
+        AttributeNotFoundException e = assertThrows(AttributeNotFoundException.class, () -> objectMBean.getAttribute(null));
 
-        // then
-        assertEquals("Fname value must be equal to vijay","vijay",((Attribute)(attributes.get(0))).getValue());
+        assertNotNull(e, "An AttributeNotFoundException must have occurred by now as there is no attribute with the name null");
     }
 
     @Test
-    public void testSetAttributesForArrayTypeAttribue() throws Exception
+    public void testSetAttributeAttributeWithWrongAttrName()
     {
-        // given
-        derivedes = getArrayTypeAttribute();
+        attribute = new Attribute("fnameee", "charu");
 
-        // when
-        derivedManaged.setAddresses(derivedes);
+        AttributeNotFoundException e = assertThrows(AttributeNotFoundException.class, () -> objectMBean.setAttribute(attribute));
+
+        assertNotNull(e, "An AttributeNotFoundException must have occurred by now as there is no attribute " + "with the name ffname in bean");
+    }
+
+    @Test
+    public void testSetAttributesWithCorrectValues()
+    {
+        AttributeList attributes = getAttributes("fname", "vijay");
+        objectMBean.setAttributes(attributes);
+
+        attributes = objectMBean.getAttributes(new String[]{"fname"});
+
+        assertEquals(1, attributes.size());
+        assertEquals("vijay", ((Attribute)(attributes.get(0))).getValue(), "Fname value must be equal to vijay");
+    }
+
+    @Test
+    public void testSetAttributesForArrayTypeAttribute() throws Exception
+    {
+        Derived[] deriveds = getArrayTypeAttribute();
+
+        derivedManaged.setAddresses(deriveds);
         mBeanDerivedManaged.getMBeanInfo();
 
-        // then
-        assertNotNull("Address object shouldn't be null",mBeanDerivedManaged.getAttribute("addresses"));
+        assertNotNull(mBeanDerivedManaged.getAttribute("addresses"), "Address object shouldn't be null");
     }
 
     @Test
-    public void testSetAttributesForCollectionTypeAttribue() throws Exception
+    public void testSetAttributesForCollectionTypeAttribute() throws Exception
     {
-        // given
-        aliasNames = getCollectionTypeAttribute();
+        ArrayList<Derived> aliasNames = new ArrayList<>(Arrays.asList(getArrayTypeAttribute()));
 
-        // when
         derivedManaged.setAliasNames(aliasNames);
         mBeanDerivedManaged.getMBeanInfo();
 
-        // then
-        assertNotNull("Address object shouldn't be null",mBeanDerivedManaged.getAttribute("aliasNames"));
-        assertNull("Derived object shouldn't be registered with container so its value will be null",mBeanDerivedManaged.getAttribute("derived"));
+        assertNotNull(mBeanDerivedManaged.getAttribute("aliasNames"), "Address object shouldn't be null");
+        assertNull(mBeanDerivedManaged.getAttribute("derived"), "Derived object shouldn't registered with container so its value will be null");
     }
 
     private Derived[] getArrayTypeAttribute()
@@ -241,112 +162,74 @@ public class ObjectMBeanUtilTest
         MBeanContainer mBeanDerivedManagedContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         mBeanDerivedManaged.setMBeanContainer(mBeanDerivedManagedContainer);
         Derived derived0 = new Derived();
-        mBeanDerivedManagedContainer.beanAdded(null,derived0);
-        Derived[] derivedes = new Derived[3];
+        mBeanDerivedManagedContainer.beanAdded(null, derived0);
+        Derived[] deriveds = new Derived[3];
         for (int i = 0; i < 3; i++)
-        {
-            derivedes[i] = new Derived();
-        }
-        derivedManaged.setAddresses(derivedes);
+            deriveds[i] = new Derived();
+        derivedManaged.setAddresses(deriveds);
         mBeanDerivedManaged.getMBeanInfo();
-        ArrayList<Derived> aliasNames = new ArrayList<Derived>(Arrays.asList(derivedes));
+        ArrayList<Derived> aliasNames = new ArrayList<>(Arrays.asList(deriveds));
         derivedManaged.setAliasNames(aliasNames);
-        return derivedes;
-    }
-
-    private ArrayList<Derived> getCollectionTypeAttribute()
-    {
-        ArrayList<Derived> aliasNames = new ArrayList<Derived>(Arrays.asList(getArrayTypeAttribute()));
-        return aliasNames;
+        return deriveds;
     }
 
     @Test
     public void testSetAttributesException()
     {
-        // given
-        attributes = getAttributes("fnameee","charu");
+        AttributeList attributes = getAttributes("fnameee", "charu");
 
-        // when
         attributes = objectMBean.setAttributes(attributes);
 
-        // then
         // Original code eating the exception and returning zero size list
-        assertEquals("As there is no attribute with the name fnameee, this should return empty",EMPTY,attributes.size());
+        assertEquals(0, attributes.size(), "As there is no attribute with the name fnameee, this should return empty");
     }
 
     private AttributeList getAttributes(String name, String value)
     {
-        Attribute attribute = new Attribute(name,value);
+        Attribute attribute = new Attribute(name, value);
         AttributeList attributes = new AttributeList();
         attributes.add(attribute);
         return attributes;
     }
 
-    @Test(expected = MBeanException.class)
-    public void testInvokeMBeanException() throws Exception
+    @Test
+    public void testInvokeMBeanException()
     {
-        // given
-        setMBeanInfoForInvoke();
+        ReflectionException e = assertThrows(ReflectionException.class, () -> objectMBean.invoke("doodle2", new Object[0], new String[0]));
 
-        // when
-        objectMBean.invoke("doodle2",new Object[] {},new String[] {});
-
-        // then
-        fail("An MBeanException must have occurred by now as doodle2() in Derived bean throwing exception");
+        assertNotNull(e, "An ReflectionException must have occurred by now as doodle2() in Derived bean is private");
     }
 
-    @Test(expected = ReflectionException.class)
-    public void testInvokeReflectionException() throws Exception
+    @Test
+    public void testInvokeReflectionException()
     {
-        // given
-        setMBeanInfoForInvoke();
+        MBeanException e = assertThrows(MBeanException.class, () -> objectMBean.invoke("doodle1", new Object[0], new String[0]));
 
-        // when
-        objectMBean.invoke("doodle1",new Object[] {},new String[] {});
-
-        // then
-        fail("An ReflectionException must have occurred by now as doodle1() has private access in Derived bean");
+        assertNotNull(e, "MBeanException is null");
     }
 
     @Test
     public void testInvoke() throws Exception
     {
-        // given
-        setMBeanInfoForInvoke();
+        String value = (String)objectMBean.invoke("good", new Object[0], new String[0]);
 
-        // when
-        value = (String)objectMBean.invoke("good",new Object[] {},new String[] {});
-
-        // then
-        assertEquals("Method(good) invocation on objectMBean must return not bad","not bad",value);
-    }
-
-    @Test(expected = ReflectionException.class)
-    public void testInvokeNoSuchMethodException() throws Exception
-    {
-        // given
-        setMBeanInfoForInvoke();
-
-        // when
-        // DerivedMBean contains a managed method with the name good,we must
-        // call this method without any arguments
-        objectMBean.invoke("good",new Object[] {},new String[]
-        { "int aone" });
-
-        // then
-        fail("An ReflectionException must have occurred by now as we cannot call a methow with wrong signature");
-    }
-
-    private void setMBeanInfoForInvoke()
-    {
-        objectMBean = (ObjectMBean)ObjectMBean.mbeanFor(derivedExtended);
-        container.beanAdded(null,derivedExtended);
-        objectMBean.getMBeanInfo();
+        assertEquals("not bad", value, "Method(good) invocation on objectMBean must return not bad");
     }
 
     @Test
-    public void testToVariableName()
+    public void testInvokeNoSuchMethodException()
     {
-        assertEquals("fullName",objectMBean.toVariableName("isfullName"));
+        // DerivedMBean contains a managed method with the name good,
+        // we must call this method without any arguments.
+        ReflectionException e = assertThrows(ReflectionException.class, () ->
+                objectMBean.invoke("good", new Object[0], new String[]{"int aone"}));
+
+        assertNotNull(e, "A ReflectionException must have occurred by now as we cannot call a method with wrong signature");
+    }
+
+    @Test
+    public void testToAttributeName()
+    {
+        assertEquals("fullName", MetaData.toAttributeName("isfullName"));
     }
 }

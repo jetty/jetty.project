@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.http2.alpn.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,8 +41,7 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ALPNNegotiationTest extends AbstractALPNTest
 {
@@ -88,7 +92,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             encrypted.clear();
             int read = channel.read(encrypted);
             encrypted.flip();
-            Assert.assertTrue(read > 0);
+            assertTrue(read > 0);
             // Cannot decrypt, as the SSLEngine has been already closed
 
             // It may happen that the read() above read both the ServerHello and the TLS Close Alert.
@@ -98,9 +102,9 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             if (read > 0)
             {
                 encrypted.flip();
-                Assert.assertEquals(21, encrypted.get());
+                assertEquals(21, encrypted.get());
                 encrypted.clear();
-                Assert.assertEquals(-1, channel.read(encrypted));
+                assertEquals(-1, channel.read(encrypted));
             }
         }
     }
@@ -147,7 +151,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             encrypted.clear();
             int read = channel.read(encrypted);
             encrypted.flip();
-            Assert.assertTrue(read > 0);
+            assertTrue(read > 0);
             ByteBuffer decrypted = ByteBuffer.allocate(sslEngine.getSession().getApplicationBufferSize());
             sslEngine.unwrap(encrypted, decrypted);
 
@@ -157,12 +161,12 @@ public class ALPNNegotiationTest extends AbstractALPNTest
                 // Now if we can read more, we should read the TLS Close Alert and then the TCP FIN.
                 encrypted.clear();
                 read = channel.read(encrypted);
-                Assert.assertTrue(read > 0);
+                assertTrue(read > 0);
                 encrypted.flip();
             }
-            Assert.assertEquals(21, encrypted.get());
+            assertEquals(21, encrypted.get());
             encrypted.clear();
-            Assert.assertEquals(-1, channel.read(encrypted));
+            assertEquals(-1, channel.read(encrypted));
         }
     }
 
@@ -196,7 +200,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
                 @Override
                 public void selected(String protocol)
                 {
-                    Assert.assertEquals("http/1.1", protocol);
+                    assertEquals("http/1.1", protocol);
                 }
             });
 
@@ -215,7 +219,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             InputStream input = client.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             String line = reader.readLine();
-            Assert.assertTrue(line.contains(" 404 "));
+            assertThat(line, containsString(" 404 "));
         }
     }
 
@@ -248,7 +252,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
                 @Override
                 public void selected(String protocol)
                 {
-                    Assert.assertEquals("http/1.1", protocol);
+                    assertEquals("http/1.1", protocol);
                 }
             });
 
@@ -267,7 +271,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             InputStream input = client.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             String line = reader.readLine();
-            Assert.assertTrue(line.contains(" 404 "));
+            assertThat(line, containsString(" 404 "));
         }
     }
 
@@ -318,7 +322,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             InputStream input = client.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             String line = reader.readLine();
-            Assert.assertTrue(line.contains(" 404 "));
+            assertThat(line, containsString(" 404 "));
         }
     }
 }

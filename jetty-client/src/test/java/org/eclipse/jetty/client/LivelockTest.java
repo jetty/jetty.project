@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.channels.Selector;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
@@ -35,39 +36,30 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class LivelockTest
 {
-    @Parameterized.Parameters(name = "server={0}, client={1}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> modes()
     {
-        List<Object[]> data = new ArrayList<>();
-        // Server-live-lock, Client-live-lock
-        data.add(new Object[] { true, true });
-        data.add(new Object[] { true, false });
-        data.add(new Object[] { false, true });
-        data.add(new Object[] { false, false });
-        return data;
+        return Stream.of(
+            // Server-live-lock, Client-live-lock
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
     }
-
-    @Parameterized.Parameter(0)
-    public boolean serverLiveLock;
-
-    @Parameterized.Parameter(1)
-    public boolean clientLiveLock;
 
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         Handler handler = new EmptyServerHandler();
@@ -80,7 +72,7 @@ public class LivelockTest
         server.start();
     }
     
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         if (client != null)
@@ -89,8 +81,9 @@ public class LivelockTest
             server.stop();
     }
 
-    @Test
-    public void testLivelock() throws Exception
+    @ParameterizedTest(name = "{index} ==> serverLiveLock={0}, clientLiveLock={1}")
+    @MethodSource("modes")
+    public void testLivelock(boolean serverLiveLock, boolean clientLiveLock) throws Exception
     {
         // This test applies a moderate connect/request load (5/s) over 5 seconds,
         // with a connect timeout of 1000, so any delayed connects will be detected.
@@ -147,7 +140,7 @@ public class LivelockTest
                     });
             sleep(pause);
         }
-        Assert.assertTrue(latch.await(2 * pause * count, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(2 * pause * count, TimeUnit.MILLISECONDS));
 
         // Exit the livelocks.
         busy.set(false);

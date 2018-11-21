@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.jsp;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class TestJspFileNameToClass
 {
@@ -32,27 +34,27 @@ public class TestJspFileNameToClass
         h.setName("test");
 
 
-        Assert.assertEquals(null,  h.getClassNameForJsp(null));
+        assertEquals(null,  h.getClassNameForJsp(null));
 
-        Assert.assertEquals(null,  h.getClassNameForJsp(""));
+        assertEquals(null,  h.getClassNameForJsp(""));
 
-        Assert.assertEquals(null,  h.getClassNameForJsp("/blah/"));
+        assertEquals(null,  h.getClassNameForJsp("/blah/"));
 
-        Assert.assertEquals(null,  h.getClassNameForJsp("//blah///"));
+        assertEquals(null,  h.getClassNameForJsp("//blah///"));
 
-        Assert.assertEquals(null,  h.getClassNameForJsp("/a/b/c/blah/"));
+        assertEquals(null,  h.getClassNameForJsp("/a/b/c/blah/"));
 
-        Assert.assertEquals("org.apache.jsp.a.b.c.blah",  h.getClassNameForJsp("/a/b/c/blah"));
+        assertEquals("org.apache.jsp.a.b.c.blah",  h.getClassNameForJsp("/a/b/c/blah"));
 
-        Assert.assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("/blah.jsp"));
+        assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("/blah.jsp"));
 
-        Assert.assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("//blah.jsp"));
+        assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("//blah.jsp"));
 
-        Assert.assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("blah.jsp"));
+        assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("blah.jsp"));
 
-        Assert.assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("/a/b/c/blah.jsp"));
+        assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("/a/b/c/blah.jsp"));
 
-        Assert.assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
+        assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
     }
     
 }

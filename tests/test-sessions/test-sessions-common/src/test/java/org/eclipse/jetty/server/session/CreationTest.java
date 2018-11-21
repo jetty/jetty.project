@@ -19,11 +19,11 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -45,7 +45,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 
 
@@ -81,7 +82,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);       
+        contextHandler.addEventListener(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -107,7 +108,7 @@ public class CreationTest
             synchronizer.await(5, TimeUnit.SECONDS);
 
             //session should now be evicted from the cache
-            String id = TestServer.extractSessionId(sessionCookie);            
+            String id = TestServer.extractSessionId(sessionCookie);
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
@@ -120,7 +121,7 @@ public class CreationTest
             
             //ensure request has finished being handled
             synchronizer.await(5, TimeUnit.SECONDS);
-            
+
             //session should now be evicted from the cache again
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(TestServer.extractSessionId(sessionCookie)));
         }
@@ -166,14 +167,14 @@ public class CreationTest
 
             CountDownLatch synchronizer = new CountDownLatch(1);
             scopeListener.setExitSynchronizer(synchronizer);
-            
+
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             
             //ensure request has finished being handled
             synchronizer.await(5, TimeUnit.SECONDS);
-            
+
             //check that the session does not exist
            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
@@ -219,16 +220,16 @@ public class CreationTest
             HttpClient client = new HttpClient();
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping+"?action=createinv&check=true";
-            
+
             CountDownLatch synchronizer = new CountDownLatch(1);
             scopeListener.setExitSynchronizer(synchronizer);
-            
+
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             
             synchronizer.await(5, TimeUnit.SECONDS);
-            
+
             //check that the session does not exist
            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
@@ -284,7 +285,7 @@ public class CreationTest
             scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url+"?action=forward");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-            
+
             //wait for request to have exited server completely
             synchronizer.await(5, TimeUnit.SECONDS);
             
@@ -347,7 +348,7 @@ public class CreationTest
             
             //check that the session does not exist 
             assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertFalse(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));      
+            assertFalse(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {

@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -137,6 +138,8 @@ public class InetAccessHandler extends HandlerWrapper
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent, _set.getIncluded(), _set.getExcluded());
+        dumpObjects(out, indent,
+            DumpableCollection.from("included",_set.getIncluded()),
+            DumpableCollection.from("excluded",_set.getExcluded()));
     }
 }

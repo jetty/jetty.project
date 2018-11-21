@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.common.io.http;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -30,8 +30,8 @@ import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class HttpResponseHeaderParserTest
 {
@@ -100,10 +100,10 @@ public class HttpResponseHeaderParserTest
         HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
         assertThat("Parser.parse",parser.parse(buf),notNullValue());
 
-        Assert.assertThat("Response.statusCode",capture.getStatusCode(),is(200));
-        Assert.assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
+        assertThat("Response.statusCode",capture.getStatusCode(),is(200));
+        assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
 
-        Assert.assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
+        assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
     }
 
     @Test
@@ -150,18 +150,18 @@ public class HttpResponseHeaderParserTest
         assertThat("Parser.parse",parser.parse(buf),notNullValue());
 
         // Parse small 1
-        Assert.assertThat("Small 1",parser.parse(small1),nullValue());
+        assertThat("Small 1",parser.parse(small1),nullValue());
 
         // Parse small 2
-        Assert.assertThat("Small 2",parser.parse(small2),nullValue());
+        assertThat("Small 2",parser.parse(small2),nullValue());
 
         // Parse small 3
-        Assert.assertThat("Small 3",parser.parse(small3),notNullValue());
+        assertThat("Small 3",parser.parse(small3),notNullValue());
 
-        Assert.assertThat("Response.statusCode",capture.getStatusCode(),is(200));
-        Assert.assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
+        assertThat("Response.statusCode",capture.getStatusCode(),is(200));
+        assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
 
-        Assert.assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
+        assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
     }
 
     @Test

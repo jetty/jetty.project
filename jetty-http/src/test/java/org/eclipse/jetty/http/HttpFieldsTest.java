@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -29,16 +38,7 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
 
 public class HttpFieldsTest
 {
@@ -116,13 +116,9 @@ public class HttpFieldsTest
 
         assertEquals("value0",header.getField(0).getValue());
         assertEquals("value1",header.getField(1).getValue());
-        try
-        {
+        assertThrows(NoSuchElementException.class, ()->{
             header.getField(2);
-            Assert.fail();
-        }
-        catch(NoSuchElementException e)
-        {}
+        });
     }
 
     @Test
@@ -177,9 +173,9 @@ public class HttpFieldsTest
         BufferUtil.flipToFlush(buffer,0);
         String out = BufferUtil.toString(buffer).toLowerCase(Locale.ENGLISH);
 
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));
-        Assert.assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
+        assertThat(out,Matchers.containsString((HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
+        assertThat(out,Matchers.containsString((HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));
+        assertThat(out,Matchers.containsString((HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
     }
 
     @Test
@@ -396,33 +392,33 @@ public class HttpFieldsTest
         fields.add("name", "four, I V");
 
         List<String> list = fields.getCSV("name",false);
-        assertEquals("zero",HttpFields.valueParameters(list.get(0),null));
-        assertEquals("one",HttpFields.valueParameters(list.get(1),null));
-        assertEquals("1 + 1",HttpFields.valueParameters(list.get(2),null));
-        assertEquals("three",HttpFields.valueParameters(list.get(3),null));
-        assertEquals("four",HttpFields.valueParameters(list.get(4),null));
-        assertEquals("I V",HttpFields.valueParameters(list.get(5),null));
+        assertEquals(HttpFields.valueParameters(list.get(0), null), "zero");
+        assertEquals(HttpFields.valueParameters(list.get(1), null), "one");
+        assertEquals(HttpFields.valueParameters(list.get(2), null), "1 + 1");
+        assertEquals(HttpFields.valueParameters(list.get(3), null), "three");
+        assertEquals(HttpFields.valueParameters(list.get(4), null), "four");
+        assertEquals(HttpFields.valueParameters(list.get(5), null), "I V");
         
         fields.addCSV("name","six");
         list = fields.getCSV("name",false);
-        assertEquals("zero",HttpFields.valueParameters(list.get(0),null));
-        assertEquals("one",HttpFields.valueParameters(list.get(1),null));
-        assertEquals("1 + 1",HttpFields.valueParameters(list.get(2),null));
-        assertEquals("three",HttpFields.valueParameters(list.get(3),null));
-        assertEquals("four",HttpFields.valueParameters(list.get(4),null));
-        assertEquals("I V",HttpFields.valueParameters(list.get(5),null));
-        assertEquals("six",HttpFields.valueParameters(list.get(6),null));
+        assertEquals(HttpFields.valueParameters(list.get(0), null), "zero");
+        assertEquals(HttpFields.valueParameters(list.get(1), null), "one");
+        assertEquals(HttpFields.valueParameters(list.get(2), null), "1 + 1");
+        assertEquals(HttpFields.valueParameters(list.get(3), null), "three");
+        assertEquals(HttpFields.valueParameters(list.get(4), null), "four");
+        assertEquals(HttpFields.valueParameters(list.get(5), null), "I V");
+        assertEquals(HttpFields.valueParameters(list.get(6), null), "six");
         
         fields.addCSV("name","1 + 1","7","zero");
         list = fields.getCSV("name",false);
-        assertEquals("zero",HttpFields.valueParameters(list.get(0),null));
-        assertEquals("one",HttpFields.valueParameters(list.get(1),null));
-        assertEquals("1 + 1",HttpFields.valueParameters(list.get(2),null));
-        assertEquals("three",HttpFields.valueParameters(list.get(3),null));
-        assertEquals("four",HttpFields.valueParameters(list.get(4),null));
-        assertEquals("I V",HttpFields.valueParameters(list.get(5),null));
-        assertEquals("six",HttpFields.valueParameters(list.get(6),null));
-        assertEquals("7",HttpFields.valueParameters(list.get(7),null));   
+        assertEquals(HttpFields.valueParameters(list.get(0), null), "zero");
+        assertEquals(HttpFields.valueParameters(list.get(1), null), "one");
+        assertEquals(HttpFields.valueParameters(list.get(2), null), "1 + 1");
+        assertEquals(HttpFields.valueParameters(list.get(3), null), "three");
+        assertEquals(HttpFields.valueParameters(list.get(4), null), "four");
+        assertEquals(HttpFields.valueParameters(list.get(5), null), "I V");
+        assertEquals(HttpFields.valueParameters(list.get(6), null), "six");
+        assertEquals(HttpFields.valueParameters(list.get(7), null), "7");
     }
     
     @Test
@@ -440,12 +436,12 @@ public class HttpFieldsTest
 
         
         List<String> list = fields.getQualityCSV("name");
-        assertEquals("first",HttpFields.valueParameters(list.get(0),null));
-        assertEquals("zero",HttpFields.valueParameters(list.get(1),null));
-        assertEquals("one",HttpFields.valueParameters(list.get(2),null));
-        assertEquals("two",HttpFields.valueParameters(list.get(3),null));
-        assertEquals("three",HttpFields.valueParameters(list.get(4),null));
-        assertEquals("four",HttpFields.valueParameters(list.get(5),null));
+        assertEquals(HttpFields.valueParameters(list.get(0), null), "first");
+        assertEquals(HttpFields.valueParameters(list.get(1), null), "zero");
+        assertEquals(HttpFields.valueParameters(list.get(2), null), "one");
+        assertEquals(HttpFields.valueParameters(list.get(3), null), "two");
+        assertEquals(HttpFields.valueParameters(list.get(4), null), "three");
+        assertEquals(HttpFields.valueParameters(list.get(5), null), "four");
     }
     
     @Test
@@ -463,12 +459,12 @@ public class HttpFieldsTest
 
         
         List<String> list = fields.getQualityCSV(HttpHeader.ACCEPT);
-        assertEquals("first",HttpFields.valueParameters(list.get(0),null));
-        assertEquals("zero",HttpFields.valueParameters(list.get(1),null));
-        assertEquals("one",HttpFields.valueParameters(list.get(2),null));
-        assertEquals("two",HttpFields.valueParameters(list.get(3),null));
-        assertEquals("three",HttpFields.valueParameters(list.get(4),null));
-        assertEquals("four",HttpFields.valueParameters(list.get(5),null));
+        assertEquals(HttpFields.valueParameters(list.get(0), null), "first");
+        assertEquals(HttpFields.valueParameters(list.get(1), null), "zero");
+        assertEquals(HttpFields.valueParameters(list.get(2), null), "one");
+        assertEquals(HttpFields.valueParameters(list.get(3), null), "two");
+        assertEquals(HttpFields.valueParameters(list.get(4), null), "three");
+        assertEquals(HttpFields.valueParameters(list.get(5), null), "four");
     }
 
 
@@ -616,8 +612,8 @@ public class HttpFieldsTest
         {
             assertTrue(header.containsKey("n"+i));
             assertTrue(header.containsKey("N"+i));
-            assertFalse(""+i,header.contains("n"+i,"xyz"));
-            assertEquals(""+i,i>=4,header.contains("n"+i,"def"));
+            assertFalse(header.contains("n"+i,"xyz"),""+i);
+            assertEquals(i>=4,header.contains("n"+i, "def"), ""+i);
         }
 
 

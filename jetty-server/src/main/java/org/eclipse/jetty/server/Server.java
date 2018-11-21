@@ -18,6 +18,22 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -32,7 +48,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -40,7 +55,6 @@ import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -48,24 +62,6 @@ import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 /* ------------------------------------------------------------ */
 /** Jetty HTTP Servlet Server.
@@ -429,48 +425,23 @@ public class Server extends HandlerWrapper implements Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}",this);
 
-        MultiException mex=new MultiException();
+        MultiException mex = new MultiException();
 
-        // list if graceful futures
-        List<Future<Void>> futures = new ArrayList<>();
-
-        // First close the network connectors to stop accepting new connections
-        for (Connector connector : _connectors)
-            futures.add(connector.shutdown());
-
-        // Then tell the contexts that we are shutting down
-        Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
-        for (Handler graceful : gracefuls)
-            futures.add(((Graceful)graceful).shutdown());
-
-        // Shall we gracefully wait for zero connections?
-        long stopTimeout = getStopTimeout();
-        if (stopTimeout>0)
+        try
         {
-            long stop_by=System.currentTimeMillis()+stopTimeout;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Graceful shutdown {} by ",this,new Date(stop_by));
-
-            // Wait for shutdowns
-            for (Future<Void> future: futures)
-            {
-                try
-                {
-                    if (!future.isDone())
-                        future.get(Math.max(1L,stop_by-System.currentTimeMillis()),TimeUnit.MILLISECONDS);
-                }
-                catch (Exception e)
-                {
-                    mex.add(e);
-                }
-            }
+            // list if graceful futures
+            List<Future<Void>> futures = new ArrayList<>();
+            // First shutdown the network connectors to stop accepting new connections
+            for (Connector connector : _connectors)
+                futures.add(connector.shutdown());
+            // then shutdown all graceful handlers 
+            doShutdown(futures);
         }
-
-        // Cancel any shutdowns not done
-        for (Future<Void> future: futures)
-            if (!future.isDone())
-                future.cancel(true);
-
+        catch(Throwable e)
+        {
+            mex.add(e);
+        }
+        
         // Now stop the connectors (this will close existing connections)
         for (Connector connector : _connectors)
         {
@@ -656,6 +627,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void setAttribute(String name, Object attribute)
     {
+        // TODO this is a crude way to get attribute values managed by JMX.
         Object old=_attributes.getAttribute(name);
         updateBean(old,attribute);        
         _attributes.setAttribute(name, attribute);
@@ -718,7 +690,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpBeans(out,indent,Collections.singleton(new ClassLoaderDump(this.getClass().getClassLoader())));
+        dumpObjects(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()),_attributes);
     }
 
     /* ------------------------------------------------------------ */

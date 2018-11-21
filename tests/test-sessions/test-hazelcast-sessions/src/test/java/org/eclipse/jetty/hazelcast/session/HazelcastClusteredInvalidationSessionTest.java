@@ -20,24 +20,23 @@ package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public class HazelcastClusteredInvalidationSessionTest
     extends AbstractClusteredInvalidationSessionTest
 {
-
     HazelcastSessionDataStoreFactory factory;
 
     HazelcastTestHelper _testHelper;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _testHelper = new HazelcastTestHelper();
     }
 
-    @After
+    @AfterEach
     public void shutdown()
     {
         _testHelper.tearDown();

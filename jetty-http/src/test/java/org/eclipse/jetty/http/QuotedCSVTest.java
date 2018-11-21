@@ -19,11 +19,11 @@
 package org.eclipse.jetty.http;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class QuotedCSVTest
 {
@@ -32,7 +32,7 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "value 0.5;pqy=vwz;q=0.5",
                 "value 1.0",
                 "other;param"));
@@ -43,7 +43,7 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue(",aaaa,  , bbbb ,,cccc,");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "aaaa",
                 "bbbb",
                 "cccc"));
@@ -54,7 +54,7 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue("A;p=\"v\",B,\"C, D\"");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "A;p=\"v\"",
                 "B",
                 "\"C, D\""));
@@ -65,7 +65,7 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue("value;p=\"v");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "value;p=\"v"));
     }
     
@@ -74,7 +74,7 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("A;p=\"v\",B,\"C, D\"");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "A;p=v",
                 "B",
                 "C, D"));

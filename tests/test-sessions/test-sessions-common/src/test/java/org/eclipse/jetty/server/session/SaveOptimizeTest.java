@@ -19,6 +19,15 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -35,16 +44,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.Test;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
 
 
 
@@ -227,7 +227,7 @@ public class SaveOptimizeTest
                 String sessionId = TestServer.extractSessionId(sessionCookie);
 
                 SessionData data = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
-                assertNotNull(data);           
+                assertNotNull(data);
 
                 // Perform a request to do nothing with the same session cookie
                 int numSavesBefore = getNumSaves();
@@ -455,7 +455,7 @@ public class SaveOptimizeTest
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
                 String sessionId = TestServer.extractSessionId(sessionCookie);
-                
+
                 //ensure request fully finished processing
                 assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -467,7 +467,7 @@ public class SaveOptimizeTest
                 latch = new CountDownLatch(1);
                 scopeListener.setExitSynchronizer(latch);
                 client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=max&value=60").send();
-                
+
                 //ensure request fully finished processing
                 assertTrue(latch.await(5, TimeUnit.SECONDS));
 

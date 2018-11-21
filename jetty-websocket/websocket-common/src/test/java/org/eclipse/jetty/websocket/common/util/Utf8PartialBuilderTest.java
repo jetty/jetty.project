@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test partial UTF8 String sequence building.

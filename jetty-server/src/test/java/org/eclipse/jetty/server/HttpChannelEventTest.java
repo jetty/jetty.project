@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -34,9 +39,9 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.Test;
 
 public class HttpChannelEventTest
 {
@@ -52,7 +57,7 @@ public class HttpChannelEventTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         if (server != null)
@@ -71,7 +76,7 @@ public class HttpChannelEventTest
             {
                 ServletInputStream input = request.getInputStream();
                 int content = input.read();
-                Assert.assertEquals(data, content);
+                assertEquals(data, content);
                 applicationLatch.countDown();
             }
         });
@@ -95,11 +100,11 @@ public class HttpChannelEventTest
         ByteBuffer buffer = connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Listener event happens before the application.
-        Assert.assertTrue(listenerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(applicationLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(listenerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(applicationLatch.await(5, TimeUnit.SECONDS));
 
         HttpTester.Response response = HttpTester.parseResponse(buffer);
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -121,7 +126,7 @@ public class HttpChannelEventTest
             @Override
             public void onResponseContent(Request request, ByteBuffer content)
             {
-                Assert.assertTrue(content.hasRemaining());
+                assertTrue(content.hasRemaining());
                 latch.countDown();
             }
         });
@@ -130,10 +135,10 @@ public class HttpChannelEventTest
         request.setHeader("Host", "localhost");
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
-        Assert.assertArrayEquals(data, response.getContentBytes());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertArrayEquals(data, response.getContentBytes());
     }
 
     @Test
@@ -161,8 +166,8 @@ public class HttpChannelEventTest
         String request = HttpTester.newRequest().toString();
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -198,7 +203,7 @@ public class HttpChannelEventTest
         request.setHeader("Host", "localhost");
         HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -232,9 +237,9 @@ public class HttpChannelEventTest
         request.setHeader("Host", "localhost");
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertThat(elapsed.get(), Matchers.greaterThan(0L));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertThat(elapsed.get(), Matchers.greaterThan(0L));
     }
 
     private static class TestHandler extends AbstractHandler.ErrorDispatchHandler

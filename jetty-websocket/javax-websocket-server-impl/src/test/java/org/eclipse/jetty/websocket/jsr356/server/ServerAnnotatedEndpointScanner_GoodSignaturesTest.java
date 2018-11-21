@@ -18,15 +18,17 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.Reader;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.websocket.CloseReason;
 import javax.websocket.PongMessage;
@@ -71,45 +73,18 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortObjectT
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test {@link AnnotatedEndpointScanner} against various simple, 1 method {@link ServerEndpoint} annotated classes with valid signatures.
  */
-@RunWith(Parameterized.class)
 public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
 {
-    public static class Case
+    public static Stream<Arguments> scenarios() throws Exception
     {
-        public static void add(List<Case[]> data, Class<?> pojo, Field metadataField, Class<?>... expectedParams)
-        {
-            data.add(new Case[]
-            { new Case(pojo,metadataField,expectedParams) });
-        }
 
-        // The websocket pojo to test against
-        Class<?> pojo;
-        // The JsrAnnotatedMetadata field that should be populated
-        Field metadataField;
-        // The expected parameters for the Callable found by the scanner
-        Class<?> expectedParameters[];
-
-        public Case(Class<?> pojo, Field metadataField, Class<?>... expectedParams)
-        {
-            this.pojo = pojo;
-            this.metadataField = metadataField;
-            this.expectedParameters = expectedParams;
-        }
-    }
-
-    @Parameters
-    public static Collection<Case[]> data() throws Exception
-    {
-        List<Case[]> data = new ArrayList<>();
         Field fOpen = findFieldRef(AnnotatedServerEndpointMetadata.class,"onOpen");
         Field fClose = findFieldRef(AnnotatedServerEndpointMetadata.class,"onClose");
         Field fError = findFieldRef(AnnotatedServerEndpointMetadata.class,"onError");
@@ -120,53 +95,53 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         Field fBinaryStream = findFieldRef(AnnotatedServerEndpointMetadata.class,"onBinaryStream");
         Field fPong = findFieldRef(AnnotatedServerEndpointMetadata.class,"onPong");
 
-        // @formatter:off
+        List<Scenario> data = new ArrayList<>();
         // -- Open Events
-        Case.add(data, BasicOpenSocket.class, fOpen);
-        Case.add(data, BasicOpenSessionSocket.class, fOpen, Session.class);
+        data.add(new Scenario(BasicOpenSocket.class, fOpen));
+        data.add(new Scenario(BasicOpenSessionSocket.class, fOpen, Session.class));
         // -- Close Events
-        Case.add(data, BasicCloseSocket.class, fClose);
-        Case.add(data, BasicCloseReasonSocket.class, fClose, CloseReason.class);
-        Case.add(data, BasicCloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class);
-        Case.add(data, BasicCloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class);
+        data.add(new Scenario(BasicCloseSocket.class, fClose));
+        data.add(new Scenario(BasicCloseReasonSocket.class, fClose, CloseReason.class));
+        data.add(new Scenario(BasicCloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class));
+        data.add(new Scenario(BasicCloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class));
         // -- Error Events
-        Case.add(data, BasicErrorSocket.class, fError);
-        Case.add(data, BasicErrorSessionSocket.class, fError, Session.class);
-        Case.add(data, BasicErrorSessionThrowableSocket.class, fError, Session.class, Throwable.class);
-        Case.add(data, BasicErrorThrowableSocket.class, fError, Throwable.class);
-        Case.add(data, BasicErrorThrowableSessionSocket.class, fError, Throwable.class, Session.class);
+        data.add(new Scenario(BasicErrorSocket.class, fError));
+        data.add(new Scenario(BasicErrorSessionSocket.class, fError, Session.class));
+        data.add(new Scenario(BasicErrorSessionThrowableSocket.class, fError, Session.class, Throwable.class));
+        data.add(new Scenario(BasicErrorThrowableSocket.class, fError, Throwable.class));
+        data.add(new Scenario(BasicErrorThrowableSessionSocket.class, fError, Throwable.class, Session.class));
         // -- Text Events
-        Case.add(data, BasicTextMessageStringSocket.class, fText, String.class);
-        Case.add(data, StatelessTextMessageStringSocket.class, fText, Session.class, String.class);
+        data.add(new Scenario(BasicTextMessageStringSocket.class, fText, String.class));
+        data.add(new Scenario(StatelessTextMessageStringSocket.class, fText, Session.class, String.class));
         // -- Primitives
-        Case.add(data, BooleanTextSocket.class, fText, Boolean.TYPE);
-        Case.add(data, BooleanObjectTextSocket.class, fText, Boolean.class);
-        Case.add(data, ByteTextSocket.class, fText, Byte.TYPE);
-        Case.add(data, ByteObjectTextSocket.class, fText, Byte.class);
-        Case.add(data, CharTextSocket.class, fText, Character.TYPE);
-        Case.add(data, CharacterObjectTextSocket.class, fText, Character.class);
-        Case.add(data, DoubleTextSocket.class, fText, Double.TYPE);
-        Case.add(data, DoubleObjectTextSocket.class, fText, Double.class);
-        Case.add(data, FloatTextSocket.class, fText, Float.TYPE);
-        Case.add(data, FloatObjectTextSocket.class, fText, Float.class);
-        Case.add(data, IntTextSocket.class, fText, Integer.TYPE);
-        Case.add(data, IntegerObjectTextSocket.class, fText, Integer.class);
-        Case.add(data, ShortTextSocket.class, fText, Short.TYPE);
-        Case.add(data, ShortObjectTextSocket.class, fText, Short.class);
+        data.add(new Scenario(BooleanTextSocket.class, fText, Boolean.TYPE));
+        data.add(new Scenario(BooleanObjectTextSocket.class, fText, Boolean.class));
+        data.add(new Scenario(ByteTextSocket.class, fText, Byte.TYPE));
+        data.add(new Scenario(ByteObjectTextSocket.class, fText, Byte.class));
+        data.add(new Scenario(CharTextSocket.class, fText, Character.TYPE));
+        data.add(new Scenario(CharacterObjectTextSocket.class, fText, Character.class));
+        data.add(new Scenario(DoubleTextSocket.class, fText, Double.TYPE));
+        data.add(new Scenario(DoubleObjectTextSocket.class, fText, Double.class));
+        data.add(new Scenario(FloatTextSocket.class, fText, Float.TYPE));
+        data.add(new Scenario(FloatObjectTextSocket.class, fText, Float.class));
+        data.add(new Scenario(IntTextSocket.class, fText, Integer.TYPE));
+        data.add(new Scenario(IntegerObjectTextSocket.class, fText, Integer.class));
+        data.add(new Scenario(ShortTextSocket.class, fText, Short.TYPE));
+        data.add(new Scenario(ShortObjectTextSocket.class, fText, Short.class));
         // -- Beans
-        Case.add(data, DateTextSocket.class, fText, Date.class);
+        data.add(new Scenario(DateTextSocket.class, fText, Date.class));
         // -- Reader Events
-        Case.add(data, ReaderParamSocket.class, fTextStream, Reader.class, String.class);
-        Case.add(data, StringReturnReaderParamSocket.class, fTextStream, Reader.class, String.class);
+        data.add(new Scenario(ReaderParamSocket.class, fTextStream, Reader.class, String.class));
+        data.add(new Scenario(StringReturnReaderParamSocket.class, fTextStream, Reader.class, String.class));
         // -- Binary Events
-        Case.add(data, BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class);
+        data.add(new Scenario(BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class));
         // -- Pong Events
-        Case.add(data, BasicPongMessageSocket.class, fPong, PongMessage.class);
+        data.add(new Scenario(BasicPongMessageSocket.class, fPong, PongMessage.class));
         // @formatter:on
 
         // TODO: validate return types
 
-        return data;
+        return data.stream().map(Arguments::of);
     }
 
     private static Field findFieldRef(Class<?> clazz, String fldName) throws Exception
@@ -174,32 +149,49 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         return clazz.getField(fldName);
     }
 
-    private Case testcase;
-
-    public ServerAnnotatedEndpointScanner_GoodSignaturesTest(Case testcase)
-    {
-        this.testcase = testcase;
-    }
-
-    @Test
-    public void testScan_Basic() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testScan_Basic(Scenario scenario) throws Exception
     {
         WebSocketContainerScope container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,testcase.pojo,null);
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,scenario.pojo,null);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
-        Assert.assertThat("Metadata",metadata,notNullValue());
+        assertThat("Metadata",metadata,notNullValue());
 
-        JsrCallable method = (JsrCallable)testcase.metadataField.get(metadata);
-        Assert.assertThat(testcase.metadataField.toString(),method,notNullValue());
-        int len = testcase.expectedParameters.length;
+        JsrCallable method = (JsrCallable)scenario.metadataField.get(metadata);
+        assertThat(scenario.metadataField.toString(),method,notNullValue());
+        int len = scenario.expectedParameters.length;
         for (int i = 0; i < len; i++)
         {
-            Class<?> expectedParam = testcase.expectedParameters[i];
+            Class<?> expectedParam = scenario.expectedParameters[i];
             Class<?> actualParam = method.getParamTypes()[i];
 
-            Assert.assertTrue("Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]",actualParam.equals(expectedParam));
+            assertTrue(actualParam.equals(expectedParam),"Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]");
+        }
+    }
+
+    public static class Scenario
+    {
+        // The websocket pojo to test against
+        Class<?> pojo;
+        // The JsrAnnotatedMetadata field that should be populated
+        Field metadataField;
+        // The expected parameters for the Callable found by the scanner
+        Class<?> expectedParameters[];
+
+        public Scenario(Class<?> pojo, Field metadataField, Class<?>... expectedParams)
+        {
+            this.pojo = pojo;
+            this.metadataField = metadataField;
+            this.expectedParameters = expectedParams;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.pojo.getSimpleName();
         }
     }
 }

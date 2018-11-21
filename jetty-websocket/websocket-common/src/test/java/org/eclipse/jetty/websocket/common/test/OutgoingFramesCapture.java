@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
@@ -30,7 +31,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.junit.Assert;
+
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
@@ -38,22 +39,22 @@ public class OutgoingFramesCapture implements OutgoingFrames
 
     public void assertFrameCount(int expectedCount)
     {
-        Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
+        assertThat("Captured frame count",frames.size(),is(expectedCount));
     }
 
     public void assertHasFrame(byte op)
     {
-        Assert.assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
+        assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
     }
 
     public void assertHasFrame(byte op, int expectedCount)
     {
-        Assert.assertThat(OpCode.name(op),getFrameCount(op),is(expectedCount));
+        assertThat(OpCode.name(op),getFrameCount(op),is(expectedCount));
     }
 
     public void assertHasNoFrames()
     {
-        Assert.assertThat("Has no frames",frames.size(),is(0));
+        assertThat("Has no frames",frames.size(),is(0));
     }
 
     public void dump()

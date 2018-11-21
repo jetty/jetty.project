@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -14,7 +14,7 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <exam.version>4.11.0</exam.version>
+    <exam.version>4.12.0</exam.version>
     <url.version>2.5.2</url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
     <skipTests>true</skipTests>
@@ -45,12 +45,6 @@
       <artifactId>pax-exam-junit4</artifactId>
       <version>${exam.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
@@ -84,13 +78,13 @@
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
-      <version>3.12.50</version>
+      <version>3.13.100</version>
       <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
-        <version>3.6.0</version>
+        <version>3.7.100</version>
         <scope>test</scope>
     </dependency>
 
@@ -154,7 +148,23 @@
     <dependency>
      <groupId>org.apache.aries.spifly</groupId>
       <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
-      <version>1.0.10</version>
+      <version>1.1</version>
+     <scope>test</scope>
+     <exclusions>
+         <exclusion>
+             <groupId>org.apache.felix</groupId>
+             <artifactId>org.apache.felix.framework</artifactId>
+         </exclusion>
+         <exclusion>
+             <groupId>org.ow2.asm</groupId>
+             <artifactId>asm-util</artifactId>
+         </exclusion>
+     </exclusions>
+    </dependency>
+    <dependency>
+     <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
      <scope>test</scope>
     </dependency>
     <dependency>
@@ -402,13 +412,11 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -435,6 +443,14 @@
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             </systemPropertyVariables>
           </configuration>
+          <!-- paxexam still using junit 4 so we have to force the provider here -->
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.surefire</groupId>
+              <artifactId>surefire-junit47</artifactId>
+              <version>${maven.surefire.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
         <plugin>

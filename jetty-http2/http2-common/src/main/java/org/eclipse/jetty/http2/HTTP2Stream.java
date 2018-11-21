@@ -42,7 +42,6 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -139,6 +138,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     {
         if (writing.compareAndSet(null, callback))
             return true;
+        close();
         callback.failed(new WritePendingException());
         return false;
     }
@@ -176,7 +176,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean isRemotelyClosed()
     {
-        return closeState.get() == CloseState.REMOTELY_CLOSED;
+        CloseState state = closeState.get();
+        return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING;
     }
 
     public boolean isLocallyClosed()
@@ -275,8 +276,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
         {
@@ -286,6 +285,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
+
+        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+            session.removeStream(this);
+
         callback.succeeded();
     }
 
@@ -507,6 +510,13 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+        notifyClosed(this);
+    }
+
     private void updateStreamCount(int deltaStream, int deltaClosing)
     {
         ((HTTP2Session)session).updateStreamCount(isLocal(), deltaStream, deltaClosing);
@@ -612,10 +622,25 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
+    private void notifyClosed(Stream stream)
+    {
+        Listener listener = this.listener;
+        if (listener == null)
+            return;
+        try
+        {
+            listener.onClosed(stream);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
@@ -627,13 +652,14 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b/%b,%s,age=%d,attachment=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getId(),
                 sendWindow,
                 recvWindow,
-                isReset(),
+                localReset,
+                remoteReset,
                 closeState,
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStamp),
                 attachment);

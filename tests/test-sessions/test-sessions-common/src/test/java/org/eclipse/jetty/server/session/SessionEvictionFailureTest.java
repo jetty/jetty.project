@@ -23,9 +23,9 @@ package org.eclipse.jetty.server.session;
 
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.util.Set;
@@ -42,7 +42,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * SessionEvictionFailureTest
@@ -67,45 +67,33 @@ public class SessionEvictionFailureTest
             _nextStoreResult = results;
         }
         
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-         */
         @Override
         public boolean isPassivating()
         {
             return false;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-         */
+
         @Override
         public boolean exists(String id) throws Exception
         {
             return true;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataMap#load(java.lang.String)
-         */
+
         @Override
-        public SessionData load(String id) throws Exception
+        public SessionData doLoad(String id) throws Exception
         {
             return null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionDataMap#delete(java.lang.String)
-         */
         @Override
         public boolean delete(String id) throws Exception
         {
             return false;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
-         */
+
         @Override
         public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
         {
@@ -115,9 +103,6 @@ public class SessionEvictionFailureTest
             }
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doGetExpired(java.util.Set)
-         */
         @Override
         public Set<String> doGetExpired(Set<String> candidates)
         {

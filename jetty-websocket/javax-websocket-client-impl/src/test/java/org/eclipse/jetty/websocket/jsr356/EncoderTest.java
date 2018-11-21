@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -50,12 +53,11 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class EncoderTest
 {
@@ -143,14 +145,14 @@ public class EncoderTest
     private static BlockheadServer server;
     private WebSocketContainer client;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -158,10 +160,10 @@ public class EncoderTest
 
     private void assertReceivedQuotes(String result, Quotes quotes)
     {
-        Assert.assertThat("Quote Author",result,containsString("Author: " + quotes.getAuthor()));
+        assertThat("Quote Author",result,containsString("Author: " + quotes.getAuthor()));
         for (String quote : quotes.quotes)
         {
-            Assert.assertThat("Quote",result,containsString("Quote: " + quote));
+            assertThat("Quote",result,containsString("Quote: " + quote));
         }
     }
 
@@ -191,20 +193,20 @@ public class EncoderTest
         return quotes;
     }
 
-    @Before
+    @BeforeEach
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
         client.setDefaultMaxSessionIdleTimeout(10000);
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         ((LifeCycle)client).stop();
     }
 
-    @Test(timeout = 10000)
+    @Test
     public void testSingleQuotes() throws Exception
     {
         // Hook into server connection creation
@@ -222,18 +224,20 @@ public class EncoderTest
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            // Setup echo of frames on server side
-            serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
+            assertTimeoutPreemptively(ofSeconds(10),()-> {
+                // Setup echo of frames on server side
+                serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
 
-            Quotes ben = getQuotes("quotes-ben.txt");
-            quoter.write(ben);
+                Quotes ben = getQuotes("quotes-ben.txt");
+                quoter.write(ben);
 
-            String result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertReceivedQuotes(result,ben);
+                String result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                assertReceivedQuotes(result, ben);
+            });
         }
     }
 
-    @Test(timeout = 10000)
+    @Test
     public void testTwoQuotes() throws Exception
     {
         // Hook into server connection creation
@@ -250,18 +254,20 @@ public class EncoderTest
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            // Setup echo of frames on server side
-            serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
+            assertTimeoutPreemptively(ofSeconds(10),()-> {
+                // Setup echo of frames on server side
+                serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
 
-            Quotes ben = getQuotes("quotes-ben.txt");
-            Quotes twain = getQuotes("quotes-twain.txt");
-            quoter.write(ben);
-            quoter.write(twain);
+                Quotes ben = getQuotes("quotes-ben.txt");
+                Quotes twain = getQuotes("quotes-twain.txt");
+                quoter.write(ben);
+                quoter.write(twain);
 
-            String result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertReceivedQuotes(result,ben);
-            result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertReceivedQuotes(result,twain);
+                String result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                assertReceivedQuotes(result, ben);
+                result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                assertReceivedQuotes(result, twain);
+            });
         }
     }
 

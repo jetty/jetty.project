@@ -3,6 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>org.eclipse.jetty.its</groupId>
+    <artifactId>it-parent-pom</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
   <groupId>org.eclipse.jetty.its.jetty-deploy-war-mojo-it</groupId>
   <artifactId>jetty-simple-project</artifactId>
   <version>0.0.1-SNAPSHOT</version>
@@ -11,7 +17,6 @@
   <name>Jetty :: Simple deploy war mojo test</name>
 
   <properties>
-    <jetty.version>@project.version@</jetty.version>
     <jetty.port.file>${project.build.directory}/jetty-deploy-war-port.txt</jetty.port.file>
   </properties>
 
@@ -19,15 +24,13 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-maven-plugin</artifactId>
-      <version>@project.version@</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -36,20 +39,11 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <target>1.8</target>
-          <source>1.8</source>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>@surefireVersion@</version>
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
             <contentCheck>Bean Validation Webapp example</contentCheck>
           </systemPropertyVariables>
           <dependenciesToScan>
@@ -77,7 +71,6 @@
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
-        <version>@project.version@</version>
         <executions>
           <execution>
             <id>start-jetty</id>
@@ -107,7 +100,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.0.2</version>
         <executions>
           <execution>
             <id>load-war</id>
@@ -147,7 +139,6 @@
             <plugin>
               <groupId>org.eclipse.jetty</groupId>
               <artifactId>jetty-maven-plugin</artifactId>
-              <version>@project.version@</version>
               <dependencies>
                 <dependency>
                   <groupId>javax.xml.bind</groupId>

@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -338,18 +340,31 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         }
     }
 
-    protected boolean anyToFailure(Throwable failure)
+    private void anyToFailure(Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return false;
+            return;
 
         // Mark atomically the request as completed, with respect
         // to concurrency between request success and request failure.
         if (exchange.requestComplete(failure))
-            return abort(exchange, failure);
+            executeAbort(exchange, failure);
+    }
 
-        return false;
+    private void executeAbort(HttpExchange exchange, Throwable failure)
+    {
+        try
+        {
+            Executor executor = getHttpChannel().getHttpDestination().getHttpClient().getExecutor();
+            executor.execute(() -> abort(exchange, failure));
+        }
+        catch (RejectedExecutionException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            abort(exchange, failure);
+        }
     }
 
     private void terminateRequest(HttpExchange exchange)
@@ -564,14 +579,14 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             // respect to concurrency between request and response.
             Result result = exchange.terminateRequest();
             terminateRequest(exchange, failure, result);
+            return true;
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Concurrent failure: request termination skipped, performed by helpers");
+            return false;
         }
-
-        return true;
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)

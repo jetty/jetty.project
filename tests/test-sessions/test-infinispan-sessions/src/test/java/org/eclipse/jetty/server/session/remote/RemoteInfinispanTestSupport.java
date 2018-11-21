@@ -19,12 +19,23 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.Properties;
 
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
+import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.SerializationContext;
+
+
 
 /**
  * RemoteInfinispanTestSupport
@@ -34,7 +45,7 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 public class RemoteInfinispanTestSupport
 {
     public static final String DEFAULT_CACHE_NAME =  "session_test_cache";
-    public  RemoteCache _cache;
+    public  RemoteCache<String,Object> _cache;
     private String _name;
     public static  RemoteCacheManager _manager;
     
@@ -42,11 +53,24 @@ public class RemoteInfinispanTestSupport
     {
         try
         {
-            _manager = new RemoteCacheManager();
+            String host = System.getProperty("hotrod.host","127.0.0.1");
+            Properties properties = new Properties();
+
+            ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
+            clientBuilder.withProperties(properties).addServer().host(host).marshaller(new ProtoStreamMarshaller());
+
+            _manager = new RemoteCacheManager(clientBuilder.build());
+
+            FileDescriptorSource fds = new FileDescriptorSource();
+            fds.addProtoFiles("/session.proto");
+
+            SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_manager);
+            serCtx.registerProtoFiles(fds);
+            serCtx.registerMarshaller(new SessionDataMarshaller());
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            fail(e);
         }
     }
     
@@ -65,7 +89,7 @@ public class RemoteInfinispanTestSupport
     
  
   
-    public RemoteCache getCache ()
+    public RemoteCache<String,Object> getCache ()
     {
         return _cache;
     }
@@ -82,8 +106,7 @@ public class RemoteInfinispanTestSupport
     }
     
     
-    
-    @SuppressWarnings("unchecked")
+ 
     public void createSession (SessionData data)
     throws Exception
     {
@@ -111,7 +134,8 @@ public class RemoteInfinispanTestSupport
         if (obj == null)
             return false;
         
-        SessionData saved = (SessionData)obj;
+        InfinispanSessionData saved = (InfinispanSessionData)obj;
+        saved.deserializeAttributes();
         
         assertEquals(data.getId(), saved.getId());
         assertEquals(data.getContextPath(), saved.getContextPath());

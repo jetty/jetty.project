@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-distribution</artifactId>
@@ -29,7 +29,7 @@
         <executions>
           <execution>
             <id>copy-base-assembly-tree</id>
-            <phase>process-resources</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
@@ -48,67 +48,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>populate distribution from home</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <copy todir="${assembly-directory}">
-                  <fileset dir="${home-directory}/jetty-home-${project.version}/" />
-                </copy>
-              </tasks>
-            </configuration>
-          </execution>
-          <execution>
-            <id>set jetty.sh</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
-              </tasks>
-            </configuration>
-          </execution>
-          <execution>
-            <id>removeKeystore</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <delete file="${assembly-directory}/etc/keystore" />
-              </tasks>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-remote-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>process</goal>
-            </goals>
-            <configuration>
-              <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.2</resourceBundle>
-              </resourceBundles>
-              <outputDirectory>${assembly-directory}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <!--
@@ -117,7 +56,7 @@
           -->
           <execution>
             <id>unpack-jetty-home</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -135,10 +74,9 @@
               <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
-
           <execution>
             <id>copy</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -210,7 +148,7 @@
 
           <execution>
             <id>unpack-test-webapp-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -218,7 +156,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                 <artifactId>test-jetty-webapp</artifactId>
+                  <artifactId>test-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
@@ -232,7 +170,7 @@
 
           <execution>
             <id>unpack-test-jaas-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -254,7 +192,7 @@
 
           <execution>
             <id>unpack-test-jndi-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -276,7 +214,7 @@
 
           <execution>
             <id>unpack-test-spec-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -297,7 +235,7 @@
           </execution>
           <execution>
             <id>unpack-documentation</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -318,6 +256,68 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>populate distribution from home</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <copy todir="${assembly-directory}">
+                  <fileset dir="${home-directory}/jetty-home-${project.version}/" />
+                </copy>
+              </tasks>
+            </configuration>
+          </execution>
+          <execution>
+            <id>set jetty.sh</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
+              </tasks>
+            </configuration>
+          </execution>
+          <execution>
+            <id>removeKeystore</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <delete file="${assembly-directory}/etc/keystore" />
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <configuration>
+              <resourceBundles>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.2</resourceBundle>
+              </resourceBundles>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
@@ -326,7 +326,7 @@
           -->
           <execution>
             <id>setup home</id>
-            <phase>process-classes</phase>
+            <phase>package</phase>
             <configuration>
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
               <arguments>
@@ -344,7 +344,7 @@
           -->
           <execution>
             <id>setup demo-base-startd</id>
-            <phase>process-classes</phase>
+            <phase>package</phase>
             <configuration>
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
               <arguments>

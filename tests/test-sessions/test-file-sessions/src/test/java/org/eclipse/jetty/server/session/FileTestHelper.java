@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -31,9 +31,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
@@ -161,9 +158,8 @@ public class FileTestHelper
     {
         String filename = ""+expiry+"_"+contextPath+"_"+vhost+"_"+id;
         File file = new File(_tmpDir, filename);
-        try(FileOutputStream fos = new FileOutputStream(file,false))
+        try (FileOutputStream fos = new FileOutputStream(file,false); DataOutputStream out = new DataOutputStream(fos))
         {
-            DataOutputStream out = new DataOutputStream(fos);
             out.writeUTF(id);
             out.writeUTF(contextPath);
             out.writeUTF(vhost);
@@ -177,14 +173,9 @@ public class FileTestHelper
 
             if (attributes != null)
             {
-                List<String> keys = new ArrayList<String>(attributes.keySet());
-                out.writeInt(keys.size());
+                SessionData tmp = new SessionData(id,contextPath, vhost, created, accessed, lastAccessed, maxIdle);
                 ObjectOutputStream oos = new ObjectOutputStream(out);
-                for (String name:keys)
-                {
-                    oos.writeUTF(name);
-                    oos.writeObject(attributes.get(name));
-                }
+                SessionData.serializeAttributes(tmp, oos);
             }
         }
     }
@@ -197,10 +188,8 @@ public class FileTestHelper
         File file = new File(_tmpDir, filename);
         assertTrue(file.exists());
         
-        try (FileInputStream in = new FileInputStream(file))
+        try (FileInputStream in = new FileInputStream(file); DataInputStream di = new DataInputStream(in))
         {
-            DataInputStream di = new DataInputStream(in);
-
             String id = di.readUTF();
             String contextPath = di.readUTF();
             String vhost = di.readUTF();
@@ -223,28 +212,18 @@ public class FileTestHelper
             assertEquals(data.getExpiry(), expiry);
             assertEquals(data.getMaxInactiveMs(), maxIdle);
 
-            Map<String,Object> attributes = new HashMap<>();
-            
-            int size = di.readInt();
-            if (size > 0)
-            {
-               ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(di);
-                for (int i=0; i<size;i++)
-                {
-                    String key = ois.readUTF();
-                    Object value = ois.readObject();
-                    attributes.put(key,value);
-                }
-            }
+            SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
+            ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(di);
+            SessionData.deserializeAttributes(tmp, ois);
             
             //same number of attributes
-            assertEquals(data.getAllAttributes().size(), attributes.size());
+            assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
             //same keys
-            assertTrue(data.getKeys().equals(attributes.keySet()));
+            assertTrue(data.getKeys().equals(tmp.getAllAttributes().keySet()));
             //same values
             for (String name:data.getKeys())
             {
-                assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+                assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
             }
         }
         

@@ -19,7 +19,7 @@
 package org.eclipse.jetty.tests.ws;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
@@ -37,7 +37,7 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SessionInfoIT
 {

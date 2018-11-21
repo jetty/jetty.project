@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -56,9 +59,9 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.Test;
 
 public class RawHTTP2ProxyTest
 {
@@ -92,7 +95,7 @@ public class RawHTTP2ProxyTest
         return client;
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         for (int i = clients.size() - 1; i >= 0; i--)
@@ -223,7 +226,7 @@ public class RawHTTP2ProxyTest
             {
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("CLIENT received {}", frame);
-                Assert.assertEquals(buffer1.slice(), frame.getData());
+                assertEquals(buffer1.slice(), frame.getData());
                 callback.succeeded();
                 latch1.countDown();
             }
@@ -259,8 +262,8 @@ public class RawHTTP2ProxyTest
         Stream stream2 = streamPromise2.get(5, TimeUnit.SECONDS);
         stream2.data(new DataFrame(stream2.getId(), buffer1.slice(), true), Callback.NOOP);
 
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        assertTrue(latch2.await(5, TimeUnit.SECONDS));
     }
 
     private static class ClientToProxySessionListener extends ServerSessionListener.Adapter

@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -127,12 +128,16 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         if (_dumpContext)
         {
             if (_out==null)
+            {
                 handler.dumpStdErr();
+                System.err.println(Dumpable.KEY);
+            }
             else
             {
                 try
                 {
                     handler.dump(_out);
+                    _out.println(Dumpable.KEY);
                 }
                 catch(Exception e)
                 {

@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+/**
+ * @deprecated use {@link org.eclipse.jetty.toolchain.test.StackUtils} instead
+ */
 public final class StackUtil
 {
     public static String toString(Throwable t)

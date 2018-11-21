@@ -19,6 +19,11 @@
 package org.eclipse.jetty.util;
 
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -26,17 +31,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BufferUtilTest
 {
@@ -60,7 +58,7 @@ public class BufferUtilTest
         };
 
         for (int i=0;i<buf.length;i++)
-            assertEquals("t"+i, val[i], BufferUtil.toInt(buf[i]));
+            assertEquals(val[i], BufferUtil.toInt(buf[i]), "t"+i);
     }
 
     @Test
@@ -83,7 +81,7 @@ public class BufferUtilTest
             BufferUtil.clearToFill(buffer);
             BufferUtil.putDecInt(buffer,val[i]);
             BufferUtil.flipToFlush(buffer,0);
-            assertEquals("t"+i,str[i],BufferUtil.toString(buffer));
+            assertEquals(str[i], BufferUtil.toString(buffer), "t"+i);
         }
     }
 
@@ -107,7 +105,7 @@ public class BufferUtilTest
             BufferUtil.clearToFill(buffer);
             BufferUtil.putDecLong(buffer,val[i]);
             BufferUtil.flipToFlush(buffer,0);
-            assertEquals("t"+i,str[i],BufferUtil.toString(buffer));
+            assertEquals(str[i], BufferUtil.toString(buffer), "t"+i);
         }
     }
 
@@ -131,7 +129,7 @@ public class BufferUtilTest
             BufferUtil.clearToFill(buffer);
             BufferUtil.putHexInt(buffer,val[i]);
             BufferUtil.flipToFlush(buffer,0);
-            assertEquals("t"+i,str[i],BufferUtil.toString(buffer));
+            assertEquals(str[i], BufferUtil.toString(buffer), "t"+i);
         }
     }
 
@@ -167,13 +165,9 @@ public class BufferUtilTest
         BufferUtil.append(to,from.array(),3,2);
         assertEquals("12345",BufferUtil.toString(to));
 
-        try
-        {
+        assertThrows(BufferOverflowException.class, () -> {
             BufferUtil.append(to,from.array(),0,5);
-            Assert.fail();
-        }
-        catch(BufferOverflowException e)
-        {}
+        });
     }
 
 
@@ -207,11 +201,11 @@ public class BufferUtilTest
         while (buf.remaining() > 0)
         {
             byte b = buf.get();
-            Assert.assertEquals(b,0x44);
+            assertEquals(b,0x44);
             count++;
         }
 
-        Assert.assertEquals("Count of bytes",arr.length,count);
+        assertEquals(arr.length, count, "Count of bytes");
     }
 
     @Test
@@ -228,17 +222,17 @@ public class BufferUtilTest
         while (buf.remaining() > 0)
         {
             byte b = buf.get();
-            Assert.assertEquals(b,0x77);
+            assertEquals(b,0x77);
             count++;
         }
 
-        Assert.assertEquals("Count of bytes",length,count);
+        assertEquals(length, count, "Count of bytes");
     }
 
     private static final Logger LOG = Log.getLogger(BufferUtilTest.class);
 
     @Test
-    @Ignore("Very simple microbenchmark to compare different writeTo implementations. Only for development thus " +
+    @Disabled("Very simple microbenchmark to compare different writeTo implementations. Only for development thus " +
             "ignored.")
     public void testWriteToMicrobenchmark() throws IOException
     {

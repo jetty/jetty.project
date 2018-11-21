@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,27 +32,25 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(WorkDirExtension.class)
 public class DefaultServletRangesTest
 {
     public static final String DATA = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ!@#$%^&*()_+/.,[]";
-    @Rule
-    public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
 
     private Server server;
     private LocalConnector connector;
     private ServletContextHandler context;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         server = new Server();
@@ -82,7 +80,7 @@ public class DefaultServletRangesTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         server.stop();
@@ -163,7 +161,6 @@ public class DefaultServletRangesTest
 
     }
 
-
     @Test
     public void testMultipleSameRangeRequests() throws Exception
     {
@@ -186,11 +183,11 @@ public class DefaultServletRangesTest
         String boundary = body.substring(0, body.indexOf("\r\n"));
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
-        
+
         assertResponseContains("Content-Range: bytes 10-60/80", response);
         assertResponseContains("Content-Range: bytes 0-2/80", response);
-        Assert.assertEquals( "Content range 0-60/80 in response not only 1:" + response , //
-                             2, response.split( "Content-Range: bytes 10-60/80" ).length);
+        assertEquals( 2, response.split( "Content-Range: bytes 10-60/80" ).length, //
+                      "Content range 0-60/80 in response not only 1:" + response );
         assertTrue(body.endsWith(boundary + "--\r\n"));
     }
 
@@ -275,35 +272,12 @@ public class DefaultServletRangesTest
 
     private void assertResponseNotContains(String forbidden, String response)
     {
-        Assert.assertThat(response,Matchers.not(Matchers.containsString(forbidden)));
+        assertThat(response,Matchers.not(Matchers.containsString(forbidden)));
     }
 
     private int assertResponseContains(String expected, String response)
     {
-        Assert.assertThat(response,Matchers.containsString(expected));
+        assertThat(response,Matchers.containsString(expected));
         return response.indexOf(expected);
-    }
-
-    private void deleteFile(File file) throws IOException
-    {
-        if (OS.IS_WINDOWS)
-        {
-            // Windows doesn't seem to like to delete content that was recently created
-            // Attempt a delete and if it fails, attempt a rename
-            boolean deleted = file.delete();
-            if (!deleted)
-            {
-                File deletedDir = MavenTestingUtils.getTargetFile(".deleted");
-                FS.ensureDirExists(deletedDir);
-                File dest = File.createTempFile(file.getName(), "deleted", deletedDir);
-                boolean renamed = file.renameTo(dest);
-                if (!renamed)
-                    System.err.println("WARNING: unable to move file out of the way: " + file.getName());
-            }
-        }
-        else
-        {
-            Assert.assertTrue("Deleting: " + file.getName(), file.delete());
-        }
     }
 }

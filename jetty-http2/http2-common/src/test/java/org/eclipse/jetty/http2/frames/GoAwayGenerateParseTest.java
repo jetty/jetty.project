@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +33,8 @@ import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class GoAwayGenerateParseTest
 {
@@ -71,11 +75,11 @@ public class GoAwayGenerateParseTest
             }
         }
 
-        Assert.assertEquals(1, frames.size());
+        assertEquals(1, frames.size());
         GoAwayFrame frame = frames.get(0);
-        Assert.assertEquals(lastStreamId, frame.getLastStreamId());
-        Assert.assertEquals(error, frame.getError());
-        Assert.assertNull(frame.getPayload());
+        assertEquals(lastStreamId, frame.getLastStreamId());
+        assertEquals(error, frame.getError());
+        assertNull(frame.getPayload());
     }
 
     @Test
@@ -114,11 +118,11 @@ public class GoAwayGenerateParseTest
                 }
             }
 
-            Assert.assertEquals(1, frames.size());
+            assertEquals(1, frames.size());
             GoAwayFrame frame = frames.get(0);
-            Assert.assertEquals(lastStreamId, frame.getLastStreamId());
-            Assert.assertEquals(error, frame.getError());
-            Assert.assertArrayEquals(payload, frame.getPayload());
+            assertEquals(lastStreamId, frame.getLastStreamId());
+            assertEquals(error, frame.getError());
+            assertArrayEquals(payload, frame.getPayload());
         }
     }
 }

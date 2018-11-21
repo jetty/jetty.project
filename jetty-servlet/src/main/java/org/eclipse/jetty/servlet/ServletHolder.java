@@ -55,6 +55,8 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -1312,11 +1314,23 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        if (_initParams.isEmpty())
+            Dumpable.dumpObjects(out, indent, this,
+                _servlet == null?getHeldClass():_servlet);
+        else
+            Dumpable.dumpObjects(out, indent, this,
+                _servlet == null?getHeldClass():_servlet,
+                new DumpableCollection("initParams", _initParams.entrySet()));
+    }
 
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,jsp=%s,order=%d,inst=%b",_name,hashCode(),_className,_forcedPath,_initOrder,_servlet!=null);
+        return String.format("%s@%x==%s,jsp=%s,order=%d,inst=%b,async=%b",_name,hashCode(),_className,_forcedPath,_initOrder,_servlet!=null,isAsyncSupported());
     }
 }

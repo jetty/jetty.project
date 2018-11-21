@@ -2,16 +2,18 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jaspi</artifactId>
   <name>Jetty :: JASPI Security</name>
   <description>Jetty security infrastructure</description>
-  <url>http://www.eclipse.org/jetty</url>
+
   <properties>
     <bundle-symbolic-name>${project.groupId}.security.jaspi</bundle-symbolic-name>
   </properties>
+
   <build>
     <plugins>
       <plugin>
@@ -23,24 +25,7 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>[1.9,)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <argLine>@{argLine} --add-modules java.se.ee</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -55,6 +40,24 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.security.auth.message</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.3.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>2.3.0.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.activation</groupId>
+      <artifactId>javax.activation-api</artifactId>
+      <version>1.2.0</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.geronimo.components</groupId>

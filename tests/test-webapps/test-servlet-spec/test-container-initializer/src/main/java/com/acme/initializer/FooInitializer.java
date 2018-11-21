@@ -63,6 +63,9 @@ public class FooInitializer implements ServletContainerInitializer
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
+            if (sce.getServletContext().getAttribute("com.acme.AnnotationTest.listenerTest") != null)
+                throw new IllegalStateException("FooListener already initialized");
+            
             //Can add a ServletContextListener from a ServletContainerInitializer
             sce.getServletContext().setAttribute("com.acme.AnnotationTest.listenerTest", Boolean.TRUE);
             
@@ -95,6 +98,9 @@ public class FooInitializer implements ServletContainerInitializer
     @Override
     public void onStartup(Set<Class<?>> classes, ServletContext context)
     {
+        if (context.getAttribute("com.acme.Foo") != null)
+            throw new IllegalStateException ("FooInitializer on Startup already called");
+        
         context.setAttribute("com.acme.Foo", new ArrayList<Class>(classes));
         ServletRegistration.Dynamic reg = context.addServlet("AnnotationTest", "com.acme.AnnotationTest");
         context.setAttribute("com.acme.AnnotationTest.complete", (reg == null));

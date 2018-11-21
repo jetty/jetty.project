@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -67,6 +68,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -124,13 +126,23 @@ public class ServletHandler extends ScopedHandler
     @SuppressWarnings("unchecked")
     protected final Queue<String>[] _chainLRU = new Queue[FilterMapping.ALL];
 
-
-
     /* ------------------------------------------------------------ */
     /** Constructor.
      */
     public ServletHandler()
     {
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out,indent,
+            DumpableCollection.fromArray("listeners "+this,_listeners),
+            DumpableCollection.fromArray("filters "+this,_filters),
+            DumpableCollection.fromArray("filterMappings "+this,_filterMappings),
+            DumpableCollection.fromArray("servlets "+this,_servlets),
+            DumpableCollection.fromArray("servletMappings "+this,_servletMappings));
     }
 
     /* ----------------------------------------------------------------- */
@@ -178,7 +190,7 @@ public class ServletHandler extends ScopedHandler
 
         if (_contextHandler==null)
             initialize();
-        
+
         super.doStart();
     }
     
@@ -257,10 +269,8 @@ public class ServletHandler extends ScopedHandler
         
         //Retain only filters and mappings that were added using jetty api (ie Source.EMBEDDED)
         FilterHolder[] fhs = (FilterHolder[]) LazyList.toArray(filterHolders, FilterHolder.class);
-        updateBeans(_filters, fhs);
         _filters = fhs;
         FilterMapping[] fms = (FilterMapping[]) LazyList.toArray(filterMappings, FilterMapping.class);
-        updateBeans(_filterMappings, fms);
         _filterMappings = fms;
         
         _matchAfterIndex = (_filterMappings == null || _filterMappings.length == 0 ? -1 : _filterMappings.length-1);
@@ -302,10 +312,8 @@ public class ServletHandler extends ScopedHandler
 
         //Retain only Servlets and mappings added via jetty apis (ie Source.EMBEDDED)
         ServletHolder[] shs = (ServletHolder[]) LazyList.toArray(servletHolders, ServletHolder.class);
-        updateBeans(_servlets, shs);
         _servlets = shs;
         ServletMapping[] sms = (ServletMapping[])LazyList.toArray(servletMappings, ServletMapping.class); 
-        updateBeans(_servletMappings, sms);
         _servletMappings = sms;
 
         //Retain only Listeners added via jetty apis (is Source.EMBEDDED)
@@ -327,7 +335,6 @@ public class ServletHandler extends ScopedHandler
             }
         }
         ListenerHolder[] listeners = (ListenerHolder[])LazyList.toArray(listenerHolders, ListenerHolder.class);
-        updateBeans(_listeners, listeners);
         _listeners = listeners;
 
         //will be regenerated on next start
@@ -730,60 +737,26 @@ public class ServletHandler extends ScopedHandler
     {
         MultiException mx = new MultiException();
 
-        //start filter holders now
-        if (_filters != null)
-        {
-            for (FilterHolder f: _filters)
-            {
+        Stream.concat(Stream.concat(
+            Arrays.stream(_filters),
+            Arrays.stream(_servlets).sorted()),
+            Arrays.stream(_listeners))
+            .forEach(h->{
                 try
                 {
-                    f.start();
-                    f.initialize();
-                }
-                catch (Exception e)
-                {
-                    mx.add(e);
-                }
-            }
-        }
-        
-        // Sort and Initialize servlets
-        if (_servlets!=null)
-        {
-            ServletHolder[] servlets = _servlets.clone();
-            Arrays.sort(servlets);
-            for (ServletHolder servlet : servlets)
-            {
-                try
-                {
-                    servlet.start();
-                    servlet.initialize();
+                    if (!h.isStarted())
+                    {
+                        h.start();
+                        h.initialize();
+                    }
                 }
                 catch (Throwable e)
                 {
                     LOG.debug(Log.EXCEPTION, e);
                     mx.add(e);
                 }
-            }
-        }
+            });
 
-        //any other beans
-        for (Holder<?> h: getBeans(Holder.class))
-        {
-            try
-            {
-                if (!h.isStarted())
-                {
-                    h.start();
-                    h.initialize();
-                }
-            }
-            catch (Exception e)
-            {
-                mx.add(e);
-            }
-        }
-        
         mx.ifExceptionThrow();
     }
 
@@ -820,7 +793,6 @@ public class ServletHandler extends ScopedHandler
             for (ListenerHolder holder:listeners)
                 holder.setServletHandler(this);
 
-        updateBeans(_listeners,listeners);
         _listeners = listeners;
     }
     
@@ -1537,7 +1509,6 @@ public class ServletHandler extends ScopedHandler
      */
     public void setFilterMappings(FilterMapping[] filterMappings)
     {
-        updateBeans(_filterMappings,filterMappings);
         _filterMappings = filterMappings;
         if (isStarted()) updateMappings();
         invalidateChainsCache();
@@ -1550,7 +1521,6 @@ public class ServletHandler extends ScopedHandler
             for (FilterHolder holder:holders)
                 holder.setServletHandler(this);
         
-        updateBeans(_filters,holders);
         _filters=holders;
         updateNameMappings();
         invalidateChainsCache();
@@ -1562,7 +1532,6 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServletMappings(ServletMapping[] servletMappings)
     {
-        updateBeans(_servletMappings,servletMappings);
         _servletMappings = servletMappings;
         if (isStarted()) updateMappings();
         invalidateChainsCache();
@@ -1578,7 +1547,6 @@ public class ServletHandler extends ScopedHandler
             for (ServletHolder holder:holders)
                 holder.setServletHandler(this);
         
-        updateBeans(_servlets,holders);
         _servlets=holders;
         updateNameMappings();
         invalidateChainsCache();

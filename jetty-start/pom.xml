@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-start</artifactId>
@@ -50,6 +50,7 @@
                   <artifact>org.eclipse.jetty:jetty-util</artifact>
                   <includes>
                     <include>org/eclipse/jetty/util/JavaVersion*</include>
+                    <include>org/eclipse/jetty/util/ManifestUtils*</include>
                     <include>org/eclipse/jetty/util/TopologicalSort*</include>
                   </includes>
               	</filter>

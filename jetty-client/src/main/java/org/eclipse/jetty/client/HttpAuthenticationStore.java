@@ -65,7 +65,9 @@ public class HttpAuthenticationStore implements AuthenticationStore
     @Override
     public void addAuthenticationResult(Authentication.Result result)
     {
-        results.put(result.getURI(), result);
+        URI uri = result.getURI();
+        if (uri != null)
+            results.put(uri, result);
     }
 
     @Override

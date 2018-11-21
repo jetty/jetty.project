@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -31,10 +33,10 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class TomcatServerQuirksTest
 {
@@ -65,14 +67,14 @@ public class TomcatServerQuirksTest
 
     private static BlockheadServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -116,7 +118,7 @@ public class TomcatServerQuirksTest
             client.connect(websocket,wsURI);
 
             // Wait for proper upgrade
-            Assert.assertTrue("Timed out waiting for Client side WebSocket open event",websocket.openLatch.await(1,TimeUnit.SECONDS));
+            assertTrue(websocket.openLatch.await(1,TimeUnit.SECONDS), "Timed out waiting for Client side WebSocket open event");
 
             try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
             {
@@ -134,7 +136,7 @@ public class TomcatServerQuirksTest
                 serverConn.writeRaw(serverFrame);
             }
 
-            Assert.assertTrue(websocket.dataLatch.await(1000,TimeUnit.SECONDS));
+            assertTrue(websocket.dataLatch.await(1000,TimeUnit.SECONDS));
         }
         finally
         {

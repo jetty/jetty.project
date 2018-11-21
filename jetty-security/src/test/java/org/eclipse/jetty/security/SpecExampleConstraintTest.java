@@ -19,9 +19,9 @@
 package org.eclipse.jetty.security;
 
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -43,10 +43,10 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -59,7 +59,7 @@ public class SpecExampleConstraintTest
     private static SessionHandler _session;
     private ConstraintSecurityHandler _security;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer()
     {
         _server = new Server();
@@ -84,7 +84,7 @@ public class SpecExampleConstraintTest
         _server.addBean(_loginService);
     }
 
-    @Before
+    @BeforeEach
     public void setupSecurity()
     {
         _security = new ConstraintSecurityHandler();
@@ -224,7 +224,7 @@ public class SpecExampleConstraintTest
                 }), knownRoles);
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         if (_server.isRunning())

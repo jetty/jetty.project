@@ -81,10 +81,10 @@ Make sure you have it installed.
 
 [source, screen, subs="{sub-order}"]
 ....
-# apt-get install openjdk-7-jdk
+# apt-get install openjdk-8-jdk
 ....
 
-Or download Java 7 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
+Or download Java 8 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
 [source, screen, subs="{sub-order}"]
 ....

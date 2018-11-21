@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.ManifestUtils;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.log.Log;
@@ -69,7 +69,8 @@ import org.objectweb.asm.Opcodes;
 public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
-    protected static int ASM_OPCODE_VERSION = Opcodes.ASM6; //compatibility of api
+    private static final int ASM_OPCODE_VERSION = Opcodes.ASM7; //compatibility of api
+    private static final String ASM_OPCODE_VERSION_STR = "ASM7";
     
     /**
      * Map of classnames scanned and the first location from which scan occurred
@@ -85,48 +86,49 @@ public class AnnotationParser
     public static int asmVersion ()
     {
         int asmVersion = ASM_OPCODE_VERSION;
-        Package asm = Opcodes.class.getPackage();
-        if (asm == null)
-            LOG.warn("Unknown asm runtime version, assuming version {}", asmVersion);
+        String version = ManifestUtils.getVersion(Opcodes.class).orElse(null);
+        if (version == null)
+        {
+            LOG.warn("Unknown ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
+        }
         else
         {
-            String s = asm.getImplementationVersion();
-            if (s==null)
-                LOG.warn("Unknown asm implementation version, assuming version {}", asmVersion);
-            else
+            int dot = version.indexOf('.');
+            version = version.substring(0, (dot < 0 ? version.length() : dot)).trim();
+            try
             {
-                int dot = s.indexOf('.');
-                s = s.substring(0, (dot < 0 ? s.length() : dot)).trim();
-                try
+                int v = Integer.parseInt(version);
+                switch (v)
                 {
-                    int v = Integer.parseInt(s);
-                    switch (v)
+                    case 4:
                     {
-                        case 4:
-                        {
-                            asmVersion = Opcodes.ASM4;
-                            break;
-                        }
-                        case 5:
-                        {
-                            asmVersion = Opcodes.ASM5;
-                            break;
-                        }
-                        case 6:
-                        {
-                            asmVersion = Opcodes.ASM6;
-                            break;
-                        }
-                        default:
-                        {
-                            LOG.warn("Unrecognized runtime asm version, assuming {}", asmVersion);
-                        }
+                        asmVersion = Opcodes.ASM4;
+                        break;
+                    }
+                    case 5:
+                    {
+                        asmVersion = Opcodes.ASM5;
+                        break;
+                    }
+                    case 6:
+                    {
+                        asmVersion = Opcodes.ASM6;
+                        break;
+                    }
+                    case 7:
+                    {
+                        asmVersion = Opcodes.ASM7;
+                        break;
+                    }
+                    default:
+                    {
+                        LOG.warn("Unrecognized ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
                     }
                 }
-                catch (NumberFormatException e)
-                {
-                    LOG.warn("Unable to parse runtime asm version, assuming version {}", asmVersion);
-                }
+            }
+            catch (NumberFormatException e)
+            {
+                LOG.warn("Unable to parse ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
             }
         }
         return asmVersion;

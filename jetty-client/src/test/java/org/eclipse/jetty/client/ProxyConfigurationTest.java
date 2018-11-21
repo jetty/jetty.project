@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.client;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 public class ProxyConfigurationTest
 {
@@ -27,7 +30,7 @@ public class ProxyConfigurationTest
     public void testProxyMatchesWithoutIncludesWithoutExcludes() throws Exception
     {
         HttpProxy proxy = new HttpProxy("host", 0);
-        Assert.assertTrue(proxy.matches(new Origin("http", "any", 0)));
+        assertTrue(proxy.matches(new Origin("http", "any", 0)));
     }
 
     @Test
@@ -36,9 +39,9 @@ public class ProxyConfigurationTest
         HttpProxy proxy = new HttpProxy("host", 0);
         proxy.getExcludedAddresses().add("1.2.3.4:5");
 
-        Assert.assertTrue(proxy.matches(new Origin("http", "any", 0)));
-        Assert.assertTrue(proxy.matches(new Origin("http", "1.2.3.4", 0)));
-        Assert.assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 5)));
+        assertTrue(proxy.matches(new Origin("http", "any", 0)));
+        assertTrue(proxy.matches(new Origin("http", "1.2.3.4", 0)));
+        assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 5)));
     }
 
     @Test
@@ -47,9 +50,9 @@ public class ProxyConfigurationTest
         HttpProxy proxy = new HttpProxy("host", 0);
         proxy.getIncludedAddresses().add("1.2.3.4:5");
 
-        Assert.assertFalse(proxy.matches(new Origin("http", "any", 0)));
-        Assert.assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 0)));
-        Assert.assertTrue(proxy.matches(new Origin("http", "1.2.3.4", 5)));
+        assertFalse(proxy.matches(new Origin("http", "any", 0)));
+        assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 0)));
+        assertTrue(proxy.matches(new Origin("http", "1.2.3.4", 5)));
     }
 
     @Test
@@ -59,9 +62,9 @@ public class ProxyConfigurationTest
         proxy.getIncludedAddresses().add("1.2.3.4");
         proxy.getExcludedAddresses().add("1.2.3.4:5");
 
-        Assert.assertFalse(proxy.matches(new Origin("http", "any", 0)));
-        Assert.assertTrue(proxy.matches(new Origin("http", "1.2.3.4", 0)));
-        Assert.assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 5)));
+        assertFalse(proxy.matches(new Origin("http", "any", 0)));
+        assertTrue(proxy.matches(new Origin("http", "1.2.3.4", 0)));
+        assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 5)));
     }
 
     @Test
@@ -71,8 +74,8 @@ public class ProxyConfigurationTest
         proxy.getIncludedAddresses().add("[1::2:3:4]");
         proxy.getExcludedAddresses().add("[1::2:3:4]:5");
 
-        Assert.assertFalse(proxy.matches(new Origin("http", "any", 0)));
-        Assert.assertTrue(proxy.matches(new Origin("http", "[1::2:3:4]", 0)));
-        Assert.assertFalse(proxy.matches(new Origin("http", "[1::2:3:4]", 5)));
+        assertFalse(proxy.matches(new Origin("http", "any", 0)));
+        assertTrue(proxy.matches(new Origin("http", "[1::2:3:4]", 0)));
+        assertFalse(proxy.matches(new Origin("http", "[1::2:3:4]", 5)));
     }
 }

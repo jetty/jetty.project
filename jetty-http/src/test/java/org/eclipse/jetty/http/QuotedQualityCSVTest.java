@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.http;
 
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertThat;
 
 public class QuotedQualityCSVTest
 {
@@ -36,7 +36,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue(" audio/*; q=0.2, audio/basic");
-        Assert.assertThat(values,Matchers.contains("audio/basic","audio/*"));
+        assertThat(values,Matchers.contains("audio/basic","audio/*"));
     }
 
     @Test
@@ -45,7 +45,7 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("text/plain; q=0.5, text/html,");
         values.addValue("text/x-dvi; q=0.8, text/x-c");
-        Assert.assertThat(values,Matchers.contains("text/html","text/x-c","text/x-dvi","text/plain"));
+        assertThat(values,Matchers.contains("text/html","text/x-c","text/x-dvi","text/plain"));
     }
     
     @Test
@@ -55,7 +55,7 @@ public class QuotedQualityCSVTest
         values.addValue("text/*, text/plain, text/plain;format=flowed, */*");
         
         // Note this sort is only on quality and not the most specific type as per 5.3.2
-        Assert.assertThat(values,Matchers.contains("text/*","text/plain","text/plain;format=flowed","*/*"));
+        assertThat(values,Matchers.contains("text/*","text/plain","text/plain;format=flowed","*/*"));
     }
     
     @Test
@@ -64,7 +64,7 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV(QuotedQualityCSV.MOST_SPECIFIC);
         values.addValue("text/*, text/plain, text/plain;format=flowed, */*");
         
-        Assert.assertThat(values,Matchers.contains("text/plain;format=flowed","text/plain","text/*","*/*"));
+        assertThat(values,Matchers.contains("text/plain;format=flowed","text/plain","text/*","*/*"));
     }
     
     @Test
@@ -73,7 +73,7 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("text/*;q=0.3, text/html;q=0.7, text/html;level=1,");
         values.addValue("text/html;level=2;q=0.4, */*;q=0.5");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "text/html;level=1",
                 "text/html",
                 "*/*",
@@ -92,7 +92,7 @@ public class QuotedQualityCSVTest
         values.addValue("compress;q=0.5, gzip;q=1.0");
         values.addValue("gzip;q=1.0, identity; q=0.5, *;q=0");
         
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "compress",
                 "gzip",
                 "*",
@@ -108,7 +108,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("  value 0.5  ;  p = v  ;  q =0.5  ,  value 1.0 ");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "value 1.0",
                 "value 0.5;p=v"));
     }
@@ -118,7 +118,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue(",aaaa,  , bbbb ,,cccc,");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "aaaa",
                 "bbbb",
                 "cccc"));
@@ -129,7 +129,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("  value 0.5  ;  p = \"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "value 0.5;p=\"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
     }
     
@@ -138,7 +138,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("value;p=\"v");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "value;p=\"v"));
     }
     
@@ -147,7 +147,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("  value 0.5  ;  p = v  ;  q = \"0.5\"  ,  value 1.0 ");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "value 1.0",
                 "value 0.5;p=v"));
     }
@@ -157,7 +157,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("value0.5;p=v;q=0.5,value1.0,valueBad;q=X");
-        Assert.assertThat(values,Matchers.contains(
+        assertThat(values,Matchers.contains(
                 "value1.0",
                 "value0.5;p=v"));
     }
@@ -302,7 +302,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("one;q=0.5,two;q=0.5,three;q=0.5");
-        Assert.assertThat(values.getValues(),Matchers.contains("one","two","three"));
+        assertThat(values.getValues(),Matchers.contains("one","two","three"));
     }
 
     @Test
@@ -310,7 +310,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("one,two;,three;x=y");
-        Assert.assertThat(values.getValues(),Matchers.contains("one","two","three;x=y"));
+        assertThat(values.getValues(),Matchers.contains("one","two","three;x=y"));
     }
 
 

@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test various RSV violations

@@ -19,14 +19,16 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MulticastConfig;
 import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.SerializerConfig;
+
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 
@@ -45,12 +47,21 @@ public class HazelcastTestHelper
     static final String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
     
     static final String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
-    static final HazelcastInstance _instance = Hazelcast.getOrCreateHazelcastInstance( new Config() //
-                                            .setInstanceName(_hazelcastInstanceName ) //
-                                            .setNetworkConfig( new NetworkConfig().setJoin( //
-                                                new JoinConfig().setMulticastConfig( //
-                                                    new MulticastConfig().setEnabled( false ) ) ) ) //
-                                            .addMapConfig( new MapConfig().setName(_name) ) );
+    
+    static SerializerConfig _serializerConfig; 
+    
+    static HazelcastInstance _instance;
+                       
+    static 
+    {
+        _serializerConfig = new SerializerConfig().setImplementation(new SessionDataSerializer()).setTypeClass(SessionData.class);
+        Config config = new Config();
+        config.setInstanceName(_hazelcastInstanceName );
+        config.setNetworkConfig( new NetworkConfig().setJoin(new JoinConfig().setMulticastConfig(new MulticastConfig().setEnabled(false))));
+        config.addMapConfig(new MapConfig().setName(_name));
+        config.getSerializationConfig().addSerializerConfig(_serializerConfig);
+        _instance = Hazelcast.getOrCreateHazelcastInstance(config);
+    }
 
     public HazelcastTestHelper ()
     {

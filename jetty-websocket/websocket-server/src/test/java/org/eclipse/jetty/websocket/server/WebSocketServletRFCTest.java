@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -50,10 +53,10 @@ import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
@@ -65,20 +68,20 @@ public class WebSocketServletRFCTest
     private static SimpleServletServer server;
     private static BlockheadClient client;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new RFCServlet());
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -86,7 +89,7 @@ public class WebSocketServletRFCTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();
@@ -132,7 +135,7 @@ public class WebSocketServletRFCTest
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             Frame binmsg = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             int expectedSize = buf1.length + buf2.length + buf3.length;
-            Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
+            assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
             int aaCount = 0;
             int bbCount = 0;
@@ -154,23 +157,25 @@ public class WebSocketServletRFCTest
                         ccCount++;
                         break;
                     default:
-                        Assert.fail(String.format("Encountered invalid byte 0x%02X",(byte)(0xFF & b)));
+                        fail(String.format("Encountered invalid byte 0x%02X",(byte)(0xFF & b)));
                 }
             }
-            Assert.assertThat("Echoed data count for 0xAA",aaCount,is(buf1.length));
-            Assert.assertThat("Echoed data count for 0xBB",bbCount,is(buf2.length));
-            Assert.assertThat("Echoed data count for 0xCC",ccCount,is(buf3.length));
+            assertThat("Echoed data count for 0xAA",aaCount,is(buf1.length));
+            assertThat("Echoed data count for 0xBB",bbCount,is(buf2.length));
+            assertThat("Echoed data count for 0xCC",ccCount,is(buf3.length));
         }
     }
 
-    @Test(expected = NotUtf8Exception.class)
+    @Test
     public void testDetectBadUTF8()
     {
         byte buf[] = new byte[]
         { (byte)0xC2, (byte)0xC3 };
 
         Utf8StringBuilder utf = new Utf8StringBuilder();
-        utf.append(buf,0,buf.length);
+        assertThrows(NotUtf8Exception.class, ()-> {
+            utf.append(buf, 0, buf.length);
+        });
     }
 
     /**
@@ -193,7 +198,7 @@ public class WebSocketServletRFCTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
     }
 
@@ -219,7 +224,7 @@ public class WebSocketServletRFCTest
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             Frame cf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             CloseInfo close = new CloseInfo(cf);
-            Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
     }
 
@@ -251,7 +256,7 @@ public class WebSocketServletRFCTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
     }
 
@@ -277,9 +282,9 @@ public class WebSocketServletRFCTest
 
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
+            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
         }
     }
 
@@ -311,7 +316,7 @@ public class WebSocketServletRFCTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
     }
 }

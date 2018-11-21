@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -310,21 +311,22 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<Holder> connections = new ArrayList<>();
+        DumpableCollection busy;
+        DumpableCollection muxed;
+        DumpableCollection idle;
         lock();
         try
         {
-            connections.addAll(busyConnections.values());
-            connections.addAll(muxedConnections.values());
-            connections.addAll(idleConnections);
+            busy = new DumpableCollection("busy", new ArrayList<>(busyConnections.values()));
+            muxed = new DumpableCollection("muxed", new ArrayList<>(muxedConnections.values()));
+            idle = new DumpableCollection("idle", new ArrayList<>(idleConnections));
         }
         finally
         {
             unlock();
         }
 
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, connections);
+        Dumpable.dumpObjects(out, indent, this, busy, muxed, idle);
     }
 
     @Override

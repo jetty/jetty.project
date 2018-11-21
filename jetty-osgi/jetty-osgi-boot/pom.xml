@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot</artifactId>
@@ -80,7 +80,7 @@
  javax.servlet.http;version="[3.1,3.2)",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
- org.objectweb.asm;version=4;resolution:=optional,
+ org.objectweb.asm;version="5";resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,

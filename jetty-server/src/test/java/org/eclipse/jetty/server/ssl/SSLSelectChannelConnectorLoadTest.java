@@ -19,7 +19,7 @@
 package org.eclipse.jetty.server.ssl;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -49,9 +49,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class SSLSelectChannelConnectorLoadTest
 {
@@ -59,7 +59,7 @@ public class SSLSelectChannelConnectorLoadTest
     private static ServerConnector connector;
     private static SSLContext sslContext;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
@@ -89,7 +89,7 @@ public class SSLSelectChannelConnectorLoadTest
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

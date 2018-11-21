@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 import java.io.File;
@@ -33,10 +34,9 @@ import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.samples.pong.PongContextListener;
 import org.eclipse.jetty.websocket.jsr356.server.samples.pong.PongMessageEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.samples.pong.PongSocket;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class PingPongTest
 {
@@ -44,7 +44,7 @@ public class PingPongTest
     private static URI serverUri;
     private static WebSocketContainer client;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         File testdir = MavenTestingUtils.getTargetTestingDir(PingPongTest.class.getName());
@@ -62,19 +62,19 @@ public class PingPongTest
         server.deployWebapp(webapp);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = ContainerProvider.getWebSocketContainer();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @Test(timeout = 2000)
+    @Test
     public void testPingEndpoint() throws Exception
     {
         EchoClientSocket socket = new EchoClientSocket();
@@ -92,7 +92,7 @@ public class PingPongTest
 
             // Validate Responses
             String actual = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Received Ping Response",actual,containsString("PongMessage[/ping]:" + msg));
+            assertThat("Received Ping Response",actual,containsString("PongMessage[/ping]:" + msg));
         }
         finally
         {
@@ -101,7 +101,7 @@ public class PingPongTest
         }
     }
     
-    @Test(timeout = 2000)
+    @Test
     public void testPongEndpoint() throws Exception
     {
         EchoClientSocket socket = new EchoClientSocket();
@@ -119,7 +119,7 @@ public class PingPongTest
 
             // Validate Responses
             String received = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Received Ping Responses",received,containsString("PongMessage[/pong]:" + msg));
+            assertThat("Received Ping Responses",received,containsString("PongMessage[/pong]:" + msg));
         }
         finally
         {
@@ -128,7 +128,7 @@ public class PingPongTest
         }
     }
     
-    @Test(timeout = 2000)
+    @Test
     public void testPingSocket() throws Exception
     {
         EchoClientSocket socket = new EchoClientSocket();
@@ -146,7 +146,7 @@ public class PingPongTest
 
             // Validate Responses
             String actual = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Received Ping Response",actual,containsString("@OnMessage(PongMessage)[/ping-socket]:" + msg));
+            assertThat("Received Ping Response",actual,containsString("@OnMessage(PongMessage)[/ping-socket]:" + msg));
         }
         finally
         {
@@ -155,7 +155,7 @@ public class PingPongTest
         }
     }
     
-    @Test(timeout = 2000)
+    @Test
     public void testPongSocket() throws Exception
     {
         EchoClientSocket socket = new EchoClientSocket();
@@ -173,7 +173,7 @@ public class PingPongTest
 
             // Validate Responses
             String received = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Received Ping Responses",received,containsString("@OnMessage(PongMessage)[/pong-socket]:" + msg));
+            assertThat("Received Ping Responses",received,containsString("@OnMessage(PongMessage)[/pong-socket]:" + msg));
         }
         finally
         {

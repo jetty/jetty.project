@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
   <artifactId>test-gcloud-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: GCloud</name>
@@ -27,7 +27,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skipTests>true</skipTests>
-          <test>GCloudTestSuite</test>
         </configuration>
       </plugin>
     </plugins>

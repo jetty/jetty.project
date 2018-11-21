@@ -18,21 +18,26 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -50,19 +55,11 @@ import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertTrue;
-
-@RunWith(AdvancedRunner.class)
 public class ServerConnectorTest
 {
     public static class ReuseInfoHandler extends AbstractHandler
@@ -146,7 +143,7 @@ public class ServerConnectorTest
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
-            if (!OS.IS_WINDOWS)
+            if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             {
                 assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
             }
@@ -182,7 +179,7 @@ public class ServerConnectorTest
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
-            if (!OS.IS_WINDOWS)
+            if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             {
                 assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
             }
@@ -218,7 +215,7 @@ public class ServerConnectorTest
             assertThat("Response",response,containsString("connector._reuseAddress() = false"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
-            if (!OS.IS_WINDOWS)
+            if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             {
                 assertThat("Response",response,containsString("socket.getReuseAddress() = false"));
             }
@@ -302,11 +299,28 @@ public class ServerConnectorTest
         server.stop();
         
         assertThat(connector.getTransport(),Matchers.nullValue());
-        
-        
-        
-        
-        
-        
+    }
+
+    @Test
+    public void testBindToAddressWhichIsInUse() throws Exception
+    {
+        try (ServerSocket socket = new ServerSocket(0))
+        {
+            final int port = socket.getLocalPort();
+
+            Server server = new Server();
+            ServerConnector connector = new ServerConnector(server);
+            connector.setPort(port);
+            server.addConnector(connector);
+
+            HandlerList handlers = new HandlerList();
+            handlers.addHandler(new DefaultHandler());
+
+            server.setHandler(handlers);
+
+            IOException x = assertThrows(IOException.class, () -> server.start());
+            assertThat(x.getCause(), instanceOf(BindException.class));
+            assertThat(x.getMessage(), containsString("0.0.0.0:" + port));
+        }
     }
 }

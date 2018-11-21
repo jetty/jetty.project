@@ -25,8 +25,8 @@ import javax.enterprise.inject.spi.Bean;
 
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractWeldTest
 {
@@ -42,14 +42,14 @@ public abstract class AbstractWeldTest
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void initWeld()
     {
         weld = new Weld();
         container = weld.initialize();
     }
 
-    @AfterClass
+    @AfterAll
     public static void shutdownWeld()
     {
         weld.shutdown();

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
   <artifactId>test-mongodb-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Mongo</name>
@@ -45,7 +45,7 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-test-policy</artifactId>
-                  <version>${jetty-test-policy-version}</version>
+                  <version>${jetty-test-policy.version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**/*.keystore,**/*.pem</includes>
@@ -121,7 +121,7 @@
             <plugin>
               <groupId>com.github.joelittlejohn.embedmongo</groupId>
               <artifactId>embedmongo-maven-plugin</artifactId>
-              <version>0.3.5</version>
+              <version>0.4.1</version>
               <configuration>
                 <!--port>37017</port-->
                 <!-- allocates a random port and overrides embedmongo.port -->
@@ -137,6 +137,8 @@
                 <!--storageEngine>wiredTiger</storageEngine-->
                 <!-- optional, skips this plugin entirely, use on the command line like -Dembedmongo.skip -->
                 <skip>false</skip>
+                <downloadPath>https://jenkins.webtide.net/userContent/</downloadPath>
+                <version>2.2.1</version>
               </configuration>
               <executions>
                 <execution>

@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.annotations.resources;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -34,9 +34,9 @@ import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TestResourceAnnotations
 {
@@ -48,7 +48,7 @@ public class TestResourceAnnotations
     private Object objA = 1000;
     private Object objB = 2000;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         server = new Server();
@@ -61,7 +61,7 @@ public class TestResourceAnnotations
         env = comp.createSubcontext("env");
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         comp.destroySubcontext("env");

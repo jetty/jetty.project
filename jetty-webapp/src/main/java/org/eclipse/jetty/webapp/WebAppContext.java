@@ -1067,14 +1067,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             Collections.sort(server_classes);
         }
         
-        dumpBeans(out,indent,
-            Collections.singletonList(new ClassLoaderDump(getClassLoader())),
-            Collections.singletonList(new DumpableCollection("Systemclasses "+this,system_classes)),
-            Collections.singletonList(new DumpableCollection("Serverclasses "+this,server_classes)),
-            Collections.singletonList(new DumpableCollection("Configurations "+this,_configurations)),
-            Collections.singletonList(new DumpableCollection("Handler attributes "+this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
-            Collections.singletonList(new DumpableCollection("Context attributes "+this,((Context)getServletContext()).getAttributeEntrySet())),
-            Collections.singletonList(new DumpableCollection("Initparams "+this,getInitParams().entrySet()))
+        dumpObjects(out,indent,
+            new ClassLoaderDump(getClassLoader()),
+            new DumpableCollection("Systemclasses "+this,system_classes),
+            new DumpableCollection("Serverclasses "+this,server_classes),
+            new DumpableCollection("Configurations "+this,_configurations),
+            new DumpableCollection("Handler attributes "+this,((AttributesMap)getAttributes()).getAttributeEntrySet()),
+            new DumpableCollection("Context attributes "+this,((Context)getServletContext()).getAttributeEntrySet()),
+            new DumpableCollection("Initparams "+this,getInitParams().entrySet())
             );
     }
     

@@ -4,13 +4,14 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.15-SNAPSHOT</version>
   </parent>
   <artifactId>test-infinispan-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
+    <hotrod.host>127.0.0.1</hotrod.host>
   </properties>
   <build>
     <plugins>
@@ -46,7 +47,7 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-test-policy</artifactId>
-                  <version>${jetty-test-policy-version}</version>
+                  <version>${jetty-test-policy.version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**/*.keystore,**/*.pem</includes>
@@ -114,6 +115,12 @@
       <version>9.1.0.Final</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-remote-query-client</artifactId>
+      <version>9.1.0.Final</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <profiles>
     <!-- to test hotrod, configure a cache called "remote-session-test" -->
@@ -134,6 +141,9 @@
               <includes>
                 <include>**/*.java</include>
               </includes>
+              <systemPropertyVariables>
+                <hotrod.host>${hotrod.host}</hotrod.host>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>

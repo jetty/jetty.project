@@ -21,21 +21,16 @@ package org.eclipse.jetty.websocket.common.extensions;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractExtensionTest
 {
-    @Rule
-    public TestName testname = new TestName();
-
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     protected ExtensionTool clientExtensions;
     protected ExtensionTool serverExtensions;
 
-    @Before
+    @BeforeEach
     public void init()
     {
         clientExtensions = new ExtensionTool(WebSocketPolicy.newClientPolicy(),bufferPool);

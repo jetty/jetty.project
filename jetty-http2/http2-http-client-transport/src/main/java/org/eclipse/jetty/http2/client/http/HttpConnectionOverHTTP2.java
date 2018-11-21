@@ -35,12 +35,17 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
 {
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+
     private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
     private final Queue<HttpChannelOverHTTP2> idleChannels = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -87,21 +92,30 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     protected void release(HttpChannelOverHTTP2 channel)
     {
-        // Only non-push channels are released.
+        if (LOG.isDebugEnabled())
+            LOG.debug("Released {}", channel);
         if (activeChannels.remove(channel))
         {
-            channel.setStream(null);
             // Recycle only non-failed channels.
             if (channel.isFailed())
                 channel.destroy();
             else
                 idleChannels.offer(channel);
-            getHttpDestination().release(this);
         }
         else
         {
             channel.destroy();
         }
+    }
+
+    void onStreamClosed(IStream stream, HttpChannelOverHTTP2 channel)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} closed for {}", stream, channel);
+        channel.setStream(null);
+        // Only non-push channels are released.
+        if (stream.isLocal())
+            getHttpDestination().release(this);
     }
 
     @Override

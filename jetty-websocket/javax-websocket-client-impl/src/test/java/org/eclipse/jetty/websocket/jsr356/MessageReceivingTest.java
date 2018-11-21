@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 
 import java.io.IOException;
@@ -42,13 +43,12 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * This class tests receiving of messages by different types of {@link MessageHandler}
@@ -67,7 +67,7 @@ public class MessageReceivingTest {
         VERY_LONG_STRING = new String(raw, StandardCharsets.UTF_8);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -92,7 +92,7 @@ public class MessageReceivingTest {
         serverUri = new URI(String.format("ws://%s:%d/", host, port));
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() {
         try {
             server.stop();
@@ -101,12 +101,12 @@ public class MessageReceivingTest {
         }
     }
 
-    @Before
+    @BeforeEach
     public void initClient() {
         container = ContainerProvider.getWebSocketContainer();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         ((LifeCycle)container).stop();
@@ -118,10 +118,10 @@ public class MessageReceivingTest {
      * @throws Exception on exception occur
      */
     @Test
-    @Ignore("flappy test")
+    @Disabled("flappy test")
     public void testWholeTextMessage() throws Exception {
         final TestEndpoint echoer = new TestEndpoint(new WholeStringCaptureHandler());
-        Assert.assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
         final Session session = container.connectToServer(echoer, serverUri);
         if (LOG.isDebugEnabled())
@@ -143,7 +143,7 @@ public class MessageReceivingTest {
     @Test
     public void testPartialTextMessage() throws Exception {
         final TestEndpoint echoer = new TestEndpoint(new PartialStringCaptureHandler());
-        Assert.assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
         final Session session = container.connectToServer(echoer, serverUri);
         if (LOG.isDebugEnabled())
@@ -163,7 +163,7 @@ public class MessageReceivingTest {
     @Test
     public void testWholeBinaryMessage() throws Exception {
         final TestEndpoint echoer = new TestEndpoint(new WholeByteBufferCaptureHandler());
-        Assert.assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
         final Session session = container.connectToServer(echoer, serverUri);
         if (LOG.isDebugEnabled())
@@ -183,7 +183,7 @@ public class MessageReceivingTest {
     @Test
     public void testPartialBinaryMessage() throws Exception {
         final TestEndpoint echoer = new TestEndpoint(new PartialByteBufferCaptureHandler());
-        Assert.assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
         final Session session = container.connectToServer(echoer, serverUri);
         if (LOG.isDebugEnabled())

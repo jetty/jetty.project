@@ -148,12 +148,6 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
         super.destroy();
     }
 
-    @Override
-    public void dumpThis(Appendable out) throws IOException
-    {
-        out.append(toString()).append(" - ").append(getState()).append('\n');
-    }
-
     /**
      * An extension of AbstractHandler that handles {@link DispatcherType#ERROR} dispatches.
      * <p>
