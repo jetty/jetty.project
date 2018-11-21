@@ -20,7 +20,6 @@ package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
@@ -40,7 +39,6 @@ import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
-    private final AtomicReference<ContentState> handlingContent = new AtomicReference<>(ContentState.IDLE);
     private final HttpParser parser;
     private ByteBuffer buffer;
     private boolean shutdown;
@@ -265,18 +263,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        handlingContent.set(ContentState.CONTENT);
         CompletableCallback callback = new CompletableCallback()
         {
-            @Override
-            public void succeeded()
-            {
-                boolean messageComplete = !handlingContent.compareAndSet(ContentState.CONTENT, ContentState.IDLE);
-                super.succeeded();
-                if (messageComplete)
-                    messageComplete();
-            }
-
             @Override
             public void resume()
             {
@@ -316,9 +304,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public boolean messageComplete()
     {
-        if (handlingContent.compareAndSet(ContentState.CONTENT, ContentState.COMPLETE))
-            return false;
-
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return false;
@@ -390,6 +375,4 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         return String.format("%s[%s]", super.toString(), parser);
     }
-
-    private enum ContentState { IDLE, CONTENT, COMPLETE }
 }
