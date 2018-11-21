@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.UnitGenerator;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 

@@ -40,12 +40,6 @@
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-core</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
-    </dependency>
   </dependencies>
 
   <build>

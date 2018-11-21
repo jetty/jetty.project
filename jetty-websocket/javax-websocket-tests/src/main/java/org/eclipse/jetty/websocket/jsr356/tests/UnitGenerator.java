@@ -16,16 +16,18 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
-
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.internal.Generator;
+package org.eclipse.jetty.websocket.jsr356.tests;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.internal.Generator;
 
 /**
  * Extension of the default WebSocket Generator for unit testing purposes
