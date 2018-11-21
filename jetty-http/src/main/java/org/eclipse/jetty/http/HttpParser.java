@@ -1638,16 +1638,14 @@ public class HttpParser
                         _contentPosition += _contentChunk.remaining();
                         buffer.position(buffer.position()+_contentChunk.remaining());
 
-                        boolean handle = _handler.content(_contentChunk);
+                        if (_handler.content(_contentChunk))
+                            return true;
 
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
-                            boolean handleContent = handleContentMessage();
-                            return handle || handleContent;
+                            return handleContentMessage();
                         }
-                        else if (handle)
-                            return true;
                     }
                     break;
                 }
