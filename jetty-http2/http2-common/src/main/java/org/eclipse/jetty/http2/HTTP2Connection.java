@@ -261,8 +261,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                             reacquireNetworkBuffer();
                     }
 
-                    // Here we know that this.buffer is not retained:
-                    // either it has been released, or it's a new one.
+                    // Here we know that this.networkBuffer is not retained by
+                    // application code: either it has been released, or it's a new one.
                     int filled = fill(getEndPoint(), networkBuffer.getBuffer());
                     if (LOG.isDebugEnabled())
                         LOG.debug("Filled {} bytes in {}", filled, networkBuffer);
@@ -305,31 +305,32 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void reacquireNetworkBuffer()
         {
-            if (networkBuffer == null)
+            NetworkBuffer currentBuffer = networkBuffer;
+            if (currentBuffer == null)
                 throw new IllegalStateException();
 
-            if (networkBuffer.getBuffer().hasRemaining())
+            if (currentBuffer.getBuffer().hasRemaining())
                 throw new IllegalStateException();
 
-            NetworkBuffer old = networkBuffer;
-            old.release();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Reacquired {}<-{}", networkBuffer, old);
+            currentBuffer.release();
             networkBuffer = new NetworkBuffer();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Reacquired {}<-{}", currentBuffer, networkBuffer);
         }
 
         private void releaseNetworkBuffer()
         {
-            if (networkBuffer == null)
+            NetworkBuffer currentBuffer = networkBuffer;
+            if (currentBuffer == null)
                 throw new IllegalStateException();
 
-            if (networkBuffer.hasRemaining() && !shutdown && !failed)
+            if (currentBuffer.hasRemaining() && !shutdown && !failed)
                 throw new IllegalStateException();
 
-            networkBuffer.release();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Released {}", networkBuffer);
+            currentBuffer.release();
             networkBuffer = null;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Released {}", currentBuffer);
         }
 
         @Override
@@ -408,12 +409,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             completed(failure);
         }
 
-        private void completed(Throwable th)
+        private void completed(Throwable failure)
         {
-            if (release()==0)
+            if (release() == 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Released retained " + this, th);
+                    LOG.debug("Released retained " + this, failure);
             }
         }
 
