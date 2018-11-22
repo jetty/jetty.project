@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
@@ -754,6 +753,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
             ch.addEventListener(MultiPartCleanerListener.INSTANCE);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public ContextHandler getContextHandler()
+    {
+        return ContextHandler.getContextHandler(_config.getServletContext());
     }
 
     /* ------------------------------------------------------------ */

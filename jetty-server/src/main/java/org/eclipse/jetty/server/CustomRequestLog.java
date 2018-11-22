@@ -34,6 +34,7 @@ import javax.servlet.http.Cookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -172,22 +173,8 @@ import static java.lang.invoke.MethodType.methodType;
  <td>
  The time, in the form given by an optional format, parameter (default format [18/Sep/2011:19:18:28 -0400] where
  the last number indicates the timezone offset from GMT.)
- <br><br>
- The format parameter should be in an extended strftime(3) format (potentially localized).
- If the format starts with begin: (default) the time is taken at the beginning of the request processing.
- If it starts with end: it is the time when the log entry gets written, close to the end of the request processing.
-
- <br><br>In addition to the formats supported by strftime(3), the following format tokens are supported:
-
- <pre>
- sec         number of seconds since the Epoch
- msec        number of milliseconds since the Epoch
- usec        number of microseconds since the Epoch
- msec_frac   millisecond fraction
- usec_frac   microsecond fraction
- </pre>
-
- These tokens can not be combined with each other or strftime(3) formatting in the same format string. You can use multiple %{format}t tokens instead.
+ <br>
+ The format parameter should be in a format supported by {@link DateCache}
  </td>
  </tr>
 
@@ -263,14 +250,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(CustomRequestLog.class);
 
-    //TODO previous NCSA format includes "" in the append, so %C would print out "cookies" if cookies exist and - without the "" if they do not
     public static final String NCSA_FORMAT = "%a - %u %t \"%r\" %s %B \"%{Referer}i\" \"%{User-Agent}i\" \"%C\"";
+    public static final String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
 
     private static ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
 
     private String[] _ignorePaths;
     private transient PathMappings<String> _ignorePathMap;
-    private final static String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
     private Locale _logLocale = Locale.getDefault();
     private String _logTimeZone = "GMT";
 
@@ -445,7 +431,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private MethodHandle getLogHandle(String formatString) throws NoSuchMethodException, IllegalAccessException
     {
         MethodHandle append = MethodHandles.lookup().findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
-        MethodHandle logHandle = dropArguments(dropArguments(append.bindTo("\n"), 1, Request.class), 2, Response.class);
+        MethodHandle logHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, "logNothing", methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class));
 
         List<Token> tokens = getTokens(formatString);
         Collections.reverse(tokens);
@@ -515,13 +501,12 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static class Token
     {
-        //todo make final
-        public String code = null;
-        public String arg = null;
-        public List<String> modifiers = null;
-        public boolean negated = false;
+        public final String code;
+        public final String arg;
+        public final List<String> modifiers;
+        public final boolean negated;
 
-        public String literal = null;
+        public final String literal;
 
         public Token(String code, String arg, List<String> modifiers, boolean negated)
         {
@@ -529,9 +514,16 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             this.arg = arg;
             this.modifiers = modifiers;
             this.negated = negated;
+
+            this.literal = null;
         }
         public Token(String literal)
         {
+            this.code = null;
+            this.arg = null;
+            this.modifiers = null;
+            this.negated = false;
+
             this.literal = literal;
         }
 
@@ -539,6 +531,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             return(literal != null);
         }
+
         public boolean isPercentCode()
         {
             return(code != null);
@@ -578,7 +571,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             case "%":
             {
-                //todo use literal
                 specificHandle = dropArguments(dropArguments(append.bindTo("%"), 1, Request.class), 2, Response.class);
                 break;
             }
@@ -773,7 +765,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "t":
             {
-                //todo is this correctly supporting the right formats
                 DateCache logDateCache;
                 if (arg == null || arg.isEmpty())
                     logDateCache = new DateCache(DEFAULT_DATE_FORMAT, _logLocale , _logTimeZone);
@@ -786,7 +777,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 specificHandle = specificHandle.bindTo(logDateCache);
                 break;
             }
-
 
             case "T":
             {
@@ -910,10 +900,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
 
 
-
-
     //-----------------------------------------------------------------------------------//
 
+    private static void logNothing(StringBuilder b, Request request, Response response)
+    {
+    }
 
     private static void logClientIP(StringBuilder b, Request request, Response response)
     {
@@ -984,8 +975,16 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logFilename(StringBuilder b, Request request, Response response)
     {
-        //TODO verify
-        append(b, request.getServletContext().getRealPath(request.getPathInfo()));
+        UserIdentity.Scope scope = request.getUserIdentityScope();
+        if (scope==null || scope.getContextHandler()==null)
+            b.append('-');
+        else
+        {
+            ContextHandler context = scope.getContextHandler();
+            int lengthToStrip = scope.getContextPath().length()>1 ? scope.getContextPath().length() : 0;
+            String filename = context.getServletContext().getRealPath(request.getPathInfo().substring(lengthToStrip));
+            append(b, filename);
+        }
     }
 
     private static void logRemoteHostName(StringBuilder b, Request request, Response response)
@@ -1053,7 +1052,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logRequestHandler(StringBuilder b, Request request, Response response)
     {
-        //todo verify
         append(b, request.getServletName());
     }
 
@@ -1072,7 +1070,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logLatencyMicroseconds(StringBuilder b, Request request, Response response)
     {
-        //todo can we use nanotime?
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(TimeUnit.MILLISECONDS.toMicros(latency));
     }
@@ -1122,14 +1119,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logBytesSent(StringBuilder b, Request request, Response response)
     {
-        //todo redirect to logResponseSize
-        append(b, "?");
+        //todo difference between this and logResponseSize
+        b.append(response.getHttpOutput().getWritten());
     }
 
     private static void logBytesTransferred(StringBuilder b, Request request, Response response)
     {
-        //todo implement: bytesTransferred = bytesReceived+bytesSent
-        append(b, "?");
+        b.append(request.getHttpInput().getContentConsumed() + response.getHttpOutput().getWritten());
     }
 
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
