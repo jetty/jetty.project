@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.test.HttpTester;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;

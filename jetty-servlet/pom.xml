@@ -61,7 +61,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-http-test</artifactId>
+      <artifactId>jetty-http-tools</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

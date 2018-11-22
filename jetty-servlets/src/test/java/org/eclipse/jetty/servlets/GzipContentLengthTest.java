@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.test.HttpTester;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlets.GzipTester.ContentMetadata;

@@ -16,32 +16,43 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.test.matchers;
+package org.eclipse.jetty.http.tools.matchers;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 
-public class HttpFieldsMatchers
+public class HttpFieldsContainsHeaderKey extends TypeSafeMatcher<HttpFields>
 {
+    private final String keyName;
+
+    public HttpFieldsContainsHeaderKey(String keyName)
+    {
+        this.keyName = keyName;
+    }
+
+    public HttpFieldsContainsHeaderKey(HttpHeader header)
+    {
+        this.keyName = header.asString();
+    }
+
+    @Override
+    public void describeTo(Description description)
+    {
+        description.appendText("expecting http field name ").appendValue(keyName);
+    }
+
+    @Override
+    protected boolean matchesSafely(HttpFields fields)
+    {
+        return fields.containsKey(this.keyName);
+    }
+
     @Factory
-    public static Matcher<HttpFields> containsHeader(String keyName) {
+    public static Matcher<HttpFields> containsKey(String keyName) {
         return new HttpFieldsContainsHeaderKey(keyName);
-    }
-
-    @Factory
-    public static Matcher<HttpFields> containsHeader(HttpHeader header) {
-        return new HttpFieldsContainsHeaderKey(header);
-    }
-
-    @Factory
-    public static Matcher<HttpFields> containsHeaderValue(String keyName, String value) {
-        return new HttpFieldsContainsHeaderValue(keyName, value);
-    }
-
-    @Factory
-    public static Matcher<HttpFields> containsHeaderValue(HttpHeader header, String value) {
-        return new HttpFieldsContainsHeaderValue(header, value);
     }
 }

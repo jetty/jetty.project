@@ -32,7 +32,7 @@ import java.util.zip.InflaterInputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.test.HttpTester;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.test;
+package org.eclipse.jetty.http.tools;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

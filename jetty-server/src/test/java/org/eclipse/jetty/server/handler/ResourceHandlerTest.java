@@ -30,7 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.test.HttpTester;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;

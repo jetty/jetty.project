@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.test.matchers;
+package org.eclipse.jetty.http.tools.matchers;
 
 import java.util.Locale;
 
