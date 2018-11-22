@@ -59,3 +59,4 @@ public class JmxConfiguration extends AbstractConfiguration
         }
     }
 }
+

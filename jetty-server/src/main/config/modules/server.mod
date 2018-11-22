@@ -25,7 +25,7 @@ lib/jetty-io-${jetty.version}.jar
 etc/jetty.xml
 
 [jpms]
-patch-module: servlet.api=lib/jetty-schemas-3.1.jar
+patch-module: servlet.api=lib/jetty-schemas-${servlet.schema.version}.jar
 
 [ini-template]
 ### Common HTTP configuration

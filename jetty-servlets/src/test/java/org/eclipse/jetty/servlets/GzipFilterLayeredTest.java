@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -35,23 +30,22 @@ import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.handler.gzip.AsyncManipFilter;
-import org.eclipse.jetty.server.handler.gzip.AsyncScheduledDispatchWrite;
-import org.eclipse.jetty.server.handler.gzip.AsyncTimeoutCompleteWrite;
-import org.eclipse.jetty.server.handler.gzip.AsyncTimeoutDispatchWrite;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.handler.gzip.GzipTester;
-import org.eclipse.jetty.server.handler.gzip.GzipTester.ContentMetadata;
-import org.eclipse.jetty.server.handler.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlets.GzipTester.ContentMetadata;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Test the GzipFilter support when under several layers of Filters.

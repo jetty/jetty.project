@@ -18,16 +18,15 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.util.BufferUtil;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpRequestTesterTest
 {

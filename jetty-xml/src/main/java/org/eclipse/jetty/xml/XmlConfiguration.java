@@ -90,13 +90,13 @@ public class XmlConfiguration
     private static final XmlParser __parser = initParser();
     private static XmlParser initParser()
     {
-        ClassLoader loader = XmlConfiguration.class.getClassLoader();
         XmlParser parser = new XmlParser();
-        URL config60 = loader.getResource("org/eclipse/jetty/xml/configure_6_0.dtd");
-        URL config76 = loader.getResource("org/eclipse/jetty/xml/configure_7_6.dtd");
-        URL config90 = loader.getResource("org/eclipse/jetty/xml/configure_9_0.dtd");
-        URL config93 = loader.getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
-        parser.redirectEntity("configure.dtd",config90);
+        Class<?> klass = XmlConfiguration.class;
+        URL config60 = klass.getResource("configure_6_0.dtd");
+        URL config76 = klass.getResource("configure_7_6.dtd");
+        URL config90 = klass.getResource("configure_9_0.dtd");
+        URL config93 = klass.getResource("configure_9_3.dtd");
+        parser.redirectEntity("configure.dtd",config93);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
         parser.redirectEntity("configure_1_2.dtd",config60);
@@ -107,6 +107,7 @@ public class XmlConfiguration
         parser.redirectEntity("configure_9_3.dtd",config93);
 
         parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config93);
+        parser.redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd",config93);
         parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config93);
         parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config93);
         parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd",config93);

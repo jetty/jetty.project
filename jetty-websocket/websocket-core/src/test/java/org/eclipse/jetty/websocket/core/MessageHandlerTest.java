@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -26,12 +32,6 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.FrameHandler.CoreSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import static org.eclipse.jetty.util.BufferUtil.toBuffer;
 import static org.eclipse.jetty.util.Callback.NOOP;
@@ -64,7 +64,7 @@ public class MessageHandlerTest
         demanding = false;
         demand = 0;
 
-        session = new DummyCoreSession()
+        session = new CoreSession.Empty()
         {
             private ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 

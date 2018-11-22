@@ -18,21 +18,21 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.servlet.internal.WebSocketCreatorMapping;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
+
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.

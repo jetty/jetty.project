@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
@@ -35,12 +41,6 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.concurrent.TimeUnit;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,7 +49,7 @@ public class GeneratorTest
 {
     private static final Logger LOG = Log.getLogger(Helper.class);
 
-    private static UnitGenerator unitGenerator = new UnitGenerator(Behavior.SERVER);
+    private static Generator generator = new Generator(new MappedByteBufferPool());
     private static WebSocketChannel channel = newChannel(Behavior.SERVER);
 
     private static WebSocketChannel newChannel(Behavior behavior)
@@ -82,7 +82,7 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = unitGenerator.generate(binaryFrame);
+        ByteBuffer actual = generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -125,7 +125,7 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = unitGenerator.generate(binaryFrame);
+        ByteBuffer actual = generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -171,7 +171,7 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = unitGenerator.generate(binaryFrame);
+        ByteBuffer actual = generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -216,7 +216,7 @@ public class GeneratorTest
         bb.flip();
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = unitGenerator.generate(binaryFrame);
+        ByteBuffer actual = generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -264,7 +264,7 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = unitGenerator.generate(binaryFrame);
+        ByteBuffer actual = generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -309,7 +309,7 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = unitGenerator.generate(binaryFrame);
+        ByteBuffer actual = generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
@@ -339,7 +339,7 @@ public class GeneratorTest
     {
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(new byte[] {});
 
-        ByteBuffer actual = unitGenerator.generate(binaryFrame);
+        ByteBuffer actual = generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -421,7 +421,7 @@ public class GeneratorTest
     {
         CloseStatus close = new CloseStatus(1000);
 
-        ByteBuffer actual = unitGenerator.generate(close.toFrame());
+        ByteBuffer actual = generate(close.toFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -447,7 +447,7 @@ public class GeneratorTest
 
         CloseStatus close = new CloseStatus(1000, message.toString());
 
-        ByteBuffer actual = unitGenerator.generate(close.toFrame());
+        ByteBuffer actual = generate(close.toFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
 
         byte messageBytes[] = message.toString().getBytes(StandardCharsets.UTF_8);
@@ -478,7 +478,7 @@ public class GeneratorTest
 
         CloseStatus close = new CloseStatus(1000, message);
 
-        ByteBuffer actual = unitGenerator.generate(close.toFrame());
+        ByteBuffer actual = generate(close.toFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -548,7 +548,7 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING).setPayload(bytes);
 
-        ByteBuffer actual = unitGenerator.generate(pingFrame);
+        ByteBuffer actual = generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
 
@@ -575,7 +575,7 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING).setPayload(bytes);
 
-        ByteBuffer actual = unitGenerator.generate(pingFrame);
+        ByteBuffer actual = generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -600,7 +600,7 @@ public class GeneratorTest
     {
         Frame pingFrame = new Frame(OpCode.PING);
 
-        ByteBuffer actual = unitGenerator.generate(pingFrame);
+        ByteBuffer actual = generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -623,7 +623,7 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING).setPayload(messageBytes);
 
-        ByteBuffer actual = unitGenerator.generate(pingFrame);
+        ByteBuffer actual = generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -680,8 +680,8 @@ public class GeneratorTest
         Frame text1 = new Frame(OpCode.TEXT).setPayload("Hel").setFin(false);
         Frame text2 = new Frame(OpCode.CONTINUATION).setPayload("lo");
 
-        ByteBuffer actual1 = unitGenerator.generate(text1);
-        ByteBuffer actual2 = unitGenerator.generate(text2);
+        ByteBuffer actual1 = generate(text1);
+        ByteBuffer actual2 = generate(text2);
 
         ByteBuffer expected1 = ByteBuffer.allocate(5);
 
@@ -713,7 +713,7 @@ public class GeneratorTest
         pong.setMask(new byte[]
             { 0x37, (byte)0xfa, 0x21, 0x3d });
 
-        ByteBuffer actual = unitGenerator.generate(pong);
+        ByteBuffer actual = generate(pong);
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -738,7 +738,7 @@ public class GeneratorTest
         text.setMask(new byte[]
             { 0x37, (byte)0xfa, 0x21, 0x3d });
 
-        ByteBuffer actual = unitGenerator.generate(text);
+        ByteBuffer actual = generate(text);
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -766,7 +766,7 @@ public class GeneratorTest
         Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 
-        ByteBuffer actual = unitGenerator.generate(binary);
+        ByteBuffer actual = generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + Generator.MAX_HEADER_LENGTH);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -801,7 +801,7 @@ public class GeneratorTest
         Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 
-        ByteBuffer actual = unitGenerator.generate(binary);
+        ByteBuffer actual = generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -832,7 +832,7 @@ public class GeneratorTest
     {
         Frame ping = new Frame(OpCode.PING).setPayload("Hello");
 
-        ByteBuffer actual = unitGenerator.generate(ping);
+        ByteBuffer actual = generate(ping);
 
         ByteBuffer expected = ByteBuffer.allocate(10);
         expected.put(new byte[]
@@ -853,7 +853,7 @@ public class GeneratorTest
     {
         Frame text = new Frame(OpCode.TEXT).setPayload("Hello");
 
-        ByteBuffer actual = unitGenerator.generate(text);
+        ByteBuffer actual = generate(text);
 
         ByteBuffer expected = ByteBuffer.allocate(10);
 
@@ -878,7 +878,7 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(text);
 
-        ByteBuffer actual = unitGenerator.generate(textFrame);
+        ByteBuffer actual = generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -916,7 +916,7 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = unitGenerator.generate(textFrame);
+        ByteBuffer actual = generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -956,7 +956,7 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = unitGenerator.generate(textFrame);
+        ByteBuffer actual = generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -996,7 +996,7 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = unitGenerator.generate(textFrame);
+        ByteBuffer actual = generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -1038,7 +1038,7 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = unitGenerator.generate(textFrame);
+        ByteBuffer actual = generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -1078,7 +1078,7 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = unitGenerator.generate(textFrame);
+        ByteBuffer actual = generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
@@ -1109,7 +1109,7 @@ public class GeneratorTest
     {
         Frame textFrame = new Frame(OpCode.TEXT).setPayload("");
 
-        ByteBuffer actual = unitGenerator.generate(textFrame);
+        ByteBuffer actual = generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -1284,7 +1284,7 @@ public class GeneratorTest
             // Generate from all frames
             for (Frame f : frames)
             {
-                ByteBuffer header = unitGenerator.generateHeaderBytes(f);
+                ByteBuffer header = generator.generateHeaderBytes(f);
                 totalBytes += BufferUtil.put(header, completeBuf);
 
                 if (f.hasPayload())
@@ -1305,9 +1305,9 @@ public class GeneratorTest
     private void assertGeneratedBytes(CharSequence expectedBytes, Frame... frames)
     {
         // collect up all frames as single ByteBuffer
-        ByteBuffer allframes = unitGenerator.asBuffer(frames);
-        // Get hex String form of all frames bytebuffer.
-        String actual = Hex.asHex(allframes);
+        ByteBuffer buffer = generate(frames);
+        // Get hex String form of all frames buffer.
+        String actual = Hex.asHex(buffer);
         // Validate
         assertThat("Buffer", actual, is(expectedBytes.toString()));
     }
@@ -1326,5 +1326,14 @@ public class GeneratorTest
         {
             buf[i] ^= maskingKey[i % 4];
         }
+    }
+
+    private static ByteBuffer generate(Frame... frames)
+    {
+        int length = Arrays.stream(frames).mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
+        ByteBuffer buffer = ByteBuffer.allocate(length);
+        Arrays.stream(frames).forEach(frame -> generator.generateWholeFrame(frame, buffer));
+        BufferUtil.flipToFlush(buffer, 0);
+        return buffer;
     }
 }

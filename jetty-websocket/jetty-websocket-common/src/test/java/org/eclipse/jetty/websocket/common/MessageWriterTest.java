@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.util.Arrays;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
-import org.eclipse.jetty.websocket.core.TestableLeakTrackingBufferPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

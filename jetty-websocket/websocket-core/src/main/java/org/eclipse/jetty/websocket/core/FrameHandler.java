@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
@@ -292,6 +292,170 @@ public interface FrameHandler extends IncomingFrames
         int getInputBufferSize();
 
         void setInputBufferSize(int inputBufferSize);
+
+        class Empty implements CoreSession
+        {
+            @Override
+            public String getNegotiatedSubProtocol()
+            {
+                return null;
+            }
+
+            @Override
+            public List<ExtensionConfig> getNegotiatedExtensions()
+            {
+                return null;
+            }
+
+            @Override
+            public Map<String, List<String>> getParameterMap()
+            {
+                return null;
+            }
+
+            @Override
+            public String getProtocolVersion()
+            {
+                return null;
+            }
+
+            @Override
+            public URI getRequestURI()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean isSecure()
+            {
+                return false;
+            }
+
+            @Override
+            public void abort()
+            {
+            }
+
+            @Override
+            public Behavior getBehavior()
+            {
+                return null;
+            }
+
+            @Override
+            public ByteBufferPool getByteBufferPool()
+            {
+                return null;
+            }
+
+            @Override
+            public SocketAddress getLocalAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public SocketAddress getRemoteAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean isOpen()
+            {
+                return false;
+            }
+
+            @Override
+            public Duration getIdleTimeout()
+            {
+                return Duration.ZERO;
+            }
+
+            @Override
+            public void setIdleTimeout(Duration timeout)
+            {
+
+            }
+
+            @Override
+            public void flush(Callback callback)
+            {
+
+            }
+
+            @Override
+            public void close(Callback callback)
+            {
+
+            }
+
+            @Override
+            public void close(int statusCode, String reason, Callback callback)
+            {
+
+            }
+
+            @Override
+            public void demand(long n)
+            {
+
+            }
+
+            @Override
+            public boolean isAutoFragment()
+            {
+                return false;
+            }
+
+            @Override
+            public void setAutoFragment(boolean autoFragment)
+            {
+
+            }
+
+            @Override
+            public long getMaxFrameSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public void setMaxFrameSize(long maxFrameSize)
+            {
+
+            }
+
+            @Override
+            public int getOutputBufferSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public void setOutputBufferSize(int outputBufferSize)
+            {
+
+            }
+
+            @Override
+            public int getInputBufferSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public void setInputBufferSize(int inputBufferSize)
+            {
+
+            }
+
+            @Override
+            public void sendFrame(Frame frame, Callback callback, boolean batch)
+            {
+
+            }
+        }
     }
 
     interface CoreCustomizer

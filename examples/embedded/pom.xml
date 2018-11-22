@@ -134,12 +134,5 @@
       <artifactId>jetty-test-helper</artifactId>
       <!-- scope>test</scope-->
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 </project>

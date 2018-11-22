@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -27,20 +30,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.nio.ByteBuffer;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WebSocketFrameTest
 {
-    public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool(WebSocketFrameTest.class);
+    public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
     @AfterEach
     public void afterEach()
     {
-        bufferPool.assertNoLeaks();
+        String id = WebSocketFrameTest.class.getSimpleName();
+        assertThat("Leaked Acquires Count for [" + id + "]", bufferPool.getLeakedAcquires(), is(0L));
+        assertThat("Leaked Releases Count for [" + id + "]", bufferPool.getLeakedReleases(), is(0L));
+        assertThat("Leaked Resource Count for [" + id + "]", bufferPool.getLeakedResources(), is(0L));
     }
 
     private Generator generator;

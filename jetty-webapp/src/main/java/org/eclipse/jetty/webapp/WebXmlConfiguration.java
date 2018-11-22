@@ -53,9 +53,15 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
             Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
-            if (dftResource == null) 
-                dftResource = context.newResource(defaultsDescriptor);
-            context.getMetaData().setDefaults (dftResource);
+            if (dftResource == null)
+            {
+                String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
+                if (defaultsDescriptor.startsWith(pkg))
+                    dftResource = Resource.newResource(WebXmlConfiguration.class.getResource(defaultsDescriptor.substring(pkg.length())));
+                if (dftResource == null)
+                    dftResource = context.newResource(defaultsDescriptor);
+            }
+            context.getMetaData().setDefaults(dftResource);
         }
         
         //parse, but don't process web.xml

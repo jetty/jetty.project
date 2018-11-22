@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
@@ -27,13 +34,6 @@ import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -508,7 +508,8 @@ public class ParserTest
         }
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer completeBuf = new UnitGenerator(Behavior.SERVER).asBuffer(send);
+
+        ByteBuffer completeBuf = generate(Behavior.SERVER, send);
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf, true);
 
@@ -536,7 +537,7 @@ public class ParserTest
         send.add(new Frame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer completeBuf = new UnitGenerator(Behavior.SERVER).asBuffer(send);
+        ByteBuffer completeBuf = generate(Behavior.SERVER, send);
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf, true);
 
@@ -805,7 +806,7 @@ public class ParserTest
         send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer completeBuf = new UnitGenerator(Behavior.SERVER).asBuffer(send);
+        ByteBuffer completeBuf = generate(Behavior.SERVER, send);
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf, true);
 
@@ -1357,7 +1358,7 @@ public class ParserTest
         frames.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         // Build up raw (network bytes) buffer
-        ByteBuffer networkBytes = new UnitGenerator(Behavior.CLIENT).asBuffer(frames);
+        ByteBuffer networkBytes = generate(Behavior.CLIENT, frames);
 
         // Parse, in 4096 sized windows
         ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(), false), true, Behavior.SERVER);
@@ -1650,5 +1651,23 @@ public class ParserTest
         assertEquals("Hello World", text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(), not(sameInstance(buffer.array())));
         assertTrue(text.isReleaseable());
+    }
+
+    private ByteBuffer generate(Behavior behavior, List<Frame> frames)
+    {
+        Generator generator = new Generator(new MappedByteBufferPool());
+        int length = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
+        ByteBuffer buffer = ByteBuffer.allocate(length);
+        frames.stream()
+                .peek(frame -> maskIfClient(behavior, frame))
+                .forEach(frame -> generator.generateWholeFrame(frame, buffer));
+        BufferUtil.flipToFlush(buffer, 0);
+        return buffer;
+    }
+
+    private void maskIfClient(Behavior behavior, Frame frame)
+    {
+        if (behavior == Behavior.CLIENT)
+            frame.setMask(new byte[]{0x11, 0x22, 0x33, 0x44});
     }
 }

@@ -18,9 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.Session;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.DummyCoreSession;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.UpgradeRequest;
 import org.eclipse.jetty.websocket.jsr356.UpgradeRequestAdapter;
@@ -38,14 +47,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Session;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -111,7 +112,7 @@ public class OnCloseTest
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request, response, futureSession);
-        frameHandler.onOpen(new DummyCoreSession());
+        frameHandler.onOpen(new FrameHandler.CoreSession.Empty());
 
         // Execute onClose call
         frameHandler.onFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);

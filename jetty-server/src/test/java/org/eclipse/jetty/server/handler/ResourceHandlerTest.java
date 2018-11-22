@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
-import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
-import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
-import static org.eclipse.jetty.http.HttpHeader.LOCATION;
-import static org.eclipse.jetty.http.HttpHeader.SERVER;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,7 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -54,11 +42,22 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
+import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
+import static org.eclipse.jetty.http.HttpHeader.LOCATION;
+import static org.eclipse.jetty.http.HttpHeader.SERVER;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Resource Handler test

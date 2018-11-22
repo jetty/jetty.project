@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class HostPortTest
 {
-    private static Stream<Arguments> validAuthorityProvider()
+    public static Stream<Arguments> validAuthorityProvider()
     {
 
         return Stream.of(
@@ -46,7 +46,7 @@ public class HostPortTest
         );
     }
 
-    private static Stream<Arguments> invalidAuthorityProvider()
+    public static Stream<Arguments> invalidAuthorityProvider()
     {
         return Stream.of(
                 null,

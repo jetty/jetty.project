@@ -28,10 +28,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http</artifactId>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-http-tools</artifactId>
       <version>${project.version}</version>
-      <classifier>tests</classifier>
     </dependency>
     <dependency>
       <groupId>javax.websocket</groupId>
@@ -40,12 +39,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-core</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
     </dependency>
   </dependencies>
 
