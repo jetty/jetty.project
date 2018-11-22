@@ -24,7 +24,7 @@ module org.eclipse.jetty.alpn.conscrypt.client
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.alpn.client;
-    requires conscrypt.openjdk.uber;
+    requires org.conscrypt;
 
     provides ALPNProcessor.Client with ConscryptClientALPNProcessor;
 }
