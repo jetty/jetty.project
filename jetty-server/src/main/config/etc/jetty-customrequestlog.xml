@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Request Log                                 -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Configure Request Log for Server                            -->
+  <!-- (Use RequestLogHandler for a context specific RequestLog    -->
+  <!-- =========================================================== -->
+  <Set name="RequestLog">
+    <New id="RequestLog" class="org.eclipse.jetty.server.CustomRequestLog">
+      <!-- Writer -->
+      <Arg>
+        <New class="org.eclipse.jetty.server.AsyncRequestLogWriter">
+          <Arg><Property name="jetty.base" default="." />/<Property>
+              <Name>jetty.customrequestlog.filePath</Name>
+              <Default><Property name="jetty.customrequestlog.dir" default="logs"/>/yyyy_mm_dd.request.log</Default>
+            </Property></Arg>
+          <Arg/>
+
+          <Set name="filenameDateFormat"><Property name="jetty.customrequestlog.filenameDateFormat" default="yyyy_MM_dd"/></Set>
+          <Set name="retainDays"><Property name="jetty.customrequestlog.retainDays" default="90"/></Set>
+          <Set name="append"><Property name="jetty.customrequestlog.append" default="false"/></Set>
+          <Set name="timeZone"><Property name="jetty.customrequestlog.timezone" default="GMT"/></Set>
+        </New>
+      </Arg>
+
+      <!-- Format String -->
+      <Arg>
+        <Property name="jetty.customrequestlog.formatString">
+          <Default>
+            <Get class="org.eclipse.jetty.server.CustomRequestLog" name="NCSA_FORMAT"/>
+          </Default>
+        </Property>
+      </Arg>
+    </New>
+  </Set>
+</Configure>
