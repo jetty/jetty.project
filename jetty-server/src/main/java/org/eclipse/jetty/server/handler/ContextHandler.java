@@ -256,7 +256,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent,
+        dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("eventListeners " + this, _eventListeners),
             new DumpableCollection("handler attributes " + this, ((AttributesMap)getAttributes()).getAttributeEntrySet()),

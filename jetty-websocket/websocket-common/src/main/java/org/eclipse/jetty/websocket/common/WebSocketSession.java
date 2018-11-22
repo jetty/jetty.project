@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -38,7 +37,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -281,7 +279,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out,indent,
+        dumpObjects(out,indent,
             DumpableCollection.from("incoming", incomingHandler),
             DumpableCollection.from("outgoing", outgoingHandler));
     }

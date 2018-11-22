@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -65,9 +68,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTransportScenario>
 {
     private final Logger logger = Log.getLogger(HttpClientLoadTest.class);
@@ -85,11 +85,12 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     public void testIterative(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new LoadHandler());
-
-        scenario.client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-        scenario.client.setMaxConnectionsPerDestination(32768);
-        scenario.client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        scenario.start(new LoadHandler(), client ->
+        {
+            client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+            client.setMaxConnectionsPerDestination(32768);
+            client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        });
 
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
         int runs = 1;
@@ -130,11 +131,13 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     public void testConcurrent(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new LoadHandler());
+        scenario.start(new LoadHandler(), client ->
+        {
+            client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+            client.setMaxConnectionsPerDestination(32768);
+            client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        });
 
-        scenario.client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-        scenario.client.setMaxConnectionsPerDestination(32768);
-        scenario.client.setMaxRequestsQueuedPerDestination(1024 * 1024);
 
         int runs = 1;
         int iterations = 256;

@@ -27,10 +27,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
-class SslSelectionDump extends ContainerLifeCycle implements Dumpable
+class SslSelectionDump implements Dumpable
 {
     static class CaptionedList extends ArrayList<String> implements Dumpable
     {
@@ -66,9 +65,7 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
                             String[] includedByConfig)
     {
         this.type = type;
-        addBean(enabled);
-        addBean(disabled);
-        
+
         List<String> jvmEnabled = Arrays.asList(enabledByJVM);
         List<Pattern> excludedPatterns = Arrays.stream(excludedByConfig)
                 .map((entry) -> Pattern.compile(entry))
@@ -165,12 +162,12 @@ class SslSelectionDump extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent);
+        Dumpable.dumpObjects(out, indent, this, enabled, disabled);
     }
-    
+
     @Override
-    protected void dumpThis(Appendable out) throws IOException
+    public String toString()
     {
-        out.append(type).append(" Selections").append(System.lineSeparator());
+        return String.format("%s Selections", type);
     }
 }

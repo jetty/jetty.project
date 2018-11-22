@@ -76,6 +76,9 @@ public class AnnotatedListener implements HttpSessionListener,  HttpSessionAttri
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
+        if (sce.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest") != null)
+            throw new IllegalStateException("AnnotatedListener already initialized");
+        
         sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", Boolean.valueOf(maxAmount!=null));
     }
 

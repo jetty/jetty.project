@@ -24,15 +24,20 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.Servlet;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
@@ -60,6 +65,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +77,66 @@ public class ServletContextHandlerTest
     private LocalConnector _connector;
 
     private static final AtomicInteger __testServlets = new AtomicInteger();
+    
+    public static class MySCI implements ServletContainerInitializer
+    {
+        @Override
+        public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+        {
+            //add a programmatic listener
+            if (ctx.getAttribute("MySCI.startup") != null)
+                throw new IllegalStateException("MySCI already called");
+            ctx.setAttribute("MySCI.startup", Boolean.TRUE);
+            ctx.addListener(new MyContextListener()); 
+        }
+    }
+
+    public static class MySCIStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
+    {
+        MySCI _sci = new MySCI();
+        ContextHandler.Context _ctx;
+
+        MySCIStarter (ContextHandler.Context ctx)
+        {
+            _ctx = ctx;
+        }
+
+        @Override
+        protected void doStart() throws Exception
+        {
+            super.doStart();
+            //call the SCI
+            try
+            {
+                _ctx.setExtendedListenerTypes(true);
+                _sci.onStartup(Collections.emptySet(), _ctx);
+            }
+            finally
+            {
+
+            }
+        }
+    }
+    
+    
+    public static class MyContextListener implements ServletContextListener
+    {
+
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.contextInitialized"));
+            sce.getServletContext().setAttribute("MyContextListener.contextInitialized", Boolean.TRUE);
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.contextDestroyed"));
+            sce.getServletContext().setAttribute("MyContextListener.contextDestroyed", Boolean.TRUE);
+        }
+        
+    }
     
     public static class MySessionHandler extends SessionHandler
     {
@@ -156,6 +222,20 @@ public class ServletContextHandlerTest
         sessions.checkSessionAttributeListeners(1);
         sessions.checkSessionIdListeners(0);
         sessions.checkSessionListeners(1);
+    }
+
+    
+    @Test
+    public void testListenerFromSCI() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts,"/");
+        root.addBean(new MySCIStarter(root.getServletContext()), true);
+        _server.start();
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.contextInitialized"));
     }
 
     @Test

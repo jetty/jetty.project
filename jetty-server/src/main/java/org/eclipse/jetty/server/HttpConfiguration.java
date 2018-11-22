@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </p>
  */
 @ManagedObject("HTTP Configuration")
-public class HttpConfiguration
+public class HttpConfiguration implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
 
@@ -70,7 +72,8 @@ public class HttpConfiguration
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
-    private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
+    private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
+    private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
     private boolean _notifyRemoteAsyncErrors = true;
 
@@ -133,7 +136,8 @@ public class HttpConfiguration
         _maxErrorDispatches=config._maxErrorDispatches;
         _minRequestDataRate=config._minRequestDataRate;
         _minResponseDataRate=config._minResponseDataRate;
-        _cookieCompliance=config._cookieCompliance;
+        _requestCookieCompliance =config._requestCookieCompliance;
+        _responseCookieCompliance =config._responseCookieCompliance;
         _notifyRemoteAsyncErrors=config._notifyRemoteAsyncErrors;
     }
     
@@ -531,19 +535,58 @@ public class HttpConfiguration
         _minResponseDataRate = bytesPerSecond;
     }
 
-    public CookieCompliance getCookieCompliance()
+    /**
+     * @see #getResponseCookieCompliance()
+     * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
+     */
+    public CookieCompliance getRequestCookieCompliance()
     {
-        return _cookieCompliance;
-    }
-    
-    public void setCookieCompliance(CookieCompliance cookieCompliance)
-    {
-        _cookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+        return _requestCookieCompliance;
     }
 
+    /**
+     * @see #getRequestCookieCompliance()
+     * @return The CookieCompliance used for generating response <code>Set-Cookie</code> headers
+     */
+    public CookieCompliance getResponseCookieCompliance()
+    {
+        return _responseCookieCompliance;
+    }
+
+    /**
+     * @see #setRequestCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for parsing request <code>Cookie</code> headers.
+     */
+    public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _requestCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+    }
+
+    /**
+     * @see #setResponseCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for generating response <code>Set-Cookie</code> headers
+     */
+    public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _responseCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+    }
+
+    @Deprecated
+    public void setCookieCompliance(CookieCompliance compliance)
+    {
+        setRequestCookieCompliance(compliance);
+    }
+
+    @Deprecated
+    public CookieCompliance getCookieCompliance()
+    {
+        return getRequestCookieCompliance();
+    }
+
+    @Deprecated
     public boolean isCookieCompliance(CookieCompliance compliance)
     {
-        return _cookieCompliance.equals(compliance);
+        return _requestCookieCompliance.equals(compliance);
     }
 
     /**
@@ -579,15 +622,51 @@ public class HttpConfiguration
         return _notifyRemoteAsyncErrors;
     }
 
+    @Override public String dump()
+    {
+        return Dumpable.dump(this);
+    }
+
+    @Override public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out,indent,this,
+            new DumpableCollection("customizers",_customizers),
+            new DumpableCollection("formEncodedMethods",_formEncodedMethods.keySet()),
+            "outputBufferSize=" + _outputBufferSize,
+            "outputAggregationSize=" + _outputAggregationSize,
+            "requestHeaderSize=" + _requestHeaderSize,
+            "responseHeaderSize=" + _responseHeaderSize,
+            "headerCacheSize=" + _headerCacheSize,
+            "secureScheme=" + _secureScheme,
+            "securePort=" + _securePort,
+            "idleTimeout=" + _idleTimeout,
+            "blockingTimeout=" + _blockingTimeout,
+            "sendDateHeader=" + _sendDateHeader,
+            "sendServerVersion=" + _sendServerVersion,
+            "sendXPoweredBy=" + _sendXPoweredBy,
+            "delayDispatchUntilContent=" + _delayDispatchUntilContent,
+            "persistentConnectionsEnabled=" + _persistentConnectionsEnabled,
+            "maxErrorDispatches=" + _maxErrorDispatches,
+            "minRequestDataRate=" + _minRequestDataRate,
+            "minResponseDataRate=" + _minResponseDataRate,
+            "cookieCompliance=" + _requestCookieCompliance,
+            "setRequestCookieCompliance=" + _responseCookieCompliance,
+            "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors
+        );
+    }
+
     @Override
     public String toString()
     {
         return String.format("%s@%x{%d/%d,%d/%d,%s://:%d,%s}",
-                this.getClass().getSimpleName(),
-                hashCode(),
-                _outputBufferSize, _outputAggregationSize,
-                _requestHeaderSize,_responseHeaderSize,
-                _secureScheme,_securePort,
-                _customizers);
+            this.getClass().getSimpleName(),
+            hashCode(),
+            _outputBufferSize,
+            _outputAggregationSize,
+            _requestHeaderSize,
+            _responseHeaderSize,
+            _secureScheme,
+            _securePort,
+            _customizers);
     }
 }

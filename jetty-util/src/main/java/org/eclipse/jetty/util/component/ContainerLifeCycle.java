@@ -655,10 +655,21 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         return Dumpable.dump(this);
     }
 
+    /**
+     * @param dumpable the object to dump
+     * @return the string representation of the given Dumpable
+     * @deprecated use {@link Dumpable#dump(Dumpable)} instead
+     */
+    @Deprecated
+    public static String dump(Dumpable dumpable)
+    {
+        return Dumpable.dump(dumpable);
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out,indent);
+        dumpObjects(out,indent);
     }
 
     /**
@@ -683,6 +694,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         out.append(String.valueOf(this)).append(" - ").append(getState()).append("\n");
     }
 
+    /**
+     * @param out The Appendable to dump to
+     * @param obj The object to dump
+     * @throws IOException May be thrown by the Appendable
+     * @deprecated use {@link Dumpable#dumpObject(Appendable, Object)} instead
+     */
+    @Deprecated
+    public static void dumpObject(Appendable out, Object obj) throws IOException
+    {
+        Dumpable.dumpObject(out, obj);
+    }
 
     /** Dump this object, it's contained beans and additional items to an Appendable
      * @param out The appendable to dump to
@@ -690,9 +712,22 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * @param items Additional items to be dumped as contained.
      * @throws IOException May be thrown by the Appendable
      */
-    protected void dumpBeans(Appendable out, String indent, Object... items) throws IOException
+    protected void dumpObjects(Appendable out, String indent, Object... items) throws IOException
     {
         Dumpable.dumpObjects(out,indent,this, items);
+    }
+
+    /**
+     * @param out The appendable to dump to
+     * @param indent The indent to apply after any new lines
+     * @param items Additional collections to be dumped
+     * @throws IOException May be thrown by the Appendable
+     * @deprecated use {@link #dumpObjects(Appendable, String, Object...)}
+     */
+    @Deprecated
+    protected void dumpBeans(Appendable out, String indent, Collection<?>... items) throws IOException
+    {
+        dump(out, indent, items);
     }
 
     @Deprecated
