@@ -31,7 +31,7 @@
               <instructions>
                 <Bundle-Description>javax.websocket.client Implementation</Bundle-Description>
                 <Export-Package>
-                  org.eclipse.jetty.websocket.jsr356.common.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                  org.eclipse.jetty.websocket.jsr356.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
               </instructions>
             </configuration>

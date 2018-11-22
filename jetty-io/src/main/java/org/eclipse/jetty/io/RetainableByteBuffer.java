@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Retainable;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Retainable;
 
 /**
  * A Retainable ByteBuffer.
@@ -65,7 +65,7 @@ public class RetainableByteBuffer implements Retainable
         {
             int r = references.get();
             if (r == 0)
-                throw new IllegalStateException("released");
+                throw new IllegalStateException("released " + this);
             if (references.compareAndSet(r, r + 1))
                 break;
         }
@@ -76,9 +76,8 @@ public class RetainableByteBuffer implements Retainable
         int ref = references.decrementAndGet();
         if (ref == 0)
             pool.release(buffer);
-        else if (ref < 0 )
-            throw new IllegalStateException("already released");
-
+        else if (ref < 0)
+            throw new IllegalStateException("already released " + this);
         return ref;
     }
 
@@ -95,6 +94,6 @@ public class RetainableByteBuffer implements Retainable
     @Override
     public String toString()
     {
-        return BufferUtil.toDetailString(buffer) + ":r=" + getReferences();
+        return String.format("%s@%x{%s,r=%d}", getClass().getSimpleName(), hashCode(), BufferUtil.toDetailString(buffer), getReferences());
     }
 }
