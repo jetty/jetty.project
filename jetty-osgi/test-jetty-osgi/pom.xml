@@ -601,6 +601,7 @@
            <excludes>
              <exclude>**/TestJettyOSGiBootHTTP2</exclude>  
            </excludes>
+           <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
          </configuration>
        </plugin>
       </plugins>
