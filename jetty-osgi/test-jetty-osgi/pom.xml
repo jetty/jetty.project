@@ -476,9 +476,7 @@
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             </systemPropertyVariables>
-            <excludes>
-              <exclude>**/TestJettyOSGiBootHTTP2</exclude>
-            </excludes>
+            <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
           <dependencies>
