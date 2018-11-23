@@ -100,7 +100,7 @@ public interface Dumpable
         }
         catch (Throwable th)
         {
-            out.append("=>").append(th.toString()).append("\n");
+            out.append("=> ").append(th.toString()).append("\n");
         }
     }
 
@@ -134,12 +134,12 @@ public interface Dumpable
             for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext();)
             {
                 Object bean = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
+                String nextIndent = indent + ((i.hasNext() || size>0) ? "|  " : "   ");
                 if (bean instanceof LifeCycle)
                 {
                     if (container.isManaged(bean))
                     {
-                        out.append(indent).append("+=");
+                        out.append(indent).append("+= ");
                         if (bean instanceof Dumpable)
                             ((Dumpable)bean).dump(out,nextIndent);
                         else
@@ -147,7 +147,7 @@ public interface Dumpable
                     }
                     else if (containerLifeCycle != null && containerLifeCycle.isAuto(bean))
                     {
-                        out.append(indent).append("+?");
+                        out.append(indent).append("+? ");
                         if (bean instanceof Dumpable)
                             ((Dumpable)bean).dump(out,nextIndent);
                         else
@@ -155,18 +155,18 @@ public interface Dumpable
                     }
                     else
                     {
-                        out.append(indent).append("+~");
+                        out.append(indent).append("+~ ");
                         dumpObject(out, bean);
                     }
                 }
                 else if (containerLifeCycle != null && containerLifeCycle.isUnmanaged(bean))
                 {
-                    out.append(indent).append("+~");
+                    out.append(indent).append("+~ ");
                     dumpObject(out, bean);
                 }
                 else
                 {
-                    out.append(indent).append("+-");
+                    out.append(indent).append("+- ");
                     if (bean instanceof Dumpable)
                         ((Dumpable)bean).dump(out,nextIndent);
                     else
@@ -179,8 +179,8 @@ public interface Dumpable
             for (Iterator i = ((Iterable<?>)object).iterator(); i.hasNext();)
             {
                 Object item = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
-                out.append(indent).append("+:");
+                String nextIndent = indent + ((i.hasNext() || size>0) ? "|  " : "   ");
+                out.append(indent).append("+: ");
                 if (item instanceof Dumpable)
                     ((Dumpable)item).dump(out,nextIndent);
                 else
@@ -192,8 +192,8 @@ public interface Dumpable
             for (Iterator<? extends Map.Entry<?, ?>> i = ((Map<?,?>)object).entrySet().iterator(); i.hasNext();)
             {
                 Map.Entry entry = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? "| " : "  ");
-                out.append(indent).append("+@").append(String.valueOf(entry.getKey())).append('=');
+                String nextIndent = indent + ((i.hasNext() || size>0) ? "|  " : "   ");
+                out.append(indent).append("+@ ").append(String.valueOf(entry.getKey())).append('=');
                 Object item = entry.getValue();
                 if (item instanceof Dumpable)
                     ((Dumpable)item).dump(out,nextIndent);
@@ -209,13 +209,12 @@ public interface Dumpable
         for (Object item : extraChildren)
         {
             i++;
-            String nextIndent = indent + (i<size ? "| " : "  ");
-            out.append(indent).append("+>");
+            String nextIndent = indent + (i<size ? "|  " : "   ");
+            out.append(indent).append("+> ");
             if (item instanceof Dumpable)
                 ((Dumpable)item).dump(out,nextIndent);
             else
                 dumpObjects(out, nextIndent, item);
         }
     }
-
 }

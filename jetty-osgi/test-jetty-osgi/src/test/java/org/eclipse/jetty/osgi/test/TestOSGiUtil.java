@@ -110,7 +110,6 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.apache.aries" ).artifactId( "org.apache.aries.util" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-osgi-servlet-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "javax.annotation" ).artifactId( "javax.annotation-api" ).versionAsInProject().start());
@@ -157,7 +156,6 @@ public class TestOSGiUtil
         List<Option> res = new ArrayList<>();
   
         //jetty jsp bundles  
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-schemas").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());

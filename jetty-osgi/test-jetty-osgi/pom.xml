@@ -162,12 +162,6 @@
      </exclusions>
     </dependency>
     <dependency>
-     <groupId>org.apache.aries</groupId>
-      <artifactId>org.apache.aries.util</artifactId>
-      <version>1.1.1</version>
-     <scope>test</scope>
-    </dependency>
-    <dependency>
      <groupId>com.sun.activation</groupId>
       <artifactId>javax.activation</artifactId>
       <version>1.2.0</version>
@@ -579,7 +573,7 @@
         <dependency>
           <groupId>org.conscrypt</groupId>
           <artifactId>conscrypt-openjdk-uber</artifactId>
-          <version>1.0.0.RC11</version>
+          <version>${conscrypt.version}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
