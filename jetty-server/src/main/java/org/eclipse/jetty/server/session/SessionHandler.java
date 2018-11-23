@@ -1238,8 +1238,6 @@ public class SessionHandler extends ScopedHandler
                 //session doesn't exist on this context
                 return;
             }
-            
-            session.setExtendedId(newExtendedId); //remember the extended id
 
             //inform the listeners
            callSessionIdListeners(session, oldId);

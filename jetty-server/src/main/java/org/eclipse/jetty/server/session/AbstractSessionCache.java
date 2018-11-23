@@ -151,8 +151,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     
     /**
      * Remove the session with this identity from the store
+     * 
      * @param id the id
-     * @return true if removed false otherwise
+     * @return Session that was removed or null
      */
     public abstract Session doDelete (String id);
 
