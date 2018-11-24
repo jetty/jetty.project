@@ -57,6 +57,22 @@ import static java.lang.invoke.MethodType.methodType;
  <td>The percent sign.</td>
  </tr>
 
+
+
+
+ <tr>
+ <td valign="top">%{format}a</td>
+ <td>
+ Client IP address of the request.
+ Valid formats are {server, client, local, remote}
+
+ where server and client are the logical addresses
+ where local and remote are the physical addresses
+ </td>
+ </tr>
+
+
+
  <tr>
  <td valign="top">%a</td>
  <td>Client IP address of the request.</td>
@@ -71,6 +87,19 @@ import static java.lang.invoke.MethodType.methodType;
  <td valign="top">%A</td>
  <td>Local IP-address.</td>
  </tr>
+
+ <tr>
+ <td valign="top">%h</td>
+ <td>Remote hostname. Will log a dotted-string form of the IP if the Hostname cannot be resolved.</td>
+ </tr>
+
+ <tr>
+ <td valign="top">%v</td>
+ <td>
+ todo this is now %{server}a
+ The canonical ServerName of the server serving the request.</td>
+ </tr>
+
 
  <tr>
  <td valign="top">%B</td>
@@ -106,11 +135,6 @@ import static java.lang.invoke.MethodType.methodType;
  </tr>
 
  <tr>
- <td valign="top">%h</td>
- <td>Remote hostname. Will log a dotted-string form of the IP if the Hostname cannot be resolved.</td>
- </tr>
-
- <tr>
  <td valign="top">%H</td>
  <td>The request protocol.</td>
  </tr>
@@ -139,13 +163,18 @@ import static java.lang.invoke.MethodType.methodType;
 
  <tr>
  <td valign="top">%p</td>
- <td>The canonical port of the server serving the request.</td>
+ <td>The canonical port of the server serving the request.
+ todo merge this with below
+ </td>
  </tr>
-
  <tr>
  <td valign="top">%{format}p</td>
  <td>The canonical port of the server serving the request, or the server's actual port, or the client's actual port.
- Valid formats are canonical, local, or remote.</td>
+ Valid formats are canonical, local, or remote.
+ todo update this documenatation
+ server, client  logical
+ local, remote   physical
+ </td>
  </tr>
 
  <tr>
@@ -201,11 +230,6 @@ import static java.lang.invoke.MethodType.methodType;
  <tr>
  <td valign="top">%U</td>
  <td>The URL path requested, not including any query string.</td>
- </tr>
-
- <tr>
- <td valign="top">%v</td>
- <td>The canonical ServerName of the server serving the request.</td>
  </tr>
 
  <tr>
@@ -578,26 +602,35 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             case "a":
             {
                 String method;
-
-                if (arg != null)
+                switch (arg)
                 {
-                    if (!arg.equals("c"))
-                        throw new IllegalArgumentException("Argument of %a which is not 'c'");
+                    case "server":
+                        method = "logServerHost";
+                        break;
 
-                    method = "logConnectionIP";
-                }
-                else
-                {
-                    method = "logClientIP";
+                    case "client":
+                        method = "logClientHost";
+                        break;
+
+                    case "local":
+                        method = "logLocalHost";
+                        break;
+
+                    case "remote":
+                        method = "logRemoteHost";
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Invalid arg for %a");
                 }
 
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
 
-            case "A":
+            case "h":
             {
-                String method = "logLocalIP";
+                String method = "logRemoteHostName";
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
@@ -612,6 +645,38 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             case "b":
             {
                 String method = "logResponseSizeCLF";
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "I":
+            {
+                String method;
+                if (arg == null || arg.isEmpty())
+                    method = "logBytesReceived";
+                else if (arg.equals("CLF"))
+                {
+                    method = "logBytesReceivedCLF";
+                }
+                else
+                    throw new IllegalArgumentException("Invalid argument for %I");
+
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "O":
+            {
+                String method;
+                if (arg == null || arg.isEmpty())
+                    method = "logBytesSent";
+                else if (arg.equals("CLF"))
+                {
+                    method = "logBytesSentCLF";
+                }
+                else
+                    throw new IllegalArgumentException("Invalid argument for %I");
+
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
@@ -657,12 +722,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 break;
             }
 
-            case "h":
-            {
-                String method = "logRemoteHostName";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
 
             case "H":
             {
@@ -709,14 +768,16 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "p":
             {
-                if (arg == null || arg.isEmpty())
-                    arg = "canonical";
-
                 String method;
                 switch (arg)
                 {
-                    case "canonical":
-                        method = "logCanonicalPort";
+
+                    case "server":
+                        method = "logServerPort";
+                        break;
+
+                    case "client":
+                        method = "logClientPort";
                         break;
 
                     case "local":
@@ -822,30 +883,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 break;
             }
 
-            case "v":
-            {
-                String method = "logServerName";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
-
             case "X":
             {
                 String method = "logConnectionStatus";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
-
-            case "I":
-            {
-                String method = "logBytesReceived";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
-
-            case "O":
-            {
-                String method = "logBytesSent";
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
@@ -906,19 +946,44 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
     }
 
-    private static void logClientIP(StringBuilder b, Request request, Response response)
+    private static void logServerHost(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getRemoteAddr());
+        append(b, request.getServerName());
     }
 
-    private static void logConnectionIP(StringBuilder b, Request request, Response response)
+    private static void logClientHost(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getRemoteHost());
+    }
+
+    private static void logLocalHost(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getHttpChannel().getEndPoint().getLocalAddress().getAddress().getHostAddress());
+    }
+
+    private static void logRemoteHost(StringBuilder b, Request request, Response response)
     {
         append(b, request.getHttpChannel().getEndPoint().getRemoteAddress().getAddress().getHostAddress());
     }
 
-    private static void logLocalIP(StringBuilder b, Request request, Response response)
+    private static void logServerPort(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getLocalAddr());
+        b.append(request.getServerPort());
+    }
+
+    private static void logClientPort(StringBuilder b, Request request, Response response)
+    {
+        b.append(request.getRemotePort());
+    }
+
+    private static void logLocalPort(StringBuilder b, Request request, Response response)
+    {
+        b.append(request.getHttpChannel().getEndPoint().getLocalAddress().getPort());
+    }
+
+    private static void logRemotePort(StringBuilder b, Request request, Response response)
+    {
+        b.append(request.getHttpChannel().getEndPoint().getRemoteAddress().getPort());
     }
 
     private static void logResponseSize(StringBuilder b, Request request, Response response)
@@ -935,6 +1000,23 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         else
             b.append(written);
     }
+
+    private static void logBytesSent(StringBuilder b, Request request, Response response)
+    {
+        b.append(response.getHttpChannel().getBytesWritten());
+    }
+
+    private static void logBytesReceived(StringBuilder b, Request request, Response response)
+    {
+        //todo this be content received rather than consumed
+        b.append(request.getHttpInput().getContentConsumed());
+    }
+
+    private static void logBytesTransferred(StringBuilder b, Request request, Response response)
+    {
+        b.append(request.getHttpInput().getContentConsumed() + response.getHttpOutput().getWritten());
+    }
+
 
     private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
@@ -987,11 +1069,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         }
     }
 
-    private static void logRemoteHostName(StringBuilder b, Request request, Response response)
-    {
-        append(b, request.getRemoteHost());
-    }
-
     private static void logRequestProtocol(StringBuilder b, Request request, Response response)
     {
         append(b, request.getProtocol());
@@ -1019,21 +1096,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logResponseHeader(String arg, StringBuilder b, Request request, Response response)
     {
         append(b, response.getHeader(arg));
-    }
-
-    private static void logCanonicalPort(StringBuilder b, Request request, Response response)
-    {
-        b.append(request.getServerPort());
-    }
-
-    private static void logLocalPort(StringBuilder b, Request request, Response response)
-    {
-        b.append(request.getLocalPort());
-    }
-
-    private static void logRemotePort(StringBuilder b, Request request, Response response)
-    {
-        b.append(request.getRemotePort());
     }
 
     private static void logQueryString(StringBuilder b, Request request, Response response)
@@ -1101,32 +1163,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         append(b, request.getRequestURI());
     }
 
-    private static void logServerName(StringBuilder b, Request request, Response response)
-    {
-        append(b, request.getServerName());
-    }
-
     private static void logConnectionStatus(StringBuilder b, Request request, Response response)
     {
         b.append(request.getHttpChannel().isResponseCompleted() ?  (request.getHttpChannel().isPersistent() ? '+' : '-') : 'X');
     }
 
-    private static void logBytesReceived(StringBuilder b, Request request, Response response)
-    {
-        //todo should this be content received rather than consumed
-        b.append(request.getHttpInput().getContentConsumed());
-    }
-
-    private static void logBytesSent(StringBuilder b, Request request, Response response)
-    {
-        //todo difference between this and logResponseSize
-        b.append(response.getHttpOutput().getWritten());
-    }
-
-    private static void logBytesTransferred(StringBuilder b, Request request, Response response)
-    {
-        b.append(request.getHttpInput().getContentConsumed() + response.getHttpOutput().getWritten());
-    }
 
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {

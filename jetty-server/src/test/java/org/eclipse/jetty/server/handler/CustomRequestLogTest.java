@@ -19,6 +19,14 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.Socket;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -27,14 +35,18 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.DateCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,7 +54,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class CustomRequestLogTest
@@ -52,6 +64,8 @@ public class CustomRequestLogTest
     LocalConnector _connector;
     BlockingQueue<String> _entries = new BlockingArrayQueue<>();
     BlockingQueue<Long> requestTimes = new BlockingArrayQueue<>();
+    ServerConnector _serverConnector;
+    URI _serverURI;
 
 
     @BeforeEach
@@ -59,16 +73,28 @@ public class CustomRequestLogTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
+        _serverConnector = new ServerConnector(_server);
         _server.addConnector(_connector);
+        _server.addConnector(_serverConnector);
     }
 
     void testHandlerServerStart(String formatString) throws Exception
     {
+        _serverConnector.setPort(0);
+        _serverConnector.getBean(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         TestRequestLogWriter writer = new TestRequestLogWriter();
         _log = new CustomRequestLog(writer, formatString);
         _server.setRequestLog(_log);
         _server.setHandler(new TestHandler());
         _server.start();
+
+        String host = _serverConnector.getHost();
+        if (host == null)
+        {
+            host = "localhost";
+        }
+        int localPort = _serverConnector.getLocalPort();
+        _serverURI = new URI(String.format("http://%s:%d/",host,localPort));
     }
 
     @AfterEach
@@ -106,33 +132,58 @@ public class CustomRequestLogTest
     }
 
     @Test
-    public void testLogClientIP() throws Exception
+    public void testLogAddress() throws Exception
     {
-        testHandlerServerStart("ClientIP: %a");
+        testHandlerServerStart("%{local}a|%{local}p|" +
+                "%{remote}a|%{remote}p|" +
+                "%{server}a|%{server}p|" +
+                "%{client}a|%{client}p");
 
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
+        Enumeration e = NetworkInterface.getNetworkInterfaces();
+        while(e.hasMoreElements())
+        {
+            NetworkInterface n = (NetworkInterface) e.nextElement();
+            if (n.isLoopback())
+            {
+                Enumeration ee = n.getInetAddresses();
+                while (ee.hasMoreElements())
+                {
+                    InetAddress i = (InetAddress)ee.nextElement();
+                    try (Socket client = newSocket(i.getHostAddress(), _serverURI.getPort()))
+                    {
+                        OutputStream os = client.getOutputStream();
+                        String request = "GET / HTTP/1.0\n" +
+                                "Host: webtide.com:1234\n" +
+                                "Forwarded: For=10.1.2.3:1337\n" +
+                                "\n\n";
+                        os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+                        os.flush();
 
-    @Test
-    public void testLogConnectionIP() throws Exception
-    {
-        testHandlerServerStart("ConnectionIP: %{c}a");
+                        String[] log = _entries.poll(5, TimeUnit.SECONDS).split("\\|");
+                        assertThat(log.length, is(8));
 
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
+                        String localAddr = log[0];
+                        String localPort = log[1];
+                        String remoteAddr = log[2];
+                        String remotePort = log[3];
+                        String serverAddr = log[4];
+                        String serverPort = log[5];
+                        String clientAddr = log[6];
+                        String clientPort = log[7];
 
-    @Test
-    public void testLogLocalIP() throws Exception
-    {
-        testHandlerServerStart("LocalIP: %A");
+                        assertThat(serverPort, is("1234"));
+                        assertThat(clientPort, is("1337"));
+                        assertThat(remotePort, not(clientPort));
+                        assertThat(localPort, not(serverPort));
 
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
+                        assertThat(serverAddr, is("webtide.com"));
+                        assertThat(clientAddr, is("10.1.2.3"));
+                        assertThat(InetAddress.getByName(remoteAddr), is(client.getInetAddress()));
+                        assertThat(InetAddress.getByName(localAddr), is(i));
+                    }
+                }
+            }
+        }
     }
 
     @Test
@@ -164,9 +215,46 @@ public class CustomRequestLogTest
     }
 
     @Test
+    public void testLogBytesSent() throws Exception
+    {
+        testHandlerServerStart("BytesSent: %O");
+
+        _connector.getResponse("GET / HTTP/1.0\necho: hello world\n\n");
+        String log = _entries.poll(5,TimeUnit.SECONDS);
+        assertThat(log, is("BytesSent: 11"));
+    }
+
+    @Test
+    public void testLogBytesReceived() throws Exception
+    {
+        testHandlerServerStart("BytesReceived: %I");
+
+        _connector.getResponse("GET / HTTP/1.0\n" +
+                "Content-Length: 11\n\n" +
+                "hello world");
+
+        String log = _entries.poll(5,TimeUnit.SECONDS);
+        assertThat(log, is("BytesReceived: 11"));
+    }
+
+    @Test
+    public void testLogBytesTransferred() throws Exception
+    {
+        testHandlerServerStart("BytesTransferred: %S");
+
+        _connector.getResponse("GET / HTTP/1.0\n" +
+                "echo: hello world\n" +
+                "Content-Length: 11\n\n" +
+                "hello world");
+
+        String log = _entries.poll(5,TimeUnit.SECONDS);
+        assertThat(log, is("BytesTransferred: 22"));
+    }
+
+    @Test
     public void testLogRequestCookie() throws Exception
     {
-        testHandlerServerStart("RequestCookie: %{cookieName}C, %{cookie2}C, %{cookie3}C");
+        testHandlerServerStart("RequestCookies: %{cookieName}C, %{cookie2}C, %{cookie3}C");
 
         _connector.getResponse("GET / HTTP/1.0\nCookie: cookieName=cookieValue; cookie2=value2\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
@@ -194,23 +282,13 @@ public class CustomRequestLogTest
     }
 
     @Test
-    public void testLogRemoteHostName() throws Exception
-    {
-        testHandlerServerStart("RemoteHostName: %h");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
-    @Test
     public void testLogRequestProtocol() throws Exception
     {
-        testHandlerServerStart("RequestProtocol: %H");
+        testHandlerServerStart("%H");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("Protocol: HTTP/1.0"));
+        assertThat(log, is("HTTP/1.0"));
     }
 
     @Test
@@ -246,6 +324,7 @@ public class CustomRequestLogTest
         assertThat(_entries.poll(5,TimeUnit.SECONDS), is("KeepAliveRequests: 3"));
     }
 
+    @Disabled
     @Test
     public void testLogKeepAliveRequestsHttp2() throws Exception
     {
@@ -271,45 +350,6 @@ public class CustomRequestLogTest
         _connector.getResponse("GET /responseHeaders HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log, is("ResponseHeader: value1, value2, -"));
-    }
-
-    @Test
-    public void testLogCanonicalPort() throws Exception
-    {
-        testHandlerServerStart("CanonicalPort: %p, %{canonical}p");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
-    @Test
-    public void testLogLocalPort() throws Exception
-    {
-        testHandlerServerStart("LocalPort: %{local}p");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
-    @Test
-    public void testLogRemotePort() throws Exception
-    {
-        testHandlerServerStart("RemotePort: %{remote}p");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
-    @Test
-    public void testLogUnknownPort() throws Exception
-    {
-        assertThrows(IllegalArgumentException.class, ()->
-        {
-            testHandlerServerStart("%{unknown}p");
-        });
     }
 
     @Test
@@ -357,7 +397,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        long requestTime = requestTimes.poll(5,TimeUnit.SECONDS).longValue();
+        long requestTime = requestTimes.poll(5,TimeUnit.SECONDS);
         DateCache dateCache = new DateCache(_log.DEFAULT_DATE_FORMAT, _log.getLogLocale(), _log.getLogTimeZone());
         assertThat(log, is("RequestTime: ["+ dateCache.format(requestTime) +"]"));
     }
@@ -369,7 +409,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        long requestTime = requestTimes.poll(5,TimeUnit.SECONDS).longValue();
+        long requestTime = requestTimes.poll(5,TimeUnit.SECONDS);
         DateCache dateCache = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", _log.getLogLocale(), _log.getLogTimeZone());
         assertThat(log, is("RequestTime: ["+ dateCache.format(requestTime) +"]"));
     }
@@ -421,16 +461,6 @@ public class CustomRequestLogTest
     }
 
     @Test
-    public void testLogRequestAuthentication() throws Exception
-    {
-        testHandlerServerStart("RequestAuthentication: %u");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
-    @Test
     public void testLogUrlRequestPath() throws Exception
     {
         testHandlerServerStart("UrlRequestPath: %U");
@@ -440,16 +470,7 @@ public class CustomRequestLogTest
         assertThat(log, is("UrlRequestPath: /path"));
     }
 
-    @Test
-    public void testLogServerName() throws Exception
-    {
-        testHandlerServerStart("ServerName: %v");
-
-        _connector.getResponse("GET / HTTP/1.0\nHost: webtide.com\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("ServerName: webtide.com"));
-    }
-
+    @Disabled
     @Test
     public void testLogConnectionStatus() throws Exception
     {
@@ -460,56 +481,40 @@ public class CustomRequestLogTest
         fail(log);
     }
 
-    @Test
-    public void testLogBytesReceived() throws Exception
-    {
-        testHandlerServerStart("BytesReceived: %I");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
-    @Test
-    public void testLogBytesSent() throws Exception
-    {
-        testHandlerServerStart("BytesSent: %I");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
-    @Test
-    public void testLogBytesTransferred() throws Exception
-    {
-        testHandlerServerStart("BytesTransferred: %I");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
-    }
-
+    @Disabled
     @Test
     public void testLogRequestTrailer() throws Exception
     {
-        testHandlerServerStart("RequestTrailer: %{trailerName}ti");
+        testHandlerServerStart("%{trailerName}ti");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         fail(log);
     }
 
+    @Disabled
     @Test
     public void testLogResponseTrailer() throws Exception
     {
-        testHandlerServerStart("ResponseTrailer: %{trailerName}to");
+        testHandlerServerStart("%{trailerName}to");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         fail(log);
     }
-    
+
+    protected Socket newSocket() throws Exception
+    {
+        return newSocket(_serverURI.getHost(), _serverURI.getPort());
+    }
+
+    protected Socket newSocket(String host, int port) throws Exception
+    {
+        Socket socket = new Socket(host, port);
+        socket.setSoTimeout(10000);
+        socket.setTcpNoDelay(true);
+        return socket;
+    }
 
     class TestRequestLogWriter implements RequestLog.Writer
     {
@@ -564,6 +569,12 @@ public class CustomRequestLogTest
 
             requestTimes.offer(baseRequest.getTimeStamp());
             baseRequest.setHandled(true);
+
+            if (request.getContentLength() > 0)
+            {
+                InputStream in = request.getInputStream();
+                while (in.read()>0);
+            }
         }
     }
 }
