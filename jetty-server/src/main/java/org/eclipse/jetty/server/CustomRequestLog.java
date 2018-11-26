@@ -47,8 +47,9 @@ import static java.lang.invoke.MethodType.methodType;
 
 /**
  <table>
+ <caption>CustomRequestLog Format Codes</caption>
  <tr>
- <td width="20%"><b>Format String</b></td>
+ <td><b>Format String</b></td>
  <td><b>Description</b></td>
  </tr>
 
@@ -267,7 +268,6 @@ import static java.lang.invoke.MethodType.methodType;
  <td>%{VARNAME}^to</td>
  <td>The contents of VARNAME: trailer line(s) in the response sent from the server.</td>
  </tr>
-
  </table>
  */
 public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
@@ -336,6 +336,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     /**
      * Extract the user authentication
      * @param request The request to extract from
+     * @param checkDeferred Whether to check for deferred authentication
      * @return The string to log for authenticated user.
      */
     protected static String getAuthentication(Request request, boolean checkDeferred)

@@ -64,7 +64,10 @@ public class NCSARequestLog extends AbstractNCSARequestLog
 
     /* ------------------------------------------------------------ */
     /**
-     * Create request log object with specified output file name.
+     * Create request log object given a RequestLogWriter file name.
+     *
+     * @param writer the writer which manages the output of the formatted string
+     *               produced by the {@link RequestLog}
      */
     public NCSARequestLog(RequestLogWriter writer)
     {
