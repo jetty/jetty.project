@@ -26,6 +26,10 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+
+/**
+ * An asynchronously writing RequestLogWriter
+ */
 public class AsyncRequestLogWriter extends RequestLogWriter
 {
     private static final Logger LOG = Log.getLogger(AsyncRequestLogWriter.class);
@@ -38,19 +42,19 @@ public class AsyncRequestLogWriter extends RequestLogWriter
         this(null, null);
     }
 
-    public AsyncRequestLogWriter(String filename,BlockingQueue<String> queue)
+    public AsyncRequestLogWriter(String filename, BlockingQueue<String> queue)
     {
         super(filename);
-        if (queue==null)
-            queue=new BlockingArrayQueue<>(1024);
-        _queue=queue;
+        if (queue == null)
+            queue = new BlockingArrayQueue<>(1024);
+        _queue = queue;
     }
 
     private class WriterThread extends Thread
     {
         WriterThread()
         {
-            setName("AsyncRequestLogWriter@"+Integer.toString(AsyncRequestLogWriter.this.hashCode(),16));
+            setName("AsyncRequestLogWriter@" + Integer.toString(AsyncRequestLogWriter.this.hashCode(), 16));
         }
 
         @Override
@@ -61,13 +65,13 @@ public class AsyncRequestLogWriter extends RequestLogWriter
                 try
                 {
                     String log = _queue.poll(10, TimeUnit.SECONDS);
-                    if (log!=null)
+                    if (log != null)
                         AsyncRequestLogWriter.super.write(log);
 
-                    while(!_queue.isEmpty())
+                    while (!_queue.isEmpty())
                     {
-                        log=_queue.poll();
-                        if (log!=null)
+                        log = _queue.poll();
+                        if (log != null)
                             AsyncRequestLogWriter.super.write(log);
                     }
                 }
@@ -97,7 +101,7 @@ public class AsyncRequestLogWriter extends RequestLogWriter
         _thread.interrupt();
         _thread.join();
         super.doStop();
-        _thread=null;
+        _thread = null;
     }
 
     @Override
@@ -107,7 +111,7 @@ public class AsyncRequestLogWriter extends RequestLogWriter
         {
             if (_warnedFull)
                 LOG.warn("Log Queue overflow");
-            _warnedFull=true;
+            _warnedFull = true;
         }
     }
 }

@@ -32,7 +32,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * Format (single log format). This log format can be output by most web
  * servers, and almost all web log analysis software can understand these
  * formats.
- * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#NCSA_FORMAT} with a {@link RequestLogWriter}
+ *
+ * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with a {@link RequestLogWriter}
  */
 @Deprecated
 @ManagedObject("NCSA standard format request log")
@@ -40,7 +41,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
 {
     private final RequestLogWriter _requestLogWriter;
 
-    /* ------------------------------------------------------------ */
     /**
      * Create request log object with default settings.
      */
@@ -49,7 +49,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         this((String)null);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Create request log object with specified output file name.
      *
@@ -62,7 +61,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         this(new RequestLogWriter(filename));
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Create request log object given a RequestLogWriter file name.
      *
@@ -76,21 +74,18 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         setExtended(true);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the output file name of the request log.
      * The file name may be in the format expected by
      * {@link RolloverFileOutputStream}.
      *
      * @param filename file name of the request log
-     *
      */
     public void setFilename(String filename)
     {
         _requestLogWriter.setFilename(filename);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void setLogTimeZone(String tz)
     {
@@ -98,7 +93,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         _requestLogWriter.setTimeZone(tz);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve the output file name of the request log.
      *
@@ -109,8 +103,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
     {
         return _requestLogWriter.getFileName();
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Retrieve the file name of the request log with the expanded
      * date wildcard if the output is written to the disk using
@@ -123,14 +116,12 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         return _requestLogWriter.getDatedFilename();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected boolean isEnabled()
     {
         return _requestLogWriter.isEnabled();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the number of days before rotated log files are deleted.
      *
@@ -141,7 +132,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         _requestLogWriter.setRetainDays(retainDays);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve the number of days before rotated log files are deleted.
      *
@@ -153,7 +143,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         return _requestLogWriter.getRetainDays();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set append to log flag.
      *
@@ -165,7 +154,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         _requestLogWriter.setAppend(append);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve append to log flag.
      *
@@ -177,19 +165,17 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         return _requestLogWriter.isAppend();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the log file name date format.
-     * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
      *
      * @param logFileDateFormat format string that is passed to {@link RolloverFileOutputStream}
+     * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
      */
     public void setFilenameDateFormat(String logFileDateFormat)
     {
         _requestLogWriter.setFilenameDateFormat(logFileDateFormat);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve the file name date format string.
      *
@@ -200,14 +186,12 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         return _requestLogWriter.getFilenameDateFormat();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void write(String requestEntry) throws IOException
     {
         _requestLogWriter.write(requestEntry);
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Set up request logging and open log file.
      *
@@ -219,7 +203,6 @@ public class NCSARequestLog extends AbstractNCSARequestLog
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Close the log file and perform cleanup.
      *

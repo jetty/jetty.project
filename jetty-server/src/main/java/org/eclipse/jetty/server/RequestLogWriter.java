@@ -29,6 +29,9 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * Writer which outputs pre-formatted request log strings to a file using {@link RolloverFileOutputStream}.
+ */
 public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Writer
 {
     private static final Logger LOG = Log.getLogger(RequestLogWriter.class);
@@ -53,7 +56,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         setAppend(true);
         setRetainDays(31);
 
-        if(filename != null)
+        if (filename != null)
             setFilename(filename);
     }
 
@@ -63,7 +66,6 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
      * {@link RolloverFileOutputStream}.
      *
      * @param filename file name of the request log
-     *
      */
     public void setFilename(String filename)
     {
@@ -85,7 +87,6 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
     {
         return _filename;
     }
-
 
     /**
      * Retrieve the file name of the request log with the expanded
@@ -126,7 +127,6 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         return _retainDays;
     }
 
-
     /**
      * Set append to log flag.
      *
@@ -148,19 +148,17 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         return _append;
     }
 
-
     /**
      * Set the log file name date format.
-     * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
      *
      * @param logFileDateFormat format string that is passed to {@link RolloverFileOutputStream}
+     * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
      */
     public void setFilenameDateFormat(String logFileDateFormat)
     {
         _filenameDateFormat = logFileDateFormat;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve the file name date format string.
      *
@@ -171,13 +169,12 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         return _filenameDateFormat;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void write(String requestEntry) throws IOException
     {
-        synchronized(this)
+        synchronized (this)
         {
-            if (_writer==null)
+            if (_writer == null)
                 return;
             _writer.write(requestEntry);
             _writer.write(System.lineSeparator());
@@ -185,18 +182,12 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Set up request logging and open log file.
-     *
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected synchronized void doStart() throws Exception
     {
         if (_filename != null)
         {
-            _fileOut = new RolloverFileOutputStream(_filename,_append,_retainDays,TimeZone.getTimeZone(getTimeZone()),_filenameDateFormat,null);
+            _fileOut = new RolloverFileOutputStream(_filename, _append, _retainDays, TimeZone.getTimeZone(getTimeZone()), _filenameDateFormat, null);
             _closeOut = true;
             LOG.info("Opened " + getDatedFilename());
         }
@@ -205,7 +196,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
 
         _out = _fileOut;
 
-        synchronized(this)
+        synchronized (this)
         {
             _writer = new OutputStreamWriter(_out);
         }
@@ -222,12 +213,6 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         return _timeZone;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Close the log file and perform cleanup.
-     *
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

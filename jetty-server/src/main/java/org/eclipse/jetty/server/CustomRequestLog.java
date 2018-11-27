@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,236 +48,222 @@ import static java.lang.invoke.MethodHandles.foldArguments;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
- <table>
- <caption>CustomRequestLog Format Codes</caption>
- <tr>
- <td><b>Format String</b></td>
- <td><b>Description</b></td>
- </tr>
-
- <tr>
- <td>%%</td>
- <td>The percent sign.</td>
- </tr>
-
-
-
-
- <tr>
- <td valign="top">%{format}a</td>
- <td>
- Client IP address of the request.
- Valid formats are {server, client, local, remote}
-
- where server and client are the logical addresses
- where local and remote are the physical addresses
- </td>
- </tr>
-
-
-
- <tr>
- <td valign="top">%a</td>
- <td>Client IP address of the request.</td>
- </tr>
-
- <tr>
- <td valign="top">%{c}a</td>
- <td>Underlying peer IP address of the connection.</td>
- </tr>
-
- <tr>
- <td valign="top">%A</td>
- <td>Local IP-address.</td>
- </tr>
-
- <tr>
- <td valign="top">%h</td>
- <td>Remote hostname. Will log a dotted-string form of the IP if the Hostname cannot be resolved.</td>
- </tr>
-
- <tr>
- <td valign="top">%v</td>
- <td>
- todo this is now %{server}a
- The canonical ServerName of the server serving the request.</td>
- </tr>
-
-
- <tr>
- <td valign="top">%B</td>
- <td>Size of response in bytes, excluding HTTP headers.</td>
- </tr>
-
- <tr>
- <td valign="top">%b</td>
- <td>Size of response in bytes, excluding HTTP headers. In CLF format, i.e. a '-' rather than a 0 when no bytes are sent.</td>
- </tr>
-
- <tr>
- <td valign="top">%{VARNAME}C</td>
- <td>
- The contents of cookie VARNAME in the request sent to the server. Only version 0 cookies are fully supported.
- Optional VARNAME parameter, without this parameter %C will log all cookies from the request.
- </td>
- </tr>
-
- <tr>
- <td valign="top">%D</td>
- <td>The time taken to serve the request, in microseconds.</td>
- </tr>
-
- <tr>
- <td valign="top">%{VARNAME}e</td>
- <td>The contents of the environment variable VARNAME.</td>
- </tr>
-
- <tr>
- <td valign="top">%f</td>
- <td>Filename.</td>
- </tr>
-
- <tr>
- <td valign="top">%H</td>
- <td>The request protocol.</td>
- </tr>
-
- <tr>
- <td valign="top">%{VARNAME}i</td>
- <td>The contents of VARNAME: header line(s) in the request sent to the server.</td>
- </tr>
-
- <tr>
- <td valign="top">%k</td>
- <td>Number of keepalive requests handled on this connection.
- Interesting if KeepAlive is being used, so that, for example, a '1' means the first keepalive request
- after the initial one, '2' the second, etc...; otherwise this is always 0 (indicating the initial request).</td>
- </tr>
-
- <tr>
- <td valign="top">%m</td>
- <td>The request method.</td>
- </tr>
-
- <tr>
- <td valign="top">%{VARNAME}o</td>
- <td>The contents of VARNAME: header line(s) in the response.</td>
- </tr>
-
- <tr>
- <td valign="top">%p</td>
- <td>The canonical port of the server serving the request.
- todo merge this with below
- </td>
- </tr>
- <tr>
- <td valign="top">%{format}p</td>
- <td>The canonical port of the server serving the request, or the server's actual port, or the client's actual port.
- Valid formats are canonical, local, or remote.
- todo update this documenatation
- server, client  logical
- local, remote   physical
- </td>
- </tr>
-
- <tr>
- <td valign="top">%q</td>
- <td>The query string (prepended with a ? if a query string exists, otherwise an empty string).</td>
- </tr>
-
- <tr>
- <td valign="top">%r</td>
- <td>First line of request.</td>
- </tr>
-
- <tr>
- <td valign="top">%R</td>
- <td>The handler generating the response (if any).</td>
- </tr>
-
- <tr>
- <td valign="top">%s</td>
- <td>Response status.</td>
- </tr>
-
- <tr>
- <td valign="top">%{format}t</td>
- <td>
- The time, in the form given by an optional format, parameter (default format [18/Sep/2011:19:18:28 -0400] where
- the last number indicates the timezone offset from GMT.)
- <br>
- The format parameter should be in a format supported by {@link DateCache}
- </td>
- </tr>
-
- <tr>
- <td valign="top">%T</td>
- <td>The time taken to serve the request, in seconds.</td>
- </tr>
-
- <tr>
- <td valign="top">%{UNIT}T</td>
- <td>The time taken to serve the request, in a time unit given by UNIT.
- Valid units are ms for milliseconds, us for microseconds, and s for seconds.
- Using s gives the same result as %T without any format; using us gives the same result as %D.</td>
- </tr>
-
- <tr>
- <td valign="top">%{d}u</td>
- <td>
- Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).
- Optional parameter d, with this parameter deferred authentication will also be checked.
- </td>
- </tr>
-
- <tr>
- <td valign="top">%U</td>
- <td>The URL path requested, not including any query string.</td>
- </tr>
-
- <tr>
- <td valign="top">%X</td>
- <td>
- Connection status when response is completed:
- <pre>
- X = Connection aborted before the response completed.
- + = Connection may be kept alive after the response is sent.
- - = Connection will be closed after the response is sent.</pre>
- </td>
- </tr>
-
- <tr>
- <td valign="top">%I</td>
- <td>Bytes received.</td>
- </tr>
-
- <tr>
- <td valign="top">%O</td>
- <td>Bytes sent.</td>
- </tr>
-
- <tr>
- <td valign="top">%S</td>
- <td>Bytes transferred (received and sent). This is the combination of %I and %O.</td>
- </tr>
-
- <tr>
- <td valign="top">%{VARNAME}^ti</td>
- <td>The contents of VARNAME: trailer line(s) in the request sent to the server.</td>
- </tr>
-
- <tr>
- <td>%{VARNAME}^to</td>
- <td>The contents of VARNAME: trailer line(s) in the response sent from the server.</td>
- </tr>
- </table>
+ * A flexible RequestLog, which produces log strings in a customizable format.
+ * The Logger takes a format string where request characteristics can be added using "%" format codes which are
+ * replaced by the corresponding value in the log output.
+ * <p>
+ * The terms server, client, local and remote are used to refer to the different addresses and ports
+ * which can be logged. Server and client refer to the logical addresses which can be modified in the request
+ * headers. Where local and remote refer to the physical addresses which may be a proxy between the
+ * end-user and the server.
+ *
+ *
+ * <br><br>Percent codes are specified in the format %MODIFIERS{PARAM}CODE
+ *<pre>
+ * MODIFIERS:
+ *     Optional list of comma separated HTTP status codes which may be preceded by a single "!" to indicate
+ *     negation. If the status code is not in the list the literal string "-" will be logged instead of
+ *     the resulting value from the percent code.
+ * {PARAM}:
+ *     Parameter string which may be optional depending on the percent code used.
+ * CODE:
+ *     A one or two character code specified by the {@link CustomRequestLog} table of format codes.
+ * </pre>
+ *
+ * <table>
+ * <caption>Format Codes</caption>
+ * <tr>
+ * <td><b>Format String</b></td>
+ * <td><b>Description</b></td>
+ * </tr>
+ *
+ * <tr>
+ * <td>%%</td>
+ * <td>The percent sign.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{format}a</td>
+ * <td>
+ * Address or Hostname. Valid formats are {server, client, local, remote}
+ * Optional format parameter which will be server by default.
+ * <br>
+ * Where server and client are the logical addresses which can be modified in the request headers, while local and
+ * remote are the physical addresses so may be a proxy between the end-user and the server.
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{format}p</td>
+ * <td>
+ * Port. Valid formats are {server, client, local, remote}
+ * Optional format parameter which will be server by default.
+ * <br>
+ * Where server and client are the logical ports which can be modified in the request headers, while local and
+ * remote are the physical ports so may be to a proxy between the end-user and the server.
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{clf}I</td>
+ * <td>
+ * Size of request in bytes, excluding HTTP headers.
+ * Optional parameter with value of clf to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{clf}O</td>
+ * <td>
+ * Size of response in bytes, excluding HTTP headers.
+ * Optional parameter with value of clf to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{clf}S</td>
+ * <td>
+ * Bytes transferred (received and sent). This is the combination of %I and %O.
+ * Optional parameter with value of clf to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{VARNAME}C</td>
+ * <td>
+ * The contents of cookie VARNAME in the request sent to the server. Only version 0 cookies are fully supported.
+ * Optional VARNAME parameter, without this parameter %C will log all cookies from the request.
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%D</td>
+ * <td>The time taken to serve the request, in microseconds.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{VARNAME}e</td>
+ * <td>The contents of the environment variable VARNAME.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%f</td>
+ * <td>Filename.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%H</td>
+ * <td>The request protocol.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{VARNAME}i</td>
+ * <td>The contents of VARNAME: header line(s) in the request sent to the server.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%k</td>
+ * <td>Number of keepalive requests handled on this connection.
+ * Interesting if KeepAlive is being used, so that, for example, a '1' means the first keepalive request
+ * after the initial one, '2' the second, etc...; otherwise this is always 0 (indicating the initial request).</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%m</td>
+ * <td>The request method.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{VARNAME}o</td>
+ * <td>The contents of VARNAME: header line(s) in the response.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%q</td>
+ * <td>The query string (prepended with a ? if a query string exists, otherwise an empty string).</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%r</td>
+ * <td>First line of request.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%R</td>
+ * <td>The handler generating the response (if any).</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%s</td>
+ * <td>Response status.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{format}t</td>
+ * <td>
+ * The time, in the form given by an optional format, parameter (default format [18/Sep/2011:19:18:28 -0400] where
+ * the last number indicates the timezone offset from GMT.)
+ * <br>
+ * The format parameter should be in a format supported by {@link DateCache}
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%T</td>
+ * <td>The time taken to serve the request, in seconds.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{UNIT}T</td>
+ * <td>The time taken to serve the request, in a time unit given by UNIT.
+ * Valid units are ms for milliseconds, us for microseconds, and s for seconds.
+ * Using s gives the same result as %T without any format; using us gives the same result as %D.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{d}u</td>
+ * <td>
+ * Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).
+ * Optional parameter d, with this parameter deferred authentication will also be checked.
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%U</td>
+ * <td>The URL path requested, not including any query string.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%X</td>
+ * <td>
+ * Connection status when response is completed:
+ * <pre>
+ * X = Connection aborted before the response completed.
+ * + = Connection may be kept alive after the response is sent.
+ * - = Connection will be closed after the response is sent.</pre>
+ * </td>
+ * </tr>
+ *
+ * <tr>
+ * <td valign="top">%{VARNAME}^ti</td>
+ * <td>The contents of VARNAME: trailer line(s) in the request sent to the server.</td>
+ * </tr>
+ *
+ * <tr>
+ * <td>%{VARNAME}^to</td>
+ * <td>The contents of VARNAME: trailer line(s) in the response sent from the server.</td>
+ * </tr>
+ * </table>
  */
+@ManagedObject("Custom format request log")
 public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(CustomRequestLog.class);
 
-    public static final String NCSA_FORMAT = "%a - %u %t \"%r\" %s %B \"%{Referer}i\" \"%{User-Agent}i\" \"%C\"";
     public static final String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
+
+    public static final String NCSA_FORMAT = "%{client}a - %u %t \"%r\" %s %O";
+    public static final String EXTENDED_NCSA_FORMAT = "%{client}a - %u %t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"";
 
     private static ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
 
@@ -286,9 +274,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private RequestLog.Writer _requestLogWriter;
     private final MethodHandle _logHandle;
+    private final String _formatString;
 
     public CustomRequestLog(RequestLog.Writer writer, String formatString)
     {
+        _formatString = formatString;
         _requestLogWriter = writer;
         addBean(_requestLogWriter);
 
@@ -335,7 +325,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     /**
      * Extract the user authentication
-     * @param request The request to extract from
+     *
+     * @param request       The request to extract from
      * @param checkDeferred Whether to check for deferred authentication
      * @return The string to log for authenticated user.
      */
@@ -346,7 +337,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         String name = null;
 
         boolean deferred = false;
-        if (checkDeferred && authentication instanceof  Authentication.Deferred)
+        if (checkDeferred && authentication instanceof Authentication.Deferred)
         {
             authentication = ((Authentication.Deferred)authentication).authenticate(request);
             deferred = true;
@@ -355,7 +346,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         if (authentication instanceof Authentication.User)
             name = ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
 
-        return (name==null) ? null : (deferred ? ("?"+name):name);
+        return (name == null) ? null : (deferred ? ("?" + name) : name);
     }
 
     /**
@@ -376,6 +367,18 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     public String[] getIgnorePaths()
     {
         return _ignorePaths;
+    }
+
+
+    /**
+     * Retrieve the format string.
+     *
+     * @return the format string
+     */
+    @ManagedAttribute("format string")
+    public String getFormatString()
+    {
+        return _formatString;
     }
 
     /**
@@ -442,7 +445,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void append(StringBuilder buf, String s)
     {
-        if (s==null || s.length()==0)
+        if (s == null || s.length() == 0)
             buf.append('-');
         else
             buf.append(s);
@@ -474,11 +477,21 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static List<Token> getTokens(String formatString)
     {
+        /*
+        Extracts literal strings and percent codes out of the format string.
+        We will either match a percent code of the format %MODIFIERS{PARAM}CODE, or a literal string
+        until the next percent code or the end of the formatString is reached.
+
+        where
+            MODIFIERS is an optional comma separated list of numbers.
+            {PARAM} is an optional string parameter to the percent code.
+            CODE is a 1 to 2 character string corresponding to a format code.
+         */
         final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)");
 
         List<Token> tokens = new ArrayList<>();
         String remaining = formatString;
-        while(remaining.length()>0)
+        while (remaining.length() > 0)
         {
             Matcher m = PATTERN.matcher(remaining);
             if (m.matches())
@@ -542,6 +555,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             this.literal = null;
         }
+
         public Token(String literal)
         {
             this.code = null;
@@ -554,15 +568,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
         public boolean isLiteralString()
         {
-            return(literal != null);
+            return (literal != null);
         }
 
         public boolean isPercentCode()
         {
-            return(code != null);
+            return (code != null);
         }
     }
-
 
 
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
@@ -577,11 +590,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         String responseCode = Integer.toString(response.getStatus());
         if (negated)
         {
-            return(!modifiers.contains(responseCode));
+            return (!modifiers.contains(responseCode));
         }
         else
         {
-            return(modifiers.contains(responseCode));
+            return (modifiers.contains(responseCode));
         }
     }
 
@@ -602,6 +615,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "a":
             {
+                if (arg == null || arg.isEmpty())
+                    arg = "server";
+
                 String method;
                 switch (arg)
                 {
@@ -629,23 +645,35 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 break;
             }
 
-            case "h":
+            case "p":
             {
-                String method = "logRemoteHostName";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
+                if (arg == null || arg.isEmpty())
+                    arg = "server";
 
-            case "B":
-            {
-                String method = "logResponseSize";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
+                String method;
+                switch (arg)
+                {
 
-            case "b":
-            {
-                String method = "logResponseSizeCLF";
+                    case "server":
+                        method = "logServerPort";
+                        break;
+
+                    case "client":
+                        method = "logClientPort";
+                        break;
+
+                    case "local":
+                        method = "logLocalPort";
+                        break;
+
+                    case "remote":
+                        method = "logRemotePort";
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Invalid arg for %p");
+                }
+
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
@@ -656,9 +684,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     method = "logBytesReceived";
                 else if (arg.equals("CLF"))
-                {
                     method = "logBytesReceivedCLF";
-                }
                 else
                     throw new IllegalArgumentException("Invalid argument for %I");
 
@@ -672,11 +698,23 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     method = "logBytesSent";
                 else if (arg.equals("CLF"))
-                {
                     method = "logBytesSentCLF";
-                }
                 else
-                    throw new IllegalArgumentException("Invalid argument for %I");
+                    throw new IllegalArgumentException("Invalid argument for %O");
+
+                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
+                break;
+            }
+
+            case "S":
+            {
+                String method;
+                if (arg == null || arg.isEmpty())
+                    method = "logBytesTransferred";
+                else if (arg.equals("CLF"))
+                    method = "logBytesTransferredCLF";
+                else
+                    throw new IllegalArgumentException("Invalid argument for %S");
 
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
@@ -767,36 +805,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 break;
             }
 
-            case "p":
-            {
-                String method;
-                switch (arg)
-                {
-
-                    case "server":
-                        method = "logServerPort";
-                        break;
-
-                    case "client":
-                        method = "logClientPort";
-                        break;
-
-                    case "local":
-                        method = "logLocalPort";
-                        break;
-
-                    case "remote":
-                        method = "logRemotePort";
-                        break;
-
-                    default:
-                        throw new IllegalArgumentException("Invalid arg for %p");
-                }
-
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
-
             case "q":
             {
                 String method = "logQueryString";
@@ -829,9 +837,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             {
                 DateCache logDateCache;
                 if (arg == null || arg.isEmpty())
-                    logDateCache = new DateCache(DEFAULT_DATE_FORMAT, _logLocale , _logTimeZone);
+                    logDateCache = new DateCache(DEFAULT_DATE_FORMAT, _logLocale, _logTimeZone);
                 else
-                    logDateCache = new DateCache(arg, _logLocale , _logTimeZone);
+                    logDateCache = new DateCache(arg, _logLocale, _logTimeZone);
 
                 String method = "logRequestTime";
                 MethodType logTypeDateCache = methodType(Void.TYPE, DateCache.class, StringBuilder.class, Request.class, Response.class);
@@ -891,14 +899,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 break;
             }
 
-            case "S":
-            {
-                String method = "logBytesTransferred";
-                specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
-                break;
-            }
-
-
             case "ti":
             {
                 if (arg == null || arg.isEmpty())
@@ -938,7 +938,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
         return foldArguments(logHandle, specificHandle);
     }
-
 
 
     //-----------------------------------------------------------------------------------//
@@ -996,7 +995,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
     {
         long written = response.getHttpChannel().getBytesWritten();
-        if (written==0)
+        if (written == 0)
             b.append('-');
         else
             b.append(written);
@@ -1007,15 +1006,45 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         b.append(response.getHttpChannel().getBytesWritten());
     }
 
+    private static void logBytesSentCLF(StringBuilder b, Request request, Response response)
+    {
+        long sent = response.getHttpChannel().getBytesWritten();
+        if (sent == 0)
+            b.append('-');
+        else
+            b.append(sent);
+    }
+
     private static void logBytesReceived(StringBuilder b, Request request, Response response)
     {
         //todo this be content received rather than consumed
         b.append(request.getHttpInput().getContentConsumed());
     }
 
+    private static void logBytesReceivedCLF(StringBuilder b, Request request, Response response)
+    {
+        //todo this be content received rather than consumed
+        long received = request.getHttpInput().getContentConsumed();
+        if (received == 0)
+            b.append('-');
+        else
+            b.append(received);
+    }
+
     private static void logBytesTransferred(StringBuilder b, Request request, Response response)
     {
+        //todo this be content received rather than consumed
         b.append(request.getHttpInput().getContentConsumed() + response.getHttpOutput().getWritten());
+    }
+
+    private static void logBytesTransferredCLF(StringBuilder b, Request request, Response response)
+    {
+        //todo this be content received rather than consumed
+        long transferred = request.getHttpInput().getContentConsumed() + response.getHttpOutput().getWritten();
+        if (transferred == 0)
+            b.append('-');
+        else
+            b.append(transferred);
     }
 
 
@@ -1059,12 +1088,12 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logFilename(StringBuilder b, Request request, Response response)
     {
         UserIdentity.Scope scope = request.getUserIdentityScope();
-        if (scope==null || scope.getContextHandler()==null)
+        if (scope == null || scope.getContextHandler() == null)
             b.append('-');
         else
         {
             ContextHandler context = scope.getContextHandler();
-            int lengthToStrip = scope.getContextPath().length()>1 ? scope.getContextPath().length() : 0;
+            int lengthToStrip = scope.getContextPath().length() > 1 ? scope.getContextPath().length() : 0;
             String filename = context.getServletContext().getRealPath(request.getPathInfo().substring(lengthToStrip));
             append(b, filename);
         }
@@ -1101,7 +1130,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logQueryString(StringBuilder b, Request request, Response response)
     {
-        append(b, "?"+request.getQueryString());
+        append(b, "?" + request.getQueryString());
     }
 
     private static void logRequestFirstLine(StringBuilder b, Request request, Response response)
@@ -1166,7 +1195,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logConnectionStatus(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getHttpChannel().isResponseCompleted() ?  (request.getHttpChannel().isPersistent() ? '+' : '-') : 'X');
+        b.append(request.getHttpChannel().isResponseCompleted() ? (request.getHttpChannel().isPersistent() ? '+' : '-') : 'X');
     }
 
 

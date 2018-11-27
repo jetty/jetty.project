@@ -22,7 +22,7 @@ import java.util.concurrent.BlockingQueue;
 
 /**
  * An asynchronously writing NCSA Request Log
- * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#NCSA_FORMAT} with an {@link AsyncRequestLogWriter}
+ * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with an {@link AsyncRequestLogWriter}
  */
 @Deprecated
 public class AsyncNCSARequestLog extends NCSARequestLog

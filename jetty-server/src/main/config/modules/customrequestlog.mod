@@ -7,7 +7,7 @@ Enables a format string style request log.
 requestlog
 
 [tags]
-customrequestlog
+requestlog
 
 [depend]
 server
@@ -20,22 +20,22 @@ logs/
 
 [ini-template]
 ## Logging directory (relative to $jetty.base)
-# jetty.customrequestlog.dir=logs
+# jetty.requestlog.dir=logs
 
 ## File path
-# jetty.customrequestlog.filePath=${jetty.customrequestlog.dir}/yyyy_mm_dd.request.log
+# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
 
 ## Date format for rollovered files (uses SimpleDateFormat syntax)
-# jetty.customrequestlog.filenameDateFormat=yyyy_MM_dd
+# jetty.requestlog.filenameDateFormat=yyyy_MM_dd
 
 ## How many days to retain old log files
-# jetty.customrequestlog.retainDays=90
+# jetty.requestlog.retainDays=90
 
 ## Whether to append to existing file
-# jetty.customrequestlog.append=false
+# jetty.requestlog.append=false
 
 ## Timezone of the log entries
-# jetty.customrequestlog.timezone=GMT
+# jetty.requestlog.timezone=GMT
 
 ## Format string
-# jetty.customrequestlog.formatString=%a - %u %t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
+# jetty.requestlog.formatString=%a - %u %t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"

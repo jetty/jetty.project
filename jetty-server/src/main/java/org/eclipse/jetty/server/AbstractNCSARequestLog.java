@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Locale;
+
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -36,7 +37,8 @@ import org.eclipse.jetty.util.log.Logger;
  * Configuration options allow a choice between the standard Common Log Format (as used in the 3 log format) and the
  * Combined Log Format (single log format). This log format can be output by most web servers, and almost all web log
  * analysis software can understand these formats.
- * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#NCSA_FORMAT} with a {@link RequestLog.Writer}
+ *
+ * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with a {@link RequestLog.Writer}
  */
 @Deprecated
 public class AbstractNCSARequestLog extends ContainerLifeCycle implements RequestLog
@@ -67,6 +69,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
 
     /**
      * Is logging enabled
+     *
      * @return true if logging is enabled
      */
     protected boolean isEnabled()
@@ -76,6 +79,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
 
     /**
      * Write requestEntry out. (to disk or slf4j log)
+     *
      * @param requestEntry the request entry
      * @throws IOException if unable to write the entry
      */
@@ -84,9 +88,9 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
         _requestLogWriter.write(requestEntry);
     }
 
-    private void append(StringBuilder buf,String s)
+    private void append(StringBuilder buf, String s)
     {
-        if (s==null || s.length()==0)
+        if (s == null || s.length() == 0)
             buf.append('-');
         else
             buf.append(s);
@@ -113,7 +117,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
 
             if (_logServer)
             {
-                append(buf,request.getServerName());
+                append(buf, request.getServerName());
                 buf.append(' ');
             }
 
@@ -128,9 +132,9 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
 
             buf.append(addr);
             buf.append(" - ");
-            
+
             String auth = getAuthentication(request);
-            append(buf,auth==null?"-":auth);
+            append(buf, auth == null ? "-" : auth);
 
             buf.append(" [");
             if (_logDateCache != null)
@@ -139,15 +143,15 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
                 buf.append(request.getTimeStamp());
 
             buf.append("] \"");
-            append(buf,request.getMethod());
+            append(buf, request.getMethod());
             buf.append(' ');
-            append(buf,request.getOriginalURI());
+            append(buf, request.getOriginalURI());
             buf.append(' ');
-            append(buf,request.getProtocol());
+            append(buf, request.getProtocol());
             buf.append("\" ");
 
             int status = response.getCommittedMetaData().getStatus();
-            if (status >=0)
+            if (status >= 0)
             {
                 buf.append((char)('0' + ((status / 100) % 10)));
                 buf.append((char)('0' + ((status / 10) % 10)));
@@ -222,21 +226,22 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
             LOG.warn(e);
         }
     }
-    
+
     /**
      * Extract the user authentication
+     *
      * @param request The request to extract from
      * @return The string to log for authenticated user.
      */
     protected String getAuthentication(Request request)
     {
         Authentication authentication = request.getAuthentication();
-        
+
         if (authentication instanceof Authentication.User)
             return ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
-        
+
         // TODO extract the user name if it is Authentication.Deferred and return as '?username'
-        
+
         return null;
     }
 
@@ -425,7 +430,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
     {
         if (_logDateFormat != null)
         {
-            _logDateCache = new DateCache(_logDateFormat, _logLocale ,_logTimeZone);
+            _logDateCache = new DateCache(_logDateFormat, _logLocale, _logTimeZone);
         }
 
         if (_ignorePaths != null && _ignorePaths.length > 0)
