@@ -143,7 +143,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         
         // Build HttpClient
         HttpClient httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
-        if(httpClient == null)
+        if ((httpClient == null) && (context.getServer() != null))
         {
             httpClient = (HttpClient) context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
         }
