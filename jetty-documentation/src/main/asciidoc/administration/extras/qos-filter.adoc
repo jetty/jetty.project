@@ -110,11 +110,11 @@ The maximum number of requests to be serviced at a time. The default is 10.
 maxPriority::
 The maximum valid priority that can be assigned to a request.
 A request with a high priority value is more important than a request with a low priority value. The default is 10.
-waitMS::
+waitMs::
 The length of time, in milliseconds, to wait while trying to accept a new request.
 Used when the maxRequests limit is reached.
 Default is 50 ms.
-suspendMS::
+suspendMs::
 Length of time, in milliseconds, that the request will be suspended if it is not accepted immediately.
 If not set, the container's default suspend period applies. Default is -1 ms.
 managedAttr::
