@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -470,15 +472,39 @@ public class CustomRequestLogTest
         assertThat(log, is("UrlRequestPath: /path"));
     }
 
-    @Disabled
     @Test
     public void testLogConnectionStatus() throws Exception
     {
-        testHandlerServerStart("ConnectionStatus: %X");
+        testHandlerServerStart("%U ConnectionStatus: %s %X");
 
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        fail(log);
+        _connector.getResponse("GET /one HTTP/1.0\n\n");
+        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/one ConnectionStatus: 200 -"));
+
+        _connector.getResponse("GET /two HTTP/1.1\n" +
+                "Host: localhost\n" +
+                "Connection: close\n" +
+                "\n");
+        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/two ConnectionStatus: 200 -"));
+
+        LocalConnector.LocalEndPoint connect = _connector.connect();
+        connect.addInput("GET /three HTTP/1.0\n" +
+                "Connection: keep-alive\n\n");
+        connect.addInput("GET /four HTTP/1.1\n" +
+                "Host: localhost\n\n");
+        connect.addInput("GET /BAD HTTP/1.1\n\n");
+        assertThat(connect.getResponse(), containsString("200 OK"));
+        assertThat(connect.getResponse(), containsString("200 OK"));
+        assertThat(connect.getResponse(), containsString("400 "));
+
+        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/three ConnectionStatus: 200 +"));
+        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/four ConnectionStatus: 200 +"));
+        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/BAD ConnectionStatus: 400 -"));
+
+        _connector.getResponse("GET /abort HTTP/1.1\n" +
+                "Host: localhost\n" +
+                "\n");
+        connect.getResponse();
+        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/abort ConnectionStatus: 200 X"));
     }
 
     @Disabled
@@ -554,6 +580,12 @@ public class CustomRequestLogTest
             {
                 response.addHeader("Header1", "value1");
                 response.addHeader("Header2", "value2");
+            }
+            else if (request.getRequestURI().contains("/abort"))
+            {
+                response.getOutputStream().println("data");
+                response.flushBuffer();
+                baseRequest.getHttpChannel().abort(new QuietServletException("test abort"));
             }
             else if (request.getRequestURI().contains("delay"))
             {
