@@ -106,26 +106,26 @@ import static java.lang.invoke.MethodType.methodType;
  * </tr>
  *
  * <tr>
- * <td valign="top">%{clf}I</td>
+ * <td valign="top">%{CLF}I</td>
  * <td>
  * Size of request in bytes, excluding HTTP headers.
- * Optional parameter with value of clf to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
+ * Optional parameter with value of "CLF" to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
  * </td>
  * </tr>
  *
  * <tr>
- * <td valign="top">%{clf}O</td>
+ * <td valign="top">%{CLF}O</td>
  * <td>
  * Size of response in bytes, excluding HTTP headers.
- * Optional parameter with value of clf to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
+ * Optional parameter with value of "CLF" to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
  * </td>
  * </tr>
  *
  * <tr>
- * <td valign="top">%{clf}S</td>
+ * <td valign="top">%{CLF}S</td>
  * <td>
  * Bytes transferred (received and sent). This is the combination of %I and %O.
- * Optional parameter with value of clf to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
+ * Optional parameter with value of "CLF" to use CLF format, i.e. a '-' rather than a 0 when no bytes are sent.
  * </td>
  * </tr>
  *
@@ -649,7 +649,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 String method;
                 if (arg == null || arg.isEmpty())
                     method = "logBytesReceived";
-                else if (arg.equals("CLF"))
+                else if (arg.equalsIgnoreCase("clf"))
                     method = "logBytesReceivedCLF";
                 else
                     throw new IllegalArgumentException("Invalid argument for %I");
@@ -663,7 +663,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 String method;
                 if (arg == null || arg.isEmpty())
                     method = "logBytesSent";
-                else if (arg.equals("CLF"))
+                else if (arg.equalsIgnoreCase("clf"))
                     method = "logBytesSentCLF";
                 else
                     throw new IllegalArgumentException("Invalid argument for %O");
@@ -677,7 +677,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 String method;
                 if (arg == null || arg.isEmpty())
                     method = "logBytesTransferred";
-                else if (arg.equals("CLF"))
+                else if (arg.equalsIgnoreCase("clf"))
                     method = "logBytesTransferredCLF";
                 else
                     throw new IllegalArgumentException("Invalid argument for %S");
