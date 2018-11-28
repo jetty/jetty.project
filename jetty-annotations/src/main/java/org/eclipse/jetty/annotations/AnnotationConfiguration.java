@@ -694,13 +694,26 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 LOG.debug("Excluded {} empty ordering", sci);
             return true;
         }
-
+        
         if (sciResource == null)
         {
             //not from a jar therefore not from WEB-INF so not excludable
             if (LOG.isDebugEnabled()) 
-                LOG.debug("!Excluded {} not from jar", sci);
+                LOG.debug("!Excluded {} null resource", sci);
             return false; 
+        }
+        else
+        {
+            //check urls that match web-inf/classes equivalent dirs
+            for (Resource dir : context.getMetaData().getWebInfClassesDirs())
+            {
+                if (dir.equals(sciResource))
+                { 
+                    if (LOG.isDebugEnabled()) 
+                        LOG.debug("!Excluded {} not from jar", sci);
+                    return false;
+                }
+            }
         }
         
         URI loadingJarURI = sciResource.getURI();
