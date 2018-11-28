@@ -404,14 +404,14 @@ public class CustomRequestLogTest
     {
         testHandlerServerStart("%{us}T");
 
-        long lowerBound = System.currentTimeMillis();
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        long upperBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        long lowerBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
         long durationLowerBound = TimeUnit.MILLISECONDS.toMicros(DELAY);
-        long durationUpperBound = TimeUnit.MILLISECONDS.toMicros(upperBound-lowerBound + DELAY);
+        long durationUpperBound = TimeUnit.MILLISECONDS.toMicros(upperBound-lowerBound);
 
         assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
         assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
@@ -422,14 +422,14 @@ public class CustomRequestLogTest
     {
         testHandlerServerStart("%{ms}T");
 
-        long lowerBound = System.currentTimeMillis();
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        long upperBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        long lowerBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
         long durationLowerBound = DELAY;
-        long durationUpperBound = upperBound-lowerBound + DELAY;
+        long durationUpperBound = upperBound-lowerBound;
 
         assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
         assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
@@ -440,14 +440,14 @@ public class CustomRequestLogTest
     {
         testHandlerServerStart("%{s}T");
 
-        long lowerBound = System.currentTimeMillis();
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        long upperBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        long lowerBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
         long durationLowerBound = TimeUnit.MILLISECONDS.toSeconds(DELAY);
-        long durationUpperBound = TimeUnit.MILLISECONDS.toSeconds(upperBound-lowerBound + DELAY);
+        long durationUpperBound = TimeUnit.MILLISECONDS.toSeconds(upperBound-lowerBound);
 
         assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
         assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
