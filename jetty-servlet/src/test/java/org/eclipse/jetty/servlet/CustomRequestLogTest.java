@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -92,7 +93,7 @@ public class CustomRequestLogTest
     {
         testHandlerServerStart("RequestHandler: %R");
 
-        _connector.getResponse("GET / HTTP/1.0\n\n");
+        _connector.getResponse("GET /context/servlet/ HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log, Matchers.containsString("TestServlet"));
     }

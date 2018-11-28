@@ -53,7 +53,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
@@ -69,6 +69,7 @@ public class CustomRequestLogTest
     ServerConnector _serverConnector;
     URI _serverURI;
 
+    private final static long DELAY = 2000;
 
     @BeforeEach
     public void before() throws Exception
@@ -394,13 +395,16 @@ public class CustomRequestLogTest
         testHandlerServerStart("%{us}T");
 
         long lowerBound = System.currentTimeMillis();
-        _connector.getResponse("GET / HTTP/1.0\n\n");
+        _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         long upperBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
 
-        long duration = upperBound-lowerBound;
-        assertThat(Long.parseLong(log), greaterThan((long)0));
-        assertThat(Long.parseLong(log), lessThanOrEqualTo(TimeUnit.MILLISECONDS.toMicros(duration)));
+        long measuredDuration = Long.parseLong(log);
+        long durationLowerBound = TimeUnit.MILLISECONDS.toMicros(DELAY);
+        long durationUpperBound = TimeUnit.MILLISECONDS.toMicros(upperBound-lowerBound + DELAY);
+
+        assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
+        assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
     }
 
     @Test
@@ -409,13 +413,16 @@ public class CustomRequestLogTest
         testHandlerServerStart("%{ms}T");
 
         long lowerBound = System.currentTimeMillis();
-        _connector.getResponse("GET / HTTP/1.0\n\n");
+        _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         long upperBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
 
-        long duration = upperBound-lowerBound;
-        assertThat(Long.parseLong(log), greaterThan((long)0));
-        assertThat(Long.parseLong(log), lessThanOrEqualTo(duration));
+        long measuredDuration = Long.parseLong(log);
+        long durationLowerBound = DELAY;
+        long durationUpperBound = upperBound-lowerBound + DELAY;
+
+        assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
+        assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
     }
 
     @Test
@@ -428,10 +435,12 @@ public class CustomRequestLogTest
         String log = _entries.poll(5,TimeUnit.SECONDS);
         long upperBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
 
+        long measuredDuration = Long.parseLong(log);
+        long durationLowerBound = TimeUnit.MILLISECONDS.toSeconds(DELAY);
+        long durationUpperBound = TimeUnit.MILLISECONDS.toSeconds(upperBound-lowerBound + DELAY);
 
-        long duration = upperBound-lowerBound;
-        assertThat(Long.parseLong(log), greaterThan((long)0));
-        assertThat(Long.parseLong(log), lessThanOrEqualTo(TimeUnit.MILLISECONDS.toMicros(duration)));
+        assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
+        assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
     }
 
     @Test
@@ -563,7 +572,7 @@ public class CustomRequestLogTest
             {
                 try
                 {
-                    Thread.sleep(2000);
+                    Thread.sleep(DELAY);
                 }
                 catch (InterruptedException e)
                 {
