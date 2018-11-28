@@ -189,34 +189,6 @@ public class CustomRequestLogTest
     }
 
     @Test
-    public void testLogResponseSize() throws Exception
-    {
-        testHandlerServerStart("ResponseSize: %B");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("ResponseSize: 0"));
-
-        _connector.getResponse("GET / HTTP/1.0\nEcho: hello world\n\n");
-        log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("ResponseSize: 11"));
-    }
-
-    @Test
-    public void testLogResponseSizeCLF() throws Exception
-    {
-        testHandlerServerStart("ResponseSize: %b");
-
-        _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("ResponseSize: -"));
-
-        _connector.getResponse("GET / HTTP/1.0\nEcho: hello world\n\n");
-        log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("ResponseSize: 11"));
-    }
-
-    @Test
     public void testLogBytesSent() throws Exception
     {
         testHandlerServerStart("BytesSent: %O");

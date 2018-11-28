@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -52,7 +53,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 
 public class NcsaRequestLogTest
@@ -69,14 +69,12 @@ public class NcsaRequestLogTest
         switch (logType)
         {
             case "customNCSA":
-                _log = new CustomRequestLog(writer, CustomRequestLog.NCSA_FORMAT);
+                _log = new CustomRequestLog(writer, CustomRequestLog.EXTENDED_NCSA_FORMAT);
                 break;
             case "NCSA":
             {
                 AbstractNCSARequestLog logNCSA = new AbstractNCSARequestLog(writer);
                 logNCSA.setExtended(true);
-                logNCSA.setLogLatency(true);
-                logNCSA.setLogCookies(true);
                 _log = logNCSA;
                 break;
             }
@@ -354,7 +352,7 @@ public class NcsaRequestLogTest
         _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://[:1]/foo "));
-        assertThat(log,containsString(" 400 50 \"http://other.site\" \"-\" - "));
+        assertThat(log,containsString(" 400 50 \"http://other.site\" \"-\""));
     }
 
     @ParameterizedTest()
@@ -367,7 +365,7 @@ public class NcsaRequestLogTest
         _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://[:1]/foo "));
-        assertThat(log,containsString(" 400 50 \"http://other.site\" \"Mozilla/5.0 (test)\" - "));
+        assertThat(log,containsString(" 400 50 \"http://other.site\" \"Mozilla/5.0 (test)\""));
     }
     
 
@@ -490,9 +488,6 @@ public class NcsaRequestLogTest
         startServer();
         makeRequest(requestPath);
         assertRequestLog(expectedLogEntry, _log);
-
-        if (!(testHandler instanceof HelloHandler))
-            assertThat(errors,contains(requestPath));
     }
 
 
