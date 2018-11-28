@@ -55,7 +55,7 @@ public class OneWebAppWithJsp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath( "/" );
         File warFile = new File(
-                "../../jetty-distribution/target/distribution/demo-base/webapps/test.war" );
+                "jetty-distribution/target/distribution/demo-base/webapps/test.war" );
         if (!warFile.exists())
         {
             throw new RuntimeException( "Unable to find WAR File: "
@@ -93,7 +93,7 @@ public class OneWebAppWithJsp
         // itself.
         HashLoginService loginService = new HashLoginService();
         loginService.setName( "Test Realm" );
-        loginService.setConfig( "src/test/resources/realm.properties" );
+        loginService.setConfig( "examples/embedded/src/test/resources/realm.properties" );
         server.addBean( loginService );
 
         // Start things up! 

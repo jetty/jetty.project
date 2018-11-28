@@ -295,6 +295,7 @@ public class ServletContextHandler extends ContextHandler
     {
         super.doStop();
         _objFactory.clear();
+        getServletContext().removeAttribute(DecoratedObjectFactory.ATTR);
     }
 
     /* ------------------------------------------------------------ */
