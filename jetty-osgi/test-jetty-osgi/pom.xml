@@ -148,16 +148,12 @@
     <dependency>
      <groupId>org.apache.aries.spifly</groupId>
       <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
      <scope>test</scope>
      <exclusions>
          <exclusion>
              <groupId>org.apache.felix</groupId>
              <artifactId>org.apache.felix.framework</artifactId>
-         </exclusion>
-         <exclusion>
-             <groupId>org.ow2.asm</groupId>
-             <artifactId>asm-util</artifactId>
          </exclusion>
      </exclusions>
     </dependency>
