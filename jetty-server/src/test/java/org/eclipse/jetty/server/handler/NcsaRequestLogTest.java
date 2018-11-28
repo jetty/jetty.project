@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.server.AbstractNCSARequestLog;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -44,9 +45,11 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,6 +64,7 @@ public class NcsaRequestLogTest
     Server _server;
     LocalConnector _connector;
     BlockingQueue<String> _entries = new BlockingArrayQueue<>();
+    StacklessLogging stacklessLogging;
 
     private void setup(String logType) throws Exception
     {
@@ -106,10 +110,17 @@ public class NcsaRequestLogTest
 
 
 
+    @BeforeEach
+    public void before() throws Exception
+    {
+        stacklessLogging = new StacklessLogging(HttpChannel.class);
+    }
+
     @AfterEach
     public void after() throws Exception
     {
         _server.stop();
+        stacklessLogging.close();
     }
     
     
