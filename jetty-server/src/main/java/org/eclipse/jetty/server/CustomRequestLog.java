@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -199,12 +200,22 @@ import static java.lang.invoke.MethodType.methodType;
  * </tr>
  *
  * <tr>
- * <td valign="top">%{format}t</td>
+ * <td valign="top">%{format|timeZone|locale}t</td>
  * <td>
- * The time, in the form given by an optional format, parameter (default format [18/Sep/2011:19:18:28 -0400] where
- * the last number indicates the timezone offset from GMT.)
- * <br>
- * The format parameter should be in a format supported by {@link DateCache}
+ * The time that the request was received.
+ * Optional parameter in one of the following formats {format}, {format|timeZone} or {format|timeZone|locale}.<br><br>
+ *
+ * <pre>
+ * Format Parameter: (default format [18/Sep/2011:19:18:28 -0400] where the last number indicates the timezone offset from GMT.)
+ *     Must be in a format supported by {@link DateCache}
+ *
+ * TimeZone Parameter:
+ *     Default timeZone GMT
+ *     Must be in a format supported by {@link TimeZone#getTimeZone(String)}
+ *
+ * Locale Parameter:
+ *     Default locale {@link Locale#getDefault()}
+ *     Must be in a format supported by {@link Locale#forLanguageTag(String)}</pre>
  * </td>
  * </tr>
  *
@@ -269,8 +280,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private String[] _ignorePaths;
     private transient PathMappings<String> _ignorePathMap;
-    private Locale _logLocale = Locale.getDefault();
-    private String _logTimeZone = "GMT";
 
     private RequestLog.Writer _requestLogWriter;
     private final MethodHandle _logHandle;
@@ -369,7 +378,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         return _ignorePaths;
     }
 
-
     /**
      * Retrieve the format string.
      *
@@ -400,48 +408,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
         super.doStart();
     }
-
-    /**
-     * Set the locale of the request log.
-     *
-     * @param logLocale locale object
-     */
-    public void setLogLocale(Locale logLocale)
-    {
-        _logLocale = logLocale;
-    }
-
-    /**
-     * Retrieve the locale of the request log.
-     *
-     * @return locale object
-     */
-    public Locale getLogLocale()
-    {
-        return _logLocale;
-    }
-
-    /**
-     * Set the timezone of the request log.
-     *
-     * @param tz timezone string
-     */
-    public void setLogTimeZone(String tz)
-    {
-        _logTimeZone = tz;
-    }
-
-    /**
-     * Retrieve the timezone of the request log.
-     *
-     * @return timezone string
-     */
-    @ManagedAttribute("the timezone")
-    public String getLogTimeZone()
-    {
-        return _logTimeZone;
-    }
-
 
     private static void append(StringBuilder buf, String s)
     {
@@ -487,7 +453,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             {PARAM} is an optional string parameter to the percent code.
             CODE is a 1 to 2 character string corresponding to a format code.
          */
-        final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)");
+        final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)", Pattern.DOTALL|Pattern.MULTILINE);
 
         List<Token> tokens = new ArrayList<>();
         String remaining = formatString;
@@ -835,11 +801,36 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "t":
             {
-                DateCache logDateCache;
-                if (arg == null || arg.isEmpty())
-                    logDateCache = new DateCache(DEFAULT_DATE_FORMAT, _logLocale, _logTimeZone);
-                else
-                    logDateCache = new DateCache(arg, _logLocale, _logTimeZone);
+                String format = DEFAULT_DATE_FORMAT;
+                TimeZone timeZone = TimeZone.getTimeZone("GMT");
+                Locale locale = Locale.getDefault();
+
+                if (arg != null && !arg.isEmpty())
+                {
+                    String[] args = arg.split("\\|");
+                    switch (args.length)
+                    {
+                        case 1:
+                            format = args[0];
+                            break;
+
+                        case 2:
+                            format = args[0];
+                            timeZone = TimeZone.getTimeZone(args[1]);
+                            break;
+
+                        case 3:
+                            format = args[0];
+                            timeZone = TimeZone.getTimeZone(args[1]);
+                            locale = Locale.forLanguageTag(args[2]);
+                            break;
+
+                        default:
+                            throw new IllegalArgumentException("Too many \"|\" characters in %t");
+                    }
+                }
+
+                DateCache logDateCache = new DateCache(format, locale, timeZone);
 
                 String method = "logRequestTime";
                 MethodType logTypeDateCache = methodType(Void.TYPE, DateCache.class, StringBuilder.class, Request.class, Response.class);

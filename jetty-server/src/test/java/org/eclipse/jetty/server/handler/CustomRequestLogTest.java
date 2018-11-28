@@ -27,6 +27,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -373,20 +374,29 @@ public class CustomRequestLogTest
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         long requestTime = requestTimes.poll(5,TimeUnit.SECONDS);
-        DateCache dateCache = new DateCache(_log.DEFAULT_DATE_FORMAT, _log.getLogLocale(), _log.getLogTimeZone());
+        DateCache dateCache = new DateCache(_log.DEFAULT_DATE_FORMAT, Locale.getDefault(), "GMT");
         assertThat(log, is("RequestTime: ["+ dateCache.format(requestTime) +"]"));
     }
 
     @Test
     public void testLogRequestTimeCustomFormats() throws Exception
     {
-        testHandlerServerStart("RequestTime: %{EEE MMM dd HH:mm:ss zzz yyyy}t");
+        testHandlerServerStart("%{EEE MMM dd HH:mm:ss zzz yyyy}t\n" +
+                "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t\n" +
+                "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         long requestTime = requestTimes.poll(5,TimeUnit.SECONDS);
-        DateCache dateCache = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", _log.getLogLocale(), _log.getLogTimeZone());
-        assertThat(log, is("RequestTime: ["+ dateCache.format(requestTime) +"]"));
+
+        DateCache dateCache1 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "GMT");
+        DateCache dateCache2 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "EST");
+        DateCache dateCache3 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.forLanguageTag("ja"), "EST");
+
+        String[] logs = log.split("\n");
+        assertThat(logs[0], is("["+ dateCache1.format(requestTime) +"]"));
+        assertThat(logs[1], is("["+ dateCache2.format(requestTime) +"]"));
+        assertThat(logs[2], is("["+ dateCache3.format(requestTime) +"]"));
     }
 
     @Test

@@ -20,9 +20,15 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Slf4jLog;
 
+/**
+ * Request log writer using a Slf4jLog Logger
+ */
+@ManagedObject("Slf4j RequestLog Writer")
 public class Slf4jRequestLogWriter extends AbstractLifeCycle implements RequestLog.Writer
 {
     private Slf4jLog logger;
@@ -39,6 +45,7 @@ public class Slf4jRequestLogWriter extends AbstractLifeCycle implements RequestL
         this.loggerName = loggerName;
     }
 
+    @ManagedAttribute("logger name")
     public String getLoggerName()
     {
         return loggerName;

@@ -25,6 +25,8 @@ import java.io.Writer;
 import java.util.TimeZone;
 
 import org.eclipse.jetty.util.RolloverFileOutputStream;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,6 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Writer which outputs pre-formatted request log strings to a file using {@link RolloverFileOutputStream}.
  */
+@ManagedObject("Request Log writer which writes to file")
 public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Writer
 {
     private static final Logger LOG = Log.getLogger(RequestLogWriter.class);
@@ -83,6 +86,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
      *
      * @return file name of the request log
      */
+    @ManagedAttribute("filename")
     public String getFileName()
     {
         return _filename;
@@ -95,6 +99,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
      *
      * @return file name of the request log, or null if not applicable
      */
+    @ManagedAttribute("dated filename")
     public String getDatedFilename()
     {
         if (_fileOut instanceof RolloverFileOutputStream)
@@ -102,6 +107,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         return null;
     }
 
+    @Deprecated
     protected boolean isEnabled()
     {
         return (_fileOut != null);
@@ -122,6 +128,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
      *
      * @return number of days to keep a log file
      */
+    @ManagedAttribute("number of days to keep a log file")
     public int getRetainDays()
     {
         return _retainDays;
@@ -143,6 +150,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
      *
      * @return value of the flag
      */
+    @ManagedAttribute("if request log file will be appended after restart")
     public boolean isAppend()
     {
         return _append;
@@ -164,6 +172,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
      *
      * @return the log File Date Format
      */
+    @ManagedAttribute("log file name date format")
     public String getFilenameDateFormat()
     {
         return _filenameDateFormat;
@@ -208,6 +217,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         _timeZone = timeZone;
     }
 
+    @ManagedAttribute("timezone of the log")
     public String getTimeZone()
     {
         return _timeZone;

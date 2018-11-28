@@ -75,13 +75,13 @@ public class AsyncRequestLogWriter extends RequestLogWriter
                             AsyncRequestLogWriter.super.write(log);
                     }
                 }
-                catch (IOException e)
-                {
-                    LOG.warn(e);
-                }
                 catch (InterruptedException e)
                 {
                     LOG.ignore(e);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn(t);
                 }
             }
         }
