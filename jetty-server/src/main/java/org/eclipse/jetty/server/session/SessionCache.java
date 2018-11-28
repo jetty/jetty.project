@@ -91,16 +91,41 @@ public interface SessionCache extends LifeCycle
      */
     Session newSession (SessionData data);
     
+    /**
+     * Change the id of a session.
+     * 
+     * This method has been superceded by the 4 arg renewSessionId method and
+     * should no longer be called.
+     * 
+     * @param oldId the old id
+     * @param newId the new id
+     * @return the changed Session
+     * @throws Exception if anything went wrong
+     * @deprecated use
+     *             {@link #renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId)}
+     */
+    @Deprecated
+    default Session renewSessionId(String oldId, String newId) throws Exception
+    {
+        return null;
+    }
     
+
     /**
      * Change the id of a Session.
      * 
      * @param oldId the current session id
      * @param newId the new session id
+     * @param oldExtendedId the current extended session id
+     * @param newExtendedId the new extended session id
      * @return the Session after changing its id
      * @throws Exception if any error occurred
      */
-    Session renewSessionId (String oldId, String newId) throws Exception;
+    default Session renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId) throws Exception
+    {
+        return renewSessionId(oldId, newId);
+    }
+
     
     
     /**

@@ -10,7 +10,6 @@ pipeline {
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
             mavenBuild("jdk8", "-Pmongodb install")
-            junit '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
             // Collect up the jacoco execution results (only on main build)
             jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                 exclusionPattern: '' +
@@ -95,6 +94,7 @@ def mavenBuild(jdk, cmdline) {
       jdk: "$jdk",
       publisherStrategy: 'EXPLICIT',
       globalMavenSettingsConfig: settingsName,
+      options: [junitPublisher(disabled: false)],
       mavenOpts: mavenOpts,
       mavenLocalRepo: localRepo) {
     // Some common Maven command line + provided command line
