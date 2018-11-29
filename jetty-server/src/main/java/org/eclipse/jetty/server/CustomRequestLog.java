@@ -1213,7 +1213,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        HttpFields trailers = request.getTrailers();
+        HttpFields trailers = request.getTrailerHttpFields();
         if (trailers != null)
             append(b, trailers.get(arg));
         else
