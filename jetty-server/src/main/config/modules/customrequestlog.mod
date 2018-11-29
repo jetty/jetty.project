@@ -34,8 +34,8 @@ logs/
 ## Whether to append to existing file
 # jetty.requestlog.append=false
 
-## Timezone of the log entries
+## Timezone of the log file rollover
 # jetty.requestlog.timezone=GMT
 
 ## Format string
-# jetty.requestlog.formatString=%a - %u %t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
+# jetty.customrequestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"

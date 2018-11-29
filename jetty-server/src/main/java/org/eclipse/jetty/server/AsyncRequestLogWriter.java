@@ -42,6 +42,11 @@ public class AsyncRequestLogWriter extends RequestLogWriter
         this(null, null);
     }
 
+    public AsyncRequestLogWriter(String filename)
+    {
+        this(filename, null);
+    }
+
     public AsyncRequestLogWriter(String filename, BlockingQueue<String> queue)
     {
         super(filename);
