@@ -26,8 +26,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -117,8 +117,7 @@ public class ManyHandlers
 
         // configure request logging
         File requestLogFile = File.createTempFile("demo", "log");
-        NCSARequestLog ncsaLog = new NCSARequestLog(
-                requestLogFile.getAbsolutePath());
+        CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.getAbsolutePath());
         server.setRequestLog(ncsaLog);
 
         // create the handler collections

@@ -305,6 +305,22 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         }
     }
 
+    public CustomRequestLog(String file)
+    {
+        this(file, NCSA_FORMAT);
+    }
+
+    public CustomRequestLog(String file, String format)
+    {
+        this(new RequestLogWriter(file), format);
+    }
+
+    @ManagedAttribute("The RequestLogWriter")
+    public RequestLog.Writer getWriter()
+    {
+        return _requestLogWriter;
+    }
+
     /**
      * Writes the request and response information to the output stream.
      *

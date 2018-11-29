@@ -30,12 +30,13 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.AsyncRequestLogWriter;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LowResourceMonitor;
-import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnectionStatistics;
@@ -205,14 +206,11 @@ public class LikeJettyXml
         server.setHandler(rewrite);
 
         // === jetty-requestlog.xml ===
-        NCSARequestLog requestLog = new NCSARequestLog();
-        requestLog.setFilename(jetty_home + "/logs/yyyy_mm_dd.request.log");
-        requestLog.setFilenameDateFormat("yyyy_MM_dd");
-        requestLog.setRetainDays(90);
-        requestLog.setAppend(true);
-        requestLog.setExtended(true);
-        requestLog.setLogCookies(false);
-        requestLog.setLogTimeZone("GMT");
+        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jetty_home + "/logs/yyyy_mm_dd.request.log");
+        CustomRequestLog requestLog = new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT + " \"%C\"");
+        logWriter.setFilenameDateFormat("yyyy_MM_dd");
+        logWriter.setRetainDays(90);
+        logWriter.setTimeZone("GMT");
         server.setRequestLog(requestLog);
 
 
