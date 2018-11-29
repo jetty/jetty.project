@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -39,7 +35,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.server.AbstractNCSARequestLog;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -47,30 +45,50 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-public class RequestLogTest
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
+public class NcsaRequestLogTest
 {
-    Log _log;
+    RequestLog _log;
     Server _server;
     LocalConnector _connector;
-    
+    BlockingQueue<String> _entries = new BlockingArrayQueue<>();
+    StacklessLogging stacklessLogging;
 
-    @BeforeEach
-    public void before() throws Exception
+    private void setup(String logType) throws Exception
     {
-        _log = new Log();
+        TestRequestLogWriter writer = new TestRequestLogWriter();
+
+        switch (logType)
+        {
+            case "customNCSA":
+                _log = new CustomRequestLog(writer, CustomRequestLog.EXTENDED_NCSA_FORMAT);
+                break;
+            case "NCSA":
+            {
+                AbstractNCSARequestLog logNCSA = new AbstractNCSARequestLog(writer);
+                logNCSA.setExtended(true);
+                _log = logNCSA;
+                break;
+            }
+            default:
+                throw new IllegalStateException("invalid logType");
+        }
+
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        
     }
     
     void testHandlerServerStart() throws Exception
@@ -92,230 +110,273 @@ public class RequestLogTest
 
 
 
+    @BeforeEach
+    public void before() throws Exception
+    {
+        stacklessLogging = new StacklessLogging(HttpChannel.class);
+    }
+
     @AfterEach
     public void after() throws Exception
     {
         _server.stop();
+        stacklessLogging.close();
     }
     
     
-    @Test
-    public void testNotHandled() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testNotHandled(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
         
         _connector.getResponse("GET /foo HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo HTTP/1.0\" 404 "));
     }
 
-    @Test
-    public void testRequestLine() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testRequestLine(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
         
         _connector.getResponse("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
         
         _connector.getResponse("GET //bad/foo?data=1 HTTP/1.0\n\n");
-        log = _log.entries.poll(5,TimeUnit.SECONDS);
+        log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET //bad/foo?data=1 HTTP/1.0\" 200 "));
                 
         _connector.getResponse("GET http://host:80/foo?data=1 HTTP/1.0\n\n");
-        log = _log.entries.poll(5,TimeUnit.SECONDS);
+        log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://host:80/foo?data=1 HTTP/1.0\" 200 "));   
     }
     
-    @Test
-    public void testHTTP10Host() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testHTTP10Host(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse(
             "GET /foo?name=value HTTP/1.0\n"+
             "Host: servername\n"+
             "\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
     
-    @Test
-    public void testHTTP11() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testHTTP11(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse(
             "GET /foo?name=value HTTP/1.1\n"+
             "Host: servername\n"+
             "\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
     
-    @Test
-    public void testAbsolute() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testAbsolute(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse(
             "GET http://hostname:8888/foo?name=value HTTP/1.1\n"+
             "Host: servername\n"+
             "\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://hostname:8888/foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
     
-    @Test
-    public void testQuery() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testQuery(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET /foo?name=value HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
     
-    @Test
-    public void testSmallData() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testSmallData(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET /foo?data=42 HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 200 42 "));
     }
     
-    @Test
-    public void testBigData() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testBigData(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET /foo?data=102400 HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 200 102400 "));
     }
     
-    @Test
-    public void testStatus() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testStatus(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET /foo?status=206 HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 206 0 "));
     }
     
-    @Test
-    public void testStatusData() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testStatusData(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET /foo?status=206&data=42 HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 206 42 "));
     }
     
-    @Test
-    public void testBadRequest() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testBadRequest(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("XXXXXXXXXXXX\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 400 "));
     }
     
-    @Test
-    public void testBadCharacter() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testBadCharacter(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("METHOD /f\00o HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 400 "));
     }
     
-    @Test
-    public void testBadVersion() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testBadVersion(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("METHOD /foo HTTP/9\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 400 "));
     }
     
-    @Test
-    public void testLongURI() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testLongURI(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         char[] chars = new char[10000];
         Arrays.fill(chars,'o');
         String ooo = new String(chars);
         _connector.getResponse("METHOD /f"+ooo+" HTTP/1.0\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 414 "));
     }
     
-    @Test
-    public void testLongHeader() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testLongHeader(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         char[] chars = new char[10000];
         Arrays.fill(chars,'o');
         String ooo = new String(chars);
         _connector.getResponse("METHOD /foo HTTP/1.0\name: f+"+ooo+"\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("\"METHOD /foo HTTP/1.0\""));
         assertThat(log,containsString(" 431 "));
     }
     
-    @Test
-    public void testBadRequestNoHost() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testBadRequestNoHost(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET /foo HTTP/1.1\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo "));
         assertThat(log,containsString(" 400 "));
     }
 
-    @Test
-    public void testUseragentWithout() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testUseragentWithout(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://[:1]/foo "));
-        assertThat(log,containsString(" 400 50 \"http://other.site\" \"-\" - "));
+        assertThat(log,containsString(" 400 50 \"http://other.site\" \"-\""));
     }
 
-    @Test
-    public void testUseragentWith() throws Exception
+    @ParameterizedTest()
+    @ValueSource(strings = {"customNCSA", "NCSA"})
+    public void testUseragentWith(String logType) throws Exception
     {
+        setup(logType);
         testHandlerServerStart();
 
         _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
-        String log = _log.entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://[:1]/foo "));
-        assertThat(log,containsString(" 400 50 \"http://other.site\" \"Mozilla/5.0 (test)\" - "));
+        assertThat(log,containsString(" 400 50 \"http://other.site\" \"Mozilla/5.0 (test)\""));
     }
     
 
@@ -324,22 +385,28 @@ public class RequestLogTest
     {
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[] { new NoopHandler(), "/noop", "\"GET /noop HTTP/1.0\" 404" });
-        data.add(new Object[] { new HelloHandler(), "/hello", "\"GET /hello HTTP/1.0\" 200" });
-        data.add(new Object[] { new ResponseSendErrorHandler(), "/sendError", "\"GET /sendError HTTP/1.0\" 599" });
-        data.add(new Object[] { new ServletExceptionHandler(), "/sex", "\"GET /sex HTTP/1.0\" 500" });
-        data.add(new Object[] { new IOExceptionHandler(), "/ioex", "\"GET /ioex HTTP/1.0\" 500" });
-        data.add(new Object[] { new RuntimeExceptionHandler(), "/rtex", "\"GET /rtex HTTP/1.0\" 500" });
-        data.add(new Object[] { new BadMessageHandler(), "/bad", "\"GET /bad HTTP/1.0\" 499" });
-        data.add(new Object[] { new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 488" });
+        for(String logType : Arrays.asList("customNCSA","NCSA"))
+        {
+            data.add(new Object[]{logType, new NoopHandler(), "/noop", "\"GET /noop HTTP/1.0\" 404"});
+            data.add(new Object[]{logType, new HelloHandler(), "/hello", "\"GET /hello HTTP/1.0\" 200"});
+            data.add(new Object[]{logType, new ResponseSendErrorHandler(), "/sendError", "\"GET /sendError HTTP/1.0\" 599"});
+            data.add(new Object[]{logType, new ServletExceptionHandler(), "/sex", "\"GET /sex HTTP/1.0\" 500"});
+            data.add(new Object[]{logType, new IOExceptionHandler(), "/ioex", "\"GET /ioex HTTP/1.0\" 500"});
+            data.add(new Object[]{logType, new IOExceptionPartialHandler(), "/ioex", "\"GET /ioex HTTP/1.0\" 200"});
+            data.add(new Object[]{logType, new RuntimeExceptionHandler(), "/rtex", "\"GET /rtex HTTP/1.0\" 500"});
+            data.add(new Object[]{logType, new BadMessageHandler(), "/bad", "\"GET /bad HTTP/1.0\" 499"});
+            data.add(new Object[]{logType, new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 488"});
+            data.add(new Object[]{logType, new AbortPartialHandler(), "/bad", "\"GET /bad HTTP/1.0\" 200"});
+        }
 
         return data.stream().map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testServerRequestLog(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testServerRequestLog(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         _server.setRequestLog(_log);
         _server.setHandler(testHandler);
         startServer();
@@ -349,8 +416,9 @@ public class RequestLogTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerWrapper(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerWrapper(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         RequestLogHandler handler = new RequestLogHandler();
         handler.setRequestLog(_log);
         handler.setHandler(testHandler);
@@ -362,8 +430,9 @@ public class RequestLogTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollectionFirst(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerCollectionFirst(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         RequestLogHandler handler = new RequestLogHandler();
         handler.setRequestLog(_log);
         HandlerCollection handlers = new HandlerCollection();
@@ -377,8 +446,9 @@ public class RequestLogTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollectionLast(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerCollectionLast(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         RequestLogHandler handler = new RequestLogHandler();
         handler.setRequestLog(_log);
         // This is the old ordering of request handler and it cannot well handle thrown exception
@@ -399,8 +469,9 @@ public class RequestLogTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testErrorHandler(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testErrorHandler(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         _server.setRequestLog(_log);
         AbstractHandler.ErrorDispatchHandler wrapper = new AbstractHandler.ErrorDispatchHandler()
         {
@@ -428,16 +499,14 @@ public class RequestLogTest
         startServer();
         makeRequest(requestPath);
         assertRequestLog(expectedLogEntry, _log);
-
-        if (!(testHandler instanceof HelloHandler))
-            assertThat(errors,contains(requestPath));
     }
 
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testOKErrorHandler(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testOKErrorHandler(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         _server.setRequestLog(_log);
         AbstractHandler.ErrorDispatchHandler wrapper = new AbstractHandler.ErrorDispatchHandler()
         {
@@ -463,8 +532,9 @@ public class RequestLogTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testAsyncDispatch(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testAsyncDispatch(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         _server.setRequestLog(_log);
         _server.setHandler(new AbstractHandler()
         {
@@ -493,8 +563,9 @@ public class RequestLogTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testAsyncComplete(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
+    public void testAsyncComplete(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
+        setup(logType);
         _server.setRequestLog(_log);
         _server.setHandler(new AbstractHandler()
         {
@@ -545,12 +616,12 @@ public class RequestLogTest
     }
 
 
-    private void assertRequestLog(final String expectedLogEntry, Log log) throws Exception
+    private void assertRequestLog(final String expectedLogEntry, RequestLog log) throws Exception
     {
-        String line = log.entries.poll(5, TimeUnit.SECONDS);
+        String line = _entries.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(line);
         assertThat(line,containsString(expectedLogEntry));
-        Assertions.assertTrue(log.entries.isEmpty());
+        Assertions.assertTrue(_entries.isEmpty());
     }
 
     public static class CaptureLog extends AbstractLifeCycle implements RequestLog
@@ -623,6 +694,20 @@ public class RequestLogTest
         }
     }
 
+    private static class IOExceptionPartialHandler extends AbstractTestHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentType("text/plain");
+            response.setContentLength(100);
+            response.getOutputStream().println("You were expecting maybe a ");
+            response.flushBuffer();
+            throw new IOException("expected");
+        }
+    }
+
     private static class RuntimeExceptionHandler extends AbstractTestHandler
     {
         @Override
@@ -652,6 +737,20 @@ public class RequestLogTest
         }
     }
 
+    private static class AbortPartialHandler extends AbstractTestHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentType("text/plain");
+            response.setContentLength(100);
+            response.getOutputStream().println("You were expecting maybe a ");
+            response.flushBuffer();
+            baseRequest.getHttpChannel().abort(new Throwable("bomb"));
+        }
+    }
+
     public static class OKErrorHandler extends ErrorHandler
     {
         @Override
@@ -675,30 +774,14 @@ public class RequestLogTest
         }
     }
 
-
-    private class Log extends AbstractNCSARequestLog
+    class TestRequestLogWriter implements RequestLog.Writer
     {
-        public BlockingQueue<String> entries = new BlockingArrayQueue<>();
-
-        Log()
-        {
-            super.setExtended(true);
-            super.setLogLatency(true);
-            super.setLogCookies(true);
-        }
-
         @Override
-        protected boolean isEnabled()
-        {
-            return true;
-        }
-
-        @Override
-        public void write(String requestEntry) throws IOException
+        public void write(String requestEntry)
         {
             try
             {
-                entries.add(requestEntry);
+                _entries.add(requestEntry);
             }
             catch(Exception e)
             {

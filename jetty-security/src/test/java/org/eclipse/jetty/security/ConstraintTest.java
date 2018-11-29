@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
 import javax.servlet.HttpConstraintElement;
 import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletException;
@@ -1526,6 +1525,12 @@ public class ConstraintTest
 
             UserIdentity.Scope scope = new UserIdentity.Scope()
             {
+                @Override
+                public ContextHandler getContextHandler()
+                {
+                    return null;
+                }
+
                 @Override
                 public String getContextPath()
                 {

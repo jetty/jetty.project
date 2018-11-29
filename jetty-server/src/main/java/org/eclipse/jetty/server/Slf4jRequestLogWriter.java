@@ -20,48 +20,52 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Slf4jLog;
 
 /**
- * Implementation of NCSARequestLog where output is sent as a SLF4J INFO Log message on the named logger "org.eclipse.jetty.server.RequestLog"
- * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with an {@link Slf4jRequestLogWriter}
+ * Request log writer using a Slf4jLog Logger
  */
-@Deprecated
-@ManagedObject("NCSA standard format request log to slf4j bridge")
-public class Slf4jRequestLog extends AbstractNCSARequestLog
+@ManagedObject("Slf4j RequestLog Writer")
+public class Slf4jRequestLogWriter extends AbstractLifeCycle implements RequestLog.Writer
 {
-    private final Slf4jRequestLogWriter _requestLogWriter;
+    private Slf4jLog logger;
+    private String loggerName;
 
-    public Slf4jRequestLog()
+    public Slf4jRequestLogWriter()
     {
-        this(new Slf4jRequestLogWriter());
-    }
-
-    public Slf4jRequestLog(Slf4jRequestLogWriter writer)
-    {
-        super(writer);
-        _requestLogWriter = writer;
+        // Default logger name (can be set)
+        this.loggerName = "org.eclipse.jetty.server.RequestLog";
     }
 
     public void setLoggerName(String loggerName)
     {
-        _requestLogWriter.setLoggerName(loggerName);
+        this.loggerName = loggerName;
     }
 
+    @ManagedAttribute("logger name")
     public String getLoggerName()
     {
-        return _requestLogWriter.getLoggerName();
+        return loggerName;
     }
 
-    @Override
     protected boolean isEnabled()
     {
-        return _requestLogWriter.isEnabled();
+        return logger != null;
     }
 
     @Override
     public void write(String requestEntry) throws IOException
     {
-        _requestLogWriter.write(requestEntry);
+        logger.info(requestEntry);
+    }
+
+    @Override
+    protected synchronized void doStart() throws Exception
+    {
+        logger = new Slf4jLog(loggerName);
+        super.doStart();
     }
 }

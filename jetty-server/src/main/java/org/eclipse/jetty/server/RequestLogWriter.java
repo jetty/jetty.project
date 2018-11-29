@@ -19,59 +19,48 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.TimeZone;
 
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
- * This {@link RequestLog} implementation outputs logs in the pseudo-standard
- * NCSA common log format. Configuration options allow a choice between the
- * standard Common Log Format (as used in the 3 log format) and the Combined Log
- * Format (single log format). This log format can be output by most web
- * servers, and almost all web log analysis software can understand these
- * formats.
- *
- * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with a {@link RequestLogWriter}
+ * Writer which outputs pre-formatted request log strings to a file using {@link RolloverFileOutputStream}.
  */
-@Deprecated
-@ManagedObject("NCSA standard format request log")
-public class NCSARequestLog extends AbstractNCSARequestLog
+@ManagedObject("Request Log writer which writes to file")
+public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Writer
 {
-    private final RequestLogWriter _requestLogWriter;
+    private static final Logger LOG = Log.getLogger(RequestLogWriter.class);
 
-    /**
-     * Create request log object with default settings.
-     */
-    public NCSARequestLog()
+    private String _filename;
+    private boolean _append;
+    private int _retainDays;
+    private boolean _closeOut;
+    private String _timeZone = "GMT";
+    private String _filenameDateFormat = null;
+    private transient OutputStream _out;
+    private transient OutputStream _fileOut;
+    private transient Writer _writer;
+
+    public RequestLogWriter()
     {
-        this((String)null);
+        this(null);
     }
 
-    /**
-     * Create request log object with specified output file name.
-     *
-     * @param filename the file name for the request log.
-     *                 This may be in the format expected
-     *                 by {@link RolloverFileOutputStream}
-     */
-    public NCSARequestLog(String filename)
+    public RequestLogWriter(String filename)
     {
-        this(new RequestLogWriter(filename));
-    }
+        setAppend(true);
+        setRetainDays(31);
 
-    /**
-     * Create request log object given a RequestLogWriter file name.
-     *
-     * @param writer the writer which manages the output of the formatted string
-     *               produced by the {@link RequestLog}
-     */
-    public NCSARequestLog(RequestLogWriter writer)
-    {
-        super(writer);
-        _requestLogWriter = writer;
-        setExtended(true);
+        if (filename != null)
+            setFilename(filename);
     }
 
     /**
@@ -83,14 +72,13 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setFilename(String filename)
     {
-        _requestLogWriter.setFilename(filename);
-    }
-
-    @Override
-    public void setLogTimeZone(String tz)
-    {
-        super.setLogTimeZone(tz);
-        _requestLogWriter.setTimeZone(tz);
+        if (filename != null)
+        {
+            filename = filename.trim();
+            if (filename.length() == 0)
+                filename = null;
+        }
+        _filename = filename;
     }
 
     /**
@@ -98,10 +86,10 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      *
      * @return file name of the request log
      */
-    @ManagedAttribute("file of log")
-    public String getFilename()
+    @ManagedAttribute("filename")
+    public String getFileName()
     {
-        return _requestLogWriter.getFileName();
+        return _filename;
     }
 
     /**
@@ -111,15 +99,18 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      *
      * @return file name of the request log, or null if not applicable
      */
+    @ManagedAttribute("dated filename")
     public String getDatedFilename()
     {
-        return _requestLogWriter.getDatedFilename();
+        if (_fileOut instanceof RolloverFileOutputStream)
+            return ((RolloverFileOutputStream)_fileOut).getDatedFilename();
+        return null;
     }
 
-    @Override
+    @Deprecated
     protected boolean isEnabled()
     {
-        return _requestLogWriter.isEnabled();
+        return (_fileOut != null);
     }
 
     /**
@@ -129,7 +120,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setRetainDays(int retainDays)
     {
-        _requestLogWriter.setRetainDays(retainDays);
+        _retainDays = retainDays;
     }
 
     /**
@@ -137,10 +128,10 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      *
      * @return number of days to keep a log file
      */
-    @ManagedAttribute("number of days that log files are kept")
+    @ManagedAttribute("number of days to keep a log file")
     public int getRetainDays()
     {
-        return _requestLogWriter.getRetainDays();
+        return _retainDays;
     }
 
     /**
@@ -151,7 +142,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setAppend(boolean append)
     {
-        _requestLogWriter.setAppend(append);
+        _append = append;
     }
 
     /**
@@ -159,10 +150,10 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      *
      * @return value of the flag
      */
-    @ManagedAttribute("existing log files are appends to the new one")
+    @ManagedAttribute("if request log file will be appended after restart")
     public boolean isAppend()
     {
-        return _requestLogWriter.isAppend();
+        return _append;
     }
 
     /**
@@ -173,7 +164,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      */
     public void setFilenameDateFormat(String logFileDateFormat)
     {
-        _requestLogWriter.setFilenameDateFormat(logFileDateFormat);
+        _filenameDateFormat = logFileDateFormat;
     }
 
     /**
@@ -181,39 +172,86 @@ public class NCSARequestLog extends AbstractNCSARequestLog
      *
      * @return the log File Date Format
      */
+    @ManagedAttribute("log file name date format")
     public String getFilenameDateFormat()
     {
-        return _requestLogWriter.getFilenameDateFormat();
+        return _filenameDateFormat;
     }
 
     @Override
     public void write(String requestEntry) throws IOException
     {
-        _requestLogWriter.write(requestEntry);
+        synchronized (this)
+        {
+            if (_writer == null)
+                return;
+            _writer.write(requestEntry);
+            _writer.write(System.lineSeparator());
+            _writer.flush();
+        }
     }
 
-    /**
-     * Set up request logging and open log file.
-     *
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected synchronized void doStart() throws Exception
     {
+        if (_filename != null)
+        {
+            _fileOut = new RolloverFileOutputStream(_filename, _append, _retainDays, TimeZone.getTimeZone(getTimeZone()), _filenameDateFormat, null);
+            _closeOut = true;
+            LOG.info("Opened " + getDatedFilename());
+        }
+        else
+            _fileOut = System.err;
+
+        _out = _fileOut;
+
+        synchronized (this)
+        {
+            _writer = new OutputStreamWriter(_out);
+        }
         super.doStart();
     }
 
-    /**
-     * Close the log file and perform cleanup.
-     *
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
+    public void setTimeZone(String timeZone)
+    {
+        _timeZone = timeZone;
+    }
+
+    @ManagedAttribute("timezone of the log")
+    public String getTimeZone()
+    {
+        return _timeZone;
+    }
+
     @Override
     protected void doStop() throws Exception
     {
         synchronized (this)
         {
             super.doStop();
+            try
+            {
+                if (_writer != null)
+                    _writer.flush();
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
+            if (_out != null && _closeOut)
+                try
+                {
+                    _out.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.ignore(e);
+                }
+
+            _out = null;
+            _fileOut = null;
+            _closeOut = false;
+            _writer = null;
         }
     }
 }
