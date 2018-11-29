@@ -20,8 +20,9 @@ package org.eclipse.jetty.server;
 
 import java.security.Principal;
 import java.util.Map;
-
 import javax.security.auth.Subject;
+
+import org.eclipse.jetty.server.handler.ContextHandler;
 
 /** 
  * User object that encapsulates user identity and operations such as run-as-role actions,
@@ -64,6 +65,12 @@ public interface UserIdentity
      */
     interface Scope
     {
+        /* ------------------------------------------------------------ */
+        /**
+         * @return The context handler that the identity is being considered within
+         */
+        ContextHandler getContextHandler();
+
         /* ------------------------------------------------------------ */
         /**
          * @return The context path that the identity is being considered within
