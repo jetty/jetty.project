@@ -37,7 +37,7 @@ module org.eclipse.jetty.util
     requires static java.logging;
     requires static java.sql;
     requires static java.xml;
-    requires static javax.servlet.api;
+    requires static jetty.servlet.api;
     requires static org.slf4j;
 
     uses CredentialProvider;

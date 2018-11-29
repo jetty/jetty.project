@@ -26,7 +26,7 @@ module org.eclipse.jetty.websocket.jetty.server
 {
     exports org.eclipse.jetty.websocket.server;
 
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.servlet;
     requires org.eclipse.jetty.webapp;

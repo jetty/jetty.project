@@ -210,7 +210,6 @@ Version Information on 11 entries in the classpath.
 : order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
  0:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
- 1:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
  2:                {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
  3:                {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
  4:                {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
@@ -385,7 +384,6 @@ Module: security
 
 Module: server
       LIB: lib/servlet-api-3.1.jar
-      LIB: lib/jetty-schemas-3.1.jar
       LIB: lib/jetty-http-${jetty.version}.jar
       LIB: lib/jetty-continuation-${jetty.version}.jar
       LIB: lib/jetty-server-${jetty.version}.jar

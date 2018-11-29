@@ -22,7 +22,7 @@ module org.eclipse.jetty.security.jaspi
     exports org.eclipse.jetty.security.jaspi.callback;
     exports org.eclipse.jetty.security.jaspi.modules;
 
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires javax.security.auth.message;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;

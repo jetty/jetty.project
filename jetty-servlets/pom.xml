@@ -24,7 +24,7 @@
         <configuration>
           <argLine>
             @{argLine}
-            --add-modules javax.servlet.api
+            --add-modules jetty.servlet.api
             --add-modules org.eclipse.jetty.util
             --add-modules org.eclipse.jetty.io
             --add-modules org.eclipse.jetty.http
@@ -63,8 +63,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

@@ -13,22 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quickstart</bundle-symbolic-name>
-    <jetty-schemas-jar>${settings.localRepository}/org/eclipse/jetty/toolchain/jetty-schemas/${servlet.schema.version}/jetty-schemas-${servlet.schema.version}.jar</jetty-schemas-jar>
   </properties>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine}
-            --patch-module javax.servlet.api=${jetty-schemas-jar}
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>

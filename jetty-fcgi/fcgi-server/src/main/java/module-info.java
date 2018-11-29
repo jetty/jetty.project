@@ -21,7 +21,7 @@ module org.eclipse.jetty.fcgi.server
     exports org.eclipse.jetty.fcgi.server;
     exports org.eclipse.jetty.fcgi.server.proxy;
 
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.io;

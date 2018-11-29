@@ -15,11 +15,9 @@
   <name>Jetty :: Simple :: Base</name>
 
   <dependencies>
-
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <type>jar</type>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

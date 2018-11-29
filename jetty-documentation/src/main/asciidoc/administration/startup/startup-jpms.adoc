@@ -69,15 +69,12 @@ This will give an output looking something like this (broken in sections for cla
 [source, screen, subs="{sub-order}"]
 ....
 /opt/openjdk-11+28/bin/java
---module-path /opt/jetty/lib/servlet-api-3.1.jar:/opt/jetty/lib/jetty-schemas-3.1.jar:/opt/jetty/lib/jetty-http-9.4.13-SNAPSHOT.jar:...
---patch-module servlet.api=/opt/jetty/lib/jetty-schemas-3.1.jar
+--module-path /opt/jetty/lib/jetty-servlet-api-4.0.0.jar:/opt/jetty/lib/jetty-http-9.4.13-SNAPSHOT.jar:...
 --module org.eclipse.jetty.xml/org.eclipse.jetty.xml.XmlConfiguration /opt/jetty/etc/jetty-threadpool.xml /opt/jetty/etc/jetty.xml ...
 ....
 
 The `--module-path` option specifies the list of Jetty jars. 
 This list depends on the Jetty modules that have been enabled via the link:#startup-modules[`--add-to-start`] command.
-
-The `--patch-module` option is necessary for Servlet and JSP Containers to find XML DTDs and XML Schemas required to validate the various XML files present in web applications (such as `web.xml` and others).
 
 The `--module` option tells the JVM to run main class `XmlConfiguration` from the `org.eclipse.jetty.xml` module, with the given XML files as program arguments.
 

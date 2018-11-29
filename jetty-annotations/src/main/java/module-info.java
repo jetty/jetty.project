@@ -27,7 +27,7 @@ module org.eclipse.jetty.annotations
 
     requires java.naming;
     requires java.annotation;
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.objectweb.asm;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;

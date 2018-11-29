@@ -23,7 +23,7 @@ module org.eclipse.jetty.jaas
     exports org.eclipse.jetty.jaas.spi;
 
     requires java.naming;
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.security;

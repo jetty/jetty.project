@@ -22,7 +22,7 @@ module org.eclipse.jetty.servlet
     exports org.eclipse.jetty.servlet.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.servlet.listener;
 
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.server;
