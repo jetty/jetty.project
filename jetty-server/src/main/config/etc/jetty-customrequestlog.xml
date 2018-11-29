@@ -16,7 +16,7 @@
       <Arg>
         <New class="org.eclipse.jetty.server.AsyncRequestLogWriter">
           <Arg><Property name="jetty.base" default="." />/<Property>
-              <Name>jetty.customrequestlog.filePath</Name>
+              <Name>jetty.requestlog.filePath</Name>
               <Default><Property name="jetty.requestlog.dir" default="logs"/>/yyyy_mm_dd.request.log</Default>
             </Property></Arg>
           <Arg/>
@@ -30,7 +30,7 @@
 
       <!-- Format String -->
       <Arg>
-        <Property name="jetty.requestlog.formatString">
+        <Property name="jetty.customrequestlog.formatString">
           <Default>
             <Get class="org.eclipse.jetty.server.CustomRequestLog" name="EXTENDED_NCSA_FORMAT"/>
           </Default>
