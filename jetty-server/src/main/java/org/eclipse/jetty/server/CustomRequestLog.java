@@ -307,7 +307,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     public CustomRequestLog(String file)
     {
-        this(file, NCSA_FORMAT);
+        this(file, EXTENDED_NCSA_FORMAT);
     }
 
     public CustomRequestLog(String file, String format)
