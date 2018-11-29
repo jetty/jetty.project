@@ -30,13 +30,13 @@ import javax.servlet.ServletException;
  *
  *
  */
-public class ServerServletContainerInitializer implements ServletContainerInitializer
+public class WebInfClassServletContainerInitializer implements ServletContainerInitializer
 {
 
     /**
      * 
      */
-    public ServerServletContainerInitializer()
+    public WebInfClassServletContainerInitializer()
     {
         // TODO Auto-generated constructor stub
     }
