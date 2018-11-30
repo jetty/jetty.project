@@ -48,7 +48,7 @@
     <logback.version>1.2.3</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <servlet.api.version>4.0.0-SNAPSHOT</servlet.api.version>
+    <servlet.api.version>4.0.1-SNAPSHOT</servlet.api.version>
     <jsp.version>8.5.33</jsp.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>

@@ -19,9 +19,10 @@
 package org.eclipse.jetty.osgi.test;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket(maxTextMessageSize = 64 * 1024)
 public class SimpleEchoSocket
 {
+    private static final Logger LOG = Log.getLogger(SimpleEchoSocket.class);
     private final CountDownLatch closeLatch;
     @SuppressWarnings("unused")
     private Session session;
@@ -52,7 +54,8 @@ public class SimpleEchoSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        //System.out.printf("Connection closed: %d - %s%n",statusCode,reason);
+        LOG.debug("Connection closed: {} - {}", statusCode, reason);
+
         this.session = null;
         this.closeLatch.countDown(); // trigger latch
     }
@@ -60,16 +63,11 @@ public class SimpleEchoSocket
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
-        //System.out.printf("Got connect: %s%n",session);
+        LOG.debug("Got connect: {}", session);
         this.session = session;
         try
         {
-            Future<Void> fut;
-            //System.err.println("Sending Foo!");
-            fut = session.getRemote().sendStringByFuture("Foo");
-
-            fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
-            //System.err.println("Foo complete");
+            session.getRemote().sendString("Foo");
 
             session.close(StatusCode.NORMAL,"I'm done");
         }
@@ -82,6 +80,6 @@ public class SimpleEchoSocket
     @OnWebSocketMessage
     public void onMessage(String msg)
     {
-        //System.out.printf("Got msg: %s%n",msg);
+        LOG.debug("Got msg: {}", msg);
     }
 }
