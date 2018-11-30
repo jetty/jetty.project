@@ -56,7 +56,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  */
 public class TestOSGiUtil
 {
-
+    
     public static final String BUNDLE_DEBUG = "bundle.debug";
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
@@ -99,13 +99,13 @@ public class TestOSGiUtil
         res.addAll(coreJettyDependencies());
         return res;
     }
-
+ 
     public static Option optionalRemoteDebug()
     {
         return CoreOptions.when(Boolean.getBoolean("pax.exam.debug.remote"))
                 .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
     }
-
+     
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<>();
