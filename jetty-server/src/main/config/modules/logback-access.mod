@@ -14,7 +14,7 @@ logback-impl
 resources
 
 [provide]
-requestlog
+requestlog-impl
 
 [xml]
 etc/jetty-logback-access.xml

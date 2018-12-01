@@ -1,13 +1,14 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables a format string style request log.
+An implementation of requestlog using CustomRequestLog and AsyncRequestLogWriter
 
 [provides]
-requestlog
+requestlog-impl
 
 [tags]
 requestlog
+logging
 
 [depend]
 server
@@ -17,8 +18,12 @@ etc/jetty-customrequestlog.xml
 
 [files]
 logs/
+basehome:modules/requestlog/jetty-customrequestlog.xml|etc/jetty-customrequestlog.xml
 
 [ini-template]
+## Format string
+# jetty.customrequestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
+
 ## Logging directory (relative to $jetty.base)
 # jetty.requestlog.dir=logs
 
@@ -36,6 +41,3 @@ logs/
 
 ## Timezone of the log file rollover
 # jetty.requestlog.timezone=GMT
-
-## Format string
-# jetty.customrequestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"

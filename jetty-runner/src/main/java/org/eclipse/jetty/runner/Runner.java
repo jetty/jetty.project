@@ -34,8 +34,8 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.ShutdownMonitor;
@@ -497,8 +497,7 @@ public class Runner
 
         if (_logFile!=null)
         {
-            NCSARequestLog requestLog = new NCSARequestLog(_logFile);
-            requestLog.setExtended(false);
+            CustomRequestLog requestLog = new CustomRequestLog(_logFile);
             _server.setRequestLog(requestLog);
         }
     }

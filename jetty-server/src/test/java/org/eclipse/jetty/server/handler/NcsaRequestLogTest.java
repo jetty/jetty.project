@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.server.AbstractNCSARequestLog;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
@@ -53,7 +52,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -75,13 +73,6 @@ public class NcsaRequestLogTest
             case "customNCSA":
                 _log = new CustomRequestLog(writer, CustomRequestLog.EXTENDED_NCSA_FORMAT);
                 break;
-            case "NCSA":
-            {
-                AbstractNCSARequestLog logNCSA = new AbstractNCSARequestLog(writer);
-                logNCSA.setExtended(true);
-                _log = logNCSA;
-                break;
-            }
             default:
                 throw new IllegalStateException("invalid logType");
         }
@@ -122,42 +113,47 @@ public class NcsaRequestLogTest
         _server.stop();
         stacklessLogging.close();
     }
-    
+
+    // TODO include logback?
+    public static Stream<Arguments> ncsaImplementations()
+    {
+        return Stream.of(Arguments.of("customNCSA"));
+    }
     
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testNotHandled(String logType) throws Exception
     {
         setup(logType);
         testHandlerServerStart();
-        
+
         _connector.getResponse("GET /foo HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo HTTP/1.0\" 404 "));
     }
 
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testRequestLine(String logType) throws Exception
     {
         setup(logType);
         testHandlerServerStart();
-        
+
         _connector.getResponse("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
-        
+
         _connector.getResponse("GET //bad/foo?data=1 HTTP/1.0\n\n");
         log = _entries.poll(5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET //bad/foo?data=1 HTTP/1.0\" 200 "));
-                
+
         _connector.getResponse("GET http://host:80/foo?data=1 HTTP/1.0\n\n");
         log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log,containsString("GET http://host:80/foo?data=1 HTTP/1.0\" 200 "));   
+        assertThat(log,containsString("GET http://host:80/foo?data=1 HTTP/1.0\" 200 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testHTTP10Host(String logType) throws Exception
     {
         setup(logType);
@@ -171,9 +167,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET /foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testHTTP11(String logType) throws Exception
     {
         setup(logType);
@@ -187,9 +183,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET /foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testAbsolute(String logType) throws Exception
     {
         setup(logType);
@@ -203,9 +199,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET http://hostname:8888/foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testQuery(String logType) throws Exception
     {
         setup(logType);
@@ -216,9 +212,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET /foo?name=value"));
         assertThat(log,containsString(" 200 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testSmallData(String logType) throws Exception
     {
         setup(logType);
@@ -229,9 +225,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 200 42 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testBigData(String logType) throws Exception
     {
         setup(logType);
@@ -242,9 +238,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 200 102400 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testStatus(String logType) throws Exception
     {
         setup(logType);
@@ -255,9 +251,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 206 0 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testStatusData(String logType) throws Exception
     {
         setup(logType);
@@ -268,9 +264,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("GET /foo?"));
         assertThat(log,containsString(" 206 42 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testBadRequest(String logType) throws Exception
     {
         setup(logType);
@@ -281,9 +277,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 400 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testBadCharacter(String logType) throws Exception
     {
         setup(logType);
@@ -294,9 +290,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 400 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testBadVersion(String logType) throws Exception
     {
         setup(logType);
@@ -307,9 +303,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 400 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testLongURI(String logType) throws Exception
     {
         setup(logType);
@@ -323,9 +319,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("\"- - -\""));
         assertThat(log,containsString(" 414 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testLongHeader(String logType) throws Exception
     {
         setup(logType);
@@ -339,9 +335,9 @@ public class NcsaRequestLogTest
         assertThat(log,containsString("\"METHOD /foo HTTP/1.0\""));
         assertThat(log,containsString(" 431 "));
     }
-    
+
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testBadRequestNoHost(String logType) throws Exception
     {
         setup(logType);
@@ -354,7 +350,7 @@ public class NcsaRequestLogTest
     }
 
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testUseragentWithout(String logType) throws Exception
     {
         setup(logType);
@@ -367,7 +363,7 @@ public class NcsaRequestLogTest
     }
 
     @ParameterizedTest()
-    @ValueSource(strings = {"customNCSA", "NCSA"})
+    @MethodSource("ncsaImplementations")
     public void testUseragentWith(String logType) throws Exception
     {
         setup(logType);
@@ -381,12 +377,12 @@ public class NcsaRequestLogTest
     
 
     // Tests from here use these parameters
-    public static Stream<Arguments> data()
+    public static Stream<Arguments> scenarios()
     {
         List<Object[]> data = new ArrayList<>();
-
-        for(String logType : Arrays.asList("customNCSA","NCSA"))
+        ncsaImplementations().forEach(arg->
         {
+            String logType = String.valueOf(arg.get()[0]);
             data.add(new Object[]{logType, new NoopHandler(), "/noop", "\"GET /noop HTTP/1.0\" 404"});
             data.add(new Object[]{logType, new HelloHandler(), "/hello", "\"GET /hello HTTP/1.0\" 200"});
             data.add(new Object[]{logType, new ResponseSendErrorHandler(), "/sendError", "\"GET /sendError HTTP/1.0\" 599"});
@@ -397,13 +393,13 @@ public class NcsaRequestLogTest
             data.add(new Object[]{logType, new BadMessageHandler(), "/bad", "\"GET /bad HTTP/1.0\" 499"});
             data.add(new Object[]{logType, new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 488"});
             data.add(new Object[]{logType, new AbortPartialHandler(), "/bad", "\"GET /bad HTTP/1.0\" 200"});
-        }
+        });
 
         return data.stream().map(Arguments::of);
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testServerRequestLog(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
@@ -415,7 +411,7 @@ public class NcsaRequestLogTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testLogHandlerWrapper(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
@@ -429,7 +425,7 @@ public class NcsaRequestLogTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testLogHandlerCollectionFirst(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
@@ -445,7 +441,7 @@ public class NcsaRequestLogTest
 
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testLogHandlerCollectionLast(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
@@ -468,7 +464,7 @@ public class NcsaRequestLogTest
 
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testErrorHandler(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
@@ -503,7 +499,7 @@ public class NcsaRequestLogTest
 
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testOKErrorHandler(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
@@ -531,7 +527,7 @@ public class NcsaRequestLogTest
 
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testAsyncDispatch(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
@@ -562,7 +558,7 @@ public class NcsaRequestLogTest
 
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("scenarios")
     public void testAsyncComplete(String logType, Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         setup(logType);
