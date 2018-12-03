@@ -15,21 +15,26 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlets</bundle-symbolic-name>
-    <surefire.argLine>
-      ${surefire.argLine.default}
-      --add-modules javax.servlet.api
-      --add-modules org.eclipse.jetty.util
-      --add-modules org.eclipse.jetty.io
-      --add-modules org.eclipse.jetty.http
-      --add-modules org.eclipse.jetty.server
-      --add-modules org.eclipse.jetty.jmx
-      --add-reads org.eclipse.jetty.servlets=java.management
-      --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
-    </surefire.argLine>
   </properties>
 
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            --add-modules javax.servlet.api
+            --add-modules org.eclipse.jetty.util
+            --add-modules org.eclipse.jetty.io
+            --add-modules org.eclipse.jetty.http
+            --add-modules org.eclipse.jetty.server
+            --add-modules org.eclipse.jetty.jmx
+            --add-reads org.eclipse.jetty.servlets=java.management
+            --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
+          </argLine>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>

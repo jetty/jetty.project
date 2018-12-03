@@ -13,12 +13,22 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
-    <surefire.argLine>
-      ${surefire.argLine.default}
-      --add-reads org.eclipse.jetty.http2.client=javax.servlet.api
-      --add-modules javax.servlet.api
-    </surefire.argLine>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            --add-reads org.eclipse.jetty.http2.client=javax.servlet.api
+            --add-modules javax.servlet.api
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>

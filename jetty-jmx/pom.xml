@@ -11,13 +11,19 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmx</bundle-symbolic-name>
-    <surefire.argLine>${surefire.argLine.default}
-      --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.jmx=ALL-UNNAMED
-      --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.util.log.jmx=ALL-UNNAMED
-    </surefire.argLine>
   </properties>
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.jmx=ALL-UNNAMED
+            --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.util.log.jmx=ALL-UNNAMED
+          </argLine>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>

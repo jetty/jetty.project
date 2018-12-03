@@ -14,7 +14,6 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
-    <surefire.argLine>${surefire.argLine.default} --add-modules org.eclipse.jetty.jmx</surefire.argLine>
   </properties>
 
   <build>
@@ -44,6 +43,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <argLine>
+            @{argLine}
+            --add-modules org.eclipse.jetty.jmx
+          </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <excludes>
             <exclude>org.eclipse.jetty.webapp.WebAppClassLoaderUrlStreamTest</exclude>
