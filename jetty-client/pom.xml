@@ -12,22 +12,17 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
+    <surefire.argLine>
+      ${surefire.argLine.default}
+      --add-reads org.eclipse.jetty.client=javax.servlet.api
+      --add-modules java.security.jgss
+      --add-modules javax.servlet.api
+      --add-modules org.eclipse.jetty.jmx
+      --add-modules org.slf4j
+    </surefire.argLine>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine}
-            --add-reads org.eclipse.jetty.client=javax.servlet.api
-            --add-modules java.security.jgss
-            --add-modules javax.servlet.api
-            --add-modules org.eclipse.jetty.jmx
-            --add-modules org.slf4j
-          </argLine>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>

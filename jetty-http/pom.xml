@@ -13,6 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.http</bundle-symbolic-name>
+    <surefire.argLine>${surefire.argLine.default}  --add-modules javax.servlet.api</surefire.argLine>
   </properties>
 
   <dependencies>
@@ -41,12 +42,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>@{argLine} --add-modules javax.servlet.api</argLine>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
