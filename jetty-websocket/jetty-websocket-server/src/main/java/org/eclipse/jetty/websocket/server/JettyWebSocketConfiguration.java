@@ -48,7 +48,14 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
     public JettyWebSocketConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-        addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+
+        if (isAvailable("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration"))
+            addDependents("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+        else if (isAvailable("org.eclipse.jetty.annotations.AnnotationConfiguration"))
+            addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+        else
+            throw new RuntimeException("Unable to add AnnotationConfiguration dependent (not present in classpath)");
+
         protectAndExpose(
             "org.eclipse.jetty.websocket.api.",
             "org.eclipse.jetty.websocket.common.",
@@ -59,9 +66,14 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
     @Override
     public boolean isAvailable()
     {
+        return isAvailable("org.eclipse.jetty.websocket.common.JettyWebSocketFrame");
+    }
+
+    private boolean isAvailable(String classname)
+    {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.websocket.common.JettyWebSocketFrame") != null;
+            return Loader.loadClass(classname) != null;
         }
         catch (Throwable e)
         {
