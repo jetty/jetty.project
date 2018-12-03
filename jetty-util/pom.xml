@@ -64,7 +64,10 @@
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             </systemPropertyVariables>
-            <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails --add-modules javax.servlet.api,org.slf4j</argLine>
+            <argLine>
+              @{argLine} ${surefire.base.argLine}
+              --add-modules javax.servlet.api,org.slf4j
+            </argLine>
           </configuration>
         </plugin>
       </plugins>

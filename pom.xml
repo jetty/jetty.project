@@ -67,6 +67,8 @@
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
 
+    <surefire.base.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</surefire.base.argLine>
+
     <!-- some maven plugins versions -->
     <maven.surefire.version>2.22.1</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
@@ -590,7 +592,9 @@
           <version>${maven.surefire.version}</version>
           <configuration>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
-            <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
+            <argLine>
+              @{argLine} ${surefire.base.argLine}
+            </argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
             <reuseForks>true</reuseForks> <!-- to work around crash at https://github.com/junit-team/junit5/issues/801 -->

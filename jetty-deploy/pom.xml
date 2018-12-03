@@ -21,7 +21,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine}
+            @{argLine} ${surefire.base.argLine}
             --add-modules org.eclipse.jetty.jmx
             --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http
           </argLine>

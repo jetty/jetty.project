@@ -22,7 +22,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails
+            @{argLine} ${surefire.base.argLine}
             --patch-module javax.servlet.api=${jetty-schemas-jar}
           </argLine>
         </configuration>

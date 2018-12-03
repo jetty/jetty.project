@@ -49,7 +49,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails
+            @{argLine} ${surefire.base.argLine}
             --add-reads org.eclipse.jetty.websocket.javax.common=org.eclipse.jetty.websocket.javax.server
           </argLine>
         </configuration>
