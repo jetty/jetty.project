@@ -145,7 +145,7 @@ public final class RFC6455Handshaker implements Handshaker
         // Check for handler
         if (handler == null)
         {
-            LOG.warn("not upgraded: no channel {}", baseRequest);
+            LOG.warn("not upgraded: no frame handler provided {}", baseRequest);
             return false;
         }
 
