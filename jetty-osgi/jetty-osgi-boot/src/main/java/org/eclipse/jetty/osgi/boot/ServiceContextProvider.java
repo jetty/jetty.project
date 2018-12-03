@@ -49,7 +49,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class ServiceContextProvider extends AbstractContextProvider implements ServiceProvider
 { 
-    private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = Log.getLogger(ServiceContextProvider.class);
     
     private Map<ServiceReference, App> _serviceMap = new HashMap<>();
     

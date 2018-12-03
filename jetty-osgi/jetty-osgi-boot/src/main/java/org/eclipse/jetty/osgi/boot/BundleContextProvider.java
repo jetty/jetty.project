@@ -44,7 +44,7 @@ import org.osgi.util.tracker.BundleTracker;
  */
 public class BundleContextProvider extends AbstractContextProvider implements BundleProvider
 {    
-    private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = Log.getLogger(BundleContextProvider.class);
 
     private Map<String, App> _appMap = new HashMap<String, App>();
     

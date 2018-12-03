@@ -43,7 +43,7 @@ import org.osgi.util.tracker.BundleTracker;
  */
 public class BundleWebAppProvider extends AbstractWebAppProvider implements BundleProvider
 {     
-    private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
+    private static final Logger LOG = Log.getLogger(BundleWebAppProvider.class);
     
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.

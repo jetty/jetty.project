@@ -47,7 +47,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class ServiceWebAppProvider extends AbstractWebAppProvider implements ServiceProvider
 {   
-    private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
+    private static final Logger LOG = Log.getLogger(ServiceWebAppProvider.class);
     
     /**
      * Map of ServiceRef to App. Used when it is an osgi service that is a WebAppContext.
