@@ -44,7 +44,10 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>@{argLine} --add-modules javax.servlet.api</argLine>
+          <argLine>
+            @{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails
+            --add-modules javax.servlet.api
+          </argLine>
         </configuration>
       </plugin>
       <plugin>

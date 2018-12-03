@@ -21,7 +21,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine}
+            @{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails
             --add-reads org.eclipse.jetty.http2.client=javax.servlet.api
             --add-modules javax.servlet.api
           </argLine>

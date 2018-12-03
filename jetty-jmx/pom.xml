@@ -18,7 +18,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine}
+            @{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails
             --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.jmx=ALL-UNNAMED
             --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.util.log.jmx=ALL-UNNAMED
           </argLine>
