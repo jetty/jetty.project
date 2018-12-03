@@ -57,6 +57,7 @@ public class TestJettyOSGiBootWithWebSocket
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(TestOSGiUtil.optionalRemoteDebug());
+        options.addAll(TestOSGiUtil.jettyLogging());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-websocket.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
@@ -69,6 +70,7 @@ public class TestJettyOSGiBootWithWebSocket
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
         options.addAll(annotationDependencies());
+        options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[options.size()]);
     }
 
@@ -95,21 +97,18 @@ public class TestJettyOSGiBootWithWebSocket
         TestOSGiUtil.debugBundles(bundleContext);
     }
     
-
-
     @Test
     public void testWebsocket() throws Exception
     {            
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 
-        URI uri = new URI("ws://127.0.0.1:" + port+"/ws/foo");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ws/foo");
 
         WebSocketClient client = new WebSocketClient();
         
         try
         {
-
             SimpleEchoSocket socket = new SimpleEchoSocket();
 
             client.start();
