@@ -48,6 +48,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 import aQute.bnd.osgi.Constants;
+import org.osgi.framework.BundleException;
 
 /**
  * Test using websocket in osgi
@@ -64,6 +65,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-javax-websocket.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
@@ -110,37 +112,16 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
     }
-    
-
 
     @Test
     public void testWebsocket() throws Exception
     {
-        //this is necessary because the javax.websocket-api jar does not have manifest headers
-        //that allow it to use ServiceLoader in osgi, this corrects that defect
-        TinyBundle bundle = TinyBundles.bundle();
-        bundle.set(Constants.FRAGMENT_HOST, "javax.websocket-api");
-        bundle.set(Constants.REQUIRE_CAPABILITY, 
-                   "osgi.serviceloader;filter:=\"(osgi.serviceloader=javax.websocket.ContainerProvider)\";resolution:=optional;cardinality:=multiple, osgi.extender; filter:=\"(osgi.extender=osgi.serviceloader.processor)\"");
-        bundle.set(Constants.BUNDLE_SYMBOLICNAME, "javax.websocket.api.fragment");
-        InputStream is = bundle.build(TinyBundles.withBnd());        
-        bundleContext.installBundle("dummyLocation", is);
-        
-        Bundle websocketApiBundle = TestOSGiUtil.getBundle(bundleContext, "javax.websocket-api");
-        assertNotNull(websocketApiBundle);
-        websocketApiBundle.update();
-        websocketApiBundle.start();
- 
-        
-        Bundle javaxWebsocketClient = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket");
-        assertNotNull(javaxWebsocketClient);
-        javaxWebsocketClient.start();
- 
-        Bundle javaxWebsocketServer = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
-        assertNotNull(javaxWebsocketServer);
-        javaxWebsocketServer.start();
-        
-        
+        fixJavaxWebSocketApi();
+
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
+
         String port = System.getProperty("boot.javax.websocket.port");
         assertNotNull(port);
 
@@ -148,7 +129,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         assertNotNull(container);
 
         SimpleJavaxWebSocket socket = new SimpleJavaxWebSocket();
-        URI uri = new URI("ws://127.0.0.1:" + port+"/javax.websocket/");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/javax.websocket/");
         Session session = container.connectToServer(socket,uri);
         try
         {
@@ -162,5 +143,30 @@ public class TestJettyOSGiBootWithJavaxWebSocket
             session.close();
             assertTrue(socket.closeLatch.await(1,TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
         }
+    }
+
+    private void fixJavaxWebSocketApi() throws BundleException
+    {
+        // this is necessary because the javax.websocket-api jar does not have manifest headers
+        // that allow it to use ServiceLoader in osgi, this corrects that defect
+        TinyBundle bundle = TinyBundles.bundle();
+        bundle.set(Constants.FRAGMENT_HOST, "javax.websocket-api");
+        bundle.set(Constants.REQUIRE_CAPABILITY,
+                   "osgi.serviceloader;filter:=\"(osgi.serviceloader=javax.websocket.ContainerProvider)\";resolution:=optional;cardinality:=multiple, osgi.extender; filter:=\"(osgi.extender=osgi.serviceloader.processor)\"");
+        bundle.set(Constants.BUNDLE_SYMBOLICNAME, "javax.websocket.api.fragment");
+        InputStream is = bundle.build(TinyBundles.withBnd());
+        bundleContext.installBundle("dummyLocation", is);
+
+        Bundle websocketApiBundle = TestOSGiUtil.getBundle(bundleContext, "javax.websocket-api");
+        assertNotNull(websocketApiBundle);
+        websocketApiBundle.update();
+        websocketApiBundle.start();
+    }
+
+    private void startBundle(BundleContext bundleContext, String symbolicName) throws BundleException
+    {
+        Bundle bundle = TestOSGiUtil.getBundle(bundleContext, symbolicName);
+        assertNotNull("Bundle[" + symbolicName + "] should exist",bundle);
+        bundle.start();
     }
 }
