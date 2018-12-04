@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.osgi.test;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
@@ -118,16 +119,16 @@ public class TestJettyOSGiBootWithAnnotations
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
-            assertTrue(content.contains("<h1>Servlet 3.1 Test WebApp</h1>"));
+            assertThat(content, containsString("<h1>Servlet 3.0/3.1/4.0 Test WebApp</h1>"));
             
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
             content = response.getContentAsString();
-            assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
+            assertThat(content, containsString("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
             
             response = client.GET("http://127.0.0.1:" + port + "/frag.html");
             content = response.getContentAsString();
-            assertTrue(content.contains("<h1>FRAGMENT</h1>"));
+            assertThat(content, containsString("<h1>FRAGMENT</h1>"));
         }
         finally
         {
