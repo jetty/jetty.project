@@ -40,6 +40,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,6 +71,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<>();
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
@@ -99,7 +101,10 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
         res.add(CoreOptions.systemProperty("jetty.sslContext.provider").value("Conscrypt"));
-        
+
+        String conscryptVersion = System.getProperty("conscrypt-version");
+        Assume.assumeFalse("Missing 'conscrypt-version' system property", (conscryptVersion == null || conscryptVersion.equals("null")));
+
         res.add(wrappedBundle(mavenBundle().groupId("org.conscrypt").artifactId("conscrypt-openjdk-uber").versionAsInProject())
                 .imports("javax.net.ssl,*")
                 .exports("org.conscrypt;version="+System.getProperty("conscrypt-version"))
