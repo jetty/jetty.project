@@ -65,7 +65,7 @@
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             </systemPropertyVariables>
             <argLine>
-              @{argLine} ${surefire.argLine}
+              @{argLine} ${jetty.surefire.argLine}
               --add-modules javax.servlet.api,org.slf4j
             </argLine>
           </configuration>
