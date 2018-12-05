@@ -118,7 +118,7 @@ public class TestJettyOSGiBootWithAnnotations
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
-            assertTrue(content.contains("<h1>Servlet 3.1 Test WebApp</h1>"));
+            assertTrue(content.contains("Test WebApp"));
             
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
