@@ -25,7 +25,7 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
 
 /**
  * Example of setting up a javax.websocket server with Jetty embedded
