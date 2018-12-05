@@ -22,7 +22,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${surefire.base.argLine}
+            @{argLine} ${surefire.argLine}
             --patch-module javax.servlet.api=${jetty-schemas-jar}
           </argLine>
         </configuration>
