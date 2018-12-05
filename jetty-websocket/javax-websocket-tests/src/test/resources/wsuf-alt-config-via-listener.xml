@@ -7,7 +7,7 @@
   version="3.1">
 
   <listener>
-    <listener-class>org.eclipse.jetty.websocket.jsr356.tests.server.InfoContextAltAttributeListener</listener-class>
+    <listener-class>org.eclipse.jetty.websocket.javax.tests.server.InfoContextAltAttributeListener</listener-class>
   </listener>
 
   <filter>

@@ -57,7 +57,7 @@
               <instructions>
                 <Bundle-Description>javax.websocket Integration Tests</Bundle-Description>
                 <Export-Package>
-                  org.eclipse.jetty.websocket.jsr356.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                  org.eclipse.jetty.websocket.javax.tests.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
               </instructions>
             </configuration>

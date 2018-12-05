@@ -47,10 +47,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 @HandlesTypes({ ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class })
 public class JavaxWebSocketServerContainerInitializer implements ServletContainerInitializer
 {
-    public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
-    public static final String ADD_DYNAMIC_FILTER_KEY = "org.eclipse.jetty.websocket.jsr356.addDynamicFilter";
+    public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.javax";
+    public static final String DEPRECATED_ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
     private static final Logger LOG = Log.getLogger(JavaxWebSocketServerContainerInitializer.class);
-    public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.jsr356.HttpClient";
+    public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.javax.HttpClient";
 
     /**
      * DestroyListener
@@ -89,7 +89,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
      * @param defValue the default value, if the value is not specified in the context
      * @return the value for the feature key
      */
-    public static boolean isEnabledViaContext(ServletContext context, String keyName, boolean defValue)
+    public static Boolean isEnabledViaContext(ServletContext context, String keyName, Boolean defValue)
     {
         // Try context parameters first
         String cp = context.getInitParameter(keyName);
@@ -197,9 +197,15 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
     {
-        if (!isEnabledViaContext(context, ENABLE_KEY, true))
+        Boolean dft = isEnabledViaContext(context, DEPRECATED_ENABLE_KEY, null);
+        if (dft==null)
+            dft = Boolean.TRUE;
+        else
+            LOG.warn("Deprecated parameter used: " + DEPRECATED_ENABLE_KEY);
+
+        if (!isEnabledViaContext(context, ENABLE_KEY, dft))
         {
-            LOG.info("JSR-356 is disabled by configuration for context {}", context.getContextPath());
+            LOG.info("Javax Websocket is disabled by configuration for context {}", context.getContextPath());
             return;
         }
 
@@ -207,12 +213,12 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
 
         if (handler == null)
         {
-            throw new ServletException("Not running on Jetty, JSR-356 support unavailable");
+            throw new ServletException("Not running on Jetty, Javax Websocket support unavailable");
         }
 
         if (!(handler instanceof ServletContextHandler))
         {
-            throw new ServletException("Not running in Jetty ServletContextHandler, JSR-356 support unavailable");
+            throw new ServletException("Not running in Jetty ServletContextHandler, Javax Websocket support unavailable");
         }
 
         ServletContextHandler jettyContext = (ServletContextHandler)handler;
