@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>tests-parent</artifactId>
+    <version>10.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>test-websocket-autobahn</artifactId>
+  <name>Test :: Jetty Websocket Autobahn</name>
+  <description>Jetty Websocket Autobahn test suite</description>
+  <url>http://www.eclipse.org/jetty</url>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-server-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+  <profiles>
+    <profile>
+      <id>autobahn</id>
+      <activation>
+        <property>
+          <name>autobahn</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>me.normanmaurer.maven.autobahntestsuite</groupId>
+            <artifactId>autobahntestsuite-maven-plugin</artifactId>
+            <version>0.1.4</version>
+            <configuration>
+
+              <!-- Optional configuration -->
+              <!-- The port to bind the server on. Default is to choose a random free port. -->
+              <!--port>9090</port-->
+
+              <!-- The number of milliseconds to wait for the server to startup -->
+              <waitTime>20000</waitTime>
+              <generateJUnitXml>true</generateJUnitXml>
+              <cases>
+                <case>*</case>
+              </cases>
+
+              <excludeCases></excludeCases>
+              <failOnNonStrict>false</failOnNonStrict>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>test</phase>
+                <goals>
+                  <goal>fuzzingclient</goal>
+                </goals>
+                <configuration>
+                  <!-- The class which contains a main method that accept the port as parameter and startup the -->
+                  <!-- the server. -->
+                  <!--mainClass>org.eclipse.jetty.websocket.autobahn.WebSocketServer</mainClass-->
+                  <mainClass>org.eclipse.jetty.websocket.autobahn.WebSocketJsrServer</mainClass>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
