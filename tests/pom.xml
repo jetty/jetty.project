@@ -67,5 +67,6 @@
     <module>test-quickstart</module>
     <module>test-jmx</module>
     <module>test-http-client-transport</module>
+    <module>test-websocket-autobahn</module>
   </modules>
 </project>
