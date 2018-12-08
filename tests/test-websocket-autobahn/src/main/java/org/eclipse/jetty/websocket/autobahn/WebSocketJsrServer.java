@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.autobahn;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
@@ -55,7 +55,7 @@ public class WebSocketJsrServer
         server.setHandler( context );
 
         // Enable javax.websocket configuration for the context
-        ServerContainer wsContainer = JavaxWebSocketServerContainerInitializer.configureContext( context );
+        ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext( context );
 
         // Add your websockets to the container
         wsContainer.addEndpoint( EchoJsrSocket.class );

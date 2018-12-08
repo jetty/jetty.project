@@ -57,7 +57,8 @@ public class WebSocketServer
         @Override
         public void configure( WebSocketServletFactory factory )
         {
-            factory.addMapping( factory.parsePathSpec( "/" ), ( req, res ) -> new EchoSocket() );
+            // Register the echo websocket with the basic WebSocketCreator
+            factory.register(EchoSocket.class);
         }
     }
 
