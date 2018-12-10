@@ -442,7 +442,7 @@ public class LowResourceMonitor extends ContainerLifeCycle
     {
     }
 
-    interface LowResourceCheck
+    public interface LowResourceCheck
     {
         boolean isLowOnResources();
 
