@@ -91,7 +91,8 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
+        res.add(mavenBundle().groupId("com.sun.activation").artifactId("javax.activation").version("1.2.0").noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.mail.glassfish").version("1.4.1.v201005082020").noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
@@ -105,10 +106,15 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         return res;
     }
 
-
     @Ignore
-    public void assertAllBundlesActiveOrResolved()
+    public void assertAllBundlesActiveOrResolved() throws BundleException
     {
+        fixJavaxWebSocketApi();
+
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
+
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
     }
