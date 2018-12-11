@@ -316,10 +316,10 @@ public class DoSFilter implements Filter
             // Get a rate tracker associated with this request, and record one hit.
             tracker = getRateTracker(request);
 
-            // Calculate the rate and check it is over the allowed limit
+            // Calculate the rate and check if it is over the allowed limit
             final boolean overRateLimit = tracker.isRateExceeded(System.currentTimeMillis());
 
-            // Pass it through if  we are not currently over the rate limit.
+            // Pass it through if we are not currently over the rate limit.
             if (!overRateLimit)
             {
                 if (LOG.isDebugEnabled())
