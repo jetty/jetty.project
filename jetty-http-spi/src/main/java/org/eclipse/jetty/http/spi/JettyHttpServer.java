@@ -243,6 +243,18 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         chc.addHandler(jettyContextHandler);
         _contexts.put(path, context);
 
+        if(!jettyContextHandler.isStarted())
+        {
+            try
+            {
+                jettyContextHandler.start();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e.getMessage(), e );
+            }
+        }
+
         return context;
     }
 
