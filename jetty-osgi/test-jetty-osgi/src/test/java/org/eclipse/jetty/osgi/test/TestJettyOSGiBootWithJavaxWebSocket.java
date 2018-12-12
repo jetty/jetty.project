@@ -65,7 +65,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
-        options.add(TestOSGiUtil.optionalRemoteDebug());
+        // options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-javax-websocket.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
