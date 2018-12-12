@@ -99,8 +99,8 @@ Note: order presented here is how they would appear on the classpath.
 32:                      1.2 | ${jetty.home}/lib/annotations/javax.annotation-api-1.2.jar
 33:               {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
 34:                      1.0 | ${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
-35:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-client-impl-{VERSION}.jar
-36:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-server-impl-{VERSION}.jar
+35:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-client-{VERSION}.jar
+36:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-server-{VERSION}.jar
 37:               {VERSION} | ${jetty.home}/lib/websocket/websocket-api-{VERSION}.jar
 38:               {VERSION} | ${jetty.home}/lib/websocket/websocket-client-{VERSION}.jar
 39:               {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
