@@ -28,9 +28,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
- * Example of setting up a Jetty WebSocket server
- * <p>
- * Note: this uses the Jetty WebSocket API, not the javax.websocket API.
+ * Jetty WebSocket server using the Jetty WebSocket API
  */
 public class WebSocketServer
 {

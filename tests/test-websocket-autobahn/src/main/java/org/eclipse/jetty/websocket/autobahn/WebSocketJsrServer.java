@@ -22,13 +22,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 /**
- * Example of setting up a javax.websocket server with Jetty embedded
+ * javax.websocket server with Jetty embedded
  */
 public class WebSocketJsrServer
 {
@@ -42,6 +45,12 @@ public class WebSocketJsrServer
         public void onMessage( Session session, String message )
         {
             session.getAsyncRemote().sendText( message );
+        }
+
+        @OnOpen
+        public void onOpen( Session session, EndpointConfig endpointConfig ){
+            session.setMaxTextMessageBufferSize( Integer.MAX_VALUE );
+            session.setMaxBinaryMessageBufferSize( Integer.MAX_VALUE );
         }
     }
 
