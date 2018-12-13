@@ -63,10 +63,8 @@ public class WebSocketJsrServer
         context.setContextPath( "/" );
         server.setHandler( context );
 
-        // Enable javax.websocket configuration for the context
         ServerContainer wsContainer = JavaxWebSocketServerContainerInitializer.configureContext( context );
 
-        // Add your websockets to the container
         wsContainer.addEndpoint( EchoJsrSocket.class );
 
         server.start();
