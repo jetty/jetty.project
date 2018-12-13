@@ -77,7 +77,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
-        options.addAll(annotationDependencies());
+        options.addAll(testJettyWebApp());
         options.addAll(extraDependencies());
         return options.toArray(new Option[options.size()]);
     }
@@ -88,14 +88,10 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         return TestOSGiUtil.jspDependencies();
     }
 
-    public static List<Option> annotationDependencies()
+    public static List<Option> testJettyWebApp()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("com.sun.activation").artifactId("javax.activation").version("1.2.0").noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.mail.glassfish").version("1.4.1.v201005082020").noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
-        //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
     public static List<Option> extraDependencies()
@@ -114,6 +110,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
+        startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
 
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
@@ -127,6 +124,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
+        startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
 
         String port = System.getProperty("boot.javax.websocket.port");
         assertNotNull(port);
