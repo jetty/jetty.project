@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -54,6 +55,23 @@ public class TestFooServlet extends HttpServlet
             if (foo == null || foo.getInt() != 33)
                 response.sendError(500, "Foo not deserialized");
         }
-        
+        else if ("async".equals(action))
+        {
+            if (request.getAttribute("async-test") == null)
+            {
+                request.setAttribute("async-test", Boolean.TRUE);
+                AsyncContext acontext = request.startAsync();
+                System.err.println("Starting async and dispatching");
+                
+                acontext.dispatch();
+                return;
+            }
+            else
+            {
+                HttpSession session = request.getSession(true);
+                System.err.println("After dispatch and finishing response");
+                response.getWriter().println("OK");
+            }
+        }
     }
 }

@@ -407,6 +407,9 @@ public class SessionHandler extends ScopedHandler
      */
     public void complete(HttpSession session)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Complete called with session {}", session); 
+        
         if (session == null)
             return;
         
@@ -428,6 +431,8 @@ public class SessionHandler extends ScopedHandler
     {
         if (request.isAsyncStarted() && request.getDispatcherType() == DispatcherType.REQUEST)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding AsyncListener for {}", request);
             request.getAsyncContext().addListener(_sessionAsyncListener);
         }
         else
@@ -1599,6 +1604,9 @@ public class SessionHandler extends ScopedHandler
 
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("SessionHandler.doScope");
+            
             old_session_manager = baseRequest.getSessionHandler();
             old_session = baseRequest.getSession(false);
 
@@ -1622,10 +1630,7 @@ public class SessionHandler extends ScopedHandler
             }
 
             if (LOG.isDebugEnabled())
-            {
-                LOG.debug("sessionHandler=" + this);
-                LOG.debug("session=" + existingSession);
-            }
+                LOG.debug("sessionHandler={} session={}",this, existingSession);
 
             if (_nextScope != null)
                 _nextScope.doScope(target,baseRequest,request,response);
@@ -1638,8 +1643,9 @@ public class SessionHandler extends ScopedHandler
         {
             //if there is a session that was created during handling this context, then complete it
             HttpSession finalSession = baseRequest.getSession(false);
-            if (LOG.isDebugEnabled()) LOG.debug("FinalSession="+finalSession+" old_session_manager="+old_session_manager+" this="+this);
-            if ((finalSession != null) && (old_session_manager != this))
+            if (LOG.isDebugEnabled())
+                LOG.debug("FinalSession={}, old_session_manager={}, this={}, calling complete={}", finalSession, old_session_manager, this, (old_session_manager != this));
+            if (old_session_manager != this)
             {
                 complete((Session)finalSession, baseRequest);
             }
