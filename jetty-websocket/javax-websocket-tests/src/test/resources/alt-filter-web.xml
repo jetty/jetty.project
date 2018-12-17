@@ -7,7 +7,7 @@
   version="3.1">
 
   <context-param>
-    <param-name>org.eclipse.jetty.websocket.jsr356.addDynamicFilter</param-name>
+    <param-name>org.eclipse.jetty.websocket.javax.addDynamicFilter</param-name>
     <param-value>false</param-value>
   </context-param>
 

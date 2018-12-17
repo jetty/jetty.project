@@ -113,7 +113,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }};
 
     private static final Logger LOG = Log.getLogger(SslContextFactory.class);
-    private static final Logger LOG_CONFIG = LOG.getLogger("config");
+    private static final Logger LOG_CONFIG = LOG.getLogger("SslContextFactoryConfig");
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
             (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?

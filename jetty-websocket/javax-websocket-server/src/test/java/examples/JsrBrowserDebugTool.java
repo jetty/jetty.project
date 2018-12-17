@@ -28,8 +28,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
 
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;

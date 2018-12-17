@@ -66,6 +66,10 @@
             <DynamicImport-Package>
               org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"
             </DynamicImport-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer
+            </Provide-Capability>
           </instructions>
         </configuration>
       </plugin>

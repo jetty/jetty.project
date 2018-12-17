@@ -9,11 +9,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>javax-websocket-client-impl</artifactId>
+  <artifactId>javax-websocket-client</artifactId>
   <name>Jetty :: Websocket :: javax.websocket :: Client Implementation</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.javax.websocket</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.javax.websocket.client</bundle-symbolic-name>
   </properties>
 
   <dependencies>
@@ -53,10 +53,15 @@
               <instructions>
                 <Bundle-Description>javax.websocket.client Implementation</Bundle-Description>
                 <Export-Package>
-                  org.eclipse.jetty.websocket.jsr356.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                  org.eclipse.jetty.websocket.javax.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=javax.websocket.ContainerProvider</Provide-Capability>
+                <Require-Capability>
+                  osgi.extender;
+                  filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
+                </Require-Capability>
+                <Provide-Capability>
+                  osgi.serviceloader;osgi.serviceloader=javax.websocket.ContainerProvider
+                </Provide-Capability>
               </instructions>
             </configuration>
           </execution>

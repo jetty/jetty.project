@@ -18,11 +18,11 @@
 
 module org.eclipse.jetty.websocket.javax.common
 {
-    exports org.eclipse.jetty.websocket.jsr356;
-    exports org.eclipse.jetty.websocket.jsr356.decoders;
-    exports org.eclipse.jetty.websocket.jsr356.encoders;
-    exports org.eclipse.jetty.websocket.jsr356.messages;
-    exports org.eclipse.jetty.websocket.jsr356.util;
+    exports org.eclipse.jetty.websocket.javax.common;
+    exports org.eclipse.jetty.websocket.javax.common.decoders;
+    exports org.eclipse.jetty.websocket.javax.common.encoders;
+    exports org.eclipse.jetty.websocket.javax.common.messages;
+    exports org.eclipse.jetty.websocket.javax.common.util;
 
     requires javax.websocket.api;
     requires org.eclipse.jetty.util;

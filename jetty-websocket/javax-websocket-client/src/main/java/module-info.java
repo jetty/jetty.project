@@ -18,11 +18,11 @@
 
 import javax.websocket.ContainerProvider;
 
-import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainerProvider;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider;
 
 module org.eclipse.jetty.websocket.javax.client
 {
-    exports org.eclipse.jetty.websocket.jsr356.client;
+    exports org.eclipse.jetty.websocket.javax.client;
 
     requires javax.websocket.api;
     requires org.eclipse.jetty.util;

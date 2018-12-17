@@ -54,7 +54,7 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle imple
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)_context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
         if (initializers == null)
             return;
-        
+
         for (ContainerInitializer i : initializers)
         {
             try

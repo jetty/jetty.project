@@ -4,15 +4,15 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-  <!-- disable JSR-356 -->
+  <!-- disable Javax Websockets -->
   <context-param>
-    <param-name>org.eclipse.jetty.websocket.jsr356</param-name>
+    <param-name>org.eclipse.jetty.websocket.javax</param-name>
     <param-value>false</param-value>
   </context-param>
 
   <servlet>
     <servlet-name>info-servlet</servlet-name>
-    <servlet-class>org.eclipse.jetty.websocket.jsr356.tests.server.InfoServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.websocket.javax.tests.server.InfoServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 

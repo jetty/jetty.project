@@ -52,9 +52,11 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
     public WebSocketCoreClient()
     {
         this(new HttpClient(new SslContextFactory()));
-        this.httpClient.setName("WSCoreClient");
+        // TODO is there more HttpClient configuration we should do by default?
+        httpClient.getSslContextFactory().setEndpointIdentificationAlgorithm("HTTPS");
+        httpClient.setName("WSCoreClient");
         // Internally created, let websocket client's lifecycle manage it.
-        this.addManaged(httpClient);
+        addManaged(httpClient);
     }
 
     public WebSocketCoreClient(HttpClient httpClient)
