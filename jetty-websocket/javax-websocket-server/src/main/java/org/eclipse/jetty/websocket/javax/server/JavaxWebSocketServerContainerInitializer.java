@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.server;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -153,20 +152,8 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         if (executor == null)
             executor = context.getServer().getThreadPool();
 
-        // Do we need to make a client?
-        if (httpClient == null)
-        {
-            // TODO Do we always need a HttpClient?
-            // TODO Can the client share the websocket or container buffer pool
-            httpClient = new HttpClient();
-            httpClient.setName("Javax-WebSocketServer@" + Integer.toHexString(httpClient.hashCode()));
+        if (httpClient!=null && httpClient.getExecutor()==null)
             httpClient.setExecutor(executor);
-            context.addBean(httpClient, true);
-        }
-        else if (httpClient.getExecutor() == null)
-        {
-            httpClient.setExecutor(executor);
-        }
 
         // Create the Jetty ServerContainer implementation
         JavaxWebSocketServerContainer jettyContainer = new JavaxWebSocketServerContainer(webSocketCreatorMapping, httpClient, executor);

@@ -18,6 +18,21 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.function.Supplier;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.Session;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -30,20 +45,6 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.Session;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-
 /**
  * Container for Client use of the javax.websocket API.
  * <p>
@@ -52,25 +53,21 @@ import java.util.concurrent.Future;
 @ManagedObject("JSR356 Client Container")
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
-    protected final WebSocketCoreClient coreClient;
+    protected WebSocketCoreClient coreClient;
+    protected Supplier<WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
-    private ClassLoader contextClassLoader;
     private DecoratedObjectFactory objectFactory;
     private WebSocketExtensionRegistry extensionRegistry;
 
     public JavaxWebSocketClientContainer()
     {
-        this(new WebSocketCoreClient());
-        this.coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(this.coreClient.getHttpClient().hashCode()));
-        // We created WebSocketCoreClient, let lifecycle be managed by us
-        addManaged(coreClient);
+        this(() -> new WebSocketCoreClient());
     }
 
-    public JavaxWebSocketClientContainer(HttpClient httpClient)
+    public JavaxWebSocketClientContainer(Supplier<WebSocketCoreClient> coreClientFactory)
     {
-        this(new WebSocketCoreClient(httpClient));
-        // We created WebSocketCoreClient, let lifecycle be managed by us
-        addManaged(coreClient);
+        this((WebSocketCoreClient)null);
+        this.coreClientFactory = coreClientFactory;
     }
 
     public JavaxWebSocketClientContainer(WebSocketCoreClient coreClient)
@@ -78,7 +75,6 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         super();
         this.coreClient = coreClient;
         this.addBean(this.coreClient);
-        this.contextClassLoader = this.getClass().getClassLoader();
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
@@ -98,11 +94,18 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
     protected HttpClient getHttpClient()
     {
-        return coreClient.getHttpClient();
+        return getWebSocketCoreClient().getHttpClient();
     }
 
-    protected WebSocketCoreClient getWebSocketCoreClient() throws Exception
+    protected WebSocketCoreClient getWebSocketCoreClient()
     {
+        if (coreClient == null)
+        {
+            coreClient = coreClientFactory.get();
+            this.coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(this.coreClient.getHttpClient().hashCode()));
+            addManaged(coreClient);
+        }
+
         return coreClient;
     }
 
@@ -132,7 +135,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         Objects.requireNonNull(configuredEndpoint, "WebSocket configured endpoint cannot be null");
         Objects.requireNonNull(destURI, "Destination URI cannot be null");
 
-        ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, coreClient, destURI, configuredEndpoint);
+        ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
         EndpointConfig config = configuredEndpoint.getConfig();
         if (config != null && config instanceof ClientEndpointConfig)

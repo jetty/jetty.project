@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -28,10 +32,6 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 
 public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHandler.CoreCustomizer
 {
@@ -51,12 +51,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public WebSocketCoreClient()
     {
-        this(new HttpClient(new SslContextFactory()));
-        // TODO is there more HttpClient configuration we should do by default?
-        httpClient.getSslContextFactory().setEndpointIdentificationAlgorithm("HTTPS");
-        httpClient.setName("WSCoreClient");
-        // Internally created, let websocket client's lifecycle manage it.
-        addManaged(httpClient);
+        this(null,null);
     }
 
     public WebSocketCoreClient(HttpClient httpClient)
@@ -66,7 +61,13 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public WebSocketCoreClient(HttpClient httpClient, FrameHandler.CoreCustomizer customizer)
     {
-        this.httpClient = httpClient == null?new HttpClient():httpClient;
+        if (httpClient==null)
+        {
+            httpClient = new HttpClient(new SslContextFactory());
+            httpClient.getSslContextFactory().setEndpointIdentificationAlgorithm("HTTPS");
+            httpClient.setName(String.format("%s@%x",getClass().getSimpleName(),hashCode()));
+        }
+        this.httpClient = httpClient;
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.objectFactory = new DecoratedObjectFactory();
         this.customizer = customizer;

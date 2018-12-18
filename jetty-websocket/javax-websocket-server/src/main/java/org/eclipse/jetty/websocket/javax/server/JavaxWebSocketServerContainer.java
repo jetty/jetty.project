@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.WebSocketContainer;
@@ -40,10 +39,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.server.internal.AnnotatedServerEndpointConfig;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.internal.UndefinedServerEndpointConfig;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreatorMapping;
 
@@ -83,13 +82,20 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
 
     /**
      * Main entry point for {@link JavaxWebSocketServerContainerInitializer}.
-     *
      * @param webSocketCreatorMapping the {@link WebSocketCreatorMapping} that this container belongs to
      * @param httpClient              the {@link HttpClient} instance to use
      */
     public JavaxWebSocketServerContainer(WebSocketCreatorMapping webSocketCreatorMapping, HttpClient httpClient, Executor executor)
     {
-        super(new WebSocketCoreClient(httpClient));
+        super(() ->
+        {
+            // TODO Can the client share the websocket or container buffer pool
+            WebSocketCoreClient client = new WebSocketCoreClient(httpClient);
+            if (executor != null && httpClient == null)
+                client.getHttpClient().setExecutor(executor);
+
+            return client;
+        });
         this._webSocketCreatorMapping = webSocketCreatorMapping;
         this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
@@ -123,24 +129,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     public DecoratedObjectFactory getObjectFactory()
     {
         return this._webSocketCreatorMapping.getObjectFactory();
-    }
-
-    @Override
-    protected WebSocketCoreClient getWebSocketCoreClient() throws Exception
-    {
-        // Lazy Start Http Client
-        if (!coreClient.getHttpClient().isStarted())
-        {
-            coreClient.getHttpClient().start();
-        }
-
-        // Lazy Start WebSocket Client
-        if (!coreClient.isStarted())
-        {
-            coreClient.start();
-        }
-
-        return coreClient;
     }
 
     @Override
