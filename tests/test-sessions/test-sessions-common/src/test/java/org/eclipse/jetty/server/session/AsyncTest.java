@@ -52,22 +52,20 @@ import org.junit.jupiter.api.Test;
  */
 public class AsyncTest
 {
-
     public static class LatchServlet extends HttpServlet
     {
-
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             resp.getWriter().println("Latched");
         }
-        
     }
-
 
     @Test
     public void testSessionWithAsyncDispatch() throws Exception
     {
+        // Test async dispatch back to same context, which then creates a session.
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
@@ -118,6 +116,8 @@ public class AsyncTest
     @Test
     public void testSessionWithAsyncComplete() throws Exception
     {
+        // Test async write, which creates a session and completes outside of a dispatch
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
@@ -168,6 +168,9 @@ public class AsyncTest
     @Test
     public void testSessionWithCrossContextAsync() throws Exception
     {
+        // Test async dispatch from context A to context B then
+        // async dispatch back to context B, which then creates a session (in context B).
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
@@ -218,10 +221,13 @@ public class AsyncTest
         }
     }
 
-
     @Test
     public void testSessionWithCrossContextAsyncComplete() throws Exception
     {
+        // Test async dispatch from context A to context B, which then does an
+        // async write, which creates a session (in context A) and completes outside of a
+        // dispatch
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
@@ -239,7 +245,6 @@ public class AsyncTest
         LatchServlet latchServlet = new LatchServlet();
         ServletHolder latchHolder = new ServletHolder(latchServlet);
         contextB.addServlet(latchHolder, "/latch");
-
 
         server.start();
         int port = server.getPort();

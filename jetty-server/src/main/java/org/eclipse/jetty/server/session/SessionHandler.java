@@ -1611,7 +1611,7 @@ public class SessionHandler extends ScopedHandler
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        SessionHandler old_session_manager = null;
+        SessionHandler old_session_handler = null;
         HttpSession old_session = null;
         HttpSession existingSession = null;
 
@@ -1620,10 +1620,10 @@ public class SessionHandler extends ScopedHandler
             if (LOG.isDebugEnabled())
                 LOG.debug("SessionHandler.doScope");
             
-            old_session_manager = baseRequest.getSessionHandler();
+            old_session_handler = baseRequest.getSessionHandler();
             old_session = baseRequest.getSession(false);
 
-            if (old_session_manager != this)
+            if (old_session_handler != this)
             {
                 // new session context
                 baseRequest.setSessionHandler(this);
@@ -1634,7 +1634,7 @@ public class SessionHandler extends ScopedHandler
             // access any existing session for this context
             existingSession = baseRequest.getSession(false);
             
-            if ((existingSession != null) && (old_session_manager != this))
+            if ((existingSession != null) && (old_session_handler != this))
             {
                 HttpCookie cookie = access(existingSession,request.isSecure());
                 // Handle changed ID or max-age refresh, but only if this is not a redispatched request
@@ -1656,13 +1656,17 @@ public class SessionHandler extends ScopedHandler
         {
             //if there is a session that was created during handling this context, then complete it
             if (LOG.isDebugEnabled())
-                LOG.debug("FinalSession={}, old_session_manager={}, this={}, calling complete={}", baseRequest.getSession(false), old_session_manager, this, (old_session_manager != this));
-            if (old_session_manager != this)
+                LOG.debug("FinalSession={}, old_session_handler={}, this={}, calling complete={}", baseRequest.getSession(false), old_session_handler, this, (old_session_handler != this));
+
+            // If we are leaving the scope of this session handler, ensure the session is completed
+            if (old_session_handler != this)
                 ensureCompletion(baseRequest);
-         
-            if (old_session_manager != null && old_session_manager != this)
+
+            // revert the session handler to the previous, unless it was null, in which case remember it as
+            // the first session handler encountered.
+            if (old_session_handler != null && old_session_handler != this)
             {
-                baseRequest.setSessionHandler(old_session_manager);
+                baseRequest.setSessionHandler(old_session_handler);
                 baseRequest.setSession(old_session);
             }
         }
