@@ -136,16 +136,9 @@ public class SessionEvictionFailureTest
         
     }
     
-    
-    
-    /**
-     * TestFooServlet
-     *
-     *
-     */
+
     public static class TestServlet extends HttpServlet
     {
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {

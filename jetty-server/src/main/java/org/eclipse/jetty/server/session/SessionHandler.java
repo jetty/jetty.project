@@ -162,8 +162,22 @@ public class SessionHandler extends ScopedHandler
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            //An async request has completed, so we can complete the session
-            complete(Request.getBaseRequest(event.getAsyncContext().getRequest()).getSession(false));
+            // An async request has completed, so we can complete the session,
+            // but we must locate the session instance for this context
+            Request request = Request.getBaseRequest(event.getAsyncContext().getRequest());
+            HttpSession session = request.getSession(false);
+            String id;
+            if (session!=null)
+                id = session.getId();
+            else
+            {
+                id = (String)request.getAttribute(DefaultSessionIdManager.__NEW_SESSION_ID);
+                if (id==null)
+                    id = request.getRequestedSessionId();
+            }
+
+            if (id!=null)
+                complete(getSession(id));
         }
 
         @Override
@@ -412,7 +426,7 @@ public class SessionHandler extends ScopedHandler
         
         if (session == null)
             return;
-        
+
         Session s = ((SessionIf)session).getSession();
     
         try
@@ -425,25 +439,26 @@ public class SessionHandler extends ScopedHandler
             LOG.warn(e);
         }
     }
-    
-    
-    public void complete (Session session, Request request)
+
+    @Deprecated
+    public void complete(Session session, Request baseRequest)
     {
-        if (request.isAsyncStarted() && request.getDispatcherType() == DispatcherType.REQUEST)
+        ensureCompletion(baseRequest);
+    }
+
+    private void ensureCompletion(Request baseRequest)
+    {
+        if (baseRequest.isAsyncStarted())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Adding AsyncListener for {}", request);
-            request.getAsyncContext().addListener(_sessionAsyncListener);
+                LOG.debug("Adding AsyncListener for {}", baseRequest);
+            if (!baseRequest.getHttpChannelState().hasListener(_sessionAsyncListener))
+                baseRequest.getAsyncContext().addListener(_sessionAsyncListener);
         }
         else
         {
-            complete(session);
+            complete(baseRequest.getSession(false));
         }
-        //if dispatcher type is not async and not request, complete immediately (its a forward or an include)
-        
-        //else if dispatcher type is request and not async, complete immediately
-        
-        //else register an async callback completion listener that will complete the session
     }
 
 
@@ -459,7 +474,6 @@ public class SessionHandler extends ScopedHandler
 
         _context=ContextHandler.getCurrentContext();
         _loader=Thread.currentThread().getContextClassLoader();
-
 
         synchronized (server)
         {
@@ -477,7 +491,6 @@ public class SessionHandler extends ScopedHandler
                 
                 _sessionCache.setSessionDataStore(sds);
             }
-
          
             if (_sessionIdManager==null)
             {
@@ -1642,13 +1655,10 @@ public class SessionHandler extends ScopedHandler
         finally
         {
             //if there is a session that was created during handling this context, then complete it
-            HttpSession finalSession = baseRequest.getSession(false);
             if (LOG.isDebugEnabled())
-                LOG.debug("FinalSession={}, old_session_manager={}, this={}, calling complete={}", finalSession, old_session_manager, this, (old_session_manager != this));
+                LOG.debug("FinalSession={}, old_session_manager={}, this={}, calling complete={}", baseRequest.getSession(false), old_session_manager, this, (old_session_manager != this));
             if (old_session_manager != this)
-            {
-                complete((Session)finalSession, baseRequest);
-            }
+                ensureCompletion(baseRequest);
          
             if (old_session_manager != null && old_session_manager != this)
             {
