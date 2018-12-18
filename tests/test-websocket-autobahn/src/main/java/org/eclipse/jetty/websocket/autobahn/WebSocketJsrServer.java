@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.autobahn;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
 
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
