@@ -58,32 +58,7 @@ public class AsyncContextState implements AsyncContext
     @Override
     public void addListener(final AsyncListener listener, final ServletRequest request, final ServletResponse response)
     {
-        AsyncListener wrap = new AsyncListener()
-        {
-            @Override
-            public void onTimeout(AsyncEvent event) throws IOException
-            {
-                listener.onTimeout(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
-            }
-            
-            @Override
-            public void onStartAsync(AsyncEvent event) throws IOException
-            {
-                listener.onStartAsync(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
-            }
-            
-            @Override
-            public void onError(AsyncEvent event) throws IOException
-            {
-                listener.onError(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
-            }
-            
-            @Override
-            public void onComplete(AsyncEvent event) throws IOException
-            {                
-                listener.onComplete(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
-            }
-        };
+        AsyncListener wrap = new WrappedAsyncListener(listener, request, response);
         state().addListener(wrap);
     }
 
@@ -188,6 +163,46 @@ public class AsyncContextState implements AsyncContext
         return state();
     }
 
-    
+    public static class WrappedAsyncListener implements AsyncListener
+    {
+        private final AsyncListener _listener;
+        private final ServletRequest _request;
+        private final ServletResponse _response;
 
+        public WrappedAsyncListener(AsyncListener listener, ServletRequest request, ServletResponse response)
+        {
+            _listener = listener;
+            _request = request;
+            _response = response;
+        }
+
+        public AsyncListener getListener()
+        {
+            return _listener;
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            _listener.onTimeout(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            _listener.onStartAsync(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+            _listener.onError(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+        }
+
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+            _listener.onComplete(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+        }
+    }
 }

@@ -50,7 +50,7 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.1</servlet.api.version>
     <servlet.schema.version>4.0.3</servlet.schema.version>
-    <jsp.version>8.5.33</jsp.version>
+    <jsp.version>8.5.35.1</jsp.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.4.1</conscrypt.version>
