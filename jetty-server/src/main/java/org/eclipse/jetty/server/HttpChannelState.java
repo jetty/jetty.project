@@ -149,6 +149,25 @@ public class HttpChannelState
         }
     }
 
+    public boolean hasListener(AsyncListener listener)
+    {
+        try(Locker.Lock lock= _locker.lock())
+        {
+            if (_asyncListeners==null)
+                return false;
+            for (AsyncListener l : _asyncListeners)
+            {
+                if (l==listener)
+                    return true;
+
+                if (l instanceof AsyncContextState.WrappedAsyncListener && ((AsyncContextState.WrappedAsyncListener)l).getListener()==listener)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
     public void setTimeout(long ms)
     {
         try(Locker.Lock lock= _locker.lock())

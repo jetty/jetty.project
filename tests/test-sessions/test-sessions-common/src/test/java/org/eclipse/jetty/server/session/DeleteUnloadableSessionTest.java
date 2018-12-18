@@ -128,12 +128,7 @@ public class DeleteUnloadableSessionTest
         }
         
     }
-    
-    /**
-     * TestFooServlet
-     *
-     *
-     */
+
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;

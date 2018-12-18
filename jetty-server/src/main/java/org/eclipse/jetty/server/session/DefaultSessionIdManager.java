@@ -55,7 +55,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
-    private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
+    public final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
     
     protected static final AtomicLong COUNTER = new AtomicLong();
 
