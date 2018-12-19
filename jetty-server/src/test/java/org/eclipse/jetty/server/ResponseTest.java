@@ -578,6 +578,30 @@ public class ResponseTest
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
     }
 
+
+    @Test
+    public void testPrintln() throws Exception
+    {
+        Response response = getResponse();
+        Request request = response.getHttpChannel().getRequest();
+
+        SessionHandler session_handler = new SessionHandler();
+        session_handler.setServer(_server);
+        session_handler.setUsingCookies(true);
+        session_handler.start();
+        request.setSessionHandler(session_handler);
+        HttpSession session = request.getSession(true);
+
+        assertThat(session,not(nullValue()));
+        assertTrue(session.isNew());
+
+        response.getOutputStream().println("ABC");
+        response.getOutputStream().println("XYZ");
+        response.getOutputStream().close();
+        assertEquals("ABC\r\nXYZ\r\n",BufferUtil.toString(_content));
+    }
+
+
     @Test
     public void testContentTypeWithOther() throws Exception
     {
