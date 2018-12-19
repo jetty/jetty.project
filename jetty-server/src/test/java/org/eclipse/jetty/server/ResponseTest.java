@@ -591,14 +591,24 @@ public class ResponseTest
         session_handler.start();
         request.setSessionHandler(session_handler);
         HttpSession session = request.getSession(true);
+        response.setCharacterEncoding(UTF_8.name());
 
         assertThat(session,not(nullValue()));
         assertTrue(session.isNew());
 
-        response.getOutputStream().println("ABC");
+        String expected = "";
+        response.getOutputStream().print("ABC");
+        expected += "ABC";
         response.getOutputStream().println("XYZ");
+        expected += "XYZ\r\n";
+        String s="";
+        for (int i=0; i<100; i++)
+            s += "\u20AC\u20AC\u20AC\u20AC\u20AC\u20AC\u20AC\u20AC\u20AC\u20AC";
+        response.getOutputStream().println(s);
+        expected += s +"\r\n";
+
         response.getOutputStream().close();
-        assertEquals("ABC\r\nXYZ\r\n",BufferUtil.toString(_content));
+        assertEquals(expected,BufferUtil.toString(_content, UTF_8));
     }
 
 

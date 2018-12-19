@@ -27,6 +27,7 @@ import java.nio.channels.WritePendingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -127,6 +128,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     private static Logger LOG = Log.getLogger(HttpOutput.class);
+    private final static ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlocker;
@@ -138,7 +140,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private int _bufferSize;
     private int _commitSize;
     private WriteListener _writeListener;
-    private CharsetEncoder _encoder;
     private volatile Throwable _onError;
     /*
     ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSED
@@ -699,16 +700,23 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (isClosed())
             throw new IOException("Closed");
 
-        // TODO would a Threadlocal pool be better?
         String charset = _channel.getResponse().getCharacterEncoding();
-        if (_encoder==null || !_encoder.charset().name().equals(charset))
-            _encoder = Charset.forName(charset).newEncoder();
+        CharsetEncoder encoder = _encoder.get();
+        if (encoder==null || !encoder.charset().name().equalsIgnoreCase(charset))
+        {
+            encoder = Charset.forName(charset).newEncoder();
+            encoder.onMalformedInput(CodingErrorAction.REPLACE);
+            encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
+            _encoder.set(encoder);
+        }
         else
-            _encoder.reset();
+        {
+            encoder.reset();
+        }
 
         CharBuffer in = CharBuffer.wrap(s);
         CharBuffer crlf = eoln?CharBuffer.wrap("\r\n"):null;
-        ByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1+(s.length()+2)*_encoder.averageBytesPerChar()),false);
+        ByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1+(s.length()+2)*encoder.averageBytesPerChar()),false);
         BufferUtil.flipToFill(out);
 
         for(;;)
@@ -716,7 +724,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             CoderResult result;
             if (in.hasRemaining())
             {
-                result = _encoder.encode(in, out, false);
+                result = encoder.encode(in, out, crlf==null);
                 if (result.isUnderflow())
                     if (crlf==null)
                         break;
@@ -725,10 +733,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             else if (crlf.hasRemaining())
             {
-                result = _encoder.encode(crlf, out, true);
+                result = encoder.encode(crlf, out, true);
                 if (result.isUnderflow())
                 {
-                    if (!_encoder.flush(out).isUnderflow())
+                    if (!encoder.flush(out).isUnderflow())
                         result.throwException();
                     break;
                 }
