@@ -68,6 +68,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     {
         this((WebSocketCoreClient)null);
         this.coreClientFactory = coreClientFactory;
+        this.addBean(coreClientFactory);
     }
 
     public JavaxWebSocketClientContainer(WebSocketCoreClient coreClient)
