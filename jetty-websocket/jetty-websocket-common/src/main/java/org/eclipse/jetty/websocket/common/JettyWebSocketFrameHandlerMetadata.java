@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import java.lang.invoke.MethodHandle;
 import java.time.Duration;
 
-public class JettyWebSocketFrameHandlerMetadata implements FrameHandler.CoreCustomizer
+public class JettyWebSocketFrameHandlerMetadata extends FrameHandler.ConfigurationCustomizer
 {
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
@@ -40,12 +40,6 @@ public class JettyWebSocketFrameHandlerMetadata implements FrameHandler.CoreCust
 
     private MethodHandle pingHandle;
     private MethodHandle pongHandle;
-
-    // Policy Configuration
-    private int idleTimeout = -1;
-    private int inputBufferSize = -1;
-    private int maxBinaryMessageSize = -1;
-    private int maxTextMessageSize = -1;
 
     // Batch Configuration
     // TODO remove?
@@ -109,46 +103,6 @@ public class JettyWebSocketFrameHandlerMetadata implements FrameHandler.CoreCust
     public MethodHandle getFrameHandle()
     {
         return frameHandle;
-    }
-
-    public void setIdleTimeout(int idleTimeout)
-    {
-        this.idleTimeout = idleTimeout;
-    }
-
-    public int getIdleTimeout()
-    {
-        return idleTimeout;
-    }
-
-    public void setInputBufferSize(int inputBufferSize)
-    {
-        this.inputBufferSize = inputBufferSize;
-    }
-
-    public int getInputBufferSize()
-    {
-        return inputBufferSize;
-    }
-
-    public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
-    {
-        this.maxBinaryMessageSize = maxBinaryMessageSize;
-    }
-
-    public int getMaxBinaryMessageSize()
-    {
-        return maxBinaryMessageSize;
-    }
-
-    public void setMaxTextMessageSize(int maxTextMessageSize)
-    {
-        this.maxTextMessageSize = maxTextMessageSize;
-    }
-
-    public int getMaxTextMessageSize()
-    {
-        return maxTextMessageSize;
     }
 
     public void setOpenHandler(MethodHandle open, Object origin)
@@ -225,17 +179,5 @@ public class JettyWebSocketFrameHandlerMetadata implements FrameHandler.CoreCust
         }
 
         return obj.toString();
-    }
-
-    @Override
-    public void customize(FrameHandler.CoreSession session)
-    {
-        // Update passed in (unique) policy for this Frame Handler instance
-        if (getIdleTimeout() > 0)
-            session.setIdleTimeout(Duration.ofMillis(getIdleTimeout()));
-
-        if (getInputBufferSize() > 0)
-            session.setInputBufferSize(getInputBufferSize());
-
     }
 }

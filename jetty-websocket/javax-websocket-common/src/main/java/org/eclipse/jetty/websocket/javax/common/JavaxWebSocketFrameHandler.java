@@ -217,7 +217,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
         if (errorHandle == null)
         {
-            LOG.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " missing onError handler", cause);
+            LOG.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " : " + cause);
+            if (LOG.isDebugEnabled())
+                LOG.debug("unhandled", cause);
             return;
         }
 

@@ -130,14 +130,6 @@ public class ServletUpgradeRequest
         return requestURI.getHost();
     }
 
-    /**
-     * Return the underlying HttpServletRequest that existed at Upgrade time.
-     * <p>
-     * Note: many features of the HttpServletRequest are invalid when upgraded,
-     * especially ones that deal with body content, streams, readers, and responses.
-     *
-     * @return a limited version of the underlying HttpServletRequest
-     */
     public HttpServletRequest getHttpServletRequest()
     {
         return request;
@@ -148,33 +140,16 @@ public class ServletUpgradeRequest
         return request.getProtocol();
     }
 
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocale()}
-     *
-     * @return the preferred <code>Locale</code> for the client
-     */
     public Locale getLocale()
     {
         return request.getLocale();
     }
 
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocales()}
-     *
-     * @return an Enumeration of preferred Locale objects
-     */
     public Enumeration<Locale> getLocales()
     {
         return request.getLocales();
     }
 
-    /**
-     * Return a {@link java.net.SocketAddress} for the local socket.
-     * <p>
-     * Warning: this can cause a DNS lookup
-     *
-     * @return the local socket address
-     */
     public SocketAddress getLocalSocketAddress()
     {
         // TODO: fix when HttpServletRequest can use Unix Socket stuff
@@ -221,13 +196,6 @@ public class ServletUpgradeRequest
         return this.queryString;
     }
 
-    /**
-     * Return a {@link SocketAddress} for the remote socket.
-     * <p>
-     * Warning: this can cause a DNS lookup
-     *
-     * @return the remote socket address
-     */
     public SocketAddress getRemoteSocketAddress()
     {
         return new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
@@ -263,12 +231,6 @@ public class ServletUpgradeRequest
         return getParameterMap();
     }
 
-    /**
-     * Return the HttpSession if it exists.
-     * <p>
-     * Note: this is equivalent to {@link HttpServletRequest#getSession(boolean)}
-     * and will not create a new HttpSession.
-     */
     public HttpSession getSession()
     {
         return request.getSession(false);
@@ -279,9 +241,6 @@ public class ServletUpgradeRequest
         return negotiation.getOfferedSubprotocols();
     }
 
-    /**
-     * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
-     */
     public Principal getUserPrincipal()
     {
         return request.getUserPrincipal();

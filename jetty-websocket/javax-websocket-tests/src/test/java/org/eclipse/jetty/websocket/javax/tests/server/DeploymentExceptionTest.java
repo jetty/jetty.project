@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.javax.tests.server.sockets.InvalidOpenCloseRe
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.InvalidOpenSessionIntSocket;
 import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreatorMapping;
+import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,7 +99,7 @@ public class DeploymentExceptionTest
     {
         ServletContextHandler context = new ServletContextHandler();
 
-        WebSocketCreatorMapping factory = new WebSocketCreatorMapping();
+        WebSocketMapping factory = new WebSocketMapping();
         HttpClient httpClient = new HttpClient();
 
         JavaxWebSocketServerContainer container = new JavaxWebSocketServerContainer(factory, httpClient, server.getThreadPool());

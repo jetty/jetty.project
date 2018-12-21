@@ -116,13 +116,12 @@ public interface LifeCycle
      */
     public interface Listener extends EventListener
     {
-        public void lifeCycleStarting(LifeCycle event);
-        public void lifeCycleStarted(LifeCycle event);
-        public void lifeCycleFailure(LifeCycle event,Throwable cause);
-        public void lifeCycleStopping(LifeCycle event);
-        public void lifeCycleStopped(LifeCycle event);
+        default void lifeCycleStarting(LifeCycle event) {}
+        default void lifeCycleStarted(LifeCycle event) {}
+        default void lifeCycleFailure(LifeCycle event,Throwable cause) {}
+        default void lifeCycleStopping(LifeCycle event) {}
+        default void lifeCycleStopped(LifeCycle event) {}
     }
-    
     
     /**
      * Utility to start an object if it is a LifeCycle and to convert

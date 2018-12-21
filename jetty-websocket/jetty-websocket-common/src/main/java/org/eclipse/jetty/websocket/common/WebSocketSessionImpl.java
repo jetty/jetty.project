@@ -104,13 +104,13 @@ public class WebSocketSessionImpl implements Session
     @Override
     public long getMaxBinaryMessageSize()
     {
-        return frameHandler.getMaxBinaryMessageSize();
+        return coreSession.getMaxBinaryMessageSize();
     }
 
     @Override
     public long getMaxTextMessageSize()
     {
-        return frameHandler.getMaxTextMessageSize();
+        return coreSession.getMaxTextMessageSize();
     }
 
     @Override
@@ -134,13 +134,13 @@ public class WebSocketSessionImpl implements Session
     @Override
     public void setMaxBinaryMessageSize(long size)
     {
-        frameHandler.setMaxBinaryMessageSize(size);
+        coreSession.setMaxBinaryMessageSize(size);
     }
 
     @Override
     public void setMaxTextMessageSize(long size)
     {
-        frameHandler.setMaxTextMessageSize(size);
+        coreSession.setMaxTextMessageSize(size);
     }
 
     @Override

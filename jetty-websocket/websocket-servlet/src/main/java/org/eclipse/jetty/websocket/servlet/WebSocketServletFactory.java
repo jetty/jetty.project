@@ -24,22 +24,6 @@ import java.time.Duration;
 
 public interface WebSocketServletFactory
 {
-    void addFrameHandlerFactory(WebSocketServletFrameHandlerFactory frameHandlerFactory);
-
-    /**
-     * add a WebSocket mapping to a provided {@link WebSocketCreator}.
-     * <p>
-     * If mapping is added before this configuration is started, then it is persisted through
-     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
-     * this configuration is stopped.
-     * </p>
-     *
-     * @param pathSpec the pathspec to respond on
-     * @param creator  the WebSocketCreator to use
-     * @since 10.0
-     */
-    void addMapping(PathSpec pathSpec, WebSocketCreator creator);
-
     Duration getDefaultIdleTimeout();
 
     void setDefaultIdleTimeout(Duration duration);
@@ -64,6 +48,26 @@ public interface WebSocketServletFactory
 
     void setDefaultOutputBufferSize(int bufferSize);
 
+    boolean isAutoFragment();
+
+    void setAutoFragment(boolean autoFragment);
+
+    void addMapping(String pathSpec, WebSocketCreator creator);
+
+    /**
+     * add a WebSocket mapping to a provided {@link WebSocketCreator}.
+     * <p>
+     * If mapping is added before this configuration is started, then it is persisted through
+     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     * this configuration is stopped.
+     * </p>
+     *
+     * @param pathSpec the pathspec to respond on
+     * @param creator  the WebSocketCreator to use
+     * @since 10.0
+     */
+    void addMapping(PathSpec pathSpec, WebSocketCreator creator);
+
     /**
      * Returns the creator for the given path spec.
      *
@@ -80,9 +84,6 @@ public interface WebSocketServletFactory
      */
     WebSocketCreator getMatch(String target);
 
-    boolean isAutoFragment();
-
-    void setAutoFragment(boolean autoFragment);
 
     /**
      * Parse a PathSpec string into a PathSpec instance.

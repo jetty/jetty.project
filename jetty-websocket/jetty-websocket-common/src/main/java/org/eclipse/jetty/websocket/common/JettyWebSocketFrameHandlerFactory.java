@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -44,8 +45,8 @@ import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
@@ -56,28 +57,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 /**
- * Factory for websocket-core {@link FrameHandler} implementations suitable for
- * use with jetty-native websocket API.
- * <p>
- * Will create a {@link FrameHandler} suitable for use with classes/objects that:
- * </p>
- * <ul>
- * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
- * <li>Extends {@link org.eclipse.jetty.websocket.api.WebSocketAdapter}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketConnectionListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPartialListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPingPongListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketFrameListener}</li>
- * </ul>
  */
-public class JettyWebSocketFrameHandlerFactory
+public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 {
     private final Executor executor;
     private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
@@ -85,6 +73,7 @@ public class JettyWebSocketFrameHandlerFactory
     public JettyWebSocketFrameHandlerFactory(Executor executor)
     {
         this.executor = executor;
+        addBean(executor);
     }
 
     public JettyWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -155,13 +144,6 @@ public class JettyWebSocketFrameHandlerFactory
             frameHandle, pingHandle, pongHandle,
             future,
             metadata);
-
-        // TODO these are not attributes on the CoreSession, so we need another path to route them to the sinks that enforce them:
-        if (metadata.getMaxBinaryMessageSize() >= -1)
-            frameHandler.setMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
-
-        if (metadata.getMaxTextMessageSize() >= -1)
-            frameHandler.setMaxTextMessageSize(metadata.getMaxTextMessageSize());
 
         return frameHandler;
     }
@@ -298,10 +280,14 @@ public class JettyWebSocketFrameHandlerFactory
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
 
-        metadata.setInputBufferSize(anno.inputBufferSize());
-        metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
+        if (anno.inputBufferSize()>=0)
+            metadata.setInputBufferSize(anno.inputBufferSize());
+        if (anno.maxBinaryMessageSize()>=0)
+           metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
+        if (anno.maxTextMessageSize()>=0)
         metadata.setMaxTextMessageSize(anno.maxTextMessageSize());
-        metadata.setIdleTimeout(anno.maxIdleTime());
+        if (anno.maxIdleTime()>=0)
+            metadata.setIdleTimeout(Duration.ofMillis(anno.maxIdleTime()));
         metadata.setBatchMode(anno.batchMode());
 
         Method onmethod;
@@ -486,4 +472,9 @@ public class JettyWebSocketFrameHandlerFactory
         throw new InvalidSignatureException(err.toString());
     }
 
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent, metadataMap);
+    }
 }

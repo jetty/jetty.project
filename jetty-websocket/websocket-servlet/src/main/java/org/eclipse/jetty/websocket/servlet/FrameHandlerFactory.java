@@ -16,39 +16,22 @@
 //  ========================================================================
 //
 
+package org.eclipse.jetty.websocket.servlet;
 
-package org.eclipse.jetty.annotations;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 
-import java.util.Set;
 
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-
-/**
- * ServerServletContainerInitializer
- *
- *
- */
-public class ServerServletContainerInitializer implements ServletContainerInitializer
+public interface FrameHandlerFactory
 {
-
     /**
-     * 
+     * Create a FrameHandler from the provided websocketPojo.
+     *
+     * @param websocketPojo   the websocket pojo to work with
+     * @param upgradeRequest  the Upgrade Handshake Request used to create the FrameHandler
+     * @param upgradeResponse the Upgrade Handshake Response used to create the FrameHandler
+     * @return the API specific FrameHandler, or null if this implementation is unable to create
+     * the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
      */
-    public ServerServletContainerInitializer()
-    {
-        // TODO Auto-generated constructor stub
-    }
-
-    /** 
-     * @see javax.servlet.ServletContainerInitializer#onStartup(java.util.Set, javax.servlet.ServletContext)
-     */
-    @Override
-    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
-    {
-        // TODO Auto-generated method stub
-
-    }
-
+    FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest,
+        ServletUpgradeResponse upgradeResponse);
 }

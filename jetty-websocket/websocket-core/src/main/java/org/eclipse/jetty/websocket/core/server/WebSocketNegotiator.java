@@ -26,7 +26,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import java.io.IOException;
 import java.util.function.Function;
 
-public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
+public interface WebSocketNegotiator extends FrameHandler.Customizer
 {
     FrameHandler negotiate(Negotiation negotiation) throws IOException;
 
@@ -48,7 +48,7 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
         };
     }
 
-    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, FrameHandler.CoreCustomizer customizer)
+    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, FrameHandler.Customizer customizer)
     {
         return new AbstractNegotiator(null, null, null, customizer)
         {
@@ -65,7 +65,7 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
         WebSocketExtensionRegistry extensionRegistry,
         DecoratedObjectFactory objectFactory,
         ByteBufferPool bufferPool,
-        FrameHandler.CoreCustomizer customizer)
+        FrameHandler.Customizer customizer)
     {
         return new AbstractNegotiator(extensionRegistry, objectFactory, bufferPool, customizer)
         {
@@ -82,7 +82,7 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
         final WebSocketExtensionRegistry extensionRegistry;
         final DecoratedObjectFactory objectFactory;
         final ByteBufferPool bufferPool;
-        final FrameHandler.CoreCustomizer customizer;
+        final FrameHandler.Customizer customizer;
 
         public AbstractNegotiator()
         {
@@ -93,7 +93,7 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
             WebSocketExtensionRegistry extensionRegistry,
             DecoratedObjectFactory objectFactory,
             ByteBufferPool bufferPool,
-            FrameHandler.CoreCustomizer customizer)
+            FrameHandler.Customizer customizer)
         {
             this.extensionRegistry = extensionRegistry == null?new WebSocketExtensionRegistry():extensionRegistry;
             this.objectFactory = objectFactory == null?new DecoratedObjectFactory():objectFactory;
@@ -124,6 +124,11 @@ public interface WebSocketNegotiator extends FrameHandler.CoreCustomizer
         public ByteBufferPool getByteBufferPool()
         {
             return bufferPool;
+        }
+
+        public FrameHandler.Customizer getCustomizer()
+        {
+            return customizer;
         }
     }
 }

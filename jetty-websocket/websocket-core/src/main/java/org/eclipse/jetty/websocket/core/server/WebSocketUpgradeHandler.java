@@ -74,7 +74,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
             return;
         }
 
-        if (handshaker.upgradeRequest(negotiator, request, response))
+        if (handshaker.upgradeRequest(negotiator, request, response, null))
             return;
 
         if (!baseRequest.isHandled())

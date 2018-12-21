@@ -33,14 +33,14 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHandler.CoreCustomizer
+public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHandler.Customizer
 {
 
     private static final Logger LOG = Log.getLogger(WebSocketCoreClient.class);
     private final HttpClient httpClient;
     private WebSocketExtensionRegistry extensionRegistry;
     private DecoratedObjectFactory objectFactory;
-    private final FrameHandler.CoreCustomizer customizer;
+    private final FrameHandler.Customizer customizer;
 
     // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
     // - AsyncWrite Idle Timeout
@@ -59,7 +59,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
         this(httpClient, null);
     }
 
-    public WebSocketCoreClient(HttpClient httpClient, FrameHandler.CoreCustomizer customizer)
+    public WebSocketCoreClient(HttpClient httpClient, FrameHandler.Customizer customizer)
     {
         if (httpClient==null)
         {

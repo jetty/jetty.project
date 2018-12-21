@@ -1148,4 +1148,18 @@ public class Session implements SessionHandler.SessionIf
         return _resident;
     }
 
+    @Override
+    public String toString()
+    {
+        try (Lock lock = _lock.lock())
+        {
+            return String.format("%s@%x{id=%s,x=%s,req=%d,res=%b}",
+                getClass().getSimpleName(),
+                hashCode(),
+                _sessionData.getId(),
+                _extendedId,
+                _requests,
+                _resident);
+        }
+    }
 }
