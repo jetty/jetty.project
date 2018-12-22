@@ -295,12 +295,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         else
         {
-            if (isRemoteStreamClosed(streamId))
-                notifyReset(this, frame);
-            else
-                onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_rst_stream_frame");
+            onResetForUnknownStream(frame);
         }
     }
+
+    protected abstract void onResetForUnknownStream(ResetFrame frame);
 
     @Override
     public void onSettings(SettingsFrame frame)

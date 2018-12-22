@@ -19,6 +19,7 @@
     <maven.compiler.target>8</maven.compiler.target>
     <!--maven.compiler.release>11</maven.compiler.release-->
     <jetty.port.file>${project.build.directory}/jetty-run-mojo-annotation.txt</jetty.port.file>
+    <annotation-api.version>@javax.annotation-api@</annotation-api.version>
   </properties>
 
   <dependencies>
