@@ -67,7 +67,12 @@ public class AutobahnWebSocketServer
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server();
+        int port = 9001; // same port as found in fuzzing-client.json
+        if(args != null && args.length>0)
+        {
+            port = Integer.parseInt( args[0] );
+        }
+        Server server = new Server( port );
 
         ServerConnector connector = new ServerConnector(
             server,
@@ -75,7 +80,7 @@ public class AutobahnWebSocketServer
         );
         connector.addBean(new RFC6455Handshaker());
 
-        connector.setPort(9001); // same port as found in fuzzing-client.json
+        //connector.setPort(9001);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
 
