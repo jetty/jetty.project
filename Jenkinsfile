@@ -35,6 +35,7 @@ pipeline {
                             classPattern: '**/target/classes',
                             sourcePattern: '**/src/main/java'
                         warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+                        junit '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml,**/autobahntestsuite-reports/*.xml'
                         maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/its"
                     }
                 }
@@ -83,7 +84,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
         jdk: "$jdk",
         publisherStrategy: 'EXPLICIT',
         globalMavenSettingsConfig: settingsName,
-        options: [junitPublisher(disabled: false)],
         mavenOpts: mavenOpts,
         mavenLocalRepo: localRepo) {
         // Some common Maven command line + provided command line
