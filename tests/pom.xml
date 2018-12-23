@@ -68,9 +68,5 @@
     <module>test-quickstart</module>
     <module>test-jmx</module>
     <module>test-http-client-transport</module>
-    <!--
-    autobahn run might be in an other module
-    <module>test-websocket-autobahn</module>
-    -->
   </modules>
 </project>

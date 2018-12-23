@@ -10,7 +10,7 @@ pipeline {
                     agent { node { label 'linux' } }
                     options { timeout(time: 120, unit: 'MINUTES') }
                     steps {
-                        mavenBuild("jdk11", "-Pmongodb install", "maven3")
+                        mavenBuild("jdk11", "-Pautobahn -Pmongodb install", "maven3")
                         warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
                         // Collect up the jacoco execution results (only on main build)
                         jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -86,7 +86,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
         mavenOpts: mavenOpts,
         mavenLocalRepo: localRepo) {
         // Some common Maven command line + provided command line
-        sh "mvn -V -B -T3 -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+        sh "mvn -V -B -T3 -e -fae -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
     }
 }
 
