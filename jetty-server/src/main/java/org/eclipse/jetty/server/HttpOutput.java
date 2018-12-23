@@ -21,8 +21,14 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
+import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,6 +62,9 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpOutput extends ServletOutputStream implements Runnable
 {
+    private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
+    private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
+
     /**
      * The HttpOutput.Interceptor is a single intercept point for all
      * output written to the HttpOutput: via writer; via output stream;
@@ -119,6 +128,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     private static Logger LOG = Log.getLogger(HttpOutput.class);
+    private final static ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlocker;
@@ -551,6 +561,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void write(ByteBuffer buffer) throws IOException
     {
+        // This write always bypasses aggregate buffer
+
         // Async or Blocking ?
         while (true)
         {
@@ -674,10 +686,115 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void print(String s) throws IOException
     {
+        print(s,false);
+    }
+
+    @Override
+    public void println(String s) throws IOException
+    {
+        print(s,true);
+    }
+
+    private void print(String s, boolean eoln) throws IOException
+    {
         if (isClosed())
             throw new IOException("Closed");
 
-        write(s.getBytes(_channel.getResponse().getCharacterEncoding()));
+        String charset = _channel.getResponse().getCharacterEncoding();
+        CharsetEncoder encoder = _encoder.get();
+        if (encoder==null || !encoder.charset().name().equalsIgnoreCase(charset))
+        {
+            encoder = Charset.forName(charset).newEncoder();
+            encoder.onMalformedInput(CodingErrorAction.REPLACE);
+            encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
+            _encoder.set(encoder);
+        }
+        else
+        {
+            encoder.reset();
+        }
+
+        CharBuffer in = CharBuffer.wrap(s);
+        CharBuffer crlf = eoln?CharBuffer.wrap("\r\n"):null;
+        ByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1+(s.length()+2)*encoder.averageBytesPerChar()),false);
+        BufferUtil.flipToFill(out);
+
+        for(;;)
+        {
+            CoderResult result;
+            if (in.hasRemaining())
+            {
+                result = encoder.encode(in, out, crlf==null);
+                if (result.isUnderflow())
+                    if (crlf==null)
+                        break;
+                    else
+                        continue;
+            }
+            else if (crlf.hasRemaining())
+            {
+                result = encoder.encode(crlf, out, true);
+                if (result.isUnderflow())
+                {
+                    if (!encoder.flush(out).isUnderflow())
+                        result.throwException();
+                    break;
+                }
+            }
+            else
+                break;
+
+            if (result.isOverflow())
+            {
+                BufferUtil.flipToFlush(out,0);
+                ByteBuffer bigger = BufferUtil.ensureCapacity(out,out.capacity()+s.length()+2);
+                getHttpChannel().getByteBufferPool().release(out);
+                BufferUtil.flipToFill(bigger);
+                out = bigger;
+                continue;
+            }
+
+            result.throwException();
+        }
+        BufferUtil.flipToFlush(out,0);
+        write(out.array(),out.arrayOffset(),out.remaining());
+        getHttpChannel().getByteBufferPool().release(out);
+    }
+
+    @Override
+    public void println(boolean b) throws IOException
+    {
+        println(lStrings.getString(b? "value.true":"value.false"));
+    }
+
+    @Override
+    public void println(char c) throws IOException
+    {
+        println(String.valueOf(c));
+    }
+
+    @Override
+    public void println(int i) throws IOException
+    {
+        println(String.valueOf(i));
+    }
+
+    @Override
+    public void println(long l) throws IOException
+    {
+        println(String.valueOf(l));
+    }
+
+    @Override
+    public void println(float f) throws IOException
+    {
+        println(String.valueOf(f));
+    }
+
+    @Override
+    public void println(double d) throws IOException
+    {
+        println(String.valueOf(d));
     }
 
     /**

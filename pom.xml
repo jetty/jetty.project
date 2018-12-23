@@ -45,7 +45,7 @@
     <build-support.version>1.4</build-support.version>
     <slf4j.version>1.8.0-beta2</slf4j.version>
     <log4j2.version>2.11.1</log4j2.version>
-    <logback.version>1.2.3</logback.version>
+    <logback.version>1.3.0-alpha4</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.1</servlet.api.version>
@@ -79,6 +79,12 @@
 
     <!-- testing -->
     <jetty.test.version>5.2</jetty.test.version>
+    <!-- springboot is only used for jetty-maven-plugin it test
+    otherwise depending on Spring Boot might be chicken and egg issue :) -->
+    <springboot.version>2.1.1.RELEASE</springboot.version>
+    <jsr250-api.version>1.0</jsr250-api.version>
+    <annotation-api.version>1.3.2</annotation-api.version>
+    <jackson-databind.version>2.9.7</jackson-databind.version>
   </properties>
 
   <licenses>
@@ -908,7 +914,7 @@
       <dependency>
         <groupId>javax.annotation</groupId>
         <artifactId>javax.annotation-api</artifactId>
-        <version>1.3.2</version>
+        <version>${annotation-api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
