@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
@@ -25,16 +28,19 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.hamcrest.Matchers;
-
-import java.nio.ByteBuffer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -70,6 +76,7 @@ public class ExtensionTool
         {
             this.ext = factory.newInstance(objectFactory, bufferPool, extConfig);
             this.ext.setNextIncomingFrames(capture);
+            this.ext.setWebSocketChannel(newWebsocketChannel());
         }
 
         public void parseIncomingHex(String... rawhex)
@@ -140,5 +147,14 @@ public class ExtensionTool
     public Tester newTester(String parameterizedExtension)
     {
         return new Tester(parameterizedExtension);
+    }
+
+    private WebSocketChannel newWebsocketChannel()
+    {
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
+        WebSocketChannel channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        return channel;
     }
 }

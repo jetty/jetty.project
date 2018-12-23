@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.core.internal.compress;
 
+import java.util.zip.DataFormatException;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-
-import java.util.zip.DataFormatException;
 
 /**
  * Implementation of the
@@ -65,7 +65,10 @@ public class DeflateFrameExtension extends CompressExtension
 
         try
         {
-            ByteAccumulator accumulator = new ByteAccumulator(getMaxFrameSize());
+            //TODO fix this to use long instead of int
+            if (getWebSocketChannel().getMaxFrameSize() > Integer.MAX_VALUE)
+                throw new IllegalArgumentException("maxFrameSize too large for ByteAccumulator");
+            ByteAccumulator accumulator = new ByteAccumulator((int)getWebSocketChannel().getMaxFrameSize());
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
             forwardIncoming(frame, callback, accumulator);

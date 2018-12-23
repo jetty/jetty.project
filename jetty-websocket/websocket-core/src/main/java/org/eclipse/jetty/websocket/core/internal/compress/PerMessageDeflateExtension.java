@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.internal.compress;
 
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.zip.DataFormatException;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -26,11 +31,6 @@ import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.zip.DataFormatException;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -73,7 +73,10 @@ public class PerMessageDeflateExtension extends CompressExtension
             return;
         }
 
-        ByteAccumulator accumulator = new ByteAccumulator(getMaxFrameSize());
+        //TODO fix this to use long instead of int
+        if (getWebSocketChannel().getMaxFrameSize() > Integer.MAX_VALUE)
+            throw new IllegalArgumentException("maxFrameSize too large for ByteAccumulator");
+        ByteAccumulator accumulator = new ByteAccumulator((int)getWebSocketChannel().getMaxFrameSize());
 
         try
         {
