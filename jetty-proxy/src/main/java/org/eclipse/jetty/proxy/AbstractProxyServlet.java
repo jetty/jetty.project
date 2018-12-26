@@ -549,7 +549,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             }
             builder.append(System.lineSeparator());
 
-            _log.debug("{} proxying to upstream:{}{}{}{}",
+            _log.debug("{} proxying to upstream:{}{}{}{}{}",
                     getRequestId(clientRequest),
                     System.lineSeparator(),
                     builder,
