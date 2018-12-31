@@ -90,7 +90,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
       jdk: "$jdk",
       publisherStrategy: 'EXPLICIT',
       globalMavenSettingsConfig: settingsName,
-      options: [junitPublisher(disabled: false)],
+      options: [junitPublisher(disabled: false),mavenLinkerPublisher(disabled: false),pipelineGraphPublisher(disabled: false)],
       mavenOpts: mavenOpts,
       mavenLocalRepo: localRepo) {
     // Some common Maven command line + provided command line
