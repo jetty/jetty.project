@@ -2,6 +2,7 @@
 
 pipeline {
     agent any
+    options { durabilityHint('PERFORMANCE_OPTIMIZED') }
     stages {
         stage("Parallel Stage") {
             parallel {
@@ -39,7 +40,6 @@ pipeline {
                         maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/its"
                     }
                 }
-
                 stage("Build Javadoc") {
                     agent { node { label 'linux' } }
                     options { timeout(time: 30, unit: 'MINUTES') }
@@ -76,14 +76,13 @@ pipeline {
  */
 def mavenBuild(jdk, cmdline, mvnName) {
   def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
-  def settingsName = 'oss-settings.xml'
   def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
     withMaven(
         maven: mvnName,
         jdk: "$jdk",
         publisherStrategy: 'EXPLICIT',
-        globalMavenSettingsConfig: settingsName,
+        options: [mavenLinkerPublisher(disabled: false),pipelineGraphPublisher(disabled: false)],
         mavenOpts: mavenOpts,
         mavenLocalRepo: localRepo) {
         // Some common Maven command line + provided command line
