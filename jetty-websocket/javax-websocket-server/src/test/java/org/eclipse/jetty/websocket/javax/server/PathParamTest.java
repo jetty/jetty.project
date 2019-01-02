@@ -18,17 +18,30 @@
 
 package org.eclipse.jetty.websocket.javax.server;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import javax.websocket.DeploymentException;
 import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreatorMapping;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 public class PathParamTest
 {
+    private static class DummyServerContainer extends JavaxWebSocketServerContainer
+    {
+        public DummyServerContainer()
+        {
+            super(new WebSocketCreatorMapping(), new HttpClient(), new QueuedThreadPool());
+            addBean(getHttpClient(), true);
+            addBean(getExecutor(), true);
+        }
+    }
+
     private JavaxWebSocketServerContainer container;
 
     @BeforeEach
