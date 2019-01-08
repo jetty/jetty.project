@@ -39,6 +39,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 @WebSocket
 public class BrowserSocket
@@ -224,6 +225,11 @@ public class BrowserSocket
                     Calendar now = Calendar.getInstance();
                     DateFormat sdf = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.FULL,SimpleDateFormat.FULL);
                     writeMessage("Server time: %s",sdf.format(now.getTime()));
+                    break;
+                }
+                case "dump":
+                {
+                    ((WebSocketSession)session).dumpStdErr();
                     break;
                 }
                 default:

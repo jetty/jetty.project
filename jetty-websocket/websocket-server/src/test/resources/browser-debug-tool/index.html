@@ -16,8 +16,8 @@
       <input id="manythreads" class="button" type="submit" name="many" value="manythreads" disabled="disabled"/>
       <input id="hello" class="button" type="submit" name="hello" value="hello" disabled="disabled"/>
       <input id="there" class="button" type="submit" name="there" value="there" disabled="disabled"/>
+      <input id="dump" class="button" type="submit" name="dump" value="dump" disabled="disabled"/>
       <input id="json" class="button" type="submit" name="json" value="json" disabled="disabled"/>
-      <input id="twain" class="button" type="submit" name="twain" value="twain" disabled="disabled"/>
       <input id="send10k" class="button" type="submit" name="send10k" value="send10k" disabled="disabled"/>
       <input id="send100k" class="button" type="submit" name="send100k" value="send100k" disabled="disabled"/>
       <input id="send1000k" class="button" type="submit" name="send1000k" value="send1000k" disabled="disabled"/>
@@ -32,7 +32,7 @@
     $("manythreads").onclick = function(event) {wstool.write("manythreads:20,25,60"); return false; }
     $("hello").onclick = function(event) {wstool.write("Hello"); return false; }
     $("there").onclick = function(event) {wstool.write("There"); return false; }
-    $("twain").onclick = function(event) {wstool.write("@twain.txt"); return false; }
+    $("dump").onclick = function(event) {wstool.write("dump:"); return false; }
     $("json").onclick = function(event) {wstool.write("[{\"channel\":\"/meta/subscribe\",\"subscription\":\"/chat/demo\",\"id\":\"2\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
             + " 12 Sep 2013 19:42:30 GMT\"},{\"channel\":\"/meta/subscribe\",\"subscription\":\"/members/demo\",\"id\":\"3\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
             + " 12 Sep 2013 19:42:30 GMT\"},{\"channel\":\"/chat/demo\",\"data\":{\"user\":\"ch\",\"membership\":\"join\",\"chat\":\"ch"
