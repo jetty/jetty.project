@@ -621,6 +621,11 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
+        public String toString() {
+            return _endp.toString();
+        }
+
+        @Override
         public boolean isOpen()
         {
             return _endp.isOpen();
