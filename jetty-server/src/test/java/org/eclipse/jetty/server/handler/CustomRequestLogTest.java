@@ -30,7 +30,6 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -254,7 +253,9 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("EnvironmentVar: " + System.getenv("JAVA_HOME") + ""));
+
+        String envVar = System.getenv("JAVA_HOME");
+        assertThat(log, is("EnvironmentVar: " + ((envVar==null) ? "-" : envVar)));
     }
 
     @Test
