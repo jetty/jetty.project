@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -631,15 +632,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
+    public String dumpSelf() {
+        return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(toString()).append(System.lineSeparator());
+    public void dump(Appendable out, String indent) throws IOException {
+        Object endpRef = toConnectionString();
+        EndPoint endp = getEndPoint();
+        if(endp instanceof ChannelEndPoint)
+            endpRef = ((ChannelEndPoint) endp).toEndPointString();
+        Dumpable.dumpObjects(out, indent, this, endpRef, ioState, flusher, generator, parser);
     }
 
     @Override

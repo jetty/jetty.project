@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 @ManagedObject("Abstract Extension")
-public abstract class AbstractExtension extends AbstractLifeCycle implements Dumpable, Extension
+public abstract class AbstractExtension extends AbstractLifeCycle implements Extension
 {
     private final Logger log;
     private WebSocketPolicy policy;
@@ -52,27 +52,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
     public AbstractExtension()
     {
         log = Log.getLogger(this.getClass());
-    }
-    
-    @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        // incoming
-        dumpWithHeading(out, indent, "incoming", this.nextIncoming);
-        dumpWithHeading(out, indent, "outgoing", this.nextOutgoing);
-    }
-
-    protected void dumpWithHeading(Appendable out, String indent, String heading, Object bean) throws IOException
-    {
-        out.append(indent).append(" +- ");
-        out.append(heading).append(" : ");
-        out.append(bean.toString());
     }
     
     @Deprecated
