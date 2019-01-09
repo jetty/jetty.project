@@ -51,6 +51,7 @@
     <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
 
+    <it.debug>false</it.debug>
     <!-- testing -->
     <jetty.test.version>5.2</jetty.test.version>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
