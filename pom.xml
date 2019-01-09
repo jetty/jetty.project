@@ -339,7 +339,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2018</copyright-range>
+            <copyright-range>${project.inceptionYear}-2019</copyright-range>
           </properties>
         </configuration>
         <executions>
@@ -661,7 +661,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2018 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2019 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
               <_noee>true</_noee>

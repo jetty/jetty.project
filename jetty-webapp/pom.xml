@@ -48,6 +48,9 @@
             --add-modules org.eclipse.jetty.jmx
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
+          <additionalClasspathElements>
+            <additionalClasspathElement>${basedir}/src/test/resources/module/foo-bar-janb.jar</additionalClasspathElement>
+          </additionalClasspathElements>
           <excludes>
             <exclude>org.eclipse.jetty.webapp.WebAppClassLoaderUrlStreamTest</exclude>
           </excludes>
