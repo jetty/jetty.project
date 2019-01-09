@@ -18,7 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -30,9 +34,6 @@ import org.eclipse.jetty.websocket.javax.tests.server.sockets.IdleTimeoutOnOpenS
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,7 +70,8 @@ public class IdleTimeoutTest
 
     private void assertConnectionTimeout(String requestPath) throws Exception
     {
-        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath);
+             StacklessLogging stacklessLogging = new StacklessLogging(IdleTimeoutOnOpenSocket.class))
         {
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
