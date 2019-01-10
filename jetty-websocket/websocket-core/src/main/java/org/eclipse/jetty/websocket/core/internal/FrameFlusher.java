@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -27,14 +34,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Objects;
 
 public class FrameFlusher extends IteratingCallback
 {
@@ -148,7 +147,7 @@ public class FrameFlusher extends IteratingCallback
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} processed {} entries flush=%b batch=%s: {}",
+            LOG.debug("{} processed {} entries flush={} batch={}: {}",
                 this,
                 entries.size(),
                 flush,
@@ -269,9 +268,8 @@ public class FrameFlusher extends IteratingCallback
     @Override
     public String toString()
     {
-        return String.format("%s@%x[queueSize=%d,aggregate=%s]",
-            getClass().getSimpleName(),
-            hashCode(),
+        return String.format("%s[queueSize=%d,aggregate=%s]",
+            super.toString(),
             getQueueSize(),
             BufferUtil.toDetailString(batchBuffer));
     }

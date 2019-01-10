@@ -18,8 +18,17 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -40,16 +49,6 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
 
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
 /**
  * The Core WebSocket Session.
  */
@@ -59,11 +58,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
     private final Behavior behavior;
-    private final WebSocketChannelState state = new WebSocketChannelState();
+    private final WebSocketChannelState channelState = new WebSocketChannelState();
     private final FrameHandler handler;
     private final Negotiated negotiated;
     private final boolean demanding;
-    private final FrameSequence outgoingSequence = new FrameSequence();
 
     private WebSocketConnection connection;
     private boolean autoFragment = WebSocketConstants.DEFAULT_AUTO_FRAGMENT;
@@ -239,7 +237,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public boolean isOpen()
     {
-        return state.isOutOpen();
+        return channelState.isOutOpen();
     }
 
     public void setWebSocketConnection(WebSocketConnection connection)
@@ -289,7 +287,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public void onClosed(Throwable cause, CloseStatus closeStatus)
     {
-        if (state.onClosed(closeStatus))
+        if (channelState.onClosed(closeStatus))
         {
             connection.cancelDemand();
 
@@ -390,7 +388,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         try
         {
             // Upgrade success
-            state.onConnected();
+            channelState.onConnected();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("ConnectionState: Transition to CONNECTED");
@@ -398,7 +396,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             try
             {
                 // Open connection and handler
-                state.onOpen();
+                channelState.onOpen();
                 handler.onOpen(this);
                 if (!demanding)
                     connection.demand(1);
@@ -459,10 +457,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (LOG.isDebugEnabled())
             LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
+        boolean closed;
         try
         {
             assertValidOutgoing(frame);
-            outgoingSequence.check(frame.getOpCode(), frame.isFin());
+            closed = channelState.checkOutgoing(frame);
         }
         catch (Throwable ex)
         {
@@ -476,7 +475,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             if (LOG.isDebugEnabled())
                 LOG.debug("close({}, {}, {})", closeStatus, callback, batch);
 
-            if (state.onCloseOut(closeStatus))
+            if (closed)
             {
                 callback = new Callback.Nested(callback)
                 {
@@ -485,7 +484,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     {
                         try
                         {
-                            handler.onClosed(state.getCloseStatus());
+                            handler.onClosed(channelState.getCloseStatus());
                         }
                         catch (Throwable e)
                         {
@@ -598,7 +597,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         maxTextMessageSize = maxSize;
     }
 
-    private class IncomingAdaptor extends FrameSequence implements IncomingFrames
+    private class IncomingAdaptor implements IncomingFrames
     {
         @Override
         public void onFrame(Frame frame, Callback callback)
@@ -607,59 +606,52 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
-                        frame, callback, state, handler);
+                            frame, callback, channelState, handler);
 
-                check(frame.getOpCode(), frame.isFin());
-                if (state.isInOpen())
+
+                boolean closed = channelState.checkIncoming(frame);
+
+                // Handle inbound close
+                if (frame.getOpCode() == OpCode.CLOSE)
                 {
-                    // Handle inbound close
-                    if (frame.getOpCode() == OpCode.CLOSE)
+                    connection.cancelDemand();
+                    CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                    if (closed)
                     {
-                        connection.cancelDemand();
-                        CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                        if (state.onCloseIn(closeStatus))
-                        {
-                            callback = new Callback.Nested(callback)
-                            {
-                                @Override
-                                public void completed()
-                                {
-                                    handler.onClosed(state.getCloseStatus());
-                                    connection.close();
-                                }
-                            };
-                            handler.onFrame(frame, callback);
-                            return;
-                        }
-
                         callback = new Callback.Nested(callback)
                         {
                             @Override
                             public void completed()
                             {
-                                // was a close sent by the handler?
-                                if (state.isOutOpen())
-                                {
-                                    // No!
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("ConnectionState: sending close response {}", closeStatus);
-
-                                    close(closeStatus.getCode(), closeStatus.getReason(), Callback.NOOP);
-                                    return;
-                                }
+                                handler.onClosed(channelState.getCloseStatus());
+                                connection.close();
                             }
                         };
+                        handler.onFrame(frame, callback);
+                        return;
                     }
 
-                    // Handle the frame
-                    handler.onFrame(frame, callback);
+                    callback = new Callback.Nested(callback)
+                    {
+                        @Override
+                        public void completed()
+                        {
+                            // was a close sent by the handler? todo what if someone beats this to close
+                            if (channelState.isOutOpen())
+                            {
+                                // No!
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("ConnectionState: sending close response {}", closeStatus);
+
+                                close(closeStatus.getCode(), closeStatus.getReason(), Callback.NOOP);
+                                return;
+                            }
+                        }
+                    };
                 }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Discarding post EOF frame - {}", frame);
-                    callback.failed(new EofException());
-                }
+
+                // Handle the frame
+                handler.onFrame(frame, callback);
             }
             catch (Throwable t)
             {
@@ -740,7 +732,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     {
         return String.format("WSChannel@%x{%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
             hashCode(),
-            state,
+            channelState,
             negotiated,
             autoFragment,
             inputBufferSize,

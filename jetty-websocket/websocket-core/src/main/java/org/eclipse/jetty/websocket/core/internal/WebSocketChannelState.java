@@ -19,140 +19,223 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.websocket.core.CloseStatus;
-
-import java.util.concurrent.atomic.AtomicReference;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 
 /**
  * Atomic Connection State
  */
 public class WebSocketChannelState
 {
-    private static class State
+    enum State
     {
-        final String name;
-        final boolean inOpen;
-        final boolean outOpen;
-        final CloseStatus closeStatus;
+        CONNECTING,
+        CONNECTED,
+        OPEN,
+        ICLOSED,
+        OCLOSED,
+        CLOSED;
 
-        State(String name, boolean inOpen, boolean outOpen, CloseStatus closeStatus)
+        public boolean isClosed()
         {
-            this.name = name;
-            this.inOpen = inOpen;
-            this.outOpen = outOpen;
-            this.closeStatus = closeStatus;
+            return this.equals(CLOSED);
         }
 
-        @Override
-        public String toString()
+        public boolean isInOpen()
         {
-            return String.format("%s{i=%b o=%b c=%d}", name, inOpen, outOpen, closeStatus == null?-1:closeStatus.getCode());
+            if (this.equals(OPEN) || this.equals(OCLOSED))
+                return true;
+
+            return false;
+        }
+
+        public boolean isOutOpen()
+        {
+            if (this.equals(OPEN) || this.equals(ICLOSED))
+                return true;
+
+            return false;
         }
     }
 
-    private static final State CONNECTING = new State("CONNECTING", false, false, null);
-    private static final State CONNECTED = new State("CONNECTED", true, true, null);
-    private static final State OPEN = new State("OPEN", true, true, null);
+    private State _channelState = State.CONNECTING;
+    private byte _incomingSequence = OpCode.UNDEFINED;
+    private byte _outgoingSequence = OpCode.UNDEFINED;
+    CloseStatus _closeStatus = null;
 
-    private AtomicReference<State> state = new AtomicReference<>(CONNECTING);
 
     public void onConnected()
     {
-        if (!state.compareAndSet(CONNECTING, CONNECTED))
-            throw new IllegalStateException(state.get().toString());
+        synchronized (this)
+        {
+            if (!_channelState.equals(State.CONNECTING))
+                throw new IllegalStateException(_channelState.toString());
+
+            _channelState = State.CONNECTED;
+        }
     }
 
     public void onOpen()
     {
-        if (!state.compareAndSet(CONNECTED, OPEN))
-            throw new IllegalStateException(state.get().toString());
+        synchronized (this)
+        {
+            if (!_channelState.equals(State.CONNECTED))
+                throw new IllegalStateException(_channelState.toString());
+
+            _channelState = State.OPEN;
+        }
     }
 
     @Override
     public String toString()
     {
-        return state.get().toString();
+        return _channelState.toString();
+    }
+
+
+    public State getState()
+    {
+        synchronized (this)
+        {
+            return _channelState;
+        }
     }
 
     public boolean isClosed()
     {
-        State s = state.get();
-        return !s.inOpen && !s.outOpen;
+        return getState().isClosed();
     }
 
     public boolean isInOpen()
     {
-        return state.get().inOpen;
+        return getState().isInOpen();
     }
 
     public boolean isOutOpen()
     {
-        return state.get().outOpen;
+        return getState().isOutOpen();
     }
 
     public CloseStatus getCloseStatus()
     {
-        return state.get().closeStatus;
-    }
-
-    public boolean onCloseIn(CloseStatus closeStatus)
-    {
-        while (true)
+        synchronized (this)
         {
-            State s = state.get();
-
-            if (!s.inOpen)
-                throw new IllegalStateException(state.get().toString());
-
-            if (s.outOpen)
-            {
-                State closedIn = new State("ICLOSED", false, true, closeStatus);
-                if (state.compareAndSet(s, closedIn))
-                    return false;
-            }
-            else
-            {
-                State closed = new State("CLOSED", false, false, closeStatus);
-                if (state.compareAndSet(s, closed))
-                    return true;
-            }
+            return _closeStatus;
         }
     }
 
-    public boolean onCloseOut(CloseStatus closeStatus)
-    {
-        while (true)
-        {
-            State s = state.get();
-
-            if (!s.outOpen)
-                throw new IllegalStateException(state.get().toString());
-
-            if (s.inOpen)
-            {
-                State closedOut = new State("OCLOSED", true, false, closeStatus);
-                if (state.compareAndSet(s, closedOut))
-                    return false;
-            }
-            else
-            {
-                State closed = new State("CLOSED", false, false, closeStatus);
-                if (state.compareAndSet(s, closed))
-                    return true;
-            }
-        }
-    }
 
     public boolean onClosed(CloseStatus closeStatus)
     {
-        while (true)
+        synchronized (this)
         {
-            State s = state.get();
-            if (!s.outOpen && !s.inOpen)
+            if (_channelState.equals(State.CLOSED))
                 return false;
 
-            State newState = new State("CLOSED", false, false, closeStatus);
-            if (state.compareAndSet(s, newState))
-                return true;
+            _closeStatus = closeStatus;
+            _channelState = State.CLOSED;
+            return true;
+        }
+    }
+
+
+    public boolean checkOutgoing(Frame frame) throws ProtocolException
+    {
+        synchronized (this)
+        {
+            _outgoingSequence = getNextState(frame, _outgoingSequence);
+
+            if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                _closeStatus = CloseStatus.getCloseStatus(frame);
+                _channelState = updateChannelState(_channelState, _incomingSequence, _outgoingSequence);
+            }
+
+            return _channelState.equals(State.CLOSED);
+        }
+    }
+
+
+
+    public boolean checkIncoming(Frame frame) throws ProtocolException
+    {
+        synchronized (this)
+        {
+            _incomingSequence = getNextState(frame, _incomingSequence);
+
+            if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                _closeStatus = CloseStatus.getCloseStatus(frame);
+                _channelState = updateChannelState(_channelState, _incomingSequence, _outgoingSequence);
+            }
+
+            return _channelState.equals(State.CLOSED);
+        }
+    }
+
+
+
+    private static State updateChannelState(State state, byte _incomingSequence, byte _outgoingSequence)
+    {
+        switch (state)
+        {
+            case OPEN:
+            case ICLOSED:
+            case OCLOSED:
+                break;
+            default:
+                throw new IllegalStateException(state.toString());
+        }
+
+        State newState = state;
+        if ((_outgoingSequence == OpCode.CLOSE) && (_incomingSequence == OpCode.CLOSE))
+            newState = State.CLOSED;
+        else if (_outgoingSequence == OpCode.CLOSE)
+            newState = State.OCLOSED;
+        else if (_incomingSequence == OpCode.CLOSE)
+            newState = State.ICLOSED;
+
+        return newState;
+    }
+
+
+    public static byte getNextState(Frame frame, byte state) throws ProtocolException
+    {
+        byte opcode = frame.getOpCode();
+        boolean fin = frame.isFin();
+
+        if (state == OpCode.CLOSE)
+            throw new ProtocolException(OpCode.name(opcode) + " after CLOSE");
+
+        switch (opcode)
+        {
+            case OpCode.UNDEFINED:
+                throw new ProtocolException("UNDEFINED OpCode: " + OpCode.name(opcode));
+
+            case OpCode.CONTINUATION:
+                if (state == OpCode.UNDEFINED)
+                    throw new ProtocolException("CONTINUATION after fin==true");
+                if (fin)
+                    return OpCode.UNDEFINED;
+                return state;
+
+            case OpCode.CLOSE:
+                return OpCode.CLOSE;
+
+            case OpCode.PING:
+            case OpCode.PONG:
+                return state;
+
+            case OpCode.TEXT:
+            case OpCode.BINARY:
+            default:
+                if (state != OpCode.UNDEFINED)
+                    throw new ProtocolException("DataFrame before fin==true");
+                if (!fin)
+                    return opcode;
+
+                return OpCode.UNDEFINED;
         }
     }
 }
