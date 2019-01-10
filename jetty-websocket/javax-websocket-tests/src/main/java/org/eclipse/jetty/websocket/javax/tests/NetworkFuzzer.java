@@ -45,7 +45,7 @@ import org.eclipse.jetty.websocket.core.internal.Generator;
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
     private final LocalServer server;
-    private final RawWebSocketClient rawClient;
+    private final WebSocketCoreClient client;
     private final RawUpgradeRequest upgradeRequest;
     private final UnitGenerator generator;
     private final FrameCapture frameCapture;
@@ -65,9 +65,9 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         super();
         this.server = server;
-        this.rawClient = new RawWebSocketClient();
+        this.client = new WebSocketCoreClient();
         CompletableFuture<FrameCapture> futureOnCapture = new CompletableFuture<>();
-        this.upgradeRequest = new RawUpgradeRequest(rawClient, wsURI, futureOnCapture);
+        this.upgradeRequest = new RawUpgradeRequest(client, wsURI, futureOnCapture);
         if (requestHeaders != null)
         {
             HttpFields fields = this.upgradeRequest.getHeaders();
@@ -77,10 +77,10 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
                 fields.put(name, value);
             });
         }
-        this.rawClient.start();
+        this.client.start();
         this.generator = new UnitGenerator(Behavior.CLIENT);
 
-        CompletableFuture<FrameHandler.CoreSession> futureHandler = this.rawClient.connect(upgradeRequest);
+        CompletableFuture<FrameHandler.CoreSession> futureHandler = this.client.connect(upgradeRequest);
         CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (channel, capture) -> capture);
         this.frameCapture = futureCapture.get(10, TimeUnit.SECONDS);
     }
@@ -102,7 +102,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     @Override
     public void close() throws Exception
     {
-        this.rawClient.stop();
+        this.client.stop();
     }
 
     @Override
@@ -156,7 +156,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
-                frameCapture.channel.sendFrame(f, blocker, false);
+                frameCapture.session.sendFrame(f, blocker, false);
             }
         }
     }
@@ -168,7 +168,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
-                frameCapture.channel.sendFrame(f, blocker, false);
+                frameCapture.session.sendFrame(f, blocker, false);
             }
         }
     }
@@ -182,10 +182,6 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             send(buffer, segmentSize);
         }
-    }
-
-    public static class RawWebSocketClient extends WebSocketCoreClient
-    {
     }
 
     public static class RawUpgradeRequest extends UpgradeRequest
@@ -226,7 +222,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private final EndPoint endPoint;
         private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
-        private CoreSession channel;
+        private CoreSession session;
 
         public FrameCapture(EndPoint endPoint)
         {
@@ -247,20 +243,26 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         public void onFrame(Frame frame, Callback callback)
         {
             receivedFrames.offer(Frame.copy(frame));
-            callback.succeeded();
+            synchronized(this)
+            {
+                callback.succeeded();
+            }
         }
 
         @Override
         public void onOpen(CoreSession coreSession) throws Exception
         {
-            this.channel = coreSession;
+            this.session = coreSession;
         }
 
         public void writeRaw(ByteBuffer buffer) throws IOException
         {
-            try (SharedBlockingCallback.Blocker blocker = blockingCallback.acquire())
+            synchronized (this)
             {
-                this.endPoint.write(blocker, buffer);
+                try (SharedBlockingCallback.Blocker blocker = blockingCallback.acquire())
+                {
+                    this.endPoint.write(blocker, buffer);
+                }
             }
         }
     }

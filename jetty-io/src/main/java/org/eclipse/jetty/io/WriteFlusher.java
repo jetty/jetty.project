@@ -55,6 +55,8 @@ abstract public class WriteFlusher
     private final EndPoint _endPoint;
     private final AtomicReference<State> _state = new AtomicReference<>();
 
+    Throwable last;
+
     static
     {
         // fill the state machine
@@ -270,7 +272,13 @@ abstract public class WriteFlusher
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
 
         if (!updateState(__IDLE, __WRITING))
+        {
+            if (last!=null)
+                last.printStackTrace();
             throw new WritePendingException();
+        }
+
+        last = new Throwable();
 
         try
         {
