@@ -454,67 +454,73 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
+        synchronized(this)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
         boolean closed;
-        try
-        {
-            assertValidOutgoing(frame);
-            closed = channelState.checkOutgoing(frame);
-        }
-        catch (Throwable ex)
-        {
-            callback.failed(ex);
-            return;
-        }
-
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-            if (LOG.isDebugEnabled())
-                LOG.debug("close({}, {}, {})", closeStatus, callback, batch);
-
-            if (closed)
+            try
             {
-                callback = new Callback.Nested(callback)
+                assertValidOutgoing(frame);
+                closed = channelState.checkOutgoing(frame);
+            }
+            catch (Throwable ex)
+            {
+                callback.failed(ex);
+                return;
+            }
+
+            if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("close({}, {}, {})", closeStatus, callback, batch);
+
+                if (closed)
                 {
-                    @Override
-                    public void completed()
+                    callback = new Callback.Nested(callback)
                     {
-                        try
-                        {
-                            handler.onClosed(channelState.getCloseStatus());
-                        }
-                        catch (Throwable e)
+                        @Override
+                        public void completed()
                         {
                             try
                             {
-                                handler.onError(e);
+                                handler.onClosed(channelState.getCloseStatus());
                             }
-                            catch (Throwable e2)
+                            catch (Throwable e)
                             {
-                                e.addSuppressed(e2);
-                                LOG.warn(e);
+                                try
+                                {
+                                    handler.onError(e);
+                                }
+                                catch (Throwable e2)
+                                {
+                                    e.addSuppressed(e2);
+                                    LOG.warn(e);
+                                }
+                            }
+                            finally
+                            {
+                                connection.close();
                             }
                         }
-                        finally
-                        {
-                            connection.close();
-                        }
-                    }
-                };
+                    };
+                }
             }
-        }
 
-        negotiated.getExtensions().sendFrame(frame, callback, batch);
+            negotiated.getExtensions().sendFrame(frame, callback, batch);
+        }
         connection.sendFrameQueue();
     }
 
     @Override
     public void flush(Callback callback)
     {
-        negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
+        synchronized(this)
+        {
+            negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
+        }
         connection.sendFrameQueue();
     }
 
