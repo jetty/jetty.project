@@ -81,7 +81,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        negotiated.getExtensions().connect(new ExtendedIncoming(), new ExtendedOutgoing(), this);
+        negotiated.getExtensions().connect(new IncomingAdaptor(), new OutgoingAdaptor(), this);
     }
 
     /**
@@ -509,12 +509,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
 
         negotiated.getExtensions().sendFrame(frame, callback, batch);
+        connection.sendFrameQueue();
     }
 
     @Override
     public void flush(Callback callback)
     {
         negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
+        connection.sendFrameQueue();
     }
 
     @Override
@@ -596,7 +598,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         maxTextMessageSize = maxSize;
     }
 
-    private class ExtendedIncoming extends FrameSequence implements IncomingFrames
+    private class IncomingAdaptor extends FrameSequence implements IncomingFrames
     {
         @Override
         public void onFrame(Frame frame, Callback callback)
@@ -666,14 +668,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
     }
 
-    private class ExtendedOutgoing implements OutgoingFrames
+    private class OutgoingAdaptor implements OutgoingFrames
     {
         @Override
         public void sendFrame(Frame frame, Callback callback, boolean batch)
         {
             try
             {
-                connection.sendFrame(frame, callback, batch);
+                connection.enqueueFrame(frame, callback, batch);
             }
             catch (ProtocolException e)
             {

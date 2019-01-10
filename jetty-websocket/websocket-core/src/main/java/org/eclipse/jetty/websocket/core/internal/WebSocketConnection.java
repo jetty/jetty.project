@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
@@ -45,7 +44,7 @@ import java.util.concurrent.Executor;
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, OutgoingFrames, Runnable
+public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, Runnable
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
@@ -170,7 +169,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         // TODO review all close paths
         IOException e = new IOException("Closed");
-        flusher.terminate(e, true);
         channel.onClosed(e);
         super.onClose();
     }
@@ -577,8 +575,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         setInitialBuffer(prefilled);
     }
 
-    @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    /**
+     * Enqueue a Frame to be sent.
+     * @see #sendFrameQueue()
+     * @param frame The frame to queue
+     * @param callback The callback to call once the frame is sent
+     * @param batch True if batch mode is to be used
+     */
+    void enqueueFrame(Frame frame, Callback callback, boolean batch)
     {
         if (channel.getBehavior() == Behavior.CLIENT)
         {
@@ -588,6 +592,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             wsf.setMask(mask);
         }
         flusher.enqueue(frame, callback, batch);
+    }
+
+    void sendFrameQueue()
+    {
+        flusher.iterate();
     }
 
     private class Flusher extends FrameFlusher
