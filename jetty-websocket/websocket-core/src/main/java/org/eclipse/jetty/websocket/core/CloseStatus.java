@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 /**
  * Representation of a WebSocket Close (status code &amp; reason)
@@ -162,6 +163,15 @@ public class CloseStatus
         return;
     }
 
+    public static CloseStatus getCloseStatus(Frame frame)
+    {
+        if (frame instanceof CloseStatus.Supplier)
+            return ((CloseStatus.Supplier)frame).getCloseStatus();
+        if (frame.getOpCode()==OpCode.CLOSE)
+            return new CloseStatus(frame);
+        return null;
+    }
+
     public int getCode()
     {
         return code;
@@ -265,19 +275,19 @@ public class CloseStatus
 
     public Frame toFrame()
     {
-        return toFrame(code, reason);
+        if (isTransmittableStatusCode(code))
+            return new CloseFrame(this, OpCode.CLOSE, true, asPayloadBuffer(code, reason));
+        return new CloseFrame(this, OpCode.CLOSE);
     }
 
     public static Frame toFrame(int closeStatus)
     {
-        return toFrame(closeStatus, null);
+        return new CloseStatus(closeStatus).toFrame();
     }
 
     public static Frame toFrame(int closeStatus, String reason)
     {
-        if (isTransmittableStatusCode(closeStatus))
-            return new Frame(OpCode.CLOSE, true, asPayloadBuffer(closeStatus, reason));
-        return new Frame(OpCode.CLOSE);
+        return new CloseStatus(closeStatus, reason).toFrame();
     }
 
     public static String codeString(int closeStatus)
@@ -324,4 +334,27 @@ public class CloseStatus
         return String.format("{%04d=%s,%s}", code, codeString(code), reason);
     }
 
+    public interface Supplier
+    {
+        CloseStatus getCloseStatus();
+    }
+
+    class CloseFrame extends Frame implements CloseStatus.Supplier
+    {
+        public CloseFrame(CloseStatus closeStatus, byte opcode)
+        {
+            super(opcode);
+        }
+
+        public CloseFrame(CloseStatus closeStatus, byte opCode, boolean fin, ByteBuffer payload)
+        {
+            super(opCode, fin, payload);
+        }
+
+        @Override
+        public CloseStatus getCloseStatus()
+        {
+            return CloseStatus.this;
+        }
+    }
 }
