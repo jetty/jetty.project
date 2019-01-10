@@ -456,66 +456,72 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
-
-        try
+        synchronized(this)
         {
-            assertValidOutgoing(frame);
-            outgoingSequence.check(frame.getOpCode(), frame.isFin());
-        }
-        catch (Throwable ex)
-        {
-            callback.failed(ex);
-            return;
-        }
-
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
             if (LOG.isDebugEnabled())
-                LOG.debug("close({}, {}, {})", closeStatus, callback, batch);
+                LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
-            if (state.onCloseOut(closeStatus))
+            try
             {
-                callback = new Callback.Nested(callback)
+                assertValidOutgoing(frame);
+                outgoingSequence.check(frame.getOpCode(), frame.isFin());
+            }
+            catch (Throwable ex)
+            {
+                callback.failed(ex);
+                return;
+            }
+
+            if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("close({}, {}, {})", closeStatus, callback, batch);
+
+                if (state.onCloseOut(closeStatus))
                 {
-                    @Override
-                    public void completed()
+                    callback = new Callback.Nested(callback)
                     {
-                        try
-                        {
-                            handler.onClosed(state.getCloseStatus());
-                        }
-                        catch (Throwable e)
+                        @Override
+                        public void completed()
                         {
                             try
                             {
-                                handler.onError(e);
+                                handler.onClosed(state.getCloseStatus());
                             }
-                            catch (Throwable e2)
+                            catch (Throwable e)
                             {
-                                e.addSuppressed(e2);
-                                LOG.warn(e);
+                                try
+                                {
+                                    handler.onError(e);
+                                }
+                                catch (Throwable e2)
+                                {
+                                    e.addSuppressed(e2);
+                                    LOG.warn(e);
+                                }
+                            }
+                            finally
+                            {
+                                connection.close();
                             }
                         }
-                        finally
-                        {
-                            connection.close();
-                        }
-                    }
-                };
+                    };
+                }
             }
-        }
 
-        negotiated.getExtensions().sendFrame(frame, callback, batch);
+            negotiated.getExtensions().sendFrame(frame, callback, batch);
+        }
         connection.sendFrameQueue();
     }
 
     @Override
     public void flush(Callback callback)
     {
-        negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
+        synchronized(this)
+        {
+            negotiated.getExtensions().sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
+        }
         connection.sendFrameQueue();
     }
 
@@ -598,7 +604,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         maxTextMessageSize = maxSize;
     }
 
-    private class IncomingAdaptor extends FrameSequence implements IncomingFrames
+    private class
+    IncomingAdaptor extends FrameSequence implements IncomingFrames
     {
         @Override
         public void onFrame(Frame frame, Callback callback)
