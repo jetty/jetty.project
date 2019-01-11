@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -61,7 +62,11 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
     public JavaxWebSocketClientContainer()
     {
-        this(() -> new WebSocketCoreClient());
+        this(() -> {
+            WebSocketCoreClient coreClient = new WebSocketCoreClient();
+            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
+            return coreClient;
+        });
     }
 
     public JavaxWebSocketClientContainer(Supplier<WebSocketCoreClient> coreClientFactory)
@@ -75,7 +80,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     {
         super();
         this.coreClient = coreClient;
-        this.addBean(this.coreClient);
+        this.addBean(coreClient);
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
@@ -103,8 +108,10 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         if (coreClient == null)
         {
             coreClient = coreClientFactory.get();
-            this.coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(this.coreClient.getHttpClient().hashCode()));
-            addManaged(coreClient);
+            if (coreClient.isRunning())
+                addBean(coreClient,false);
+            else
+                addManaged(coreClient);
         }
 
         return coreClient;
