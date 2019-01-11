@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -39,6 +37,8 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractHttpClientServerTest
 {
@@ -67,7 +67,7 @@ public abstract class AbstractHttpClientServerTest
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName(executor.getName() + "-client");
 
-        HttpClientTransport transport = new HttpClientTransportOverFCGI(1, false, "");
+        HttpClientTransport transport = new HttpClientTransportOverFCGI(1, "");
         transport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
         {
             @Override
