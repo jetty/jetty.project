@@ -18,14 +18,22 @@
 
 package org.eclipse.jetty.websocket.server.browser;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.extensions.FrameCaptureExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
@@ -120,8 +128,7 @@ public class BrowserDebugTool implements WebSocketCreator
         return connector.getLocalPort();
     }
 
-    public void prepare(int port)
-    {
+    public void prepare(int port) throws IOException, URISyntaxException {
         server = new Server();
         connector = new ServerConnector(server);
         connector.setPort(port);
@@ -150,14 +157,20 @@ public class BrowserDebugTool implements WebSocketCreator
 
         server.setHandler(wsHandler);
 
-        String resourceBase = "src/test/resources/browser-debug-tool";
+        Resource staticResourceBase = findStaticResources();
 
         ResourceHandler rHandler = new ResourceHandler();
         rHandler.setDirectoriesListed(true);
-        rHandler.setResourceBase(resourceBase);
+        rHandler.setBaseResource(staticResourceBase);
         wsHandler.setHandler(rHandler);
 
         LOG.info("{} setup on port {}",this.getClass().getName(),port);
+    }
+
+    private Resource findStaticResources() throws FileNotFoundException, URISyntaxException, MalformedURLException {
+        Path path = MavenTestingUtils.getTestResourcePathDir("browser-debug-tool");
+        LOG.info("Static Resources: {}", path);
+        return new PathResource(path);
     }
 
     public void start() throws Exception

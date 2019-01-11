@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -108,20 +109,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        super.dump(out,indent);
-
-        IncomingFrames websocket = getLastIncoming();
-        OutgoingFrames network = getLastOutgoing();
-
-        out.append(indent).append(" +- Stack").append(System.lineSeparator());
-        out.append(indent).append("     +- Network  : ").append(network.toString()).append(System.lineSeparator());
-        for (Extension ext : extensions)
-        {
-            out.append(indent).append("     +- Extension: ").append(ext.toString()).append(System.lineSeparator());
-        }
-        out.append(indent).append("     +- Websocket: ").append(websocket.toString()).append(System.lineSeparator());
+    public String dumpSelf() {
+        return String.format("%s@%x[size=%d,queueSize=%d]", getClass().getSimpleName(), hashCode(), extensions.size(), getQueueSize());
     }
 
     @ManagedAttribute(name = "Extension List", readonly = true)
