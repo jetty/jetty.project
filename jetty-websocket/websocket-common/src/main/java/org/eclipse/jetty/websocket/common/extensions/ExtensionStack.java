@@ -110,7 +110,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
     @Override
     public String dumpSelf() {
-        return String.format("ExtensionStack%x [size=%d]", hashCode(), extensions.size());
+        return String.format("%s@%x[size=%d,queueSize=%d]", getClass().getSimpleName(), hashCode(), extensions.size(), getQueueSize());
     }
 
     @ManagedAttribute(name = "Extension List", readonly = true)

@@ -337,9 +337,8 @@ public class FrameFlusher extends IteratingCallback
         ByteBuffer agg = aggregate;
         if (agg != null)
             aggSize = agg.position();
-        return String.format("%s@%x[queueSize=%d,aggregateSize=%d,terminated=%s]",
-                getClass().getSimpleName(),
-                hashCode(),
+        return String.format("%s[queueSize=%d,aggregateSize=%d,terminated=%s]",
+                super.toString(),
                 getQueueSize(),
                 aggSize,
                 terminated);

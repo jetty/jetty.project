@@ -279,7 +279,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
     @Override
     public String dumpSelf() {
-        return String.format("%s@%x[behavior=%s,batchMode=%s,idleTimeout=%,d,requestURI=%s]",
+        return String.format("%s@%x[behavior=%s,batchMode=%s,idleTimeout=%d,requestURI=%s]",
                 this.getClass().getSimpleName(), hashCode(),
                 getPolicy().getBehavior(),
                 getBatchMode(),
