@@ -144,8 +144,10 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
 
         // Find Pre-Existing (Shared?) HttpClient and/or executor
         HttpClient httpClient = (HttpClient)context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
-        if (httpClient == null)
-            httpClient = (HttpClient)context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
+        if ((httpClient == null) && (context.getServer() != null))
+        {
+            httpClient = (HttpClient) context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
+        }
 
         Executor executor = httpClient == null?null:httpClient.getExecutor();
         if (executor == null)
