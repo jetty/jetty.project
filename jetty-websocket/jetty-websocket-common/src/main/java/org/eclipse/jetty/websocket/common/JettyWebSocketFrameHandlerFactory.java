@@ -18,6 +18,23 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
@@ -46,24 +63,21 @@ import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.Frame;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-
 /**
+ * Factory to create {@link JettyWebSocketFrameHandler} instances suitable for
+ * use with jetty-native websocket API.
+ * <p>
+ * Will create a {@link FrameHandler} suitable for use with classes/objects that:
+ * </p>
+ * <ul>
+ * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
+ * <li>Extends {@link org.eclipse.jetty.websocket.api.WebSocketAdapter}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketConnectionListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPartialListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPingPongListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketFrameListener}</li>
+ * </ul>
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 {

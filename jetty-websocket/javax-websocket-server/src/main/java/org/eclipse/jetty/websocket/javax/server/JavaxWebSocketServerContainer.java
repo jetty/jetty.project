@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
@@ -80,12 +78,13 @@ public class JavaxWebSocketServerContainer
         if (!(handler instanceof ServletContextHandler))
             return null;
 
-        return (javax.websocket.WebSocketContainer)handler.getServletContext().getAttribute(ServerContainer.class.getName());
+        return (javax.websocket.WebSocketContainer)handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
 
     public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext) throws ServletException
     {
-        ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
+        ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
+
         JavaxWebSocketServerContainer container = contextHandler.getBean(JavaxWebSocketServerContainer.class);
         if (container==null)
         {
@@ -116,7 +115,7 @@ public class JavaxWebSocketServerContainer
         return container;
     }
 
-    private final WebSocketMapping _webSocketMapping;
+    private final WebSocketMapping webSocketMapping;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
@@ -138,7 +137,7 @@ public class JavaxWebSocketServerContainer
                 client.getHttpClient().setExecutor(executor);
             return client;
         });
-        this._webSocketMapping = webSocketMapping;
+        this.webSocketMapping = webSocketMapping;
         this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
@@ -148,7 +147,7 @@ public class JavaxWebSocketServerContainer
     {
         ContextHandler contextHandler = (ContextHandler) context;
         JavaxWebSocketServerContainer container = contextHandler.getBean(JavaxWebSocketServerContainer.class);
-        if (container==null)
+        if (container==this)
         {
             contextHandler.removeBean(container);
             LifeCycle.stop(container);
@@ -159,7 +158,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public ByteBufferPool getBufferPool()
     {
-        return this._webSocketMapping.getBufferPool();
+        return this.webSocketMapping.getBufferPool();
     }
 
     @Override
@@ -171,7 +170,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return this._webSocketMapping.getExtensionRegistry();
+        return this.webSocketMapping.getExtensionRegistry();
     }
 
     @Override
@@ -183,7 +182,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return this._webSocketMapping.getObjectFactory();
+        return this.webSocketMapping.getObjectFactory();
     }
 
     @Override
@@ -269,10 +268,11 @@ public class JavaxWebSocketServerContainer
     {
         frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
 
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this._webSocketMapping
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this.webSocketMapping
             .getExtensionRegistry());
 
-        this._webSocketMapping.addMapping(new UriTemplatePathSpec(config.getPath()), creator, frameHandlerFactory, customizer);
+        this.webSocketMapping
+            .addMapping(new UriTemplatePathSpec(config.getPath()), creator, frameHandlerFactory, customizer);
     }
 
     @Override
