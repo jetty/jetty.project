@@ -18,7 +18,14 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -28,18 +35,15 @@ import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
-import javax.servlet.ServletContext;
-
 public class JettyServerFrameHandlerFactory
     extends JettyWebSocketFrameHandlerFactory
     implements FrameHandlerFactory, LifeCycle.Listener
 {
     public static JettyServerFrameHandlerFactory ensureFactory(ServletContext servletContext)
+        throws ServletException
     {
-        ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
+        ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Jetty Websocket");
+
         JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
         if (factory == null)
         {

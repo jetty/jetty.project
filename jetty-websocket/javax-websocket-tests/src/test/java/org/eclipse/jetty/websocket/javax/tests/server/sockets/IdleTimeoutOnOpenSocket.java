@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets;
 
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
+
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 @ServerEndpoint(value = "/idle-onopen-socket")
 public class IdleTimeoutOnOpenSocket
@@ -36,5 +39,12 @@ public class IdleTimeoutOnOpenSocket
     public String onMessage(String msg)
     {
         return msg;
+    }
+
+    @OnError
+    public void onError(Throwable cause)
+    {
+        if (!(cause instanceof WebSocketTimeoutException))
+            throw new RuntimeException(cause);
     }
 }

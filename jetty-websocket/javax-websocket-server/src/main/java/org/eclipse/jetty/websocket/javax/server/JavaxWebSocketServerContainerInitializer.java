@@ -20,11 +20,9 @@ package org.eclipse.jetty.websocket.javax.server;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Executor;
+
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.HandlesTypes;
 import javax.websocket.DeploymentException;
@@ -33,8 +31,6 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
@@ -126,7 +122,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
             return;
         }
 
-        JavaxWebSocketServerContainer container = configureContext((ServletContextHandler)(ContextHandler.getContextHandler(context)));
+        JavaxWebSocketServerContainer container = configureContext(ServletContextHandler.getServletContextHandler(context,"Javax WebSocket SCI"));
 
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
