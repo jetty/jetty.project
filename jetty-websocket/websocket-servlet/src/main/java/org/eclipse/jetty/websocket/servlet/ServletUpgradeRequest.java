@@ -205,7 +205,7 @@ public class ServletUpgradeRequest
     }
 
     /**
-     * @return The local requested address
+     * @return The local requested address, which is typically an {@link InetSocketAddress}, but may be another derivation of {@link SocketAddress}
      * @see ServletRequest#getLocalAddr()
      * @see ServletRequest#getLocalPort()
      */
@@ -274,7 +274,7 @@ public class ServletUpgradeRequest
     }
 
     /**
-     * @return The remote request address
+     * @return The remote request address, which is typically an {@link InetSocketAddress}, but may be another derivation of {@link SocketAddress}
      * @see ServletRequest#getRemoteAddr()
      * @see ServletRequest#getRemotePort()
      */
