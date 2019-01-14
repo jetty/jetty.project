@@ -20,7 +20,9 @@ package org.eclipse.jetty.websocket.servlet;
 
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-
+/**
+ * Factory for FrameHandler instances
+ */
 public interface FrameHandlerFactory
 {
     /**
