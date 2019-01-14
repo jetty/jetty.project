@@ -621,6 +621,16 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
+        public String toString() {
+            return String.format("%s@%x[remote=%s,local=%s,endpoint=%s]",
+                    getClass().getSimpleName(),
+                    hashCode(),
+                    _remote,
+                    _local,
+                    _endp);
+        }
+
+        @Override
         public boolean isOpen()
         {
             return _endp.isOpen();

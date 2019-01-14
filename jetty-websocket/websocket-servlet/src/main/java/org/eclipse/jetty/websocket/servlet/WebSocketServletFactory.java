@@ -19,11 +19,14 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 import java.time.Duration;
 
 public interface WebSocketServletFactory
 {
+
+    WebSocketExtensionRegistry getExtensionRegistry();
     Duration getDefaultIdleTimeout();
 
     void setDefaultIdleTimeout(Duration duration);
