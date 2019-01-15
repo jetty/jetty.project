@@ -174,8 +174,6 @@ public abstract class WebSocketServlet extends HttpServlet
 
     private class CustomizedWebSocketServletFactory extends FrameHandler.ConfigurationCustomizer implements WebSocketServletFactory
     {
-
-        @Override
         public WebSocketExtensionRegistry getExtensionRegistry()
         {
             return mapping.getExtensionRegistry();
