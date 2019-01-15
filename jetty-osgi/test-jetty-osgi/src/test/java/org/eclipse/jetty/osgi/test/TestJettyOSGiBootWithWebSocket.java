@@ -32,7 +32,6 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -85,7 +84,6 @@ public class TestJettyOSGiBootWithWebSocket
     }
 
 
-    @Ignore
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
@@ -96,7 +94,10 @@ public class TestJettyOSGiBootWithWebSocket
 
     @Test
     public void testWebsocket() throws Exception
-    {            
+    {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+        
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 

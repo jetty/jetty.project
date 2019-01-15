@@ -35,7 +35,6 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -91,6 +90,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     public static List<Option> testJettyWebApp()
     {
         List<Option> res = new ArrayList<>();
+        //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
@@ -102,16 +102,9 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         return res;
     }
 
-    @Ignore
-    public void assertAllBundlesActiveOrResolved() throws BundleException
+
+    public void assertAllBundlesActiveOrResolved()
     {
-        fixJavaxWebSocketApi();
-
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
-        startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
-
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
     }
@@ -119,12 +112,16 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
+
         fixJavaxWebSocketApi();
 
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
         startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
+
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
 
         String port = System.getProperty("boot.javax.websocket.port");
         assertNotNull(port);
