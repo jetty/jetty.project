@@ -24,6 +24,8 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
 
@@ -49,10 +51,12 @@ public class WebSocketJsrServer
     {
         Server server = new Server(8080);
 
+        HandlerList handlers = new HandlerList();
+
         ServletContextHandler context = new ServletContextHandler(
                 ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        server.setHandler(context);
+        handlers.addHandler(context);
 
         // Enable javax.websocket configuration for the context
         ServerContainer wsContainer = JavaxWebSocketServerContainerInitializer
@@ -61,6 +65,9 @@ public class WebSocketJsrServer
         // Add your websockets to the container
         wsContainer.addEndpoint(EchoJsrSocket.class);
 
+        handlers.addHandler(new DefaultHandler());
+
+        server.setHandler(handlers);
         server.start();
         context.dumpStdErr();
         server.join();

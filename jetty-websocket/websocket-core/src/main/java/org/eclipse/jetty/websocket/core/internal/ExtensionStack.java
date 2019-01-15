@@ -233,6 +233,12 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     }
 
     @Override
+    public String dumpSelf()
+    {
+        return String.format("%s@%x[size=%d,queueSize=%d]", getClass().getSimpleName(), hashCode(), extensions.size(), getQueueSize());
+    }
+
+    @Override
     public String toString()
     {
         StringBuilder s = new StringBuilder();

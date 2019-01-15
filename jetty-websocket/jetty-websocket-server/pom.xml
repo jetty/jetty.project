@@ -33,6 +33,12 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-api</artifactId>
       <version>${project.version}</version>

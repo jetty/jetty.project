@@ -24,6 +24,7 @@ import java.time.Duration;
 
 public interface WebSocketServletFactory
 {
+
     Duration getDefaultIdleTimeout();
 
     void setDefaultIdleTimeout(Duration duration);

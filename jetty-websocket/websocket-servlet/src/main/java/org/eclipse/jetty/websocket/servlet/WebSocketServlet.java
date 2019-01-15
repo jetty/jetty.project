@@ -33,6 +33,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
@@ -173,6 +174,11 @@ public abstract class WebSocketServlet extends HttpServlet
 
     private class CustomizedWebSocketServletFactory extends FrameHandler.ConfigurationCustomizer implements WebSocketServletFactory
     {
+        public WebSocketExtensionRegistry getExtensionRegistry()
+        {
+            return mapping.getExtensionRegistry();
+        }
+
         @Override
         public Duration getDefaultIdleTimeout()
         {
