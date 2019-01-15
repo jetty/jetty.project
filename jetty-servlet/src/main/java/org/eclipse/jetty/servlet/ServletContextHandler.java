@@ -96,7 +96,19 @@ public class ServletContextHandler extends ContextHandler
     public final static int GZIP=4;
     public final static int NO_SESSIONS=0;
     public final static int NO_SECURITY=0;
-    
+
+    public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
+    {
+        ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
+        if (contextHandler == null)
+            throw new IllegalStateException("No Jetty ContextHandler, " + purpose+ " unavailable");
+
+        if (!(contextHandler instanceof ServletContextHandler))
+            throw new IllegalStateException("No Jetty ServletContextHandler, " + purpose + " unavailable");
+
+        return (ServletContextHandler)contextHandler;
+    }
+
     public interface ServletContainerInitializerCaller extends LifeCycle {};
 
     protected final DecoratedObjectFactory _objFactory;

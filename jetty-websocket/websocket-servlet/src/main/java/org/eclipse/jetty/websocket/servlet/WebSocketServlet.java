@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -153,10 +154,9 @@ public abstract class WebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        // Typically this servlet is used together with the WebSocketUpgradeFilter,
+        // Often this servlet is used together with the WebSocketUpgradeFilter,
         // so upgrade requests will normally be upgraded by the filter.  But we
         // can do it here as well if for some reason the filter did not match.
-
         if (mapping.upgrade(req, resp, null))
             return;
 
@@ -256,7 +256,7 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             // TODO a bit fragile. This code knows that only the JettyFHF is added directly as a been
             ServletContext servletContext = getServletContext();
-            ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
+            ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "WebSocketServlet");
             FrameHandlerFactory frameHandlerFactory = contextHandler.getBean(FrameHandlerFactory.class);
 
             if (frameHandlerFactory==null)
