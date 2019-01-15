@@ -18,6 +18,24 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ContainerProvider;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.MessageHandler;
@@ -28,24 +46,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ContainerProvider;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -90,12 +90,14 @@ public class DecoderReaderManySmallTest
     {
         URI wsUri = server.getWsUri().resolve("/eventids");
         EventIdSocket clientSocket = new EventIdSocket(testInfo.getTestMethod().toString());
-        Session clientSession = client.connectToServer(clientSocket, wsUri);
 
         final int from = 1000;
         final int to = 2000;
 
-        clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
+        try(Session clientSession = client.connectToServer(clientSocket, wsUri))
+        {
+            clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
+        }
 
         // collect seen ids
         List<Integer> seen = new ArrayList<>();
@@ -181,6 +183,8 @@ public class DecoderReaderManySmallTest
                     sendText(Integer.toString(id), Callback.NOOP, false);
                 }
             }
+
+            getCoreSession().flush(callback);
         }
     }
 }
