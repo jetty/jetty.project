@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -27,12 +26,11 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Objects;
 
-public class WebSocketSessionImpl implements Session, Dumpable
+public class WebSocketSessionImpl implements Session
 {
     private final FrameHandler.CoreSession coreSession;
     private final JettyWebSocketFrameHandler frameHandler;
@@ -204,21 +202,6 @@ public class WebSocketSessionImpl implements Session, Dumpable
     {
         // TODO:
         return null;
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        Dumpable.dumpObjects(out, indent, this, upgradeRequest, coreSession, remoteEndpoint, frameHandler);
-    }
-
-    @Override
-    public String dumpSelf()
-    {
-        return String.format("%s@%x[behavior=%s,idleTimeout=%d]",
-                this.getClass().getSimpleName(), hashCode(),
-                getPolicy().getBehavior(),
-                getIdleTimeout());
     }
 
     @Override

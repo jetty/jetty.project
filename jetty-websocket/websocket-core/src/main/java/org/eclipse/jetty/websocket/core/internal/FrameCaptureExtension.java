@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -112,14 +111,12 @@ public class FrameCaptureExtension extends AbstractExtension
         }
 
         ByteBuffer buf = getBufferPool().acquire(BUFSIZE, false);
-        BufferUtil.flipToFill(buf);
 
         try
         {
             Frame f = Frame.copy(frame);
             f.setMask(null); // TODO is this needed?
             generator.generateHeaderBytes(f, buf);
-            BufferUtil.flipToFlush(buf, 0);
             channel.write(buf);
             if (frame.hasPayload())
             {

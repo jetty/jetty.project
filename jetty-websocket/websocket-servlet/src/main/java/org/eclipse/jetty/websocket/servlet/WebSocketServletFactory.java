@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 import java.time.Duration;
 
@@ -40,8 +39,6 @@ public interface WebSocketServletFactory
      * @since 10.0
      */
     void addMapping(PathSpec pathSpec, WebSocketCreator creator);
-
-    WebSocketExtensionRegistry getExtensionRegistry();
 
     Duration getDefaultIdleTimeout();
 
