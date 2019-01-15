@@ -18,6 +18,18 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import java.io.IOException;
+import java.net.CookieStore;
+import java.net.SocketAddress;
+import java.net.URI;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -33,18 +45,6 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-
-import java.io.IOException;
-import java.net.CookieStore;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy
 {
@@ -93,9 +93,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
     {
-        ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, coreClient, null, toUri, websocket);
-        coreClient.connect(upgradeRequest);
-        return upgradeRequest.getFutureSession();
+        return connect(websocket, toUri, null);
     }
 
     /**
@@ -107,7 +105,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, org.eclipse.jetty.websocket.api.UpgradeRequest request) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request) throws IOException
     {
         ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, coreClient, request, toUri, websocket);
         coreClient.connect(upgradeRequest);
