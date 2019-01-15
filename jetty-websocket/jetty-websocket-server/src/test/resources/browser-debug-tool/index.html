@@ -11,6 +11,7 @@
       <input id="connect" class="button" type="submit" name="connect" value="connect"/>
       <input id="close" class="button" type="submit" name="close" value="close" disabled="disabled"/>
       <input id="info" class="button" type="submit" name="info" value="info" disabled="disabled"/>
+      <input id="ping" class="button" type="submit" name="ping" value="ping" disabled="disabled"/>
       <input id="time" class="button" type="submit" name="time" value="time" disabled="disabled"/>
       <input id="many" class="button" type="submit" name="many" value="many" disabled="disabled"/>
       <input id="manythreads" class="button" type="submit" name="many" value="manythreads" disabled="disabled"/>
@@ -27,6 +28,7 @@
     $("connect").onclick = function(event) { wstool.connect(); return false; }
     $("close").onclick = function(event) {wstool.close(); return false; }
     $("info").onclick = function(event) {wstool.write("info:"); return false; }
+    $("ping").onclick = function(event) {wstool.write("ping:"); return false; }
     $("time").onclick = function(event) {wstool.write("time:"); return false; }
     $("many").onclick = function(event) {wstool.write("many:15,300"); return false; }
     $("manythreads").onclick = function(event) {wstool.write("manythreads:20,25,60"); return false; }

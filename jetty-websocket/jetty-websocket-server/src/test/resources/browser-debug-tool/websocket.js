@@ -68,7 +68,7 @@ var wstool = {
     
     infos : function(message) {
         this._scount++;
-        if(message.length > 300) {
+        if(message.length > 300 && !message.startsWith("Dump:")) {
             wstool._out("server", "[s" + this._scount + "] [big message: " + message.length + " characters]");
         } else {
             wstool._out("server", "[s" + this._scount + "] " + message);
@@ -79,6 +79,7 @@ var wstool = {
         $('connect').disabled = enabled;
         $('close').disabled = !enabled;
         $('info').disabled = !enabled;
+        $('ping').disabled = !enabled;
         $('time').disabled = !enabled;
         $('many').disabled = !enabled;
         $('manythreads').disabled = !enabled;

@@ -23,10 +23,12 @@ import java.io.InputStream;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -38,8 +40,11 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
 
 @WebSocket
 public class BrowserSocket
@@ -187,6 +192,19 @@ public class BrowserSocket
 
                     break;
                 }
+                case "ping":
+                {
+                    try
+                    {
+                        LOG.info("PING!");
+                        this.session.getRemote().sendPing(BufferUtil.toBuffer("ping from server"));
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn(e);
+                    }
+                    break;
+                }
                 case "many":
                 {
                     String parts[] = val.split(",");
@@ -231,7 +249,7 @@ public class BrowserSocket
                 {
                     String dump = (session instanceof Dumpable) ? ((Dumpable) session).dump() : session.toString();
                     System.err.println(dump);
-                    writeMessage("Dump: %s", dump);
+                    Arrays.stream(dump.split("\n")).forEach(d->writeMessage("Dump: %s", d));
                     break;
                 }
                 default:
