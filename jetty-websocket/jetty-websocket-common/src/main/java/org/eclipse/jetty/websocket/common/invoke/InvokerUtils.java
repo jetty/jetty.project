@@ -104,6 +104,10 @@ public class InvokerUtils
      * Might need to drop calling args and/or reorder the calling args to fit
      * the actual method being called.
      * </p>
+     * @param targetClass     the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method          the method to invoke
+     * @param callingArgs     the calling arguments
+     * @return the MethodHandle for this set of CallingArgs
      */
     public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, Arg... callingArgs)
     {
