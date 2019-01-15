@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 
 @ManagedObject("Abstract Extension")
-public abstract class AbstractExtension implements Extension, Dumpable
+public abstract class AbstractExtension implements Extension
 {
     private final Logger log;
     private ByteBufferPool bufferPool;
@@ -42,27 +42,6 @@ public abstract class AbstractExtension implements Extension, Dumpable
     public AbstractExtension()
     {
         log = Log.getLogger(this.getClass());
-    }
-
-    @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        // incoming
-        dumpWithHeading(out, indent, "incoming", this.nextIncoming);
-        dumpWithHeading(out, indent, "outgoing", this.nextOutgoing);
-    }
-
-    protected void dumpWithHeading(Appendable out, String indent, String heading, Object bean) throws IOException
-    {
-        out.append(indent).append(" +- ");
-        out.append(heading).append(" : ");
-        out.append(bean.toString());
     }
 
     @Override

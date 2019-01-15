@@ -70,7 +70,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         }
     }
 
-    public static void configure(ServletContextHandler contextHandler) throws ServletException
+    public static void configure(ServletContextHandler contextHandler)
     {
         JettyWebSocketServletContainerInitializer sci = new JettyWebSocketServletContainerInitializer();
         JettyWebSocketEmbeddedStarter starter = new JettyWebSocketEmbeddedStarter(sci, contextHandler);

@@ -698,7 +698,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            negotiated.getSubProtocol(),
+            "subprotocol="+negotiated.getSubProtocol(),
             negotiated.getExtensions(),
             handler);
     }
