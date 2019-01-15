@@ -70,6 +70,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private long maxFrameSize = WebSocketConstants.DEFAULT_MAX_FRAME_SIZE;
     private int inputBufferSize = WebSocketConstants.DEFAULT_INPUT_BUFFER_SIZE;
     private int outputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
+    private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
+    private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
 
     public WebSocketChannel(FrameHandler handler,
         Behavior behavior,
@@ -576,6 +578,30 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         this.inputBufferSize = inputBufferSize;
     }
 
+    @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return maxBinaryMessageSize;
+    }
+
+    @Override
+    public void setMaxBinaryMessageSize(long maxSize)
+    {
+        maxBinaryMessageSize = maxSize;
+    }
+
+    @Override
+    public long getMaxTextMessageSize()
+    {
+        return maxTextMessageSize;
+    }
+
+    @Override
+    public void setMaxTextMessageSize(long maxSize)
+    {
+        maxTextMessageSize = maxSize;
+    }
+
     private class IncomingState extends FrameSequence implements IncomingFrames
     {
         @Override
@@ -672,7 +698,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            negotiated.getSubProtocol(),
+            "subprotocol="+negotiated.getSubProtocol(),
             negotiated.getExtensions(),
             handler);
     }

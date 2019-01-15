@@ -21,23 +21,19 @@ package org.eclipse.jetty.websocket.servlet;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
 /**
- * WebSocket Core API - Factory for Servlet based API's to use for creating API specific FrameHandler instances that
- * websocket-core will eventually utilize.
- * <p>
- * This is used by Servlet based APIs only.
- * </p>
+ * Factory for FrameHandler instances
  */
-public interface WebSocketServletFrameHandlerFactory
+public interface FrameHandlerFactory
 {
-    String ATTR_HANDLERS = "org.eclipse.jetty.websocket.servlet.FrameHandlerFactories";
-
     /**
-     * Attempt to create a FrameHandler from the provided websocketPojo.
+     * Create a FrameHandler from the provided websocketPojo.
      *
      * @param websocketPojo   the websocket pojo to work with
      * @param upgradeRequest  the Upgrade Handshake Request used to create the FrameHandler
      * @param upgradeResponse the Upgrade Handshake Response used to create the FrameHandler
-     * @return the API specific FrameHandler, or null if this implementation is unable to create the FrameHandler (allowing another {@link WebSocketServletFrameHandlerFactory} to try)
+     * @return the API specific FrameHandler, or null if this implementation is unable to create
+     * the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
      */
-    FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse);
+    FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest,
+        ServletUpgradeResponse upgradeResponse);
 }

@@ -23,7 +23,7 @@ package org.eclipse.jetty.websocket.servlet;
  * <p>
  * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
  * WebSocketCreator implementation.
- * <p>
+ * </p>
  */
 public interface WebSocketCreator
 {

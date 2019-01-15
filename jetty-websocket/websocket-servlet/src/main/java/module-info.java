@@ -23,6 +23,7 @@ module org.eclipse.jetty.websocket.servlet
     requires javax.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
+    requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.servlet;
     requires org.eclipse.jetty.websocket.core;

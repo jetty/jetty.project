@@ -125,10 +125,53 @@ public interface FrameHandler extends IncomingFrames
         return false;
     }
 
+
+    interface Configuration
+    {
+
+        /**
+         * Get the Idle Timeout
+         *
+         * @return the idle timeout
+         */
+        Duration getIdleTimeout();
+
+        /**
+         * Set the Idle Timeout.
+         *
+         * @param timeout the timeout duration
+         */
+        void setIdleTimeout(Duration timeout);
+
+        boolean isAutoFragment();
+
+        void setAutoFragment(boolean autoFragment);
+
+        long getMaxFrameSize();
+
+        void setMaxFrameSize(long maxFrameSize);
+
+        int getOutputBufferSize();
+
+        void setOutputBufferSize(int outputBufferSize);
+
+        int getInputBufferSize();
+
+        void setInputBufferSize(int inputBufferSize);
+
+        long getMaxBinaryMessageSize();
+
+        void setMaxBinaryMessageSize(long maxSize);
+
+        long getMaxTextMessageSize();
+
+        void setMaxTextMessageSize(long maxSize);
+    }
+
     /**
      * Represents the outgoing Frames.
      */
-    interface CoreSession extends OutgoingFrames
+    interface CoreSession extends OutgoingFrames, Configuration
     {
         /**
          * The negotiated WebSocket Sub-Protocol for this channel.
@@ -230,20 +273,6 @@ public interface FrameHandler extends IncomingFrames
         boolean isOpen();
 
         /**
-         * Get the Idle Timeout
-         *
-         * @return the idle timeout
-         */
-        Duration getIdleTimeout();
-
-        /**
-         * Set the Idle Timeout.
-         *
-         * @param timeout the timeout duration
-         */
-        void setIdleTimeout(Duration timeout);
-
-        /**
          * If using BatchMode.ON or BatchMode.AUTO, trigger a flush of enqueued / batched frames.
          *
          * @param callback the callback to track close frame sent (or failed)
@@ -276,22 +305,6 @@ public interface FrameHandler extends IncomingFrames
          *          {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
          */
         void demand(long n);
-
-        boolean isAutoFragment();
-
-        void setAutoFragment(boolean autoFragment);
-
-        long getMaxFrameSize();
-
-        void setMaxFrameSize(long maxFrameSize);
-
-        int getOutputBufferSize();
-
-        void setOutputBufferSize(int outputBufferSize);
-
-        int getInputBufferSize();
-
-        void setInputBufferSize(int inputBufferSize);
 
         class Empty implements CoreSession
         {
@@ -375,31 +388,26 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void setIdleTimeout(Duration timeout)
             {
-
             }
 
             @Override
             public void flush(Callback callback)
             {
-
             }
 
             @Override
             public void close(Callback callback)
             {
-
             }
 
             @Override
             public void close(int statusCode, String reason, Callback callback)
             {
-
             }
 
             @Override
             public void demand(long n)
             {
-
             }
 
             @Override
@@ -411,7 +419,6 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void setAutoFragment(boolean autoFragment)
             {
-
             }
 
             @Override
@@ -423,7 +430,6 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void setMaxFrameSize(long maxFrameSize)
             {
-
             }
 
             @Override
@@ -435,7 +441,6 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void setOutputBufferSize(int outputBufferSize)
             {
-
             }
 
             @Override
@@ -447,19 +452,154 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void setInputBufferSize(int inputBufferSize)
             {
-
             }
 
             @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
             {
+            }
 
+            @Override
+            public long getMaxBinaryMessageSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public void setMaxBinaryMessageSize(long maxSize)
+            {
+            }
+
+            @Override
+            public long getMaxTextMessageSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public void setMaxTextMessageSize(long maxSize)
+            {
             }
         }
     }
 
-    interface CoreCustomizer
+    interface Customizer
     {
         void customize(CoreSession session);
     }
+
+    class ConfigurationCustomizer implements Customizer, Configuration
+    {
+        private Duration timeout;
+        private Boolean autoFragment;
+        private Long maxFrameSize;
+        private Integer outputBufferSize;
+        private Integer inputBufferSize;
+        private Long maxBinaryMessageSize;
+        private Long maxTextMessageSize;
+
+        @Override
+        public Duration getIdleTimeout()
+        {
+            return timeout;
+        }
+
+        @Override
+        public void setIdleTimeout(Duration timeout)
+        {
+            this.timeout = timeout;
+        }
+
+        @Override
+        public boolean isAutoFragment()
+        {
+            return autoFragment==null?WebSocketConstants.DEFAULT_AUTO_FRAGMENT:autoFragment;
+        }
+
+        @Override
+        public void setAutoFragment(boolean autoFragment)
+        {
+            this.autoFragment = autoFragment;
+        }
+
+        @Override
+        public long getMaxFrameSize()
+        {
+            return maxFrameSize==null?WebSocketConstants.DEFAULT_MAX_FRAME_SIZE:maxFrameSize;
+        }
+
+        @Override
+        public void setMaxFrameSize(long maxFrameSize)
+        {
+            this.maxFrameSize = maxFrameSize;
+        }
+
+        @Override
+        public int getOutputBufferSize()
+        {
+            return outputBufferSize==null?WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE:outputBufferSize;
+        }
+
+        @Override
+        public void setOutputBufferSize(int outputBufferSize)
+        {
+            this.outputBufferSize = outputBufferSize;
+        }
+
+        @Override
+        public int getInputBufferSize()
+        {
+            return inputBufferSize==null?WebSocketConstants.DEFAULT_INPUT_BUFFER_SIZE:inputBufferSize;
+        }
+
+        @Override
+        public void setInputBufferSize(int inputBufferSize)
+        {
+            this.inputBufferSize = inputBufferSize;
+        }
+
+        @Override
+        public long getMaxBinaryMessageSize()
+        {
+            return maxBinaryMessageSize==null?WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE:maxBinaryMessageSize;
+        }
+
+        @Override
+        public void setMaxBinaryMessageSize(long maxBinaryMessageSize)
+        {
+            this.maxBinaryMessageSize = maxBinaryMessageSize;
+        }
+
+        @Override
+        public long getMaxTextMessageSize()
+        {
+            return maxTextMessageSize==null?WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE:maxTextMessageSize;
+        }
+
+        @Override
+        public void setMaxTextMessageSize(long maxTextMessageSize)
+        {
+            this.maxTextMessageSize = maxTextMessageSize;
+        }
+
+        @Override
+        public void customize(CoreSession session)
+        {
+            if (timeout!=null)
+                session.setIdleTimeout(timeout);
+            if (autoFragment!=null)
+                session.setAutoFragment(autoFragment);
+            if (maxFrameSize!=null)
+                session.setMaxFrameSize(maxFrameSize);
+            if (inputBufferSize!=null)
+                session.setInputBufferSize(inputBufferSize);
+            if (outputBufferSize!=null)
+                session.setOutputBufferSize(outputBufferSize);
+            if (maxBinaryMessageSize!=null)
+                session.setMaxBinaryMessageSize(maxBinaryMessageSize);
+            if (maxTextMessageSize!=null)
+                session.setMaxTextMessageSize(maxTextMessageSize);
+        }
+    }
+
 }

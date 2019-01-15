@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -42,8 +33,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
+
 /**
- * Servlet specific Upgrade Request implementation.
+ * Holder of request data for a WebSocket upgrade request.
  */
 public class ServletUpgradeRequest
 {
@@ -62,7 +64,9 @@ public class ServletUpgradeRequest
         this.queryString = httpRequest.getQueryString();
         this.secure = httpRequest.isSecure();
 
+        // TODO why is this URL and not URI?
         StringBuffer uri = httpRequest.getRequestURL();
+        // WHY?
         if (this.queryString != null)
             uri.append("?").append(this.queryString);
         uri.replace(0, uri.indexOf(":"), secure?"wss":"ws");
@@ -70,11 +74,18 @@ public class ServletUpgradeRequest
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
 
+    /**
+     * @return The {@link X509Certificate} instance at request attribute "javax.servlet.request.X509Certificate" or null.
+     */
     public X509Certificate[] getCertificates()
     {
         return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
     }
 
+    /**
+     * @see HttpServletRequest#getCookies()
+     * @return Request cookies
+     */
     public List<HttpCookie> getCookies()
     {
         if (cookies == null)
@@ -95,16 +106,30 @@ public class ServletUpgradeRequest
         return cookies;
     }
 
+    /**
+     * @return The extensions offered
+     * @see Negotiation#getOfferedExtensions()
+     */
     public List<ExtensionConfig> getExtensions()
     {
         return negotiation.getOfferedExtensions();
     }
 
+    /**
+     * @param name Header name
+     * @return Header value or null
+     * @see HttpServletRequest#getHeader(String)
+     */
     public String getHeader(String name)
     {
         return request.getHeader(name);
     }
 
+    /**
+     * @param name Header name
+     * @return Header value as integer or -1
+     * @see HttpServletRequest#getHeader(String)
+     */
     public int getHeaderInt(String name)
     {
         String val = request.getHeader(name);
@@ -115,43 +140,55 @@ public class ServletUpgradeRequest
         return Integer.parseInt(val);
     }
 
+    /**
+     * @return Map of headers
+     * @see UpgradeHttpServletRequest#getHeaders()
+     */
     public Map<String, List<String>> getHeadersMap()
     {
         return request.getHeaders();
     }
 
+    /**
+     * @param name Header name
+     * @return List of header values or null
+     * @see UpgradeHttpServletRequest#getHeaders()
+     */
     public List<String> getHeaders(String name)
     {
         return request.getHeaders().get(name);
     }
 
+    /**
+     * @return The requested host
+     * @see HttpServletRequest#getRequestURL()
+     */
     public String getHost()
     {
+        // TODO why is this not HttpServletRequest#getHost ?
         return requestURI.getHost();
     }
 
     /**
-     * Return the underlying HttpServletRequest that existed at Upgrade time.
-     * <p>
-     * Note: many features of the HttpServletRequest are invalid when upgraded,
-     * especially ones that deal with body content, streams, readers, and responses.
-     *
-     * @return a limited version of the underlying HttpServletRequest
+     * @return Immutable version of {@link HttpServletRequest}
      */
     public HttpServletRequest getHttpServletRequest()
     {
         return request;
     }
 
+    /**
+     * @return The HTTP protocol version
+     * @see HttpServletRequest#getProtocol()
+     */
     public String getHttpVersion()
     {
         return request.getProtocol();
     }
 
     /**
-     * Equivalent to {@link HttpServletRequest#getLocale()}
-     *
-     * @return the preferred <code>Locale</code> for the client
+     * @return The requested Locale
+     * @see HttpServletRequest#getLocale()
      */
     public Locale getLocale()
     {
@@ -159,9 +196,8 @@ public class ServletUpgradeRequest
     }
 
     /**
-     * Equivalent to {@link HttpServletRequest#getLocales()}
-     *
-     * @return an Enumeration of preferred Locale objects
+     * @return The requested Locales
+     * @see HttpServletRequest#getLocales()
      */
     public Enumeration<Locale> getLocales()
     {
@@ -169,11 +205,9 @@ public class ServletUpgradeRequest
     }
 
     /**
-     * Return a {@link java.net.SocketAddress} for the local socket.
-     * <p>
-     * Warning: this can cause a DNS lookup
-     *
-     * @return the local socket address
+     * @return The local requested address, which is typically an {@link InetSocketAddress}, but may be another derivation of {@link SocketAddress}
+     * @see ServletRequest#getLocalAddr()
+     * @see ServletRequest#getLocalPort()
      */
     public SocketAddress getLocalSocketAddress()
     {
@@ -181,16 +215,27 @@ public class ServletUpgradeRequest
         return new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
     }
 
+    /**
+     * @return The requested method
+     * @see HttpServletRequest#getMethod()
+     */
     public String getMethod()
     {
         return request.getMethod();
     }
 
+    /**
+     * @return The origin header value
+     */
     public String getOrigin()
     {
         return getHeader("Origin");
     }
 
+    /**
+     * @return The request parameter map
+     * @see ServletRequest#getParameterMap()
+     */
     public Map<String, List<String>> getParameterMap()
     {
         if (parameterMap == null)
@@ -206,6 +251,9 @@ public class ServletUpgradeRequest
         return parameterMap;
     }
 
+    /**
+     * @return WebSocket protocol version from "Sec-WebSocket-Version" header
+     */
     public String getProtocolVersion()
     {
         String version = request.getHeader(HttpHeader.SEC_WEBSOCKET_VERSION.asString());
@@ -216,26 +264,32 @@ public class ServletUpgradeRequest
         return version;
     }
 
+    /**
+     * @return The request query string
+     * @see HttpServletRequest#getQueryString()
+     */
     public String getQueryString()
     {
         return this.queryString;
     }
 
     /**
-     * Return a {@link SocketAddress} for the remote socket.
-     * <p>
-     * Warning: this can cause a DNS lookup
-     *
-     * @return the remote socket address
+     * @return The remote request address, which is typically an {@link InetSocketAddress}, but may be another derivation of {@link SocketAddress}
+     * @see ServletRequest#getRemoteAddr()
+     * @see ServletRequest#getRemotePort()
      */
     public SocketAddress getRemoteSocketAddress()
     {
         return new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
     }
 
+    /**
+     * @return The request URI path within the context
+     */
     public String getRequestPath()
     {
         // Since this can be called from a filter, we need to be smart about determining the target request path.
+        // TODO probably better adding servletPath and pathInfo
         String contextPath = request.getContextPath();
         String requestPath = request.getRequestURI();
         if (requestPath.startsWith(contextPath))
@@ -243,55 +297,78 @@ public class ServletUpgradeRequest
         return requestPath;
     }
 
+    /**
+     * @return The request URI
+     * @see HttpServletRequest#getRequestURL()
+     */
     public URI getRequestURI()
     {
         return requestURI;
     }
 
+    /**
+     * @param name Attribute name
+     * @return Attribute value or null
+     * @see ServletRequest#getAttribute(String)
+     */
     public Object getServletAttribute(String name)
     {
         return request.getAttribute(name);
     }
 
+    /**
+     * @return Request attribute map
+     * @see UpgradeHttpServletRequest#getAttributes()
+     */
     public Map<String, Object> getServletAttributes()
     {
         return request.getAttributes();
     }
 
+    /**
+     * @return Request parameters
+     * @see ServletRequest#getParameterMap()
+     */
     public Map<String, List<String>> getServletParameters()
     {
         return getParameterMap();
     }
 
     /**
-     * Return the HttpSession if it exists.
-     * <p>
-     * Note: this is equivalent to {@link HttpServletRequest#getSession(boolean)}
-     * and will not create a new HttpSession.
+     * @return The HttpSession, which may be null or invalidated
+     * @see HttpServletRequest#getSession(boolean)
      */
     public HttpSession getSession()
     {
         return request.getSession(false);
     }
 
+    /**
+     * @return Get WebSocket negotiation offered sub protocols
+     */
     public List<String> getSubProtocols()
     {
         return negotiation.getOfferedSubprotocols();
     }
 
     /**
-     * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
+     * @return The User's {@link Principal} or null
+     * @see HttpServletRequest#getUserPrincipal()
      */
     public Principal getUserPrincipal()
     {
         return request.getUserPrincipal();
     }
 
-    public boolean hasSubProtocol(String test)
+    /**
+     * @param subprotocol A sub protocol name
+     * @return True if the sub protocol was offered
+     */
+    public boolean hasSubProtocol(String subprotocol)
     {
         for (String protocol : getSubProtocols())
         {
-            if (protocol.equalsIgnoreCase(test))
+            if (protocol.equalsIgnoreCase(subprotocol))
             {
                 return true;
             }
@@ -299,16 +376,30 @@ public class ServletUpgradeRequest
         return false;
     }
 
+    /**
+     * @return True if the request is secure
+     * @see ServletRequest#isSecure()
+     */
     public boolean isSecure()
     {
         return this.secure;
     }
 
+    /**
+     * @param role The user role
+     * @return True if the requests user has the role
+     * @see HttpServletRequest#isUserInRole(String)
+     */
     public boolean isUserInRole(String role)
     {
         return request.isUserInRole(role);
     }
 
+    /**
+     * @param name Attribute name
+     * @param value Attribute value to set
+     * @see ServletRequest#setAttribute(String, Object)
+     */
     public void setServletAttribute(String name, Object value)
     {
         request.setAttribute(name, value);

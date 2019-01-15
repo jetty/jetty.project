@@ -67,13 +67,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
      */
     private final UpgradeResponse upgradeResponse;
     private final CompletableFuture<Session> futureSession;
-    private final CoreCustomizer customizer;
+    private final Customizer customizer;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
-    private long maxBinaryMessageSize = -1;
-    private long maxTextMessageSize = -1;
 
     public JettyWebSocketFrameHandler(Executor executor,
         Object endpointInstance,
@@ -85,7 +83,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         MethodHandle frameHandle,
         MethodHandle pingHandle, MethodHandle pongHandle,
         CompletableFuture<Session> futureSession,
-        CoreCustomizer customizer)
+        Customizer customizer)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
@@ -130,7 +128,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (errorHandle == null)
         {
-            log.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " missing onError handler", cause);
+            log.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " : " + cause);
+            if (log.isDebugEnabled())
+                log.debug("unhandled", cause);
             return;
         }
 
@@ -228,14 +228,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         pongHandle = JettyWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
 
         if (textHandle != null)
-        {
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, getMaxTextMessageSize());
-        }
+            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, coreSession.getMaxTextMessageSize());
 
         if (binaryHandle != null)
-        {
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, getMaxBinaryMessageSize());
-        }
+            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, coreSession.getMaxBinaryMessageSize());
 
         if (openHandle != null)
         {
@@ -250,26 +246,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
 
         futureSession.complete(session);
-    }
-
-    public long getMaxBinaryMessageSize()
-    {
-        return maxBinaryMessageSize;
-    }
-
-    public void setMaxBinaryMessageSize(long maxSize)
-    {
-        this.maxBinaryMessageSize = maxSize;
-    }
-
-    public long getMaxTextMessageSize()
-    {
-        return maxTextMessageSize;
-    }
-
-    public void setMaxTextMessageSize(long maxSize)
-    {
-        this.maxTextMessageSize = maxSize;
     }
 
     public String toString()

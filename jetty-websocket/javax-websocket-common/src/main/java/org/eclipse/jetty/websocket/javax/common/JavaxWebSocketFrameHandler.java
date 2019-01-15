@@ -18,6 +18,25 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+import javax.websocket.CloseReason;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.PongMessage;
+import javax.websocket.Session;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -38,24 +57,6 @@ import org.eclipse.jetty.websocket.javax.common.messages.PartialByteArrayMessage
 import org.eclipse.jetty.websocket.javax.common.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
-
-import javax.websocket.CloseReason;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class JavaxWebSocketFrameHandler implements FrameHandler
 {
@@ -217,7 +218,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
         if (errorHandle == null)
         {
-            LOG.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " missing onError handler", cause);
+            LOG.warn("Unhandled Error: " + endpointInstance,  cause);
             return;
         }
 

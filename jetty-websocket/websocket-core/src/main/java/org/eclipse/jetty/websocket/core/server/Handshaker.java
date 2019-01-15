@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,5 +32,10 @@ public interface Handshaker
         return new RFC6455Handshaker();
     }
 
-    boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    boolean upgradeRequest(
+        WebSocketNegotiator negotiator,
+        HttpServletRequest request,
+        HttpServletResponse response,
+        FrameHandler.Customizer defaultCustomizer)
+        throws IOException;
 }
