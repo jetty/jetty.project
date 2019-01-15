@@ -33,7 +33,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -95,10 +94,9 @@ public class TestJettyOSGiBootWithAnnotations
     }
 
 
-    @Ignore
-    @Test
     public void assertAllBundlesActiveOrResolved()
     {
+        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
@@ -107,6 +105,10 @@ public class TestJettyOSGiBootWithAnnotations
     @Test
     public void testIndex() throws Exception
     {
+        
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+            
         HttpClient client = new HttpClient();
         try
         {

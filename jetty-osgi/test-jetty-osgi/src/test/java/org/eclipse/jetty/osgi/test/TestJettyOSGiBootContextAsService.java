@@ -32,7 +32,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -81,19 +80,14 @@ public class TestJettyOSGiBootContextAsService
 
 
 
-   
-    @Ignore
-    public void assertAllBundlesActiveOrResolved()
-    {
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-    }
-
-
     /**
      */
     @Test
     public void testContextHandlerAsOSGiService() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
+        
         // now test the context
         HttpClient client = new HttpClient();
         try
