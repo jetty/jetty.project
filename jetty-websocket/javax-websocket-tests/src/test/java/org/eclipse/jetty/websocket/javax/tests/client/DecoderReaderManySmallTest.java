@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -50,6 +47,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderReaderManySmallTest
 {
@@ -91,12 +91,14 @@ public class DecoderReaderManySmallTest
     {
         URI wsUri = server.getWsUri().resolve("/eventids");
         EventIdSocket clientSocket = new EventIdSocket(testInfo.getTestMethod().toString());
-        Session clientSession = client.connectToServer(clientSocket, wsUri);
 
         final int from = 1000;
         final int to = 2000;
 
-        clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
+        try(Session clientSession = client.connectToServer(clientSocket, wsUri))
+        {
+            clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
+        }
 
         // collect seen ids
         List<Integer> seen = new ArrayList<>();
@@ -182,6 +184,8 @@ public class DecoderReaderManySmallTest
                     sendText(Integer.toString(id), Callback.NOOP, false);
                 }
             }
+
+            getCoreSession().flush(callback);
         }
     }
 }

@@ -100,7 +100,7 @@ abstract public class WriteFlusher
      * @param previous the expected current state
      * @param next     the desired new state
      * @return the previous state or null if the state transition failed
-     * @throws WritePendingException if currentState is WRITING and new state is WRITING (api usage error)
+     * @throws IllegalStateException if previous to next is not a legal state transition (api usage error)
      */
     private boolean updateState(State previous, State next)
     {
