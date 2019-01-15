@@ -195,7 +195,7 @@ public class TransportScenario
             }
             case FCGI:
             {
-                return new HttpClientTransportOverFCGI(1, false, "");
+                return new HttpClientTransportOverFCGI(1, "");
             }
             case UNIX_SOCKET:
             {

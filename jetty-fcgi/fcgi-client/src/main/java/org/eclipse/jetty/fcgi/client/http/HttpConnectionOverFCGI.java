@@ -64,18 +64,16 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HttpDestination destination;
     private final Promise<Connection> promise;
-    private final boolean multiplexed;
     private final Flusher flusher;
     private final Delegate delegate;
     private final ClientParser parser;
     private ByteBuffer buffer;
 
-    public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise, boolean multiplexed)
+    public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
         super(endPoint, destination.getHttpClient().getExecutor());
         this.destination = destination;
         this.promise = promise;
-        this.multiplexed = multiplexed;
         this.flusher = new Flusher(endPoint);
         this.delegate = new Delegate(destination);
         this.parser = new ClientParser(new ResponseListener());
@@ -201,8 +199,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     {
         long idleTimeout = getEndPoint().getIdleTimeout();
         boolean close = delegate.onIdleTimeout(idleTimeout);
-        if (multiplexed)
-            close &= isFillInterested();
         if (close)
             close(new TimeoutException("Idle timeout " + idleTimeout + " ms"));
         return false;
@@ -257,8 +253,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     protected boolean closeByHTTP(HttpFields fields)
     {
-        if (multiplexed)
-            return false;
         if (!fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
             return false;
         close();

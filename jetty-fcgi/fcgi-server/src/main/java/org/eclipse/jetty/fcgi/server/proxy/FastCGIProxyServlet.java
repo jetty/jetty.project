@@ -245,7 +245,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     {
         private ProxyHttpClientTransportOverFCGI(int selectors, String scriptRoot)
         {
-            super(selectors, false, scriptRoot);
+            super(selectors, scriptRoot);
         }
 
         @Override
