@@ -153,7 +153,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 if (!(frame instanceof ParsedFrame)) // already check in parser
-                    new CloseStatus(frame.getPayload());
+                    CloseStatus.getCloseStatus(frame);
             }
         }
         else
@@ -459,7 +459,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             if (LOG.isDebugEnabled())
                 LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
-        boolean closed;
+            boolean closed;
             try
             {
                 assertValidOutgoing(frame);
@@ -473,9 +473,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("close({}, {}, {})", closeStatus, callback, batch);
+                    LOG.debug("close({}, {}, {})", CloseStatus.getCloseStatus(frame), callback, batch);
 
                 if (closed)
                 {
@@ -621,7 +620,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 if (frame.getOpCode() == OpCode.CLOSE)
                 {
                     connection.cancelDemand();
-                    CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                     if (closed)
                     {
                         callback = new Callback.Nested(callback)
@@ -642,13 +640,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                         @Override
                         public void completed()
                         {
-                            // was a close sent by the handler? todo what if someone beats this to close
                             if (channelState.isOutOpen())
                             {
-                                // No!
+                                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("ConnectionState: sending close response {}", closeStatus);
 
+                                // this may race with a rare application close but errors are ignored
                                 close(closeStatus.getCode(), closeStatus.getReason(), Callback.NOOP);
                                 return;
                             }
