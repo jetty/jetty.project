@@ -39,7 +39,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -108,7 +107,6 @@ public class TestJettyOSGiBootHTTP2JDK9
     }
  
 
-    @Ignore
     public void assertAllBundlesActiveOrResolved() throws Exception
     {
         TestOSGiUtil.debugBundles(bundleContext);
@@ -126,6 +124,9 @@ public class TestJettyOSGiBootHTTP2JDK9
     @Test
     public void testHTTP2() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+        
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;
         try 
