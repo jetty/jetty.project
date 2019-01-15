@@ -67,7 +67,7 @@ import org.eclipse.jetty.websocket.core.Frame;
  * Factory to create {@link JettyWebSocketFrameHandler} instances suitable for
  * use with jetty-native websocket API.
  * <p>
- * Will create a {@link FrameHandler} suitable for use with classes/objects that:
+ * Will create a {@link org.eclipse.jetty.websocket.core.FrameHandler} suitable for use with classes/objects that:
  * </p>
  * <ul>
  * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
