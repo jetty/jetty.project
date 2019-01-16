@@ -18,28 +18,27 @@
 
 package org.eclipse.jetty.websocket.javax.tests.quotes;
 
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Tests a {@link javax.websocket.Decoder.TextStream} automatic decoding to a Socket onMessage parameter
@@ -73,7 +72,7 @@ public class QuotesDecoderTextStreamTest
             @Override
             protected void configureServletContextHandler(ServletContextHandler context) throws Exception
             {
-                ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(context);
+                ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(context);
                 container.addEndpoint(QuotesEchoStringSocket.class);
             }
         };

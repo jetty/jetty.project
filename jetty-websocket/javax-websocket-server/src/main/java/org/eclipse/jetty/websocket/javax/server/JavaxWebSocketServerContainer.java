@@ -89,10 +89,10 @@ public class JavaxWebSocketServerContainer
         if (container==null)
         {
             // Find Pre-Existing (Shared?) HttpClient and/or executor
-            HttpClient httpClient = (HttpClient)servletContext.getAttribute(JavaxWebSocketServerContainerInitializer.HTTPCLIENT_ATTRIBUTE);
+            HttpClient httpClient = (HttpClient)servletContext.getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
             if (httpClient == null)
                 httpClient = (HttpClient)contextHandler.getServer()
-                    .getAttribute(JavaxWebSocketServerContainerInitializer.HTTPCLIENT_ATTRIBUTE);
+                    .getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
 
             Executor executor = httpClient == null?null:httpClient.getExecutor();
             if (executor == null)
@@ -124,7 +124,7 @@ public class JavaxWebSocketServerContainer
     private List<ServerEndpointConfig> deferredEndpointConfigs;
 
     /**
-     * Main entry point for {@link JavaxWebSocketServerContainerInitializer}.
+     * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
      * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
      * @param httpClient              the {@link HttpClient} instance to use
      */

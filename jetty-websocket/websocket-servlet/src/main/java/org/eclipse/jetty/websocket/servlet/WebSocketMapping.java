@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.servlet.ServletContext;
@@ -31,12 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
-import org.eclipse.jetty.http.pathmap.PathMappings;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.http.pathmap.RegexPathSpec;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.http.pathmap.*;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -51,6 +42,8 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+
+import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
 /**
  * Mapping of pathSpec to a tupple of {@link WebSocketCreator}, {@link FrameHandlerFactory} and
@@ -84,7 +77,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     }
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
-    private final Set<FrameHandlerFactory> frameHandlerFactories = new HashSet<>();
     private final Handshaker handshaker = Handshaker.newInstance();
 
     private DecoratedObjectFactory objectFactory;
@@ -183,12 +175,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public DecoratedObjectFactory getObjectFactory()
     {
         return this.objectFactory;
-    }
-
-    public void addFrameHandlerFactory(FrameHandlerFactory webSocketServletFrameHandlerFactory)
-    {
-        // TODO should this be done by a ServiceLoader?
-        this.frameHandlerFactories.add(webSocketServletFrameHandlerFactory);
     }
 
     /**
