@@ -64,9 +64,15 @@ public class TestGetContent
                 System.out.println( "pingServlet ok" );
             }
             String contentCheck = System.getProperty( "contentCheck" );
+            String pathToCheck = System.getProperty( "pathToCheck" );
             if(StringUtils.isNotBlank( contentCheck ) )
             {
-                String response = httpClient.GET( "http://localhost:" + port ).getContentAsString();
+                String url = "http://localhost:" + port;
+                if(pathToCheck!=null)
+                {
+                    url += pathToCheck;
+                }
+                String response = httpClient.GET( url ).getContentAsString();
                 assertTrue(response.contains(contentCheck), "it test " + System.getProperty( "maven.it.name" )
                     + ", response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println( "contentCheck" );

@@ -155,7 +155,11 @@
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
-                <requireUpperBoundDeps/>
+                <requireUpperBoundDeps>
+                  <excludes>
+                    <exclude>javax.enterprise:cdi-api</exclude>
+                  </excludes>
+                </requireUpperBoundDeps>
               </rules>
             </configuration>
           </execution>
