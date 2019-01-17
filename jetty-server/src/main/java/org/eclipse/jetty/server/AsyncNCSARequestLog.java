@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,112 +18,22 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
-
-/* ------------------------------------------------------------ */
 /**
  * An asynchronously writing NCSA Request Log
+ * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with an {@link AsyncRequestLogWriter}
  */
+@Deprecated
 public class AsyncNCSARequestLog extends NCSARequestLog
 {
-    private static final Logger LOG = Log.getLogger(AsyncNCSARequestLog.class);
-    private final BlockingQueue<String> _queue;
-    private transient WriterThread _thread;
-    private boolean _warnedFull;
-
     public AsyncNCSARequestLog()
     {
         this(null,null);
     }
 
-    public AsyncNCSARequestLog(BlockingQueue<String> queue)
+    public AsyncNCSARequestLog(String filename, BlockingQueue<String> queue)
     {
-        this(null,queue);
+        super(new AsyncRequestLogWriter(filename, queue));
     }
-
-    public AsyncNCSARequestLog(String filename)
-    {
-        this(filename,null);
-    }
-
-    public AsyncNCSARequestLog(String filename,BlockingQueue<String> queue)
-    {
-        super(filename);
-        if (queue==null)
-            queue=new BlockingArrayQueue<>(1024);
-        _queue=queue;
-    }
-
-    private class WriterThread extends Thread
-    {
-        WriterThread()
-        {
-            setName("AsyncNCSARequestLog@"+Integer.toString(AsyncNCSARequestLog.this.hashCode(),16));
-        }
-
-        @Override
-        public void run()
-        {
-            while (isRunning())
-            {
-                try
-                {
-                    String log = _queue.poll(10,TimeUnit.SECONDS);
-                    if (log!=null)
-                        AsyncNCSARequestLog.super.write(log);
-
-                    while(!_queue.isEmpty())
-                    {
-                        log=_queue.poll();
-                        if (log!=null)
-                            AsyncNCSARequestLog.super.write(log);
-                    }
-                }
-                catch (IOException e)
-                {
-                    LOG.warn(e);
-                }
-                catch (InterruptedException e)
-                {
-                    LOG.ignore(e);
-                }
-            }
-        }
-    }
-
-    @Override
-    protected synchronized void doStart() throws Exception
-    {
-        super.doStart();
-        _thread = new WriterThread();
-        _thread.start();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        _thread.interrupt();
-        _thread.join();
-        super.doStop();
-        _thread=null;
-    }
-
-    @Override
-    public void write(String log) throws IOException
-    {
-        if (!_queue.offer(log))
-        {
-            if (_warnedFull)
-                LOG.warn("Log Queue overflow");
-            _warnedFull=true;
-        }
-    }
-
 }

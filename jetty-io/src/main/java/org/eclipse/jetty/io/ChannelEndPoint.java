@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -426,21 +425,11 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     public String toEndPointString()
     {
         // We do a best effort to print the right toString() and that's it.
-        try
-        {
-            boolean valid = _key != null && _key.isValid();
-            int keyInterests = valid ? _key.interestOps() : -1;
-            int keyReadiness = valid ? _key.readyOps() : -1;
-            return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
-                    super.toEndPointString(),
-                    _currentInterestOps,
-                    _desiredInterestOps,
-                    keyInterests,
-                    keyReadiness);
-        }
-        catch (Throwable x)
-        {
-            return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _desiredInterestOps);
-        }
+        return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
+                super.toEndPointString(),
+                _currentInterestOps,
+                _desiredInterestOps,
+                ManagedSelector.safeInterestOps(_key),
+                ManagedSelector.safeReadyOps(_key));
     }
 }

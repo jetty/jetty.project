@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,6 @@ import javax.inject.Inject;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -86,8 +85,6 @@ public class TestJettyOSGiBootWithJsp
     }
 
 
-    @Ignore
-    @Test
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
@@ -98,6 +95,9 @@ public class TestJettyOSGiBootWithJsp
     @Test
     public void testJspDump() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+        
         HttpClient client = new HttpClient();
         try
         {

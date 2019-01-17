@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -55,7 +55,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
-    private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
+    public final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
     
     protected static final AtomicLong COUNTER = new AtomicLong();
 

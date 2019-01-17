@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +17,6 @@
 //
 
 package org.eclipse.jetty.requestlog.jmh;
-
-import static java.lang.invoke.MethodHandles.dropArguments;
-import static java.lang.invoke.MethodHandles.foldArguments;
-import static java.lang.invoke.MethodType.methodType;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -42,6 +38,10 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+import static java.lang.invoke.MethodHandles.dropArguments;
+import static java.lang.invoke.MethodHandles.foldArguments;
+import static java.lang.invoke.MethodType.methodType;
 
 
 
@@ -79,14 +79,7 @@ public class RequestLogBenchmark
         }
     }
 
-    private ThreadLocal<StringBuilder> buffers = new ThreadLocal<StringBuilder>()
-    {
-        @Override
-        protected StringBuilder initialValue()
-        {
-            return new StringBuilder(256);
-        }
-    };
+    private ThreadLocal<StringBuilder> buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
     MethodHandle logHandle;
     Object[] iteratedLog;
 
@@ -96,8 +89,7 @@ public class RequestLogBenchmark
         {
             MethodType logType = methodType(Void.TYPE, StringBuilder.class, String.class);
 
-            MethodHandle append = MethodHandles.lookup()
-                .findStatic(RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
+            MethodHandle append = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
             MethodHandle logURI = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logURI", logType);
             MethodHandle logAddr = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logAddr", logType);
             MethodHandle logLength = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logLength", logType);
@@ -171,7 +163,7 @@ public class RequestLogBenchmark
         try
         {
             StringBuilder b = buffers.get();
-            logHandle.invoke(buffers.get(), request);
+            logHandle.invoke(b, request);
             String l = b.toString();
             b.setLength(0);
             return l;
@@ -202,7 +194,7 @@ public class RequestLogBenchmark
     public String testHandle()
     {
         return logMethodHandle(Long.toString(ThreadLocalRandom.current().nextLong()));
-    };
+    }
 
 
     public static void main(String[] args) throws RunnerException

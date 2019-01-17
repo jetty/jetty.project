@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -272,6 +272,34 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
+    static int safeReadyOps(SelectionKey selectionKey)
+    {
+        try
+        {
+            return selectionKey.readyOps();
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            return -1;
+        }
+    }
+
+    static int safeInterestOps(SelectionKey selectionKey)
+    {
+        try
+        {
+            return selectionKey.interestOps();
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            return -1;
+        }
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -474,7 +502,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Object attachment = key.attachment();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("selected {} {} {} ",key.readyOps(),key,attachment);
+                        LOG.debug("selected {} {} {} ", safeReadyOps(key), key, attachment);
                     try
                     {
                         if (attachment instanceof Selectable)
@@ -490,7 +518,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         }
                         else
                         {
-                            throw new IllegalStateException("key=" + key + ", att=" + attachment + ", iOps=" + key.interestOps() + ", rOps=" + key.readyOps());
+                            throw new IllegalStateException("key=" + key + ", att=" + attachment + ", iOps=" + safeInterestOps(key) + ", rOps=" + safeReadyOps(key));
                         }
                     }
                     catch (CancelledKeyException x)
@@ -571,19 +599,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             List<String> list = new ArrayList<>(selector_keys.size());
             for (SelectionKey key : selector_keys)
             {
-                    if (key==null)
-                        continue;
-                try
-                {
-                    list.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
-                }
-                catch (Throwable x)
-                {
-                    list.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
-                }
+                if (key != null)
+                    list.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), safeInterestOps(key), key.attachment()));
             }
             keys = list;
-            
             latch.countDown();
         }
 

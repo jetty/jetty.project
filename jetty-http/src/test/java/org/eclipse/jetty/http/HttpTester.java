@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -110,13 +109,28 @@ public class HttpTester
     
     public static Response parseResponse(InputStream responseStream) throws IOException
     {
-        ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
-        IO.copy(responseStream, contentStream);
-        
         Response r=new Response();
         HttpParser parser =new HttpParser(r);
-        parser.parseNext(ByteBuffer.wrap(contentStream.toByteArray()));
-        return r;
+
+        // Read and parse a character at a time so we never can read more than we should.
+        byte[] array = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(array);
+        buffer.limit(1);
+
+        while(true)
+        {
+            buffer.position(1);
+            int l = responseStream.read(array);
+            if (l<0)
+                parser.atEOF();
+            else
+                buffer.position(0);
+
+            if (parser.parseNext(buffer))
+                return r;
+            else if (l<0)
+                return null;
+        }
     }
     
     public abstract static class Input

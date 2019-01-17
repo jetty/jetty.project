@@ -456,12 +456,6 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>infinispan-7</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
                   <artifactId>infinispan-embedded</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
@@ -679,6 +673,11 @@
       <groupId>org.eclipse.jetty.cdi</groupId>
       <artifactId>cdi-servlet</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+      <version>3.3.0.Final</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.cdi</groupId>

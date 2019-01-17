@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -41,66 +42,73 @@ import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 
 
-
-
 /**
  * Session
  *
  * A heavy-weight Session object representing a HttpSession. Session objects
- * relating to a context are kept in a {@link SessionCache}. The purpose of
- * the SessionCache is to keep the working set of Session objects in memory
- * so that they may be accessed quickly, and facilitate the sharing of a
- * Session object amongst multiple simultaneous requests referring to the
- * same session id.
+ * relating to a context are kept in a {@link SessionCache}. The purpose of the
+ * SessionCache is to keep the working set of Session objects in memory so that
+ * they may be accessed quickly, and facilitate the sharing of a Session object
+ * amongst multiple simultaneous requests referring to the same session id.
  * 
- * The {@link SessionHandler} coordinates 
- * the lifecycle of Session objects with the help of the SessionCache.
+ * The {@link SessionHandler} coordinates the lifecycle of Session objects with
+ * the help of the SessionCache.
  * 
  * @see SessionHandler
  * @see org.eclipse.jetty.server.SessionIdManager
  */
 public class Session implements SessionHandler.SessionIf
 {
-    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
-    
-    
+    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+
     /**
      * 
      */
-    public final static String SESSION_CREATED_SECURE="org.eclipse.jetty.security.sessionCreatedSecure";
-    
-    
+    public final static String SESSION_CREATED_SECURE = "org.eclipse.jetty.security.sessionCreatedSecure";
+
     /**
      * State
      *
      * Validity states of a session
      */
-    public enum State {VALID, INVALID, INVALIDATING};
-    
-    
-    
+    public enum State
+    {
+        VALID, INVALID, INVALIDATING, CHANGING
+    };
 
-    
-    protected final SessionData _sessionData; //the actual data associated with a session
-    protected final SessionHandler _handler; //the manager of the session
-    protected String _extendedId; //the _id plus the worker name
+    public enum IdState
+    {
+        SET, CHANGING
+    };
+
+    protected final SessionData _sessionData; // the actual data associated with
+                                              // a session
+
+    protected final SessionHandler _handler; // the manager of the session
+
+    protected String _extendedId; // the _id plus the worker name
     protected long _requests;
-    protected boolean _idChanged; 
+
+    protected boolean _idChanged;
+
     protected boolean _newSession;
-    protected State _state = State.VALID; //state of the session:valid,invalid or being invalidated
-    protected Locker _lock = new Locker(); //sync lock
+
+    protected State _state = State.VALID; // state of the session:valid,invalid
+                                          // or being invalidated
+
+    protected Locker _lock = new Locker(); // sync lock
+    protected Condition _stateChangeCompleted = _lock.newCondition();
     protected boolean _resident = false;
     protected final SessionInactivityTimer _sessionInactivityTimer;
-    
-    
+
 
     /* ------------------------------------------------------------- */
     /**
      * SessionInactivityTimer
      * 
-     * Each Session has a timer associated with it that fires whenever 
-     * it has been idle (ie not accessed by a request) for a 
-     * configurable amount of time, or the Session expires.
+     * Each Session has a timer associated with it that fires whenever it has
+     * been idle (ie not accessed by a request) for a configurable amount of
+     * time, or the Session expires.
      * 
      * @see SessionCache
      *
@@ -109,60 +117,63 @@ public class Session implements SessionHandler.SessionIf
     {
         protected final CyclicTimeout _timer;
         protected long _msec = -1;
-        
+
         public SessionInactivityTimer()
         {
             _timer = new CyclicTimeout((getSessionHandler().getScheduler()))
-                    {
-                        @Override
-                        public void onTimeoutExpired()
-                        {
-                            if (LOG.isDebugEnabled()) LOG.debug("Timer expired for session {}", getId());
-                           getSessionHandler().sessionInactivityTimerExpired(Session.this);
-                        }
-                
-                    };
+            {
+                @Override
+                public void onTimeoutExpired()
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Timer expired for session {}", getId());
+                    getSessionHandler().sessionInactivityTimerExpired(Session.this);
+                }
+
+            };
         }
 
 
         /**
-         * @param ms the timeout to set; -1 means that the timer will not be scheduled
+         * @param ms the timeout to set; -1 means that the timer will not be
+         *            scheduled
          */
         public void setTimeout(long ms)
         {
             _msec = ms;
-            if (LOG.isDebugEnabled()) LOG.debug("Session {} timer={}ms",getId(), ms);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Session {} timer={}ms", getId(), ms);
         }
 
-
-        public void schedule ()
+        public void schedule()
         {
             if (_msec > 0)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("(Re)starting timer for session {} at {}ms",getId(), _msec);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("(Re)starting timer for session {} at {}ms", getId(), _msec);
                 _timer.schedule(_msec, TimeUnit.MILLISECONDS);
             }
             else
             {
-                if (LOG.isDebugEnabled()) LOG.debug("Not starting timer for session {}",getId());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not starting timer for session {}", getId());
             }
         }
-        
-      
+
         public void cancel()
         {
             _timer.cancel();
-            if (LOG.isDebugEnabled()) LOG.debug("Cancelled timer for session {}",getId());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Cancelled timer for session {}", getId());
         }
-        
-        
-        public void destroy ()
+
+        public void destroy()
         {
             _timer.destroy();
-            if (LOG.isDebugEnabled()) LOG.debug("Destroyed timer for session {}",getId());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Destroyed timer for session {}", getId());
         }
     }
-
 
 
     /* ------------------------------------------------------------- */
@@ -172,17 +183,17 @@ public class Session implements SessionHandler.SessionIf
      * @param request the request the session should be based on
      * @param data the session data
      */
-    public Session (SessionHandler handler, HttpServletRequest request, SessionData data)
+    public Session(SessionHandler handler, HttpServletRequest request, SessionData data)
     {
         _handler = handler;
         _sessionData = data;
         _newSession = true;
         _sessionData.setDirty(true);
-        _requests = 1; //access will not be called on this new session, but we are obviously in a request
+        _requests = 1; // access will not be called on this new session, but we
+                       // are obviously in a request
         _sessionInactivityTimer = new SessionInactivityTimer();
     }
-    
-    
+
 
     /* ------------------------------------------------------------- */
     /**
@@ -191,19 +202,18 @@ public class Session implements SessionHandler.SessionIf
      * @param handler the SessionHandler managing the session
      * @param data the session data
      */
-    public Session (SessionHandler handler, SessionData data)
+    public Session(SessionHandler handler, SessionData data)
     {
         _handler = handler;
         _sessionData = data;
         _sessionInactivityTimer = new SessionInactivityTimer();
     }
-    
+
 
     /* ------------------------------------------------------------- */
     /**
-     *  Returns the current number of requests that are active in the
-     *  Session.
-     *  
+     * Returns the current number of requests that are active in the Session.
+     * 
      * @return the number of active requests for this session
      */
     public long getRequests()
@@ -213,23 +223,21 @@ public class Session implements SessionHandler.SessionIf
             return _requests;
         }
     }
-    
-    
 
-    
+
 
     /* ------------------------------------------------------------- */
-    public void setExtendedId (String extendedId)
+    public void setExtendedId(String extendedId)
     {
         _extendedId = extendedId;
     }
-    
+
     /* ------------------------------------------------------------- */
     protected void cookieSet()
     {
         try (Lock lock = _lock.lock())
         {
-           _sessionData.setCookieSet(_sessionData.getAccessed());
+            _sessionData.setCookieSet(_sessionData.getAccessed());
         }
     }
     /* ------------------------------------------------------------ */
@@ -239,7 +247,7 @@ public class Session implements SessionHandler.SessionIf
         {
             if (!isValid())
                 return false;
-            _newSession=false;
+            _newSession = false;
             long lastAccessed = _sessionData.getAccessed();
             _sessionData.setAccessed(time);
             _sessionData.setLastAccessed(lastAccessed);
@@ -251,8 +259,9 @@ public class Session implements SessionHandler.SessionIf
             }
             _requests++;
 
-            //temporarily stop the idle timer
-            if (LOG.isDebugEnabled()) LOG.debug("Session {} accessed, stopping timer, active requests={}",getId(),_requests);
+            // temporarily stop the idle timer
+            if (LOG.isDebugEnabled())
+                LOG.debug("Session {} accessed, stopping timer, active requests={}", getId(), _requests);
             _sessionInactivityTimer.cancel();
 
 
@@ -267,18 +276,19 @@ public class Session implements SessionHandler.SessionIf
         {
             _requests--;
 
-            if (LOG.isDebugEnabled()) LOG.debug("Session {} complete, active requests={}",getId(),_requests);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Session {} complete, active requests={}", getId(), _requests);
 
-            //start the inactivity timer
+            // start the inactivity timer
             if (_requests == 0)
                 _sessionInactivityTimer.schedule();
         }
     }
 
 
-
     /* ------------------------------------------------------------- */
-    /** Check to see if session has expired as at the time given.
+    /**
+     * Check to see if session has expired as at the time given.
      * 
      * @param time the time since the epoch in ms
      * @return true if expired
@@ -290,83 +300,85 @@ public class Session implements SessionHandler.SessionIf
             return _sessionData.isExpiredAt(time);
         }
     }
-    
-    
+
     /* ------------------------------------------------------------- */
-    /** Check if the Session has been idle longer than a number of seconds.
+    /**
+     * Check if the Session has been idle longer than a number of seconds.
      * 
      * @param sec the number of seconds
      * @return true if the session has been idle longer than the interval
      */
-    protected boolean isIdleLongerThan (int sec)
+    protected boolean isIdleLongerThan(int sec)
     {
         long now = System.currentTimeMillis();
         try (Lock lock = _lock.lock())
         {
-            return ((_sessionData.getAccessed() + (sec*1000)) <= now);
+            return ((_sessionData.getAccessed() + (sec * 1000)) <= now);
         }
     }
-    
-  
+
 
     /* ------------------------------------------------------------ */
     /**
-     * Call binding and attribute listeners based on the new and old
-     * values of the attribute.
+     * Call binding and attribute listeners based on the new and old values of
+     * the attribute.
      * 
      * @param name name of the attribute
-     * @param newValue  new value of the attribute
+     * @param newValue new value of the attribute
      * @param oldValue previous value of the attribute
      * @throws IllegalStateException if no session manager can be find
      */
-    protected void callSessionAttributeListeners (String name, Object newValue, Object oldValue)
+    protected void callSessionAttributeListeners(String name, Object newValue, Object oldValue)
     {
-        if (newValue==null || !newValue.equals(oldValue))
+        if (newValue == null || !newValue.equals(oldValue))
         {
-            if (oldValue!=null)
-                unbindValue(name,oldValue);
-            if (newValue!=null)
-                bindValue(name,newValue);
+            if (oldValue != null)
+                unbindValue(name, oldValue);
+            if (newValue != null)
+                bindValue(name, newValue);
 
             if (_handler == null)
-                throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
-            
-            _handler.doSessionAttributeListeners(this,name,oldValue,newValue);
+                throw new IllegalStateException("No session manager for session " + _sessionData.getId());
+
+            _handler.doSessionAttributeListeners(this, name, oldValue, newValue);
         }
     }
 
-    
-    
+
     /* ------------------------------------------------------------- */
     /**
-     * Unbind value if value implements {@link HttpSessionBindingListener} (calls {@link HttpSessionBindingListener#valueUnbound(HttpSessionBindingEvent)}) 
-     * @param name the name with which the object is bound or unbound  
+     * Unbind value if value implements {@link HttpSessionBindingListener}
+     * (calls
+     * {@link HttpSessionBindingListener#valueUnbound(HttpSessionBindingEvent)})
+     * 
+     * @param name the name with which the object is bound or unbound
      * @param value the bound value
      */
     public void unbindValue(java.lang.String name, Object value)
     {
-        if (value!=null&&value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(this,name));
-    }
-    
-
-    /* ------------------------------------------------------------- */
-    /** 
-     * Bind value if value implements {@link HttpSessionBindingListener} (calls {@link HttpSessionBindingListener#valueBound(HttpSessionBindingEvent)}) 
-     * @param name the name with which the object is bound or unbound  
-     * @param value the bound value
-     */
-    public void bindValue(java.lang.String name, Object value)
-    {
-        if (value!=null&&value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(this,name));
+        if (value != null && value instanceof HttpSessionBindingListener)
+            ((HttpSessionBindingListener) value).valueUnbound(new HttpSessionBindingEvent(this, name));
     }
 
 
     /* ------------------------------------------------------------- */
     /**
-     * Call the activation listeners. This must be called holding the
-     * lock.
+     * Bind value if value implements {@link HttpSessionBindingListener} (calls
+     * {@link HttpSessionBindingListener#valueBound(HttpSessionBindingEvent)})
+     * 
+     * @param name the name with which the object is bound or unbound
+     * @param value the bound value
+     */
+    public void bindValue(java.lang.String name, Object value)
+    {
+        if (value != null && value instanceof HttpSessionBindingListener)
+            ((HttpSessionBindingListener) value).valueBound(new HttpSessionBindingEvent(this, name));
+    }
+
+
+    /* ------------------------------------------------------------- */
+    /**
+     * Call the activation listeners. This must be called holding the lock.
      */
     public void didActivate()
     {
@@ -385,8 +397,7 @@ public class Session implements SessionHandler.SessionIf
 
     /* ------------------------------------------------------------- */
     /**
-     * Call the passivation listeners. This must be called holding the
-     * lock
+     * Call the passivation listeners. This must be called holding the lock
      */
     public void willPassivate()
     {
@@ -407,10 +418,16 @@ public class Session implements SessionHandler.SessionIf
     {
         try (Lock lock = _lock.lock())
         {
-            return _state==State.VALID;
+            return _state == State.VALID;
         }
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean isChanging()
+    {
+        checkLocked();
+        return _state == State.CHANGING;
+    }
 
     /* ------------------------------------------------------------- */
     public long getCookieSetTime()
@@ -433,9 +450,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-
-
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#getId()
      */
     @Override
@@ -447,25 +462,24 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    
+
     public String getExtendedId()
     {
         return _extendedId;
     }
-    
+
     public String getContextPath()
     {
         return _sessionData.getContextPath();
     }
 
-    
-    public String getVHost ()
+    public String getVHost()
     {
         return _sessionData.getVhost();
     }
-    
 
-    /** 
+
+    /**
      * @see javax.servlet.http.HttpSession#getLastAccessedTime()
      */
     @Override
@@ -477,18 +491,18 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#getServletContext()
      */
     @Override
     public ServletContext getServletContext()
     {
         if (_handler == null)
-            throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
-       return _handler._context;
+            throw new IllegalStateException("No session manager for session " + _sessionData.getId());
+        return _handler._context;
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#setMaxInactiveInterval(int)
      */
     @Override
@@ -496,7 +510,7 @@ public class Session implements SessionHandler.SessionIf
     {
         try (Lock lock = _lock.lock())
         {
-            _sessionData.setMaxInactiveMs((long)secs*1000L);  
+            _sessionData.setMaxInactiveMs((long) secs * 1000L);
             _sessionData.calcAndSetExpiry();
             _sessionData.setDirty(true);
             updateInactivityTimer();
@@ -509,63 +523,68 @@ public class Session implements SessionHandler.SessionIf
             }
         }
     }
-    
-    
+
     /**
-     * Set the inactivity timer to the smaller of the session maxInactivity
-     * (ie session-timeout from web.xml), or the inactive eviction time.
+     * Set the inactivity timer to the smaller of the session maxInactivity (ie
+     * session-timeout from web.xml), or the inactive eviction time.
      */
-    public void updateInactivityTimer ()
+    public void updateInactivityTimer()
     {
         try (Lock lock = _lock.lock())
         {
-            long maxInactive =  _sessionData.getMaxInactiveMs();        
+            long maxInactive = _sessionData.getMaxInactiveMs();
             int evictionPolicy = getSessionHandler().getSessionCache().getEvictionPolicy();
 
             if (maxInactive <= 0)
             {
-                //sessions are immortal, they never expire
+                // sessions are immortal, they never expire
                 if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
                 {
-                    //we do not want to evict inactive sessions
+                    // we do not want to evict inactive sessions
                     _sessionInactivityTimer.setTimeout(-1);
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} is immortal && no inactivity eviction", getId());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} is immortal && no inactivity eviction", getId());
                 }
                 else
                 {
-                    //sessions are immortal but we want to evict after inactivity
+                    // sessions are immortal but we want to evict after
+                    // inactivity
                     _sessionInactivityTimer.setTimeout(TimeUnit.SECONDS.toMillis(evictionPolicy));
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} is immortal; evict after {} sec inactivity", getId(), evictionPolicy);
-                }                    
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} is immortal; evict after {} sec inactivity", getId(), evictionPolicy);
+                }
             }
             else
             {
-                //sessions are not immortal
+                // sessions are not immortal
                 if (evictionPolicy == SessionCache.NEVER_EVICT)
                 {
-                    //timeout is just the maxInactive setting
+                    // timeout is just the maxInactive setting
                     _sessionInactivityTimer.setTimeout(_sessionData.getMaxInactiveMs());
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} no eviction", getId());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} no eviction", getId());
                 }
                 else if (evictionPolicy == SessionCache.EVICT_ON_SESSION_EXIT)
                 {
-                    //session will not remain in the cache, so no timeout
+                    // session will not remain in the cache, so no timeout
                     _sessionInactivityTimer.setTimeout(-1);
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} evict on exit", getId());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} evict on exit", getId());
                 }
                 else
                 {
-                    //want to evict on idle: timer is lesser of the session's maxInactive and eviction timeout
+                    // want to evict on idle: timer is lesser of the session's
+                    // maxInactive and eviction timeout
                     _sessionInactivityTimer.setTimeout(Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy)));
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(), maxInactive, evictionPolicy);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(), maxInactive, evictionPolicy);
                 }
             }
         }
     }
-    
 
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#getMaxInactiveInterval()
      */
     @Override
@@ -574,11 +593,11 @@ public class Session implements SessionHandler.SessionIf
         try (Lock lock = _lock.lock())
         {
             long maxInactiveMs = _sessionData.getMaxInactiveMs();
-            return (int)(maxInactiveMs < 0 ? -1 : maxInactiveMs/1000);
+            return (int) (maxInactiveMs < 0 ? -1 : maxInactiveMs / 1000);
         }
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#getSessionContext()
      */
     @Override
@@ -589,13 +608,12 @@ public class Session implements SessionHandler.SessionIf
         return SessionHandler.__nullSessionContext;
     }
 
-    
+
     public SessionHandler getSessionHandler()
     {
         return _handler;
     }
-    
-    
+
     /* ------------------------------------------------------------- */
     /**
      * Check that the session can be modified.
@@ -603,50 +621,68 @@ public class Session implements SessionHandler.SessionIf
      * @throws IllegalStateException if the session is invalid
      */
     protected void checkValidForWrite() throws IllegalStateException
-    {    
+    {
         checkLocked();
 
         if (_state == State.INVALID)
-            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
-        
+            throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId()
+                                            + " created="
+                                            + _sessionData.getCreated()
+                                            + " accessed="
+                                            + _sessionData.getAccessed()
+                                            + " lastaccessed="
+                                            + _sessionData.getLastAccessed()
+                                            + " maxInactiveMs="
+                                            + _sessionData.getMaxInactiveMs()
+                                            + " expiry="
+                                            + _sessionData.getExpiry());
+
         if (_state == State.INVALIDATING)
-            return;  //in the process of being invalidated, listeners may try to remove attributes
-        
+            return; // in the process of being invalidated, listeners may try to
+                    // remove attributes
+
         if (!isResident())
-            throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" not resident");
+            throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() + " not resident");
     }
-    
-    
+
     /* ------------------------------------------------------------- */
     /**
      * Chech that the session data can be read.
      * 
      * @throws IllegalStateException if the session is invalid
      */
-    protected void checkValidForRead () throws IllegalStateException
+    protected void checkValidForRead() throws IllegalStateException
     {
         checkLocked();
-        
+
         if (_state == State.INVALID)
-            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
-        
+            throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId()
+                                            + " created="
+                                            + _sessionData.getCreated()
+                                            + " accessed="
+                                            + _sessionData.getAccessed()
+                                            + " lastaccessed="
+                                            + _sessionData.getLastAccessed()
+                                            + " maxInactiveMs="
+                                            + _sessionData.getMaxInactiveMs()
+                                            + " expiry="
+                                            + _sessionData.getExpiry());
+
         if (_state == State.INVALIDATING)
             return;
-        
+
         if (!isResident())
-            throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" not resident");
+            throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() + " not resident");
     }
-    
-    
+
     /* ------------------------------------------------------------- */
-    protected void checkLocked ()
-    throws IllegalStateException
+    protected void checkLocked() throws IllegalStateException
     {
         if (!_lock.isLocked())
             throw new IllegalStateException("Session not locked");
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#getAttribute(java.lang.String)
      */
     @Override
@@ -659,7 +695,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#getValue(java.lang.String)
      */
     @Override
@@ -667,12 +703,12 @@ public class Session implements SessionHandler.SessionIf
     public Object getValue(String name)
     {
         try (Lock lock = _lock.lock())
-        { 
+        {
             return _sessionData.getAttribute(name);
         }
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#getAttributeNames()
      */
     @Override
@@ -682,7 +718,7 @@ public class Session implements SessionHandler.SessionIf
         {
             checkValidForRead();
             final Iterator<String> itor = _sessionData.getKeys().iterator();
-            return new Enumeration<String> ()
+            return new Enumeration<String>()
             {
 
                 @Override
@@ -702,15 +738,11 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-
-
     /* ------------------------------------------------------------ */
     public int getAttributes()
     {
         return _sessionData.getKeys().size();
     }
-
-
 
 
     /* ------------------------------------------------------------ */
@@ -743,97 +775,145 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------- */
-    /** 
-     * @see javax.servlet.http.HttpSession#setAttribute(java.lang.String, java.lang.Object)
+    /**
+     * @see javax.servlet.http.HttpSession#setAttribute(java.lang.String,
+     *      java.lang.Object)
      */
     @Override
     public void setAttribute(String name, Object value)
     {
-        Object old=null;
+        Object old = null;
         try (Lock lock = _lock.lock())
         {
-            //if session is not valid, don't accept the set
+            // if session is not valid, don't accept the set
             checkValidForWrite();
-            old=_sessionData.setAttribute(name,value);
+            old = _sessionData.setAttribute(name, value);
         }
         if (value == null && old == null)
-            return; //if same as remove attribute but attribute was already removed, no change
+            return; // if same as remove attribute but attribute was already
+                    // removed, no change
         callSessionAttributeListeners(name, value, old);
     }
-    
-    
-    
+
     /* ------------------------------------------------------------- */
-    /** 
-     * @see javax.servlet.http.HttpSession#putValue(java.lang.String, java.lang.Object)
+    /**
+     * @see javax.servlet.http.HttpSession#putValue(java.lang.String,
+     *      java.lang.Object)
      */
     @Override
     @Deprecated
     public void putValue(String name, Object value)
     {
-        setAttribute(name,value);
+        setAttribute(name, value);
     }
-    
-    
-    
+
     /* ------------------------------------------------------------- */
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#removeAttribute(java.lang.String)
      */
     @Override
     public void removeAttribute(String name)
     {
-       setAttribute(name, null);
+        setAttribute(name, null);
     }
-    
-    
-    
+
     /* ------------------------------------------------------------- */
-    /** 
+    /**
      * @see javax.servlet.http.HttpSession#removeValue(java.lang.String)
      */
     @Override
     @Deprecated
     public void removeValue(String name)
     {
-       setAttribute(name, null);
+        setAttribute(name, null);
     }
 
     /* ------------------------------------------------------------ */
-    /** Force a change to the id of a session.
+    /**
+     * Force a change to the id of a session.
      * 
      * @param request the Request associated with the call to change id.
      */
     public void renewId(HttpServletRequest request)
     {
         if (_handler == null)
-            throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
-        
+            throw new IllegalStateException("No session manager for session " + _sessionData.getId());
+
         String id = null;
         String extendedId = null;
         try (Lock lock = _lock.lock())
         {
-            checkValidForWrite(); //don't renew id on a session that is not valid
-            id = _sessionData.getId(); //grab the values as they are now
+            while (true)
+            {
+                switch (_state)
+                {
+                    case INVALID:
+                    case INVALIDATING:
+                        throw new IllegalStateException();
+
+                    case CHANGING:
+                        try
+                        {
+                            _stateChangeCompleted.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        continue;
+
+                    case VALID:
+                        _state = State.CHANGING;
+                        break;
+                    default:
+                        throw new IllegalStateException();
+                }
+                break;
+            }
+
+            id = _sessionData.getId(); // grab the values as they are now
             extendedId = getExtendedId();
         }
-        
-        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request); 
+
+
+        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request);
+
         try (Lock lock = _lock.lock())
         {
-            checkValidForWrite(); 
-            _sessionData.setId(newId);
-            setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+            switch (_state)
+            {
+                case CHANGING:
+                    if (id.equals(newId))
+                        throw new IllegalStateException("Unable to change session id");
+
+                    // this shouldn't be necessary to do here EXCEPT that when a
+                    // null session cache is
+                    // used, a new Session object will be created during the
+                    // call to renew, so this
+                    // Session object will not have been modified.
+                    _sessionData.setId(newId);
+                    setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+                    setIdChanged(true);
+
+                    _state = State.VALID;
+                    _stateChangeCompleted.signalAll();
+                    break;
+
+                case INVALID:
+                case INVALIDATING:
+                    throw new IllegalStateException("Session invalid");
+
+                default:
+                    throw new IllegalStateException();
+            }
         }
-        setIdChanged(true);
     }
-       
-   
+
     /* ------------------------------------------------------------- */
-    /** Called by users to invalidate a session, or called by the
-     * access method as a request enters the session if the session
-     * has expired, or called by manager as a result of scavenger
-     * expiring session
+    /**
+     * Called by users to invalidate a session, or called by the access method
+     * as a request enters the session if the session has expired, or called by
+     * manager as a result of scavenger expiring session
      * 
      * @see javax.servlet.http.HttpSession#invalidate()
      */
@@ -841,16 +921,28 @@ public class Session implements SessionHandler.SessionIf
     public void invalidate()
     {
         if (_handler == null)
-            throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
+            throw new IllegalStateException("No session manager for session " + _sessionData.getId());
 
         boolean result = beginInvalidate();
 
         try
         {
-            //if the session was not already invalid, or in process of being invalidated, do invalidate
+            // if the session was not already invalid, or in process of being
+            // invalidated, do invalidate
             if (result)
             {
-                //tell id mgr to remove session from all contexts
+                try
+                {
+                    // do the invalidation
+                    _handler.callSessionDestroyedListeners(this);
+                }
+                finally
+                {
+                    // call the attribute removed listeners and finally mark it
+                    // as invalid
+                    finishInvalidate();
+                }
+                // tell id mgr to remove sessions with same id from all contexts
                 _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
             }
         }
@@ -861,24 +953,27 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------- */
-    /** Grab the lock on the session
+    /**
+     * Grab the lock on the session
+     * 
      * @return the lock
      */
-    public Lock lock ()
+    public Lock lock()
     {
         return _lock.lock();
     }
-    
-    
+
     /* ------------------------------------------------------------- */
-    /** Grab the lock on the session if it isn't locked already
+    /**
+     * Grab the lock on the session if it isn't locked already
+     * 
      * @return the lock
      */
-    public Lock lockIfNotHeld ()
+    public Lock lockIfNotHeld()
     {
         return _lock.lock();
     }
-    
+
     /* ------------------------------------------------------------- */
     /**
      * @return true if the session is not already invalid or being invalidated.
@@ -886,29 +981,54 @@ public class Session implements SessionHandler.SessionIf
     protected boolean beginInvalidate()
     {
         boolean result = false;
-        
+
         try (Lock lock = _lock.lock())
         {
-            switch (_state)
+
+            while (true)
             {
-                case INVALID:
+                switch (_state)
                 {
-                    throw new IllegalStateException(); //spec does not allow invalidate of already invalid session
+                    case INVALID:
+                    {
+                        throw new IllegalStateException(); // spec does not
+                                                           // allow invalidate
+                                                           // of already invalid
+                                                           // session
+                    }
+                    case INVALIDATING:
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Session {} already being invalidated", _sessionData.getId());
+                        break;
+                    }
+                    case CHANGING:
+                    {
+                        try
+                        {
+                            _stateChangeCompleted.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        continue;
+                    }
+                    case VALID:
+                    {
+                        // only first change from valid to invalidating should
+                        // be actionable
+                        result = true;
+                        _state = State.INVALIDATING;
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException();
                 }
-                case VALID:
-                {
-                    //only first change from valid to invalidating should be actionable
-                    result = true;
-                    _state = State.INVALIDATING;
-                    break;
-                }
-                default:
-                {
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} already being invalidated", _sessionData.getId());
-                }
+                break;
             }
         }
-        
+
         return result;
     }
 
@@ -918,16 +1038,15 @@ public class Session implements SessionHandler.SessionIf
      * 
      * @throws IllegalStateException if no session manager can be find
      */
-    @Deprecated 
+    @Deprecated
     protected void doInvalidate() throws IllegalStateException
     {
-       finishInvalidate();
+        finishInvalidate();
     }
-    
-    
+
     /* ------------------------------------------------------------- */
-    /** Call HttpSessionAttributeListeners as part of invalidating
-     * a Session.
+    /**
+     * Call HttpSessionAttributeListeners as part of invalidating a Session.
      * 
      * @throws IllegalStateException if no session manager can be find
      */
@@ -938,21 +1057,22 @@ public class Session implements SessionHandler.SessionIf
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("invalidate {}",_sessionData.getId());
+                    LOG.debug("invalidate {}", _sessionData.getId());
                 if (_state == State.VALID || _state == State.INVALIDATING)
                 {
                     Set<String> keys = null;
                     do
                     {
                         keys = _sessionData.getKeys();
-                        for (String key:keys)
+                        for (String key : keys)
                         {
-                            Object  old=_sessionData.setAttribute(key,null);
+                            Object old = _sessionData.setAttribute(key, null);
+                            // if same as remove attribute but attribute was
+                            // already removed, no change
                             if (old == null)
-                                return; //if same as remove attribute but attribute was already removed, no change
+                                continue;
                             callSessionAttributeListeners(key, null, old);
                         }
-
                     }
                     while (!keys.isEmpty());
                 }
@@ -961,6 +1081,8 @@ public class Session implements SessionHandler.SessionIf
             {
                 // mark as invalid
                 _state = State.INVALID;
+                _handler.recordSessionTime(this);
+                _stateChangeCompleted.signalAll();
             }
         }
     }
@@ -975,29 +1097,26 @@ public class Session implements SessionHandler.SessionIf
             return _newSession;
         }
     }
-    
-    
+
 
     /* ------------------------------------------------------------- */
     public void setIdChanged(boolean changed)
     {
         try (Lock lock = _lock.lock())
         {
-            _idChanged=changed;
+            _idChanged = changed;
         }
     }
-    
-    
+
     /* ------------------------------------------------------------- */
-    public boolean isIdChanged ()
+    public boolean isIdChanged()
     {
         try (Lock lock = _lock.lock())
         {
             return _idChanged;
         }
     }
-    
-    
+
     /* ------------------------------------------------------------- */
     @Override
     public Session getSession()
@@ -1005,7 +1124,7 @@ public class Session implements SessionHandler.SessionIf
         // TODO why is this used
         return this;
     }
-  
+
     /* ------------------------------------------------------------- */
     protected SessionData getSessionData()
     {
@@ -1013,7 +1132,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------- */
-    public void setResident (boolean resident)
+    public void setResident(boolean resident)
     {
         _resident = resident;
 
@@ -1024,9 +1143,23 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------- */
-    public boolean isResident ()
+    public boolean isResident()
     {
         return _resident;
     }
-    
+
+    @Override
+    public String toString()
+    {
+        try (Lock lock = _lock.lock())
+        {
+            return String.format("%s@%x{id=%s,x=%s,req=%d,res=%b}",
+                getClass().getSimpleName(),
+                hashCode(),
+                _sessionData.getId(),
+                _extendedId,
+                _requests,
+                _resident);
+        }
+    }
 }
