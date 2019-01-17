@@ -11,6 +11,7 @@
  <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
+   <it.debug>false</it.debug>
   </properties>
 
   <build>

@@ -13,6 +13,7 @@
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
+    <it.debug>false</it.debug>
   </properties>
   <build>
     <plugins>
