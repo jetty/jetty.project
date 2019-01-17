@@ -93,7 +93,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return bytesOut.longValue();
     }
 
-
     protected void addBytesOut(long bytesOut)
     {
         this.bytesOut.add(bytesOut);

@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -62,6 +53,15 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpClientTest extends AbstractTest<TransportScenario>
 {
@@ -453,7 +453,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
     public void testConnectionListener(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new EmptyServerHandler());
+        scenario.startServer(new EmptyServerHandler());
+        long idleTimeout = 1000;
+        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
@@ -471,9 +473,6 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
                 closeLatch.countDown();
             }
         });
-
-        long idleTimeout = 1000;
-        scenario.client.setIdleTimeout(idleTimeout);
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
                 .scheme(scenario.getScheme())

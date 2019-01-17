@@ -27,13 +27,9 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.NegotiatingClientConnection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class ALPNClientConnection extends NegotiatingClientConnection
 {
-    private static final Logger LOG = Log.getLogger(ALPNClientConnection.class);
-
     private final List<String> protocols;
 
     public ALPNClientConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, SSLEngine sslEngine, Map<String, Object> context, List<String> protocols)
@@ -49,9 +45,9 @@ public class ALPNClientConnection extends NegotiatingClientConnection
 
     public void selected(String protocol)
     {
-        if (protocol==null || !protocols.contains(protocol))
+        if (protocol == null || !protocols.contains(protocol))
             close();
         else
-            super.completed();
+            completed();
     }
 }

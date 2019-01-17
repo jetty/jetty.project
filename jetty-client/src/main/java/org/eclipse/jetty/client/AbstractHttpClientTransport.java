@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.Map;
+
+import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -52,5 +56,14 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
     public void setConnectionPoolFactory(ConnectionPool.Factory factory)
     {
         this.factory = factory;
+    }
+
+    protected void connectFailed(Map<String, Object> context, Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Could not connect to {}", context.get(HTTP_DESTINATION_CONTEXT_KEY));
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        promise.failed(failure);
     }
 }
