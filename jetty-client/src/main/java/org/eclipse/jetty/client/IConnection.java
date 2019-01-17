@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.client;
 
-public abstract class PoolingHttpDestination extends HttpDestination
+import org.eclipse.jetty.client.api.Connection;
+
+public interface IConnection extends Connection
 {
-    public PoolingHttpDestination(HttpClient client, Origin origin)
-    {
-        super(client, origin);
-    }
+    public SendFailure send(HttpExchange exchange);
 }

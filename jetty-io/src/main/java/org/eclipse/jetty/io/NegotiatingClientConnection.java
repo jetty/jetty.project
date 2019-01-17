@@ -35,6 +35,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
     private final SSLEngine engine;
     private final ClientConnectionFactory connectionFactory;
     private final Map<String, Object> context;
+    private String protocol;
     private volatile boolean completed;
 
     protected NegotiatingClientConnection(EndPoint endPoint, Executor executor, SSLEngine sslEngine, ClientConnectionFactory connectionFactory, Map<String, Object> context)
@@ -50,8 +51,14 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         return engine;
     }
 
-    protected void completed()
+    public String getProtocol()
     {
+        return protocol;
+    }
+
+    protected void completed(String protocol)
+    {
+        this.protocol = protocol;
         completed = true;
     }
 
@@ -70,6 +77,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         catch (Throwable x)
         {
             close();
+            // TODO: should we not fail the promise in the context here?
             throw new RuntimeIOException(x);
         }
     }

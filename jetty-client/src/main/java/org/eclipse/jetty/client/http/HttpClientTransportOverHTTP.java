@@ -23,8 +23,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -53,9 +53,9 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public HttpDestination newHttpDestination(Origin origin)
+    public HttpDestination newHttpDestination(HttpDestination.Info info)
     {
-        return new HttpDestinationOverHTTP(getHttpClient(), origin);
+        return new DuplexHttpDestination(getHttpClient(), info);
     }
 
     @Override

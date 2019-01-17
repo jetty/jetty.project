@@ -16,25 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.MultiplexHttpDestination;
-import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.SendFailure;
-import org.eclipse.jetty.client.api.Connection;
-
-public class HttpDestinationOverHTTP2 extends MultiplexHttpDestination
+public class DuplexHttpDestination extends HttpDestination
 {
-    public HttpDestinationOverHTTP2(HttpClient client, Origin origin)
+    public DuplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, origin);
+        this(client, new Info(origin, null));
     }
 
-    @Override
-    protected SendFailure send(Connection connection, HttpExchange exchange)
+    public DuplexHttpDestination(HttpClient client, Info info)
     {
-        return ((HttpConnectionOverHTTP2)connection).send(exchange);
+        super(client, info);
     }
 }

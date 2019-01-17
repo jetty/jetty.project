@@ -16,38 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.alpn.client;
+package org.eclipse.jetty.client.http;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 
-import javax.net.ssl.SSLEngine;
-
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.NegotiatingClientConnection;
+import org.eclipse.jetty.util.Promise;
 
-public class ALPNClientConnection extends NegotiatingClientConnection
+public class HttpClientConnectionFactory implements ClientConnectionFactory
 {
-    private final List<String> protocols;
+    public static final Info HTTP = new Info(List.of("http/1.1"), new HttpClientConnectionFactory());
 
-    public ALPNClientConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, SSLEngine sslEngine, Map<String, Object> context, List<String> protocols)
+    @Override
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
-        super(endPoint, executor, sslEngine, connectionFactory, context);
-        this.protocols = protocols;
-    }
-
-    public List<String> getProtocols()
-    {
-        return protocols;
-    }
-
-    public void selected(String protocol)
-    {
-        if (protocol == null || !protocols.contains(protocol))
-            close();
-        else
-            completed(protocol);
+        HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        return customize(new HttpConnectionOverHTTP(endPoint, destination, promise), context);
     }
 }

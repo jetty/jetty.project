@@ -90,7 +90,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.SOCKET_ADDRESS_CONTEXT_KEY);
+        InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
         SSLEngine engine = sslContextFactory.newSSLEngine(address);
         engine.setUseClientMode(true);
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
@@ -143,7 +143,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             HostnameVerifier verifier = sslContextFactory.getHostnameVerifier();
             if (verifier != null)
             {
-                InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.SOCKET_ADDRESS_CONTEXT_KEY);
+                InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
                 String host = address.getHostString();
                 try
                 {

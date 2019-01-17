@@ -23,9 +23,9 @@ import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
@@ -72,9 +72,9 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public HttpDestination newHttpDestination(Origin origin)
+    public HttpDestination newHttpDestination(HttpDestination.Info info)
     {
-        return new HttpDestinationOverFCGI(getHttpClient(), origin);
+        return new DuplexHttpDestination(getHttpClient(), info);
     }
 
     @Override

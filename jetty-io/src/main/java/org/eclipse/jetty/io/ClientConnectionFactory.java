@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -44,5 +45,32 @@ public interface ClientConnectionFactory
         if (client != null)
             client.getBeans(Connection.Listener.class).forEach(connection::addListener);
         return connection;
+    }
+
+    public static class Info
+    {
+        private final List<String> protocols;
+        private final ClientConnectionFactory factory;
+
+        public Info(List<String> protocols, ClientConnectionFactory factory)
+        {
+            this.protocols = protocols;
+            this.factory = factory;
+        }
+
+        public List<String> getProtocols()
+        {
+            return protocols;
+        }
+
+        public ClientConnectionFactory getClientConnectionFactory()
+        {
+            return factory;
+        }
+
+        public boolean matches(List<String> candidates)
+        {
+            return protocols.stream().anyMatch(candidates::contains);
+        }
     }
 }

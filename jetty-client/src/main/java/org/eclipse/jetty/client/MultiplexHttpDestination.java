@@ -18,13 +18,24 @@
 
 package org.eclipse.jetty.client;
 
-public abstract class MultiplexHttpDestination extends HttpDestination
+import java.util.function.Function;
+
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+
+public class MultiplexHttpDestination extends HttpDestination implements HttpDestination.Multiplexed
 {
-    protected MultiplexHttpDestination(HttpClient client, Origin origin)
+    public MultiplexHttpDestination(HttpClient client, Info info)
     {
-        super(client, origin);
+        this(client, info, Function.identity());
     }
 
+    public MultiplexHttpDestination(HttpClient client, Info info, Function<ClientConnectionFactory, ClientConnectionFactory> factoryFn)
+    {
+        super(client, info, factoryFn);
+    }
+
+    @ManagedAttribute(value = "The maximum number of concurrent requests per connection")
     public int getMaxRequestsPerConnection()
     {
         ConnectionPool connectionPool = getConnectionPool();

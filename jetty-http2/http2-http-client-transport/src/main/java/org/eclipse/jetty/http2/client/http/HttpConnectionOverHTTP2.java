@@ -64,7 +64,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     }
 
     @Override
-    protected SendFailure send(HttpExchange exchange)
+    public SendFailure send(HttpExchange exchange)
     {
         HttpRequest request = exchange.getRequest();
         request.version(HttpVersion.HTTP_2);

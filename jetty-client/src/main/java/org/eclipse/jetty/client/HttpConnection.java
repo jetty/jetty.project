@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -38,7 +37,7 @@ import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public abstract class HttpConnection implements Connection
+public abstract class HttpConnection implements IConnection
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
@@ -79,8 +78,6 @@ public abstract class HttpConnection implements Connection
         if (result != null)
             httpRequest.abort(result.failure);
     }
-
-    protected abstract SendFailure send(HttpExchange exchange);
 
     protected void normalizeRequest(Request request)
     {

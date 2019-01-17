@@ -23,11 +23,13 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
@@ -52,12 +54,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject
-public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
+public class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final HttpClient client;
-    private final Origin origin;
+    private final Info info;
     private final Queue<HttpExchange> exchanges;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
@@ -67,10 +69,21 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final TimeoutTask timeout;
     private ConnectionPool connectionPool;
 
+    @Deprecated
     public HttpDestination(HttpClient client, Origin origin)
     {
+        this(client, new Info(origin, null));
+    }
+
+    public HttpDestination(HttpClient client, Info info)
+    {
+        this(client, info, Function.identity());
+    }
+
+    public HttpDestination(HttpClient client, Info info, Function<ClientConnectionFactory, ClientConnectionFactory> factoryFn)
+    {
         this.client = client;
-        this.origin = origin;
+        this.info = info;
 
         this.exchanges = newExchangeQueue(client);
 
@@ -79,9 +92,21 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         
         this.timeout = new TimeoutTask(client.getScheduler());
 
+        String host = HostPort.normalizeHost(getHost());
+        if (!client.isDefaultPort(getScheme(), getPort()))
+            host += ":" + getPort();
+        hostField = new HttpField(HttpHeader.HOST, host);
+
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
-        proxy = proxyConfig.match(origin);
-        ClientConnectionFactory connectionFactory = client.getTransport();
+        this.proxy = proxyConfig.match(getOrigin());
+
+        this.connectionFactory = factoryFn.apply(createClientConnectionFactory());
+    }
+
+    private ClientConnectionFactory createClientConnectionFactory()
+    {
+        ProxyConfiguration.Proxy proxy = getProxy();
+        ClientConnectionFactory connectionFactory = getHttpClient().getTransport();
         if (proxy != null)
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
@@ -93,12 +118,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (isSecure())
                 connectionFactory = newSslClientConnectionFactory(connectionFactory);
         }
-        this.connectionFactory = connectionFactory;
-
-        String host = HostPort.normalizeHost(getHost());
-        if (!client.isDefaultPort(getScheme(), getPort()))
-            host += ":" + getPort();
-        hostField = new HttpField(HttpHeader.HOST, host);
+        return connectionFactory;
     }
 
     @Override
@@ -147,9 +167,14 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return client;
     }
 
+    public Info getInfo()
+    {
+        return info;
+    }
+
     public Origin getOrigin()
     {
-        return origin;
+        return info.origin;
     }
 
     public Queue<HttpExchange> getHttpExchanges()
@@ -181,7 +206,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @ManagedAttribute(value = "The destination scheme", readonly = true)
     public String getScheme()
     {
-        return origin.getScheme();
+        return getOrigin().getScheme();
     }
 
     @Override
@@ -190,14 +215,14 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     {
         // InetSocketAddress.getHostString() transforms the host string
         // in case of IPv6 addresses, so we return the original host string
-        return origin.getAddress().getHost();
+        return getOrigin().getAddress().getHost();
     }
 
     @Override
     @ManagedAttribute(value = "The destination port", readonly = true)
     public int getPort()
     {
-        return origin.getAddress().getPort();
+        return getOrigin().getAddress().getPort();
     }
 
     @ManagedAttribute(value = "The number of queued requests", readonly = true)
@@ -208,7 +233,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public Origin.Address getConnectAddress()
     {
-        return proxy == null ? origin.getAddress() : proxy.getAddress();
+        return proxy == null ? getOrigin().getAddress() : proxy.getAddress();
     }
 
     public HttpField getHostField()
@@ -343,7 +368,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             }
             else
             {
-                SendFailure result = send(connection, exchange);
+                SendFailure result = ((IConnection)connection).send(exchange);
                 if (result != null)
                 {
                     if (LOG.isDebugEnabled())
@@ -357,8 +382,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             return getHttpExchanges().peek() != null;
         }
     }
-
-    protected abstract SendFailure send(Connection connection, HttpExchange exchange);
 
     @Override
     public void newConnection(Promise<Connection> promise)
@@ -476,7 +499,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public String asString()
     {
-        return origin.asString();
+        return getInfo().asString();
     }
 
     @Override
@@ -490,7 +513,127 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 exchanges.size(),
                 connectionPool);
     }
-    
+
+    @FunctionalInterface
+    public interface Multiplexed
+    {
+        void setMaxRequestsPerConnection(int maxRequestsPerConnection);
+    }
+
+    public static class Info
+    {
+        private final Origin origin;
+        private final Protocol protocol;
+
+        public Info(Origin origin, Protocol protocol)
+        {
+            this.origin = origin;
+            this.protocol = protocol;
+        }
+
+        public Origin getOrigin()
+        {
+            return origin;
+        }
+
+        public Protocol getProtocol()
+        {
+            return protocol;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            Info that = (Info)obj;
+            return origin.equals(that.origin) && Objects.equals(protocol, that.protocol);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(origin, protocol);
+        }
+
+        public String asString()
+        {
+            return String.format("%s|%s", origin.asString(), protocol == null ? "null" : protocol.asString());
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
+        }
+    }
+
+    public static class Protocol
+    {
+        private final List<String> protocols;
+        private final boolean negotiate;
+        private final String kind;
+
+        public Protocol(List<String> protocols, boolean negotiate)
+        {
+            this(protocols, negotiate, null);
+        }
+
+        public Protocol(List<String> protocols, boolean negotiate, String kind)
+        {
+            this.protocols = protocols;
+            this.negotiate = negotiate;
+            this.kind = kind;
+        }
+
+        public List<String> getProtocols()
+        {
+            return protocols;
+        }
+
+        public boolean isNegotiate()
+        {
+            return negotiate;
+        }
+
+        public String getKind()
+        {
+            return kind;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            Protocol that = (Protocol)obj;
+            return protocols.equals(that.protocols) &&
+                    negotiate == that.negotiate &&
+                    Objects.equals(kind, that.kind);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(protocols, negotiate, kind);
+        }
+
+        public String asString()
+        {
+            return String.format("proto=%s,nego=%b,kind=%s", protocols, negotiate, kind);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
+        }
+    }
+
     // The TimeoutTask that expires when the next check of expiry is needed
     private class TimeoutTask extends CyclicTimeout
     {

@@ -50,6 +50,8 @@ public interface HttpClientTransport extends ClientConnectionFactory
      */
     public void setHttpClient(HttpClient client);
 
+    public HttpDestination newHttpDestination(HttpDestination.Info info);
+
     /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
      * <p>
@@ -58,8 +60,13 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object
+     * @deprecated use {@link #newHttpDestination(HttpDestination.Info)} instead
      */
-    public HttpDestination newHttpDestination(Origin origin);
+    @Deprecated
+    public default HttpDestination newHttpDestination(Origin origin)
+    {
+        return newHttpDestination(new HttpDestination.Info(origin, null));
+    }
 
     /**
      * Establishes a physical connection to the given {@code address}.
@@ -78,4 +85,10 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param factory the factory for ConnectionPool instances
      */
     public void setConnectionPoolFactory(ConnectionPool.Factory factory);
+
+    @FunctionalInterface
+    public interface Dynamic
+    {
+        public HttpDestination.Protocol getProtocol(HttpRequest request);
+    }
 }

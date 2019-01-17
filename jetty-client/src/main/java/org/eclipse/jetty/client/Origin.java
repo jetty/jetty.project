@@ -75,7 +75,7 @@ public class Origin
     @Override
     public String toString()
     {
-        return asString();
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
     }
 
     public static class Address

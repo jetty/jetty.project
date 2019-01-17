@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
@@ -37,7 +34,6 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
@@ -46,8 +42,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientUploadDuringServerShutdown
 {
@@ -252,7 +250,7 @@ public class HttpClientUploadDuringServerShutdown
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", connector.getLocalPort());
         DuplexConnectionPool pool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, pool.getConnectionCount());
         assertEquals(0, pool.getIdleConnections().size());

@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class ClientConnector extends ContainerLifeCycle
 {
     public static final String CLIENT_CONNECTOR_CONTEXT_KEY = "org.eclipse.jetty.client.connector";
-    public static final String SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".socketAddress";
+    public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
     public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
     public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
     private static final Logger LOG = Log.getLogger(ClientConnector.class);
@@ -212,7 +212,7 @@ public class ClientConnector extends ContainerLifeCycle
             if (context == null)
                 context = new HashMap<>();
             context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
-            context.putIfAbsent(SOCKET_ADDRESS_CONTEXT_KEY, address);
+            context.putIfAbsent(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
 
             channel = SocketChannel.open();
             SocketAddress bindAddress = getBindAddress();
@@ -299,7 +299,7 @@ public class ClientConnector extends ContainerLifeCycle
     protected void connectFailed(Throwable failure, Map<String, Object> context)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Could not connect to {}", context.get(SOCKET_ADDRESS_CONTEXT_KEY));
+            LOG.debug("Could not connect to {}", context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY));
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
         promise.failed(failure);
     }

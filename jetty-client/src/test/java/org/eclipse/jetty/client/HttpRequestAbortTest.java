@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -39,13 +33,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 {
@@ -112,7 +111,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             assertSame(cause, x.getCause());
         assertFalse(begin.get());
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -156,7 +155,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             assertSame(cause, x.getCause());
         assertFalse(committed.await(1, TimeUnit.SECONDS));
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -200,7 +199,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             assertSame(cause, x.getCause());
         assertFalse(committed.await(1, TimeUnit.SECONDS));
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -235,7 +234,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         if (aborted.get())
             assertSame(cause, x.getCause());
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -293,7 +292,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         if (aborted.get())
             assertSame(cause, x.getCause());
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -353,7 +352,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
             assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
-            HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+            HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
             assertEquals(0, connectionPool.getConnectionCount());
             assertEquals(0, connectionPool.getActiveConnections().size());
@@ -460,7 +459,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 assertSame(cause, x.getCause());
         }
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
