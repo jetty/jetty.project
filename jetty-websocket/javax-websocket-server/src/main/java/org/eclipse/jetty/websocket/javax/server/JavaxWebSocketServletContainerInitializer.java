@@ -54,46 +54,31 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
      *
      * @param context  the context to search
      * @param keyName  the key name
-     * @param defValue the default value, if the value is not specified in the context
-     * @return the value for the feature key
+     * @return the value for the feature key, otherwise null if key is not set in context
      */
-    public static Boolean isEnabledViaContext(ServletContext context, String keyName, Boolean defValue)
+    private static Boolean isEnabledViaContext(ServletContext context, String keyName)
     {
         // Try context parameters first
         String cp = context.getInitParameter(keyName);
-
         if (cp != null)
         {
             if (TypeUtil.isTrue(cp))
-            {
                 return true;
-            }
-
-            if (TypeUtil.isFalse(cp))
-            {
+            else
                 return false;
-            }
-
-            return defValue;
         }
 
         // Next, try attribute on context
         Object enable = context.getAttribute(keyName);
-
         if (enable != null)
         {
             if (TypeUtil.isTrue(enable))
-            {
                 return true;
-            }
-
-            if (TypeUtil.isFalse(enable))
-            {
+            else
                 return false;
-            }
         }
 
-        return defValue;
+        return null;
     }
 
     public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context)
@@ -110,13 +95,18 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
     {
-        Boolean dft = isEnabledViaContext(context, DEPRECATED_ENABLE_KEY, null);
-        if (dft==null)
-            dft = Boolean.TRUE;
-        else
+        Boolean enableKey = isEnabledViaContext(context, ENABLE_KEY);
+        Boolean deprecatedEnabledKey = isEnabledViaContext(context, DEPRECATED_ENABLE_KEY);
+        if (deprecatedEnabledKey != null)
             LOG.warn("Deprecated parameter used: " + DEPRECATED_ENABLE_KEY);
 
-        if (!isEnabledViaContext(context, ENABLE_KEY, dft))
+        boolean websocketEnabled = true;
+        if (enableKey != null)
+            websocketEnabled = enableKey;
+        else if (deprecatedEnabledKey != null)
+            websocketEnabled = deprecatedEnabledKey;
+
+        if (!websocketEnabled)
         {
             LOG.info("Javax Websocket is disabled by configuration for context {}", context.getContextPath());
             return;
