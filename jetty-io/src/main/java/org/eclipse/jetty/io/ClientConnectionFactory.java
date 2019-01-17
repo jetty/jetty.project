@@ -28,10 +28,9 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
  */
 public interface ClientConnectionFactory
 {
-    public static final String CONNECTOR_CONTEXT_KEY = "client.connector";
+    public static final String CLIENT_CONTEXT_KEY = "org.eclipse.jetty.client";
 
     /**
-     *
      * @param endPoint the {@link org.eclipse.jetty.io.EndPoint} to link the newly created connection to
      * @param context the context data to create the connection
      * @return a new {@link Connection}
@@ -41,8 +40,9 @@ public interface ClientConnectionFactory
 
     public default Connection customize(Connection connection, Map<String, Object> context)
     {
-        ContainerLifeCycle connector = (ContainerLifeCycle)context.get(CONNECTOR_CONTEXT_KEY);
-        connector.getBeans(Connection.Listener.class).forEach(connection::addListener);
+        ContainerLifeCycle client = (ContainerLifeCycle)context.get(CLIENT_CONTEXT_KEY);
+        if (client != null)
+            client.getBeans(Connection.Listener.class).forEach(connection::addListener);
         return connection;
     }
 }

@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
@@ -47,7 +48,13 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
 
     public HttpClientTransportOverFCGI(int selectors, String scriptRoot)
     {
-        super(selectors);
+        this(new ClientConnector(), scriptRoot);
+        getClientConnector().setSelectors(selectors);
+    }
+
+    public HttpClientTransportOverFCGI(ClientConnector connector, String scriptRoot)
+    {
+        super(connector);
         this.scriptRoot = scriptRoot;
         setConnectionPoolFactory(destination ->
         {

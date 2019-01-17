@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -27,6 +28,7 @@ import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -34,10 +36,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslClientConnectionFactory implements ClientConnectionFactory
 {
-    public static final String SSL_CONTEXT_FACTORY_CONTEXT_KEY = "ssl.context.factory";
-    public static final String SSL_PEER_HOST_CONTEXT_KEY = "ssl.peer.host";
-    public static final String SSL_PEER_PORT_CONTEXT_KEY = "ssl.peer.port";
-    public static final String SSL_ENGINE_CONTEXT_KEY = "ssl.engine";
+    public static final String SSL_ENGINE_CONTEXT_KEY = "org.eclipse.jetty.client.ssl.engine";
 
     private final SslContextFactory sslContextFactory;
     private final ByteBufferPool byteBufferPool;
@@ -88,9 +87,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        String host = (String)context.get(SSL_PEER_HOST_CONTEXT_KEY);
-        int port = (Integer)context.get(SSL_PEER_PORT_CONTEXT_KEY);
-        SSLEngine engine = sslContextFactory.newSSLEngine(host, port);
+        InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.SOCKET_ADDRESS_CONTEXT_KEY);
+        SSLEngine engine = sslContextFactory.newSSLEngine(address);
         engine.setUseClientMode(true);
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
@@ -119,8 +117,9 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
             sslConnection.setAllowMissingCloseMessage(isAllowMissingCloseMessage());
-            ContainerLifeCycle connector = (ContainerLifeCycle)context.get(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY);
-            connector.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
+            ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnectionFactory.CLIENT_CONTEXT_KEY);
+            if (client != null)
+                client.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
         return ClientConnectionFactory.super.customize(connection, context);
     }

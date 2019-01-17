@@ -35,22 +35,19 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class JDK9HTTP2Client
 {
     public static void main(String[] args) throws Exception
     {
         HTTP2Client client = new HTTP2Client();
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        client.addBean(sslContextFactory);
         client.start();
 
         String host = "webtide.com";
         int port = 443;
 
         FuturePromise<Session> sessionPromise = new FuturePromise<>();
-        client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener.Adapter(), sessionPromise);
+        client.connect(client.getClientConnector().getSslContextFactory(), new InetSocketAddress(host, port), new Session.Listener.Adapter(), sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
         HttpFields requestFields = new HttpFields();

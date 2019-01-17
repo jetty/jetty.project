@@ -51,11 +51,11 @@ import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 
@@ -171,9 +171,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
         {
             @Override
-            protected void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+            protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
             {
-                super.connect(sslContextFactory, address, new Wrapper(listener)
+                super.connect(address, factory, new Wrapper(listener)
                 {
                     @Override
                     public void onSettings(Session session, SettingsFrame frame)

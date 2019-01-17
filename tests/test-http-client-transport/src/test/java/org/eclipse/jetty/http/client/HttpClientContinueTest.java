@@ -327,7 +327,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         final long idleTimeout = 1000;
-        scenario.start(new AbstractHandler()
+        scenario.startServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
@@ -343,8 +343,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 }
             }
         });
-
-        scenario.client.setIdleTimeout(2 * idleTimeout);
+        scenario.startClient(httpClient -> httpClient.setIdleTimeout(2 * idleTimeout));
 
         byte[] content = new byte[1024];
         final CountDownLatch latch = new CountDownLatch(1);
@@ -375,7 +374,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         final long idleTimeout = 1000;
-        scenario.start(new AbstractHandler()
+        scenario.startServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -393,8 +392,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 }
             }
         });
-
-        scenario.client.setIdleTimeout(idleTimeout);
+        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         byte[] content = new byte[1024];
         final CountDownLatch latch = new CountDownLatch(1);

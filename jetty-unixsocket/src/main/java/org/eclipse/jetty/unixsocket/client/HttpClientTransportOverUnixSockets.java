@@ -21,85 +21,110 @@ package org.eclipse.jetty.unixsocket.client;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.channels.SocketChannel;
 import java.util.Map;
-
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.unixsocket.UnixSocketEndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 import jnr.enxio.channels.NativeSelectorProvider;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
+import org.eclipse.jetty.client.AbstractHttpClientTransport;
+import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.unixsocket.UnixSocketEndPoint;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
-public class HttpClientTransportOverUnixSockets
-    extends HttpClientTransportOverHTTP
+// TODO: this class needs a thorough review.
+public class HttpClientTransportOverUnixSockets extends AbstractHttpClientTransport
 {
-    private static final Logger LOG = Log.getLogger( HttpClientTransportOverUnixSockets.class );
-    
+    private static final Logger LOG = Log.getLogger(HttpClientTransportOverUnixSockets.class);
+
     private String _unixSocket;
     private SelectorManager selectorManager;
 
     private UnixSocketChannel channel;
 
-    public HttpClientTransportOverUnixSockets( String unixSocket )
+    public HttpClientTransportOverUnixSockets(String unixSocket)
     {
-        if ( unixSocket == null )
-        {
-            throw new IllegalArgumentException( "Unix socket file cannot be null" );
-        }
+        if (unixSocket == null)
+            throw new IllegalArgumentException("Unix socket file cannot be null");
         this._unixSocket = unixSocket;
+        setConnectionPoolFactory(destination ->
+        {
+            HttpClient httpClient = getHttpClient();
+            int maxConnections = httpClient.getMaxConnectionsPerDestination();
+            return new DuplexConnectionPool(destination, maxConnections, destination);
+        });
     }
 
     @Override
-    protected SelectorManager newSelectorManager(HttpClient client)
+    protected void doStart() throws Exception
     {
-        return selectorManager = new UnixSocketSelectorManager(client,getSelectors());
+        HttpClient httpClient = getHttpClient();
+        selectorManager = new UnixSocketSelectorManager(httpClient, 1);
+        selectorManager.setConnectTimeout(httpClient.getConnectTimeout());
+        addBean(selectorManager);
+        super.doStart();
     }
 
     @Override
-    public void connect( InetSocketAddress address, Map<String, Object> context )
+    protected void doStop() throws Exception
     {
+        super.doStop();
+        try
+        {
+            if (channel != null)
+                channel.close();
+        }
+        catch (IOException xx)
+        {
+            LOG.ignore(xx);
+        }
+    }
 
+    @Override
+    public HttpDestination newHttpDestination(Origin origin)
+    {
+        return new HttpDestinationOverHTTP(getHttpClient(), origin);
+    }
+
+    @Override
+    public void connect(InetSocketAddress address, Map<String, Object> context)
+    {
         try
         {
             InetAddress inet = address.getAddress();
             if (!inet.isLoopbackAddress() && !inet.isLinkLocalAddress() && !inet.isSiteLocalAddress())
-                throw new IOException("UnixSocket cannot connect to "+address.getHostString());
-            
+                throw new IOException("UnixSocket cannot connect to " + address.getHostString());
+
             // Open a unix socket
-            UnixSocketAddress unixAddress = new UnixSocketAddress( this._unixSocket );
-            channel = UnixSocketChannel.open( unixAddress );
-            
+            UnixSocketAddress unixAddress = new UnixSocketAddress(this._unixSocket);
+            channel = UnixSocketChannel.open(unixAddress);
+
             HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
             HttpClient client = destination.getHttpClient();
 
             configure(client, channel);
 
             channel.configureBlocking(false);
-            selectorManager.accept(channel, context);            
+            selectorManager.accept(channel, context);
         }
         // Must catch all exceptions, since some like
         // UnresolvedAddressException are not IOExceptions.
         catch (Throwable x)
         {
-            // If IPv6 is not deployed, a generic SocketException "Network is unreachable"
-            // exception is being thrown, so we attempt to provide a better error message.
-            if (x.getClass() == SocketException.class)
-                x = new SocketException("Could not connect to " + address).initCause(x);
-
             try
             {
                 if (channel != null)
@@ -116,11 +141,33 @@ public class HttpClientTransportOverUnixSockets
         }
     }
 
-    public class UnixSocketSelectorManager extends ClientSelectorManager
+    @Override
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+    {
+        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        @SuppressWarnings("unchecked")
+        Promise<org.eclipse.jetty.client.api.Connection> promise = (Promise<org.eclipse.jetty.client.api.Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        HttpConnectionOverHTTP connection = newHttpConnection(endPoint, destination, promise);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", connection);
+        return customize(connection, context);
+    }
+
+    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<org.eclipse.jetty.client.api.Connection> promise)
+    {
+        return new HttpConnectionOverHTTP(endPoint, destination, promise);
+    }
+
+    protected void configure(HttpClient client, SocketChannel channel) throws IOException
+    {
+        channel.socket().setTcpNoDelay(client.isTCPNoDelay());
+    }
+
+    public class UnixSocketSelectorManager extends SelectorManager
     {
         protected UnixSocketSelectorManager(HttpClient client, int selectors)
         {
-            super(client,selectors);
+            super(client.getExecutor(), client.getScheduler(), selectors);
         }
 
         @Override
@@ -132,25 +179,26 @@ public class HttpClientTransportOverUnixSockets
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            UnixSocketEndPoint endp = new UnixSocketEndPoint((UnixSocketChannel)channel, selector, key, getScheduler());
-            endp.setIdleTimeout(getHttpClient().getIdleTimeout());
-            return endp;
+            UnixSocketEndPoint endPoint = new UnixSocketEndPoint((UnixSocketChannel)channel, selector, key, getScheduler());
+            endPoint.setIdleTimeout(getHttpClient().getIdleTimeout());
+            return endPoint;
         }
-    }
 
-    @Override
-    protected void doStop()
-        throws Exception
-    {
-        super.doStop();
-        try
+        @Override
+        public Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment) throws IOException
         {
-            if (channel != null)
-                channel.close();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+            return destination.getClientConnectionFactory().newConnection(endPoint, context);
         }
-        catch (IOException xx)
+
+        @Override
+        protected void connectionFailed(SelectableChannel channel, Throwable x, Object attachment)
         {
-            LOG.ignore(xx);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            connectFailed(context, x);
         }
     }
 }

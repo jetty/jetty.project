@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.http2.client;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,32 +35,24 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * <p>{@link HTTP2Client} provides an asynchronous, non-blocking implementation
+ * <p>HTTP2Client provides an asynchronous, non-blocking implementation
  * to send HTTP/2 frames to a server.</p>
  * <p>Typical usage:</p>
  * <pre>
  * // Create and start HTTP2Client.
  * HTTP2Client client = new HTTP2Client();
- * SslContextFactory sslContextFactory = new SslContextFactory();
- * client.addBean(sslContextFactory);
  * client.start();
+ * SslContextFactory sslContextFactory = client.getClientConnector().getSslContextFactory();
  *
  * // Connect to host.
  * String host = "webtide.com";
@@ -108,7 +97,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * // Use the Stream object to send request content, if any, using a DATA frame.
  * ByteBuffer content = ...;
  * DataFrame requestContent = new DataFrame(stream.getId(), content, true);
- * stream.data(requestContent, Callback.Adapter.INSTANCE);
+ * stream.data(requestContent, Callback.NOOP);
  *
  * // When done, stop the client.
  * client.stop();
@@ -117,18 +106,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject
 public class HTTP2Client extends ContainerLifeCycle
 {
-    private Executor executor;
-    private Scheduler scheduler;
-    private ByteBufferPool bufferPool;
-    private ClientConnectionFactory connectionFactory;
-    private SelectorManager selector;
-    private int selectors = 1;
-    private long idleTimeout = 30000;
-    private long connectTimeout = 10000;
-    private boolean connectBlocking;
-    private SocketAddress bindAddress;
+    private final ClientConnector connector;
     private int inputBufferSize = 8192;
-    private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
+    private List<String> protocols = List.of("h2");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
@@ -136,96 +116,50 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
-    @Override
-    protected void doStart() throws Exception
+    public HTTP2Client()
     {
-        if (executor == null)
-            setExecutor(new QueuedThreadPool());
-
-        if (scheduler == null)
-            setScheduler(new ScheduledExecutorScheduler());
-
-        if (bufferPool == null)
-            setByteBufferPool(new MappedByteBufferPool());
-
-        if (connectionFactory == null)
-        {
-            HTTP2ClientConnectionFactory h2 = new HTTP2ClientConnectionFactory();
-            setClientConnectionFactory((endPoint, context) ->
-            {
-                ClientConnectionFactory factory = h2;
-                SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
-                if (sslContextFactory != null)
-                {
-                    ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
-                    factory = newSslClientConnectionFactory(sslContextFactory, alpn);
-                }
-                return factory.newConnection(endPoint, context);
-            });
-        }
-
-        if (selector == null)
-        {
-            selector = newSelectorManager();
-            addBean(selector);
-        }
-        selector.setConnectTimeout(getConnectTimeout());
-
-        super.doStart();
+        this(new ClientConnector());
     }
 
-    protected SelectorManager newSelectorManager()
+    public HTTP2Client(ClientConnector connector)
     {
-        return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors());
+        this.connector = connector;
+        addBean(connector);
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
+    public ClientConnector getClientConnector()
     {
-        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
+        return connector;
     }
 
     public Executor getExecutor()
     {
-        return executor;
+        return connector.getExecutor();
     }
 
     public void setExecutor(Executor executor)
     {
-        this.updateBean(this.executor, executor);
-        this.executor = executor;
+        connector.setExecutor(executor);
     }
 
     public Scheduler getScheduler()
     {
-        return scheduler;
+        return connector.getScheduler();
     }
 
     public void setScheduler(Scheduler scheduler)
     {
-        this.updateBean(this.scheduler, scheduler);
-        this.scheduler = scheduler;
+        connector.setScheduler(scheduler);
     }
 
     public ByteBufferPool getByteBufferPool()
     {
-        return bufferPool;
+        return connector.getByteBufferPool();
     }
 
     public void setByteBufferPool(ByteBufferPool bufferPool)
     {
-        this.updateBean(this.bufferPool, bufferPool);
-        this.bufferPool = bufferPool;
-    }
-
-    public ClientConnectionFactory getClientConnectionFactory()
-    {
-        return connectionFactory;
-    }
-
-    public void setClientConnectionFactory(ClientConnectionFactory connectionFactory)
-    {
-        this.updateBean(this.connectionFactory, connectionFactory);
-        this.connectionFactory = connectionFactory;
+        connector.setByteBufferPool(bufferPool);
     }
 
     public FlowControlStrategy.Factory getFlowControlStrategyFactory()
@@ -241,58 +175,55 @@ public class HTTP2Client extends ContainerLifeCycle
     @ManagedAttribute("The number of selectors")
     public int getSelectors()
     {
-        return selectors;
+        return connector.getSelectors();
     }
 
     public void setSelectors(int selectors)
     {
-        this.selectors = selectors;
+        connector.setSelectors(selectors);
     }
 
     @ManagedAttribute("The idle timeout in milliseconds")
     public long getIdleTimeout()
     {
-        return idleTimeout;
+        return connector.getIdleTimeout().toMillis();
     }
 
     public void setIdleTimeout(long idleTimeout)
     {
-        this.idleTimeout = idleTimeout;
+        connector.setIdleTimeout(Duration.ofMillis(idleTimeout));
     }
 
     @ManagedAttribute("The connect timeout in milliseconds")
     public long getConnectTimeout()
     {
-        return connectTimeout;
+        return connector.getConnectTimeout().toMillis();
     }
 
     public void setConnectTimeout(long connectTimeout)
     {
-        this.connectTimeout = connectTimeout;
-        SelectorManager selector = this.selector;
-        if (selector != null)
-            selector.setConnectTimeout(connectTimeout);
+        connector.setConnectTimeout(Duration.ofMillis(connectTimeout));
     }
 
     @ManagedAttribute("Whether the connect() operation is blocking")
     public boolean isConnectBlocking()
     {
-        return connectBlocking;
+        return connector.isConnectBlocking();
     }
 
     public void setConnectBlocking(boolean connectBlocking)
     {
-        this.connectBlocking = connectBlocking;
+        connector.setConnectBlocking(connectBlocking);
     }
 
     public SocketAddress getBindAddress()
     {
-        return bindAddress;
+        return connector.getBindAddress();
     }
 
     public void setBindAddress(SocketAddress bindAddress)
     {
-        this.bindAddress = bindAddress;
+        connector.setBindAddress(bindAddress);
     }
 
     @ManagedAttribute("The size of the buffer used to read from the network")
@@ -374,6 +305,7 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
+        // Prior-knowledge clear-text HTTP/2 (h2c).
         connect(null, address, listener, promise);
     }
 
@@ -384,112 +316,49 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
-        try
-        {
-            SocketChannel channel = SocketChannel.open();
-            SocketAddress bindAddress = getBindAddress();
-            if (bindAddress != null)
-                channel.bind(bindAddress);
-            configure(channel);
-            boolean connected = true;
-            if (isConnectBlocking())
-            {
-                channel.socket().connect(address, (int)getConnectTimeout());
-                channel.configureBlocking(false);
-            }
-            else
-            {
-                channel.configureBlocking(false);
-                connected = channel.connect(address);
-            }
-            context = contextFrom(sslContextFactory, address, listener, promise, context);
-            if (connected)
-                selector.accept(channel, context);
-            else
-                selector.connect(channel, context);
-        }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
+        ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
+        connect(address, factory, listener, promise, context);
+    }
+
+    public void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    {
+        context = contextFrom(factory, listener, promise, context);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
+        connector.connect(address, context);
     }
 
     public void accept(SslContextFactory sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
     {
-        try
-        {
-            if (!channel.isConnected())
-                throw new IllegalStateException("SocketChannel must be connected");
-            channel.configureBlocking(false);
-            Map<String, Object> context = contextFrom(sslContextFactory, (InetSocketAddress)channel.getRemoteAddress(), listener, promise, null);
-            selector.accept(channel, context);
-        }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
+        ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
+        accept(channel, factory, listener, promise);
     }
 
-    private Map<String, Object> contextFrom(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void accept(SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
+    {
+        Map<String, Object> context = contextFrom(factory, listener, promise, null);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
+        connector.accept(channel, context);
+    }
+
+    private Map<String, Object> contextFrom(ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         if (context == null)
             context = new HashMap<>();
         context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
         context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);
-        if (sslContextFactory != null)
-            context.put(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY, sslContextFactory);
-        context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, address.getHostString());
-        context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, address.getPort());
-        context.putIfAbsent(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY, this);
+        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, factory);
         return context;
     }
 
-    protected void configure(SocketChannel channel) throws IOException
+    private ClientConnectionFactory newClientConnectionFactory(SslContextFactory sslContextFactory)
     {
-        channel.socket().setTcpNoDelay(true);
-    }
-
-    private class ClientSelectorManager extends SelectorManager
-    {
-        private ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
+        ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
+        if (sslContextFactory != null)
         {
-            super(executor, scheduler, selectors);
+            ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
+            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
         }
-
-        @Override
-        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
-        {
-            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
-            endp.setIdleTimeout(getIdleTimeout());
-            return endp;
-        }
-
-        @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
-        {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> context = (Map<String, Object>)attachment;
-            context.put(HTTP2ClientConnectionFactory.BYTE_BUFFER_POOL_CONTEXT_KEY, getByteBufferPool());
-            context.put(HTTP2ClientConnectionFactory.EXECUTOR_CONTEXT_KEY, getExecutor());
-            context.put(HTTP2ClientConnectionFactory.SCHEDULER_CONTEXT_KEY, getScheduler());
-            return getClientConnectionFactory().newConnection(endpoint, context);
-        }
-
-        @Override
-        protected void connectionFailed(SelectableChannel channel, Throwable failure, Object attachment)
-        {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> context = (Map<String, Object>)attachment;
-            if (LOG.isDebugEnabled())
-            {
-                Object host = context.get(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY);
-                Object port = context.get(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY);
-                LOG.debug("Could not connect to {}:{}", host, port);
-            }
-            @SuppressWarnings("unchecked")
-            Promise<Session> promise = (Promise<Session>)context.get(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY);
-            promise.failed(failure);
-        }
+        return factory;
     }
 }
