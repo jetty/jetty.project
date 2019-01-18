@@ -44,16 +44,12 @@ package org.eclipse.jetty.http;
 public final class HttpCompliance
 {
     /**
-     * Get the Default HttpCompliance of <a href="https://tools.ietf.org/html/rfc7230">RFC 7230: HTTP/1.1</a>
-     *
-     * @return default HttpCompliance configuration of RFC7230 Strict
+     * Get the Default Strict HttpCompliance of <a href="https://tools.ietf.org/html/rfc7230">RFC 7230: HTTP/1.1</a>
      */
     public static final HttpCompliance RFC7230 = HttpCompliance.rfc7230Builder().build();
 
     /**
-     * Get the Default HttpCompliance of <a href="https://tools.ietf.org/html/rfc2616">RFC 2616: HTTP/1.1</a>
-     *
-     * @return default HttpCompliance configuration of RFC2616 Strict
+     * Get the Default Strict HttpCompliance of <a href="https://tools.ietf.org/html/rfc2616">RFC 2616: HTTP/1.1</a>
      */
     public static final HttpCompliance RFC2616 = HttpCompliance.rfc2616Builder().build();
 

@@ -1001,7 +1001,7 @@ public class HttpClient extends ContainerLifeCycle
 
     /**
      * Gets the http compliance mode for parsing http responses.
-     * The default http compliance level from {@link HttpCompliance#RFC7230()} which is the latest HTTP/1.1 specification
+     * The default http compliance level from {@link HttpCompliance#RFC7230} which is the latest HTTP/1.1 specification
      *
      * @return the HttpCompliance instance
      */
