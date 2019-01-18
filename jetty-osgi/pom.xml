@@ -140,6 +140,11 @@
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
           </exclusion>
+          <exclusion>
+            <!-- cannot override core java classes with Java 9+ -->
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.osgi.foundation</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
