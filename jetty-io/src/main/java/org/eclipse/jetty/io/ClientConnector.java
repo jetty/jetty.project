@@ -167,9 +167,13 @@ public class ClientConnector extends ContainerLifeCycle
     protected void doStart() throws Exception
     {
         if (executor == null)
-            setExecutor(new QueuedThreadPool());
+        {
+            QueuedThreadPool clientThreads = new QueuedThreadPool();
+            clientThreads.setName(String.format("client-pool@%x", hashCode()));
+            setExecutor(clientThreads);
+        }
         if (scheduler == null)
-            setScheduler(new ScheduledExecutorScheduler());
+            setScheduler(new ScheduledExecutorScheduler(String.format("client-scheduler@%x", hashCode()), false));
         if (byteBufferPool == null)
             setByteBufferPool(new MappedByteBufferPool());
         if (sslContextFactory == null)
