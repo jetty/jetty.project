@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
@@ -33,6 +32,7 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -252,7 +252,15 @@ public class JavaxWebSocketServerContainer
             {
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
             }
-            addEndpointMapping(config);
+
+            try
+            {
+                addEndpointMapping(config);
+            }
+            catch (InvalidWebSocketException e)
+            {
+                throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), e);
+            }
         }
         else
         {
@@ -264,15 +272,20 @@ public class JavaxWebSocketServerContainer
         }
     }
 
-    private void addEndpointMapping(ServerEndpointConfig config)
+    private void addEndpointMapping(ServerEndpointConfig config) throws InvalidWebSocketException
     {
         frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
 
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this.webSocketMapping
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, webSocketMapping
             .getExtensionRegistry());
 
-        this.webSocketMapping
-            .addMapping(new UriTemplatePathSpec(config.getPath()), creator, frameHandlerFactory, customizer);
+
+        PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
+
+        if (webSocketMapping.getMapping(pathSpec) != null)
+            throw new InvalidWebSocketException("endpoint path mapping already registered");
+
+        webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, customizer);
     }
 
     @Override
