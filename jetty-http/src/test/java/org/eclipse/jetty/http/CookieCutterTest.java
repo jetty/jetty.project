@@ -276,7 +276,7 @@ public class CookieCutterTest
 
         public TestCutter(CookieCompliance compliance)
         {
-            super(compliance);
+            super(compliance, null);
         }
 
         @Override

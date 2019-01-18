@@ -16,15 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.internal;
+package org.eclipse.jetty.http;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.MultipartConfigElement;
@@ -33,15 +34,15 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.http.MultiPartInputStreamParser;
 import org.eclipse.jetty.http.MultiPartInputStreamParser.MultiPart;
-import org.eclipse.jetty.http.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -87,7 +88,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                          "multipart/form-data, boundary="+boundary,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         try
         {
@@ -115,17 +116,20 @@ public class MultiPartInputStreamParserTest
                 "Hello world" +
                 delimiter +        // Two delimiter markers, which make an empty line.
                 delimiter +
-                "--" + boundary + "--" + delimiter; 
+                "--" + boundary + "--" + delimiter;
+
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                          "multipart/form-data, boundary="+boundary,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir,
+                                                                         complianceCapture);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertTrue(mpis.getParts().isEmpty());
-        assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, is(empty()));
     }
 
     
@@ -139,16 +143,19 @@ public class MultiPartInputStreamParserTest
 
          String str =
                  delimiter +
-                 "--" + boundary + "--" + delimiter; 
+                 "--" + boundary + "--" + delimiter;
+
+         SpecViolationCapture complianceCapture = new SpecViolationCapture();
 
          MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
          MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                           "multipart/form-data, boundary="+boundary,
                                                                           config,
-                                                                          _tmpDir);
+                                                                          _tmpDir,
+                                                                          complianceCapture);
          mpis.setDeleteOnExit(true);
          assertTrue(mpis.getParts().isEmpty());
-         assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
+         assertThat(complianceCapture.violations, is(empty()));
      }
 
     @Test
@@ -180,12 +187,14 @@ public class MultiPartInputStreamParserTest
             "\r\n"+
             "000\r\n"+ 
             "----\r\n";
+
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
         
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                              "multipart/form-data",
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(4));
@@ -211,7 +220,12 @@ public class MultiPartInputStreamParserTest
         IO.copy(title.getInputStream(), baos);
         assertThat(baos.toString("US-ASCII"), is("ttt")); 
         
-        assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, contains(
+                MultiPartInputStreamParser.MultiPartSpecReference.CONTENT_TRANSFER_ENCODING_DEPRECATED, // 8bit
+                MultiPartInputStreamParser.MultiPartSpecReference.CONTENT_TRANSFER_ENCODING_DEPRECATED, // 8bit
+                MultiPartInputStreamParser.MultiPartSpecReference.CONTENT_TRANSFER_ENCODING_DEPRECATED, // 8bit
+                MultiPartInputStreamParser.MultiPartSpecReference.CONTENT_TRANSFER_ENCODING_DEPRECATED  // binary
+        ));
 
     }
 
@@ -219,14 +233,15 @@ public class MultiPartInputStreamParserTest
     public void testNonMultiPartRequest()
     throws Exception
     {
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                             "Content-type: text/plain",
                                                              config,
-                                                            _tmpDir);
+                                                            _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
         assertTrue(mpis.getParts().isEmpty());
-        assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, is(empty()));
     }
 
     @Test
@@ -239,7 +254,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(body.getBytes()), 
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         try
         {
@@ -288,7 +303,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(is, 
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertEquals(0, parts.size());
@@ -307,7 +322,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(whitespace.getBytes()), 
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         try
         {
@@ -330,7 +345,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(whitespace.getBytes()), 
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         try
         {
@@ -360,12 +375,13 @@ public class MultiPartInputStreamParserTest
                 "bbbbb"+"\r\n" +
                 "--AaB03x--\r\n";
 
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(body.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
 
         Collection<Part> parts =    mpis.getParts();
@@ -388,7 +404,7 @@ public class MultiPartInputStreamParserTest
             assertThat(baos.toString("US-ASCII"), containsString("aaaa"));
         }
         
-        assertEquals(EnumSet.of(NonCompliance.LF_LINE_TERMINATION), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, contains(MultiPartInputStreamParser.MultiPartSpecReference.LF_LINE_TERMINATION));
     }
     
 
@@ -408,11 +424,13 @@ public class MultiPartInputStreamParserTest
                 "bbbbb"+"\r\n" +
                 "--AaB03x--\r\n";
 
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(body.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
 
         Collection<Part> parts =    mpis.getParts();
@@ -435,7 +453,7 @@ public class MultiPartInputStreamParserTest
             assertThat(baos.toString("US-ASCII"), containsString("bbbbb"));
         }
 
-        assertEquals(EnumSet.of(NonCompliance.NO_CRLF_AFTER_PREAMBLE), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, contains(MultiPartInputStreamParser.MultiPartSpecReference.NO_CRLF_AFTER_PREAMBLE));
     }
     
     
@@ -448,7 +466,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                              _contentType,
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertFalse(parts.isEmpty());
@@ -463,7 +481,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = null;
         try
@@ -486,7 +504,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = null;
         
@@ -521,7 +539,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = null;
         try
@@ -543,7 +561,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = null;
         try
@@ -577,7 +595,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(createMultipartRequestString("tptfd").getBytes()),
                 _contentType,
                 config,
-                _tmpDir);
+                _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         
@@ -600,7 +618,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(createMultipartRequestString("tptfd").getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
 
@@ -626,11 +644,13 @@ public class MultiPartInputStreamParserTest
                 "Other\n"+        
                 "--AaB03x--\n";
 
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(2));
@@ -646,7 +666,7 @@ public class MultiPartInputStreamParserTest
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
         
-        assertEquals(EnumSet.of(NonCompliance.LF_LINE_TERMINATION), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, contains(MultiPartInputStreamParser.MultiPartSpecReference.LF_LINE_TERMINATION));
     }
     
     @Test
@@ -663,11 +683,13 @@ public class MultiPartInputStreamParserTest
         "Other\r"+        
         "--AaB03x--\r";
 
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(2));
@@ -686,7 +708,7 @@ public class MultiPartInputStreamParserTest
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
         
-        assertEquals(EnumSet.of(NonCompliance.CR_LINE_TERMINATION), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, contains(MultiPartInputStreamParser.MultiPartSpecReference.CR_LINE_TERMINATION));
     }
 
     @Test
@@ -703,12 +725,14 @@ public class MultiPartInputStreamParserTest
                 "\r"+
                 "Other\r"+        
                 "--AaB03x--\r";
+
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
         
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(2));
@@ -725,7 +749,7 @@ public class MultiPartInputStreamParserTest
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other")); 
         
-        assertEquals(EnumSet.of(NonCompliance.CR_LINE_TERMINATION), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, contains(MultiPartInputStreamParser.MultiPartSpecReference.CR_LINE_TERMINATION));
     }
     
     @Test
@@ -742,7 +766,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(baos.toByteArray()), 
                                                              _contentType,
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, null);
         mpis.setDeleteOnExit(true);
         try
         {
@@ -771,7 +795,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
                                                                          contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
@@ -794,7 +818,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(contents.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
@@ -816,7 +840,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(contents.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
@@ -837,7 +861,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(contents.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
@@ -876,7 +900,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(s.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir); 
+                                                                         _tmpDir, null);
         mpis.setDeleteOnExit(true);
         mpis.setWriteFilesWithFilenames(true);
         Collection<Part> parts = mpis.getParts();
@@ -897,7 +921,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(createMultipartRequestString(filename).getBytes()),
                 _contentType,
                 config,
-                _tmpDir);
+                _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(2));
@@ -972,7 +996,7 @@ public class MultiPartInputStreamParserTest
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(sameNames.getBytes()),
                                                              _contentType,
                                                              config,
-                                                             _tmpDir);
+                                                             _tmpDir, null);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertEquals(2, parts.size());
@@ -1007,11 +1031,13 @@ public class MultiPartInputStreamParserTest
                         "the end" + "\r\n"+
                         "--AaB03x--\r\n";
 
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(contentWithEncodedPart.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertEquals(3, parts.size());
@@ -1034,7 +1060,7 @@ public class MultiPartInputStreamParserTest
         IO.copy(p3.getInputStream(), baos);
         assertEquals("the end", baos.toString("US-ASCII"));
         
-        assertEquals(EnumSet.of(NonCompliance.BASE64_TRANSFER_ENCODING), mpis.getNonComplianceWarnings());
+        assertThat(complianceCapture.violations, contains(MultiPartInputStreamParser.MultiPartSpecReference.CONTENT_TRANSFER_ENCODING_DEPRECATED));
     }
     
     @Test
@@ -1052,12 +1078,15 @@ public class MultiPartInputStreamParserTest
                         "Content-Type: text/plain\r\n"+
                         "\r\n"+
                         "truth=3Dbeauty" + "\r\n"+
-                        "--AaB03x--\r\n";  
+                        "--AaB03x--\r\n";
+
+        SpecViolationCapture complianceCapture = new SpecViolationCapture();
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(contentWithEncodedPart.getBytes()),
                                                                          _contentType,
                                                                          config,
-                                                                         _tmpDir);
+                                                                         _tmpDir, complianceCapture);
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertEquals(2, parts.size());
@@ -1073,14 +1102,10 @@ public class MultiPartInputStreamParserTest
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
         assertEquals("truth=beauty", baos.toString("US-ASCII"));
-        
-        assertEquals(EnumSet.of(NonCompliance.QUOTED_PRINTABLE_TRANSFER_ENCODING), mpis.getNonComplianceWarnings());
+
+        assertThat(complianceCapture.violations, contains(MultiPartInputStreamParser.MultiPartSpecReference.CONTENT_TRANSFER_ENCODING_DEPRECATED));
     }
 
-
-
-
-    
     private String createMultipartRequestString(String filename)
     {
         int length = filename.length();
@@ -1105,5 +1130,16 @@ public class MultiPartInputStreamParserTest
         "\r\n"+name+
         filler.toString()+"\r\n" +
         "--AaB03x--\r\n";
+    }
+
+    static class SpecViolationCapture implements SpecViolationListener
+    {
+        List<SpecReference> violations = new ArrayList<>();
+
+        @Override
+        public void onSpecViolation(SpecReference specReference, String details)
+        {
+            violations.add(specReference);
+        }
     }
 }

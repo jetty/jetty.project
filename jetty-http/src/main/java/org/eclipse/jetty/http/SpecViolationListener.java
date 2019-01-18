@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,26 +19,20 @@
 package org.eclipse.jetty.http;
 
 /**
- * The compliance for Cookie handling.
+ * Listener for Spec Compliance Violations
+ *
+ * @see HttpCompliance
+ * @see CookieCompliance
+ * @see MultiPartFormDataCompliance
  */
-public class CookieCompliance
+public interface SpecViolationListener
 {
-    public static final CookieCompliance RFC6265 = new CookieCompliance(true);
-    public static final CookieCompliance RFC2965 = new CookieCompliance(false);
-    private final boolean isRFC6265;
 
-    public CookieCompliance(boolean isRFC6265)
-    {
-        this.isRFC6265 = isRFC6265;
-    }
-
-    public boolean isRFC6265()
-    {
-        return isRFC6265;
-    }
-
-    public boolean isRFC2965()
-    {
-        return !isRFC6265;
-    }
+    /**
+     * Called when a violation in spec has been detected.
+     *
+     * @param specReference the reference to the spec being violated
+     * @param details the detail of the violation
+     */
+    void onSpecViolation(SpecReference specReference, String details);
 }

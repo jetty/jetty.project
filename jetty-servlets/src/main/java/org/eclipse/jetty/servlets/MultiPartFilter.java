@@ -163,7 +163,7 @@ public class MultiPartFilter implements Filter
         }
 
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
-        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(request.getInputStream(), content_type, config, tempdir);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(request.getInputStream(), content_type, config, tempdir, null);
         mpis.setDeleteOnExit(_deleteFiles);
         mpis.setWriteFilesWithFilenames(_writeFilesWithFilenames);
         request.setAttribute(MULTIPART, mpis);

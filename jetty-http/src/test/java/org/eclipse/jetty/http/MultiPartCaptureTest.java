@@ -166,7 +166,7 @@ public class MultiPartCaptureTest
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         try (InputStream in = Files.newInputStream(multipartRawFile))
         {
-            MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
+            MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile(),null);
 
             multipartExpectations.checkParts(parser.getParts(),s->
             { 

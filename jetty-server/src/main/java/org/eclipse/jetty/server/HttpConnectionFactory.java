@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
-    private boolean _recordHttpComplianceViolations = false;
+    private boolean _recordSpecViolations = false;
 
     public HttpConnectionFactory()
     {
@@ -53,21 +53,21 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
-    public boolean isRecordHttpComplianceViolations()
+    public boolean isRecordSpecViolations()
     {
-        return _recordHttpComplianceViolations;
+        return _recordSpecViolations;
     }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        HttpConnection conn = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
+        HttpConnection conn = new HttpConnection(_config, connector, endPoint, isRecordSpecViolations());
         return configure(conn, connector, endPoint);
     }
     
     
-    public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
+    public void setRecordSpecViolations(boolean recordHttpComplianceViolations)
     {
-        this._recordHttpComplianceViolations = recordHttpComplianceViolations;
+        this._recordSpecViolations = recordHttpComplianceViolations;
     }
 }

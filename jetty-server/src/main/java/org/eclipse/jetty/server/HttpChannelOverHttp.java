@@ -26,8 +26,6 @@ import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpCompliance;
-import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -39,6 +37,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.SpecReference;
+import org.eclipse.jetty.http.SpecViolationListener;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
-public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ComplianceHandler
+public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, SpecViolationListener
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
@@ -60,7 +60,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _unknownExpectation = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
-    private List<String> _complianceViolations;
+    private List<String> _specViolations;
     private HttpFields _trailers;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
@@ -284,10 +284,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
-        if (_complianceViolations != null && !_complianceViolations.isEmpty())
+        if (_specViolations != null && !_specViolations.isEmpty())
         {
-            this.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
-            _complianceViolations=null;
+            this.getRequest().setAttribute(SpecReference.VIOLATIONS_ATTR, _specViolations);
+            _specViolations =null;
         }
 
         boolean persistent;
@@ -516,17 +516,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
+    public void onSpecViolation(SpecReference specReference, String details)
     {
-        if (_httpConnection.isRecordHttpComplianceViolations())
+        if (_httpConnection.isRecordSpecViolations())
         {
-            if (_complianceViolations == null)
+            if (_specViolations == null)
             {
-                _complianceViolations = new ArrayList<>();
+                _specViolations = new ArrayList<>();
             }
             String record = String.format("%s (see %s) in mode %s for %s in %s", 
-                violation.getDescription(), violation.getURL(), compliance, reason, getHttpTransport());
-            _complianceViolations.add(record);
+                specReference.getDescription(), specReference.getUrl(), specReference.getName(), details, getHttpTransport());
+            _specViolations.add(record);
             if (LOG.isDebugEnabled())
                 LOG.debug(record);
         }

@@ -18,12 +18,19 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.ALLOW_CAST_INSENSITIVE_REQUEST_METHOD_CASE;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.CASE_INSENSITIVE_FIELD_VALUE_CACHE;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.REQUIRE_COLON_AFTER_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.ALLOW_CASE_INSENSITIVE_FIELD_NAMES;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.ALLOW_MULTILINE_FIELD_VALUE;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.ALLOW_HTTP_09;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.ALLOW_WHITESPACE_AFTER_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpParser.HttpSpecReference.ALLOW_TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -44,9 +51,32 @@ import org.junit.jupiter.api.Test;
 
 public class HttpParserTest
 {
+    private static final HttpCompliance LEGACY;
+    private static final HttpCompliance RFC2616_LEGACY;
+    private static final HttpCompliance RFC7230_LEGACY;
+    private static final HttpCompliance CUSTOM0;
+
     static
     {
-        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME);
+        LEGACY = HttpCompliance.rfc2616Builder()
+                .useCaseInsensitiveFieldValueCache(false)
+                .allowCaseInsensitiveRequestMethod(true)
+                .allowCaseInsensitiveFieldNames(false)
+                .build();
+
+        RFC2616_LEGACY = HttpCompliance.rfc2616Builder()
+                .allowMultipleContentLengths(false)
+                .build();
+
+        RFC7230_LEGACY = HttpCompliance.rfc7230Builder()
+                .useCaseInsensitiveFieldValueCache(true)
+                .allowCaseInsensitiveRequestMethod(false)
+                .build();
+
+        CUSTOM0 = HttpCompliance.rfc2616Builder()
+                .requireColonAfterFieldName(true)
+                .allowWhitespaceAfterFieldName(true)
+                .build();
     }
     
     /**
@@ -55,7 +85,6 @@ public class HttpParserTest
      *
      * @param parser The parser to test
      * @param buffer the buffer to parse
-     * @throws IllegalStateException If the buffers have already been partially parsed.
      */
     public static void parseAll(HttpParser parser, ByteBuffer buffer)
     {
@@ -128,7 +157,7 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer("GET /999\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         assertNull(_bad);
@@ -136,7 +165,7 @@ public class HttpParserTest
         assertEquals("/999", _uriOrStatus);
         assertEquals("HTTP/0.9", _versionOrReason);
         assertEquals(-1, _headers);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_0_9));
+        assertThat(_specViolations, contains(ALLOW_HTTP_09));
     }
 
     @Test
@@ -148,7 +177,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
         assertEquals("HTTP/0.9 not supported", _bad);
-        assertThat(_complianceViolation,Matchers.empty());
+        assertThat(_specViolations, contains(ALLOW_HTTP_09));
     }
 
     @Test
@@ -157,7 +186,7 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer("POST /222  \r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         assertNull(_bad);
@@ -165,7 +194,7 @@ public class HttpParserTest
         assertEquals("/222", _uriOrStatus);
         assertEquals("HTTP/0.9", _versionOrReason);
         assertEquals(-1, _headers);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_0_9));
+        assertThat(_specViolations, contains(ALLOW_HTTP_09));
     }
 
     @Test
@@ -178,7 +207,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
         assertEquals("HTTP/0.9 not supported", _bad);
-        assertThat(_complianceViolation,Matchers.empty());
+        assertThat(_specViolations, contains(ALLOW_HTTP_09));
     }
 
     @Test
@@ -299,7 +328,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         assertThat(_bad, Matchers.nullValue());
@@ -310,7 +339,7 @@ public class HttpParserTest
         assertEquals("value extra", _val[1]);
         assertEquals("Name2", _hdr[2]);
         assertEquals("value2", _val[2]);
-        assertThat(_complianceViolation, contains(NO_FIELD_FOLDING,NO_FIELD_FOLDING));
+        assertThat(_specViolations, contains(ALLOW_MULTILINE_FIELD_VALUE, ALLOW_MULTILINE_FIELD_VALUE));
     }
 
     @Test
@@ -324,12 +353,12 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, 4096, RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         assertThat(_bad, Matchers.notNullValue());
         assertThat(_bad, containsString("Header Folding"));
-        assertThat(_complianceViolation,Matchers.empty());
+        assertThat(_specViolations, contains(ALLOW_MULTILINE_FIELD_VALUE));
     }
     
     @Test
@@ -342,7 +371,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, 4096, RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         assertThat(_bad, Matchers.notNullValue());
@@ -359,7 +388,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, 4096, RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         assertThat(_bad, Matchers.notNullValue());
@@ -371,7 +400,8 @@ public class HttpParserTest
     {
         HttpCompliance[] compliances = new HttpCompliance[]
         {
-            HttpCompliance.RFC7230, HttpCompliance.RFC2616
+                HttpCompliance.rfc7230Builder().build(),
+                HttpCompliance.rfc2616Builder().build()
         };
 
         String whitespaces[][] = new String[][]
@@ -461,11 +491,11 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.CUSTOM0);
+        HttpParser parser = new HttpParser(handler,CUSTOM0);
         parseAll(parser, buffer);
         
         assertThat(_bad, containsString("Illegal character"));
-        assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
+        assertThat(_specViolations,contains(ALLOW_WHITESPACE_AFTER_FIELD_NAME));
     }
 
     @Test
@@ -479,11 +509,11 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.CUSTOM0);
+        HttpParser parser = new HttpParser(handler,CUSTOM0);
         parseAll(parser, buffer);
         
         assertThat(_bad, containsString("Illegal character"));
-        assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
+        assertThat(_specViolations,contains(ALLOW_WHITESPACE_AFTER_FIELD_NAME, REQUIRE_COLON_AFTER_FIELD_NAME));
     }
 
     @Test
@@ -496,7 +526,7 @@ public class HttpParserTest
                 "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.CUSTOM0);
+        HttpParser parser = new HttpParser(handler, -1, CUSTOM0);
         parseAll(parser, buffer);
 
         assertTrue(_headerCompleted);
@@ -515,11 +545,11 @@ public class HttpParserTest
         assertEquals("Other", _hdr[1]);
         assertEquals("value", _val[1]);
 
-        assertThat(_complianceViolation, contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME,HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
+        assertThat(_specViolations, contains(ALLOW_WHITESPACE_AFTER_FIELD_NAME, ALLOW_WHITESPACE_AFTER_FIELD_NAME));
     }
 
     @Test
-    public void testTrailingSpacesInHeaderNameNoCustom0() throws Exception
+    public void testTrailingSpacesInHeaderNameDefault() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "HTTP/1.1 204 No Content\r\n" +
@@ -535,6 +565,7 @@ public class HttpParserTest
         assertEquals("204", _uriOrStatus);
         assertEquals("No Content", _versionOrReason);
         assertThat(_bad, containsString("Illegal character "));
+        assertThat(_specViolations, contains(ALLOW_WHITESPACE_AFTER_FIELD_NAME));
     }
 
     @Test
@@ -547,10 +578,10 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler,RFC7230_LEGACY);
         parseAll(parser, buffer);
         assertThat(_bad, containsString("Illegal character"));
-        assertThat(_complianceViolation,Matchers.empty());
+        assertThat(_specViolations, contains(REQUIRE_COLON_AFTER_FIELD_NAME));
     }
     
 
@@ -877,11 +908,11 @@ public class HttpParserTest
                 "Connection: close\r\n" +
                 "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, -1, RFC7230_LEGACY);
         parseAll(parser, buffer);
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.METHOD_CASE_SENSITIVE));
+        assertThat(_specViolations, contains(ALLOW_CAST_INSENSITIVE_REQUEST_METHOD_CASE));
     }
 
     @Test
@@ -893,11 +924,11 @@ public class HttpParserTest
                 "Connection: close\r\n" +
                 "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
+        HttpParser parser = new HttpParser(handler, -1, LEGACY);
         parseAll(parser, buffer);
         assertNull(_bad);
         assertEquals("gEt", _methodOrVersion);
-        assertThat(_complianceViolation,Matchers.empty());
+        assertThat(_specViolations,Matchers.empty());
     }
 
     @Test
@@ -909,7 +940,7 @@ public class HttpParserTest
                         "cOnNeCtIoN: ClOsE\r\n" +
                         "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, -1, RFC7230_LEGACY);
         parseAll(parser, buffer);
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
@@ -920,7 +951,7 @@ public class HttpParserTest
         assertEquals("Connection", _hdr[1]);
         assertEquals("close", _val[1]);
         assertEquals(1, _headers);
-        assertThat(_complianceViolation,Matchers.empty());
+        assertThat(_specViolations,Matchers.empty());
     }
 
     @Test
@@ -932,7 +963,7 @@ public class HttpParserTest
                         "cOnNeCtIoN: ClOsE\r\n" +
                         "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
+        HttpParser parser = new HttpParser(handler, -1, LEGACY);
         parseAll(parser, buffer);
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
@@ -943,7 +974,7 @@ public class HttpParserTest
         assertEquals("cOnNeCtIoN", _hdr[1]);
         assertEquals("ClOsE", _val[1]);
         assertEquals(1, _headers);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE));
+        assertThat(_specViolations, contains(ALLOW_CASE_INSENSITIVE_FIELD_NAMES, ALLOW_CASE_INSENSITIVE_FIELD_NAMES,CASE_INSENSITIVE_FIELD_VALUE_CACHE));
     }
 
     @Test
@@ -1925,7 +1956,7 @@ public class HttpParserTest
                         + "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         assertEquals("POST", _methodOrVersion);
@@ -1936,7 +1967,7 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertThat(_specViolations, contains(ALLOW_TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @Test
@@ -1954,7 +1985,7 @@ public class HttpParserTest
                         + "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         assertEquals("POST", _methodOrVersion);
@@ -1965,7 +1996,7 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertThat(_specViolations, contains(ALLOW_TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @Test
@@ -2241,7 +2272,7 @@ public class HttpParserTest
         _headers = 0;
         _headerCompleted = false;
         _messageCompleted = false;
-        _complianceViolation.clear();
+        _specViolations.clear();
     }
 
     private String _host;
@@ -2259,9 +2290,9 @@ public class HttpParserTest
     private boolean _early;
     private boolean _headerCompleted;
     private boolean _messageCompleted;
-    private final List<HttpComplianceSection> _complianceViolation = new ArrayList<>();
+    private final List<SpecReference> _specViolations = new ArrayList<>();
     
-    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, HttpParser.ComplianceHandler
+    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, SpecViolationListener
     {
         @Override
         public boolean content(ByteBuffer ref)
@@ -2369,9 +2400,9 @@ public class HttpParserTest
         }
 
         @Override
-        public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
+        public void onSpecViolation(SpecReference specReference, String details)
         {
-            _complianceViolation.add(violation);
+            _specViolations.add(specReference);
         }
     }
 }

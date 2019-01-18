@@ -24,6 +24,7 @@ import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieCutter;
+import org.eclipse.jetty.http.SpecViolationListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -47,14 +48,14 @@ public class Cookies extends CookieCutter
     private Cookie[] _cookies;
     private boolean _set = false;
 
-    public Cookies()
-    {  
-        this(CookieCompliance.RFC6265);
-    }
-    
     public Cookies(CookieCompliance compliance)
     {
-        super(compliance);
+        this(compliance, null);
+    }
+
+    public Cookies(CookieCompliance compliance, SpecViolationListener specViolationListener)
+    {
+        super(compliance, specViolationListener);
     }
 
     public void addCookieField(String rawField)

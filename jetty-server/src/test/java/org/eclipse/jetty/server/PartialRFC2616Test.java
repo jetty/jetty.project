@@ -358,7 +358,7 @@ public class PartialRFC2616Test
                         "\n" +
                         "abcdef");
         response = endp.getResponse();
-        offset=checkContains(response,offset,"HTTP/1.1 400 Bad","3. ignore c-l")+1;
+        offset=checkContains(response,offset,"HTTP/1.1 400 Transfer-Encoding and Content-Length","3. ignore c-l")+1;
         checkNotContained(response,offset,"/R2","3. _content-length");
     }
 

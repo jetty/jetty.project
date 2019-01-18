@@ -20,19 +20,25 @@ package org.eclipse.jetty.http;
 
 /**
  * The compliance level for parsing <code>multiPart/form-data</code>
- *
  */
-public enum MultiPartFormDataCompliance 
+public class MultiPartFormDataCompliance
 {
-    /**
-     * Legacy <code>multiPart/form-data</code> parsing which is slow but forgiving.
-     * It will accept non compliant preambles and inconsistent line termination.
-     * @see MultiPartInputStreamParser
-     */
-    LEGACY, 
+    public static final MultiPartFormDataCompliance LEGACY = new MultiPartFormDataCompliance(false);
+    public static final MultiPartFormDataCompliance RFC7578 = new MultiPartFormDataCompliance(true);
+    private final boolean isRFC7578;
+
+    public MultiPartFormDataCompliance(boolean isRFC7578)
+    {
+        this.isRFC7578 = isRFC7578;
+    }
+
     /**
      * RFC7578 compliant parsing that is a fast but strict parser.
+     *
      * @see org.eclipse.jetty.http.MultiPartFormInputStream
      */
-    RFC7578
+    public boolean isRFC7578()
+    {
+        return isRFC7578;
+    }
 }

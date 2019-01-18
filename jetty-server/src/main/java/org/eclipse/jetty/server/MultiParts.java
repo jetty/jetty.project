@@ -22,18 +22,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.http.MultiPartInputStreamParser;
-import org.eclipse.jetty.http.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
@@ -114,24 +109,9 @@ public interface MultiParts extends Closeable
 
         public MultiPartsUtilParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request) throws IOException
         {
-            _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
+            _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir, request.getSpecViolationListener());
             _context = request.getContext();
             _utilParser.getParts();
-
-            EnumSet<NonCompliance> nonComplianceWarnings = _utilParser.getNonComplianceWarnings();
-            if (!nonComplianceWarnings.isEmpty())
-            {
-                @SuppressWarnings("unchecked")
-                List<String> violations = (List<String>)request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
-                if (violations==null)
-                {
-                    violations = new ArrayList<>();
-                    request.setAttribute(HttpCompliance.VIOLATIONS_ATTR,violations);
-                }
-
-                for(NonCompliance nc : nonComplianceWarnings)
-                    violations.add(nc.name()+": "+nc.getURL());
-            }
         }
 
         @Override

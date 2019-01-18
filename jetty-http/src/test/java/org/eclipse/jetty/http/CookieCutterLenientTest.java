@@ -179,7 +179,7 @@ public class CookieCutterLenientTest
 
         protected TestCutter()
         {
-            super(CookieCompliance.RFC6265);
+            super(CookieCompliance.RFC6265, null);
         }
 
         @Override

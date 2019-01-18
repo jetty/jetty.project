@@ -81,6 +81,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartFormDataCompliance;
+import org.eclipse.jetty.http.SpecViolationListener;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
@@ -576,6 +577,20 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
+    SpecViolationListener getSpecViolationListener()
+    {
+        if (_channel instanceof SpecViolationListener)
+            return (SpecViolationListener) _channel;
+
+        SpecViolationListener listener = _channel.getConnector().getBean(SpecViolationListener.class);
+        if (listener == null)
+        {
+            listener = _channel.getServer().getBean(SpecViolationListener.class);
+        }
+        return listener;
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Get Request Attribute.
      * <p>
@@ -601,6 +616,12 @@ public class Request implements HttpServletRequest
             if (HttpConnection.class.getName().equals(name) &&
                 _channel.getHttpTransport() instanceof HttpConnection)
                 return _channel.getHttpTransport();
+            if (SpecViolationListener.class.getName().equals(name))
+            {
+                if (_channel instanceof SpecViolationListener)
+                    return _channel;
+                return _channel.getServer().getAttribute(name);
+            }
         }
         return (_attributes == null)?null:_attributes.getAttribute(name);
     }
@@ -772,7 +793,7 @@ public class Request implements HttpServletRequest
             if (field.getHeader()==HttpHeader.COOKIE)
             {
                 if (_cookies==null)
-                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
+                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getSpecComplianceListener());
                 _cookies.addCookieField(field.getValue());
             }
         }
@@ -2048,7 +2069,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies == null)
-            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
+            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getSpecComplianceListener());
         _cookies.setCookies(cookies);
     }
 
@@ -2395,24 +2416,18 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    
-    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException
-    {
+    // TODO: review arguments (inputStream, contentType, and object not used??)
+    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException {
         MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
-        if(LOG.isDebugEnabled())
-            LOG.debug("newMultiParts {} {}",compliance, this);
-        
-        switch(compliance)
-        {
-            case RFC7578:
-                return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
-                
-            case LEGACY: 
-            default:
-                return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
+        if (LOG.isDebugEnabled())
+            LOG.debug("newMultiParts {} {}", compliance, this);
+
+        if (compliance.isRFC7578()) {
+            return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
                     (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
-                        
+        } else {
+            return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
+                    (_context != null ? (File) _context.getAttribute("javax.servlet.context.tempdir") : null), this);
         }
     }
 

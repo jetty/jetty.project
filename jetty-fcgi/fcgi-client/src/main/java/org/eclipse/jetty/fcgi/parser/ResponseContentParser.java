@@ -330,7 +330,7 @@ public class ResponseContentParser extends StreamContentParser
     {
         private FCGIHttpParser(ResponseHandler handler)
         {
-            super(handler, 65 * 1024, HttpCompliance.RFC7230);
+            super(handler, 65 * 1024, HttpCompliance.RFC7230());
             reset();
         }
 

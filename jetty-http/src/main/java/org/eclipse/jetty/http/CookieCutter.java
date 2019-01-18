@@ -31,10 +31,12 @@ public abstract class CookieCutter
     protected static final Logger LOG = Log.getLogger(CookieCutter.class);
 
     protected final CookieCompliance _compliance;
+    protected SpecViolationListener _specViolationListener;
 
-    protected CookieCutter(CookieCompliance compliance)
+    protected CookieCutter(CookieCompliance compliance, SpecViolationListener specViolationListener)
     {
         _compliance = compliance;
+        _specViolationListener = specViolationListener;
     }
 
     protected void parseFields(List<String> rawFields)
@@ -102,7 +104,7 @@ public abstract class CookieCutter
                             inQuoted = false;
                             i--;
                             continue;
-                            
+
                         default:
                             unquoted.append(c);
                             continue;
@@ -121,6 +123,7 @@ public abstract class CookieCutter
                                 break;
 
                             case ',':
+                                reportViolation(CookieSpecReference.COMMA_NOT_VALID_OCTET, name);
                                 if (_compliance!=CookieCompliance.RFC2965)
                                 {
                                     if (quoted)
@@ -157,7 +160,8 @@ public abstract class CookieCutter
                                 {
                                     if (name.startsWith("$"))
                                     {
-                                        if (_compliance==CookieCompliance.RFC2965)
+                                        reportViolation(CookieSpecReference.RESERVED_NAMES_NOT_DOLLAR_PREFIXED, name);
+                                        if (_compliance.isRFC2965())
                                         {
                                             String lowercaseName = name.toLowerCase(Locale.ENGLISH);
                                             switch(lowercaseName)
@@ -279,5 +283,42 @@ public abstract class CookieCutter
 
     protected abstract void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment);
 
+    private void reportViolation(CookieSpecReference specReference, String reason)
+    {
+        if (_specViolationListener != null)
+            _specViolationListener.onSpecViolation(specReference, reason);
+    }
 
+    enum CookieSpecReference implements SpecReference
+    {
+        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265", "Reserved $Names no longer use '$' prefix"),
+        COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#page-9", "Comma ',' not valid as cookie-octet or separator");
+
+        final String url;
+        final String description;
+
+        CookieSpecReference(String url, String description)
+        {
+            this.url = url;
+            this.description = description;
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return description;
+        }
+
+        @Override
+        public String getUrl()
+        {
+            return url;
+        }
+
+        @Override
+        public String getName()
+        {
+            return name();
+        }
+    }
 }

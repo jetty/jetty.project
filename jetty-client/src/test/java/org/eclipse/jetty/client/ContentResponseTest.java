@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -121,7 +122,8 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());
         assertEquals(mediaType, response.getMediaType());
-        assertEquals(encoding, response.getEncoding());
+        String cachedValue = encoding.toLowerCase(Locale.ENGLISH); // TODO: get actual value from Field Value Cache
+        assertEquals(cachedValue, response.getEncoding());
     }
 
     @ParameterizedTest

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.internal;
+package org.eclipse.jetty.http;
 
 import java.io.OutputStream;
 import java.io.PipedInputStream;

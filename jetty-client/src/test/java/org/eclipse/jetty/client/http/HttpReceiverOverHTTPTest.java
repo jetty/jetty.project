@@ -64,11 +64,8 @@ public class HttpReceiverOverHTTPTest
     public static Stream<Arguments> complianceModes() throws Exception
     {
         return Stream.of(
-                HttpCompliance.RFC7230,
-                HttpCompliance.RFC2616,
-                HttpCompliance.LEGACY,
-                HttpCompliance.RFC2616_LEGACY,
-                HttpCompliance.RFC7230_LEGACY
+                HttpCompliance.RFC7230(),
+                HttpCompliance.RFC2616()
         ).map(Arguments::of);
     }
     

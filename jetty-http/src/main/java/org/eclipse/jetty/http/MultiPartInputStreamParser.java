@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -61,8 +62,6 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * Handle a MultiPart Mime input stream, breaking it up on the boundary into files and strings.
  * 
- * Non Compliance warnings are documented by the method {@link #getNonComplianceWarnings()}
- *
  * @deprecated Replaced by org.eclipse.jetty.http.MultiPartFormInputStream
  * The code for MultiPartInputStream is slower than its replacement MultiPartFormInputStream. However
  * this class accepts formats non compliant the RFC that the new MultiPartFormInputStream does not accept. 
@@ -83,39 +82,8 @@ public class MultiPartInputStreamParser
     protected boolean _deleteOnExit;
     protected boolean _writeFilesWithFilenames;
     protected boolean _parsed;
+    private SpecViolationListener _specViolationListener;
 
-    private EnumSet<NonCompliance> nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
-    public enum NonCompliance
-    {
-        CR_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1"),
-        LF_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1"),
-        NO_CRLF_AFTER_PREAMBLE("https://tools.ietf.org/html/rfc2046#section-5.1.1"), 
-        BASE64_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7"), 
-        QUOTED_PRINTABLE_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7");
-        
-        final String _rfcRef;
-        
-        NonCompliance(String rfcRef)
-        {
-            _rfcRef = rfcRef;
-        }
-        
-        public String getURL()
-        {
-            return _rfcRef;
-        }
-    }
-    
-    /**
-     * @return an EnumSet of non compliances with the RFC that were accepted by this parser
-     */
-    public EnumSet<NonCompliance> getNonComplianceWarnings()
-    {                 
-        return nonComplianceWarnings; 
-    }
-
-
-    
     public class MultiPart implements Part
     {
         protected String _name;
@@ -414,12 +382,14 @@ public class MultiPartInputStreamParser
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
      * @param contextTmpDir javax.servlet.context.tempdir
+     * @param specViolationListener the compliance listener to report violations to (can be null)
      */
-    public MultiPartInputStreamParser (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
+    public MultiPartInputStreamParser (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, SpecViolationListener specViolationListener)
     {
         _contentType = contentType;
         _config = config;
         _contextTmpDir = contextTmpDir;
+        _specViolationListener = specViolationListener;
         if (_contextTmpDir == null)
             _contextTmpDir = new File (System.getProperty("java.io.tmpdir"));
 
@@ -636,8 +606,9 @@ public class MultiPartInputStreamParser
                 return;
 
             // check compliance of preamble
+            char preambleChar = untrimmed.charAt(0);
             if (Character.isWhitespace(untrimmed.charAt(0)))
-                nonComplianceWarnings.add(NonCompliance.NO_CRLF_AFTER_PREAMBLE);
+                reportViolation(MultiPartSpecReference.NO_CRLF_AFTER_PREAMBLE, String.format("Got character 0x%02x", (byte) preambleChar));
 
             // Read each part
             boolean lastPart=false;
@@ -725,15 +696,16 @@ public class MultiPartInputStreamParser
                 _parts.add(name, part);
                 part.open();
 
+                if (StringUtil.isNotBlank(contentTransferEncoding))
+                    reportViolation(MultiPartSpecReference.CONTENT_TRANSFER_ENCODING_DEPRECATED, "Requested: " + contentTransferEncoding);
+
                 InputStream partInput = null;
                 if ("base64".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    nonComplianceWarnings.add(NonCompliance.BASE64_TRANSFER_ENCODING);
                     partInput = new Base64InputStream((ReadLineInputStream)_in);
                 }
                 else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    nonComplianceWarnings.add(NonCompliance.QUOTED_PRINTABLE_TRANSFER_ENCODING);
                     partInput = new FilterInputStream(_in)
                     {
                         @Override
@@ -868,9 +840,9 @@ public class MultiPartInputStreamParser
                 EnumSet<Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
                 
                 if(term.contains(Termination.CR))
-                    nonComplianceWarnings.add(NonCompliance.CR_LINE_TERMINATION);
+                    reportViolation(MultiPartSpecReference.CR_LINE_TERMINATION, "Got lone CR");
                 if(term.contains(Termination.LF))
-                    nonComplianceWarnings.add(NonCompliance.LF_LINE_TERMINATION);
+                    reportViolation(MultiPartSpecReference.LF_LINE_TERMINATION, "Got lone LF");
             }
             else
                 throw new IOException("Incomplete parts");
@@ -939,7 +911,46 @@ public class MultiPartInputStreamParser
             return QuotedStringTokenizer.unquoteOnly(value, true);
     }
 
+    private void reportViolation(SpecReference specReference, String reason)
+    {
+        if (_specViolationListener != null)
+            _specViolationListener.onSpecViolation(specReference, reason);
+    }
 
+    enum MultiPartSpecReference implements SpecReference
+    {
+        CR_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "Use of CR (without LF) outside of line break sequences is also forbidden"),
+        LF_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "Use of LF (without CR) outside of line break sequences is also forbidden"),
+        NO_CRLF_AFTER_PREAMBLE("https://tools.ietf.org/html/rfc2046#section-5.1.1", "No CRLF after preamble"),
+        CONTENT_TRANSFER_ENCODING_DEPRECATED("https://tools.ietf.org/html/rfc7578#section-4.7", "Content-Transfer-Encoding is deprecated");
+
+        final String url;
+        final String description;
+
+        MultiPartSpecReference(String url, String description)
+        {
+            this.url = url;
+            this.description = description;
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return description;
+        }
+
+        @Override
+        public String getUrl()
+        {
+            return url;
+        }
+
+        @Override
+        public String getName()
+        {
+            return name();
+        }
+    }
 
     private static class Base64InputStream extends InputStream
     {
@@ -985,7 +996,4 @@ public class MultiPartInputStreamParser
             return _buffer[_pos++];
         }
     } 
-    
-    
-    
 }

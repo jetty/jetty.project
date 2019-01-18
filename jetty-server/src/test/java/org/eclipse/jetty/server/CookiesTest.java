@@ -23,6 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.CookieCompliance;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,7 @@ public class CookiesTest
     @Test
     public void testEmpty()
     {
-        Cookies cutter = new Cookies();
+        Cookies cutter = new Cookies(CookieCompliance.RFC6265);
         assertThat(cutter.getCookies().length,is(0));
         cutter.reset();
         assertThat(cutter.getCookies().length,is(0));
@@ -40,7 +41,7 @@ public class CookiesTest
     @Test
     public void testCacheHit()
     {
-        Cookies cutter = new Cookies();
+        Cookies cutter = new Cookies(CookieCompliance.RFC6265);
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
@@ -63,7 +64,7 @@ public class CookiesTest
     @Test
     public void testCacheMiss()
     {
-        Cookies cutter = new Cookies();
+        Cookies cutter = new Cookies(CookieCompliance.RFC6265);
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
@@ -86,7 +87,7 @@ public class CookiesTest
     @Test
     public void testCacheUnder()
     {
-        Cookies cutter = new Cookies();
+        Cookies cutter = new Cookies(CookieCompliance.RFC6265);
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
@@ -108,7 +109,7 @@ public class CookiesTest
     @Test
     public void testCacheOver()
     {
-        Cookies cutter = new Cookies();
+        Cookies cutter = new Cookies(CookieCompliance.RFC6265);
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
@@ -132,7 +133,7 @@ public class CookiesTest
     @Test
     public void testCacheReset()
     {
-        Cookies cutter = new Cookies();
+        Cookies cutter = new Cookies(CookieCompliance.RFC6265);
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
@@ -157,7 +158,7 @@ public class CookiesTest
     @Test
     public void testSet()
     {
-        Cookies cutter = new Cookies();
+        Cookies cutter = new Cookies(CookieCompliance.RFC6265);
         cutter.setCookies(new Cookie[]
         {
             new Cookie("nameA0","A0"),

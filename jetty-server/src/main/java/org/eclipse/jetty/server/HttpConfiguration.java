@@ -75,7 +75,7 @@ public class HttpConfiguration implements Dumpable
     private boolean _useDirectByteBuffers = false;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
-    private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
+    private HttpCompliance _httpCompliance = HttpCompliance.rfc7230Builder().build();
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.RFC7578;
