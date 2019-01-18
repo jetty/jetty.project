@@ -153,7 +153,7 @@ public class HttpClient extends ContainerLifeCycle
     private boolean removeIdleDestinations = false;
     private boolean connectBlocking = false;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
-    private HttpCompliance httpCompliance = HttpCompliance.RFC7230();
+    private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
 
     /**

@@ -49,6 +49,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartFormDataCompliance;
+import org.eclipse.jetty.http.SpecReference;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -1892,7 +1893,7 @@ public class RequestTest
                 assertNotNull(foo);
                 assertTrue(foo.getSize() > 0);
                 response.setStatus(200);
-                List<String> violations = (List<String>)request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
+                List<String> violations = (List<String>)request.getAttribute(SpecReference.VIOLATIONS_ATTR);
                 if(violations != null)
                 {
                     for(String v : violations)
