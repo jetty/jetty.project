@@ -17,6 +17,7 @@
   <modules>
     <module>websocket-core</module>
     <module>websocket-servlet</module>
+    <module>websocket-tests</module>
     <!-- Jetty WebSocket Implementation -->
     <module>jetty-websocket-api</module>
     <module>jetty-websocket-common</module>
