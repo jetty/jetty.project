@@ -31,7 +31,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.websocket.*;
+import javax.websocket.ContainerProvider;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.client.HttpClient;

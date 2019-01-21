@@ -33,8 +33,8 @@ public class WebSocketChannelState
         CONNECTING,
         CONNECTED,
         OPEN,
-        ICLOSED,
-        OCLOSED,
+        ISHUT,
+        OSHUT,
         CLOSED
     }
 
@@ -85,16 +85,16 @@ public class WebSocketChannelState
         return getState()==State.CLOSED;
     }
 
-    public boolean isInOpen()
+    public boolean isInputOpen()
     {
         State state = getState();
-        return (state==State.OPEN || state==State.OCLOSED);
+        return (state==State.OPEN || state==State.OSHUT);
     }
 
-    public boolean isOutOpen()
+    public boolean isOutputOpen()
     {
         State state = getState();
-        return (state==State.OPEN || state==State.ICLOSED);
+        return (state==State.OPEN || state==State.ISHUT);
     }
 
     public CloseStatus getCloseStatus()
@@ -125,7 +125,7 @@ public class WebSocketChannelState
 
         synchronized (this)
         {
-            if (!isOutOpen())
+            if (!isOutputOpen())
                 throw new IllegalStateException(_channelState.toString());
 
             if (opcode == OpCode.CLOSE)
@@ -135,9 +135,9 @@ public class WebSocketChannelState
                 switch (_channelState)
                 {
                     case OPEN:
-                        _channelState = State.OCLOSED;
+                        _channelState = State.OSHUT;
                         return false;
-                    case ICLOSED:
+                    case ISHUT:
                         _channelState = State.CLOSED;
                         return true;
                     default:
@@ -160,7 +160,7 @@ public class WebSocketChannelState
 
         synchronized (this)
         {
-            if (!isInOpen())
+            if (!isInputOpen())
                 throw new IllegalStateException(_channelState.toString());
 
             if (opcode == OpCode.CLOSE)
@@ -170,9 +170,9 @@ public class WebSocketChannelState
                 switch (_channelState)
                 {
                     case OPEN:
-                        _channelState = State.ICLOSED;
+                        _channelState = State.ISHUT;
                         return false;
-                    case OCLOSED:
+                    case OSHUT:
                         _channelState = State.CLOSED;
                         return true;
                     default:

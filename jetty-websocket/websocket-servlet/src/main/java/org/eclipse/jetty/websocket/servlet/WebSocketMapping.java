@@ -27,7 +27,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.*;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.RegexPathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;

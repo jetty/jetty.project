@@ -79,7 +79,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        negotiated.getExtensions().connect(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+        negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
     }
 
     /**
@@ -153,7 +153,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 if (!(frame instanceof ParsedFrame)) // already check in parser
-                    CloseStatus.getCloseStatus(frame);
+                    CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
             }
         }
         else
@@ -237,7 +237,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public boolean isOpen()
     {
-        return channelState.isOutOpen();
+        return channelState.isOutputOpen();
     }
 
     public void setWebSocketConnection(WebSocketConnection connection)
@@ -640,7 +640,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                         @Override
                         public void completed()
                         {
-                            if (channelState.isOutOpen())
+                            if (channelState.isOutputOpen())
                             {
                                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
 
