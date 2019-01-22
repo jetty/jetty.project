@@ -172,9 +172,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             IOException e = new IOException("Closed");
             channel.onClosed(e);
         }
+        flusher.onClose();
 
         super.onClose();
     }
+
 
     @Override
     public boolean onIdleExpired()
