@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.util.Map;
-
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -74,18 +72,6 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     public HttpDestination newHttpDestination(Origin origin)
     {
         return new HttpDestinationOverFCGI(getHttpClient(), origin);
-    }
-
-    @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
-    {
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        @SuppressWarnings("unchecked")
-        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        HttpConnectionOverFCGI connection = newHttpConnection(endPoint, destination, promise);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Created {}", connection);
-        return customize(connection, context);
     }
 
     protected HttpConnectionOverFCGI newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
