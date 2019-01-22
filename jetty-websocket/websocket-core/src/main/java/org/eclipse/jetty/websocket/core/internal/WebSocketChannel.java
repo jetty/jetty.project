@@ -287,16 +287,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public void onClosed(Throwable cause)
     {
-        onClosed(cause, new CloseStatus(CloseStatus.NO_CLOSE, cause == null?null:cause.toString()));
+
+        CloseStatus closeStatus = new CloseStatus(CloseStatus.NO_CLOSE, cause == null?null:cause.toString());
+        if (channelState.onClosed(closeStatus))
+            onClosed(cause, closeStatus);
     }
 
     public void onClosed(Throwable cause, CloseStatus closeStatus)
     {
-        if (channelState.onClosed(closeStatus))
-        {
-            connection.cancelDemand();
+        connection.cancelDemand();
 
-            // Forward Errors to Local WebSocket EndPoint
+        // Forward Errors to Local WebSocket EndPoint
+        if (cause!=null)
+        {
             try
             {
                 handler.onError(cause);
@@ -306,19 +309,22 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 cause.addSuppressed(e);
                 LOG.warn(cause);
             }
-
-            try
-            {
-                handler.onClosed(closeStatus);
-            }
-            catch (Throwable e)
-            {
-                LOG.warn(e);
-            }
         }
+
+        try
+        {
+            handler.onClosed(closeStatus);
+        }
+        catch (Throwable e)
+        {
+            LOG.warn(e);
+        }
+
+        if (connection.getEndPoint().isOpen())
+            connection.close();
     }
 
-    AbnormalCloseStatus closeStatusFor(Throwable cause)
+    AbnormalCloseStatus abnormalCloseStatusFor(Throwable cause)
     {
         int code;
         if (cause instanceof ProtocolException)
@@ -339,37 +345,30 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     /**
      * Process an Error that originated from the connection.
+     * For protocol causes, send and abnormal close frame
+     * otherwise just close the connection.
      *
      * @param cause the cause
      */
     public void processConnectionError(Throwable cause)
     {
-        CloseStatus closeStatus = closeStatusFor(cause);
+        CloseStatus closeStatus = abnormalCloseStatusFor(cause);
 
         if (closeStatus.getCode() == CloseStatus.PROTOCOL)
             close(closeStatus, Callback.NOOP, false);
-        else
-        {
-            try
-            {
-                onClosed(cause, closeStatus);
-            }
-            finally
-            {
-                connection.close();
-            }
-        }
+        else if (channelState.onClosed(closeStatus))
+            onClosed(cause, closeStatus);
     }
 
     /**
      * Process an Error that originated from the handler.
+     * Send an abnormal close frame to ensure connection is closed.
      *
      * @param cause the cause
      */
     public void processHandlerError(Throwable cause)
     {
-        CloseStatus closeStatus = closeStatusFor(cause);
-        close(closeStatus, Callback.NOOP, false);
+        close(abnormalCloseStatusFor(cause), Callback.NOOP, false);
     }
 
     /**
@@ -498,8 +497,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 if (LOG.isDebugEnabled())
                     LOG.debug("close({}, {}, {})", CloseStatus.getCloseStatus(frame), callback, batch);
 
-                System.err.println(behavior + " Closing " + closeConnection);
-
                 if (closeConnection)
                 {
                     callback = new Callback.Nested(callback)
@@ -507,20 +504,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                         @Override
                         public void completed()
                         {
-                System.err.println(behavior + " completed " + closeConnection);
-                            try
-                            {
-                                handler.onClosed(channelState.getCloseStatus());
-                            }
-                            catch (Throwable e)
-                            {
-                                LOG.warn(e);
-                            }
-                            finally
-                            {
-                System.err.println(behavior + " connection.close ");
-                                connection.close();
-                            }
+                            onClosed(null, channelState.getCloseStatus());
                         }
                     };
                 }

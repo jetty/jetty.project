@@ -46,7 +46,6 @@ public class MisbehavingClassTest
     @BeforeAll
     public static void startServer() throws Exception
     {
-        System.err.println("START");
         server = new CoreServer(new CoreServer.EchoNegotiator());
         // Start Server
         server.start();
@@ -55,7 +54,6 @@ public class MisbehavingClassTest
     @AfterAll
     public static void stopServer()
     {
-        System.err.println("STOP");
         try
         {
             server.stop();
