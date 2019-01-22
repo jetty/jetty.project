@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketResources;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests.
@@ -184,7 +185,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         final ServletContext context = config.getServletContext();
 
         if (mapping == null)
-            throw new IllegalStateException("no websocket mapping set in container");
+            mapping = new WebSocketMapping(WebSocketResources.ensureWebSocketResources(context));
 
         String max = config.getInitParameter("maxIdleTime");
         if (max != null)

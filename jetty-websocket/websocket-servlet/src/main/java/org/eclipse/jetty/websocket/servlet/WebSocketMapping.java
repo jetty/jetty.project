@@ -120,8 +120,9 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
     throws WebSocketException
     {
-        if (getMapping(pathSpec) != null)
-            throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
+        // TODO evaluate why this can't be done
+        //if (getMapping(pathSpec) != null)
+        //    throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
     }
