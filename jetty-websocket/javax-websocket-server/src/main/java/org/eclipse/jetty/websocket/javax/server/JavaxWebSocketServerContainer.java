@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketResources;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
@@ -106,7 +108,9 @@ public class JavaxWebSocketServerContainer
 
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
-                WebSocketMapping.ensureMapping(servletContext), httpClient, executor);
+                    WebSocketMapping.ensureMapping(servletContext),
+                    WebSocketResources.ensureWebSocketResources(servletContext),
+                    httpClient, executor);
             contextHandler.addManaged(container);
             contextHandler.addLifeCycleListener(container);
         }
@@ -116,6 +120,7 @@ public class JavaxWebSocketServerContainer
     }
 
     private final WebSocketMapping webSocketMapping;
+    private final WebSocketResources webSocketResources;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
@@ -123,12 +128,19 @@ public class JavaxWebSocketServerContainer
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
 
+
+    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, HttpClient httpClient, Executor executor)
+    {
+        this(webSocketMapping, new WebSocketResources(), httpClient, executor);
+    }
+
     /**
      * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
      * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
-     * @param httpClient              the {@link HttpClient} instance to use
+     * @param webSocketResources the {@link WebSocketResources} instance to use
+     * @param httpClient       the {@link HttpClient} instance to use
      */
-    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, HttpClient httpClient, Executor executor)
+    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketResources webSocketResources, HttpClient httpClient, Executor executor)
     {
         super(() ->
         {
@@ -138,6 +150,7 @@ public class JavaxWebSocketServerContainer
             return client;
         });
         this.webSocketMapping = webSocketMapping;
+        this.webSocketResources = webSocketResources;
         this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
@@ -158,7 +171,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public ByteBufferPool getBufferPool()
     {
-        return this.webSocketMapping.getBufferPool();
+        return webSocketResources.getBufferPool();
     }
 
     @Override
@@ -170,7 +183,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return this.webSocketMapping.getExtensionRegistry();
+        return webSocketResources.getExtensionRegistry();
     }
 
     @Override
@@ -182,7 +195,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return this.webSocketMapping.getObjectFactory();
+        return webSocketResources.getObjectFactory();
     }
 
     @Override
@@ -276,7 +289,7 @@ public class JavaxWebSocketServerContainer
     {
         frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
 
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, webSocketMapping
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, webSocketResources
             .getExtensionRegistry());
 
 
