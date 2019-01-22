@@ -113,8 +113,8 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             ServletContext servletContext = getServletContext();
 
-            mapping = WebSocketMapping.ensureMapping(servletContext);
             resources = WebSocketResources.ensureWebSocketResources(servletContext);
+            mapping = new WebSocketMapping(resources);
 
             String max = getInitParameter("maxIdleTime");
             if (max != null)
