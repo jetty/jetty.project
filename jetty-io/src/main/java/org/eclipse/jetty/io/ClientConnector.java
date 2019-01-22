@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
@@ -251,20 +252,8 @@ public class ClientConnector extends ContainerLifeCycle
             // exception is being thrown, so we attempt to provide a better error message.
             if (x.getClass() == SocketException.class)
                 x = new SocketException("Could not connect to " + address).initCause(x);
-
-            try
-            {
-                if (channel != null)
-                    channel.close();
-            }
-            catch (IOException xx)
-            {
-                LOG.ignore(xx);
-            }
-            finally
-            {
-                connectFailed(x, context);
-            }
+            safeClose(channel);
+            connectFailed(x, context);
         }
     }
 
@@ -273,7 +262,6 @@ public class ClientConnector extends ContainerLifeCycle
         try
         {
             context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
-
             if (!channel.isConnected())
                 throw new IllegalStateException("SocketChannel must be connected");
             configure(channel);
@@ -284,8 +272,22 @@ public class ClientConnector extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not accept {}", channel);
+            safeClose(channel);
             Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
             promise.failed(failure);
+        }
+    }
+
+    protected void safeClose(Closeable closeable)
+    {
+        try
+        {
+            if (closeable != null)
+                closeable.close();
+        }
+        catch (Throwable x)
+        {
+            LOG.ignore(x);
         }
     }
 
@@ -294,7 +296,7 @@ public class ClientConnector extends ContainerLifeCycle
         channel.socket().setTcpNoDelay(true);
     }
 
-    private void connectFailed(Throwable failure, Map<String, Object> context)
+    protected void connectFailed(Throwable failure, Map<String, Object> context)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Could not connect to {}", context.get(SOCKET_ADDRESS_CONTEXT_KEY));
@@ -302,9 +304,9 @@ public class ClientConnector extends ContainerLifeCycle
         promise.failed(failure);
     }
 
-    private class ClientSelectorManager extends SelectorManager
+    protected class ClientSelectorManager extends SelectorManager
     {
-        private ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
+        protected ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }

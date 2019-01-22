@@ -20,6 +20,7 @@ package org.eclipse.jetty.unixsocket;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -146,7 +147,6 @@ public class UnixSocketTest
         httpClient.start();
 
         ExecutionException e = assertThrows(ExecutionException.class, () -> httpClient.newRequest("http://google.com").send());
-        assertThat(e.getCause(), instanceOf(IOException.class));
-        assertThat(e.getCause().getMessage(), containsString("UnixSocket cannot connect to google.com"));
+        assertThat(e.getCause(), instanceOf(ConnectException.class));
     }
 }
