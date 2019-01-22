@@ -29,6 +29,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.WebSocketResources;
 
 /**
  * ServletContext configuration for Jetty Native WebSockets API.
@@ -72,9 +73,10 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext servletContext) throws ServletException
     {
+        WebSocketResources resources = WebSocketResources.ensureWebSocketResources(servletContext);
         JettyServerFrameHandlerFactory factory = JettyServerFrameHandlerFactory.ensureFactory(servletContext);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onStartup {}", factory);
+            LOG.debug("onStartup {} {}", resources, factory);
     }
 }
