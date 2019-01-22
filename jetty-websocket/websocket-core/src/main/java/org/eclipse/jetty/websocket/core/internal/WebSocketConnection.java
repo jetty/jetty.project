@@ -587,7 +587,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     /**
      * Enqueue a Frame to be sent.
-     * @see #sendFrameQueue()
      * @param frame The frame to queue
      * @param callback The callback to call once the frame is sent
      * @param batch True if batch mode is to be used
@@ -602,10 +601,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             wsf.setMask(mask);
         }
         flusher.enqueue(frame, callback, batch);
-    }
-
-    void sendFrameQueue()
-    {
         flusher.iterate();
     }
 
