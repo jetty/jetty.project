@@ -18,39 +18,39 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
+import java.time.Duration;
+
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-
-import java.time.Duration;
 
 public interface WebSocketServletFactory
 {
 
     WebSocketExtensionRegistry getExtensionRegistry();
 
-    Duration getDefaultIdleTimeout();
+    Duration getIdleTimeout();
 
-    void setDefaultIdleTimeout(Duration duration);
+    void setIdleTimeout(Duration duration);
 
-    int getDefaultInputBufferSize();
+    int getInputBufferSize();
 
-    void setDefaultInputBufferSize(int bufferSize);
+    void setInputBufferSize(int bufferSize);
 
-    long getDefaultMaxAllowedFrameSize();
+    long getMaxAllowedFrameSize();
 
-    void setDefaultMaxAllowedFrameSize(long maxFrameSize);
+    void setAllowedFrameSize(long maxFrameSize);
 
-    long getDefaultMaxBinaryMessageSize();
+    long getMaxBinaryMessageSize();
 
-    void setDefaultMaxBinaryMessageSize(long bufferSize);
+    void setMaxBinaryMessageSize(long bufferSize);
 
-    long getDefaultMaxTextMessageSize();
+    long getMaxTextMessageSize();
 
-    void setDefaultMaxTextMessageSize(long bufferSize);
+    void setMaxTextMessageSize(long bufferSize);
 
-    int getDefaultOutputBufferSize();
+    int getOutputBufferSize();
 
-    void setDefaultOutputBufferSize(int bufferSize);
+    void setOutputBufferSize(int bufferSize);
 
     boolean isAutoFragment();
 

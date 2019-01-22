@@ -183,73 +183,73 @@ public abstract class WebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Duration getDefaultIdleTimeout()
+        public Duration getIdleTimeout()
         {
             return getIdleTimeout();
         }
 
         @Override
-        public void setDefaultIdleTimeout(Duration duration)
+        public void setIdleTimeout(Duration duration)
         {
             setIdleTimeout(duration);
         }
 
         @Override
-        public int getDefaultInputBufferSize()
+        public int getInputBufferSize()
         {
             return getInputBufferSize();
         }
 
         @Override
-        public void setDefaultInputBufferSize(int bufferSize)
+        public void setInputBufferSize(int bufferSize)
         {
             setInputBufferSize(bufferSize);
         }
 
         @Override
-        public long getDefaultMaxAllowedFrameSize()
+        public long getMaxAllowedFrameSize()
         {
             return getMaxFrameSize();
         }
 
         @Override
-        public void setDefaultMaxAllowedFrameSize(long maxFrameSize)
+        public void setAllowedFrameSize(long maxFrameSize)
         {
             setMaxFrameSize(maxFrameSize);
         }
 
         @Override
-        public long getDefaultMaxBinaryMessageSize()
+        public long getMaxBinaryMessageSize()
         {
             return getMaxBinaryMessageSize();
         }
 
         @Override
-        public void setDefaultMaxBinaryMessageSize(long size)
+        public void setMaxBinaryMessageSize(long size)
         {
             setMaxBinaryMessageSize(size);
         }
 
         @Override
-        public long getDefaultMaxTextMessageSize()
+        public long getMaxTextMessageSize()
         {
             return getMaxTextMessageSize();
         }
 
         @Override
-        public void setDefaultMaxTextMessageSize(long size)
+        public void setMaxTextMessageSize(long size)
         {
             setMaxTextMessageSize(size);
         }
 
         @Override
-        public int getDefaultOutputBufferSize()
+        public int getOutputBufferSize()
         {
             return getOutputBufferSize();
         }
 
         @Override
-        public void setDefaultOutputBufferSize(int bufferSize)
+        public void setOutputBufferSize(int bufferSize)
         {
             setOutputBufferSize(bufferSize);
         }
