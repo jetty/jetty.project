@@ -68,7 +68,11 @@ public class WebSocketChannelState
     @Override
     public String toString()
     {
-        return _channelState.toString();
+        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}",getClass().getSimpleName(),hashCode(),
+                _channelState,
+                OpCode.name(_incomingContinuation),
+                OpCode.name(_outgoingContinuation),
+                _closeStatus);
     }
 
 
@@ -126,20 +130,31 @@ public class WebSocketChannelState
         synchronized (this)
         {
             if (!isOutputOpen())
+            {
+                if (opcode == OpCode.CLOSE && CloseStatus.getCloseStatus(frame) instanceof WebSocketChannel.AbnormalCloseStatus)
+                    _channelState = State.CLOSED;
                 throw new IllegalStateException(_channelState.toString());
+            }
 
             if (opcode == OpCode.CLOSE)
             {
                 _closeStatus = CloseStatus.getCloseStatus(frame);
+                if (_closeStatus instanceof WebSocketChannel.AbnormalCloseStatus)
+                {
+                    _channelState = State.CLOSED;
+                    return true;
+                }
 
                 switch (_channelState)
                 {
                     case OPEN:
                         _channelState = State.OSHUT;
                         return false;
+
                     case ISHUT:
                         _channelState = State.CLOSED;
                         return true;
+
                     default:
                         throw new IllegalStateException(_channelState.toString());
                 }
