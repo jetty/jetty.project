@@ -118,7 +118,7 @@ public class WebSocketChannelState
         }
     }
 
-    public boolean checkOutgoing(Frame frame) throws ProtocolException
+    public boolean onOutgoingFrame(Frame frame) throws ProtocolException
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
@@ -153,7 +153,7 @@ public class WebSocketChannelState
         return false;
     }
 
-    public boolean checkIncoming(Frame frame) throws ProtocolException
+    public boolean onIncomingFrame(Frame frame) throws ProtocolException
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();

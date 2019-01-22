@@ -18,24 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
-
-import javax.websocket.CloseReason;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.MessageHandler;
-import javax.websocket.RemoteEndpoint.Async;
-import javax.websocket.RemoteEndpoint.Basic;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
@@ -47,6 +29,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.websocket.CloseReason;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.MessageHandler;
+import javax.websocket.RemoteEndpoint.Async;
+import javax.websocket.RemoteEndpoint.Basic;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+
+import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
 
 /**
  * Client Session for the JSR.
@@ -535,7 +536,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public boolean isOpen()
     {
-        return coreSession.isOpen();
+        return coreSession.isOutputOpen();
     }
 
     /**
