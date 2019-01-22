@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -38,11 +43,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,7 +65,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     enum State
     {
-        OPEN, ICLOSED, OCLOSED
+        OPEN, ISHUT, OSHUT
     }
 
     @AfterEach
@@ -93,7 +93,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
                 break;
             }
-            case ICLOSED:
+            case ISHUT:
             {
                 TestFrameHandler serverHandler = new TestFrameHandler();
 
@@ -109,12 +109,12 @@ public class WebSocketCloseTest extends WebSocketTester
                 assertNotNull(frame);
                 assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
 
-                assertThat(server.handler.getCoreSession().toString(), containsString("ICLOSED"));
-                LOG.info("Server: ICLOSED");
+                assertThat(server.handler.getCoreSession().toString(), containsString("ISHUT"));
+                LOG.info("Server: ISHUT");
 
                 break;
             }
-            case OCLOSED:
+            case OSHUT:
             {
                 TestFrameHandler serverHandler = new TestFrameHandler();
 
@@ -129,8 +129,8 @@ public class WebSocketCloseTest extends WebSocketTester
                 assertNotNull(frame);
                 assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
 
-                assertThat(server.handler.getCoreSession().toString(), containsString("OCLOSED"));
-                LOG.info("Server: OCLOSED");
+                assertThat(server.handler.getCoreSession().toString(), containsString("OSHUT"));
+                LOG.info("Server: OSHUT");
 
                 break;
             }
@@ -140,7 +140,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void serverClose_ICLOSED() throws Exception
     {
-        setup(State.ICLOSED);
+        setup(State.ISHUT);
 
         server.handler.receivedCallback.poll().succeeded();
         Frame frame = receiveFrame(client.getInputStream());
@@ -154,7 +154,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void serverDifferentClose_ICLOSED() throws Exception
     {
-        setup(State.ICLOSED);
+        setup(State.ISHUT);
 
         server.sendFrame(CloseStatus.toFrame(CloseStatus.SHUTDOWN));
         server.handler.receivedCallback.poll().succeeded();
@@ -171,7 +171,7 @@ public class WebSocketCloseTest extends WebSocketTester
     {
         try (StacklessLogging stackless = new StacklessLogging(WebSocketChannel.class))
         {
-            setup(State.ICLOSED);
+            setup(State.ISHUT);
             server.handler.receivedCallback.poll().failed(new Exception("test failure"));
 
             Frame frame = receiveFrame(client.getInputStream());
@@ -186,7 +186,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void clientClose_OCLOSED() throws Exception
     {
-        setup(State.OCLOSED);
+        setup(State.OSHUT);
         server.handler.getCoreSession().demand(1);
         client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.NORMAL), true));
         assertNotNull(server.handler.receivedFrames.poll(10, TimeUnit.SECONDS));
@@ -201,7 +201,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void clientDifferentClose_OCLOSED() throws Exception
     {
-        setup(State.OCLOSED);
+        setup(State.OSHUT);
         server.handler.getCoreSession().demand(1);
         client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.BAD_PAYLOAD), true));
         assertNotNull(server.handler.receivedFrames.poll(10, TimeUnit.SECONDS));
@@ -218,7 +218,7 @@ public class WebSocketCloseTest extends WebSocketTester
     {
         try (StacklessLogging stackless = new StacklessLogging(WebSocketChannel.class))
         {
-            setup(State.OCLOSED);
+            setup(State.OSHUT);
             server.handler.getCoreSession().demand(1);
             client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.NORMAL), true));
             assertNotNull(server.handler.receivedFrames.poll(10, TimeUnit.SECONDS));
@@ -246,7 +246,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void clientSendsBadFrame_OCLOSED() throws Exception
     {
-        setup(State.OCLOSED);
+        setup(State.OSHUT);
 
         client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.PONG, "pong frame not masked", false));
         server.handler.getCoreSession().demand(1);
@@ -258,7 +258,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void clientSendsBadFrame_ICLOSED() throws Exception
     {
-        setup(State.ICLOSED);
+        setup(State.ISHUT);
 
         client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.PONG, "pong frame not masked", false));
         assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
@@ -286,7 +286,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void clientAborts_OCLOSED() throws Exception
     {
-        setup(State.OCLOSED);
+        setup(State.OSHUT);
 
         client.close();
         assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
@@ -299,7 +299,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void clientAborts_ICLOSED() throws Exception
     {
-        setup(State.ICLOSED);
+        setup(State.ISHUT);
 
         client.close();
         assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
@@ -330,7 +330,7 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void onFrameThrows_OCLOSED() throws Exception
     {
-        setup(State.OCLOSED);
+        setup(State.OSHUT);
 
         client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.BINARY, "binary", true));
 
@@ -478,7 +478,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
         public boolean isOpen()
         {
-            return handler.getCoreSession().isOpen();
+            return handler.getCoreSession().isOutputOpen();
         }
     }
 }

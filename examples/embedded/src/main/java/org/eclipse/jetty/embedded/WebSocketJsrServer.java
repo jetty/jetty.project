@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 
 /**
  * Example of setting up a javax.websocket server with Jetty embedded
@@ -59,7 +59,7 @@ public class WebSocketJsrServer
         handlers.addHandler(context);
 
         // Enable javax.websocket configuration for the context
-        ServerContainer wsContainer = JavaxWebSocketServerContainerInitializer
+        ServerContainer wsContainer = JavaxWebSocketServletContainerInitializer
                 .configureContext(context);
 
         // Add your websockets to the container

@@ -41,12 +41,12 @@ import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
 @HandlesTypes({ ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class })
-public class JavaxWebSocketServerContainerInitializer implements ServletContainerInitializer
+public class JavaxWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.javax";
     public static final String DEPRECATED_ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
     public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.javax.HttpClient";
-    private static final Logger LOG = Log.getLogger(JavaxWebSocketServerContainerInitializer.class);
+    private static final Logger LOG = Log.getLogger(JavaxWebSocketServletContainerInitializer.class);
 
     /**
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for

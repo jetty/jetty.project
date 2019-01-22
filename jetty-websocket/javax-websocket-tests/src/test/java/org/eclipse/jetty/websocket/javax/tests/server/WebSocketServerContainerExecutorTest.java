@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.javax.tests.WSURI;
-import org.junit.jupiter.api.Test;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executor;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -40,16 +39,18 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Executor;
 
-import static org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer.HTTPCLIENT_ATTRIBUTE;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.tests.WSURI;
+import org.junit.jupiter.api.Test;
+
+import static org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -159,7 +160,7 @@ public class WebSocketServerContainerExecutorTest
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
+        javax.websocket.server.ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(contextHandler);
         container.addEndpoint(EchoSocket.class);
         try
         {
@@ -188,7 +189,7 @@ public class WebSocketServerContainerExecutorTest
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
+        javax.websocket.server.ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(contextHandler);
         container.addEndpoint(EchoSocket.class);
         try
         {
@@ -218,7 +219,7 @@ public class WebSocketServerContainerExecutorTest
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
+        javax.websocket.server.ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(contextHandler);
         container.addEndpoint(EchoSocket.class);
         try
         {

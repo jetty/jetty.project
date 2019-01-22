@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.core.WebSocketException;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -374,7 +375,7 @@ public class Parser
             .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null?"-":TypeUtil.toHexString(mask), payloadLength);
     }
 
-    public class ParsedFrame extends Frame implements Closeable
+    public class ParsedFrame extends Frame implements Closeable, CloseStatus.Supplier
     {
         final CloseStatus closeStatus;
         final boolean releaseable;
@@ -404,6 +405,7 @@ public class Parser
                 bufferPool.release(getPayload());
         }
 
+        @Override
         public CloseStatus getCloseStatus()
         {
             return closeStatus;
