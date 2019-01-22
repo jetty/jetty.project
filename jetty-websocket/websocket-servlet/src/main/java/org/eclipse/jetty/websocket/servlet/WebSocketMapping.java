@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketResources;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
@@ -117,10 +118,11 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      * @param customizer the customizer to use to customize the WebSocket session.
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
+    throws WebSocketException
     {
-        // Handling for response forbidden (and similar paths)
-        // no creation, sorry
-        // No factory worked!
+        if (getMapping(pathSpec) != null)
+            throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
+
         mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
     }
 
