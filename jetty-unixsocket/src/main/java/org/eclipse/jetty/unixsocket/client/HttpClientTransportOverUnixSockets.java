@@ -38,6 +38,7 @@ import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
@@ -75,6 +76,18 @@ public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpCli
     public HttpDestination newHttpDestination(Origin origin)
     {
         return new HttpDestinationOverHTTP(getHttpClient(), origin);
+    }
+
+    @Override
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    {
+        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        org.eclipse.jetty.io.Connection connection = newHttpConnection(endPoint, destination, promise);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", connection);
+        return customize(connection, context);
     }
 
     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<org.eclipse.jetty.client.api.Connection> promise)

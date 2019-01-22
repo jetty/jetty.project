@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Map;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -77,18 +75,4 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
         connector.connect(address, context);
     }
-
-    @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
-    {
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        @SuppressWarnings("unchecked")
-        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        org.eclipse.jetty.io.Connection connection = newHttpConnection(endPoint, destination, promise);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Created {}", connection);
-        return customize(connection, context);
-    }
-
-    protected abstract org.eclipse.jetty.io.Connection newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise);
 }
