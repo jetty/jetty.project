@@ -19,18 +19,15 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Queue;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -51,8 +48,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
-    private final Queue<FrameEntry> entries = new ArrayDeque<>();
-    private final IteratingCallback flusher = new Flusher();
     private final WebSocketExtensionRegistry factory;
     private List<Extension> extensions;
     private IncomingFrames incoming;
@@ -198,14 +193,12 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     {
         if (outgoing == null)
             throw new IllegalStateException();
-        FrameEntry entry = new FrameEntry(frame, callback, batch);
         if (LOG.isDebugEnabled())
-            LOG.debug("Queuing {}", entry);
-        offerEntry(entry);
-        flusher.iterate();
+            LOG.debug("Extending out {} {} {}", frame, callback, batch);
+        outgoing.sendFrame(frame, callback, batch);
     }
 
-    public void connect(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketChannel webSocketChannel)
+    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketChannel webSocketChannel)
     {
         if (extensions == null)
             throw new IllegalStateException();
@@ -224,30 +217,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             extension.setWebSocketChannel(webSocketChannel);
     }
 
-    private void offerEntry(FrameEntry entry)
-    {
-        synchronized (this)
-        {
-            entries.offer(entry);
-        }
-    }
-
-    private FrameEntry pollEntry()
-    {
-        synchronized (this)
-        {
-            return entries.poll();
-        }
-    }
-
-    private int getQueueSize()
-    {
-        synchronized (this)
-        {
-            return entries.size();
-        }
-    }
-
     @Override
     public String dump()
     {
@@ -263,16 +232,14 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public String dumpSelf()
     {
-        return String.format("%s@%x[size=%d,queueSize=%d]", getClass().getSimpleName(), hashCode(), extensions.size(), getQueueSize());
+        return String.format("%s@%x[size=%d]", getClass().getSimpleName(), hashCode(), extensions.size());
     }
 
     @Override
     public String toString()
     {
         StringBuilder s = new StringBuilder();
-        s.append("ExtensionStack[");
-        s.append("queueSize=").append(getQueueSize());
-        s.append(",extensions=");
+        s.append("ExtensionStack[extensions=");
         if (extensions == null)
         {
             s.append("<null>");
@@ -303,95 +270,5 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         s.append(",outgoing=").append((this.outgoing == null)?"<null>":this.outgoing.getClass().getName());
         s.append("]");
         return s.toString();
-    }
-
-    private class Flusher extends IteratingCallback implements Callback
-    {
-        private FrameEntry current;
-
-        @Override
-        protected Action process() throws Exception
-        {
-            current = pollEntry();
-            if (current == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Entering IDLE");
-                return Action.IDLE;
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug("Processing {}", current);
-            outgoing.sendFrame(current.frame, this, current.batch);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            // This IteratingCallback never completes.
-            throw new IllegalStateException("This IteratingCallback should never complete.");
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable x)
-        {
-            // This IteratingCallback never fails.
-            // The callback are those provided by WriteCallback (implemented
-            // below) and even in case of writeFailed() we call succeeded().
-            throw new IllegalStateException("This IteratingCallback should never fail.");
-        }
-
-        @Override
-        public void succeeded()
-        {
-            // Notify first then call succeeded(), otherwise
-            // write callbacks may be invoked out of order.
-            notifyCallbackSuccess(current.callback);
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable cause)
-        {
-            // Notify first, the call succeeded() to drain the queue.
-            // We don't want to call failed(x) because that will put
-            // this flusher into a final state that cannot be exited,
-            // and the failure of a frame may not mean that the whole
-            // connection is now invalid.
-            notifyCallbackFailure(current.callback, cause);
-            super.succeeded();
-        }
-
-        private void notifyCallbackSuccess(Callback callback)
-        {
-            try
-            {
-                if (callback != null)
-                    callback.succeeded();
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Exception while notifying success of callback " + callback, x);
-            }
-        }
-
-        private void notifyCallbackFailure(Callback callback, Throwable failure)
-        {
-            try
-            {
-                if (callback != null)
-                    callback.failed(failure);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            return "ExtensionStack$Flusher[" + (extensions == null?-1:extensions.size()) + "]";
-        }
     }
 }

@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -27,14 +35,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Objects;
 
 public class FrameFlusher extends IteratingCallback
 {
@@ -49,8 +49,6 @@ public class FrameFlusher extends IteratingCallback
     private final Deque<Entry> queue = new ArrayDeque<>();
     private final List<Entry> entries;
     private final List<ByteBuffer> buffers;
-    private boolean closed;
-    private Throwable terminated;
     private ByteBuffer batchBuffer = null;
 
     public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
@@ -67,25 +65,26 @@ public class FrameFlusher extends IteratingCallback
     public void enqueue(Frame frame, Callback callback, boolean batch)
     {
         Entry entry = new Entry(frame, callback, batch);
-
-        Throwable closed;
+        byte opCode = frame.getOpCode();
         synchronized (this)
         {
-            closed = terminated;
-            if (closed == null)
-            {
-                byte opCode = frame.getOpCode();
-                if (opCode == OpCode.PING || opCode == OpCode.PONG)
-                    queue.offerFirst(entry);
-                else
-                    queue.offerLast(entry);
-            }
+            if (opCode == OpCode.PING || opCode == OpCode.PONG)
+                queue.offerFirst(entry);
+            else
+                queue.offerLast(entry);
         }
+    }
 
-        if (closed == null)
-            iterate();
-        else
-            notifyCallbackFailure(callback, closed);
+    public void onClose()
+    {
+        Throwable cause = null;
+        synchronized (this)
+        {
+            if (!queue.isEmpty())
+                cause = new IOException("Closed");
+        }
+        if (cause!=null)
+            onCompleteFailure(cause);
     }
 
     @Override
@@ -101,12 +100,6 @@ public class FrameFlusher extends IteratingCallback
             // and clear batchBuffer if we wrote it.
             if (succeedEntries() && batchBuffer != null)
                 BufferUtil.clear(batchBuffer);
-
-            if (closed)
-                return Action.SUCCEEDED;
-
-            if (terminated != null)
-                throw terminated;
 
             while (!queue.isEmpty() && entries.size() <= maxGather)
             {
@@ -167,7 +160,7 @@ public class FrameFlusher extends IteratingCallback
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} processed {} entries flush=%b batch=%s: {}",
+            LOG.debug("{} processed {} entries flush={} batch={}: {}",
                 this,
                 entries.size(),
                 flush,
@@ -220,10 +213,7 @@ public class FrameFlusher extends IteratingCallback
             notifyCallbackSuccess(entry.callback);
             entry.release();
             if (entry.frame.getOpCode() == OpCode.CLOSE)
-            {
-                terminate(new ClosedChannelException(), true);
                 endPoint.shutdownOutput();
-            }
         }
         entries.clear();
         return hadEntries;
@@ -233,13 +223,8 @@ public class FrameFlusher extends IteratingCallback
     public void onCompleteFailure(Throwable failure)
     {
         releaseAggregate();
-
-        Throwable closed;
         synchronized (this)
         {
-            closed = terminated;
-            if (closed == null)
-                terminated = failure;
             entries.addAll(queue);
             queue.clear();
         }
@@ -259,22 +244,6 @@ public class FrameFlusher extends IteratingCallback
             bufferPool.release(batchBuffer);
             batchBuffer = null;
         }
-    }
-
-    public void terminate(Throwable cause, boolean close)
-    {
-        Throwable reason;
-        synchronized (this)
-        {
-            closed = close;
-            reason = terminated;
-            if (reason == null)
-                terminated = cause;
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} {}", reason == null?"Terminating":"Terminated", this);
-        if (reason == null && !close)
-            iterate();
     }
 
     protected void notifyCallbackSuccess(Callback callback)
@@ -312,12 +281,10 @@ public class FrameFlusher extends IteratingCallback
     @Override
     public String toString()
     {
-        return String.format("%s@%x[queueSize=%d,aggregate=%s,terminated=%s]",
-            getClass().getSimpleName(),
-            hashCode(),
+        return String.format("%s[queueSize=%d,aggregate=%s]",
+            super.toString(),
             getQueueSize(),
-            BufferUtil.toDetailString(batchBuffer),
-            terminated);
+            BufferUtil.toDetailString(batchBuffer));
     }
 
     private class Entry extends FrameEntry
@@ -353,7 +320,7 @@ public class FrameFlusher extends IteratingCallback
         @Override
         public String toString()
         {
-            return String.format("%s[%s,%s,%b,%s]", getClass().getSimpleName(), frame, callback, batch, terminated);
+            return String.format("%s{%s,%s,%b}", getClass().getSimpleName(), frame, callback, batch);
         }
     }
 }

@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -43,10 +47,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketServerTest;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.junit.jupiter.api.Test;
-
-import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -218,7 +218,7 @@ public class ValidationExtensionTest extends WebSocketTester
 
         public boolean isOpen()
         {
-            return handler.getCoreSession().isOpen();
+            return handler.getCoreSession().isOutputOpen();
         }
     }
 }

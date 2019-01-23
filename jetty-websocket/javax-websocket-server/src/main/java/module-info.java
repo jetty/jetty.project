@@ -22,7 +22,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 
 module org.eclipse.jetty.websocket.javax.server
 {
@@ -42,7 +42,7 @@ module org.eclipse.jetty.websocket.javax.server
     requires org.eclipse.jetty.websocket.javax.client;
     requires org.eclipse.jetty.websocket.servlet;
 
-    provides ServletContainerInitializer with JavaxWebSocketServerContainerInitializer;
+    provides ServletContainerInitializer with JavaxWebSocketServletContainerInitializer;
     provides ServerEndpointConfig.Configurator with ContainerDefaultConfigurator;
     provides Configuration with JavaxWebSocketConfiguration;
 }
