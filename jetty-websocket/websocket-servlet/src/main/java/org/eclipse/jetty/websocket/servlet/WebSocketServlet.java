@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.time.Duration;
 
 import javax.servlet.ServletContext;
@@ -183,78 +184,6 @@ public abstract class WebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Duration getIdleTimeout()
-        {
-            return getIdleTimeout();
-        }
-
-        @Override
-        public void setIdleTimeout(Duration duration)
-        {
-            setIdleTimeout(duration);
-        }
-
-        @Override
-        public int getInputBufferSize()
-        {
-            return getInputBufferSize();
-        }
-
-        @Override
-        public void setInputBufferSize(int bufferSize)
-        {
-            setInputBufferSize(bufferSize);
-        }
-
-        @Override
-        public long getMaxAllowedFrameSize()
-        {
-            return getMaxFrameSize();
-        }
-
-        @Override
-        public void setAllowedFrameSize(long maxFrameSize)
-        {
-            setMaxFrameSize(maxFrameSize);
-        }
-
-        @Override
-        public long getMaxBinaryMessageSize()
-        {
-            return getMaxBinaryMessageSize();
-        }
-
-        @Override
-        public void setMaxBinaryMessageSize(long size)
-        {
-            setMaxBinaryMessageSize(size);
-        }
-
-        @Override
-        public long getMaxTextMessageSize()
-        {
-            return getMaxTextMessageSize();
-        }
-
-        @Override
-        public void setMaxTextMessageSize(long size)
-        {
-            setMaxTextMessageSize(size);
-        }
-
-        @Override
-        public int getOutputBufferSize()
-        {
-            return getOutputBufferSize();
-        }
-
-        @Override
-        public void setOutputBufferSize(int bufferSize)
-        {
-            setOutputBufferSize(bufferSize);
-        }
-
-        @Override
         public void addMapping(String pathSpec, WebSocketCreator creator)
         {
             addMapping(WebSocketMapping.parsePathSpec(pathSpec), creator);
@@ -272,6 +201,41 @@ public abstract class WebSocketServlet extends HttpServlet
                 throw new IllegalStateException("No known FrameHandlerFactory");
 
             mapping.addMapping(pathSpec, creator, frameHandlerFactory, this);
+        }
+
+        @Override
+        public void register(Class<?> endpointClass)
+        {
+            Constructor<?> constructor;
+            try
+            {
+                constructor = endpointClass.getDeclaredConstructor(null);
+            }
+            catch (NoSuchMethodException e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            WebSocketCreator creator = (req, resp) ->
+            {
+                try
+                {
+                    return constructor.newInstance();
+                }
+                catch (Throwable t)
+                {
+                    t.printStackTrace();
+                    return null;
+                }
+            };
+
+            addMapping("/", creator);
+        }
+
+        @Override
+        public void setCreator(WebSocketCreator creator)
+        {
+            addMapping("/", creator);
         }
 
         @Override

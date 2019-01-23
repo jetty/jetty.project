@@ -36,9 +36,9 @@ public interface WebSocketServletFactory
 
     void setInputBufferSize(int bufferSize);
 
-    long getMaxAllowedFrameSize();
+    long getMaxFrameSize();
 
-    void setAllowedFrameSize(long maxFrameSize);
+    void setMaxFrameSize(long maxFrameSize);
 
     long getMaxBinaryMessageSize();
 
@@ -71,6 +71,20 @@ public interface WebSocketServletFactory
      * @since 10.0
      */
     void addMapping(PathSpec pathSpec, WebSocketCreator creator);
+
+    /**
+     * Add a WebSocket mapping at PathSpec "/" for a creator which creates the endpointClass
+     *
+     * @param endpointClass the WebSocket class to use
+     */
+    void register(Class<?> endpointClass);
+
+    /**
+     * Add a WebSocket mapping at PathSpec "/" for a creator
+     *
+     * @param creator the WebSocketCreator to use
+     */
+    void setCreator(WebSocketCreator creator);
 
     /**
      * Returns the creator for the given path spec.
