@@ -398,8 +398,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 LOG.debug("ConnectionState: Transition to CONNECTED");
 
             // Open connection and handler
-            channelState.onOpen();
             handler.onOpen(this);
+            channelState.onOpen();
             if (!demanding)
                 connection.demand(1);
 

@@ -98,7 +98,7 @@ public class WebSocketChannelState
     public boolean isOutputOpen()
     {
         State state = getState();
-        return (state==State.OPEN || state==State.ISHUT);
+        return (state==State.CONNECTED || state==State.OPEN || state==State.ISHUT);
     }
 
     public CloseStatus getCloseStatus()
