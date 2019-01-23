@@ -23,7 +23,7 @@ A basic adapter for managing the Session object on the WebSocketListener.
 
 [source, java, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-websocket/websocket-common/src/test/java/examples/echo/AdapterEchoSocket.java[]
+include::{SRCDIR}/jetty-websocket/jetty-websocket-common/src/test/java/org/eclipse/jetty/websocket/common/endpoints/adapters/AdapterEchoSocket.java[]
 ----
 
 This is a convenience class to make using the WebSocketListener easier, and provides some useful methods to check the state of the Session.

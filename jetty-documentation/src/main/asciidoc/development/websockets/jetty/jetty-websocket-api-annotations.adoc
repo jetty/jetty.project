@@ -24,7 +24,7 @@ provided by the Jetty WebSocket API.
 
 [source, java, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-websocket/websocket-common/src/test/java/examples/echo/AnnotatedEchoSocket.java[]
+include::{SRCDIR}/jetty-websocket/jetty-websocket-common/src/test/java/org/eclipse/jetty/websocket/common/endpoints/adapters/AnnotatedEchoSocket.java[]
 ----
 
 The above example is a simple WebSocket echo endpoint that will echo back any TEXT messages it receives.
