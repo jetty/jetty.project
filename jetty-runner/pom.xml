@@ -11,7 +11,6 @@
  <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
-   <it.debug>false</it.debug>
   </properties>
 
   <build>
@@ -51,17 +50,6 @@
           </execution>
         </executions>
         <configuration>
-          <javaHome>${java.home}</javaHome>
-          <environmentVariables>
-            <JAVA_HOME>${java.home}</JAVA_HOME>
-          </environmentVariables>
-          <debug>${it.debug}</debug>
-          <projectsDirectory>src/it</projectsDirectory>
-          <timeoutInSeconds>600</timeoutInSeconds>
-          <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-          <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
-          <settingsFile>src/it/settings.xml</settingsFile>
-          <skipInvocation>${skipTests}</skipInvocation>
           <scriptVariables>
             <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
           </scriptVariables>
