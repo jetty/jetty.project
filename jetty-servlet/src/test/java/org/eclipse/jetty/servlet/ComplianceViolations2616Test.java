@@ -65,7 +65,7 @@ public class ComplianceViolations2616Test
         {
             if (request instanceof HttpServletRequest)
             {
-                List<String> violations = (List<String>) request.getAttribute("org.eclipse.jetty.http.compliance.violations");
+                List<String> violations = (List<String>) request.getAttribute("org.eclipse.jetty.spec.violations");
                 if (violations != null)
                 {
                     HttpServletResponse httpResponse = (HttpServletResponse) response;

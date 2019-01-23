@@ -607,7 +607,7 @@ public class MultiPartInputStreamParser
 
             // check compliance of preamble
             char preambleChar = untrimmed.charAt(0);
-            if (Character.isWhitespace(untrimmed.charAt(0)))
+            if (Character.isWhitespace(preambleChar))
                 reportViolation(MultiPartSpecReference.NO_CRLF_AFTER_PREAMBLE, String.format("Got character 0x%02x", (byte) preambleChar));
 
             // Read each part

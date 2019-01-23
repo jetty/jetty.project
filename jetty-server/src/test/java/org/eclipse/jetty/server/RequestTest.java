@@ -95,6 +95,7 @@ public class RequestTest
     {
         _server = new Server();
         HttpConnectionFactory http = new HttpConnectionFactory();
+        http.setRecordSpecViolations(true);
         http.setInputBufferSize(1024);
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
@@ -440,7 +441,9 @@ public class RequestTest
         });
         _server.stop();
         _server.setHandler(contextHandler);
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.LEGACY);
+        HttpConnectionFactory httpConnectionFactory = _connector.getBean(HttpConnectionFactory.class);
+        httpConnectionFactory.setRecordSpecViolations(true);
+        httpConnectionFactory.getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.LEGACY);
         _server.start();
 
         String multipart =  "      --AaB03x\r"+
@@ -486,7 +489,9 @@ public class RequestTest
      
         _server.stop();
         _server.setHandler(contextHandler);
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.RFC7578);
+        HttpConnectionFactory httpConnectionFactory = _connector.getBean(HttpConnectionFactory.class);
+        httpConnectionFactory.setRecordSpecViolations(true);
+        httpConnectionFactory.getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.RFC7578);
         _server.start();
 
         String multipart =  "      --AaB03x\r"+

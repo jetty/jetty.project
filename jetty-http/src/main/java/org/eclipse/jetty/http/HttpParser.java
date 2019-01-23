@@ -1329,13 +1329,13 @@ public class HttpParser
 
                             reportViolation(HttpSpecReference.REQUIRE_COLON_AFTER_FIELD_NAME, _headerString);
 
-                            if (_compliance.requireColonAfterFieldName())
+                            if (!_compliance.requireColonAfterFieldName())
                             {
-                                throw new IllegalCharacterException(_state, t, buffer); // TODO: shouldn't this be a BadMessageException?
+                                setState(FieldState.FIELD);
+                                break;
                             }
+                            throw new IllegalCharacterException(_state, t, buffer); // TODO: shouldn't this be a BadMessageException?
 
-                            setState(FieldState.FIELD);
-                            break;
                         case ALPHA:
                         case DIGIT:
                         case TCHAR:
@@ -1363,12 +1363,12 @@ public class HttpParser
                         case LF:
                             reportViolation(HttpSpecReference.REQUIRE_COLON_AFTER_FIELD_NAME, _headerString);
 
-                            if (_compliance.requireColonAfterFieldName())
+                            if (!_compliance.requireColonAfterFieldName())
                             {
-                                throw new IllegalCharacterException(_state, t, buffer); // TODO: shouldn't this be a BadMessageException?
+                                setState(FieldState.FIELD);
+                                break;
                             }
-                            setState(FieldState.FIELD);
-                            break;
+                            throw new IllegalCharacterException(_state, t, buffer); // TODO: shouldn't this be a BadMessageException?
 
                         default:
                             throw new IllegalCharacterException(_state,t,buffer);
