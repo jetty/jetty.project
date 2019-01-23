@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import java.net.URI;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -44,11 +49,6 @@ import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -208,7 +208,7 @@ public class WebSocketClientServerTest
 
         public boolean isOpen()
         {
-            return handler.getCoreSession().isOpen();
+            return handler.getCoreSession().isOutputOpen();
         }
     }
 
@@ -272,7 +272,7 @@ public class WebSocketClientServerTest
 
         public boolean isOpen()
         {
-            return handler.getCoreSession().isOpen();
+            return handler.getCoreSession().isOutputOpen();
         }
 
     }

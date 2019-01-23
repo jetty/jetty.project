@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -72,6 +73,18 @@ public class FrameFlusher extends IteratingCallback
             else
                 queue.offerLast(entry);
         }
+    }
+
+    public void onClose()
+    {
+        Throwable cause = null;
+        synchronized (this)
+        {
+            if (!queue.isEmpty())
+                cause = new IOException("Closed");
+        }
+        if (cause!=null)
+            onCompleteFailure(cause);
     }
 
     @Override

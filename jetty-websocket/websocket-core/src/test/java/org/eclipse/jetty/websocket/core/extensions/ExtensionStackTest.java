@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -34,9 +37,6 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -80,7 +80,7 @@ public class ExtensionStackTest
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
         OutgoingFrames connection = new OutgoingFramesCapture();
-        stack.connect(session, connection, null);
+        stack.initialize(session, connection, null);
 
         // Dump
         LOG.debug("{}", stack.dump());
@@ -104,7 +104,7 @@ public class ExtensionStackTest
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
         OutgoingFrames connection = new OutgoingFramesCapture();
-        stack.connect(session, connection, null);
+        stack.initialize(session, connection, null);
 
         // Dump
         LOG.debug("{}", stack.dump());
