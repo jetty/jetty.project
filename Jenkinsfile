@@ -64,7 +64,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "-Pcompact3 install -DskipTests", "maven3", false)
+            mavenBuild("jdk8", "-Pcompact3 install -DskipTests", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
           }
         }
