@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -90,16 +91,20 @@ public class JavaxWebSocketServerContainer
         {
             // Find Pre-Existing (Shared?) HttpClient and/or executor
             HttpClient httpClient = (HttpClient)servletContext.getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
-            if (httpClient == null)
+            if ((httpClient == null) && (contextHandler.getServer() != null))
                 httpClient = (HttpClient)contextHandler.getServer()
                     .getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
 
             Executor executor = httpClient == null?null:httpClient.getExecutor();
             if (executor == null)
-                executor = (Executor)servletContext
-                    .getAttribute("org.eclipse.jetty.server.Executor");
-            if (executor == null)
+                executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
+            if ((executor == null) && (contextHandler.getServer() != null))
                 executor = contextHandler.getServer().getThreadPool();
+            if (executor == null)
+            {
+                executor = new QueuedThreadPool();
+                contextHandler.setAttribute("org.eclipse.jetty.server.Executor", executor);
+            }
 
             if (httpClient != null && httpClient.getExecutor() == null)
                 httpClient.setExecutor(executor);
