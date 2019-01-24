@@ -550,10 +550,12 @@
             <detectJavaApiLink>false</detectJavaApiLink>
             <show>protected</show>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
+            <!-- broken build with jdk 11.0.2
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
             </links>
+            -->
           </configuration>
         </plugin>
         <plugin>
