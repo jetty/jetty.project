@@ -93,7 +93,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                     {
                         for (String path : mapping.getPathSpecs())
                         {
-                            if (path.equals("/") || path.equals("/*"))
+                            if (path.equals("/*"))
                                 return holder;
                         }
                     }
@@ -120,7 +120,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             return existingFilter;
 
         String name = "WebSocketUpgradeFilter";
-        // TODO this should be registered at pathSpec "/" (NOTE: also remove from getFilter)
         String pathSpec = "/*";
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
