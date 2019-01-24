@@ -82,19 +82,15 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         return null;
     }
 
-    public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context) throws ServletException
+    public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context)
     {
         WebSocketResources resources = WebSocketResources.ensureWebSocketResources(context.getServletContext());
         FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
-
-        WebSocketUpgradeFilter upgradeFilter = ((WebSocketUpgradeFilter)filterHolder.getFilter());
-        if (upgradeFilter.getMapping() == null)
-            upgradeFilter.setMapping(new WebSocketMapping(resources));
-
+        WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JavaxWebSocketServerContainer container = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("configureContext {} {} {} {}", upgradeFilter.getMapping(), resources, upgradeFilter, container);
+            LOG.debug("configureContext {} {} {} {}", mapping, resources, filterHolder, container);
 
         return container;
     }

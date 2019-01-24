@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 
 public class WebSocketResources
 {
-    public static WebSocketResources ensureWebSocketResources(ServletContext servletContext) throws ServletException
+    public static WebSocketResources ensureWebSocketResources(ServletContext servletContext)
     {
         ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
 

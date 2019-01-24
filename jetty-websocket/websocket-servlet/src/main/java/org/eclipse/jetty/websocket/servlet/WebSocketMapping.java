@@ -23,7 +23,6 @@ import java.net.URISyntaxException;
 import java.util.function.Consumer;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -62,21 +61,27 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
     private static final Logger LOG = Log.getLogger(WebSocketMapping.class);
 
-    public static WebSocketMapping ensureMapping(ServletContext servletContext) throws ServletException
+    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
     {
         ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
 
-        // Ensure a mapping exists
-        WebSocketMapping mapping = contextHandler.getBean(WebSocketMapping.class);
-        if (mapping == null)
+        Object mappingObject = contextHandler.getAttribute(mappingKey);
+        if (mappingObject!=null)
         {
-            mapping = new WebSocketMapping(WebSocketResources.ensureWebSocketResources(servletContext));
-            contextHandler.addBean(mapping);
-            contextHandler.addLifeCycleListener(mapping);
+            if (WebSocketMapping.class.isAssignableFrom(mappingObject.getClass()))
+                return (WebSocketMapping)mappingObject;
+            else
+                throw new IllegalStateException("WebSocketMapping attribute already in use");
         }
-
-        return mapping;
+        else
+        {
+            WebSocketMapping mapping = new WebSocketMapping(WebSocketResources.ensureWebSocketResources(servletContext));
+            contextHandler.setAttribute(mappingKey, mapping);
+            return mapping;
+        }
     }
+
+    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.WebSocketMapping";
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketResources resources;

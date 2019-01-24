@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.WebSocketContainer;
@@ -53,7 +52,6 @@ import org.eclipse.jetty.websocket.javax.server.internal.AnnotatedServerEndpoint
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.javax.server.internal.UndefinedServerEndpointConfig;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
 @ManagedObject("JSR356 Server Container")
 public class JavaxWebSocketServerContainer
@@ -84,7 +82,7 @@ public class JavaxWebSocketServerContainer
         return (javax.websocket.WebSocketContainer)handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
 
-    public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext) throws ServletException
+    public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
         ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
 
@@ -109,7 +107,7 @@ public class JavaxWebSocketServerContainer
 
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
-                    WebSocketUpgradeFilter.getMapping(servletContext),
+                    WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
                     WebSocketResources.ensureWebSocketResources(servletContext),
                     httpClient, executor);
             contextHandler.addManaged(container);

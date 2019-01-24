@@ -35,7 +35,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -78,7 +77,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
 
 
-    public static FilterHolder getFilter(ServletContext servletContext)
+    private static FilterHolder getFilter(ServletContext servletContext)
     {
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
 
@@ -87,30 +86,12 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             if (holder.getClassName().equals(WebSocketUpgradeFilter.class.getName()) ||
                     (holder.getHeldClass() != null && WebSocketUpgradeFilter.class.isAssignableFrom(holder.getHeldClass())))
             {
-                for (FilterMapping mapping : servletHandler.getFilterMappings())
-                {
-                    if (mapping.getFilterName().equals(holder.getName()))
-                    {
-                        for (String path : mapping.getPathSpecs())
-                        {
-                            if (path.equals("/*"))
-                                return holder;
-                        }
-                    }
-                }
+                if (holder.getInitParameter("javaxWebSocketMapping") != null)
+                    return holder;
             }
         }
 
         return null;
-    }
-
-    public static WebSocketMapping getMapping(ServletContext servletContext)
-    {
-        FilterHolder existingFilter = WebSocketUpgradeFilter.getFilter(servletContext);
-        if (existingFilter == null)
-            return null;
-
-        return ((WebSocketUpgradeFilter)existingFilter.getFilter()).getMapping();
     }
 
     public static FilterHolder ensureFilter(ServletContext servletContext)
@@ -124,6 +105,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
         holder.setName(name);
+        holder.setInitParameter("javaxWebSocketMapping", WebSocketMapping.DEFAULT_KEY);
 
         holder.setAsyncSupported(true);
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
@@ -167,11 +149,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         Dumpable.dumpObjects(out, indent, this, mapping);
     }
 
-    public void setMapping(WebSocketMapping mapping)
-    {
-        this.mapping = mapping;
-    }
-
     @ManagedAttribute(value = "factory", readonly = true)
     public WebSocketMapping getMapping()
     {
@@ -183,7 +160,10 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     {
         final ServletContext context = config.getServletContext();
 
-        if (mapping == null)
+        String mappingKey = config.getInitParameter("javaxWebSocketMapping");
+        if (mappingKey != null)
+            mapping = WebSocketMapping.ensureMapping(context, mappingKey);
+        else
             mapping = new WebSocketMapping(WebSocketResources.ensureWebSocketResources(context));
 
         String max = config.getInitParameter("maxIdleTime");
