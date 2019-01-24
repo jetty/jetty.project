@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -53,16 +44,21 @@ import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTLSTest
 {
@@ -114,7 +110,7 @@ public class HttpClientTLSTest
     public void testNoCommonTLSProtocol() throws Exception
     {
         SslContextFactory serverTLSFactory = createSslContextFactory();
-        serverTLSFactory.setIncludeProtocols("TLSv1.2");
+        serverTLSFactory.setIncludeProtocols("TLSv1.3");
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -128,7 +124,7 @@ public class HttpClientTLSTest
         });
 
         SslContextFactory clientTLSFactory = createSslContextFactory();
-        clientTLSFactory.setIncludeProtocols("TLSv1.1");
+        clientTLSFactory.setIncludeProtocols("TLSv1.2");
         startClient(clientTLSFactory);
 
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -141,7 +137,8 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(HttpScheme.HTTPS.asString())
                     .timeout(5, TimeUnit.SECONDS)
@@ -183,7 +180,8 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(HttpScheme.HTTPS.asString())
                     .timeout(5, TimeUnit.SECONDS)
@@ -226,7 +224,8 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(HttpScheme.HTTPS.asString())
                     .timeout(5, TimeUnit.SECONDS)
@@ -239,7 +238,7 @@ public class HttpClientTLSTest
 
     // In JDK 11, a mismatch on the client does not generate any bytes towards
     // the server, while in TLS 1.2 the client sends to the server the close_notify.
-    @DisabledOnJre( JRE.JAVA_11 )
+    @DisabledOnJre(JRE.JAVA_11)
     @Test
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnClient() throws Exception
     {
@@ -273,7 +272,8 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(HttpScheme.HTTPS.asString())
                     .timeout(5, TimeUnit.SECONDS)
@@ -321,7 +321,7 @@ public class HttpClientTLSTest
     }
 
     // Excluded because of a bug in JDK 11+27 where session resumption does not work.
-    @DisabledOnJre( JRE.JAVA_11 )
+    @DisabledOnJre(JRE.JAVA_11)
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
@@ -401,7 +401,7 @@ public class HttpClientTLSTest
     }
 
     // Excluded because of a bug in JDK 11+27 where session resumption does not work.
-    @DisabledOnJre( JRE.JAVA_11 )
+    @DisabledOnJre(JRE.JAVA_11)
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
