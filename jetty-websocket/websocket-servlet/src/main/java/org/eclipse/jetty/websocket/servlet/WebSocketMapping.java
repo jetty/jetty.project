@@ -67,10 +67,12 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         Object mappingObject = contextHandler.getAttribute(mappingKey);
         if (mappingObject!=null)
         {
-            if (WebSocketMapping.class.isAssignableFrom(mappingObject.getClass()))
+            if (WebSocketMapping.class.isInstance(mappingObject.getClass()))
                 return (WebSocketMapping)mappingObject;
             else
-                throw new IllegalStateException("WebSocketMapping attribute already in use");
+                throw new IllegalStateException(
+                        String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
+                        mappingKey, mappingObject.toString()));
         }
         else
         {
@@ -80,7 +82,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         }
     }
 
-    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.WebSocketMapping";
+    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.servlet.WebSocketMapping";
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;
@@ -266,8 +268,11 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         @Override
         public FrameHandler negotiate(Negotiation negotiation)
         {
-            //TODO what about a null context
-            ClassLoader loader = negotiation.getRequest().getServletContext().getClassLoader();
+            ServletContext servletContext = negotiation.getRequest().getServletContext();
+            if (servletContext == null)
+                throw new IllegalStateException("null servletContext from request");
+
+            ClassLoader loader = servletContext.getClassLoader();
             ClassLoader old = Thread.currentThread().getContextClassLoader();
 
             try

@@ -82,12 +82,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
         for (FilterHolder holder : servletHandler.getFilters())
         {
-            if (holder.getClassName().equals(WebSocketUpgradeFilter.class.getName()) ||
-                    (holder.getHeldClass() != null && WebSocketUpgradeFilter.class.isAssignableFrom(holder.getHeldClass())))
-            {
-                if (holder.getInitParameter("javaxWebSocketMapping") != null)
-                    return holder;
-            }
+            if (holder.getInitParameter(MAPPING_INIT_PARAM) != null)
+                return holder;
         }
 
         return null;
@@ -104,7 +100,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
         holder.setName(name);
-        holder.setInitParameter("javaxWebSocketMapping", WebSocketMapping.DEFAULT_KEY);
+        holder.setInitParameter(MAPPING_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
 
         holder.setAsyncSupported(true);
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
@@ -113,6 +109,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
         return holder;
     }
+
+    public final static String MAPPING_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
 
     private final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
     private WebSocketMapping mapping;
@@ -159,7 +157,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     {
         final ServletContext context = config.getServletContext();
 
-        String mappingKey = config.getInitParameter("javaxWebSocketMapping");
+        String mappingKey = config.getInitParameter(MAPPING_INIT_PARAM);
         if (mappingKey != null)
             mapping = WebSocketMapping.ensureMapping(context, mappingKey);
         else
