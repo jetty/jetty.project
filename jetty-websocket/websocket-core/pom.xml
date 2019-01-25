@@ -110,7 +110,7 @@
           <plugin>
             <groupId>me.normanmaurer.maven.autobahntestsuite</groupId>
             <artifactId>autobahntestsuite-maven-plugin</artifactId>
-            <version>0.1.4</version>
+            <version>0.1.6</version>
             <configuration>
 
               <!-- Optional configuration -->
@@ -123,7 +123,7 @@
               <cases>
                 <case>*</case>
               </cases>
-
+              <testFailureIgnore>true</testFailureIgnore>
               <excludeCases></excludeCases>
               <failOnNonStrict>false</failOnNonStrict>
             </configuration>
@@ -134,9 +134,7 @@
                   <goal>fuzzingclient</goal>
                 </goals>
                 <configuration>
-                  <!-- The class which contains a main method that accept the port as parameter and startup the -->
-                  <!-- the server. -->
-                  <!--mainClass>org.eclipse.jetty.websocket.autobahn.WebSocketServer</mainClass-->
+                  <!-- The class that contains a main method which accepts the port as a parameter to start the server. -->
                   <mainClass>org.eclipse.jetty.websocket.core.autobahn.AutobahnWebSocketServer</mainClass>
                 </configuration>
               </execution>
