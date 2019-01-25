@@ -133,8 +133,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-api" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-common" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-client" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-server" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-client" ).versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-client").versionAsInProject().noStart());
