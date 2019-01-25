@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import java.util.Collections;
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -29,7 +28,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketResources;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 /**
  * ServletContext configuration for Jetty Native WebSockets API.
@@ -73,10 +72,10 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext servletContext) throws ServletException
     {
-        WebSocketResources resources = WebSocketResources.ensureWebSocketResources(servletContext);
+        WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(servletContext);
         JettyServerFrameHandlerFactory factory = JettyServerFrameHandlerFactory.ensureFactory(servletContext);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onStartup {} {}", resources, factory);
+            LOG.debug("onStartup {} {}", components, factory);
     }
 }

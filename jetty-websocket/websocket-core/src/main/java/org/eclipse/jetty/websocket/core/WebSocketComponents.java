@@ -25,29 +25,29 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 
-public class WebSocketResources
+public class WebSocketComponents
 {
-    public static WebSocketResources ensureWebSocketResources(ServletContext servletContext)
+    public static WebSocketComponents ensureWebSocketComponents(ServletContext servletContext)
     {
         ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
 
         // Ensure a mapping exists
-        WebSocketResources resources = contextHandler.getBean(WebSocketResources.class);
-        if (resources == null)
+        WebSocketComponents components = contextHandler.getBean(WebSocketComponents.class);
+        if (components == null)
         {
-            resources = new WebSocketResources();
-            contextHandler.addBean(resources);
+            components = new WebSocketComponents();
+            contextHandler.addBean(components);
         }
 
-        return resources;
+        return components;
     }
 
-    public WebSocketResources()
+    public WebSocketComponents()
     {
         this(new WebSocketExtensionRegistry(), new DecoratedObjectFactory(), new MappedByteBufferPool());
     }
 
-    public WebSocketResources(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
+    public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
     {
         this.extensionRegistry = extensionRegistry;
         this.objectFactory = objectFactory;

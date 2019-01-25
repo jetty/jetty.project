@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -42,7 +41,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketResources;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests.
@@ -164,7 +163,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         if (mappingKey != null)
             mapping = WebSocketMapping.ensureMapping(context, mappingKey);
         else
-            mapping = new WebSocketMapping(WebSocketResources.ensureWebSocketResources(context));
+            mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(context));
 
         String max = config.getInitParameter("maxIdleTime");
         if (max != null)

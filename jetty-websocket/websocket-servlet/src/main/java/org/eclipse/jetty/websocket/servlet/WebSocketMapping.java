@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.function.Consumer;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -39,8 +38,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketResources;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -75,7 +74,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         }
         else
         {
-            WebSocketMapping mapping = new WebSocketMapping(WebSocketResources.ensureWebSocketResources(servletContext));
+            WebSocketMapping mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(servletContext));
             contextHandler.setAttribute(mappingKey, mapping);
             return mapping;
         }
@@ -84,17 +83,17 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.WebSocketMapping";
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
-    private final WebSocketResources resources;
+    private final WebSocketComponents components;
     private final Handshaker handshaker = Handshaker.newInstance();
 
     public WebSocketMapping()
     {
-        this(new WebSocketResources());
+        this(new WebSocketComponents());
     }
 
-    public WebSocketMapping(WebSocketResources resources)
+    public WebSocketMapping(WebSocketComponents components)
     {
-        this.resources = resources;
+        this.components = components;
     }
 
     @Override
@@ -253,7 +252,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
         {
-            super(resources.getExtensionRegistry(), resources.getObjectFactory(), resources.getBufferPool(), customizer);
+            super(components.getExtensionRegistry(), components.getObjectFactory(), components.getBufferPool(), customizer);
             this.creator = creator;
             this.factory = factory;
         }

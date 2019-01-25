@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.javax.server;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
-import org.eclipse.jetty.websocket.core.WebSocketResources;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
@@ -84,13 +83,13 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
 
     public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context)
     {
-        WebSocketResources resources = WebSocketResources.ensureWebSocketResources(context.getServletContext());
+        WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());
         FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
         WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JavaxWebSocketServerContainer container = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("configureContext {} {} {} {}", mapping, resources, filterHolder, container);
+            LOG.debug("configureContext {} {} {} {}", mapping, components, filterHolder, container);
 
         return container;
     }

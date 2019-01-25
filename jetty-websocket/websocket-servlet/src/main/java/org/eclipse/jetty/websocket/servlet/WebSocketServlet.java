@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -34,8 +33,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketResources;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
@@ -96,7 +95,7 @@ public abstract class WebSocketServlet extends HttpServlet
     private final CustomizedWebSocketServletFactory customizer = new CustomizedWebSocketServletFactory();
 
     private WebSocketMapping mapping;
-    private WebSocketResources resources;
+    private WebSocketComponents components;
 
     /**
      * Configure the WebSocketServletFactory for this servlet instance by setting default
@@ -114,8 +113,8 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             ServletContext servletContext = getServletContext();
 
-            resources = WebSocketResources.ensureWebSocketResources(servletContext);
-            mapping = new WebSocketMapping(resources);
+            components = WebSocketComponents.ensureWebSocketComponents(servletContext);
+            mapping = new WebSocketMapping(components);
 
             String max = getInitParameter("maxIdleTime");
             if (max != null)
@@ -180,7 +179,7 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         public WebSocketExtensionRegistry getExtensionRegistry()
         {
-            return resources.getExtensionRegistry();
+            return components.getExtensionRegistry();
         }
 
         @Override
