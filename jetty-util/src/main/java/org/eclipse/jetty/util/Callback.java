@@ -128,7 +128,18 @@ public interface Callback extends Invocable
             }
         };
     }
-    
+
+    static Callback from(Runnable completed)
+    {
+        return new Completing()
+        {
+            public void completed()
+            {
+                completed.run();
+            }
+        };
+    }
+
     class Completing implements Callback
     {
         @Override

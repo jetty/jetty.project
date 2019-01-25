@@ -33,8 +33,8 @@ public class WebSocketChannelState
         CONNECTING,
         CONNECTED,
         OPEN,
-        ICLOSED,
-        OCLOSED,
+        ISHUT,
+        OSHUT,
         CLOSED
     }
 
@@ -68,7 +68,11 @@ public class WebSocketChannelState
     @Override
     public String toString()
     {
-        return _channelState.toString();
+        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}",getClass().getSimpleName(),hashCode(),
+                _channelState,
+                OpCode.name(_incomingContinuation),
+                OpCode.name(_outgoingContinuation),
+                _closeStatus);
     }
 
 
@@ -85,16 +89,16 @@ public class WebSocketChannelState
         return getState()==State.CLOSED;
     }
 
-    public boolean isInOpen()
+    public boolean isInputOpen()
     {
         State state = getState();
-        return (state==State.OPEN || state==State.OCLOSED);
+        return (state==State.OPEN || state==State.OSHUT);
     }
 
-    public boolean isOutOpen()
+    public boolean isOutputOpen()
     {
         State state = getState();
-        return (state==State.OPEN || state==State.ICLOSED);
+        return (state==State.OPEN || state==State.ISHUT);
     }
 
     public CloseStatus getCloseStatus()
@@ -118,28 +122,39 @@ public class WebSocketChannelState
         }
     }
 
-    public boolean checkOutgoing(Frame frame) throws ProtocolException
+    public boolean onOutgoingFrame(Frame frame) throws ProtocolException
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
 
         synchronized (this)
         {
-            if (!isOutOpen())
+            if (!isOutputOpen())
+            {
+                if (opcode == OpCode.CLOSE && CloseStatus.getCloseStatus(frame) instanceof WebSocketChannel.AbnormalCloseStatus)
+                    _channelState = State.CLOSED;
                 throw new IllegalStateException(_channelState.toString());
+            }
 
             if (opcode == OpCode.CLOSE)
             {
                 _closeStatus = CloseStatus.getCloseStatus(frame);
+                if (_closeStatus instanceof WebSocketChannel.AbnormalCloseStatus)
+                {
+                    _channelState = State.CLOSED;
+                    return true;
+                }
 
                 switch (_channelState)
                 {
                     case OPEN:
-                        _channelState = State.OCLOSED;
+                        _channelState = State.OSHUT;
                         return false;
-                    case ICLOSED:
+
+                    case ISHUT:
                         _channelState = State.CLOSED;
                         return true;
+
                     default:
                         throw new IllegalStateException(_channelState.toString());
                 }
@@ -153,14 +168,14 @@ public class WebSocketChannelState
         return false;
     }
 
-    public boolean checkIncoming(Frame frame) throws ProtocolException
+    public boolean onIncomingFrame(Frame frame) throws ProtocolException
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
 
         synchronized (this)
         {
-            if (!isInOpen())
+            if (!isInputOpen())
                 throw new IllegalStateException(_channelState.toString());
 
             if (opcode == OpCode.CLOSE)
@@ -170,9 +185,9 @@ public class WebSocketChannelState
                 switch (_channelState)
                 {
                     case OPEN:
-                        _channelState = State.ICLOSED;
+                        _channelState = State.ISHUT;
                         return false;
-                    case OCLOSED:
+                    case OSHUT:
                         _channelState = State.CLOSED;
                         return true;
                     default:

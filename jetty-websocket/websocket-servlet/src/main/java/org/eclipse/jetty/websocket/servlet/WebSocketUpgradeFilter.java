@@ -33,7 +33,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHandler;
@@ -43,8 +42,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.WebSocketResources;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests.
@@ -78,25 +76,39 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
 
-    public static FilterHolder ensureFilter(ServletContext servletContext) throws ServletException
+
+    private static FilterHolder getFilter(ServletContext servletContext)
     {
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
 
         for (FilterHolder holder : servletHandler.getFilters())
         {
-            if (holder.getClassName().equals(WebSocketUpgradeFilter.class.getName()))
-                return holder;
-            if (holder.getHeldClass()!=null && WebSocketUpgradeFilter.class.isAssignableFrom(holder.getHeldClass()))
-                return holder;
+            if (holder.getClassName().equals(WebSocketUpgradeFilter.class.getName()) ||
+                    (holder.getHeldClass() != null && WebSocketUpgradeFilter.class.isAssignableFrom(holder.getHeldClass())))
+            {
+                if (holder.getInitParameter("javaxWebSocketMapping") != null)
+                    return holder;
+            }
         }
+
+        return null;
+    }
+
+    public static FilterHolder ensureFilter(ServletContext servletContext)
+    {
+        FilterHolder existingFilter = WebSocketUpgradeFilter.getFilter(servletContext);
+        if (existingFilter != null)
+            return existingFilter;
 
         String name = "WebSocketUpgradeFilter";
         String pathSpec = "/*";
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
-
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
         holder.setName(name);
+        holder.setInitParameter("javaxWebSocketMapping", WebSocketMapping.DEFAULT_KEY);
+
         holder.setAsyncSupported(true);
+        ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
         servletHandler.addFilterWithMapping(holder, pathSpec, dispatcherTypes);
         if (LOG.isDebugEnabled())
             LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
@@ -105,10 +117,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
     private final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
     private WebSocketMapping mapping;
-
-    public WebSocketUpgradeFilter()
-    {
-    }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
@@ -151,7 +159,12 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     public void init(FilterConfig config) throws ServletException
     {
         final ServletContext context = config.getServletContext();
-        mapping = WebSocketMapping.ensureMapping(context);
+
+        String mappingKey = config.getInitParameter("javaxWebSocketMapping");
+        if (mappingKey != null)
+            mapping = WebSocketMapping.ensureMapping(context, mappingKey);
+        else
+            mapping = new WebSocketMapping(WebSocketResources.ensureWebSocketResources(context));
 
         String max = config.getInitParameter("maxIdleTime");
         if (max != null)

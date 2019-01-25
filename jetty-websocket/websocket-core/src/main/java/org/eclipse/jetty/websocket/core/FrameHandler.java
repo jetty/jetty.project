@@ -270,7 +270,7 @@ public interface FrameHandler extends IncomingFrames
         /**
          * @return True if the websocket is open outbound
          */
-        boolean isOpen();
+        boolean isOutputOpen();
 
         /**
          * If using BatchMode.ON or BatchMode.AUTO, trigger a flush of enqueued / batched frames.
@@ -374,7 +374,7 @@ public interface FrameHandler extends IncomingFrames
             }
 
             @Override
-            public boolean isOpen()
+            public boolean isOutputOpen()
             {
                 return false;
             }

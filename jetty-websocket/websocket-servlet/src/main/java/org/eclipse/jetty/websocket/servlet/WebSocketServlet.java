@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.time.Duration;
 
 import javax.servlet.ServletContext;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketResources;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
@@ -94,6 +96,7 @@ public abstract class WebSocketServlet extends HttpServlet
     private final CustomizedWebSocketServletFactory customizer = new CustomizedWebSocketServletFactory();
 
     private WebSocketMapping mapping;
+    private WebSocketResources resources;
 
     /**
      * Configure the WebSocketServletFactory for this servlet instance by setting default
@@ -111,7 +114,8 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             ServletContext servletContext = getServletContext();
 
-            mapping = WebSocketMapping.ensureMapping(servletContext);
+            resources = WebSocketResources.ensureWebSocketResources(servletContext);
+            mapping = new WebSocketMapping(resources);
 
             String max = getInitParameter("maxIdleTime");
             if (max != null)
@@ -176,79 +180,7 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         public WebSocketExtensionRegistry getExtensionRegistry()
         {
-            return mapping.getExtensionRegistry();
-        }
-
-        @Override
-        public Duration getDefaultIdleTimeout()
-        {
-            return getIdleTimeout();
-        }
-
-        @Override
-        public void setDefaultIdleTimeout(Duration duration)
-        {
-            setIdleTimeout(duration);
-        }
-
-        @Override
-        public int getDefaultInputBufferSize()
-        {
-            return getInputBufferSize();
-        }
-
-        @Override
-        public void setDefaultInputBufferSize(int bufferSize)
-        {
-            setInputBufferSize(bufferSize);
-        }
-
-        @Override
-        public long getDefaultMaxAllowedFrameSize()
-        {
-            return getMaxFrameSize();
-        }
-
-        @Override
-        public void setDefaultMaxAllowedFrameSize(long maxFrameSize)
-        {
-            setMaxFrameSize(maxFrameSize);
-        }
-
-        @Override
-        public long getDefaultMaxBinaryMessageSize()
-        {
-            return getMaxBinaryMessageSize();
-        }
-
-        @Override
-        public void setDefaultMaxBinaryMessageSize(long size)
-        {
-            setMaxBinaryMessageSize(size);
-        }
-
-        @Override
-        public long getDefaultMaxTextMessageSize()
-        {
-            return getMaxTextMessageSize();
-        }
-
-        @Override
-        public void setDefaultMaxTextMessageSize(long size)
-        {
-            setMaxTextMessageSize(size);
-        }
-
-        @Override
-        public int getDefaultOutputBufferSize()
-        {
-            return getOutputBufferSize();
-        }
-
-        @Override
-        public void setDefaultOutputBufferSize(int bufferSize)
-        {
-            setOutputBufferSize(bufferSize);
+            return resources.getExtensionRegistry();
         }
 
         @Override
@@ -269,6 +201,41 @@ public abstract class WebSocketServlet extends HttpServlet
                 throw new IllegalStateException("No known FrameHandlerFactory");
 
             mapping.addMapping(pathSpec, creator, frameHandlerFactory, this);
+        }
+
+        @Override
+        public void register(Class<?> endpointClass)
+        {
+            Constructor<?> constructor;
+            try
+            {
+                constructor = endpointClass.getDeclaredConstructor(null);
+            }
+            catch (NoSuchMethodException e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            WebSocketCreator creator = (req, resp) ->
+            {
+                try
+                {
+                    return constructor.newInstance();
+                }
+                catch (Throwable t)
+                {
+                    t.printStackTrace();
+                    return null;
+                }
+            };
+
+            addMapping("/", creator);
+        }
+
+        @Override
+        public void setCreator(WebSocketCreator creator)
+        {
+            addMapping("/", creator);
         }
 
         @Override

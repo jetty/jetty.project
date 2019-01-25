@@ -47,34 +47,26 @@ public class JettyWebsocketTest
     public static class EventSocket
     {
         CountDownLatch closed = new CountDownLatch(1);
-        String id;
 
-        public EventSocket()
-        {
-            id = "";
-        }
-
-        public EventSocket(String id)
-        {
-            this.id = id;
-        }
+        String behavior;
 
         @OnWebSocketConnect
         public void onOpen(Session sess)
         {
-            System.out.println("["+id+"]Socket Connected: " + sess);
+            behavior = sess.getPolicy().getBehavior().name();
+            System.err.println(toString() + " Socket Connected: " + sess);
         }
 
         @OnWebSocketMessage
         public void onMessage(String message)
         {
-            System.out.println("["+id+"]Received TEXT message: " + message);
+            System.err.println(toString() + " Received TEXT message: " + message);
         }
 
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            System.out.println("["+id+"]Socket Closed: " + statusCode + ":" + reason);
+            System.err.println(toString() + " Socket Closed: " + statusCode + ":" + reason);
             closed.countDown();
         }
 
@@ -83,25 +75,20 @@ public class JettyWebsocketTest
         {
             cause.printStackTrace(System.err);
         }
-    }
 
-    public static class MyWebSocketServlet1 extends WebSocketServlet
-    {
         @Override
-        public void configure(WebSocketServletFactory factory)
+        public String toString()
         {
-            System.err.println("Configuring MyWebSocketServlet1");
-            factory.addMapping("/",(req, resp)->new EventSocket("MyWebSocketServlet1"));
+            return String.format("[%s@%s]", behavior, Integer.toHexString(hashCode()));
         }
     }
 
-    public static class MyWebSocketServlet2 extends WebSocketServlet
+    public static class MyWebSocketServlet extends WebSocketServlet
     {
         @Override
         public void configure(WebSocketServletFactory factory)
         {
-            System.err.println("Configuring MyWebSocketServlet2");
-            factory.addMapping("/",(req, resp)->new EventSocket("MyWebSocketServlet2"));
+            factory.addMapping("/",(req, resp)->new EventSocket());
         }
     }
 
@@ -118,20 +105,18 @@ public class JettyWebsocketTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        contextHandler.addServlet(MyWebSocketServlet1.class, "/testPath1");
-        contextHandler.addServlet(MyWebSocketServlet2.class, "/testPath2");
+        contextHandler.addServlet(MyWebSocketServlet.class, "/testPath1");
+        contextHandler.addServlet(MyWebSocketServlet.class, "/testPath2");
 
         try
         {
             JettyWebSocketServletContainerInitializer.configure(contextHandler);
             server.start();
 
-            URI uri = URI.create("ws://localhost:8080/testPath1");
-
             WebSocketClient client = new WebSocketClient();
             client.start();
 
-
+            URI uri = URI.create("ws://localhost:8080/testPath1");
             EventSocket socket = new EventSocket();
             CompletableFuture<Session> connect = client.connect(socket, uri);
             try(Session session = connect.get(5, TimeUnit.SECONDS))

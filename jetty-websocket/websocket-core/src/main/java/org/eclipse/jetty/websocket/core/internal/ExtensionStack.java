@@ -19,18 +19,15 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Queue;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -201,7 +198,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         outgoing.sendFrame(frame, callback, batch);
     }
 
-    public void connect(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketChannel webSocketChannel)
+    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketChannel webSocketChannel)
     {
         if (extensions == null)
             throw new IllegalStateException();

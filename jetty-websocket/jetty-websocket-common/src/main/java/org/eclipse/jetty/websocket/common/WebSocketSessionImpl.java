@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.time.Duration;
+import java.util.Objects;
+
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
@@ -26,11 +31,6 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.time.Duration;
-import java.util.Objects;
 
 public class WebSocketSessionImpl implements Session, Dumpable
 {
@@ -160,7 +160,7 @@ public class WebSocketSessionImpl implements Session, Dumpable
     @Override
     public boolean isOpen()
     {
-        return remoteEndpoint.getCoreSession().isOpen();
+        return remoteEndpoint.getCoreSession().isOutputOpen();
     }
 
     @Override

@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Utf8Appendable;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.function.Supplier;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 
 /**
  * Representation of a WebSocket Close (status code &amp; reason)
@@ -194,7 +193,7 @@ public class CloseStatus
 
         int len = 2; // status code
 
-        byte reasonBytes[] = null;
+        byte[] reasonBytes = null;
 
         if (reason != null)
         {
@@ -208,7 +207,7 @@ public class CloseStatus
         ByteBuffer buf = BufferUtil.allocate(len);
         BufferUtil.flipToFill(buf);
         buf.put((byte)((statusCode >>> 8) & 0xFF));
-        buf.put((byte)((statusCode >>> 0) & 0xFF));
+        buf.put((byte)(statusCode & 0xFF));
 
         if ((reasonBytes != null) && (reasonBytes.length > 0))
         {

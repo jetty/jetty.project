@@ -23,7 +23,7 @@ The basic form of a WebSocket using the link:{JDURL}/org/eclipse/jetty/websocket
 
 [source, java, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-websocket/websocket-common/src/test/java/examples/echo/ListenerEchoSocket.java[]
+include::{SRCDIR}/jetty-websocket/jetty-websocket-common/src/test/java/org/eclipse/jetty/websocket/common/endpoints/adapters/ListenerEchoSocket.java[]
 ----
 
 This is by far the most basic and best performing (speed and memory wise) WebSocket implementation you can create.
