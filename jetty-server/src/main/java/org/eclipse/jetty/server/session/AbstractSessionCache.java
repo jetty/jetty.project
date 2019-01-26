@@ -633,18 +633,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         return doDelete(id);
     }
 
-    
-    protected Session remove (Session session)
-    {
-        if (session == null)
-            return null; //session is not there
-        
-        session.setResident(false);
-        return doDelete(session.getId());
-    }
-   
-
-
 
     /** 
      * @see org.eclipse.jetty.server.session.SessionCache#checkExpiration(Set)
