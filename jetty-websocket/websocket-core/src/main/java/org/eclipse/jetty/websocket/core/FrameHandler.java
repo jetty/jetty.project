@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
@@ -49,33 +49,31 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
  * Once instantiated the FrameHandler follows is used as follows:
  * </p>
  * <ul>
- * <li>The {@link #onOpen(CoreSession)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
+ * <li>The {@link #onOpen(CoreSession,Callback)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
  * to obtain information about the connection and to send frames</li>
  * <li>Every data and control frame received is passed to {@link #onFrame(Frame, Callback)}.</li>
  * <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onFrame(Frame, Callback)} to give the
  * Application an opportunity to send the response itself. If an appropriate response has not been sent when the callback passed is completed, then a
  * response will be generated.</li>
- * <li>If an error is detected or received, then {@link #onError(Throwable)} will be called to inform the application of the cause of the problem.
- * The connection will then be closed or aborted and the {@link #onClosed(CloseStatus)} method called.</li>
- * <li>The {@link #onClosed(CloseStatus)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
+ * <li>If an error is detected or received, then {@link #onError(Throwable,Callback)} will be called to inform the application of the cause of the problem.
+ * The connection will then be closed or aborted and the {@link #onClosed(CloseStatus,Callback)} method called.</li>
+ * <li>The {@link #onClosed(CloseStatus,Callback)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
  * will indicate the nature of the close.</li>
  * </ul>
  */
 public interface FrameHandler extends IncomingFrames
 {
-    // TODO: have conversation about "throws Exception" vs "throws WebSocketException" vs "throws Throwable" in below signatures.
-
     /**
-     * Connection is being opened.
+     * Async notification that Connection is being opened.
      * <p>
      * FrameHandler can write during this call, but will not receive frames until
      * the onOpen() completes.
      * </p>
      *
      * @param coreSession the channel associated with this connection.
-     * @throws Exception if unable to open. TODO: will close the connection (optionally choosing close status code based on WebSocketException type)?
+     * @param callback the callback to indicate success in processing (or failure)
      */
-    void onOpen(CoreSession coreSession) throws Exception;
+    void onOpen(CoreSession coreSession, Callback callback);
 
     /**
      * Receiver of all Frames.
@@ -100,18 +98,19 @@ public interface FrameHandler extends IncomingFrames
      * </p>
      *
      * @param closeStatus the close status received from remote, or in the case of abnormal closure from local.
+     * @param callback the callback to indicate success in processing (or failure)
      */
-    void onClosed(CloseStatus closeStatus);
+    void onClosed(CloseStatus closeStatus, Callback callback);
 
     /**
      * An error has occurred or been detected in websocket-core and being reported to FrameHandler.
-     * A call to onError will be followed by a call to {@link #onClosed(CloseStatus)} giving the close status
+     * A call to onError will be followed by a call to {@link #onClosed(CloseStatus, Callback)} giving the close status
      * derived from the error.
      *
      * @param cause the reason for the error
-     * @throws Exception if unable to process the error.
+     * @param callback the callback to indicate success in processing (or failure)
      */
-    void onError(Throwable cause) throws Exception;
+    void onError(Throwable cause, Callback callback);
 
     /**
      * Does the FrameHandler manage it's own demand?
@@ -123,6 +122,73 @@ public interface FrameHandler extends IncomingFrames
     default boolean isDemanding()
     {
         return false;
+    }
+
+
+    interface Adaptor extends FrameHandler
+    {
+        @Override
+        default void onOpen(CoreSession coreSession, Callback callback)
+        {
+            try
+            {
+                onOpen(coreSession);
+                callback.succeeded();
+            }
+            catch(Throwable t)
+            {
+                callback.failed(t);
+            }
+        }
+
+        default void onOpen(CoreSession coreSession) throws Exception {}
+
+        @Override
+        default void onFrame(Frame frame, Callback callback)
+        {
+            try
+            {
+                onFrame(frame);
+                callback.succeeded();
+            }
+            catch(Throwable t)
+            {
+                callback.failed(t);
+            }
+        }
+
+        default void onFrame(Frame frame) throws Exception {}
+
+        @Override
+        default void onClosed(CloseStatus closeStatus, Callback callback)
+        {
+            try
+            {
+                onClosed(closeStatus);
+                callback.succeeded();
+            }
+            catch(Throwable t)
+            {
+                callback.failed(t);
+            }
+        }
+        default void onClosed(CloseStatus closeStatus) throws Exception {}
+
+        @Override
+        default void onError(Throwable cause, Callback callback)
+        {
+            try
+            {
+                onError(cause);
+                callback.succeeded();
+            }
+            catch(Throwable t)
+            {
+                callback.failed(t);
+            }
+        }
+
+        default void onError(Throwable cause) throws Exception  {}
     }
 
 
@@ -167,6 +233,7 @@ public interface FrameHandler extends IncomingFrames
 
         void setMaxTextMessageSize(long maxSize);
     }
+
 
     /**
      * Represents the outgoing Frames.
@@ -225,10 +292,10 @@ public interface FrameHandler extends IncomingFrames
          * </p>
          * <p>
          * Once called, any read/write activity on the websocket from this point will be indeterminate.
-         * This can result in the {@link #onError(Throwable)} event being called indicating any issue that arises.
+         * This can result in the {@link #onError(Throwable,Callback)} event being called indicating any issue that arises.
          * </p>
          * <p>
-         * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus)} event will be called.
+         * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus,Callback)} event will be called.
          * </p>
          */
         void abort();
@@ -501,7 +568,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public Duration getIdleTimeout()
         {
-            return timeout;
+            return timeout==null ? Duration.ofSeconds(0) : timeout;
         }
 
         @Override

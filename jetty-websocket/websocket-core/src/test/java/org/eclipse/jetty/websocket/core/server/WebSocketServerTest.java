@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -38,28 +32,21 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.RawFrameBuilder;
-import org.eclipse.jetty.websocket.core.TestFrameHandler;
-import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
-import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.WebSocketTester;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests of a core server with a fake client
@@ -162,9 +149,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(1);
             }
 
@@ -291,9 +279,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(3);
             }
 
@@ -349,9 +338,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(2);
             }
 
@@ -423,9 +413,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(2);
             }
 

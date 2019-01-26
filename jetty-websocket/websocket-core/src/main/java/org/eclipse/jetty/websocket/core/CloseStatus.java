@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * Representation of a WebSocket Close (status code &amp; reason)
@@ -354,6 +354,12 @@ public class CloseStatus
         public CloseStatus getCloseStatus()
         {
             return CloseStatus.this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return super.toString() + ":" + CloseStatus.this.toString();
         }
     }
 }

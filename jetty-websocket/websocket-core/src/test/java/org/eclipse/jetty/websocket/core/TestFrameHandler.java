@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Logger;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
-public class TestFrameHandler implements FrameHandler
+public class TestFrameHandler implements FrameHandler.Adaptor
 {
     private static Logger LOG = Log.getLogger(TestFrameHandler.class);
 
@@ -47,7 +47,7 @@ public class TestFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onOpen(CoreSession coreSession) throws Exception
+    public void onOpen(CoreSession coreSession)
     {
         LOG.info("onOpen {}", coreSession);
         this.session = coreSession;
@@ -69,7 +69,7 @@ public class TestFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onError(Throwable cause) throws Exception
+    public void onError(Throwable cause)
     {
         LOG.info("onError {} ", cause == null?null:cause.toString());
     }

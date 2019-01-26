@@ -147,6 +147,7 @@ public class WebSocketChannelState
 
                 switch (_channelState)
                 {
+                    case CONNECTED:
                     case OPEN:
                         _channelState = State.OSHUT;
                         return false;

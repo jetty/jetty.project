@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-public class FrameEcho implements FrameHandler
+public class FrameEcho implements FrameHandler.Adaptor
 {
     private Logger LOG = Log.getLogger(FrameEcho.class);
 

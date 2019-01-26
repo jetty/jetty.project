@@ -52,7 +52,7 @@ public class FrameHandlerTracker extends MessageHandler
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus)
+    public void onClosed(CloseStatus closeStatus) throws Exception
     {
         super.onClosed(closeStatus);
 

@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.Utf8Appendable;
-import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.*;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -37,7 +33,7 @@ import java.util.function.Consumer;
  * may extend {@link #isDemanding()} to return true and then explicityly control
  * demand with calls to {@link org.eclipse.jetty.websocket.core.FrameHandler.CoreSession#demand(long)}
  */
-public class MessageHandler implements FrameHandler
+public class MessageHandler implements FrameHandler.Adaptor
 {
 
     public static MessageHandler from(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
@@ -229,6 +225,9 @@ public class MessageHandler implements FrameHandler
         }
     }
 
+    @Override
+    public final void onFrame(Frame frame){}
+
     private void onTextFrame(Frame frame, Callback callback)
     {
         if (frame.hasPayload())
@@ -298,8 +297,8 @@ public class MessageHandler implements FrameHandler
     /**
      * Method called when a complete text message is received.
      *
-     * @param message
-     * @param callback
+     * @param message the received text payload
+     * @param callback The callback to signal completion of handling.
      */
     protected void onText(String message, Callback callback)
     {
@@ -309,8 +308,8 @@ public class MessageHandler implements FrameHandler
     /**
      * Method called when a complete binary message is received.
      *
-     * @param message
-     * @param callback
+     * @param message The binary payload
+     * @param callback The callback to signal completion of handling.
      */
     protected void onBinary(ByteBuffer message, Callback callback)
     {
@@ -425,7 +424,7 @@ public class MessageHandler implements FrameHandler
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus)
+    public void onClosed(CloseStatus closeStatus) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onClosed {}", this, closeStatus);

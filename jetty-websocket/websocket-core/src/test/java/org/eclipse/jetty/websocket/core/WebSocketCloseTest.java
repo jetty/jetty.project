@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -44,14 +39,16 @@ import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests of a core server with a fake client
@@ -187,18 +184,15 @@ public class WebSocketCloseTest extends WebSocketTester
     @Test
     public void serverFailClose_ISHUT() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(WebSocketChannel.class))
-        {
-            setup(State.ISHUT);
-            server.handler.receivedCallback.poll().failed(new Exception("test failure"));
+        setup(State.ISHUT);
+        server.handler.receivedCallback.poll().failed(new Exception("test failure"));
 
-            Frame frame = receiveFrame(client.getInputStream());
-            assertNotNull(frame);
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.SERVER_ERROR));
+        Frame frame = receiveFrame(client.getInputStream());
+        assertNotNull(frame);
+        assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.SERVER_ERROR));
 
-            assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
-            assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
-        }
+        assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
     }
 
     @Test
@@ -280,8 +274,6 @@ public class WebSocketCloseTest extends WebSocketTester
 
         client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.PONG, "pong frame not masked", false));
         assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
-        server.handler.getCoreSession().demand(1);
-        assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
 
         server.close();
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
@@ -320,8 +312,6 @@ public class WebSocketCloseTest extends WebSocketTester
         setup(State.ISHUT);
 
         client.close();
-        assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
-        server.handler.getCoreSession().demand(1);
         assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
         server.close();
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
@@ -362,7 +352,7 @@ public class WebSocketCloseTest extends WebSocketTester
         assertThat(server.handler.closeStatus.getReason(), containsString("onReceiveFrame throws for binary frames"));
     }
 
-    static class TestFrameHandler implements FrameHandler
+    static class TestFrameHandler implements FrameHandler.Adaptor
     {
         private CoreSession session;
         String state;
@@ -414,7 +404,7 @@ public class WebSocketCloseTest extends WebSocketTester
         }
 
         @Override
-        public void onError(Throwable cause) throws Exception
+        public void onError(Throwable cause)
         {
             LOG.info("onError {} ", cause == null?null:cause.toString());
             state = session.toString();

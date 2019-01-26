@@ -18,47 +18,26 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
-import javax.websocket.CloseReason;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.javax.common.messages.*;
 import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
 
-public class JavaxWebSocketFrameHandler implements FrameHandler
+import javax.websocket.MessageHandler;
+import javax.websocket.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+public class JavaxWebSocketFrameHandler implements FrameHandler.Adaptor
 {
     private final Logger LOG;
     private final JavaxWebSocketContainer container;
@@ -275,13 +254,22 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause);
+                Exception wse = new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause);
+
+                // TODO This feels like double handling of the exception? Review need for futureSession
+                futureSession.completeExceptionally(wse);
+                throw wse;
             }
         }
 
         container.addBean(session, true);
         futureSession.complete(session);
     }
+
+    /**
+     * @see #onFrame(Frame,Callback)
+     */
+    public final void onFrame(Frame frame) {}
 
     @Override
     public void onFrame(Frame frame, Callback callback)

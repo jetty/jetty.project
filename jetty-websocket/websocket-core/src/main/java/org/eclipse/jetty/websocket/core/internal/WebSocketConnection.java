@@ -18,28 +18,20 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import org.eclipse.jetty.io.*;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.*;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -185,7 +177,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onIdleExpired()");
 
         // treat as a handler error because socket is still open
-        channel.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"));
+        channel.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
         return true;
     }
 
@@ -201,7 +193,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onReadTimeout()");
 
         // treat as a handler error because socket is still open
-        channel.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout));
+        channel.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
         return false;
     }
 
@@ -241,7 +233,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     referenced.release();
 
                 // notify session & endpoint
-                channel.processHandlerError(cause);
+                channel.processHandlerError(cause,NOOP);
             }
         });
     }
@@ -453,7 +445,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.warn(t.toString());
             BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
-            channel.processConnectionError(t);
+            channel.processConnectionError(t,Callback.NOOP);
         }
     }
 
@@ -494,8 +486,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onOpen() {}", this);
 
         // Open Channel
-        channel.onOpen();
         super.onOpen();
+        channel.onOpen();
     }
 
     @Override
@@ -615,7 +607,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         public void onCompleteFailure(Throwable x)
         {
             super.onCompleteFailure(x);
-            channel.processConnectionError(x);
+            channel.processConnectionError(x,NOOP);
         }
     }
 }

@@ -26,24 +26,14 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.CloseException;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.UpgradeException;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.*;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-public class JettyWebSocketFrameHandler implements FrameHandler
+public class JettyWebSocketFrameHandler implements FrameHandler.Adaptor
 {
     private final Logger log;
     private final Executor executor;
@@ -116,7 +106,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        // TODO: FrameHandler cleanup?
     }
 
     @SuppressWarnings("Duplicates")
@@ -171,6 +160,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         return cause;
     }
+
+    /**
+     * @see #onFrame(Frame,Callback)
+     */
+    public final void onFrame(Frame frame) {}
 
     @Override
     public void onFrame(Frame frame, Callback callback)

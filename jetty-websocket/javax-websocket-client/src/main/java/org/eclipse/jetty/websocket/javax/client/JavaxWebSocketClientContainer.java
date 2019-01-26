@@ -18,33 +18,23 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.function.Supplier;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.Session;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.javax.common.*;
+
+import javax.websocket.*;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Container for Client use of the javax.websocket API.
@@ -171,8 +161,11 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         try
         {
             Future<Session> sessionFuture = connect(upgradeRequest);
-            // TODO: apply connect timeouts here?
-            return sessionFuture.get(); // TODO: unwrap IOException from ExecutionException?
+            long timeout = getDefaultMaxSessionIdleTimeout();
+            if (timeout>0)
+                return sessionFuture.get(timeout, TimeUnit.MILLISECONDS);
+
+            return sessionFuture.get();
         }
         catch (Exception e)
         {

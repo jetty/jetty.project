@@ -35,7 +35,7 @@ import static org.eclipse.jetty.websocket.core.OpCode.PONG;
  * NOTE: The introduction of WebSocket over HTTP/2 might change the behavior and implementation some.
  * </p>
  */
-public class AbstractTestFrameHandler implements FrameHandler
+public class AbstractTestFrameHandler implements FrameHandler.Adaptor
 {
     private Logger LOG = Log.getLogger(AbstractTestFrameHandler.class);
     private byte partial = OpCode.UNDEFINED;

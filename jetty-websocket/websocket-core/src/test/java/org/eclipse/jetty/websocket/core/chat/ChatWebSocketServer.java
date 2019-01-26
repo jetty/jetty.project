@@ -92,7 +92,7 @@ public class ChatWebSocketServer
             }
 
             @Override
-            public void onClosed(CloseStatus closeStatus)
+            public void onClosed(CloseStatus closeStatus) throws Exception
             {
                 LOG.debug("onClosed {}", closeStatus);
                 super.onClosed(closeStatus);
