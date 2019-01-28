@@ -18,6 +18,23 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.ContainerProvider;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -28,30 +45,14 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.javax.common.util.TextUtil;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.eclipse.jetty.websocket.javax.tests.DataUtils;
-import org.eclipse.jetty.websocket.javax.common.util.TextUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -292,9 +293,10 @@ public class MessageReceivingTest
         }
 
         @Override
-        public void onError(Throwable cause)
+        public void onError(Throwable cause, Callback callback)
         {
             LOG.warn(cause);
+            callback.succeeded();
         }
     }
 
@@ -323,9 +325,10 @@ public class MessageReceivingTest
         }
 
         @Override
-        public void onError(Throwable cause)
+        public void onError(Throwable cause, Callback callback)
         {
             LOG.warn(cause);
+            callback.succeeded();
         }
     }
 

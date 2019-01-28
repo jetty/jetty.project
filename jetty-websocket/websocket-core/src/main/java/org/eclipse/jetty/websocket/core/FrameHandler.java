@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
@@ -123,74 +123,6 @@ public interface FrameHandler extends IncomingFrames
     {
         return false;
     }
-
-
-    interface Adaptor extends FrameHandler
-    {
-        @Override
-        default void onOpen(CoreSession coreSession, Callback callback)
-        {
-            try
-            {
-                onOpen(coreSession);
-                callback.succeeded();
-            }
-            catch(Throwable t)
-            {
-                callback.failed(t);
-            }
-        }
-
-        default void onOpen(CoreSession coreSession) throws Exception {}
-
-        @Override
-        default void onFrame(Frame frame, Callback callback)
-        {
-            try
-            {
-                onFrame(frame);
-                callback.succeeded();
-            }
-            catch(Throwable t)
-            {
-                callback.failed(t);
-            }
-        }
-
-        default void onFrame(Frame frame) throws Exception {}
-
-        @Override
-        default void onClosed(CloseStatus closeStatus, Callback callback)
-        {
-            try
-            {
-                onClosed(closeStatus);
-                callback.succeeded();
-            }
-            catch(Throwable t)
-            {
-                callback.failed(t);
-            }
-        }
-        default void onClosed(CloseStatus closeStatus) throws Exception {}
-
-        @Override
-        default void onError(Throwable cause, Callback callback)
-        {
-            try
-            {
-                onError(cause);
-                callback.succeeded();
-            }
-            catch(Throwable t)
-            {
-                callback.failed(t);
-            }
-        }
-
-        default void onError(Throwable cause) throws Exception  {}
-    }
-
 
     interface Configuration
     {
@@ -568,7 +500,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public Duration getIdleTimeout()
         {
-            return timeout==null ? Duration.ofSeconds(0) : timeout;
+            return timeout==null ? Duration.ZERO : timeout;
         }
 
         @Override

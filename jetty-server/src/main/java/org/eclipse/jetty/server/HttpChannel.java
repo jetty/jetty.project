@@ -18,20 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.http.*;
-import org.eclipse.jetty.io.*;
-import org.eclipse.jetty.server.HttpChannelState.Action;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Scheduler;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -45,6 +31,33 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
+
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.server.HttpChannelState.Action;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
@@ -561,8 +574,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     protected void handleException(Throwable failure)
     {
-        LOG.warn(failure);
-
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
         Throwable no_stack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);

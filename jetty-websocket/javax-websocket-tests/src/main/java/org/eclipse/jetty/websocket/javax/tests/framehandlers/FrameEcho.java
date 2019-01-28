@@ -25,16 +25,17 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-public class FrameEcho implements FrameHandler.Adaptor
+public class FrameEcho implements FrameHandler
 {
     private Logger LOG = Log.getLogger(FrameEcho.class);
 
     private CoreSession coreSession;
 
     @Override
-    public void onOpen(CoreSession coreSession) throws Exception
+    public void onOpen(CoreSession coreSession, Callback callback)
     {
         this.coreSession = coreSession;
+        callback.succeeded();
     }
 
     @Override
@@ -47,15 +48,18 @@ public class FrameEcho implements FrameHandler.Adaptor
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus)
-    {
-        coreSession = null;
-    }
-
-    @Override
-    public void onError(Throwable cause) throws Exception
+    public void onError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug(this + " onError ", cause);
+        callback.succeeded();
     }
+
+    @Override
+    public void onClosed(CloseStatus closeStatus, Callback callback)
+    {
+        coreSession = null;
+        callback.succeeded();
+    }
+
 }

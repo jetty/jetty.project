@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -26,13 +34,6 @@ import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
 import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -46,7 +47,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
 
         ByteBuffer payload = BufferUtil.toBuffer(msg, StandardCharsets.UTF_8);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload(payload).setFin(true), Callback.NOOP);

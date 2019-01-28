@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.nio.ByteBuffer;
 
 import static org.eclipse.jetty.websocket.core.OpCode.PONG;
 
@@ -35,7 +35,7 @@ import static org.eclipse.jetty.websocket.core.OpCode.PONG;
  * NOTE: The introduction of WebSocket over HTTP/2 might change the behavior and implementation some.
  * </p>
  */
-public class AbstractTestFrameHandler implements FrameHandler.Adaptor
+public class AbstractTestFrameHandler implements SynchronousFrameHandler
 {
     private Logger LOG = Log.getLogger(AbstractTestFrameHandler.class);
     private byte partial = OpCode.UNDEFINED;

@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -33,14 +42,6 @@ import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
@@ -67,14 +68,12 @@ public class ChatWebSocketServer
         //  + MUST return the FrameHandler or null or exception?
         return new MessageHandler()
         {
-
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 LOG.debug("onOpen {}", coreSession);
                 setMaxTextMessageSize(2 * 1024);
-                super.onOpen(coreSession);
-                members.add(this);
+                super.onOpen(coreSession, Callback.from(()->{members.add(this); callback.succeeded();},x->callback.failed(x)));
             }
 
             @Override
@@ -92,10 +91,10 @@ public class ChatWebSocketServer
             }
 
             @Override
-            public void onClosed(CloseStatus closeStatus) throws Exception
+            public void onClosed(CloseStatus closeStatus, Callback callback)
             {
                 LOG.debug("onClosed {}", closeStatus);
-                super.onClosed(closeStatus);
+                super.onClosed(closeStatus, Callback.from(()->members.remove(this),callback));
                 members.remove(this);
             }
         };

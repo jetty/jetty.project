@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Utf8Appendable;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.*;
-import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
-
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
@@ -39,6 +29,28 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Utf8Appendable;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Extension;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
@@ -469,9 +481,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
-
         try
         {
             assertValidOutgoing(frame);
@@ -487,26 +496,29 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             synchronized(flusher)
             {
                 boolean closeConnection = channelState.onOutgoingFrame(frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("sendFrame({}, {}, {}) {}", frame, callback, batch, closeConnection);
 
-                if (frame.getOpCode() == OpCode.CLOSE)
+                if (closeConnection)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("close({}, {}, {})", CloseStatus.getCloseStatus(frame), callback, batch);
+                    Throwable cause = AbnormalCloseStatus.getCause(CloseStatus.getCloseStatus(frame));
 
-                    if (closeConnection)
-                    {
-                        callback = new Callback.Nested(callback)
-                        {
-                            @Override
-                            public void completed()
-                            {
-                                closeConnection(AbnormalCloseStatus.getCause(CloseStatus.getCloseStatus(frame)), channelState.getCloseStatus(),NOOP);
-                            }
-                        };
-                    }
+                    Callback closeConnectionCallback = Callback.from(
+                            ()->closeConnection(cause, channelState.getCloseStatus(), callback),
+                            x->closeConnection(cause, channelState.getCloseStatus(), Callback.from(
+                                    ()-> callback.failed(x),
+                                    x2->
+                                    {
+                                        x.addSuppressed(x2);
+                                        callback.failed(x);
+                                    })));
+
+                    flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
                 }
-
-                flusher.queue.offer(new FrameEntry(frame, callback, batch));
+                else
+                {
+                    flusher.queue.offer(new FrameEntry(frame, callback, batch));
+                }
             }
             flusher.iterate();
         }

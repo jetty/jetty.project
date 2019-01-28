@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.javax.common.*;
-
-import javax.websocket.*;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
@@ -34,7 +25,28 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.Session;
+
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 
 /**
  * Container for Client use of the javax.websocket API.
@@ -161,11 +173,14 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         try
         {
             Future<Session> sessionFuture = connect(upgradeRequest);
-            long timeout = getDefaultMaxSessionIdleTimeout();
+            long timeout = coreClient.getHttpClient().getConnectTimeout();
             if (timeout>0)
-                return sessionFuture.get(timeout, TimeUnit.MILLISECONDS);
-
+                return sessionFuture.get(timeout+1000, TimeUnit.MILLISECONDS);
             return sessionFuture.get();
+        }
+        catch (TimeoutException e)
+        {
+            throw new IOException("Connection future not completed " + destURI, e);
         }
         catch (Exception e)
         {

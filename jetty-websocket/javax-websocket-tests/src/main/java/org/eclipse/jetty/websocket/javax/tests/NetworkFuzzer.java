@@ -18,6 +18,16 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
+import java.io.IOException;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
@@ -31,16 +41,6 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
-
-import java.io.IOException;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -217,7 +217,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
     }
 
-    public static class FrameCapture implements FrameHandler.Adaptor
+    public static class FrameCapture implements FrameHandler
     {
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private final EndPoint endPoint;
@@ -229,31 +229,33 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
             this.endPoint = endPoint;
         }
 
-        @Override
-        public void onClosed(CloseStatus closeStatus)
-        {
-        }
 
         @Override
-        public void onError(Throwable cause) throws Exception
+        public void onOpen(CoreSession coreSession, Callback callback)
         {
+            this.session = coreSession;
+            callback.succeeded();
         }
 
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
             receivedFrames.offer(Frame.copy(frame));
-            synchronized(this)
-            {
-                callback.succeeded();
-            }
+            callback.succeeded();
         }
 
         @Override
-        public void onOpen(CoreSession coreSession) throws Exception
+        public void onError(Throwable cause, Callback callback)
         {
-            this.session = coreSession;
+            callback.succeeded();
         }
+
+        @Override
+        public void onClosed(CloseStatus closeStatus, Callback callback)
+        {
+            callback.succeeded();
+        }
+
 
         public void writeRaw(ByteBuffer buffer) throws IOException
         {

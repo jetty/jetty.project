@@ -18,18 +18,19 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.util.concurrent.TimeUnit;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.CloseReason;
+import javax.websocket.OnClose;
+import javax.websocket.Session;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.CloseReason;
-import javax.websocket.OnClose;
-import javax.websocket.Session;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -44,12 +45,12 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // These invocations are the same for all tests
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
         CloseStatus status = new CloseStatus(CloseStatus.NORMAL, "Normal");
         Frame closeFrame = status.toFrame();
         localEndpoint.onFrame(closeFrame, Callback.from(() ->
         {
-            localEndpoint.onClosed(status);
+            localEndpoint.onClosed(status, Callback.NOOP);
         }, t ->
         {
             throw new RuntimeException(t);

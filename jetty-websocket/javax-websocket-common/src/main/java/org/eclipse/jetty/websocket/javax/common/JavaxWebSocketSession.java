@@ -220,10 +220,10 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
             {
                 getBasicRemote().sendObject(obj);
             }
-            catch (Throwable cause)
+            catch (Exception cause)
             {
-                // TODO: need way to fail Channel.
-                frameHandler.onError(cause);
+                // TODO review this
+                throw new RuntimeException(cause);
             }
         }
     }

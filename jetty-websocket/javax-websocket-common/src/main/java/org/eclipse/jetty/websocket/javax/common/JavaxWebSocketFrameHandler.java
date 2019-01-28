@@ -18,26 +18,47 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.*;
-import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.javax.common.messages.*;
-import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
-
-import javax.websocket.MessageHandler;
-import javax.websocket.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public class JavaxWebSocketFrameHandler implements FrameHandler.Adaptor
+import javax.websocket.CloseReason;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.PongMessage;
+import javax.websocket.Session;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
+import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
+import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
+import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
+import org.eclipse.jetty.websocket.javax.common.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.javax.common.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.javax.common.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
+
+public class JavaxWebSocketFrameHandler implements FrameHandler
 {
     private final Logger LOG;
     private final JavaxWebSocketContainer container;
@@ -171,105 +192,56 @@ public class JavaxWebSocketFrameHandler implements FrameHandler.Adaptor
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus)
+    public void onOpen(CoreSession coreSession, Callback callback)
     {
-        if (closeHandle != null)
-        {
-            try
-            {
-                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
-                closeHandle.invoke(closeReason);
-            }
-            catch (Throwable cause)
-            {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause);
-            }
-        }
-
-        container.removeBean(session);
-    }
-
-    @SuppressWarnings("Duplicates")
-    @Override
-    public void onError(Throwable cause)
-    {
-        futureSession.completeExceptionally(cause);
-
-        if (errorHandle == null)
-        {
-            LOG.warn("Unhandled Error: " + endpointInstance,  cause);
-            return;
-        }
-
         try
         {
-            errorHandle.invoke(cause);
-        }
-        catch (Throwable t)
-        {
-            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getName() + " ERROR method error: " + cause.getMessage(), t);
-            wsError.addSuppressed(cause);
-            throw wsError;
-        }
-    }
+            this.coreSession = coreSession;
+            session = new JavaxWebSocketSession(container, coreSession, this, upgradeRequest.getUserPrincipal(), id, endpointConfig);
 
-    @Override
-    public void onOpen(CoreSession coreSession) throws Exception
-    {
-        this.coreSession = coreSession;
-        session = new JavaxWebSocketSession(container, coreSession, this, upgradeRequest.getUserPrincipal(), id, endpointConfig);
+            openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
+            closeHandle = InvokerUtils.bindTo(closeHandle, session);
+            errorHandle = InvokerUtils.bindTo(errorHandle, session);
 
-        openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
-        closeHandle = InvokerUtils.bindTo(closeHandle, session);
-        errorHandle = InvokerUtils.bindTo(errorHandle, session);
+            JavaxWebSocketFrameHandlerMetadata.MessageMetadata actualTextMetadata = JavaxWebSocketFrameHandlerMetadata.MessageMetadata.copyOf(textMetadata);
+            JavaxWebSocketFrameHandlerMetadata.MessageMetadata actualBinaryMetadata = JavaxWebSocketFrameHandlerMetadata.MessageMetadata.copyOf(binaryMetadata);
 
-        JavaxWebSocketFrameHandlerMetadata.MessageMetadata actualTextMetadata = JavaxWebSocketFrameHandlerMetadata.MessageMetadata.copyOf(textMetadata);
-        JavaxWebSocketFrameHandlerMetadata.MessageMetadata actualBinaryMetadata = JavaxWebSocketFrameHandlerMetadata.MessageMetadata.copyOf(binaryMetadata);
+            pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
-        pongHandle = InvokerUtils.bindTo(pongHandle, session);
-
-        if (actualTextMetadata != null)
-        {
-            actualTextMetadata.handle = InvokerUtils.bindTo(actualTextMetadata.handle, endpointInstance, endpointConfig, session);
-            actualTextMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualTextMetadata.handle, session);
-            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualTextMetadata);
-
-            textMetadata = actualTextMetadata;
-        }
-
-        if (actualBinaryMetadata != null)
-        {
-            actualBinaryMetadata.handle = InvokerUtils.bindTo(actualBinaryMetadata.handle, endpointInstance, endpointConfig, session);
-            actualBinaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualBinaryMetadata.handle, session);
-            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualBinaryMetadata);
-
-            binaryMetadata = actualBinaryMetadata;
-        }
-
-        if (openHandle != null)
-        {
-            try
+            if (actualTextMetadata != null)
             {
+                actualTextMetadata.handle = InvokerUtils.bindTo(actualTextMetadata.handle, endpointInstance, endpointConfig, session);
+                actualTextMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualTextMetadata.handle, session);
+                textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualTextMetadata);
+
+                textMetadata = actualTextMetadata;
+            }
+
+            if (actualBinaryMetadata != null)
+            {
+                actualBinaryMetadata.handle = InvokerUtils.bindTo(actualBinaryMetadata.handle, endpointInstance, endpointConfig, session);
+                actualBinaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualBinaryMetadata.handle, session);
+                binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualBinaryMetadata);
+
+                binaryMetadata = actualBinaryMetadata;
+            }
+
+            if (openHandle != null)
                 openHandle.invoke();
-            }
-            catch (Throwable cause)
-            {
-                Exception wse = new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause);
 
-                // TODO This feels like double handling of the exception? Review need for futureSession
-                futureSession.completeExceptionally(wse);
-                throw wse;
-            }
+            container.addBean(session, true);
+            futureSession.complete(session);
+            callback.succeeded();
         }
+        catch (Throwable cause)
+        {
+            Exception wse = new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause);
 
-        container.addBean(session, true);
-        futureSession.complete(session);
+            // TODO This feels like double handling of the exception? Review need for futureSession
+            futureSession.completeExceptionally(wse);
+            callback.failed(wse);
+        }
     }
-
-    /**
-     * @see #onFrame(Frame,Callback)
-     */
-    public final void onFrame(Frame frame) {}
 
     @Override
     public void onFrame(Frame frame, Callback callback)
@@ -301,6 +273,50 @@ public class JavaxWebSocketFrameHandler implements FrameHandler.Adaptor
         if (frame.isFin() && !frame.isControlFrame())
             dataType = OpCode.UNDEFINED;
     }
+
+
+    @Override
+    public void onClosed(CloseStatus closeStatus, Callback callback)
+    {
+        try
+        {
+            if (closeHandle != null)
+            {
+                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
+                closeHandle.invoke(closeReason);
+            }
+            container.removeBean(session);
+            callback.succeeded();
+        }
+        catch (Throwable cause)
+        {
+            callback.failed(new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause));
+        }
+    }
+
+    @Override
+    public void onError(Throwable cause, Callback callback)
+    {
+        try
+        {
+            futureSession.completeExceptionally(cause);
+
+            if (errorHandle != null)
+                errorHandle.invoke(cause);
+            else
+                LOG.warn("Unhandled Error: " + endpointInstance,  cause);
+            callback.succeeded();
+        }
+        catch (Throwable t)
+        {
+            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getName() + " ERROR method error: " + cause.getMessage(), t);
+            wsError.addSuppressed(cause);
+            callback.failed(wsError);
+            // TODO should futureSession be failed here?
+        }
+    }
+
+
 
     public Set<MessageHandler> getMessageHandlers()
     {

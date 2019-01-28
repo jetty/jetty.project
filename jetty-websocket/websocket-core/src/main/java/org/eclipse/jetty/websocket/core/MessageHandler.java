@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.*;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.Utf8Appendable;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A utility implementation of FrameHandler that defragments
@@ -33,7 +37,7 @@ import java.util.function.Consumer;
  * may extend {@link #isDemanding()} to return true and then explicityly control
  * demand with calls to {@link org.eclipse.jetty.websocket.core.FrameHandler.CoreSession#demand(long)}
  */
-public class MessageHandler implements FrameHandler.Adaptor
+public class MessageHandler implements FrameHandler
 {
 
     public static MessageHandler from(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
@@ -124,15 +128,16 @@ public class MessageHandler implements FrameHandler.Adaptor
         this.maxBinaryMessageSize = maxBinaryMessageSize;
     }
 
-    @Override
-    public void onOpen(CoreSession coreSession) throws Exception
-    {
-        this.coreSession = coreSession;
-    }
-
     public CoreSession getCoreSession()
     {
         return coreSession;
+    }
+
+    @Override
+    public void onOpen(CoreSession coreSession, Callback callback)
+    {
+        this.coreSession = coreSession;
+        callback.succeeded();
     }
 
     @Override
@@ -226,7 +231,38 @@ public class MessageHandler implements FrameHandler.Adaptor
     }
 
     @Override
-    public final void onFrame(Frame frame){}
+    public void onError(Throwable cause, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug(this + " onError ", cause);
+        callback.succeeded();
+    }
+
+    @Override
+    public void onClosed(CloseStatus closeStatus, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onClosed {}", this, closeStatus);
+        if (utf8StringBuilder != null && utf8StringBuilder.length() > 0 && closeStatus.isNormal())
+            LOG.warn("{} closed with partial message: {} chars", utf8StringBuilder.length());
+
+        if (binaryMessage != null)
+        {
+            if (BufferUtil.hasContent(binaryMessage))
+                LOG.warn("{} closed with partial message: {} bytes", binaryMessage.remaining());
+
+            getCoreSession().getByteBufferPool().release(binaryMessage);
+            binaryMessage = null;
+        }
+
+        if (utf8StringBuilder != null)
+        {
+            utf8StringBuilder.reset();
+            utf8StringBuilder = null;
+        }
+        coreSession = null;
+        callback.succeeded();
+    }
 
     private void onTextFrame(Frame frame, Callback callback)
     {
@@ -421,37 +457,5 @@ public class MessageHandler implements FrameHandler.Adaptor
                 return Action.SCHEDULED;
             }
         }.iterate();
-    }
-
-    @Override
-    public void onClosed(CloseStatus closeStatus) throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} onClosed {}", this, closeStatus);
-        if (utf8StringBuilder != null && utf8StringBuilder.length() > 0 && closeStatus.isNormal())
-            LOG.warn("{} closed with partial message: {} chars", utf8StringBuilder.length());
-
-        if (binaryMessage != null)
-        {
-            if (BufferUtil.hasContent(binaryMessage))
-                LOG.warn("{} closed with partial message: {} bytes", binaryMessage.remaining());
-
-            getCoreSession().getByteBufferPool().release(binaryMessage);
-            binaryMessage = null;
-        }
-
-        if (utf8StringBuilder != null)
-        {
-            utf8StringBuilder.reset();
-            utf8StringBuilder = null;
-        }
-        coreSession = null;
-    }
-
-    @Override
-    public void onError(Throwable cause) throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug(this + " onError ", cause);
     }
 }
