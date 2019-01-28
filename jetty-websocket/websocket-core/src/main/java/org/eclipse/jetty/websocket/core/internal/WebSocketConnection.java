@@ -18,20 +18,28 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import org.eclipse.jetty.io.*;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.*;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket

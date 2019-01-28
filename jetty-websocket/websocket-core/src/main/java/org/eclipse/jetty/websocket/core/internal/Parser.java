@@ -18,15 +18,20 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.Closeable;
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.*;
-
-import java.io.Closeable;
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 
 /**
  * Parsing of a frames in WebSocket land.
