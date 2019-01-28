@@ -524,19 +524,22 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
         catch (Throwable ex)
         {
-            try
+            if (frame.getOpCode() == OpCode.CLOSE)
             {
+                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                if (closeStatus instanceof AbnormalCloseStatus)
+                    closeConnection(null, closeStatus, Callback.from(
+                            ()->callback.failed(ex),
+                            x2->
+                            {
+                                ex.addSuppressed(x2);
+                                callback.failed(ex);
+                            }));
+                else
+                    callback.failed(ex);
+            }
+            else
                 callback.failed(ex);
-            }
-            finally
-            {
-                if (frame.getOpCode() == OpCode.CLOSE)
-                {
-                    CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                    if (closeStatus instanceof AbnormalCloseStatus)
-                        closeConnection(null, closeStatus, NOOP);
-                }
-            }
         }
     }
 
