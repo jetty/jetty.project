@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
@@ -84,6 +83,8 @@ public class JavaxWebSocketServerContainer
     public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext) throws ServletException
     {
         ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
+        if (contextHandler.getServer() == null)
+            throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
         JavaxWebSocketServerContainer container = contextHandler.getBean(JavaxWebSocketServerContainer.class);
         if (container==null)
@@ -96,8 +97,7 @@ public class JavaxWebSocketServerContainer
 
             Executor executor = httpClient == null?null:httpClient.getExecutor();
             if (executor == null)
-                executor = (Executor)servletContext
-                    .getAttribute("org.eclipse.jetty.server.Executor");
+                executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
             if (executor == null)
                 executor = contextHandler.getServer().getThreadPool();
 
