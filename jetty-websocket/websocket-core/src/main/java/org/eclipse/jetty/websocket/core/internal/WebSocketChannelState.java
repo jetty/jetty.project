@@ -58,21 +58,21 @@ public class WebSocketChannelState
     {
         synchronized (this)
         {
-            if (_channelState != State.CONNECTED)
-                throw new IllegalStateException(_channelState.toString());
+            switch(_channelState)
+            {
+                case CONNECTED:
+                    _channelState = State.OPEN;
+                    break;
 
-            _channelState = State.OPEN;
+                case OSHUT:
+                case CLOSED:
+                    // Already closed in onOpen handler
+                    break;
+
+                default:
+                    throw new IllegalStateException(_channelState.toString());
+            }
         }
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}",getClass().getSimpleName(),hashCode(),
-                _channelState,
-                OpCode.name(_incomingContinuation),
-                OpCode.name(_outgoingContinuation),
-                _closeStatus);
     }
 
 
@@ -204,6 +204,16 @@ public class WebSocketChannelState
         return false;
     }
 
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}",getClass().getSimpleName(),hashCode(),
+                _channelState,
+                OpCode.name(_incomingContinuation),
+                OpCode.name(_outgoingContinuation),
+                _closeStatus);
+    }
 
     private static byte checkDataSequence(byte opcode, boolean fin, byte lastOpCode) throws ProtocolException
     {

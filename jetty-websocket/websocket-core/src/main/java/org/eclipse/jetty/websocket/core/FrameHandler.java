@@ -91,6 +91,16 @@ public interface FrameHandler extends IncomingFrames
     void onFrame(Frame frame, Callback callback);
 
     /**
+     * An error has occurred or been detected in websocket-core and being reported to FrameHandler.
+     * A call to onError will be followed by a call to {@link #onClosed(CloseStatus, Callback)} giving the close status
+     * derived from the error.
+     *
+     * @param cause the reason for the error
+     * @param callback the callback to indicate success in processing (or failure)
+     */
+    void onError(Throwable cause, Callback callback);
+
+    /**
      * This is the Close Handshake Complete event.
      * <p>
      * The connection is now closed, no reading or writing is possible anymore.
@@ -102,15 +112,6 @@ public interface FrameHandler extends IncomingFrames
      */
     void onClosed(CloseStatus closeStatus, Callback callback);
 
-    /**
-     * An error has occurred or been detected in websocket-core and being reported to FrameHandler.
-     * A call to onError will be followed by a call to {@link #onClosed(CloseStatus, Callback)} giving the close status
-     * derived from the error.
-     *
-     * @param cause the reason for the error
-     * @param callback the callback to indicate success in processing (or failure)
-     */
-    void onError(Throwable cause, Callback callback);
 
     /**
      * Does the FrameHandler manage it's own demand?
@@ -217,22 +218,6 @@ public interface FrameHandler extends IncomingFrames
         boolean isSecure();
 
         /**
-         * Issue a harsh abort of the underlying connection.
-         * <p>
-         * This will terminate the connection, without sending a websocket close frame.
-         * No WebSocket Protocol close handshake will be performed.
-         * </p>
-         * <p>
-         * Once called, any read/write activity on the websocket from this point will be indeterminate.
-         * This can result in the {@link #onError(Throwable,Callback)} event being called indicating any issue that arises.
-         * </p>
-         * <p>
-         * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus,Callback)} event will be called.
-         * </p>
-         */
-        void abort();
-
-        /**
          * @return Client or Server behaviour
          */
         Behavior getBehavior();
@@ -293,6 +278,22 @@ public interface FrameHandler extends IncomingFrames
          * @param callback   the callback to track close frame sent (or failed)
          */
         void close(int statusCode, String reason, Callback callback);
+
+        /**
+         * Issue a harsh abort of the underlying connection.
+         * <p>
+         * This will terminate the connection, without sending a websocket close frame.
+         * No WebSocket Protocol close handshake will be performed.
+         * </p>
+         * <p>
+         * Once called, any read/write activity on the websocket from this point will be indeterminate.
+         * This can result in the {@link #onError(Throwable,Callback)} event being called indicating any issue that arises.
+         * </p>
+         * <p>
+         * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus,Callback)} event will be called.
+         * </p>
+         */
+        void abort();
 
         /**
          * Manage flow control by indicating demand for handling Frames.  A call to
