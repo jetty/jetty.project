@@ -83,11 +83,11 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
-        UpgradeRequest request = UpgradeRequest.from(this, wsUri, frameHandler);
+        ClientUpgradeRequest request = ClientUpgradeRequest.from(this, wsUri, frameHandler);
         return connect(request);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> connect(UpgradeRequest request) throws IOException
+    public CompletableFuture<FrameHandler.CoreSession> connect(ClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
         {

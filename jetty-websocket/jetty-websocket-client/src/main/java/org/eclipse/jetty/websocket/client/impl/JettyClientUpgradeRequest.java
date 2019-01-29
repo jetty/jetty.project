@@ -18,34 +18,35 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
+import java.net.HttpCookie;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
-import java.net.HttpCookie;
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-public class ClientUpgradeRequestImpl extends UpgradeRequest
+public class JettyClientUpgradeRequest extends ClientUpgradeRequest
 {
     private final WebSocketClient containerContext;
     private final Object websocketPojo;
     private final CompletableFuture<Session> onOpenFuture;
     private final CompletableFuture<Session> futureSession;
-    private final DelegatedClientUpgradeRequest handshakeRequest;
+    private final DelegatedJettyClientUpgradeRequest handshakeRequest;
 
-    public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, org.eclipse.jetty.websocket.api.UpgradeRequest request,
-        URI requestURI, Object websocketPojo)
+    public JettyClientUpgradeRequest(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request,
+                                     URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
@@ -89,7 +90,7 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
                 version(HttpVersion.fromString(request.getHttpVersion()));
         }
 
-        handshakeRequest = new DelegatedClientUpgradeRequest(this);
+        handshakeRequest = new DelegatedJettyClientUpgradeRequest(this);
     }
 
     @Override
@@ -108,7 +109,7 @@ public class ClientUpgradeRequestImpl extends UpgradeRequest
     @Override
     public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
     {
-        UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
+        UpgradeResponse upgradeResponse = new DelegatedJettyClientUpgradeResponse(response);
 
         JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
             handshakeRequest, upgradeResponse, onOpenFuture);

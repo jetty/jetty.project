@@ -179,7 +179,7 @@ public class WebSocketClientServerTest
 
         public void start() throws Exception
         {
-            UpgradeRequest request = UpgradeRequest.from(client, baseWebSocketUri.resolve("/test"), handler);
+            ClientUpgradeRequest request = ClientUpgradeRequest.from(client, baseWebSocketUri.resolve("/test"), handler);
             request.setSubProtocols("test");
             this.client.start();
             Future<FrameHandler.CoreSession> response = client.connect(request);

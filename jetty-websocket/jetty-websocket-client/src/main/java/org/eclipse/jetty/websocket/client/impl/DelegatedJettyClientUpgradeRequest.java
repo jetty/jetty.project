@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-
 import java.net.HttpCookie;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -35,19 +27,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpRequest}
  * in the {@link UpgradeRequest} interface.
  */
-public class DelegatedClientUpgradeRequest implements UpgradeRequest
+public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 {
-    private final org.eclipse.jetty.websocket.core.client.UpgradeRequest delegate;
+    private final ClientUpgradeRequest delegate;
     private SocketAddress localSocketAddress;
     private SocketAddress remoteSocketAddress;
 
-    public DelegatedClientUpgradeRequest(org.eclipse.jetty.websocket.core.client.UpgradeRequest delegate)
+    public DelegatedJettyClientUpgradeRequest(ClientUpgradeRequest delegate)
     {
         this.delegate = delegate;
     }

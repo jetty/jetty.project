@@ -18,37 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
-import org.eclipse.jetty.websocket.javax.tests.LocalServer;
-import org.eclipse.jetty.websocket.javax.tests.Timeouts;
-import org.eclipse.jetty.websocket.javax.tests.framehandlers.FrameHandlerTracker;
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
@@ -68,6 +37,38 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.HandshakeRequest;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
+import org.eclipse.jetty.websocket.javax.tests.LocalServer;
+import org.eclipse.jetty.websocket.javax.tests.Timeouts;
+import org.eclipse.jetty.websocket.javax.tests.framehandlers.FrameHandlerTracker;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -430,7 +431,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/capture-request-headers");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -454,7 +455,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/no-extensions");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -478,7 +479,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/capture-request-headers");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.header("X-Dummy", "Bogus");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -503,7 +504,7 @@ public class ConfiguratorTest
 
         // First Request
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -522,7 +523,7 @@ public class ConfiguratorTest
 
         // Second request
         clientSocket = new FrameHandlerTracker();
-        upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         clientConnectFuture = client.connect(upgradeRequest);
 
         channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -550,7 +551,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/addr");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -591,7 +592,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -610,7 +611,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -629,7 +630,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.header("sec-websocket-protocol", "echo, chat, status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -648,7 +649,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         // header name is not to spec (case wise)
         upgradeRequest.header("Sec-Websocket-Protocol", "echo, chat, status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
@@ -682,7 +683,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/timedecoder");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        UpgradeRequest upgradeRequest = UpgradeRequest.from(client, wsUri, clientSocket);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("gmt");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 

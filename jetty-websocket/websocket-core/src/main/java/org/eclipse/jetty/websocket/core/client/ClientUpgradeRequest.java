@@ -64,11 +64,11 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
-public abstract class UpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
+public abstract class ClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
-    public static UpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
+    public static ClientUpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
     {
-        return new UpgradeRequest(webSocketClient, requestURI)
+        return new ClientUpgradeRequest(webSocketClient, requestURI)
         {
             @Override
             public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
@@ -78,7 +78,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         };
     }
 
-    private static final Logger LOG = Log.getLogger(UpgradeRequest.class);
+    private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
     protected final CompletableFuture<FrameHandler.CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
@@ -91,7 +91,7 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
      */
     private List<String> subProtocols = new ArrayList<>();
 
-    public UpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
+    public ClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
         super(webSocketClient.getHttpClient(), new HttpConversation(), requestURI);
 
