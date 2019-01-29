@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "-Pmongodb install", "maven3")
+            mavenBuild("jdk8", "-Pmongodb install", "maven3", false)
             // Collect up the jacoco execution results (only on main build)
             jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                 exclusionPattern: '' +
@@ -44,7 +44,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "-Pmongodb install", "maven3")
+            mavenBuild("jdk11", "-Pmongodb install", "maven3", false)
             junit '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
             maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
@@ -55,7 +55,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "install javadoc:javadoc -DskipTests", "maven3")
+            mavenBuild("jdk8", "install javadoc:javadoc -DskipTests", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
           }
         }
@@ -64,7 +64,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "-Pcompact3 install -DskipTests", "maven3")
+            mavenBuild("jdk8", "-Pcompact3 install -DskipTests", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
           }
         }
@@ -82,7 +82,7 @@ pipeline {
  * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
  * @return the Jenkinsfile step representing a maven build
  */
-def mavenBuild(jdk, cmdline, mvnName) {
+def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
   def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
   def settingsName = 'oss-settings.xml'
   def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
@@ -92,7 +92,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
       jdk: "$jdk",
       publisherStrategy: 'EXPLICIT',
       globalMavenSettingsConfig: settingsName,
-      options: [junitPublisher(disabled: false),mavenLinkerPublisher(disabled: false),pipelineGraphPublisher(disabled: false)],
+      options: [junitPublisher(disabled: junitPublishDisabled),mavenLinkerPublisher(disabled: false),pipelineGraphPublisher(disabled: false)],
       mavenOpts: mavenOpts,
       mavenLocalRepo: localRepo) {
     // Some common Maven command line + provided command line
