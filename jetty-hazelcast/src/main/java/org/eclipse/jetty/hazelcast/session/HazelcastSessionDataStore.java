@@ -118,11 +118,8 @@ public class HazelcastSessionDataStore
     public Set<String> doGetExpired( Set<String> candidates )
     {
         long now = System.currentTimeMillis();
-
-        Set<String> expiredSessionIds = new HashSet<>();
-        
-        
-        expiredSessionIds = candidates.stream().filter( candidate -> {
+      
+        Set<String> expiredSessionIds = candidates.stream().filter( candidate -> {
             
             if (LOG.isDebugEnabled())
                 LOG.debug( "Checking expiry for candidate {}", candidate );
@@ -191,9 +188,7 @@ public class HazelcastSessionDataStore
         Collection<SessionData> expiredSessions = sessionDataMap.values(predicate);
         
         for (SessionData sd: expiredSessions)
-        {
             expiredSessionIds.add(sd.getId());
-        }
         
         return expiredSessionIds;
     }
