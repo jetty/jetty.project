@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -35,8 +28,14 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TextPayloadParserTest
 {
@@ -98,7 +97,6 @@ public class TextPayloadParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
@@ -133,7 +131,6 @@ public class TextPayloadParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
@@ -170,7 +167,6 @@ public class TextPayloadParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
         WebSocketFrame txt = capture.getFrames().poll();
@@ -198,7 +194,6 @@ public class TextPayloadParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
@@ -224,7 +219,6 @@ public class TextPayloadParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));

@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -33,25 +34,35 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.io.IOState;
 
 public class DummyConnection implements LogicalConnection
 {
     private static final Logger LOG = Log.getLogger(DummyConnection.class);
-    private IOState iostate;
 
     public DummyConnection()
     {
-        this.iostate = new IOState();
     }
 
     @Override
-    public void setSession(WebSocketSession session)
+    public boolean canReadWebSocketFrames()
     {
+        return true;
     }
 
     @Override
-    public void onLocalClose(CloseInfo close)
+    public boolean canWriteWebSocketFrames()
+    {
+        return true;
+    }
+
+    @Override
+    public void close(Throwable cause)
+    {
+        LOG.warn(cause);
+    }
+
+    @Override
+    public void close(CloseInfo closeInfo, Callback callback)
     {
     }
 
@@ -85,12 +96,6 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
-    public IOState getIOState()
-    {
-        return this.iostate;
-    }
-
-    @Override
     public InetSocketAddress getLocalAddress()
     {
         return null;
@@ -100,6 +105,11 @@ public class DummyConnection implements LogicalConnection
     public long getMaxIdleTimeout()
     {
         return 0;
+    }
+
+    @Override
+    public void setMaxIdleTimeout(long ms)
+    {
     }
 
     @Override
@@ -127,18 +137,31 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
+    public boolean opened()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean opening()
+    {
+        return false;
+    }
+
+    @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         callback.writeSuccess();
     }
 
     @Override
-    public void resume()
+    public void remoteClose(CloseInfo close)
     {
+
     }
 
     @Override
-    public void setMaxIdleTimeout(long ms)
+    public void resume()
     {
     }
 
@@ -150,8 +173,19 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
+    public void setSession(WebSocketSession session)
+    {
+    }
+
+    @Override
     public SuspendToken suspend()
     {
         return null;
+    }
+
+    @Override
+    public String toStateString()
+    {
+        return "no-state-in-dummy";
     }
 }

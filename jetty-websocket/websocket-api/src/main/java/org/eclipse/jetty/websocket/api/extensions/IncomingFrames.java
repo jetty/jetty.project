@@ -23,8 +23,6 @@ package org.eclipse.jetty.websocket.api.extensions;
  */
 public interface IncomingFrames
 {
-    public void incomingError(Throwable t);
-
     /**
      * Process the incoming frame.
      * <p>
@@ -34,5 +32,5 @@ public interface IncomingFrames
      * 
      * @param frame the frame to process
      */
-    public void incomingFrame(Frame frame);
+    void incomingFrame(Frame frame);
 }

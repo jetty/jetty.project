@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.MultiMap;
@@ -516,6 +518,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
                 // wrap in UpgradeException 
                 handleException(new UpgradeException(requestURI,responseStatusCode,responseLine,failure));
             }
+            return;
         }
 
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -527,7 +530,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
     private void handleException(Throwable failure)
     {
-        localEndpoint.incomingError(failure);
+        localEndpoint.onError(failure);
         fut.completeExceptionally(failure);
     }
 
@@ -574,6 +577,13 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getScheduler(),localEndpoint.getPolicy(),
                 wsClient.getBufferPool());
+
+        Collection<Connection.Listener> connectionListeners = wsClient.getBeans(Connection.Listener.class);
+
+        if (connectionListeners != null)
+        {
+            connectionListeners.forEach((listener) -> connection.addListener(listener));
+        }
 
         URI requestURI = this.getURI();
 

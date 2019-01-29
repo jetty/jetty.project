@@ -19,6 +19,9 @@
 package org.eclipse.jetty.websocket.common.test;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -27,25 +30,23 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public class BlockheadClient extends HttpClient implements WebSocketContainerScope
 {
-    private WebSocketPolicy policy;
-    private ByteBufferPool bufferPool;
+    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+    private ByteBufferPool bufferPool = new MappedByteBufferPool();
     private ExtensionFactory extensionFactory;
-    private DecoratedObjectFactory objectFactory;
+    private DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
+    private List<WebSocketSessionListener> listeners = new ArrayList<>();
 
     public BlockheadClient()
     {
         super(null);
         setName("Blockhead-CLIENT");
-        this.policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        this.bufferPool = new MappedByteBufferPool();
         this.extensionFactory = new WebSocketExtensionFactory(this);
-        this.objectFactory = new DecoratedObjectFactory();
     }
 
     public ByteBufferPool getBufferPool()
@@ -69,16 +70,26 @@ public class BlockheadClient extends HttpClient implements WebSocketContainerSco
         return policy;
     }
 
+    @Override
+    public void addSessionListener(WebSocketSessionListener listener)
+    {
+        listeners.add(listener);
+    }
+
+    @Override
+    public void removeSessionListener(WebSocketSessionListener listener)
+    {
+        listeners.remove(listener);
+    }
+
+    @Override
+    public Collection<WebSocketSessionListener> getSessionListeners()
+    {
+        return listeners;
+    }
+
     public BlockheadClientRequest newWsRequest(URI destURI)
     {
         return new BlockheadClientRequest(this, destURI);
     }
-
-    @Override
-    public void onSessionOpened(WebSocketSession session)
-    { /* ignored */ }
-
-    @Override
-    public void onSessionClosed(WebSocketSession session)
-    { /* ignored */ }
 }

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,8 +37,12 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ParserTest
 {
@@ -111,7 +110,6 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parseQuietly(completeBuf);
 
-        capture.assertErrorCount(0);
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,4);
         capture.assertHasFrame(OpCode.CLOSE,1);
@@ -135,7 +133,6 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(completeBuf);
 
-        capture.assertErrorCount(0);
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CLOSE,1);
         capture.assertHasFrame(OpCode.PONG,1);
@@ -185,7 +182,6 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(completeBuf);
 
-        capture.assertErrorCount(0);
         capture.assertHasFrame(OpCode.TEXT,textCount);
         capture.assertHasFrame(OpCode.CONTINUATION,continuationCount);
         capture.assertHasFrame(OpCode.CLOSE,1);
@@ -204,7 +200,6 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         assertThat("Frame Count",capture.getFrames().size(),is(0));
     }
 
@@ -240,7 +235,6 @@ public class ParserTest
             networkBytes.position(networkBytes.position() + windowSize);
         }
 
-        capture.assertNoErrors();
         assertThat("Frame Count",capture.getFrames().size(),is(2));
         WebSocketFrame frame = capture.getFrames().poll();
         assertThat("Frame[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
