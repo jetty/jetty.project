@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.function.Consumer;
+
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -67,7 +68,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         Object mappingObject = contextHandler.getAttribute(mappingKey);
         if (mappingObject!=null)
         {
-            if (WebSocketMapping.class.isInstance(mappingObject.getClass()))
+            if (WebSocketMapping.class.isInstance(mappingObject))
                 return (WebSocketMapping)mappingObject;
             else
                 throw new IllegalStateException(
