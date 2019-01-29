@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.EntryObject;
+import com.hazelcast.query.Predicate;
+import com.hazelcast.query.PredicateBuilder;
 
 /**
  * Session data stored in Hazelcast
@@ -51,6 +55,7 @@ public class HazelcastSessionDataStore
         // no op
     }
 
+    
     @Override
     public SessionData doLoad( String id )
             throws Exception
@@ -91,7 +96,8 @@ public class HazelcastSessionDataStore
     public void initialize( SessionContext context )
         throws Exception
     {
-        _context = context;
+        super.initialize(context);
+        sessionDataMap.addIndex("expiry", true);
     }
 
     @Override
@@ -107,16 +113,16 @@ public class HazelcastSessionDataStore
         return true;
     }
 
+
     @Override
     public Set<String> doGetExpired( Set<String> candidates )
     {
-        if (candidates == null || candidates.isEmpty())
-        {
-            return Collections.emptySet();
-        }
-        
         long now = System.currentTimeMillis();
-        return candidates.stream().filter( candidate -> {
+
+        Set<String> expiredSessionIds = new HashSet<>();
+        
+        
+        expiredSessionIds = candidates.stream().filter( candidate -> {
             
             if (LOG.isDebugEnabled())
                 LOG.debug( "Checking expiry for candidate {}", candidate );
@@ -178,7 +184,20 @@ public class HazelcastSessionDataStore
             }
             return false;
         } ).collect( Collectors.toSet() );
+        
+        
+        EntryObject eo = new PredicateBuilder().getEntryObject();
+        Predicate predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
+        Collection<SessionData> expiredSessions = sessionDataMap.values(predicate);
+        
+        for (SessionData sd: expiredSessions)
+        {
+            expiredSessionIds.add(sd.getId());
+        }
+        
+        return expiredSessionIds;
     }
+    
 
     @Override
     public boolean exists( String id )
