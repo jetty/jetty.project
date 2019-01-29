@@ -155,7 +155,7 @@ public class Session implements SessionHandler.SessionIf
         }
 
         /**
-         * @param ms the timeout to set; -1 means that the timer will not be
+         * @param time the timeout to set; -1 means that the timer will not be
          *            scheduled
          */
         public void schedule (long time)
