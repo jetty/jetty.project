@@ -594,7 +594,7 @@ public class Session implements SessionHandler.SessionIf
                 if (evictionPolicy == SessionCache.NEVER_EVICT)
                 {
                     // timeout is the time remaining until its expiry
-                    time = (remaining > 0? remaining:0);
+                    time = (remaining > 0 ? remaining : 0);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} no eviction", getId());
                 }
@@ -609,7 +609,7 @@ public class Session implements SessionHandler.SessionIf
                 {
                     // want to evict on idle: timer is lesser of the session's
                     // expiration remaining and the time to evict
-                    time = (remaining > 0? ( Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
+                    time = (remaining > 0 ? (Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(), maxInactive, evictionPolicy);
