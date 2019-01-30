@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.javax.server;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -29,10 +30,11 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.server.internal.AnnotatedServerEndpointConfig;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.javax.server.internal.UndefinedServerEndpointConfig;
@@ -80,7 +82,7 @@ public class JavaxWebSocketServerContainer
         return (javax.websocket.WebSocketContainer)handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
 
-    public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext) throws ServletException
+    public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
         ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
         if (contextHandler.getServer() == null)
@@ -106,7 +108,9 @@ public class JavaxWebSocketServerContainer
 
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
-                WebSocketMapping.ensureMapping(servletContext), httpClient, executor);
+                    WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
+                    WebSocketComponents.ensureWebSocketComponents(servletContext),
+                    httpClient, executor);
             contextHandler.addManaged(container);
             contextHandler.addLifeCycleListener(container);
         }
@@ -116,6 +120,7 @@ public class JavaxWebSocketServerContainer
     }
 
     private final WebSocketMapping webSocketMapping;
+    private final WebSocketComponents webSocketComponents;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
@@ -123,12 +128,19 @@ public class JavaxWebSocketServerContainer
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
 
+
+    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, HttpClient httpClient, Executor executor)
+    {
+        this(webSocketMapping, new WebSocketComponents(), httpClient, executor);
+    }
+
     /**
      * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
      * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
-     * @param httpClient              the {@link HttpClient} instance to use
+     * @param webSocketComponents the {@link WebSocketComponents} instance to use
+     * @param httpClient       the {@link HttpClient} instance to use
      */
-    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, HttpClient httpClient, Executor executor)
+    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, HttpClient httpClient, Executor executor)
     {
         super(() ->
         {
@@ -138,6 +150,7 @@ public class JavaxWebSocketServerContainer
             return client;
         });
         this.webSocketMapping = webSocketMapping;
+        this.webSocketComponents = webSocketComponents;
         this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
@@ -158,7 +171,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public ByteBufferPool getBufferPool()
     {
-        return this.webSocketMapping.getBufferPool();
+        return webSocketComponents.getBufferPool();
     }
 
     @Override
@@ -170,7 +183,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return this.webSocketMapping.getExtensionRegistry();
+        return webSocketComponents.getExtensionRegistry();
     }
 
     @Override
@@ -182,7 +195,7 @@ public class JavaxWebSocketServerContainer
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return this.webSocketMapping.getObjectFactory();
+        return webSocketComponents.getObjectFactory();
     }
 
     @Override
@@ -225,7 +238,7 @@ public class JavaxWebSocketServerContainer
                 ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
                 addEndpointMapping(config);
             }
-            catch (InvalidWebSocketException e)
+            catch (WebSocketException e)
             {
                 throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
             }
@@ -252,7 +265,15 @@ public class JavaxWebSocketServerContainer
             {
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
             }
-            addEndpointMapping(config);
+
+            try
+            {
+                addEndpointMapping(config);
+            }
+            catch (WebSocketException e)
+            {
+                throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), e);
+            }
         }
         else
         {
@@ -264,15 +285,15 @@ public class JavaxWebSocketServerContainer
         }
     }
 
-    private void addEndpointMapping(ServerEndpointConfig config)
+    private void addEndpointMapping(ServerEndpointConfig config) throws WebSocketException
     {
         frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
 
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this.webSocketMapping
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, webSocketComponents
             .getExtensionRegistry());
 
-        this.webSocketMapping
-            .addMapping(new UriTemplatePathSpec(config.getPath()), creator, frameHandlerFactory, customizer);
+        PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
+        webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, customizer);
     }
 
     @Override

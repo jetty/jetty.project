@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -566,7 +565,10 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         // No message sink is active
         if (activeMessageSink == null)
+        {
+            callback.succeeded();
             return;
+        }
 
         // Accept the payload into the message sink
         activeMessageSink.accept(frame, callback);
