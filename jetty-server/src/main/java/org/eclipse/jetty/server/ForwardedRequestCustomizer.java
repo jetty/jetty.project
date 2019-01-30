@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 
 
@@ -333,7 +334,7 @@ public class ForwardedRequestCustomizer implements Customizer
                 forwardedServer = getLeftMost(field.getValue());
             
             if (forwardedFor==null && _forwardedForHeader!=null && _forwardedForHeader.equalsIgnoreCase(name))
-                forwardedFor = getLeftMost(field.getValue());
+                forwardedFor = getRemoteAddr(field.getValue());
             
             if (forwardedProto==null && _forwardedProtoHeader!=null && _forwardedProtoHeader.equalsIgnoreCase(name))
                 forwardedProto = getLeftMost(field.getValue());
@@ -429,6 +430,25 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // The left-most value is the farthest downstream client
         return headerValue.substring(0,commaIndex).trim();
+    }
+
+    protected String getRemoteAddr(String headerValue)
+    {
+        String leftMost = getLeftMost(headerValue);
+
+        if (leftMost != null && leftMost.contains(":")) {
+            try {
+                HostPort hostPort = new HostPort(leftMost);
+                if (hostPort.getPort() > 0) {
+                    // address in a format host:port, return host part only.
+                    return hostPort.getHost();
+                }
+            } catch (Exception e) {
+                // failed to parse in host[:port] format, fallback to the value resolved from header
+            }
+        }
+
+        return leftMost;
     }
     
     @Override
