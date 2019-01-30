@@ -25,6 +25,13 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 
+/**
+ * A collection of components which are the resources needed for websockets such as
+ * {@link ByteBufferPool}, {@link WebSocketExtensionRegistry}, and {@link DecoratedObjectFactory}.
+ *
+ * These components should be accessed through {@link WebSocketComponents#ensureWebSocketComponents} so that
+ * the instance can be shared by being stored as a bean on the ContextHandler.
+ */
 public class WebSocketComponents
 {
     public static WebSocketComponents ensureWebSocketComponents(ServletContext servletContext)
