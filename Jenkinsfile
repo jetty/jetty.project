@@ -10,7 +10,7 @@ pipeline {
                     agent { node { label 'linux' } }
                     options { timeout(time: 120, unit: 'MINUTES') }
                     steps {
-                        mavenBuild("jdk11", "-Pautobahn -Pmongodb install", "maven3")
+                        mavenBuild("jdk11", "-Pautobahn -Pmongodb -Psnapshot-repositories install", "maven3")
                         warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
                         // Collect up the jacoco execution results (only on main build)
                         jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -44,7 +44,7 @@ pipeline {
                     agent { node { label 'linux' } }
                     options { timeout(time: 30, unit: 'MINUTES') }
                     steps {
-                        mavenBuild("jdk11", "install javadoc:javadoc -DskipTests", "maven3")
+                        mavenBuild("jdk11", "-Psnapshot-repositories install javadoc:javadoc -DskipTests", "maven3")
                         warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
                     }
                 }
