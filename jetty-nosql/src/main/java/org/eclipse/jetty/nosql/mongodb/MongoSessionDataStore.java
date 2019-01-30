@@ -455,7 +455,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         return expiredSessions;
     }
 
-
     @Override
     public void cleanOrphans(long timeLimit)
     {
