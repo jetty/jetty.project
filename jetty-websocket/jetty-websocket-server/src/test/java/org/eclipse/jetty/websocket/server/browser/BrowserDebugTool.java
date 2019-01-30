@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -148,10 +147,10 @@ public class BrowserDebugTool
             factory.addMapping(new ServletPathSpec("/"), new BrowserSocketCreator());
 
             // Set the timeout
-            factory.setDefaultIdleTimeout(Duration.ofSeconds(30));
+            factory.setIdleTimeout(Duration.ofSeconds(30));
 
             // Set top end message size
-            factory.setDefaultMaxTextMessageSize(15 * 1024 * 1024);
+            factory.setMaxTextMessageSize(15 * 1024 * 1024);
         }
 
         @Override

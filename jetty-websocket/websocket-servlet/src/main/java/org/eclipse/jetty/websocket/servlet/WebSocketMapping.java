@@ -23,7 +23,6 @@ import java.net.URISyntaxException;
 import java.util.function.Consumer;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,17 +32,15 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -64,41 +61,42 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
     private static final Logger LOG = Log.getLogger(WebSocketMapping.class);
 
-    public static WebSocketMapping ensureMapping(ServletContext servletContext) throws ServletException
+    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
     {
         ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
 
-        // Ensure a mapping exists
-        WebSocketMapping mapping = contextHandler.getBean(WebSocketMapping.class);
-        if (mapping == null)
+        Object mappingObject = contextHandler.getAttribute(mappingKey);
+        if (mappingObject!=null)
         {
-            mapping = new WebSocketMapping();
-            mapping.setContextClassLoader(servletContext.getClassLoader());
-            contextHandler.addBean(mapping);
-            contextHandler.addLifeCycleListener(mapping);
+            if (WebSocketMapping.class.isInstance(mappingObject))
+                return (WebSocketMapping)mappingObject;
+            else
+                throw new IllegalStateException(
+                        String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
+                        mappingKey, mappingObject.toString()));
         }
-
-        return mapping;
+        else
+        {
+            WebSocketMapping mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(servletContext));
+            contextHandler.setAttribute(mappingKey, mapping);
+            return mapping;
+        }
     }
 
-    private final PathMappings<Negotiator> mappings = new PathMappings<>();
-    private final Handshaker handshaker = Handshaker.newInstance();
+    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.servlet.WebSocketMapping";
 
-    private DecoratedObjectFactory objectFactory;
-    private ClassLoader contextClassLoader;
-    private WebSocketExtensionRegistry extensionRegistry;
-    private ByteBufferPool bufferPool;
+    private final PathMappings<Negotiator> mappings = new PathMappings<>();
+    private final WebSocketComponents components;
+    private final Handshaker handshaker = Handshaker.newInstance();
 
     public WebSocketMapping()
     {
-        this(new WebSocketExtensionRegistry(), new DecoratedObjectFactory(), new MappedByteBufferPool());
+        this(new WebSocketComponents());
     }
 
-    public WebSocketMapping(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
+    public WebSocketMapping(WebSocketComponents components)
     {
-        this.extensionRegistry = extensionRegistry;
-        this.objectFactory = objectFactory;
-        this.bufferPool = bufferPool;
+        this.components = components;
     }
 
     @Override
@@ -127,10 +125,12 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      * @param customizer the customizer to use to customize the WebSocket session.
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
+    throws WebSocketException
     {
-        // Handling for response forbidden (and similar paths)
-        // no creation, sorry
-        // No factory worked!
+        // TODO evaluate why this can't be done
+        //if (getMapping(pathSpec) != null)
+        //    throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
+
         mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
     }
 
@@ -155,31 +155,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this, mappings);
-    }
-
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
-    }
-
-    public void setContextClassLoader(ClassLoader classLoader)
-    {
-        this.contextClassLoader = classLoader;
-    }
-
-    public ClassLoader getContextClassloader()
-    {
-        return contextClassLoader;
-    }
-
-    public WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return this.extensionRegistry;
-    }
-
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return this.objectFactory;
     }
 
     /**
@@ -280,9 +255,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
         {
-            super(WebSocketMapping.this.getExtensionRegistry(), WebSocketMapping.this.getObjectFactory(),
-                WebSocketMapping.this.getBufferPool(),
-                customizer);
+            super(components.getExtensionRegistry(), components.getObjectFactory(), components.getBufferPool(), customizer);
             this.creator = creator;
             this.factory = factory;
         }
@@ -296,10 +269,16 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         @Override
         public FrameHandler negotiate(Negotiation negotiation)
         {
+            ServletContext servletContext = negotiation.getRequest().getServletContext();
+            if (servletContext == null)
+                throw new IllegalStateException("null servletContext from request");
+
+            ClassLoader loader = servletContext.getClassLoader();
             ClassLoader old = Thread.currentThread().getContextClassLoader();
+
             try
             {
-                Thread.currentThread().setContextClassLoader(getContextClassloader());
+                Thread.currentThread().setContextClassLoader(loader);
 
                 ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
                 ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);

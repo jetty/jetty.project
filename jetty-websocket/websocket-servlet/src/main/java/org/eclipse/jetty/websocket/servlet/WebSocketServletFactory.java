@@ -18,39 +18,39 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
+import java.time.Duration;
+
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-
-import java.time.Duration;
 
 public interface WebSocketServletFactory
 {
 
     WebSocketExtensionRegistry getExtensionRegistry();
 
-    Duration getDefaultIdleTimeout();
+    Duration getIdleTimeout();
 
-    void setDefaultIdleTimeout(Duration duration);
+    void setIdleTimeout(Duration duration);
 
-    int getDefaultInputBufferSize();
+    int getInputBufferSize();
 
-    void setDefaultInputBufferSize(int bufferSize);
+    void setInputBufferSize(int bufferSize);
 
-    long getDefaultMaxAllowedFrameSize();
+    long getMaxFrameSize();
 
-    void setDefaultMaxAllowedFrameSize(long maxFrameSize);
+    void setMaxFrameSize(long maxFrameSize);
 
-    long getDefaultMaxBinaryMessageSize();
+    long getMaxBinaryMessageSize();
 
-    void setDefaultMaxBinaryMessageSize(long bufferSize);
+    void setMaxBinaryMessageSize(long bufferSize);
 
-    long getDefaultMaxTextMessageSize();
+    long getMaxTextMessageSize();
 
-    void setDefaultMaxTextMessageSize(long bufferSize);
+    void setMaxTextMessageSize(long bufferSize);
 
-    int getDefaultOutputBufferSize();
+    int getOutputBufferSize();
 
-    void setDefaultOutputBufferSize(int bufferSize);
+    void setOutputBufferSize(int bufferSize);
 
     boolean isAutoFragment();
 
@@ -71,6 +71,20 @@ public interface WebSocketServletFactory
      * @since 10.0
      */
     void addMapping(PathSpec pathSpec, WebSocketCreator creator);
+
+    /**
+     * Add a WebSocket mapping at PathSpec "/" for a creator which creates the endpointClass
+     *
+     * @param endpointClass the WebSocket class to use
+     */
+    void register(Class<?> endpointClass);
+
+    /**
+     * Add a WebSocket mapping at PathSpec "/" for a creator
+     *
+     * @param creator the WebSocketCreator to use
+     */
+    void setCreator(WebSocketCreator creator);
 
     /**
      * Returns the creator for the given path spec.

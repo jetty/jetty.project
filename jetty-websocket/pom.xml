@@ -22,6 +22,7 @@
     <module>jetty-websocket-common</module>
     <module>jetty-websocket-client</module>
     <module>jetty-websocket-server</module>
+    <module>jetty-websocket-tests</module>
     <!-- Javax WebSocket Implementation -->
     <module>javax-websocket-common</module>
     <module>javax-websocket-client</module>
