@@ -74,8 +74,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     
     public AnnotationConfiguration()
     {
-        super();
-        protectAndExpose("org.eclipse.jetty.osgi.annotations.");
     }
     
     /**

@@ -69,7 +69,6 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<>();
-        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
