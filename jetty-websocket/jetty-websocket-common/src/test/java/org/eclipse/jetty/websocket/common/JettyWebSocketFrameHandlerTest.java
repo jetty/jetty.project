@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -119,7 +119,7 @@ public class JettyWebSocketFrameHandlerTest
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello?").setFin(true), Callback.NOOP);
         localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
@@ -163,7 +163,7 @@ public class JettyWebSocketFrameHandlerTest
             JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
             // Trigger Events
-            localEndpoint.onOpen(channel);
+            localEndpoint.onOpen(channel, Callback.NOOP);
             localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
             localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
@@ -185,7 +185,7 @@ public class JettyWebSocketFrameHandlerTest
             JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
             // Trigger Events
-            localEndpoint.onOpen(channel);
+            localEndpoint.onOpen(channel, Callback.NOOP);
             localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hel").setFin(false), Callback.NOOP);
             localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
             localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
@@ -208,7 +208,7 @@ public class JettyWebSocketFrameHandlerTest
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
@@ -238,7 +238,7 @@ public class JettyWebSocketFrameHandlerTest
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
@@ -264,10 +264,10 @@ public class JettyWebSocketFrameHandlerTest
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onError(new RuntimeException("Nothing to see here"));
+        localEndpoint.onError(new RuntimeException("Nothing to see here"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -284,7 +284,7 @@ public class JettyWebSocketFrameHandlerTest
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
@@ -314,7 +314,7 @@ public class JettyWebSocketFrameHandlerTest
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.PING).setPayload("You there?"), Callback.NOOP);

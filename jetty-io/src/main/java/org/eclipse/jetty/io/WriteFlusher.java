@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -100,7 +100,7 @@ abstract public class WriteFlusher
      * @param previous the expected current state
      * @param next     the desired new state
      * @return the previous state or null if the state transition failed
-     * @throws WritePendingException if currentState is WRITING and new state is WRITING (api usage error)
+     * @throws IllegalStateException if previous to next is not a legal state transition (api usage error)
      */
     private boolean updateState(State previous, State next)
     {

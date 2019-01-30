@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -681,6 +681,21 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (context == null)
             throw new IllegalArgumentException("WebAppContext null");
         
+        //if we don't know where its from it can't be excluded
+        if (sciResource == null)
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} null resource", sci);
+            return false; 
+        }
+        
+        //A ServletContainerInitialier that came from WEB-INF/classes or equivalent cannot be excluded by an ordering
+        if (isFromWebInfClasses(context, sciResource))
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} from web-inf/classes", sci);
+            return false;
+        }
                 
         //A ServletContainerInitializer that came from the container's classpath cannot be excluded by an ordering
         //of WEB-INF/lib jars
@@ -709,14 +724,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return true;
         }
 
-        if (sciResource == null)
-        {
-            //not from a jar therefore not from WEB-INF so not excludable
-            if (LOG.isDebugEnabled()) 
-                LOG.debug("!Excluded {} not from jar", sci);
-            return false; 
-        }
-        
+        //Check if it is excluded by an ordering
         URI loadingJarURI = sciResource.getURI();
         boolean found = false;
         Iterator<Resource> itor = orderedJars.iterator();
@@ -762,7 +770,46 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         if (sci == null)
             return false;
-        return sci.getClass().getClassLoader()==context.getClassLoader().getParent();
+        
+        ClassLoader sciLoader = sci.getClass().getClassLoader();
+        
+        //if loaded by bootstrap loader, then its the container classpath
+        if ( sciLoader == null)
+            return true;
+        
+        //if there is no context classloader, then its the container classpath
+        if (context.getClassLoader() == null)
+            return true;
+        
+        ClassLoader loader = sciLoader;
+        while (loader != null)
+        {
+            if (loader == context.getClassLoader())
+                return false; //the webapp classloader is in the ancestry of the classloader for the sci
+            else
+                loader = loader.getParent();
+        }
+        
+        return true;
+    }
+    
+    /** 
+     * Test if the ServletContainerInitializer is from WEB-INF/classes
+     * 
+     * @param context the webapp to test
+     * @param sci a Resource representing the SCI
+     * @return true if the sci Resource is inside a WEB-INF/classes directory, false otherwise
+     */
+    public boolean isFromWebInfClasses (WebAppContext context, Resource sci)
+    {
+        for (Resource dir : context.getMetaData().getWebInfClassesDirs())
+        {                
+            if (dir.equals(sci))
+            { 
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -849,27 +896,47 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //No jetty-specific ordering specified, or just the wildcard value "*" specified.
             //Fallback to ordering the ServletContainerInitializers according to:
             //container classpath first, WEB-INF/classes then WEB-INF/lib (obeying any web.xml jar ordering)
-             
-            //no web.xml ordering defined, add SCIs in any order
+            
+            //First add in all SCIs that can't be excluded
+            int lastContainerSCI = -1;
+            for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
+            {
+                if (entry.getKey().getClass().getClassLoader()==context.getClassLoader().getParent())
+                {
+                    nonExcludedInitializers.add(++lastContainerSCI, entry.getKey()); //add all container SCIs before any webapp SCIs
+                }
+                else if (entry.getValue() == null) //can't work out provenance of SCI, so can't be ordered/excluded
+                {
+                    nonExcludedInitializers.add(entry.getKey()); //add at end of list
+                }
+                else
+                {
+                    for (Resource dir : context.getMetaData().getWebInfClassesDirs())
+                    {                
+                        if (dir.equals(entry.getValue()))//from WEB-INF/classes so can't be ordered/excluded
+                        { 
+                            nonExcludedInitializers.add(entry.getKey());
+                        }
+                    }
+                }
+            }
+            
+            //throw out the ones we've already accounted for
+            for (ServletContainerInitializer s:nonExcludedInitializers)
+                sciResourceMap.remove(s);
+            
             if (context.getMetaData().getOrdering() == null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("No web.xml ordering, ServletContainerInitializers in random order");
+                //add the rest of the scis
                 nonExcludedInitializers.addAll(sciResourceMap.keySet());
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Ordering ServletContainerInitializers with ordering {}",context.getMetaData().getOrdering());
-                for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
-                {
-                    //add in SCIs from the container classpath
-                    if (entry.getKey().getClass().getClassLoader()==context.getClassLoader().getParent())
-                        nonExcludedInitializers.add(entry.getKey());
-                    else if (entry.getValue() == null) //add in SCIs not in a jar, as they must be from WEB-INF/classes and can't be ordered
-                        nonExcludedInitializers.add(entry.getKey());
-                }
-              
+                
                 //add SCIs according to the ordering of its containing jar
                 for (Resource webInfJar:context.getMetaData().getOrderedWebInfJars())
                 {
@@ -889,7 +956,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             ListIterator<ServletContainerInitializer> it = nonExcludedInitializers.listIterator();
             while (it.hasNext())
             {
-                ServletContainerInitializer sci = it.next();
+                ServletContainerInitializer sci = it.next(); 
                 if (!isFromContainerClassPath(context, sci))
                 {
                     if (LOG.isDebugEnabled())

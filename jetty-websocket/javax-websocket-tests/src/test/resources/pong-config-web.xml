@@ -7,6 +7,6 @@
   version="3.0">
 
   <listener>
-    <listener-class>org.eclipse.jetty.websocket.jsr356.tests.server.PingPongTest$PongContextListener</listener-class>
+    <listener-class>org.eclipse.jetty.websocket.javax.tests.server.PingPongTest$PongContextListener</listener-class>
   </listener>
 </web-app>

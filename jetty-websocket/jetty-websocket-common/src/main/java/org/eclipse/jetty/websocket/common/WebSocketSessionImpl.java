@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.time.Duration;
+import java.util.Objects;
+
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -26,11 +32,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-import java.net.SocketAddress;
-import java.time.Duration;
-import java.util.Objects;
-
-public class WebSocketSessionImpl implements Session
+public class WebSocketSessionImpl implements Session, Dumpable
 {
     private final FrameHandler.CoreSession coreSession;
     private final JettyWebSocketFrameHandler frameHandler;
@@ -104,13 +106,13 @@ public class WebSocketSessionImpl implements Session
     @Override
     public long getMaxBinaryMessageSize()
     {
-        return frameHandler.getMaxBinaryMessageSize();
+        return coreSession.getMaxBinaryMessageSize();
     }
 
     @Override
     public long getMaxTextMessageSize()
     {
-        return frameHandler.getMaxTextMessageSize();
+        return coreSession.getMaxTextMessageSize();
     }
 
     @Override
@@ -134,13 +136,13 @@ public class WebSocketSessionImpl implements Session
     @Override
     public void setMaxBinaryMessageSize(long size)
     {
-        frameHandler.setMaxBinaryMessageSize(size);
+        coreSession.setMaxBinaryMessageSize(size);
     }
 
     @Override
     public void setMaxTextMessageSize(long size)
     {
-        frameHandler.setMaxTextMessageSize(size);
+        coreSession.setMaxTextMessageSize(size);
     }
 
     @Override
@@ -158,7 +160,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public boolean isOpen()
     {
-        return remoteEndpoint.getCoreSession().isOpen();
+        return remoteEndpoint.getCoreSession().isOutputOpen();
     }
 
     @Override
@@ -202,6 +204,21 @@ public class WebSocketSessionImpl implements Session
     {
         // TODO:
         return null;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, upgradeRequest, coreSession, remoteEndpoint, frameHandler);
+    }
+
+    @Override
+    public String dumpSelf()
+    {
+        return String.format("%s@%x[behavior=%s,idleTimeout=%dms]",
+                this.getClass().getSimpleName(), hashCode(),
+                getPolicy().getBehavior(),
+                getIdleTimeout().toMillis());
     }
 
     @Override

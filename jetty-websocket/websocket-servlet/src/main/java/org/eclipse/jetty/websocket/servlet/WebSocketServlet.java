@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,9 +19,8 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.time.Duration;
-import java.util.List;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,19 +28,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
- * To use this servlet, you will be required to register your websockets with the {@link WebSocketCreatorMapping} so that it can create your websockets under the
+ * To use this servlet, you will be required to register your websockets with the {@link WebSocketMapping} so that it can create your websockets under the
  * appropriate conditions.
- * <p>
- * The most basic implementation would be as follows.
- * <p>
+ * </p>
+ * <p>The most basic implementation would be as follows:</p>
  * <pre>
  * package my.example;
  *
@@ -53,106 +54,99 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
  *     &#064;Override
  *     public void configure(WebSocketServletFactory factory)
  *     {
- *         // set a 10 second idle timeout
- *         factory.getPolicy().setIdleTimeout(10000);
- *         // register my socket
- *         factory.register(MyEchoSocket.class);
+ *       factory.setDefaultMaxFrameSize(4096);
+ *       factory.addMapping(factory.parsePathSpec("/"), (req,res)-&gt;new EchoSocket());
  *     }
  * }
  * </pre>
  * <p>
- * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketCreatorMapping} handling of creating
- * WebSockets.<br>
- * All other requests are treated as normal servlet requests.
+ * Only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketMapping} handling of creating
+ * WebSockets.  All other requests are treated as normal servlet requests.  The configuration defined by this servlet init parameters will
+ * be used as the customizer for any mappings created by {@link WebSocketServletFactory#addMapping(PathSpec, WebSocketCreator)} during
+ * {@link #configure(WebSocketServletFactory)} calls.  The request upgrade may be peformed by this servlet, or is may be performed by a
+ * {@link WebSocketUpgradeFilter} instance that will share the same {@link WebSocketMapping} instance.  If the filter is used, then the
+ * filter configuraton is used as the default configuration prior to this servlets configuration being applied.
+ * </p>
  * <p>
- * <p>
- * <b>Configuration / Init-Parameters:</b><br>
- * <p>
+ * <b>Configuration / Init-Parameters:</b>
+ * </p>
  * <dl>
  * <dt>maxIdleTime</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
- * <p>
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
- * <p>
  * <dt>maxBinaryMessageSize</dt>
  * <dd>set the size in bytes that a websocket may be accept as a Binary Message before closing<br>
- * <p>
  * <dt>inputBufferSize</dt>
- * <dd>set the size in bytes of the buffer used to read raw bytes from the network layer<br>
+ * <dd>set the size in bytes of the buffer used to read raw bytes from the network layer<br> * <dt>outputBufferSize</dt>
+ * <dd>set the size in bytes of the buffer used to write bytes to the network layer<br>
+ * <dt>maxFrameSize</dt>
+ * <dd>The maximum frame size sent or received.<br>
+ * <dt>autoFragment</dt>
+ * <dd>If true, frames are automatically fragmented to respect the maximum frame size.<br>
  * </dl>
  */
 @SuppressWarnings("serial")
 public abstract class WebSocketServlet extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(WebSocketServlet.class);
-    private WebSocketCreatorMapping factory;
-    private final Handshaker handshaker = Handshaker.newInstance();
+    // TODO This servlet should be split into an API neutral version and a Jetty API specific one.
 
-    public abstract void configure(WebSocketServletFactory factory);
+    private static final Logger LOG = Log.getLogger(WebSocketServlet.class);
+    private final CustomizedWebSocketServletFactory customizer = new CustomizedWebSocketServletFactory();
+
+    private WebSocketMapping mapping;
+    private WebSocketComponents components;
 
     /**
-     * @see javax.servlet.GenericServlet#init()
+     * Configure the WebSocketServletFactory for this servlet instance by setting default
+     * configuration (which may be overriden by annotations) and mapping {@link WebSocketCreator}s.
+     * This method assumes a single {@link FrameHandlerFactory} will be available as a bean on the
+     * {@link ContextHandler}, which in practise will mostly the the Jetty WebSocket API factory.
+     * @param factory the WebSocketServletFactory
      */
+    public abstract void configure(WebSocketServletFactory factory);
+
     @Override
     public void init() throws ServletException
     {
         try
         {
-            ServletContext ctx = getServletContext();
+            ServletContext servletContext = getServletContext();
 
-            factory = new WebSocketCreatorMapping();
-            factory.setContextClassLoader(ctx.getClassLoader());
+            components = WebSocketComponents.ensureWebSocketComponents(servletContext);
+            mapping = new WebSocketMapping(components);
+
             String max = getInitParameter("maxIdleTime");
             if (max != null)
-            {
-                factory.setDefaultIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
-            }
+                customizer.setIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
 
             max = getInitParameter("maxTextMessageSize");
             if (max != null)
-            {
-                factory.setDefaultMaxTextMessageSize(Long.parseLong(max));
-            }
+                customizer.setMaxTextMessageSize(Long.parseLong(max));
 
             max = getInitParameter("maxBinaryMessageSize");
             if (max != null)
-            {
-                factory.setDefaultMaxBinaryMessageSize(Long.parseLong(max));
-            }
+                customizer.setMaxBinaryMessageSize(Long.parseLong(max));
 
             max = getInitParameter("inputBufferSize");
             if (max != null)
-            {
-                factory.setDefaultInputBufferSize(Integer.parseInt(max));
-            }
+                customizer.setInputBufferSize(Integer.parseInt(max));
 
             max = getInitParameter("outputBufferSize");
             if (max != null)
-            {
-                factory.setDefaultOutputBufferSize(Integer.parseInt(max));
-            }
+                customizer.setOutputBufferSize(Integer.parseInt(max));
 
-            max = getInitParameter("maxAllowedFrameSize");
+            max = getInitParameter("maxFrameSize");
+            if (max==null)
+                max = getInitParameter("maxAllowedFrameSize");
             if (max != null)
-            {
-                factory.setDefaultMaxAllowedFrameSize(Long.parseLong(max));
-            }
+                customizer.setMaxFrameSize(Long.parseLong(max));
 
             String autoFragment = getInitParameter("autoFragment");
             if (autoFragment != null)
-            {
-                factory.setAutoFragment(Boolean.parseBoolean(autoFragment));
-            }
+                customizer.setAutoFragment(Boolean.parseBoolean(autoFragment));
 
-            List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>)ctx.getAttribute(
-                WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
-            if (factories != null)
-                factories.forEach(factory::addFrameHandlerFactory);
-
-            configure(factory); // Let user modify factory
-
-            ctx.setAttribute(WebSocketCreatorMapping.class.getName(), factory);
+            configure(customizer); // Let user modify customizer prior after init params
         }
         catch (Throwable x)
         {
@@ -160,60 +154,111 @@ public abstract class WebSocketServlet extends HttpServlet
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpServlet#service(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException
     {
-        // Since this is a filter, we need to be smart about determining the target path.
-        // We should rely on the Container for stripping path parameters and its ilk before
-        // attempting to match a specific mapped websocket creator.
-        String target = request.getServletPath();
-        if (request.getPathInfo() != null)
+        // Often this servlet is used together with the WebSocketUpgradeFilter,
+        // so upgrade requests will normally be upgraded by the filter.  But we
+        // can do it here as well if for some reason the filter did not match.
+        if (mapping.upgrade(req, resp, null))
+            return;
+
+        // If we reach this point, it means we had an incoming request to upgrade
+        // but it was either not a proper websocket upgrade, or it was possibly rejected
+        // due to incoming request constraints (controlled by WebSocketCreator)
+        if (resp.isCommitted())
+            return;
+
+        // Handle normally
+        super.service(req, resp);
+    }
+
+
+    private class CustomizedWebSocketServletFactory extends FrameHandler.ConfigurationCustomizer implements WebSocketServletFactory
+    {
+        public WebSocketExtensionRegistry getExtensionRegistry()
         {
-            target = target + request.getPathInfo();
+            return components.getExtensionRegistry();
         }
 
-        WebSocketNegotiator negotiator = factory.getMatchedNegotiator(target, pathSpec ->
+        @Override
+        public void addMapping(String pathSpec, WebSocketCreator creator)
         {
-            // Store PathSpec resource mapping as request attribute, for WebSocketCreator
-            // implementors to use later if they wish
-            request.setAttribute(PathSpec.class.getName(), pathSpec);
-        });
-
-        if (negotiator != null)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("WebSocket Upgrade detected on {} for endpoint {}", target, negotiator);
-            }
-
-            // Attempt to upgrade
-            if (handshaker.upgradeRequest(negotiator, request, response))
-            {
-                // Upgrade was a success, nothing else to do.
-                return;
-            }
-
-            // If we reach this point, it means we had an incoming request to upgrade
-            // but it was either not a proper websocket upgrade, or it was possibly rejected
-            // due to incoming request constraints (controlled by WebSocketCreator)
-            if (response.isCommitted())
-            {
-                // not much we can do at this point.
-                return;
-            }
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("No match for WebSocket Upgrade at target: {}", target);
-            }
+            addMapping(WebSocketMapping.parsePathSpec(pathSpec), creator);
         }
 
-        // All other processing
-        super.service(request, response);
+        @Override
+        public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
+        {
+            // TODO a bit fragile. This code knows that only the JettyFHF is added directly as a been
+            ServletContext servletContext = getServletContext();
+            ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "WebSocketServlet");
+            FrameHandlerFactory frameHandlerFactory = contextHandler.getBean(FrameHandlerFactory.class);
+
+            if (frameHandlerFactory==null)
+                throw new IllegalStateException("No known FrameHandlerFactory");
+
+            mapping.addMapping(pathSpec, creator, frameHandlerFactory, this);
+        }
+
+        @Override
+        public void register(Class<?> endpointClass)
+        {
+            Constructor<?> constructor;
+            try
+            {
+                constructor = endpointClass.getDeclaredConstructor(null);
+            }
+            catch (NoSuchMethodException e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            WebSocketCreator creator = (req, resp) ->
+            {
+                try
+                {
+                    return constructor.newInstance();
+                }
+                catch (Throwable t)
+                {
+                    t.printStackTrace();
+                    return null;
+                }
+            };
+
+            addMapping("/", creator);
+        }
+
+        @Override
+        public void setCreator(WebSocketCreator creator)
+        {
+            addMapping("/", creator);
+        }
+
+        @Override
+        public WebSocketCreator getMapping(PathSpec pathSpec)
+        {
+            return mapping.getMapping(pathSpec);
+        }
+
+        @Override
+        public WebSocketCreator getMatch(String target)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeMapping(PathSpec pathSpec)
+        {
+            return mapping.removeMapping(pathSpec);
+        }
+
+        @Override
+        public PathSpec parsePathSpec(String pathSpec)
+        {
+            return WebSocketMapping.parsePathSpec(pathSpec);
+        }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -128,14 +128,17 @@ public class MetaInfConfigurationTest
     }
     
     /**
-     * Assume target jdk9 or above. In this case we should extract what we need
-     * from the java.class.path. We should also examine the module path.
+     * This test examines both the classpath and the module path to find
+     * container resources.
+     * NOTE: the behaviour of the surefire plugin 3.0.0.M2 is different in
+     * jetty-9.4.x to jetty-10.0.x (where we use module-info):  in jetty-9.4.x,
+     * we can use the --add-module argument to put the foo-bar-janb.jar onto the
+     * module path, but this doesn't seem to work in jetty-10.0.x.  So this test
+     * will find foo-bar.janb.jar on the classpath, and jetty-util from the module path.
+     * 
      * @throws Exception if the test fails
      */
     @Test
-    @EnabledIfSystemProperty(named = "jdk.module.path", matches = ".*")
-    @Disabled("Passes on the assumption that we can add a directory to the module-path," +
-            "but the module-path is entirely controlled by Surefire only and cannot be changed.")
     public void testFindAndFilterContainerPathsJDK9() throws Exception
     {
         MetaInfConfiguration config = new MetaInfConfiguration();
@@ -151,30 +154,5 @@ public class MetaInfConfigurationTest
             String s = r.toString();
             assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("jetty-util"));
         }
-    }
-
-    /**
-     * Assume runtime is jdk9 or above. Target is jdk 8. In this
-     * case we must extract from the java.class.path (because jdk 9
-     * has no url based application classloader), but we should
-     * ignore the module path.
-     * @throws Exception if the test fails
-     */
-    @Test
-    @EnabledIfSystemProperty(named = "jdk.module.path", matches = ".*")
-    @Disabled("We need a similar functionality when running with JDK 11 but only on the class-path;" +
-            "however using 'TARGET_PLATFORM' as trigger for the functionality seems wrong - perhaps 'CLASS_PATH_ONLY'.")
-    public void testFindAndFilterContainerPathsTarget8() throws Exception
-    {
-        MetaInfConfiguration config = new MetaInfConfiguration();
-        WebAppContext context = new WebAppContext();
-        context.setAttribute(JavaVersion.JAVA_TARGET_PLATFORM, "8");
-        context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
-        WebAppClassLoader loader = new WebAppClassLoader(context);
-        context.setClassLoader(loader);
-        config.findAndFilterContainerPaths(context);
-        List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(2, containerResources.size());
-        assertTrue(containerResources.get(0).toString().contains("jetty-util"));
     }
 }

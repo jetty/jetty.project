@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
@@ -34,7 +33,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -96,10 +94,9 @@ public class TestJettyOSGiBootWithAnnotations
     }
 
 
-    @Ignore
-    @Test
     public void assertAllBundlesActiveOrResolved()
     {
+        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
@@ -108,6 +105,10 @@ public class TestJettyOSGiBootWithAnnotations
     @Test
     public void testIndex() throws Exception
     {
+
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+
         HttpClient client = new HttpClient();
         try
         {
@@ -119,16 +120,16 @@ public class TestJettyOSGiBootWithAnnotations
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
-            assertThat(content, containsString("<h1>Servlet 3.0/3.1/4.0 Test WebApp</h1>"));
+            assertTrue(content.contains("Test WebApp"));
             
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
             content = response.getContentAsString();
-            assertThat(content, containsString("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
+            assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
             
             response = client.GET("http://127.0.0.1:" + port + "/frag.html");
             content = response.getContentAsString();
-            assertThat(content, containsString("<h1>FRAGMENT</h1>"));
+            assertTrue(content.contains("<h1>FRAGMENT</h1>"));
         }
         finally
         {

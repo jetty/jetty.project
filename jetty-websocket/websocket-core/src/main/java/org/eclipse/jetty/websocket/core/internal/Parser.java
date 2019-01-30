@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.Closeable;
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -29,9 +32,6 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-
-import java.io.Closeable;
-import java.nio.ByteBuffer;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -374,7 +374,7 @@ public class Parser
             .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null?"-":TypeUtil.toHexString(mask), payloadLength);
     }
 
-    public class ParsedFrame extends Frame implements Closeable
+    public class ParsedFrame extends Frame implements Closeable, CloseStatus.Supplier
     {
         final CloseStatus closeStatus;
         final boolean releaseable;
@@ -404,6 +404,7 @@ public class Parser
                 bufferPool.release(getPayload());
         }
 
+        @Override
         public CloseStatus getCloseStatus()
         {
             return closeStatus;
@@ -412,6 +413,14 @@ public class Parser
         public boolean isReleaseable()
         {
             return releaseable;
+        }
+
+        @Override
+        public String toString()
+        {
+            if (closeStatus==null)
+                return super.toString();
+            return super.toString() + ":" + closeStatus;
         }
     }
 }

@@ -44,7 +44,10 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>@{argLine} --add-modules jetty.servlet.api</argLine>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules jetty.servlet.api
+          </argLine>
         </configuration>
       </plugin>
       <plugin>

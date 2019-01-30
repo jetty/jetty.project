@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,11 @@
 //
 
 package org.eclipse.jetty.websocket.common;
+
+import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -37,11 +42,6 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.UpgradeException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-
-import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -67,13 +67,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
      */
     private final UpgradeResponse upgradeResponse;
     private final CompletableFuture<Session> futureSession;
-    private final CoreCustomizer customizer;
+    private final Customizer customizer;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
-    private long maxBinaryMessageSize = -1;
-    private long maxTextMessageSize = -1;
 
     public JettyWebSocketFrameHandler(Executor executor,
         Object endpointInstance,
@@ -85,7 +83,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         MethodHandle frameHandle,
         MethodHandle pingHandle, MethodHandle pongHandle,
         CompletableFuture<Session> futureSession,
-        CoreCustomizer customizer)
+        Customizer customizer)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
@@ -116,61 +114,47 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus)
+    public void onOpen(CoreSession coreSession, Callback callback)
     {
-        // TODO: FrameHandler cleanup?
-    }
-
-    @SuppressWarnings("Duplicates")
-    @Override
-    public void onError(Throwable cause)
-    {
-        cause = convertCause(cause);
-        futureSession.completeExceptionally(cause);
-
-        if (errorHandle == null)
-        {
-            log.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " missing onError handler", cause);
-            return;
-        }
-
         try
         {
-            errorHandle.invoke(cause);
+            customizer.customize(coreSession);
+
+            session = new WebSocketSessionImpl(coreSession, this, upgradeRequest, upgradeResponse);
+
+            frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
+            openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
+            closeHandle = JettyWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
+            errorHandle = JettyWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
+            textHandle = JettyWebSocketFrameHandlerFactory.bindTo(textHandle, session);
+            binaryHandle = JettyWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
+            pingHandle = JettyWebSocketFrameHandlerFactory.bindTo(pingHandle, session);
+            pongHandle = JettyWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
+
+            if (textHandle != null)
+                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, coreSession.getMaxTextMessageSize());
+
+            if (binaryHandle != null)
+                binarySink = JettyWebSocketFrameHandlerFactory
+                        .createMessageSink(binaryHandle, binarySinkClass, executor, coreSession.getMaxBinaryMessageSize());
+
+            if (openHandle != null)
+                openHandle.invoke();
+
+            futureSession.complete(session);
+            callback.succeeded();
         }
-        catch (Throwable t)
+        catch (Throwable cause)
         {
-            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getName() + " ERROR method error: " + cause.getMessage(), t);
-            wsError.addSuppressed(cause);
-            throw wsError;
+            // TODO should futureSession be failed here?
+            callback.failed(new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause));
         }
     }
 
-    public static Throwable convertCause(Throwable cause)
-    {
-        if (cause instanceof MessageTooLargeException)
-            return new org.eclipse.jetty.websocket.api.MessageTooLargeException(cause.getMessage(), cause);
-
-        if (cause instanceof ProtocolException)
-            return new org.eclipse.jetty.websocket.api.ProtocolException(cause.getMessage(), cause);
-
-        if (cause instanceof BadPayloadException)
-            return new org.eclipse.jetty.websocket.api.BadPayloadException(cause.getMessage(), cause);
-
-        if (cause instanceof CloseException)
-            return new org.eclipse.jetty.websocket.api.CloseException(((CloseException)cause).getStatusCode(), cause.getMessage(), cause);
-
-        if (cause instanceof WebSocketTimeoutException)
-            return new org.eclipse.jetty.websocket.api.WebSocketTimeoutException(cause.getMessage(), cause);
-
-        if (cause instanceof InvalidSignatureException)
-            return new org.eclipse.jetty.websocket.api.InvalidWebSocketException(cause.getMessage(), cause);
-
-        if (cause instanceof UpgradeException)
-            return new org.eclipse.jetty.websocket.api.UpgradeException(((UpgradeException)cause).getRequestURI(), cause);
-
-        return cause;
-    }
+    /**
+     * @see #onFrame(Frame,Callback)
+     */
+    public final void onFrame(Frame frame) {}
 
     @Override
     public void onFrame(Frame frame, Callback callback)
@@ -191,85 +175,56 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         switch (frame.getOpCode())
         {
             case OpCode.CLOSE:
-                onClose(frame, callback);
+                onCloseFrame(frame, callback);
                 break;
             case OpCode.PING:
-                onPing(frame, callback);
+                onPingFrame(frame, callback);
                 break;
             case OpCode.PONG:
-                onPong(frame, callback);
+                onPongFrame(frame, callback);
                 break;
             case OpCode.TEXT:
-                onText(frame, callback);
+                onTextFrame(frame, callback);
                 break;
             case OpCode.BINARY:
-                onBinary(frame, callback);
+                onBinaryFrame(frame, callback);
                 break;
             case OpCode.CONTINUATION:
-                onContinuation(frame, callback);
+                onContinuationFrame(frame, callback);
                 break;
         }
     }
 
     @Override
-    public void onOpen(CoreSession coreSession)
+    public void onError(Throwable cause, Callback callback)
     {
-        customizer.customize(coreSession);
-
-        session = new WebSocketSessionImpl(coreSession, this, upgradeRequest, upgradeResponse);
-
-        frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
-        openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
-        closeHandle = JettyWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
-        errorHandle = JettyWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
-        textHandle = JettyWebSocketFrameHandlerFactory.bindTo(textHandle, session);
-        binaryHandle = JettyWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
-        pingHandle = JettyWebSocketFrameHandlerFactory.bindTo(pingHandle, session);
-        pongHandle = JettyWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
-
-        if (textHandle != null)
+        try
         {
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, getMaxTextMessageSize());
-        }
+            cause = convertCause(cause);
+            futureSession.completeExceptionally(cause);
 
-        if (binaryHandle != null)
-        {
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, getMaxBinaryMessageSize());
-        }
-
-        if (openHandle != null)
-        {
-            try
+            if (errorHandle != null)
+                errorHandle.invoke(cause);
+            else
             {
-                openHandle.invoke();
+                log.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " : " + cause);
+                if (log.isDebugEnabled())
+                    log.debug("unhandled", cause);
             }
-            catch (Throwable cause)
-            {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause);
-            }
+            callback.succeeded();
         }
-
-        futureSession.complete(session);
+        catch (Throwable t)
+        {
+            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getName() + " ERROR method error: " + cause.getMessage(), t);
+            wsError.addSuppressed(cause);
+            callback.failed(wsError);
+        }
     }
 
-    public long getMaxBinaryMessageSize()
+    @Override
+    public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        return maxBinaryMessageSize;
-    }
-
-    public void setMaxBinaryMessageSize(long maxSize)
-    {
-        this.maxBinaryMessageSize = maxSize;
-    }
-
-    public long getMaxTextMessageSize()
-    {
-        return maxTextMessageSize;
-    }
-
-    public void setMaxTextMessageSize(long maxSize)
-    {
-        this.maxTextMessageSize = maxSize;
+        callback.succeeded();
     }
 
     public String toString()
@@ -289,7 +244,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             activeMessageSink = null;
     }
 
-    private void onBinary(Frame frame, Callback callback)
+    private void onBinaryFrame(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = binarySink;
@@ -297,7 +252,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         acceptMessage(frame, callback);
     }
 
-    private void onClose(Frame frame, Callback callback)
+    private void onCloseFrame(Frame frame, Callback callback)
     {
         if (closeHandle != null)
         {
@@ -314,12 +269,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
-    private void onContinuation(Frame frame, Callback callback)
+    private void onContinuationFrame(Frame frame, Callback callback)
     {
         acceptMessage(frame, callback);
     }
 
-    private void onPing(Frame frame, Callback callback)
+    private void onPingFrame(Frame frame, Callback callback)
     {
         if (pingHandle != null)
         {
@@ -347,7 +302,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
-    private void onPong(Frame frame, Callback callback)
+    private void onPongFrame(Frame frame, Callback callback)
     {
         if (pongHandle != null)
         {
@@ -367,11 +322,39 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
-    private void onText(Frame frame, Callback callback)
+    private void onTextFrame(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = textSink;
 
         acceptMessage(frame, callback);
     }
+
+
+    static Throwable convertCause(Throwable cause)
+    {
+        if (cause instanceof MessageTooLargeException)
+            return new org.eclipse.jetty.websocket.api.MessageTooLargeException(cause.getMessage(), cause);
+
+        if (cause instanceof ProtocolException)
+            return new org.eclipse.jetty.websocket.api.ProtocolException(cause.getMessage(), cause);
+
+        if (cause instanceof BadPayloadException)
+            return new org.eclipse.jetty.websocket.api.BadPayloadException(cause.getMessage(), cause);
+
+        if (cause instanceof CloseException)
+            return new org.eclipse.jetty.websocket.api.CloseException(((CloseException)cause).getStatusCode(), cause.getMessage(), cause);
+
+        if (cause instanceof WebSocketTimeoutException)
+            return new org.eclipse.jetty.websocket.api.WebSocketTimeoutException(cause.getMessage(), cause);
+
+        if (cause instanceof InvalidSignatureException)
+            return new org.eclipse.jetty.websocket.api.InvalidWebSocketException(cause.getMessage(), cause);
+
+        if (cause instanceof UpgradeException)
+            return new org.eclipse.jetty.websocket.api.UpgradeException(((UpgradeException)cause).getRequestURI(), cause);
+
+        return cause;
+    }
+
 }

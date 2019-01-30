@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,8 +40,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -101,10 +99,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
         res.add(CoreOptions.systemProperty("jetty.sslContext.provider").value("Conscrypt"));
-
-        String conscryptVersion = System.getProperty("conscrypt-version");
-        Assume.assumeFalse("Missing 'conscrypt-version' system property", (conscryptVersion == null || conscryptVersion.equals("null")));
-
+        
         res.add(wrappedBundle(mavenBundle().groupId("org.conscrypt").artifactId("conscrypt-openjdk-uber").versionAsInProject())
                 .imports("javax.net.ssl,*")
                 .exports("org.conscrypt;version="+System.getProperty("conscrypt-version"))
@@ -122,8 +117,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     }
  
   
-    @Ignore
-    @Test
+
     public void assertAllBundlesActiveOrResolved() throws Exception
     {
         TestOSGiUtil.debugBundles(bundleContext);
@@ -139,6 +133,9 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     @Test
     public void testHTTP2() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+
         HTTP2Client client = new HTTP2Client();
         try 
         {

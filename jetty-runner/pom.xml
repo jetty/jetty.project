@@ -12,7 +12,7 @@
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
   </properties>
-  <url>http://www.eclipse.org/jetty</url>
+
   <build>
     <plugins>
       <plugin>
@@ -36,20 +36,26 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <configuration>
-          <!-- jetty-runner is not an OSGi component -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>install</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
-         <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-         </archive>
+          <scriptVariables>
+            <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
+          </scriptVariables>
+          <goals>
+            <goal>clean</goal>
+          </goals>
         </configuration>
       </plugin>
     </plugins>
@@ -61,6 +67,28 @@
           <configuration>
             <!-- Clirr fails with "org.apache.tools.ant.Task not found" on this project -->
             <skip>true</skip>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <configuration>
+            <!-- jetty-runner is not an OSGi component -->
+            <skip>true</skip>
+            <!-- there is no way to skip MANIFEST creation by the plugin so just configure dummy location -->
+            <manifestLocation>${project.build.directory}/NON_USED_MANIFEST</manifestLocation>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestFile>src/main/resources/MANIFEST.MF</manifestFile>
+              <manifest>
+                <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
+              </manifest>
+            </archive>
           </configuration>
         </plugin>
       </plugins>
@@ -85,7 +113,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-server</artifactId>
+      <artifactId>jetty-websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

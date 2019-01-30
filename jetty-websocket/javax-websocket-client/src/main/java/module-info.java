@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,11 @@
 
 import javax.websocket.ContainerProvider;
 
-import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainerProvider;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider;
 
 module org.eclipse.jetty.websocket.javax.client
 {
-    exports org.eclipse.jetty.websocket.jsr356.client;
+    exports org.eclipse.jetty.websocket.javax.client;
 
     requires javax.websocket.api;
     requires org.eclipse.jetty.util;

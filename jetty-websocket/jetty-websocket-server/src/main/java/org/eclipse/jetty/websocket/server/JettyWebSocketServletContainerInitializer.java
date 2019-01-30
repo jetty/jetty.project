@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,25 +18,25 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFrameHandlerFactory;
-
+import java.util.Collections;
+import java.util.Set;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 /**
  * ServletContext configuration for Jetty Native WebSockets API.
  */
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
+    private static final Logger LOG = Log.getLogger(JettyWebSocketServletContainerInitializer.class);
+
     public static class JettyWebSocketEmbeddedStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
     {
         private ServletContainerInitializer sci;
@@ -70,33 +70,12 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     }
 
     @Override
-    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+    public void onStartup(Set<Class<?>> c, ServletContext servletContext) throws ServletException
     {
-        // TODO why doesn't the javax side share this approach?
-        List<WebSocketServletFrameHandlerFactory> factories = (List<WebSocketServletFrameHandlerFactory>)ctx
-            .getAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS);
-        if (factories == null)
-        {
-            factories = new ArrayList<>();
-            ctx.setAttribute(WebSocketServletFrameHandlerFactory.ATTR_HANDLERS, factories);
-        }
+        WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(servletContext);
+        JettyServerFrameHandlerFactory factory = JettyServerFrameHandlerFactory.ensureFactory(servletContext);
 
-        Executor executor = (Executor)ctx.getAttribute("org.eclipse.jetty.server.Executor");
-        if (executor == null)
-        {
-            try
-            {
-                QueuedThreadPool threadPool = new QueuedThreadPool();
-                threadPool.setName("Jetty-WebSocketServer");
-                threadPool.start();
-                executor = threadPool;
-            }
-            catch (Exception e)
-            {
-                throw new ServletException("Unable to start internal Executor", e);
-            }
-        }
-
-        factories.add(new JettyWebSocketServletFrameHandlerFactory(executor));
+        if (LOG.isDebugEnabled())
+            LOG.debug("onStartup {} {}", components, factory);
     }
 }

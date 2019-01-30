@@ -10,7 +10,6 @@
   <name>Jetty :: Jetty JSPC Maven Plugin</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
-    <it.debug>false</it.debug>
   </properties>
   <build>
     <plugins>
@@ -56,20 +55,10 @@
           </execution>
         </executions>
         <configuration>
-          <debug>${it.debug}</debug>
           <addTestClassPath>true</addTestClassPath>
-          <timeoutInSeconds>60</timeoutInSeconds>
-          <projectsDirectory>src/it</projectsDirectory>
-          <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-          <pomIncludes>
-            <pomInclude>*/pom.xml</pomInclude>
-          </pomIncludes>
-          <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
-          <settingsFile>src/it/settings.xml</settingsFile>
           <scriptVariables>
             <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
           </scriptVariables>
-          <skipInvocation>${skipTests}</skipInvocation>
           <goals>
             <goal>clean</goal>
           </goals>

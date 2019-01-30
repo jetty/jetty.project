@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -117,7 +117,7 @@ public class AttributeNameTest
                 //Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
 
-                //Make a request to the 2nd server which will do a refresh, use TestFooServlet to ensure that the
+                //Make a request to the 2nd server which will do a refresh, use TestServlet to ensure that the
                 //session attribute with dotted name is not removed
                 Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
                 request2.header("Cookie", sessionCookie);

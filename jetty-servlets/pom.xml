@@ -23,8 +23,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine}
-            --add-modules jetty.servlet.api
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules jetty..servlet.api
             --add-modules org.eclipse.jetty.util
             --add-modules org.eclipse.jetty.io
             --add-modules org.eclipse.jetty.http

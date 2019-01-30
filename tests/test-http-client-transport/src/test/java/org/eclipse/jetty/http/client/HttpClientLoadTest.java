@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,9 +17,6 @@
 //
 
 package org.eclipse.jetty.http.client;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -67,6 +64,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTransportScenario>
 {
@@ -402,7 +402,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 }
                 case FCGI:
                 {
-                    HttpClientTransport clientTransport = new HttpClientTransportOverFCGI(1, false, "");
+                    HttpClientTransport clientTransport = new HttpClientTransportOverFCGI(1, "");
                     clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                     {
                         @Override

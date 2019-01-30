@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -69,6 +69,15 @@ public interface Dumpable
         return b.toString();
     }
 
+    /**
+     * The description of this/self found in the dump.
+     * Allows for alternative representation of Object other then .toString()
+     * where the long form output of toString() is represented in a cleaner way
+     * within the dump infrastructure.
+     *
+     * @return the representation of self
+     */
+    default String dumpSelf() { return toString(); }
 
     /**
      * Dump just an Object (but not it's contained items) to an Appendable.
@@ -89,6 +98,8 @@ public interface Dumpable
                 s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
             else if (o instanceof Map)
                 s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
+            else if (o instanceof Dumpable)
+                s = ((Dumpable)o).dumpSelf().replace("\r\n","|").replace("\n","|");
             else
                 s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
 

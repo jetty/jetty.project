@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,45 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.http.pathmap.PathSpec;
-
 import java.time.Duration;
+
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public interface WebSocketServletFactory
 {
-    void addFrameHandlerFactory(WebSocketServletFrameHandlerFactory frameHandlerFactory);
+
+    WebSocketExtensionRegistry getExtensionRegistry();
+
+    Duration getIdleTimeout();
+
+    void setIdleTimeout(Duration duration);
+
+    int getInputBufferSize();
+
+    void setInputBufferSize(int bufferSize);
+
+    long getMaxFrameSize();
+
+    void setMaxFrameSize(long maxFrameSize);
+
+    long getMaxBinaryMessageSize();
+
+    void setMaxBinaryMessageSize(long bufferSize);
+
+    long getMaxTextMessageSize();
+
+    void setMaxTextMessageSize(long bufferSize);
+
+    int getOutputBufferSize();
+
+    void setOutputBufferSize(int bufferSize);
+
+    boolean isAutoFragment();
+
+    void setAutoFragment(boolean autoFragment);
+
+    void addMapping(String pathSpec, WebSocketCreator creator);
 
     /**
      * add a WebSocket mapping to a provided {@link WebSocketCreator}.
@@ -40,29 +72,19 @@ public interface WebSocketServletFactory
      */
     void addMapping(PathSpec pathSpec, WebSocketCreator creator);
 
-    Duration getDefaultIdleTimeout();
+    /**
+     * Add a WebSocket mapping at PathSpec "/" for a creator which creates the endpointClass
+     *
+     * @param endpointClass the WebSocket class to use
+     */
+    void register(Class<?> endpointClass);
 
-    void setDefaultIdleTimeout(Duration duration);
-
-    int getDefaultInputBufferSize();
-
-    void setDefaultInputBufferSize(int bufferSize);
-
-    long getDefaultMaxAllowedFrameSize();
-
-    void setDefaultMaxAllowedFrameSize(long maxFrameSize);
-
-    long getDefaultMaxBinaryMessageSize();
-
-    void setDefaultMaxBinaryMessageSize(long bufferSize);
-
-    long getDefaultMaxTextMessageSize();
-
-    void setDefaultMaxTextMessageSize(long bufferSize);
-
-    int getDefaultOutputBufferSize();
-
-    void setDefaultOutputBufferSize(int bufferSize);
+    /**
+     * Add a WebSocket mapping at PathSpec "/" for a creator
+     *
+     * @param creator the WebSocketCreator to use
+     */
+    void setCreator(WebSocketCreator creator);
 
     /**
      * Returns the creator for the given path spec.
@@ -80,9 +102,6 @@ public interface WebSocketServletFactory
      */
     WebSocketCreator getMatch(String target);
 
-    boolean isAutoFragment();
-
-    void setAutoFragment(boolean autoFragment);
 
     /**
      * Parse a PathSpec string into a PathSpec instance.

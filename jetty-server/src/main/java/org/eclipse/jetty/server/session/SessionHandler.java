@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -162,8 +162,22 @@ public class SessionHandler extends ScopedHandler
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            //An async request has completed, so we can complete the session
-            complete(Request.getBaseRequest(event.getAsyncContext().getRequest()).getSession(false));
+            // An async request has completed, so we can complete the session,
+            // but we must locate the session instance for this context
+            Request request = Request.getBaseRequest(event.getAsyncContext().getRequest());
+            HttpSession session = request.getSession(false);
+            String id;
+            if (session!=null)
+                id = session.getId();
+            else
+            {
+                id = (String)request.getAttribute(DefaultSessionIdManager.__NEW_SESSION_ID);
+                if (id==null)
+                    id = request.getRequestedSessionId();
+            }
+
+            if (id!=null)
+                complete(getSession(id));
         }
 
         @Override
@@ -407,9 +421,12 @@ public class SessionHandler extends ScopedHandler
      */
     public void complete(HttpSession session)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Complete called with session {}", session); 
+        
         if (session == null)
             return;
-        
+
         Session s = ((SessionIf)session).getSession();
     
         try
@@ -422,23 +439,26 @@ public class SessionHandler extends ScopedHandler
             LOG.warn(e);
         }
     }
-    
-    
-    public void complete (Session session, Request request)
+
+    @Deprecated
+    public void complete(Session session, Request baseRequest)
     {
-        if (request.isAsyncStarted() && request.getDispatcherType() == DispatcherType.REQUEST)
+        ensureCompletion(baseRequest);
+    }
+
+    private void ensureCompletion(Request baseRequest)
+    {
+        if (baseRequest.isAsyncStarted())
         {
-            request.getAsyncContext().addListener(_sessionAsyncListener);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding AsyncListener for {}", baseRequest);
+            if (!baseRequest.getHttpChannelState().hasListener(_sessionAsyncListener))
+                baseRequest.getAsyncContext().addListener(_sessionAsyncListener);
         }
         else
         {
-            complete(session);
+            complete(baseRequest.getSession(false));
         }
-        //if dispatcher type is not async and not request, complete immediately (its a forward or an include)
-        
-        //else if dispatcher type is request and not async, complete immediately
-        
-        //else register an async callback completion listener that will complete the session
     }
 
 
@@ -454,7 +474,6 @@ public class SessionHandler extends ScopedHandler
 
         _context=ContextHandler.getCurrentContext();
         _loader=Thread.currentThread().getContextClassLoader();
-
 
         synchronized (server)
         {
@@ -472,7 +491,6 @@ public class SessionHandler extends ScopedHandler
                 
                 _sessionCache.setSessionDataStore(sds);
             }
-
          
             if (_sessionIdManager==null)
             {
@@ -1354,6 +1372,17 @@ public class SessionHandler extends ScopedHandler
         }
     }
     
+    /**
+     * @see #sessionInactivityTimerExpired(Session, long)
+     */
+    @Deprecated
+    public void sessionInactivityTimerExpired (Session session)
+    {
+        //for backwards compilation compatibility only
+        sessionInactivityTimerExpired(session, System.currentTimeMillis());
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * Each session has a timer that is configured to go off
@@ -1361,20 +1390,28 @@ public class SessionHandler extends ScopedHandler
      * configurable amount of time, or the session itself
      * has passed its expiry.
      * 
+     * If it has passed its expiry, then we will mark it for
+     * scavenging by next run of the HouseKeeper; if it has
+     * been idle longer than the configured eviction period,
+     * we evict from the cache.
+     * 
+     * If none of the above are true, then the System timer
+     * is inconsistent and the caller of this method will
+     * need to reset the timer.
+     * 
      * @param session the session
+     * @param now the time at which to check for expiry
      */
-    public void sessionInactivityTimerExpired (Session session)
+    public void sessionInactivityTimerExpired (Session session, long now)
     {
         if (session == null)
             return;
-
 
         //check if the session is:
         //1. valid
         //2. expired
         //3. idle
-        boolean expired = false;
-        try (Lock lock = session.lockIfNotHeld())
+        try (Lock lock = session.lock())
         {
             if (session.getRequests() > 0)
                 return; //session can't expire or be idle if there is a request in it
@@ -1384,27 +1421,27 @@ public class SessionHandler extends ScopedHandler
             
             if (!session.isValid())
                 return; //do nothing, session is no longer valid
-            
-            if (session.isExpiredAt(System.currentTimeMillis()) && session.getRequests() <=0)
-                expired = true;
-        }
 
-        if (expired)
-        {
-            //instead of expiring the session directly here, accumulate a list of 
-            //session ids that need to be expired. This is an efficiency measure: as
-            //the expiration involves the SessionDataStore doing a delete, it is 
-            //most efficient if it can be done as a bulk operation to eg reduce
-            //roundtrips to the persistent store. Only do this if the HouseKeeper that
-            //does the scavenging is configured to actually scavenge
-            if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+            if (session.isExpiredAt(now))
             {
-                _candidateSessionIdsForExpiry.add(session.getId());
-                if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+                //instead of expiring the session directly here, accumulate a list of 
+                //session ids that need to be expired. This is an efficiency measure: as
+                //the expiration involves the SessionDataStore doing a delete, it is 
+                //most efficient if it can be done as a bulk operation to eg reduce
+                //roundtrips to the persistent store. Only do this if the HouseKeeper that
+                //does the scavenging is configured to actually scavenge
+                if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+                {
+                    _candidateSessionIdsForExpiry.add(session.getId());
+                    if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+                }
+            }
+            else
+            {
+                //possibly evict the session
+                _sessionCache.checkInactiveSession(session);
             }
         }
-        else 
-            _sessionCache.checkInactiveSession(session); //if inactivity eviction is enabled the session will be deleted from the cache
     }
 
     
@@ -1593,16 +1630,19 @@ public class SessionHandler extends ScopedHandler
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        SessionHandler old_session_manager = null;
+        SessionHandler old_session_handler = null;
         HttpSession old_session = null;
         HttpSession existingSession = null;
 
         try
         {
-            old_session_manager = baseRequest.getSessionHandler();
+            if (LOG.isDebugEnabled())
+                LOG.debug("SessionHandler.doScope");
+            
+            old_session_handler = baseRequest.getSessionHandler();
             old_session = baseRequest.getSession(false);
 
-            if (old_session_manager != this)
+            if (old_session_handler != this)
             {
                 // new session context
                 baseRequest.setSessionHandler(this);
@@ -1613,7 +1653,7 @@ public class SessionHandler extends ScopedHandler
             // access any existing session for this context
             existingSession = baseRequest.getSession(false);
             
-            if ((existingSession != null) && (old_session_manager != this))
+            if ((existingSession != null) && (old_session_handler != this))
             {
                 HttpCookie cookie = access(existingSession,request.isSecure());
                 // Handle changed ID or max-age refresh, but only if this is not a redispatched request
@@ -1622,10 +1662,7 @@ public class SessionHandler extends ScopedHandler
             }
 
             if (LOG.isDebugEnabled())
-            {
-                LOG.debug("sessionHandler=" + this);
-                LOG.debug("session=" + existingSession);
-            }
+                LOG.debug("sessionHandler={} session={}",this, existingSession);
 
             if (_nextScope != null)
                 _nextScope.doScope(target,baseRequest,request,response);
@@ -1637,16 +1674,18 @@ public class SessionHandler extends ScopedHandler
         finally
         {
             //if there is a session that was created during handling this context, then complete it
-            HttpSession finalSession = baseRequest.getSession(false);
-            if (LOG.isDebugEnabled()) LOG.debug("FinalSession="+finalSession+" old_session_manager="+old_session_manager+" this="+this);
-            if ((finalSession != null) && (old_session_manager != this))
+            if (LOG.isDebugEnabled())
+                LOG.debug("FinalSession={}, old_session_handler={}, this={}, calling complete={}", baseRequest.getSession(false), old_session_handler, this, (old_session_handler != this));
+
+            // If we are leaving the scope of this session handler, ensure the session is completed
+            if (old_session_handler != this)
+                ensureCompletion(baseRequest);
+
+            // revert the session handler to the previous, unless it was null, in which case remember it as
+            // the first session handler encountered.
+            if (old_session_handler != null && old_session_handler != this)
             {
-                complete((Session)finalSession, baseRequest);
-            }
-         
-            if (old_session_manager != null && old_session_manager != this)
-            {
-                baseRequest.setSessionHandler(old_session_manager);
+                baseRequest.setSessionHandler(old_session_handler);
                 baseRequest.setSession(old_session);
             }
         }

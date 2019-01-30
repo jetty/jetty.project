@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -316,10 +316,10 @@ public class DoSFilter implements Filter
             // Get a rate tracker associated with this request, and record one hit.
             tracker = getRateTracker(request);
 
-            // Calculate the rate and check it is over the allowed limit
+            // Calculate the rate and check if it is over the allowed limit
             final boolean overRateLimit = tracker.isRateExceeded(System.currentTimeMillis());
 
-            // Pass it through if  we are not currently over the rate limit.
+            // Pass it through if we are not currently over the rate limit.
             if (!overRateLimit)
             {
                 if (LOG.isDebugEnabled())

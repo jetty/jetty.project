@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,29 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -34,19 +49,14 @@ import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingNetworkBytesCapture;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Random;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
 
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
 import static org.hamcrest.CoreMatchers.is;
@@ -229,7 +239,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void init(DeflateFrameExtension ext)
     {
-        ext.setMaxFrameSize(20 * 1024 * 1024);
+        ext.setWebSocketChannel(channelWithMaxMessageSize(20 * 1024 * 1024));
         ext.init(new ExtensionConfig(ext.getName()), bufferPool);
     }
 
@@ -371,11 +381,11 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         init(clientExtension);
-        clientExtension.setMaxFrameSize(maxMessageSize);
+        clientExtension.setWebSocketChannel(channelWithMaxMessageSize(maxMessageSize));
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         init(serverExtension);
-        serverExtension.setMaxFrameSize(maxMessageSize);
+        serverExtension.setWebSocketChannel(channelWithMaxMessageSize(maxMessageSize));
 
         // Chain the next element to decompress.
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()
@@ -413,5 +423,17 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         clientExtension.sendFrame(frame, null, false);
 
         assertArrayEquals(input, result.toByteArray());
+    }
+
+
+    private WebSocketChannel channelWithMaxMessageSize(int maxMessageSize)
+    {
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
+
+        WebSocketChannel channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        channel.setMaxFrameSize(maxMessageSize);
+        return channel;
     }
 }

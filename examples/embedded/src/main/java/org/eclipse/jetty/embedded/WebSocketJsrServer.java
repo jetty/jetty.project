@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,10 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 
 /**
  * Example of setting up a javax.websocket server with Jetty embedded
@@ -49,13 +51,17 @@ public class WebSocketJsrServer
     {
         Server server = new Server(8080);
 
+        HandlerList handlers = new HandlerList();
+
         ServletContextHandler context = new ServletContextHandler(
                 ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        server.setHandler(context);
+        handlers.addHandler(context);
+        handlers.addHandler(new DefaultHandler());
+        server.setHandler(handlers);
 
         // Enable javax.websocket configuration for the context
-        ServerContainer wsContainer = JavaxWebSocketServerContainerInitializer
+        ServerContainer wsContainer = JavaxWebSocketServletContainerInitializer
                 .configureContext(context);
 
         // Add your websockets to the container

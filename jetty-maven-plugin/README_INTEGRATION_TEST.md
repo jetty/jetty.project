@@ -17,6 +17,8 @@ Running single test
 You can run single or set of test as well using the command line argument: ```-Dinvoker.test=jetty-run-mojo-it,jetty-run-war*-it,!jetty-run-distro*```
 The parameter supports pattern and exclusion with !
 
+NOTE: if you use ```clean``` arg to maven, you will also need to add the test ```it-parent-pom```  first for invoker.test, eg ```-Dinvoker.test=it-parent-pom,jetty-run-mojo-it```.
+
 Running Logs
 --------------------
 The output of each Maven build will be located in /target/it/${project-name}/build.log

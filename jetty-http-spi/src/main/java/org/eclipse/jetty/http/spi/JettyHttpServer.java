@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -110,7 +110,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
 
         _connectors.put(addr.getHostName() + addr.getPort(), connector);
     }
-    
+
     protected Server getServer()
     {
         return _server;
@@ -218,8 +218,8 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
             try
             {
                 connector.stop();
-            } 
-            catch (Exception ex) 
+            }
+            catch (Exception ex)
             {
                 LOG.warn(ex);
             }
@@ -237,7 +237,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         HttpSpiContextHandler jettyContextHandler = context.getJettyContextHandler();
 
         ContextHandlerCollection chc = _server.getChildHandlerByClass(ContextHandlerCollection.class);
-                
+
         if (chc == null)
             throw new RuntimeException("could not find ContextHandlerCollection, you must configure one");
 

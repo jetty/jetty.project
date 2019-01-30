@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -111,6 +111,12 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * Create a callback from the passed success and failure
+     * @param success Called when the callback succeeds
+     * @param failure Called when the callback fails
+     * @return a new Callback
+     */
     static Callback from(Runnable success, Consumer<Throwable> failure)
     {
         return new Callback()
@@ -128,7 +134,83 @@ public interface Callback extends Invocable
             }
         };
     }
-    
+
+    /** Creaste a callback that runs completed when it succeeds or fails
+     * @param completed The completion to run on success or failure
+     * @return a new callback
+     */
+    static Callback from(Runnable completed)
+    {
+        return new Completing()
+        {
+            public void completed()
+            {
+                completed.run();
+            }
+        };
+    }
+
+    /**
+     * Create a nested callback that runs completed after
+     * completing the nested callback.
+     * @param callback The nested callback
+     * @param completed The completion to run after the nested callback is completed
+     * @return a new callback.
+     */
+    static Callback from(Callback callback, Runnable completed)
+    {
+        return new Nested(callback)
+        {
+            public void completed()
+            {
+                completed.run();
+            }
+        };
+    }
+
+    /**
+     * Create a nested callback that runs completed before
+     * completing the nested callback.
+     * @param callback The nested callback
+     * @param completed The completion to run before the nested callback is completed. Any exceptions thrown
+     *                  from completed will result in a callback failure.
+     * @return a new callback.
+     */
+    static Callback from(Runnable completed, Callback callback)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    completed.run();
+                    callback.succeeded();
+                }
+                catch(Throwable t)
+                {
+                    callback.failed(t);
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    completed.run();
+                }
+                catch(Throwable t)
+                {
+                    x.addSuppressed(t);
+                }
+                callback.failed(x);
+            }
+        };
+    }
+
+
     class Completing implements Callback
     {
         @Override
@@ -147,7 +229,11 @@ public interface Callback extends Invocable
         {
         }  
     }
-        
+
+    /**
+     * Nested Completing Callback that completes after
+     * completing the nested callback
+     */
     class Nested extends Completing
     {
         private final Callback callback;

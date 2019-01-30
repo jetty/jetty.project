@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator
+org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator

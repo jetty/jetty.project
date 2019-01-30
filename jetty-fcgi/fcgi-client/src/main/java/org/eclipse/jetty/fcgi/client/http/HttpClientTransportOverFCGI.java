@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
@@ -40,33 +38,23 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("The FastCGI/1.0 client transport")
 public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTransport
 {
-    private final boolean multiplexed;
     private final String scriptRoot;
 
     public HttpClientTransportOverFCGI(String scriptRoot)
     {
-        this( Math.max( 1, ProcessorUtils.availableProcessors() / 2), false, scriptRoot);
+        this(Math.max(1, ProcessorUtils.availableProcessors() / 2), scriptRoot);
     }
 
-    public HttpClientTransportOverFCGI(int selectors, boolean multiplexed, String scriptRoot)
+    public HttpClientTransportOverFCGI(int selectors, String scriptRoot)
     {
         super(selectors);
-        this.multiplexed = multiplexed;
         this.scriptRoot = scriptRoot;
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
             int maxConnections = httpClient.getMaxConnectionsPerDestination();
-            return isMultiplexed() ?
-                    new MultiplexConnectionPool(destination, maxConnections, destination, httpClient.getMaxRequestsQueuedPerDestination()) :
-                    new DuplexConnectionPool(destination, maxConnections, destination);
+            return new DuplexConnectionPool(destination, maxConnections, destination);
         });
-    }
-
-    @ManagedAttribute(value = "Whether connections are multiplexed", readonly = true)
-    public boolean isMultiplexed()
-    {
-        return multiplexed;
     }
 
     @ManagedAttribute(value = "The scripts root directory", readonly = true)
@@ -78,12 +66,11 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return isMultiplexed() ? new MultiplexHttpDestinationOverFCGI(getHttpClient(), origin)
-                : new HttpDestinationOverFCGI(getHttpClient(), origin);
+        return new HttpDestinationOverFCGI(getHttpClient(), origin);
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
@@ -96,7 +83,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
 
     protected HttpConnectionOverFCGI newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
-        return new HttpConnectionOverFCGI(endPoint, destination, promise, isMultiplexed());
+        return new HttpConnectionOverFCGI(endPoint, destination, promise);
     }
 
     protected void customize(Request request, HttpFields fastCGIHeaders)

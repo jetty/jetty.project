@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,6 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -57,7 +56,6 @@ public class TestJettyOSGiBootWithWebSocket
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(TestOSGiUtil.optionalRemoteDebug());
-        options.addAll(TestOSGiUtil.jettyLogging());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-websocket.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
@@ -69,8 +67,7 @@ public class TestJettyOSGiBootWithWebSocket
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
-        options.addAll(annotationDependencies());
-        options.add(CoreOptions.cleanCaches(true));
+        options.addAll(testJettyWebApp());
         return options.toArray(new Option[options.size()]);
     }
 
@@ -79,36 +76,39 @@ public class TestJettyOSGiBootWithWebSocket
         return TestOSGiUtil.jspDependencies();
     }
 
-    public static List<Option> annotationDependencies()
+    public static List<Option> testJettyWebApp()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
 
-    @Ignore
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
     }
     
+
+
     @Test
     public void testWebsocket() throws Exception
-    {            
+    {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 
-        URI uri = new URI("ws://127.0.0.1:" + port + "/ws/foo");
+        URI uri = new URI("ws://127.0.0.1:" + port+"/ws/foo");
 
         WebSocketClient client = new WebSocketClient();
         
         try
         {
+
             SimpleEchoSocket socket = new SimpleEchoSocket();
 
             client.start();

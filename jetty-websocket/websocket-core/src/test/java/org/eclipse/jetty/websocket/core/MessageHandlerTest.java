@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -111,7 +111,7 @@ public class MessageHandlerTest
             }
         };
 
-        handler.onOpen(session);
+        handler.onOpen(session, NOOP);
     }
 
     @Test
@@ -350,7 +350,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxTextMessageSize(4);
-        handler.onOpen(session);
+        handler.onOpen(session, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.TEXT, true, "Testing"), callback);
@@ -369,7 +369,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxTextMessageSize(4);
-        handler.onOpen(session);
+        handler.onOpen(session, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.TEXT, false, "123"), callback);
@@ -570,7 +570,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxBinaryMessageSize(4);
-        handler.onOpen(session);
+        handler.onOpen(session, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.BINARY, true, "Testing"), callback);
@@ -589,7 +589,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxBinaryMessageSize(4);
-        handler.onOpen(session);
+        handler.onOpen(session, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.BINARY, false, "123"), callback);
@@ -653,7 +653,7 @@ public class MessageHandlerTest
             }
         };
 
-        handler.onOpen(session);
+        handler.onOpen(session, NOOP);
 
         FutureCallback callback;
 
@@ -681,7 +681,7 @@ public class MessageHandlerTest
             }
         };
 
-        handler.onOpen(session);
+        handler.onOpen(session, NOOP);
 
         FutureCallback callback;
 

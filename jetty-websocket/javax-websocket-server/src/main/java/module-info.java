@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,13 +20,13 @@ import javax.servlet.ServletContainerInitializer;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketConfiguration;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 
 module org.eclipse.jetty.websocket.javax.server
 {
-    exports org.eclipse.jetty.websocket.jsr356.server;
+    exports org.eclipse.jetty.websocket.javax.server;
 
     requires jetty.servlet.api;
     requires javax.websocket.api;
@@ -42,7 +42,7 @@ module org.eclipse.jetty.websocket.javax.server
     requires org.eclipse.jetty.websocket.javax.client;
     requires org.eclipse.jetty.websocket.servlet;
 
-    provides ServletContainerInitializer with JavaxWebSocketServerContainerInitializer;
+    provides ServletContainerInitializer with JavaxWebSocketServletContainerInitializer;
     provides ServerEndpointConfig.Configurator with ContainerDefaultConfigurator;
     provides Configuration with JavaxWebSocketConfiguration;
 }

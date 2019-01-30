@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +58,9 @@ public final class RFC6455Handshaker implements Handshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeader.UPGRADE.asString());
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request,
+        HttpServletResponse response,
+        FrameHandler.Customizer defaultCustomizer) throws IOException
     {
         Request baseRequest = Request.getBaseRequest(request);
         HttpChannel httpChannel = baseRequest.getHttpChannel();
@@ -192,7 +194,8 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         channel.setWebSocketConnection(connection);
-
+        if (defaultCustomizer!=null)
+            defaultCustomizer.customize(channel);
         negotiator.customize(channel);
 
         // send upgrade response

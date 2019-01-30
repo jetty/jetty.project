@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -113,7 +113,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }};
 
     private static final Logger LOG = Log.getLogger(SslContextFactory.class);
-    private static final Logger LOG_CONFIG = LOG.getLogger("config");
+    private static final Logger LOG_CONFIG = LOG.getLogger("SslContextFactoryConfig");
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
             (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?

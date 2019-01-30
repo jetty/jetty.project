@@ -14,8 +14,8 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <exam.version>4.13.0</exam.version>
-    <url.version>2.5.4</url.version>
+    <pax.exam.version>4.13.0</pax.exam.version>
+    <pax.url.version>2.5.4</pax.url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
   </properties>
   <dependencies>
@@ -23,38 +23,50 @@
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam</artifactId>
-      <version>${exam.version}</version>
+      <version>${pax.exam.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-inject</artifactId>
-      <version>${exam.version}</version>
+      <version>${pax.exam.version}</version>
       <scope>test</scope>
     </dependency>
     <!-- Use the forked container so we can pass it system properties eg for alpn -->
     <dependency>
         <groupId>org.ops4j.pax.exam</groupId>
         <artifactId>pax-exam-container-forked</artifactId>
-        <version>${exam.version}</version>
+        <version>${pax.exam.version}</version>
         <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.swissbox</groupId>
+      <artifactId>pax-swissbox-framework</artifactId>
+      <version>1.8.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.swissbox</groupId>
+      <artifactId>pax-swissbox-tracker</artifactId>
+      <version>1.8.3</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-junit4</artifactId>
-      <version>${exam.version}</version>
+      <version>${pax.exam.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-link-mvn</artifactId>
-      <version>${exam.version}</version>
+      <version>${pax.exam.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>
       <artifactId>pax-url-aether</artifactId>
-      <version>${url.version}</version>
+      <version>${pax.url.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -65,7 +77,7 @@
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>
       <artifactId>pax-url-wrap</artifactId>
-      <version>${url.version}</version>
+      <version>${pax.url.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -280,13 +292,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-client</artifactId>
+      <artifactId>jetty-websocket-client</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-client-impl</artifactId>
+      <artifactId>javax-websocket-client</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
@@ -298,7 +310,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-server</artifactId>
+      <artifactId>jetty-websocket-server</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
@@ -309,7 +321,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server-impl</artifactId>
+      <artifactId>javax-websocket-server</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>

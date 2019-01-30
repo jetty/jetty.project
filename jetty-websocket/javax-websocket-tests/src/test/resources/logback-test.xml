@@ -19,8 +19,6 @@
     </encoder>
   </appender>
 
-  <!--<logger name="org.eclipse.jetty.websocket.tests.client.jsr356" level="debug" />-->
-
   <logger name="org.eclipse.jetty.websocket.core.internal.Parser.CLIENT" level="debug" additivity="false">
     <appender-ref ref="FILE"/>
   </logger>

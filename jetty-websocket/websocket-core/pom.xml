@@ -97,4 +97,52 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>autobahn</id>
+      <activation>
+        <property>
+          <name>autobahn</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>me.normanmaurer.maven.autobahntestsuite</groupId>
+            <artifactId>autobahntestsuite-maven-plugin</artifactId>
+            <version>0.1.6</version>
+            <configuration>
+
+              <!-- Optional configuration -->
+              <!-- The port to bind the server on. Default is to choose a random free port. -->
+              <!--port>9090</port-->
+
+              <!-- The number of milliseconds to wait for the server to startup -->
+              <waitTime>20000</waitTime>
+              <generateJUnitXml>true</generateJUnitXml>
+              <cases>
+                <case>*</case>
+              </cases>
+              <testFailureIgnore>true</testFailureIgnore>
+              <excludeCases></excludeCases>
+              <failOnNonStrict>false</failOnNonStrict>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>test</phase>
+                <goals>
+                  <goal>fuzzingclient</goal>
+                </goals>
+                <configuration>
+                  <!-- The class that contains a main method which accepts the port as a parameter to start the server. -->
+                  <mainClass>org.eclipse.jetty.websocket.core.autobahn.AutobahnWebSocketServer</mainClass>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

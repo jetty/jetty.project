@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,15 @@
 
 package examples;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Objects;
+
+import javax.servlet.ServletException;
+import javax.websocket.DeploymentException;
+
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -28,16 +37,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
-
-import javax.servlet.ServletException;
-import javax.websocket.DeploymentException;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Objects;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 
 /**
  * Tool to help debug JSR based websocket circumstances reported around browsers.
@@ -106,7 +107,7 @@ public class JsrBrowserDebugTool
         holder.setInitParameter("dirAllowed", "true");
         server.setHandler(context);
 
-        JavaxWebSocketServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(context);
+        JavaxWebSocketServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(context);
         container.addEndpoint(JsrBrowserSocket.class);
 
         LOG.info("{} setup on port {}", this.getClass().getName(), port);

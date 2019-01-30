@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,19 @@
 
 package org.eclipse.jetty.websocket.servlet.internal;
 
+import java.io.BufferedReader;
+import java.net.InetSocketAddress;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -31,18 +44,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
-import java.io.BufferedReader;
-import java.net.InetSocketAddress;
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
+
+import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.UserIdentity;
 
 /**
  * An immutable, feature limited, HttpServletRequest that will not be recycled by Jetty.
@@ -67,6 +72,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     private final Cookie[] cookies;
     private final String remoteUser;
     private final Principal principal;
+    private final Authentication authentication;
+    private final UserIdentity.Scope scope;
 
     private final Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final Map<String, String[]> parameters = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -104,6 +111,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
 
         remoteUser = httpRequest.getRemoteUser();
         principal = httpRequest.getUserPrincipal();
+        authentication = Request.getBaseRequest(httpRequest).getAuthentication();
+        scope = Request.getBaseRequest(httpRequest).getUserIdentityScope();
 
         Enumeration<String> headerNames = httpRequest.getHeaderNames();
         while (headerNames.hasMoreElements())
@@ -220,7 +229,10 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public boolean isUserInRole(String role)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        if (authentication instanceof Authentication.User)
+            return ((Authentication.User)authentication).isUserInRole(scope, role);
+
+        return false;
     }
 
     @Override

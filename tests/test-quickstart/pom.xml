@@ -80,12 +80,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server-impl</artifactId>
+      <artifactId>javax-websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-server</artifactId>
+      <artifactId>jetty-websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

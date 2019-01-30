@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -31,21 +38,13 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.Executor;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, OutgoingFrames, Runnable
+public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, Runnable
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
@@ -168,12 +167,16 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
 
-        // TODO review all close paths
-        IOException e = new IOException("Closed");
-        flusher.terminate(e, true);
-        channel.onClosed(e);
+        if (!channel.isClosed())
+        {
+            IOException e = new IOException("Closed");
+            channel.onClosed(e);
+        }
+        flusher.onClose();
+
         super.onClose();
     }
+
 
     @Override
     public boolean onIdleExpired()
@@ -181,8 +184,25 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
 
-        channel.processError(new WebSocketTimeoutException("Connection Idle Timeout"));
+        // treat as a handler error because socket is still open
+        channel.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
         return true;
+    }
+
+    /**
+     * Event for no activity on connection (read or write)
+     *
+     * @return true to signal that the endpoint must be closed, false to keep the endpoint open
+     */
+    @Override
+    protected boolean onReadTimeout(Throwable timeout)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onReadTimeout()");
+
+        // treat as a handler error because socket is still open
+        channel.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
+        return false;
     }
 
     protected void onFrame(Parser.ParsedFrame frame)
@@ -221,7 +241,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     referenced.release();
 
                 // notify session & endpoint
-                channel.processError(cause);
+                channel.processHandlerError(cause,NOOP);
             }
         });
     }
@@ -433,7 +453,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.warn(t.toString());
             BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
-            channel.processError(t);
+            channel.processConnectionError(t,Callback.NOOP);
         }
     }
 
@@ -474,20 +494,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onOpen() {}", this);
 
         // Open Channel
-        channel.onOpen();
         super.onOpen();
-    }
-
-    /**
-     * Event for no activity on connection (read or write)
-     *
-     * @return true to signal that the endpoint must be closed, false to keep the endpoint open
-     */
-    @Override
-    protected boolean onReadTimeout(Throwable timeout)
-    {
-        channel.processError(new WebSocketTimeoutException("Timeout on Read", timeout));
-        return false;
+        channel.onOpen();
     }
 
     @Override
@@ -577,8 +585,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         setInitialBuffer(prefilled);
     }
 
-    @Override
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    /**
+     * Enqueue a Frame to be sent.
+     * @param frame The frame to queue
+     * @param callback The callback to call once the frame is sent
+     * @param batch True if batch mode is to be used
+     */
+    void enqueueFrame(Frame frame, Callback callback, boolean batch)
     {
         if (channel.getBehavior() == Behavior.CLIENT)
         {
@@ -588,6 +601,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             wsf.setMask(mask);
         }
         flusher.enqueue(frame, callback, batch);
+        flusher.iterate();
     }
 
     private class Flusher extends FrameFlusher
@@ -601,7 +615,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         public void onCompleteFailure(Throwable x)
         {
             super.onCompleteFailure(x);
-            channel.processError(x);
+            channel.processConnectionError(x,NOOP);
         }
     }
 }

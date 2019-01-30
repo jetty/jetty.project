@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -295,12 +295,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         else
         {
-            if (isRemoteStreamClosed(streamId))
-                notifyReset(this, frame);
-            else
-                onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_rst_stream_frame");
+            onResetForUnknownStream(frame);
         }
     }
+
+    protected abstract void onResetForUnknownStream(ResetFrame frame);
 
     @Override
     public void onSettings(SettingsFrame frame)

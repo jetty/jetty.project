@@ -9,7 +9,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>websocket-server</artifactId>
+  <artifactId>jetty-websocket-server</artifactId>
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Server</name>
 
   <properties>
@@ -33,6 +33,12 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-api</artifactId>
       <version>${project.version}</version>
@@ -51,6 +57,11 @@
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-servlet-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -61,19 +72,14 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-Description>Jetty Websocket Server API</Bundle-Description>
+            <Bundle-Description>Websocket Server API</Bundle-Description>
+            <Bundle-Classpath/>
             <DynamicImport-Package>
-              org.eclipse.jetty.websocket.api.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"
+              org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"
             </DynamicImport-Package>
-            <Export-Package>
-              org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"
-            </Export-Package>
-            <Require-Capability>
-              osgi.extender;
-              filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
-            </Require-Capability>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer
+              osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer
             </Provide-Capability>
           </instructions>
         </configuration>
