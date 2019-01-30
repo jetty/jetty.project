@@ -116,7 +116,6 @@ public class Session implements SessionHandler.SessionIf
     public class SessionInactivityTimer
     {
         protected final CyclicTimeout _timer;
-        protected long _msec = -1;
 
         public SessionInactivityTimer()
         {
@@ -127,31 +126,45 @@ public class Session implements SessionHandler.SessionIf
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Timer expired for session {}", getId());
-                    getSessionHandler().sessionInactivityTimerExpired(Session.this);
+                    long now = System.currentTimeMillis();
+                    //handle what to do with the session after the timer expired
+                    getSessionHandler().sessionInactivityTimerExpired(Session.this, now);
+                    try (Lock lock = Session.this.lock())
+                    {
+                        //grab the lock and check what happened to the session: if it didn't get evicted and
+                        //it hasn't expired, we need to reset the timer
+                        if (Session.this.isResident() && Session.this.getRequests() <= 0 && Session.this.isValid() && !Session.this.isExpiredAt(now))
+                        {
+                            //session wasn't expired or evicted, we need to reset the timer
+                            SessionInactivityTimer.this.schedule(Session.this.calculateInactivityTimeout(now));
+                        }
+                    }
                 }
 
             };
         }
 
-
         /**
-         * @param ms the timeout to set; -1 means that the timer will not be
-         *            scheduled
+         * For backward api compatibility only. 
+         * @see #schedule(long)
          */
-        public void setTimeout(long ms)
+        @Deprecated
+        public void schedule ()
         {
-            _msec = ms;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Session {} timer={}ms", getId(), ms);
+            schedule(calculateInactivityTimeout(System.currentTimeMillis()));
         }
 
-        public void schedule()
+        /**
+         * @param time the timeout to set; -1 means that the timer will not be
+         *            scheduled
+         */
+        public void schedule (long time)
         {
-            if (_msec > 0)
+            if (time >= 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("(Re)starting timer for session {} at {}ms", getId(), _msec);
-                _timer.schedule(_msec, TimeUnit.MILLISECONDS);
+                    LOG.debug("(Re)starting timer for session {} at {}ms", getId(), time);
+                _timer.schedule(time, TimeUnit.MILLISECONDS);
             }
             else
             {
@@ -279,9 +292,15 @@ public class Session implements SessionHandler.SessionIf
             if (LOG.isDebugEnabled())
                 LOG.debug("Session {} complete, active requests={}", getId(), _requests);
 
-            // start the inactivity timer
+            // start the inactivity timer if necessary
             if (_requests == 0)
-                _sessionInactivityTimer.schedule();
+            {
+                //update the expiry time to take account of the time all requests spent inside of the
+                //session.
+                long now = System.currentTimeMillis();
+                _sessionData.calcAndSetExpiry(now);
+                _sessionInactivityTimer.schedule(calculateInactivityTimeout(now));
+            }
         }
     }
 
@@ -513,7 +532,7 @@ public class Session implements SessionHandler.SessionIf
             _sessionData.setMaxInactiveMs((long) secs * 1000L);
             _sessionData.calcAndSetExpiry();
             _sessionData.setDirty(true);
-            updateInactivityTimer();
+            
             if (LOG.isDebugEnabled())
             {
                 if (secs <= 0)
@@ -524,14 +543,29 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /**
-     * Set the inactivity timer to the smaller of the session maxInactivity (ie
-     * session-timeout from web.xml), or the inactive eviction time.
-     */
-    public void updateInactivityTimer()
+
+    @Deprecated
+    public void updateInactivityTimer() 
     {
+        //for backward api compatibility only
+    }
+    
+    /**
+     * Calculate what the session timer setting should be based on:
+     * the time remaining before the session expires 
+     * and any idle eviction time configured.
+     * The timer value will be the lesser of the above.
+     * 
+     * @param now the time at which to calculate remaining expiry
+     * @return the time remaining before expiry or inactivity timeout
+     */
+    public long calculateInactivityTimeout (long now)
+    {
+        long time = 0;
+        
         try (Lock lock = _lock.lock())
         {
+            long remaining = _sessionData.getExpiry() - now;
             long maxInactive = _sessionData.getMaxInactiveMs();
             int evictionPolicy = getSessionHandler().getSessionCache().getEvictionPolicy();
 
@@ -541,7 +575,7 @@ public class Session implements SessionHandler.SessionIf
                 if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
                 {
                     // we do not want to evict inactive sessions
-                    _sessionInactivityTimer.setTimeout(-1);
+                    time = -1;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} is immortal && no inactivity eviction", getId());
                 }
@@ -549,7 +583,7 @@ public class Session implements SessionHandler.SessionIf
                 {
                     // sessions are immortal but we want to evict after
                     // inactivity
-                    _sessionInactivityTimer.setTimeout(TimeUnit.SECONDS.toMillis(evictionPolicy));
+                    time = TimeUnit.SECONDS.toMillis(evictionPolicy);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} is immortal; evict after {} sec inactivity", getId(), evictionPolicy);
                 }
@@ -559,30 +593,32 @@ public class Session implements SessionHandler.SessionIf
                 // sessions are not immortal
                 if (evictionPolicy == SessionCache.NEVER_EVICT)
                 {
-                    // timeout is just the maxInactive setting
-                    _sessionInactivityTimer.setTimeout(_sessionData.getMaxInactiveMs());
+                    // timeout is the time remaining until its expiry
+                    time = (remaining > 0 ? remaining : 0);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} no eviction", getId());
                 }
                 else if (evictionPolicy == SessionCache.EVICT_ON_SESSION_EXIT)
                 {
                     // session will not remain in the cache, so no timeout
-                    _sessionInactivityTimer.setTimeout(-1);
+                    time = -1;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} evict on exit", getId());
                 }
                 else
                 {
                     // want to evict on idle: timer is lesser of the session's
-                    // maxInactive and eviction timeout
-                    _sessionInactivityTimer.setTimeout(Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy)));
+                    // expiration remaining and the time to evict
+                    time = (remaining > 0 ? (Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
+
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(), maxInactive, evictionPolicy);
                 }
             }
         }
+        
+        return time;
     }
-
 
     /**
      * @see javax.servlet.http.HttpSession#getMaxInactiveInterval()
@@ -963,16 +999,6 @@ public class Session implements SessionHandler.SessionIf
         return _lock.lock();
     }
 
-    /* ------------------------------------------------------------- */
-    /**
-     * Grab the lock on the session if it isn't locked already
-     * 
-     * @return the lock
-     */
-    public Lock lockIfNotHeld()
-    {
-        return _lock.lock();
-    }
 
     /* ------------------------------------------------------------- */
     /**
@@ -1132,13 +1158,14 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------- */
+    /**
+     * @param resident
+     */
     public void setResident(boolean resident)
     {
         _resident = resident;
 
-        if (_resident)
-            updateInactivityTimer();
-        else
+        if (!_resident)
             _sessionInactivityTimer.destroy();
     }
 

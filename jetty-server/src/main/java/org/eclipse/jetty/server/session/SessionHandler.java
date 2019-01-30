@@ -1372,6 +1372,17 @@ public class SessionHandler extends ScopedHandler
         }
     }
     
+    /**
+     * @see #sessionInactivityTimerExpired(Session, long)
+     */
+    @Deprecated
+    public void sessionInactivityTimerExpired (Session session)
+    {
+        //for backwards compilation compatibility only
+        sessionInactivityTimerExpired(session, System.currentTimeMillis());
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * Each session has a timer that is configured to go off
@@ -1379,20 +1390,28 @@ public class SessionHandler extends ScopedHandler
      * configurable amount of time, or the session itself
      * has passed its expiry.
      * 
+     * If it has passed its expiry, then we will mark it for
+     * scavenging by next run of the HouseKeeper; if it has
+     * been idle longer than the configured eviction period,
+     * we evict from the cache.
+     * 
+     * If none of the above are true, then the System timer
+     * is inconsistent and the caller of this method will
+     * need to reset the timer.
+     * 
      * @param session the session
+     * @param now the time at which to check for expiry
      */
-    public void sessionInactivityTimerExpired (Session session)
+    public void sessionInactivityTimerExpired (Session session, long now)
     {
         if (session == null)
             return;
-
 
         //check if the session is:
         //1. valid
         //2. expired
         //3. idle
-        boolean expired = false;
-        try (Lock lock = session.lockIfNotHeld())
+        try (Lock lock = session.lock())
         {
             if (session.getRequests() > 0)
                 return; //session can't expire or be idle if there is a request in it
@@ -1402,27 +1421,27 @@ public class SessionHandler extends ScopedHandler
             
             if (!session.isValid())
                 return; //do nothing, session is no longer valid
-            
-            if (session.isExpiredAt(System.currentTimeMillis()) && session.getRequests() <=0)
-                expired = true;
-        }
 
-        if (expired)
-        {
-            //instead of expiring the session directly here, accumulate a list of 
-            //session ids that need to be expired. This is an efficiency measure: as
-            //the expiration involves the SessionDataStore doing a delete, it is 
-            //most efficient if it can be done as a bulk operation to eg reduce
-            //roundtrips to the persistent store. Only do this if the HouseKeeper that
-            //does the scavenging is configured to actually scavenge
-            if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+            if (session.isExpiredAt(now))
             {
-                _candidateSessionIdsForExpiry.add(session.getId());
-                if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+                //instead of expiring the session directly here, accumulate a list of 
+                //session ids that need to be expired. This is an efficiency measure: as
+                //the expiration involves the SessionDataStore doing a delete, it is 
+                //most efficient if it can be done as a bulk operation to eg reduce
+                //roundtrips to the persistent store. Only do this if the HouseKeeper that
+                //does the scavenging is configured to actually scavenge
+                if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+                {
+                    _candidateSessionIdsForExpiry.add(session.getId());
+                    if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+                }
+            }
+            else
+            {
+                //possibly evict the session
+                _sessionCache.checkInactiveSession(session);
             }
         }
-        else 
-            _sessionCache.checkInactiveSession(session); //if inactivity eviction is enabled the session will be deleted from the cache
     }
 
     
