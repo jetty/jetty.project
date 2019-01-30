@@ -876,6 +876,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
+        return String.format("%s[%s %s %s]@%x", this.getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

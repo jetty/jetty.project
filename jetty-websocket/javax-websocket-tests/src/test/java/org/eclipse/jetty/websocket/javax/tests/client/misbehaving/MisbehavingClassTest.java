@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client.misbehaving;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -99,7 +98,7 @@ public class MisbehavingClassTest
             Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
             assertThat(e.getCause(), instanceOf(ExecutionException.class));
 
-            assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
+            assertThat("Close should have occurred", socket.closeLatch.await(5, TimeUnit.SECONDS), is(true));
 
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));

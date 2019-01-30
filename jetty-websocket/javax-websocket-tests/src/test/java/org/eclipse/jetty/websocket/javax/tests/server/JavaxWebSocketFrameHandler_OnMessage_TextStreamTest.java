@@ -35,12 +35,12 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
+import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -57,7 +57,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
 
         // Establish endpoint function
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request, response, futureSession);
-        frameHandler.onOpen(new FrameHandler.CoreSession.Empty());
+        frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
         func.accept(frameHandler);
         return socket;
     }

@@ -24,6 +24,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import javax.websocket.ClientEndpoint;
@@ -171,8 +173,14 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         try
         {
             Future<Session> sessionFuture = connect(upgradeRequest);
-            // TODO: apply connect timeouts here?
-            return sessionFuture.get(); // TODO: unwrap IOException from ExecutionException?
+            long timeout = coreClient.getHttpClient().getConnectTimeout();
+            if (timeout>0)
+                return sessionFuture.get(timeout+1000, TimeUnit.MILLISECONDS);
+            return sessionFuture.get();
+        }
+        catch (TimeoutException e)
+        {
+            throw new IOException("Connection future not completed " + destURI, e);
         }
         catch (Exception e)
         {

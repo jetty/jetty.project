@@ -162,9 +162,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(1);
             }
 
@@ -291,9 +292,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(3);
             }
 
@@ -349,9 +351,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(2);
             }
 
@@ -423,9 +426,10 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession) throws Exception
+            public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession);
+                callback.succeeded();
                 coreSession.demand(2);
             }
 

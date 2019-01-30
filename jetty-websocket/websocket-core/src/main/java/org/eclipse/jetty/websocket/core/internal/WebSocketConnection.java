@@ -185,7 +185,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onIdleExpired()");
 
         // treat as a handler error because socket is still open
-        channel.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"));
+        channel.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
         return true;
     }
 
@@ -201,7 +201,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onReadTimeout()");
 
         // treat as a handler error because socket is still open
-        channel.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout));
+        channel.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
         return false;
     }
 
@@ -241,7 +241,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     referenced.release();
 
                 // notify session & endpoint
-                channel.processHandlerError(cause);
+                channel.processHandlerError(cause,NOOP);
             }
         });
     }
@@ -453,7 +453,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.warn(t.toString());
             BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
-            channel.processConnectionError(t);
+            channel.processConnectionError(t,Callback.NOOP);
         }
     }
 
@@ -494,8 +494,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onOpen() {}", this);
 
         // Open Channel
-        channel.onOpen();
         super.onOpen();
+        channel.onOpen();
     }
 
     @Override
@@ -615,7 +615,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         public void onCompleteFailure(Throwable x)
         {
             super.onCompleteFailure(x);
-            channel.processConnectionError(x);
+            channel.processConnectionError(x,NOOP);
         }
     }
 }

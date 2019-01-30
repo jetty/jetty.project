@@ -30,19 +30,19 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
-import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseReasonSocket;
-import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseSocket;
+import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
-import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseReasonSessionSocket;
+import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseReasonSocket;
 import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseSessionReasonSocket;
 import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseSessionSocket;
+import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseSocket;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -112,11 +112,11 @@ public class OnCloseTest
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request, response, futureSession);
-        frameHandler.onOpen(new FrameHandler.CoreSession.Empty());
+        frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Execute onClose call
         frameHandler.onFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);
-        frameHandler.onClosed(CloseStatus.NORMAL_STATUS);
+        frameHandler.onClosed(CloseStatus.NORMAL_STATUS, Callback.NOOP);
 
         // Test captured event
         BlockingQueue<String> events = endpoint.events;

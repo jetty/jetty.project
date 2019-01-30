@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-
-public class TestFrameHandler implements FrameHandler
+public class TestFrameHandler implements SynchronousFrameHandler
 {
-    private static Logger LOG = Log.getLogger(TestFrameHandler.class);
+    private static Logger LOG = Log.getLogger(SynchronousFrameHandler.class);
 
     private CoreSession session;
 
@@ -47,7 +47,7 @@ public class TestFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onOpen(CoreSession coreSession) throws Exception
+    public void onOpen(CoreSession coreSession)
     {
         LOG.info("onOpen {}", coreSession);
         this.session = coreSession;
@@ -69,7 +69,7 @@ public class TestFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onError(Throwable cause) throws Exception
+    public void onError(Throwable cause)
     {
         LOG.info("onError {} ", cause == null?null:cause.toString());
     }

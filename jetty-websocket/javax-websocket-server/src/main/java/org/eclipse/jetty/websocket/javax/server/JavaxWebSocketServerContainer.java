@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.server;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
-import javax.servlet.ServletContext;
-import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
-import javax.websocket.WebSocketContainer;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -51,6 +39,19 @@ import org.eclipse.jetty.websocket.javax.server.internal.AnnotatedServerEndpoint
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.javax.server.internal.UndefinedServerEndpointConfig;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.websocket.DeploymentException;
+import javax.websocket.EndpointConfig;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
 
 @ManagedObject("JSR356 Server Container")
 public class JavaxWebSocketServerContainer
@@ -84,6 +85,8 @@ public class JavaxWebSocketServerContainer
     public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
         ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
+        if (contextHandler.getServer() == null)
+            throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
         JavaxWebSocketServerContainer container = contextHandler.getBean(JavaxWebSocketServerContainer.class);
         if (container==null)
@@ -96,8 +99,7 @@ public class JavaxWebSocketServerContainer
 
             Executor executor = httpClient == null?null:httpClient.getExecutor();
             if (executor == null)
-                executor = (Executor)servletContext
-                    .getAttribute("org.eclipse.jetty.server.Executor");
+                executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
             if (executor == null)
                 executor = contextHandler.getServer().getThreadPool();
 
@@ -329,9 +331,10 @@ public class JavaxWebSocketServerContainer
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
-        // TODO: warn on long -> int conversion issue
-        // TODO: Should this be Filter?
-        return (int)customizer.getMaxBinaryMessageSize();
+        long max = customizer.getMaxBinaryMessageSize();
+        if (max > (long)Integer.MAX_VALUE)
+            return Integer.MAX_VALUE;
+        return (int)max;
     }
 
     @Override
@@ -343,8 +346,10 @@ public class JavaxWebSocketServerContainer
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
-        // TODO: warn on long -> int conversion issue
-        return (int)customizer.getMaxTextMessageSize();
+        long max = customizer.getMaxTextMessageSize();
+        if (max > (long)Integer.MAX_VALUE)
+            return Integer.MAX_VALUE;
+        return (int)max;
     }
 
     @Override

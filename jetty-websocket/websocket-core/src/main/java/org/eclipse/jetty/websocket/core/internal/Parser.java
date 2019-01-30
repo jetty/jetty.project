@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.io.Closeable;
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -29,10 +32,6 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-
-import java.io.Closeable;
-import java.nio.ByteBuffer;
-import java.util.function.Supplier;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -414,6 +413,14 @@ public class Parser
         public boolean isReleaseable()
         {
             return releaseable;
+        }
+
+        @Override
+        public String toString()
+        {
+            if (closeStatus==null)
+                return super.toString();
+            return super.toString() + ":" + closeStatus;
         }
     }
 }
