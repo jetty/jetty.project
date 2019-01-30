@@ -18,19 +18,20 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +44,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(channel);
+        localEndpoint.onOpen(channel, Callback.NOOP);
 
         func.apply(localEndpoint);
 

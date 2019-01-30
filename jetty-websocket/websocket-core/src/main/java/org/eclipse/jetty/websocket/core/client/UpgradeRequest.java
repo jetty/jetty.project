@@ -18,6 +18,16 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpRequest;
@@ -53,16 +63,6 @@ import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
-
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
 
 public abstract class UpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
@@ -344,9 +344,14 @@ public abstract class UpgradeRequest extends HttpRequest implements Response.Com
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
         // Now swap out the connection
-        endp.upgrade(wsConnection);
-
-        futureCoreSession.complete(wsChannel);
+        try
+        {
+            endp.upgrade(wsConnection);
+        }
+        finally
+        {
+            futureCoreSession.complete(wsChannel);
+        }
     }
 
     /**

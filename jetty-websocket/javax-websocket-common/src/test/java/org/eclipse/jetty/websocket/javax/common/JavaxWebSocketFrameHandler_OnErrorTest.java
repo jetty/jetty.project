@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Test;
+import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnError;
 import javax.websocket.Session;
-import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -40,8 +42,8 @@ public class JavaxWebSocketFrameHandler_OnErrorTest extends AbstractJavaxWebSock
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // These invocations are the same for all tests
-        localEndpoint.onOpen(channel);
-        localEndpoint.onError(new RuntimeException("From Testcase"));
+        localEndpoint.onOpen(channel, Callback.NOOP);
+        localEndpoint.onError(new RuntimeException("From Testcase"), Callback.NOOP);
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }

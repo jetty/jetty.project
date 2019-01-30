@@ -56,8 +56,7 @@ public class ClientUpgradeRequestImpl extends org.eclipse.jetty.websocket.core.c
         UpgradeRequest upgradeRequest = new DelegatedClientUpgradeRequest(this);
         UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
 
-        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
-            upgradeRequest, upgradeResponse, futureJavaxSession);
+        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureJavaxSession);
 
         return frameHandler;
     }

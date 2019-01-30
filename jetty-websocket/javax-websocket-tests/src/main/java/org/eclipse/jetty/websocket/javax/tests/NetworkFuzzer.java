@@ -229,31 +229,33 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
             this.endPoint = endPoint;
         }
 
-        @Override
-        public void onClosed(CloseStatus closeStatus)
-        {
-        }
 
         @Override
-        public void onError(Throwable cause) throws Exception
+        public void onOpen(CoreSession coreSession, Callback callback)
         {
+            this.session = coreSession;
+            callback.succeeded();
         }
 
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
             receivedFrames.offer(Frame.copy(frame));
-            synchronized(this)
-            {
-                callback.succeeded();
-            }
+            callback.succeeded();
         }
 
         @Override
-        public void onOpen(CoreSession coreSession) throws Exception
+        public void onError(Throwable cause, Callback callback)
         {
-            this.session = coreSession;
+            callback.succeeded();
         }
+
+        @Override
+        public void onClosed(CloseStatus closeStatus, Callback callback)
+        {
+            callback.succeeded();
+        }
+
 
         public void writeRaw(ByteBuffer buffer) throws IOException
         {

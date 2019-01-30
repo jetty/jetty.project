@@ -33,12 +33,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.tests.MessageType;
-import org.eclipse.jetty.websocket.javax.tests.SessionMatchers;
-import org.eclipse.jetty.websocket.javax.tests.handlers.ByteArrayWholeHandler;
-import org.eclipse.jetty.websocket.javax.tests.handlers.ByteBufferPartialHandler;
-import org.eclipse.jetty.websocket.javax.tests.handlers.LongMessageHandler;
-import org.eclipse.jetty.websocket.javax.tests.handlers.StringWholeHandler;
+import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
@@ -47,20 +44,20 @@ import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
-import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientFrameHandlerFactory;
+import org.eclipse.jetty.websocket.javax.tests.MessageType;
+import org.eclipse.jetty.websocket.javax.tests.SessionMatchers;
+import org.eclipse.jetty.websocket.javax.tests.handlers.ByteArrayWholeHandler;
+import org.eclipse.jetty.websocket.javax.tests.handlers.ByteBufferPartialHandler;
+import org.eclipse.jetty.websocket.javax.tests.handlers.LongMessageHandler;
+import org.eclipse.jetty.websocket.javax.tests.handlers.StringWholeHandler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 public class SessionAddMessageHandlerTest
 {
@@ -88,7 +85,7 @@ public class SessionAddMessageHandlerTest
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
         frameHandler = frameHandlerFactory.newJavaxFrameHandler(ei, handshakeRequest, handshakeResponse, futureSession);
-        frameHandler.onOpen(new FrameHandler.CoreSession.Empty());
+        frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Session
         session = frameHandler.getSession();

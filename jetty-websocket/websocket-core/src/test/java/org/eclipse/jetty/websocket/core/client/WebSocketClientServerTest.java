@@ -113,6 +113,7 @@ public class WebSocketClientServerTest
                 {
                     LOG.info("channel aborted");
                     getCoreSession().abort();
+                    callback.failed(new Exception());
                 }
                 else
                 {
