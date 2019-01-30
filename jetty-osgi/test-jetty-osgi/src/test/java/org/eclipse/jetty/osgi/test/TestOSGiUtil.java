@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,6 @@ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.osgi.framework.Bundle;
@@ -57,6 +56,8 @@ import org.osgi.service.http.HttpService;
  */
 public class TestOSGiUtil
 {
+    
+    public static final String BUNDLE_DEBUG = "bundle.debug";
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
     {
@@ -103,14 +104,13 @@ public class TestOSGiUtil
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<>();
-
+        res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
         String mavenRepoPath = System.getProperty( "mavenRepoPath" );
         if (!StringUtil.isBlank(mavenRepoPath))
             res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.apache.aries" ).artifactId( "org.apache.aries.util" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-osgi-servlet-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "javax.annotation" ).artifactId( "javax.annotation-api" ).versionAsInProject().start());
@@ -157,7 +157,6 @@ public class TestOSGiUtil
         List<Option> res = new ArrayList<>();
   
         //jetty jsp bundles  
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-schemas").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());

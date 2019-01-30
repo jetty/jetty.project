@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,8 +34,6 @@ import java.util.function.Supplier;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -48,9 +46,9 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -74,6 +72,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private final AtomicBoolean _committed = new AtomicBoolean();
+    private final AtomicBoolean _responseCompleted = new AtomicBoolean();
     private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
@@ -246,6 +245,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _response;
     }
 
+    public Connection getConnection()
+    {
+        return _endPoint.getConnection();
+    }
+
     public EndPoint getEndPoint()
     {
         return _endPoint;
@@ -277,6 +281,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void recycle()
     {
         _committed.set(false);
+        _responseCompleted.set(false);
         _request.recycle();
         _response.recycle();
         _committedMetaData=null;
@@ -662,11 +667,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public String toString()
     {
         long timeStamp = _request.getTimeStamp();
-        return String.format("%s@%x{r=%s,c=%b,a=%s,uri=%s,age=%d}",
+        return String.format("%s@%x{r=%s,c=%b,c=%b/%b,a=%s,uri=%s,age=%d}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _requests,
                 _committed.get(),
+                isRequestCompleted(),
+                isResponseCompleted(),
                 _state.getState(),
                 _request.getHttpURI(),
                 timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
@@ -828,7 +835,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             // wrap callback to process 100 responses
             final int status=info.getStatus();
-            final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback, content, complete);
+            final Callback committed = (status<200&&status>=100)?new Send100Callback(callback):new SendCallback(callback, content, true, complete);
 
             notifyResponseBegin(_request);
 
@@ -838,7 +845,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         else if (info==null)
         {
             // This is a normal write
-            _transport.send(null,_request.isHead(), content, complete, new ContentCallback(callback, content, complete));
+            _transport.send(null,_request.isHead(), content, complete, new SendCallback(callback, content, false, complete));
         }
         else
         {
@@ -876,6 +883,27 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public boolean isCommitted()
     {
         return _committed.get();
+    }
+
+    /**
+     * @return True if the request lifecycle is completed
+     */
+    public boolean isRequestCompleted()
+    {
+        return _state.isCompleted();
+    }
+
+    /**
+     * @return True if the response is completely written.
+     */
+    public boolean isResponseCompleted()
+    {
+        return _responseCompleted.get();
+    }
+
+    public boolean isPersistent()
+    {
+        return _endPoint.isOpen();
     }
 
     /**
@@ -1222,17 +1250,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private class CommitCallback extends Callback.Nested
+    private class SendCallback extends Callback.Nested
     {
         private final ByteBuffer _content;
         private final int _length;
+        private final boolean _commit;
         private final boolean _complete;
 
-        private CommitCallback(Callback callback, ByteBuffer content, boolean complete)
+        private SendCallback(Callback callback, ByteBuffer content, boolean commit, boolean complete)
         {
             super(callback);
             _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
             _length = _content.remaining();
+            _commit = commit;
             _complete = complete;
         }
 
@@ -1241,11 +1271,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _written += _length;
             super.succeeded();
-            notifyResponseCommit(_request);
-            if (_content.hasRemaining())
+            if (_commit)
+               notifyResponseCommit(_request);
+            if (_length>0)
                 notifyResponseContent(_request, _content);
             if (_complete)
+            {
+                _responseCompleted.set(true);
                 notifyResponseEnd(_request);
+            }
         }
 
         @Override
@@ -1281,11 +1315,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private class Commit100Callback extends CommitCallback
+    private class Send100Callback extends SendCallback
     {
-        private Commit100Callback(Callback callback)
+        private Send100Callback(Callback callback)
         {
-            super(callback, null, false);
+            super(callback, null, false, false);
         }
 
         @Override
@@ -1295,32 +1329,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 super.succeeded();
             else
                 super.failed(new IllegalStateException());
-        }
-    }
-
-    private class ContentCallback extends Callback.Nested
-    {
-        private final ByteBuffer _content;
-        private final int _length;
-        private final boolean _complete;
-
-        private ContentCallback(Callback callback, ByteBuffer content, boolean complete)
-        {
-            super(callback);
-            _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
-            _length = _content.remaining();
-            _complete = complete;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            _written += _length;
-            super.succeeded();
-            if (_content.hasRemaining())
-                notifyResponseContent(_request, _content);
-            if (_complete)
-                notifyResponseEnd(_request);
         }
     }
 }

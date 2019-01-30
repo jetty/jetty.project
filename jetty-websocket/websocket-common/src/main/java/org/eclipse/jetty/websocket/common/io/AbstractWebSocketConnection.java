@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -631,15 +632,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
+    public String dumpSelf() {
+        return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(toString()).append(System.lineSeparator());
+    public void dump(Appendable out, String indent) throws IOException {
+        EndPoint endp = getEndPoint();
+        Object endpRef = endp.toString();
+        if(endp instanceof AbstractEndPoint)
+            endpRef = ((AbstractEndPoint) endp).toEndPointString();
+        Dumpable.dumpObjects(out, indent, this, endpRef, ioState, flusher, generator, parser);
     }
 
     @Override

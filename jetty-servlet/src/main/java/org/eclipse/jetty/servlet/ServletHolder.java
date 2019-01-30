@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
@@ -754,6 +753,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
             ch.addEventListener(MultiPartCleanerListener.INSTANCE);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public ContextHandler getContextHandler()
+    {
+        return ContextHandler.getContextHandler(_config.getServletContext());
     }
 
     /* ------------------------------------------------------------ */

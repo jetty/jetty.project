@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -68,6 +68,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -468,8 +469,12 @@ public class Request implements HttpServletRequest
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
-                    if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
-                        throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
+                    if (_metaData!=null)
+                    {
+                        String contentEncoding = getHttpFields().get(HttpHeader.CONTENT_ENCODING);
+                        if (contentEncoding!=null && !HttpHeaderValue.IDENTITY.is(contentEncoding))
+                            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501, "Unsupported Content-Encoding");
+                    }
                     extractFormParameters(_contentParameters);
                 }
                 else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&

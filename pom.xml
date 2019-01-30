@@ -24,10 +24,10 @@
     <logback.version>1.2.3</logback.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
-    <jsp.version>8.5.33.1</jsp.version>
+    <jsp.version>8.5.35.1</jsp.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
-    <conscrypt.version>1.1.4</conscrypt.version>
+    <conscrypt.version>1.4.1</conscrypt.version>
     <asm.version>7.0</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
@@ -41,10 +41,9 @@
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
-    <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>2.22.1</maven.surefire.version>
+    <maven.surefire.version>3.0.0-M2</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
@@ -53,7 +52,11 @@
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
 
     <!-- testing -->
+    <it.debug>false</it.debug>
     <jetty.test.version>5.2</jetty.test.version>
+    <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
+    <jsr250-api.version>1.0</jsr250-api.version>
+    <javax.annotation-api>1.3</javax.annotation-api>
   </properties>
 
   <licenses>
@@ -153,6 +156,11 @@
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
+                <requireUpperBoundDeps>
+                  <excludes>
+                    <exclude>javax.enterprise:cdi-api</exclude>
+                  </excludes>
+                </requireUpperBoundDeps>
               </rules>
             </configuration>
           </execution>
@@ -329,7 +337,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2018</copyright-range>
+            <copyright-range>${project.inceptionYear}-2019</copyright-range>
           </properties>
         </configuration>
         <executions>
@@ -426,7 +434,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
           <dependencies>
             <dependency>
               <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -475,7 +483,23 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-invoker-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
+          <configuration>
+            <debug>${it.debug}</debug>
+            <javaHome>${java.home}</javaHome>
+            <environmentVariables>
+              <JAVA_HOME>${java.home}</JAVA_HOME>
+            </environmentVariables>
+            <projectsDirectory>src/it</projectsDirectory>
+            <timeoutInSeconds>300</timeoutInSeconds>
+            <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+            <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+            <settingsFile>src/it/settings.xml</settingsFile>
+            <skipInvocation>${skipTests}</skipInvocation>
+            <pomIncludes>
+              <pomInclude>*/pom.xml</pomInclude>
+            </pomIncludes>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -485,12 +509,11 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
           <configuration>
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
               <manifestEntries>
-                <Automatic-Module-Name>${jpms-module-name}</Automatic-Module-Name>
                 <Implementation-Version>${project.version}</Implementation-Version>
                 <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
                 <url>${jetty.url}</url>
@@ -635,7 +658,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2018 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2019 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
             </instructions>
@@ -894,7 +917,7 @@
       <dependency>
         <groupId>javax.annotation</groupId>
         <artifactId>javax.annotation-api</artifactId>
-        <version>1.2</version>
+        <version>${javax.annotation-api}</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
@@ -1775,6 +1798,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_192</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u201</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_201</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u202</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_202</value>
         </property>
       </activation>
       <properties>

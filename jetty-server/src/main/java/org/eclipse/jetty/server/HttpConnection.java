@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -263,14 +263,26 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
-                else
+                else if (filled==0)
                 {
-                    if (filled <= 0)
+                    fillInterested();
+                    break;
+                }
+                else if (filled<0)
+                {
+                    switch(_channel.getState().getState())
                     {
-                        if (filled == 0)
-                            fillInterested();
-                        break;
+                        case COMPLETING:
+                        case COMPLETED:
+                        case IDLE:
+                        case THROWN:
+                        case ASYNC_ERROR:
+                            getEndPoint().shutdownOutput();
+                            break;
+                        default:
+                            break;
                     }
+                    break;
                 }
             }
         }
@@ -310,16 +322,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
         if (BufferUtil.isEmpty(_requestBuffer))
         {
-            // Can we fill?
-            if(getEndPoint().isInputShutdown())
-            {
-                // No pretend we read -1
-                _parser.atEOF();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled -1 {}",this,BufferUtil.toDetailString(_requestBuffer));
-                return -1;
-            }
-
             // Get a buffer
             // We are not in a race here for the request buffer as we have not yet received a request,
             // so there are not an possible legal threads calling #parseContent or #completed.
@@ -411,13 +413,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_input.isAsync())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("unconsumed async input {}", this);
+                    LOG.debug("{}unconsumed input {}",_parser.isChunking()?"Possible ":"", this);
                 _channel.abort(new IOException("unconsumed input"));
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("unconsumed input {}", this);
+                    LOG.debug("{}unconsumed input {}",_parser.isChunking()?"Possible ":"", this);
                 // Complete reading the request
                 if (!_input.consumeAll())
                     _channel.abort(new IOException("unconsumed input"));

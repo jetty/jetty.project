@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -137,7 +136,7 @@ public class JspcMojo extends AbstractMojo
      * @since jetty-7.6.3
      */
     @Parameter(defaultValue = "${project.artifacts}", readonly = true)
-    private Set projectArtifacts;
+    private Set<Artifact> projectArtifacts;
     
     
     /**
@@ -152,7 +151,7 @@ public class JspcMojo extends AbstractMojo
      * The artifacts for the plugin itself.
      */
     @Parameter(defaultValue = "${plugin.artifacts}", readonly = true)
-    private List pluginArtifacts;
+    private List<Artifact> pluginArtifacts;
     
     
     /**
@@ -336,7 +335,7 @@ public class JspcMojo extends AbstractMojo
             jspc = new JettyJspC();
         
 
-        jspc.setWebXmlFragment(webXmlFragment);
+        jspc.setWebXmlInclude(webXmlFragment);
         jspc.setUriroot(webAppSourceDirectory);     
         jspc.setOutputDir(generatedClasses);
         jspc.setClassLoader(fakeWebAppClassLoader);
@@ -373,7 +372,7 @@ public class JspcMojo extends AbstractMojo
     private String getJspFiles(String webAppSourceDirectory)
     throws Exception
     {
-        List fileNames =  FileUtils.getFileNames(new File(webAppSourceDirectory),includes, excludes, false);
+        List<String> fileNames =  FileUtils.getFileNames(new File(webAppSourceDirectory),includes, excludes, false);
         return StringUtils.join(fileNames.toArray(new String[0]), ",");
 
     }
@@ -532,7 +531,7 @@ public class JspcMojo extends AbstractMojo
         //add the dependencies of the webapp (which will form WEB-INF/lib)
         for (Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext();)
         {
-            Artifact artifact = (Artifact)iter.next();
+            Artifact artifact = iter.next();
 
             // Include runtime and compile time libraries
             if (!Artifact.SCOPE_TEST.equals(artifact.getScope()) && !Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))

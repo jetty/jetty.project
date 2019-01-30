@@ -1,92 +1,51 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <groupId>org.eclipse.jetty</groupId>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-bom</artifactId>
-  <version>9.4.15-SNAPSHOT</version>
   <name>Jetty :: Bom</name>
   <description>Jetty BOM artifact</description>
   <url>http://www.eclipse.org/jetty</url>
-  <inceptionYear>1995</inceptionYear>
   <packaging>pom</packaging>
 
-  <issueManagement>
-    <system>github</system>
-    <url>https://github.com/eclipse/jetty.project/issues</url>
-  </issueManagement>
-
-  <licenses>
-    <license>
-      <name>Apache Software License - Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-    <license>
-      <name>Eclipse Public License - Version 1.0</name>
-      <url>http://www.eclipse.org/org/documents/epl-v10.php</url>
-    </license>
-  </licenses>
-
-  <properties>
-    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build-support.version>1.4</build-support.version>
-  </properties>
-
-  <scm>
-    <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
-    <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
-    <url>https://github.com/eclipse/jetty.project</url>
-  </scm>
-
-  <distributionManagement>
-    <repository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Staging Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-    <snapshotRepository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
-    </snapshotRepository>
-    <site>
-      <id>jetty.eclipse.website</id>
-      <url>scp://build.eclipse.org:/home/data/httpd/download.eclipse.org/jetty/${project.version}/</url>
-    </site>
-  </distributionManagement>
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
+    <version>9.4.15-SNAPSHOT</version>
+  </parent>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-release-plugin</artifactId>
-          <version>2.5.3</version>
-          <configuration>
-            <useReleaseProfile>false</useReleaseProfile>
-            <goals>deploy</goals>
-            <arguments>-Peclipse-release</arguments>
-            <preparationGoals>clean install</preparationGoals>
-            <mavenExecutorId>forked-path</mavenExecutorId>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.1</version>
-          <configuration>
-            <skipSource>true</skipSource>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0</version>
-          <configuration>
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>1.0.1</version>
+        <configuration>
+          <outputDirectory>${project.build.directory}</outputDirectory>
+          <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
+          <flattenMode>bom</flattenMode>
+          <updatePomFile>true</updatePomFile>
+          <pomElements>
+            <build>remove</build>
+            <properties>remove</properties>
+          </pomElements>
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+            <phase>process-resources</phase>
+          </execution>
+          <execution>
+            <id>flatten-clean</id>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+            <phase>clean</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <dependencyManagement>
@@ -422,85 +381,4 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <developers>
-    <developer>
-      <id>gregw</id>
-      <name>Greg Wilkins</name>
-      <email>gregw@webtide.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>10</timezone>
-    </developer>
-    <developer>
-      <id>janb</id>
-      <name>Jan Bartel</name>
-      <email>janb@webtide.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>10</timezone>
-    </developer>
-    <developer>
-      <id>jesse</id>
-      <name>Jesse McConnell</name>
-      <email>jesse.mcconnell@gmail.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>-6</timezone>
-    </developer>
-    <developer>
-      <id>joakime</id>
-      <name>Joakim Erdfelt</name>
-      <email>joakim.erdfelt@gmail.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>-6</timezone>
-    </developer>
-    <developer>
-      <id>sbordet</id>
-      <name>Simone Bordet</name>
-      <email>simone.bordet@gmail.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>1</timezone>
-    </developer>
-    <developer>
-      <id>djencks</id>
-      <name>David Jencks</name>
-      <email>david.a.jencks@gmail.com</email>
-      <organization>IBM</organization>
-      <timezone>-8</timezone>
-    </developer>
-  </developers>
-
-  <profiles>
-    <profile>
-      <id>eclipse-release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <inherited>true</inherited>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-deploy-plugin</artifactId>
-            <configuration>
-              <updateReleaseInfo>true</updateReleaseInfo>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

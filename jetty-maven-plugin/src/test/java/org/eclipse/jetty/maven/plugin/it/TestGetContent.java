@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -64,9 +64,15 @@ public class TestGetContent
                 System.out.println( "pingServlet ok" );
             }
             String contentCheck = System.getProperty( "contentCheck" );
+            String pathToCheck = System.getProperty( "pathToCheck" );
             if(StringUtils.isNotBlank( contentCheck ) )
             {
-                String response = httpClient.GET( "http://localhost:" + port ).getContentAsString();
+                String url = "http://localhost:" + port;
+                if(pathToCheck!=null)
+                {
+                    url += pathToCheck;
+                }
+                String response = httpClient.GET( url ).getContentAsString();
                 assertTrue(response.contains(contentCheck), "it test " + System.getProperty( "maven.it.name" )
                     + ", response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println( "contentCheck" );

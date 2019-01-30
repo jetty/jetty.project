@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,6 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -79,15 +78,12 @@ public class TestJettyOSGiBootWithWebSocket
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
 
-    @Ignore
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
@@ -98,7 +94,10 @@ public class TestJettyOSGiBootWithWebSocket
 
     @Test
     public void testWebsocket() throws Exception
-    {            
+    {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+        
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 

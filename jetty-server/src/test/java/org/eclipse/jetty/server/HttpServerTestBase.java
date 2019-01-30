@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,16 +17,6 @@
 //
 
 package org.eclipse.jetty.server;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -58,9 +48,20 @@ import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
@@ -1690,6 +1691,91 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         finally
         {
             client.close();
+        }
+    }
+
+    @Test
+    @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+    public void testShutdown() throws Exception
+    {
+        configureServer(new ReadExactHandler());
+        byte[] content = new byte[4096];
+        Arrays.fill(content,(byte)'X');
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            // Send two persistent pipelined requests and then shutdown output
+            os.write(("GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: "+content.length+"\r\n" +
+                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(content);
+            os.write(("GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: "+content.length+"\r\n" +
+                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(content);
+            os.flush();
+            // Thread.sleep(50);
+            client.shutdownOutput();
+
+            // Read the two pipelined responses
+            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContent(), containsString("Read "+content.length));
+
+            response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContent(), containsString("Read "+content.length));
+
+            // Read the close
+            assertThat(client.getInputStream().read(),is(-1));
+        }
+    }
+
+    @Test
+    @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+    public void testChunkedShutdown() throws Exception
+    {
+        configureServer(new ReadExactHandler(4096));
+        byte[] content = new byte[4096];
+        Arrays.fill(content,(byte)'X');
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            // Send two persistent pipelined requests and then shutdown output
+            os.write(("GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(content);
+            os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.write(("GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(content);
+            os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+            client.shutdownOutput();
+
+            // Read the two pipelined responses
+            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContent(), containsString("Read "+content.length));
+
+            response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContent(), containsString("Read "+content.length));
+
+            // Read the close
+            assertThat(client.getInputStream().read(),is(-1));
         }
     }
 }

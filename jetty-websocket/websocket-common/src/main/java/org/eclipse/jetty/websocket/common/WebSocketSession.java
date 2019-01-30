@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -277,11 +278,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     }
 
     @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpObjects(out,indent,
-            DumpableCollection.from("incoming", incomingHandler),
-            DumpableCollection.from("outgoing", outgoingHandler));
+    public String dumpSelf() {
+        return String.format("%s@%x[behavior=%s,batchMode=%s,idleTimeout=%d,requestURI=%s]",
+                this.getClass().getSimpleName(), hashCode(),
+                getPolicy().getBehavior(),
+                getBatchMode(),
+                getIdleTimeout(),
+                getRequestURI());
     }
 
     @Override

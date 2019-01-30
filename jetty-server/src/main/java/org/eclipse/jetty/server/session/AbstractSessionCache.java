@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -151,8 +151,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     
     /**
      * Remove the session with this identity from the store
+     * 
      * @param id the id
-     * @return true if removed false otherwise
+     * @return Session that was removed or null
      */
     public abstract Session doDelete (String id);
 
@@ -615,12 +616,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     {
         //get the session, if its not in memory, this will load it
         Session session = get(id); 
-
  
         //Always delete it from the backing data store
         if (_sessionDataStore != null)
         {
-
             boolean dsdel = _sessionDataStore.delete(id);
             if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in session data store {}",id, dsdel);                   
         }
@@ -633,10 +632,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         
         return doDelete(id);
     }
-
-    
-   
-
 
 
     /** 
@@ -727,12 +722,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
     
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionCache#renewSessionId(java.lang.String, java.lang.String)
-     */
     @Override
-    public Session renewSessionId (String oldId, String newId)
+    public Session renewSessionId (String oldId, String newId, String oldExtendedId, String newExtendedId)
     throws Exception
     {
         if (StringUtil.isBlank(oldId))
@@ -741,17 +732,40 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             throw new IllegalArgumentException ("New session id is null");
 
         Session session = get(oldId);
-        if (session == null)
-            return null;
+        renewSessionId(session, newId, newExtendedId);
 
+        return session;
+    }
+    
+    
+    /**
+     * Swap the id on a session.
+     * 
+     * @param session the session for which to do the swap
+     * @param newId the new id
+     * @param newExtendedId the full id plus node id
+     * 
+     * @throws Exception if there was a failure saving the change
+     */
+    protected void renewSessionId (Session session, String newId, String newExtendedId)
+    throws Exception
+    {
+        if (session == null)
+            return;
+        
         try (Lock lock = session.lock())
         {
+            String oldId = session.getId();
             session.checkValidForWrite(); //can't change id on invalid session
             session.getSessionData().setId(newId);
             session.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
-            session.getSessionData().setDirty(true);  //ensure we will try to write the session out
+            session.getSessionData().setDirty(true);  //ensure we will try to write the session out    
+            session.setExtendedId(newExtendedId); //remember the new extended id
+            session.setIdChanged(true); //session id changed
+            
             doPutIfAbsent(newId, session); //put the new id into our map
             doDelete (oldId); //take old out of map
+            
             if (_sessionDataStore != null)
             {
                 _sessionDataStore.delete(oldId);  //delete the session data with the old id
@@ -759,7 +773,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             }
             if (LOG.isDebugEnabled())
                 LOG.debug ("Session id {} swapped for new id {}", oldId, newId);
-            return session;
         }
     }
     

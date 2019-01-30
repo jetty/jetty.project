@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,9 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
 
@@ -65,6 +67,100 @@ public class DefaultSessionCacheTest
         
     }
 
+    @Test
+    public void testRenewIdMultipleRequests() throws Exception
+    {
+        //Test that invalidation happens on ALL copies of the session that are in-use by requests
+        Server server = new Server();
+
+        SessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
+        server.setSessionIdManager(sessionIdManager);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);       
+        context.setContextPath("/test");
+        context.setServer(server);
+        context.getSessionHandler().setMaxInactiveInterval((int)TimeUnit.DAYS.toSeconds(1));
+        context.getSessionHandler().setSessionIdManager(sessionIdManager);
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setSaveOnCreate(true); //ensures that a session is persisted as soon as it is created
+        
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
+
+        TestSessionDataStore store = new TestSessionDataStore();
+        cache.setSessionDataStore(store);
+        context.getSessionHandler().setSessionCache(cache);
+        TestHttpSessionListener listener = new TestHttpSessionListener();
+        context.getSessionHandler().addEventListener(listener);
+
+        server.setHandler(context);
+        try
+        {
+            server.start();
+
+            //create a new session
+            Session s = (Session)context.getSessionHandler().newHttpSession(null);
+            String id = s.getId();
+            context.getSessionHandler().access(s, false); //simulate accessing the request    
+            context.getSessionHandler().complete(s); //simulate completing the request
+            
+            //make 1st request
+            final Session session = context.getSessionHandler().getSession(id); //get the session again
+            assertNotNull(session);
+            context.getSessionHandler().access(session, false); //simulate accessing the request
+
+
+            
+            //make 2nd request
+            final Session session2 = context.getSessionHandler().getSession(id); //get the session again
+            context.getSessionHandler().access(session2, false); //simulate accessing the request
+            assertNotNull(session2);
+            assertTrue(session == session2);
+          
+           
+            
+            Thread t2 = new Thread(new Runnable() 
+            {
+                @Override
+                public void run()
+                {                                      
+                    System.err.println("Starting session id renewal");
+                    session2.renewId(new Request(null,null));  
+                    System.err.println("Finished session id renewal");
+                }
+            });
+            t2.start();
+            
+
+            
+            Thread t = new Thread(new Runnable()
+                                  {
+
+                                    @Override
+                                    public void run()
+                                    {                     
+                                        System.err.println("Starting invalidation");
+                                        try{Thread.sleep(1000L);}catch (Exception e) {e.printStackTrace();}
+                                        session.invalidate();  
+                                        System.err.println("Finished invalidation");
+                                    }
+                                  }
+                                  );
+            t.start();
+            
+            t.join();
+            t2.join();
+            
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+    
+    
+    
+    
+    
 
     /**
      * Test sessions are saved when shutdown with a store.
@@ -180,7 +276,7 @@ public class DefaultSessionCacheTest
        cache.put("1234", session);
        assertTrue(cache.contains("1234"));
 
-       cache.renewSessionId("1234", "5678");
+       cache.renewSessionId("1234", "5678", "1234.foo", "5678.foo");
        
        assertTrue(cache.contains("5678"));
        assertFalse(cache.contains("1234"));
