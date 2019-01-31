@@ -199,7 +199,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onUpgradeTo(ByteBuffer buffer)
     {
-        BufferUtil.append(getRequestBuffer(), buffer);
+        if (BufferUtil.hasContent(buffer))
+            BufferUtil.append(getRequestBuffer(), buffer);
     }
 
     @Override
