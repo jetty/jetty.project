@@ -37,9 +37,9 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
     private final Map<String, Object> context;
     private volatile boolean completed;
 
-    protected NegotiatingClientConnection(EndPoint endp, Executor executor, SSLEngine sslEngine, ClientConnectionFactory connectionFactory, Map<String, Object> context)
+    protected NegotiatingClientConnection(EndPoint endPoint, Executor executor, SSLEngine sslEngine, ClientConnectionFactory connectionFactory, Map<String, Object> context)
     {
-        super(endp, executor);
+        super(endPoint, executor);
         this.engine = sslEngine;
         this.connectionFactory = connectionFactory;
         this.context = context;
@@ -67,7 +67,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
             else
                 fillInterested();
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
             close();
             throw new RuntimeIOException(x);

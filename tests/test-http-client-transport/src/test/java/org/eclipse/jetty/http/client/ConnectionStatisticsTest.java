@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.H2C;
-import static org.eclipse.jetty.http.client.Transport.HTTP;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +39,11 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.http.client.Transport.H2C;
+import static org.eclipse.jetty.http.client.Transport.HTTP;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
 {
@@ -73,7 +74,7 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         {
             @Override
             public void onOpened(Connection connection)
-            {             
+            {
             }
 
             @Override
@@ -82,7 +83,7 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
                 closed.countDown();
             }
         };
-        
+
         ConnectionStatistics serverStats = new ConnectionStatistics();
         scenario.connector.addBean(serverStats);
         scenario.connector.addBean(closer);
@@ -93,20 +94,20 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         scenario.client.addBean(closer);
         clientStats.start();
 
-        scenario.client.setIdleTimeout(1000);
+        long idleTimeout = 1000;
+        scenario.client.setIdleTimeout(idleTimeout);
 
         byte[] content = new byte[3072];
         long contentLength = content.length;
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .header(HttpHeader.CONNECTION,"close")
+                .header(HttpHeader.CONNECTION, "close")
                 .content(new BytesContentProvider(content))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
+        assertTrue(closed.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
-        closed.await();
-        
         assertThat(serverStats.getConnectionsMax(), Matchers.greaterThan(0L));
         assertThat(serverStats.getReceivedBytes(), Matchers.greaterThan(contentLength));
         assertThat(serverStats.getSentBytes(), Matchers.greaterThan(contentLength));

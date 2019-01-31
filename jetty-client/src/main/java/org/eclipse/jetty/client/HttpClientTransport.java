@@ -36,8 +36,8 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
  */
 public interface HttpClientTransport extends ClientConnectionFactory
 {
-    public static final String HTTP_DESTINATION_CONTEXT_KEY = "http.destination";
-    public static final String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "http.connection.promise";
+    public static final String HTTP_DESTINATION_CONTEXT_KEY = "org.eclipse.jetty.client.destination";
+    public static final String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.connection.promise";
 
     /**
      * Sets the {@link HttpClient} instance on this transport.

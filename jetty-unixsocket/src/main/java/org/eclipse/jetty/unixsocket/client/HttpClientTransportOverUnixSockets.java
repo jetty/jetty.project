@@ -19,138 +19,145 @@
 package org.eclipse.jetty.unixsocket.client;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
+import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.channels.SocketChannel;
 import java.util.Map;
-
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.unixsocket.UnixSocketEndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import java.util.concurrent.Executor;
 
 import jnr.enxio.channels.NativeSelectorProvider;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
+import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
+import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.unixsocket.UnixSocketEndPoint;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
-public class HttpClientTransportOverUnixSockets
-    extends HttpClientTransportOverHTTP
+// TODO: this class needs a thorough review.
+public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpClientTransport
 {
-    private static final Logger LOG = Log.getLogger( HttpClientTransportOverUnixSockets.class );
-    
-    private String _unixSocket;
-    private SelectorManager selectorManager;
+    private static final Logger LOG = Log.getLogger(HttpClientTransportOverUnixSockets.class);
 
-    private UnixSocketChannel channel;
-
-    public HttpClientTransportOverUnixSockets( String unixSocket )
+    public HttpClientTransportOverUnixSockets(String unixSocket)
     {
-        if ( unixSocket == null )
+        this(new UnixSocketClientConnector(unixSocket));
+    }
+
+    private HttpClientTransportOverUnixSockets(ClientConnector connector)
+    {
+        super(connector);
+        setConnectionPoolFactory(destination ->
         {
-            throw new IllegalArgumentException( "Unix socket file cannot be null" );
-        }
-        this._unixSocket = unixSocket;
+            HttpClient httpClient = getHttpClient();
+            int maxConnections = httpClient.getMaxConnectionsPerDestination();
+            return new DuplexConnectionPool(destination, maxConnections, destination);
+        });
     }
 
     @Override
-    protected SelectorManager newSelectorManager(HttpClient client)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return selectorManager = new UnixSocketSelectorManager(client,getSelectors());
+        return new HttpDestinationOverHTTP(getHttpClient(), origin);
     }
 
     @Override
-    public void connect( InetSocketAddress address, Map<String, Object> context )
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-
-        try
-        {
-            InetAddress inet = address.getAddress();
-            if (!inet.isLoopbackAddress() && !inet.isLinkLocalAddress() && !inet.isSiteLocalAddress())
-                throw new IOException("UnixSocket cannot connect to "+address.getHostString());
-            
-            // Open a unix socket
-            UnixSocketAddress unixAddress = new UnixSocketAddress( this._unixSocket );
-            channel = UnixSocketChannel.open( unixAddress );
-            
-            HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-            HttpClient client = destination.getHttpClient();
-
-            configure(client, channel);
-
-            channel.configureBlocking(false);
-            selectorManager.accept(channel, context);            
-        }
-        // Must catch all exceptions, since some like
-        // UnresolvedAddressException are not IOExceptions.
-        catch (Throwable x)
-        {
-            // If IPv6 is not deployed, a generic SocketException "Network is unreachable"
-            // exception is being thrown, so we attempt to provide a better error message.
-            if (x.getClass() == SocketException.class)
-                x = new SocketException("Could not connect to " + address).initCause(x);
-
-            try
-            {
-                if (channel != null)
-                    channel.close();
-            }
-            catch (IOException xx)
-            {
-                LOG.ignore(xx);
-            }
-            finally
-            {
-                connectFailed(context, x);
-            }
-        }
+        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        org.eclipse.jetty.io.Connection connection = newHttpConnection(endPoint, destination, promise);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", connection);
+        return customize(connection, context);
     }
 
-    public class UnixSocketSelectorManager extends ClientSelectorManager
+    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<org.eclipse.jetty.client.api.Connection> promise)
     {
-        protected UnixSocketSelectorManager(HttpClient client, int selectors)
+        return new HttpConnectionOverHTTP(endPoint, destination, promise);
+    }
+
+    private static class UnixSocketClientConnector extends ClientConnector
+    {
+        private final String unixSocket;
+
+        private UnixSocketClientConnector(String unixSocket)
         {
-            super(client,selectors);
+            this.unixSocket = unixSocket;
         }
 
         @Override
-        protected Selector newSelector() throws IOException
+        protected SelectorManager newSelectorManager()
         {
-            return NativeSelectorProvider.getInstance().openSelector();
+            return new UnixSocketSelectorManager(getExecutor(), getScheduler(), getSelectors());
         }
 
         @Override
-        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
+        public void connect(SocketAddress address, Map<String, Object> context)
         {
-            UnixSocketEndPoint endp = new UnixSocketEndPoint((UnixSocketChannel)channel, selector, key, getScheduler());
-            endp.setIdleTimeout(getHttpClient().getIdleTimeout());
-            return endp;
+            InetSocketAddress socketAddress = (InetSocketAddress)address;
+            InetAddress inetAddress = socketAddress.getAddress();
+            if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() || inetAddress.isSiteLocalAddress())
+            {
+                SocketChannel channel = null;
+                try
+                {
+                    UnixSocketAddress unixAddress = new UnixSocketAddress(unixSocket);
+                    channel = UnixSocketChannel.open(unixAddress);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Created {} for {}", channel, unixAddress);
+                    accept(channel, context);
+                }
+                catch (Throwable x)
+                {
+                    safeClose(channel);
+                    connectFailed(x, context);
+                }
+            }
+            else
+            {
+                connectFailed(new ConnectException("UnixSocket cannot connect to " + socketAddress.getHostString()), context);
+            }
         }
-    }
 
-    @Override
-    protected void doStop()
-        throws Exception
-    {
-        super.doStop();
-        try
+        private class UnixSocketSelectorManager extends ClientSelectorManager
         {
-            if (channel != null)
-                channel.close();
-        }
-        catch (IOException xx)
-        {
-            LOG.ignore(xx);
+            private UnixSocketSelectorManager(Executor executor, Scheduler scheduler, int selectors)
+            {
+                super(executor, scheduler, selectors);
+            }
+
+            @Override
+            protected Selector newSelector() throws IOException
+            {
+                return NativeSelectorProvider.getInstance().openSelector();
+            }
+
+            @Override
+            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
+            {
+                UnixSocketEndPoint endPoint = new UnixSocketEndPoint((UnixSocketChannel)channel, selector, key, getScheduler());
+                endPoint.setIdleTimeout(getIdleTimeout().toMillis());
+                return endPoint;
+            }
         }
     }
 }

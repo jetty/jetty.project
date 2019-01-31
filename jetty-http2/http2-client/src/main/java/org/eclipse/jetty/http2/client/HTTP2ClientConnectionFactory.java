@@ -42,12 +42,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 {
-    public static final String CLIENT_CONTEXT_KEY = "http2.client";
-    public static final String BYTE_BUFFER_POOL_CONTEXT_KEY = "http2.client.byteBufferPool";
-    public static final String EXECUTOR_CONTEXT_KEY = "http2.client.executor";
-    public static final String SCHEDULER_CONTEXT_KEY = "http2.client.scheduler";
-    public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
-    public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
+    public static final String CLIENT_CONTEXT_KEY = "org.eclipse.jetty.client.http2";
+    public static final String SESSION_LISTENER_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionListener";
+    public static final String SESSION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionPromise";
 
     private final Connection.Listener connectionListener = new ConnectionListener();
 
@@ -55,9 +52,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
-        ByteBufferPool byteBufferPool = (ByteBufferPool)context.get(BYTE_BUFFER_POOL_CONTEXT_KEY);
-        Executor executor = (Executor)context.get(EXECUTOR_CONTEXT_KEY);
-        Scheduler scheduler = (Scheduler)context.get(SCHEDULER_CONTEXT_KEY);
+        ByteBufferPool byteBufferPool = client.getByteBufferPool();
+        Executor executor = client.getExecutor();
+        Scheduler scheduler = client.getScheduler();
         Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);

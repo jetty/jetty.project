@@ -42,6 +42,7 @@
       <artifactId>jetty-alpn-client</artifactId>
       <version>${project.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>http2-client</artifactId>

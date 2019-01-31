@@ -41,6 +41,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
@@ -171,16 +172,23 @@ public class ProxyServletTest
 
     private void startClient() throws Exception
     {
-        client = prepareClient();
+        startClient(null);
     }
 
-    private HttpClient prepareClient() throws Exception
+    private void startClient(Consumer<HttpClient> consumer) throws Exception
+    {
+        client = prepareClient(consumer);
+    }
+
+    private HttpClient prepareClient(Consumer<HttpClient> consumer) throws Exception
     {
         QueuedThreadPool clientPool = new QueuedThreadPool();
         clientPool.setName("client");
         HttpClient result = new HttpClient();
         result.setExecutor(clientPool);
         result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        if (consumer != null)
+            consumer.accept(result);
         result.start();
         return result;
     }
@@ -987,7 +995,7 @@ public class ProxyServletTest
         assertEquals(name, cookies.get(0).getName());
         assertEquals(value1, cookies.get(0).getValue());
 
-        HttpClient client2 = prepareClient();
+        HttpClient client2 = prepareClient(null);
         try
         {
             String value2 = "2";
@@ -1373,10 +1381,8 @@ public class ProxyServletTest
             }
         });
         startProxy(proxyServletClass);
-        startClient();
-
         long idleTimeout = 1000;
-        client.setIdleTimeout(idleTimeout);
+        startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         byte[] content = new byte[1024];
         new Random().nextBytes(content);

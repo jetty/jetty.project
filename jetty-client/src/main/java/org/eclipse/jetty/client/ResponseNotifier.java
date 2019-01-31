@@ -203,16 +203,7 @@ public class ResponseNotifier
 
     public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
     {
-        notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
-        {
-            HttpField field = iterator.next();
-            if (!notifyHeader(listeners, response, field))
-                iterator.remove();
-        }
-        notifyHeaders(listeners, response);
-        if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
+        forwardEvents(listeners, response);
         notifySuccess(listeners, response);
     }
 
@@ -224,8 +215,15 @@ public class ResponseNotifier
 
     public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
+        forwardEvents(listeners, response);
+        notifyFailure(listeners, response, failure);
+    }
+
+    private void forwardEvents(List<Response.ResponseListener> listeners, Response response)
+    {
         notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        Iterator<HttpField> iterator = response.getHeaders().iterator();
+        while (iterator.hasNext())
         {
             HttpField field = iterator.next();
             if (!notifyHeader(listeners, response, field))
@@ -233,8 +231,11 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
-        notifyFailure(listeners, response, failure);
+        {
+            byte[] content = ((ContentResponse)response).getContent();
+            if (content != null && content.length > 0)
+                notifyContent(listeners, response, ByteBuffer.wrap(content), Callback.NOOP);
+        }
     }
 
     public void forwardFailureComplete(List<Response.ResponseListener> listeners, Request request, Throwable requestFailure, Response response, Throwable responseFailure)

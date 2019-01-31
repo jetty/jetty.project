@@ -81,16 +81,16 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * <p>{@link HttpClient} provides an efficient, asynchronous, non-blocking implementation
+ * <p>HttpClient provides an efficient, asynchronous, non-blocking implementation
  * to perform HTTP requests to a server through a simple API that offers also blocking semantic.</p>
- * <p>{@link HttpClient} provides easy-to-use methods such as {@link #GET(String)} that allow to perform HTTP
+ * <p>HttpClient provides easy-to-use methods such as {@link #GET(String)} that allow to perform HTTP
  * requests in a one-liner, but also gives the ability to fine tune the configuration of requests via
  * {@link HttpClient#newRequest(URI)}.</p>
- * <p>{@link HttpClient} acts as a central configuration point for network parameters (such as idle timeouts)
+ * <p>HttpClient acts as a central configuration point for network parameters (such as idle timeouts)
  * and HTTP parameters (such as whether to follow redirects).</p>
- * <p>{@link HttpClient} transparently pools connections to servers, but allows direct control of connections
+ * <p>HttpClient transparently pools connections to servers, but allows direct control of connections
  * for cases where this is needed.</p>
- * <p>{@link HttpClient} also acts as a central configuration point for cookies, via {@link #getCookieStore()}.</p>
+ * <p>HttpClient also acts as a central configuration point for cookies, via {@link #getCookieStore()}.</p>
  * <p>Typical usage:</p>
  * <pre>
  * HttpClient httpClient = new HttpClient();
@@ -157,7 +157,7 @@ public class HttpClient extends ContainerLifeCycle
     private String defaultRequestContentType = "application/octet-stream";
 
     /**
-     * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
+     * Creates a HttpClient instance that can perform requests to non-TLS destinations only
      * (that is, requests with the "http" scheme only, and not "https").
      *
      * @see #HttpClient(SslContextFactory) to perform requests to TLS destinations.
@@ -168,7 +168,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Creates a {@link HttpClient} instance that can perform requests to non-TLS and TLS destinations
+     * Creates a HttpClient instance that can perform requests to non-TLS and TLS destinations
      * (that is, both requests with the "http" scheme and with the "https" scheme).
      *
      * @param sslContextFactory the {@link SslContextFactory} that manages TLS encryption
@@ -517,7 +517,7 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * Returns a {@link Destination} for the given scheme, host and port.
      * Applications may use {@link Destination}s to create {@link Connection}s
-     * that will be outside {@link HttpClient}'s pooling mechanism, to explicitly
+     * that will be outside HttpClient's pooling mechanism, to explicitly
      * control the connection lifecycle (in particular their termination with
      * {@link Connection#close()}).
      *
@@ -570,7 +570,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the list of destinations known to this {@link HttpClient}.
+     * @return the list of destinations known to this HttpClient.
      */
     public List<Destination> getDestinations()
     {
@@ -586,13 +586,13 @@ public class HttpClient extends ContainerLifeCycle
     protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
     {
         Origin.Address address = destination.getConnectAddress();
-        resolver.resolve(address.getHost(), address.getPort(), new Promise<List<InetSocketAddress>>()
+        resolver.resolve(address.getHost(), address.getPort(), new Promise<>()
         {
             @Override
             public void succeeded(List<InetSocketAddress> socketAddresses)
             {
                 Map<String, Object> context = new HashMap<>();
-                context.put(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY, HttpClient.this);
+                context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 connect(socketAddresses, 0, context);
             }
@@ -605,7 +605,7 @@ public class HttpClient extends ContainerLifeCycle
 
             private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
             {
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<Connection>(promise)
+                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
                 {
                     @Override
                     public void failed(Throwable x)
@@ -638,7 +638,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link ByteBufferPool} of this {@link HttpClient}
+     * @return the {@link ByteBufferPool} of this HttpClient
      */
     public ByteBufferPool getByteBufferPool()
     {
@@ -646,7 +646,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param byteBufferPool the {@link ByteBufferPool} of this {@link HttpClient}
+     * @param byteBufferPool the {@link ByteBufferPool} of this HttpClient
      */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
@@ -706,7 +706,7 @@ public class HttpClient extends ContainerLifeCycle
 
     /**
      * <p>Sets the socket address resolution timeout used by the default {@link SocketAddressResolver}
-     * created by this {@link HttpClient} at startup.</p>
+     * created by this HttpClient at startup.</p>
      * <p>For more fine tuned configuration of socket address resolution, see
      * {@link #setSocketAddressResolver(SocketAddressResolver)}.</p>
      *
@@ -755,7 +755,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the "User-Agent" HTTP field of this {@link HttpClient}
+     * @return the "User-Agent" HTTP field of this HttpClient
      */
     public HttpField getUserAgentField()
     {
@@ -763,7 +763,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param agent the "User-Agent" HTTP header string of this {@link HttpClient}
+     * @param agent the "User-Agent" HTTP header string of this HttpClient
      */
     public void setUserAgentField(HttpField agent)
     {
@@ -773,7 +773,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return whether this {@link HttpClient} follows HTTP redirects
+     * @return whether this HttpClient follows HTTP redirects
      * @see Request#isFollowRedirects()
      */
     @ManagedAttribute("Whether HTTP redirects are followed")
@@ -783,7 +783,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param follow whether this {@link HttpClient} follows HTTP redirects
+     * @param follow whether this HttpClient follows HTTP redirects
      * @see #setMaxRedirects(int)
      */
     public void setFollowRedirects(boolean follow)
@@ -792,7 +792,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link Executor} of this {@link HttpClient}
+     * @return the {@link Executor} of this HttpClient
      */
     public Executor getExecutor()
     {
@@ -800,7 +800,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param executor the {@link Executor} of this {@link HttpClient}
+     * @param executor the {@link Executor} of this HttpClient
      */
     public void setExecutor(Executor executor)
     {
@@ -811,7 +811,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link Scheduler} of this {@link HttpClient}
+     * @return the {@link Scheduler} of this HttpClient
      */
     public Scheduler getScheduler()
     {
@@ -819,7 +819,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param scheduler the {@link Scheduler} of this {@link HttpClient}
+     * @param scheduler the {@link Scheduler} of this HttpClient
      */
     public void setScheduler(Scheduler scheduler)
     {
@@ -830,7 +830,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link SocketAddressResolver} of this {@link HttpClient}
+     * @return the {@link SocketAddressResolver} of this HttpClient
      */
     public SocketAddressResolver getSocketAddressResolver()
     {
@@ -838,7 +838,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param resolver the {@link SocketAddressResolver} of this {@link HttpClient}
+     * @param resolver the {@link SocketAddressResolver} of this HttpClient
      */
     public void setSocketAddressResolver(SocketAddressResolver resolver)
     {
@@ -849,7 +849,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max number of connections that this {@link HttpClient} opens to {@link Destination}s
+     * @return the max number of connections that this HttpClient opens to {@link Destination}s
      */
     @ManagedAttribute("The max number of connections per each destination")
     public int getMaxConnectionsPerDestination()
@@ -862,11 +862,11 @@ public class HttpClient extends ContainerLifeCycle
      * <p>
      * RFC 2616 suggests that 2 connections should be opened per each destination,
      * but browsers commonly open 6.
-     * If this {@link HttpClient} is used for load testing, it is common to have only one destination
+     * If this HttpClient is used for load testing, it is common to have only one destination
      * (the server to load test), and it is recommended to set this value to a high value (at least as
      * much as the threads present in the {@link #getExecutor() executor}).
      *
-     * @param maxConnectionsPerDestination the max number of connections that this {@link HttpClient} opens to {@link Destination}s
+     * @param maxConnectionsPerDestination the max number of connections that this HttpClient opens to {@link Destination}s
      */
     public void setMaxConnectionsPerDestination(int maxConnectionsPerDestination)
     {
@@ -885,11 +885,11 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * Sets the max number of requests that may be queued to a destination.
      * <p>
-     * If this {@link HttpClient} performs a high rate of requests to a destination,
+     * If this HttpClient performs a high rate of requests to a destination,
      * and all the connections managed by that destination are busy with other requests,
      * then new requests will be queued up in the destination.
      * This parameter controls how many requests can be queued before starting to reject them.
-     * If this {@link HttpClient} is used for load testing, it is common to have this parameter
+     * If this HttpClient is used for load testing, it is common to have this parameter
      * set to a high value, although this may impact latency (requests sit in the queue for a long
      * time before being sent).
      *
@@ -968,35 +968,6 @@ public class HttpClient extends ContainerLifeCycle
     public void setTCPNoDelay(boolean tcpNoDelay)
     {
         this.tcpNoDelay = tcpNoDelay;
-    }
-
-    /**
-     * @return true to dispatch I/O operations in a different thread, false to execute them in the selector thread
-     * @see #setDispatchIO(boolean)
-     */
-    @Deprecated
-    public boolean isDispatchIO()
-    {
-        // TODO this did default to true, so usage needs to be evaluated.
-        return false;
-    }
-
-    /**
-     * Whether to dispatch I/O operations from the selector thread to a different thread.
-     * <p>
-     * This implementation never blocks on I/O operation, but invokes application callbacks that may
-     * take time to execute or block on other I/O.
-     * If application callbacks are known to take time or block on I/O, then parameter {@code dispatchIO}
-     * should be set to true.
-     * If application callbacks are known to be quick and never block on I/O, then parameter {@code dispatchIO}
-     * may be set to false.
-     *
-     * @param dispatchIO true to dispatch I/O operations in a different thread,
-     *                   false to execute them in the selector thread
-     */
-    @Deprecated
-    public void setDispatchIO(boolean dispatchIO)
-    {
     }
 
     /**
@@ -1256,7 +1227,7 @@ public class HttpClient extends ContainerLifeCycle
         public Iterator<ContentDecoder.Factory> iterator()
         {
             final Iterator<ContentDecoder.Factory> iterator = set.iterator();
-            return new Iterator<ContentDecoder.Factory>()
+            return new Iterator<>()
             {
                 @Override
                 public boolean hasNext()

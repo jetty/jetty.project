@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.alpn.client;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -96,7 +95,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
     }
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         SSLEngine engine = (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY);
         for (Client processor : processors)

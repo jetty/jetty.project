@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 @ManagedObject("The HTTP/2 client transport")
 public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
@@ -101,13 +100,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         }
         addBean(client);
         super.doStart();
-
-        this.connectionFactory = new HTTP2ClientConnectionFactory();
-        client.setClientConnectionFactory((endPoint, context) ->
-        {
-            HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-            return destination.getClientConnectionFactory().newConnection(endPoint, context);
-        });
+        connectionFactory = new HTTP2ClientConnectionFactory();
     }
 
     @Override
@@ -134,16 +127,12 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         SessionListenerPromise listenerPromise = new SessionListenerPromise(context);
 
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        SslContextFactory sslContextFactory = null;
-        if (HttpScheme.HTTPS.is(destination.getScheme()))
-            sslContextFactory = httpClient.getSslContextFactory();
-
-        connect(sslContextFactory, address, listenerPromise, listenerPromise, context);
+        connect(address, destination.getClientConnectionFactory(), listenerPromise, listenerPromise, context);
     }
 
-    protected void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
-        getHTTP2Client().connect(sslContextFactory, address, listener, promise, context);
+        getHTTP2Client().connect(address, factory, listener, promise, context);
     }
 
     @Override
