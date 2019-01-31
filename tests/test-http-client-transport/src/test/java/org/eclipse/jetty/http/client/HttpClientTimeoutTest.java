@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -64,9 +54,20 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 {
@@ -84,7 +85,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         long timeout = 1000;
         scenario.start(new TimeoutHandler(2 * timeout));
 
-        assertThrows(TimeoutException.class, ()-> {
+        assertThrows(TimeoutException.class, () ->
+        {
             scenario.client.newRequest(scenario.newURI())
                     .timeout(timeout, TimeUnit.MILLISECONDS)
                     .send();
@@ -249,7 +251,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         scenario.startServer(new TimeoutHandler(2 * timeout));
 
         AtomicBoolean sslIdle = new AtomicBoolean();
-        scenario.client = new HttpClient(scenario.provideClientTransport(), scenario.sslContextFactory)
+        SslContextFactory sslContextFactory = scenario.newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        scenario.client = new HttpClient(scenario.provideClientTransport(), sslContextFactory)
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
@@ -275,7 +279,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         scenario.client.setIdleTimeout(timeout);
         scenario.client.start();
 
-        assertThrows(TimeoutException.class, ()->{
+        assertThrows(TimeoutException.class, () ->
+        {
             scenario.client.newRequest(scenario.newURI())
                     .send();
         });
@@ -427,14 +432,17 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         long timeout = 1000;
         String uri = "badscheme://0.0.0.1";
-        if(scenario.getNetworkConnectorLocalPort().isPresent())
+        if (scenario.getNetworkConnectorLocalPort().isPresent())
             uri += ":" + scenario.getNetworkConnectorLocalPort().get();
         Request request = scenario.client.newRequest(uri);
 
         // TODO: assert a more specific Throwable
-        assertThrows(Exception.class, ()-> {
+        assertThrows(Exception.class, () ->
+        {
             request.timeout(timeout, TimeUnit.MILLISECONDS)
-                    .send(result -> {});
+                    .send(result ->
+                    {
+                    });
         });
 
         Thread.sleep(2 * timeout);

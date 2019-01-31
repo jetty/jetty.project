@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,15 +46,18 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
-/**
- * HTTP2 setup.
- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2
 {
     private static final String LOG_LEVEL = "WARN";
-
 
     @Inject
     private BundleContext bundleContext;
@@ -69,7 +65,7 @@ public class TestJettyOSGiBootHTTP2
     @Configuration
     public Option[] config()
     {
-        ArrayList<Option> options = new ArrayList<Option>();
+        ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
@@ -90,12 +86,12 @@ public class TestJettyOSGiBootHTTP2
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("DEBUG"));
         options.add(CoreOptions.cleanCaches(true));
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
 
     public static List<Option> http2JettyDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
+        List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
 
         String alpnBoot = System.getProperty("mortbay-alpn-boot");
@@ -115,7 +111,6 @@ public class TestJettyOSGiBootHTTP2
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-server").versionAsInProject().start());
         return res;
     }
- 
 
     public void checkALPNBootOnBootstrapClasspath() throws Exception
     {
@@ -123,9 +118,8 @@ public class TestJettyOSGiBootHTTP2
         assertNotNull(alpn);
         assertNull(alpn.getClassLoader());
     }
-    
 
-    public void assertAllBundlesActiveOrResolved() throws Exception
+    public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
@@ -137,19 +131,15 @@ public class TestJettyOSGiBootHTTP2
         assertNotNull(server);
     }
 
-    
-
     @Test
     public void testHTTP2() throws Exception
     {
-        
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
         {
             checkALPNBootOnBootstrapClasspath();
             assertAllBundlesActiveOrResolved();
         }
-        
-        
+
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;
         try 
@@ -157,10 +147,9 @@ public class TestJettyOSGiBootHTTP2
             //get the port chosen for https
             String tmp = System.getProperty("boot.https.port");
             assertNotNull(tmp);
-            int port = Integer.valueOf(tmp.trim()).intValue();
+            int port = Integer.valueOf(tmp.trim());
             
             Path path = Paths.get("src",  "test", "config");
-            File base = path.toFile();
             File keys = path.resolve("etc").resolve("keystore").toFile();
             
             //set up client to do http2
@@ -170,6 +159,7 @@ public class TestJettyOSGiBootHTTP2
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+            sslContextFactory.setEndpointIdentificationAlgorithm(null);
             httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
@@ -186,5 +176,4 @@ public class TestJettyOSGiBootHTTP2
             if (http2Client != null) http2Client.stop();
         }
     }
-
 }
