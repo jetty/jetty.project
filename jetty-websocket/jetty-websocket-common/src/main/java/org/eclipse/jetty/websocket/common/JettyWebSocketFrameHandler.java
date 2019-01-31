@@ -236,7 +236,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         // No message sink is active
         if (activeMessageSink == null)
+        {
+            callback.succeeded();
             return;
+        }
 
         // Accept the payload into the message sink
         activeMessageSink.accept(frame, callback);
