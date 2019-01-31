@@ -347,10 +347,11 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         try
         {
             endp.upgrade(wsConnection);
-        }
-        finally
-        {
             futureCoreSession.complete(wsChannel);
+        }
+        catch (Throwable t)
+        {
+            futureCoreSession.completeExceptionally(t);
         }
     }
 

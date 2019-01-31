@@ -35,21 +35,21 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
 {
     private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;
-    private final CompletableFuture<Session> futureJavaxSession;
+    private final CompletableFuture<Session> futureSession;
 
     public JavaxClientUpgradeRequest(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
-        this.futureJavaxSession = new CompletableFuture<>();
+        this.futureSession = new CompletableFuture<>();
     }
 
     @Override
     protected void handleException(Throwable failure)
     {
         super.handleException(failure);
-        futureJavaxSession.completeExceptionally(failure);
+        futureSession.completeExceptionally(failure);
     }
 
     @Override
@@ -58,13 +58,13 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
         UpgradeRequest upgradeRequest = new DelegatedJavaxClientUpgradeRequest(this);
         UpgradeResponse upgradeResponse = new DelegatedJavaxClientUpgradeResponse(response);
 
-        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureJavaxSession);
+        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
 
         return frameHandler;
     }
 
     public CompletableFuture<Session> getFutureSession()
     {
-        return futureJavaxSession;
+        return futureSession;
     }
 }

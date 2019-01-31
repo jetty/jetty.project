@@ -41,7 +41,6 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
 {
     private final WebSocketClient containerContext;
     private final Object websocketPojo;
-    private final CompletableFuture<Session> onOpenFuture;
     private final CompletableFuture<Session> futureSession;
     private final DelegatedJettyClientUpgradeRequest handshakeRequest;
 
@@ -51,9 +50,7 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
-
-        this.onOpenFuture = new CompletableFuture<>();
-        this.futureSession = super.futureCoreSession.thenCombine(onOpenFuture, (channel, session) -> session);
+        this.futureSession = new CompletableFuture<>();
 
         if (request != null)
         {
@@ -103,7 +100,7 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
     protected void handleException(Throwable failure)
     {
         super.handleException(failure);
-        onOpenFuture.completeExceptionally(failure);
+        futureSession.completeExceptionally(failure);
     }
 
     @Override
@@ -112,7 +109,7 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         UpgradeResponse upgradeResponse = new DelegatedJettyClientUpgradeResponse(response);
 
         JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
-            handshakeRequest, upgradeResponse, onOpenFuture);
+            handshakeRequest, upgradeResponse, futureSession);
 
         return frameHandler;
     }
