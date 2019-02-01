@@ -37,7 +37,6 @@ public class PlainOrSslConnectionFactory extends AbstractConnectionFactory
     private static final Logger LOG = Log.getLogger(PlainOrSslConnection.class);
     private static final int TLS_ALERT_FRAME_TYPE = 0x15;
     private static final int TLS_HANDSHAKE_FRAME_TYPE = 0x16;
-    private static final int TLS_MAJOR_VERSION = 3;
 
     private final SslConnectionFactory sslConnectionFactory;
     private final String plainProtocol;
@@ -71,8 +70,7 @@ public class PlainOrSslConnectionFactory extends AbstractConnectionFactory
     protected boolean seemsTLS(ByteBuffer buffer)
     {
         int tlsFrameType = buffer.get(0) & 0xFF;
-        int tlsMajorVersion = buffer.get(1) & 0xFF;
-        return (tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE) && tlsMajorVersion == TLS_MAJOR_VERSION;
+        return tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE;
     }
 
     /**
