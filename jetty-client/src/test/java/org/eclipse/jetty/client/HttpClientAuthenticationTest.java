@@ -369,6 +369,9 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(401, response.getStatus());
+
+        Authentication.Result authenticationResult = authenticationStore.findAuthenticationResult(uri);
+        assertNull(authenticationResult);
     }
 
     @ParameterizedTest
