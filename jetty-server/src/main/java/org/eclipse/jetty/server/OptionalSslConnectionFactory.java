@@ -20,47 +20,51 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>A ConnectionFactory whose connections detect whether the first bytes are
- * TLS bytes and upgrades to either a TLS connection or to a plain connection.</p>
+ * TLS bytes and upgrades to either a TLS connection or to another configurable
+ * connection.</p>
  */
-public class PlainOrSslConnectionFactory extends AbstractConnectionFactory
+public class OptionalSslConnectionFactory extends AbstractConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(PlainOrSslConnection.class);
+    private static final Logger LOG = Log.getLogger(OptionalSslConnection.class);
     private static final int TLS_ALERT_FRAME_TYPE = 0x15;
     private static final int TLS_HANDSHAKE_FRAME_TYPE = 0x16;
+    private static final int TLS_MAJOR_VERSION = 3;
 
     private final SslConnectionFactory sslConnectionFactory;
-    private final String plainProtocol;
+    private final String otherProtocol;
 
     /**
-     * <p>Creates a new plain or TLS ConnectionFactory.</p>
-     * <p>If {@code plainProtocol} is {@code null}, and the first bytes are not TLS, then
-     * {@link #unknownProtocol(ByteBuffer, EndPoint)} is called; applications may override its
-     * behavior (by default it closes the EndPoint) for example by writing a minimal response. </p>
+     * <p>Creates a new ConnectionFactory whose connections can upgrade to TLS or another protocol.</p>
+     * <p>If {@code otherProtocol} is {@code null}, and the first bytes are not TLS, then
+     * {@link #otherProtocol(ByteBuffer, EndPoint)} is called.</p>
      *
      * @param sslConnectionFactory The SslConnectionFactory to use if the first bytes are TLS
-     * @param plainProtocol        the protocol of the ConnectionFactory to use if the first bytes are not TLS, or null.
+     * @param otherProtocol        the protocol of the ConnectionFactory to use if the first bytes are not TLS,
+     *                             or null to explicitly handle the non-TLS case
      */
-    public PlainOrSslConnectionFactory(SslConnectionFactory sslConnectionFactory, String plainProtocol)
+    public OptionalSslConnectionFactory(SslConnectionFactory sslConnectionFactory, String otherProtocol)
     {
-        super("plain|ssl");
+        super("ssl|other");
         this.sslConnectionFactory = sslConnectionFactory;
-        this.plainProtocol = plainProtocol;
+        this.otherProtocol = otherProtocol;
     }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return configure(new PlainOrSslConnection(endPoint, connector), connector, endPoint);
+        return configure(new OptionalSslConnection(endPoint, connector), connector, endPoint);
     }
 
     /**
@@ -70,39 +74,61 @@ public class PlainOrSslConnectionFactory extends AbstractConnectionFactory
     protected boolean seemsTLS(ByteBuffer buffer)
     {
         int tlsFrameType = buffer.get(0) & 0xFF;
-        return tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE;
+        int tlsMajorVersion = buffer.get(1) & 0xFF;
+        return (tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE) && tlsMajorVersion == TLS_MAJOR_VERSION;
     }
 
     /**
-     * <p>Callback method invoked when {@code plainProtocol} is {@code null}
+     * <p>Callback method invoked when {@code otherProtocol} is {@code null}
      * and the first bytes are not TLS.</p>
      * <p>This typically happens when a client is trying to connect to a TLS
      * port using the {@code http} scheme (and not the {@code https} scheme).</p>
-     * <p>This method may be overridden to write back a minimal response such as:</p>
-     * <pre>
-     * HTTP/1.1 400 Bad Request
-     * Content-Length: 35
-     * Content-Type: text/plain; charset=UTF8
-     * Connection: close
-     *
-     * Plain HTTP request sent to TLS port
-     * </pre>
      *
      * @param buffer   The buffer with the first bytes of the connection
      * @param endPoint The connection EndPoint object
      * @see #seemsTLS(ByteBuffer)
      */
-    protected void unknownProtocol(ByteBuffer buffer, EndPoint endPoint)
+    protected void otherProtocol(ByteBuffer buffer, EndPoint endPoint)
     {
-        endPoint.close();
+        // There are always at least 2 bytes.
+        int byte1 = buffer.get(0) & 0xFF;
+        int byte2 = buffer.get(1) & 0xFF;
+        if (byte1 == 'G' && byte2 == 'E')
+        {
+            // Plain text HTTP to a HTTPS port,
+            // write a minimal response.
+            String body = "" +
+                    "<!DOCTYPE html>\r\n" +
+                    "<html>\r\n" +
+                    "<head><title>Bad Request</title></head>\r\n" +
+                    "<body>" +
+                    "<h1>Bad Request</h1>" +
+                    "<p>HTTP request to HTTPS port</p>" +
+                    "</body>\r\n" +
+                    "</html>";
+            String response = "" +
+                    "HTTP/1.1 400 Bad Request\r\n" +
+                    "Content-Type: text/html\r\n" +
+                    "Content-Length: " + body.length() + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n" +
+                    body;
+            Callback.Completable completable = new Callback.Completable();
+            endPoint.write(completable, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
+            completable.whenComplete((r, x) -> endPoint.close());
+        }
+        else
+        {
+            endPoint.close();
+        }
     }
 
-    private class PlainOrSslConnection extends AbstractConnection implements Connection.UpgradeFrom
+    private class OptionalSslConnection extends AbstractConnection implements Connection.UpgradeFrom
     {
         private final Connector connector;
         private final ByteBuffer buffer;
 
-        public PlainOrSslConnection(EndPoint endPoint, Connector connector)
+        public OptionalSslConnection(EndPoint endPoint, Connector connector)
         {
             super(endPoint, connector.getExecutor());
             this.connector = connector;
@@ -121,18 +147,28 @@ public class PlainOrSslConnectionFactory extends AbstractConnectionFactory
         {
             try
             {
-                int filled = getEndPoint().fill(buffer);
-                if (filled > 0)
+                while (true)
                 {
-                    upgrade(buffer);
-                }
-                else if (filled == 0)
-                {
-                    fillInterested();
-                }
-                else
-                {
-                    close();
+                    int filled = getEndPoint().fill(buffer);
+                    if (filled > 0)
+                    {
+                        // Always have at least 2 bytes.
+                        if (BufferUtil.length(buffer) >= 2)
+                        {
+                            upgrade(buffer);
+                            break;
+                        }
+                    }
+                    else if (filled == 0)
+                    {
+                        fillInterested();
+                        break;
+                    }
+                    else
+                    {
+                        close();
+                        break;
+                    }
                 }
             }
             catch (IOException x)
@@ -162,27 +198,27 @@ public class PlainOrSslConnectionFactory extends AbstractConnectionFactory
             }
             else
             {
-                if (plainProtocol != null)
+                if (otherProtocol != null)
                 {
-                    ConnectionFactory connectionFactory = connector.getConnectionFactory(plainProtocol);
+                    ConnectionFactory connectionFactory = connector.getConnectionFactory(otherProtocol);
                     if (connectionFactory != null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Detected plain bytes, upgrading to {}", connectionFactory);
+                            LOG.debug("Detected non-TLS bytes, upgrading to {}", connectionFactory);
                         Connection next = connectionFactory.newConnection(connector, endPoint);
                         endPoint.upgrade(next);
                     }
                     else
                     {
-                        LOG.warn("Missing {} {} in {}", plainProtocol, ConnectionFactory.class.getSimpleName(), connector);
+                        LOG.warn("Missing {} {} in {}", otherProtocol, ConnectionFactory.class.getSimpleName(), connector);
                         close();
                     }
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Detected plain bytes, but no configured protocol to upgrade to");
-                    unknownProtocol(buffer, endPoint);
+                        LOG.debug("Detected non-TLS bytes, but no other protocol to upgrade to");
+                    otherProtocol(buffer, endPoint);
                 }
             }
         }

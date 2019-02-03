@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
@@ -31,10 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -43,12 +40,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class PlainOrSslConnectionTest
+public class OptionalSslConnectionTest
 {
     private Server server;
     private ServerConnector connector;
 
-    private void startServer(Function<SslConnectionFactory, PlainOrSslConnectionFactory> configFn, Handler handler) throws Exception
+    private void startServer(Function<SslConnectionFactory, OptionalSslConnectionFactory> configFn, Handler handler) throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
@@ -63,8 +60,8 @@ public class PlainOrSslConnectionTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
-        PlainOrSslConnectionFactory plainOrSsl = configFn.apply(ssl);
-        connector = new ServerConnector(server, 1, 1, plainOrSsl, ssl, http);
+        OptionalSslConnectionFactory sslOrOther = configFn.apply(ssl);
+        connector = new ServerConnector(server, 1, 1, sslOrOther, ssl, http);
         server.addConnector(connector);
 
         server.setHandler(handler);
@@ -79,34 +76,20 @@ public class PlainOrSslConnectionTest
             server.stop();
     }
 
-    private PlainOrSslConnectionFactory plainOrSsl(SslConnectionFactory ssl)
+    private OptionalSslConnectionFactory optionalSsl(SslConnectionFactory ssl)
     {
-        return new PlainOrSslConnectionFactory(ssl, ssl.getNextProtocol());
+        return new OptionalSslConnectionFactory(ssl, ssl.getNextProtocol());
     }
 
-    private PlainOrSslConnectionFactory plainToSslWithReport(SslConnectionFactory ssl)
+    private OptionalSslConnectionFactory optionalSslNoOtherProtocol(SslConnectionFactory ssl)
     {
-        return new PlainOrSslConnectionFactory(ssl, null)
-        {
-            @Override
-            protected void unknownProtocol(ByteBuffer buffer, EndPoint endPoint)
-            {
-                String response = "" +
-                        "HTTP/1.1 400 Bad Request\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
-                Callback.Completable callback = new Callback.Completable();
-                endPoint.write(callback, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
-                callback.whenComplete((r, x) -> endPoint.close());
-            }
-        };
+        return new OptionalSslConnectionFactory(ssl, null);
     }
 
     @Test
-    public void testPlainOrSslConnection() throws Exception
+    public void testOptionalSslConnection() throws Exception
     {
-        startServer(this::plainOrSsl, new EmptyServerHandler());
+        startServer(this::optionalSsl, new EmptyServerHandler());
 
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
@@ -152,9 +135,52 @@ public class PlainOrSslConnectionTest
     }
 
     @Test
-    public void testPlainToSslWithReport() throws Exception
+    public void testOptionalSslConnectionWithOnlyOneByteShouldIdleTimeout() throws Exception
     {
-        startServer(this::plainToSslWithReport, new EmptyServerHandler());
+        startServer(this::optionalSsl, new EmptyServerHandler());
+        long idleTimeout = 1000;
+        connector.setIdleTimeout(idleTimeout);
+
+        try (Socket socket = new Socket())
+        {
+            socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()), 1000);
+            OutputStream output = socket.getOutputStream();
+            output.write(0x16);
+            output.flush();
+
+            socket.setSoTimeout((int)(2 * idleTimeout));
+            InputStream input = socket.getInputStream();
+            int read = input.read();
+            assertEquals(-1, read);
+        }
+    }
+
+    @Test
+    public void testOptionalSslConnectionWithUnknownBytes() throws Exception
+    {
+        startServer(this::optionalSslNoOtherProtocol, new EmptyServerHandler());
+
+        try (Socket socket = new Socket())
+        {
+            socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()), 1000);
+            OutputStream output = socket.getOutputStream();
+            output.write(0x00);
+            output.flush();
+            Thread.sleep(500);
+            output.write(0x00);
+            output.flush();
+
+            socket.setSoTimeout(5000);
+            InputStream input = socket.getInputStream();
+            int read = input.read();
+            assertEquals(-1, read);
+        }
+    }
+
+    @Test
+    public void testOptionalSslConnectionWithHTTPBytes() throws Exception
+    {
+        startServer(this::optionalSslNoOtherProtocol, new EmptyServerHandler());
 
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
@@ -162,17 +188,18 @@ public class PlainOrSslConnectionTest
                 "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
-        // Send a plain text HTTP request to SSL port: we should get back a minimal HTTP response.
-        try (Socket plain = new Socket())
+        // Send a plain text HTTP request to SSL port,
+        // we should get back a minimal HTTP response.
+        try (Socket socket = new Socket())
         {
-            plain.connect(new InetSocketAddress("localhost", connector.getLocalPort()), 1000);
-            OutputStream plainOutput = plain.getOutputStream();
-            plainOutput.write(requestBytes);
-            plainOutput.flush();
+            socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()), 1000);
+            OutputStream output = socket.getOutputStream();
+            output.write(requestBytes);
+            output.flush();
 
-            plain.setSoTimeout(5000);
-            InputStream plainInput = plain.getInputStream();
-            HttpTester.Response response = HttpTester.parseResponse(plainInput);
+            socket.setSoTimeout(5000);
+            InputStream input = socket.getInputStream();
+            HttpTester.Response response = HttpTester.parseResponse(input);
             assertNotNull(response);
             assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
         }
