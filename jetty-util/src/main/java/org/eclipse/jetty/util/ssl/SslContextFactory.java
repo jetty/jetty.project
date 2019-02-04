@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -188,7 +188,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private int _sslSessionCacheSize = -1;
     private int _sslSessionTimeout = -1;
     private SSLContext _setContext;
-    private String _endpointIdentificationAlgorithm = null;
+    private String _endpointIdentificationAlgorithm = "HTTPS";
     private boolean _trustAll;
     private boolean _renegotiationAllowed = true;
     private int _renegotiationLimit = 5;

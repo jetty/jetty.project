@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.client;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URI;
@@ -40,6 +38,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.B64Code;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpClientProxyTest extends AbstractHttpClientServerTest
 {
@@ -315,7 +315,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         assertEquals(status, response1.getStatus());
         assertEquals(3, requests.get());
 
-        // Make again the request, authentication is cached, expect 204.
+        // Make again the request, only the server authentication is cached, expect 407 + 204.
         requests.set(0);
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
                 .scheme(scenario.getScheme())
@@ -323,7 +323,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 .send();
 
         assertEquals(status, response2.getStatus());
-        assertEquals(1, requests.get());
+        assertEquals(2, requests.get());
     }
 
     @ParameterizedTest

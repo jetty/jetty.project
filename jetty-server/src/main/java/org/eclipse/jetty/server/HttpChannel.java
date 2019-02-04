@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -71,6 +71,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
+
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicBoolean _responseCompleted = new AtomicBoolean();
     private final AtomicLong _requests = new AtomicLong();
@@ -586,9 +587,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         else if (no_stack!=null)
         {
             // No stack trace unless there is debug turned on
-            LOG.warn("{} {}",_request.getRequestURI(), no_stack.toString()); 
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
+            else
+                LOG.warn("{} {}",_request.getRequestURI(), no_stack.toString());
         }
         else
         {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,7 +33,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -52,15 +45,17 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
-/**
- * Test HTTP2 using java9 alpn.
- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2JDK9
 {
     private static final String LOG_LEVEL = "WARN";
-
 
     @Inject
     private BundleContext bundleContext;
@@ -89,7 +84,7 @@ public class TestJettyOSGiBootHTTP2JDK9
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.add(CoreOptions.cleanCaches(true));
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
 
     public static List<Option> http2JettyDependencies()
@@ -106,10 +101,8 @@ public class TestJettyOSGiBootHTTP2JDK9
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-server").versionAsInProject().start());
         return res;
     }
- 
 
-    @Ignore
-    public void assertAllBundlesActiveOrResolved() throws Exception
+    public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
@@ -121,11 +114,12 @@ public class TestJettyOSGiBootHTTP2JDK9
         assertNotNull(server);
     }
 
-    
-
     @Test
     public void testHTTP2() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+        
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;
         try 
@@ -144,6 +138,7 @@ public class TestJettyOSGiBootHTTP2JDK9
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+            sslContextFactory.setEndpointIdentificationAlgorithm(null);
             httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +17,6 @@
 //
 
 package org.eclipse.jetty.proxy;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +48,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 public class ForwardProxyServerTest
 {
     @SuppressWarnings("Duplicates")
@@ -68,9 +68,7 @@ public class ForwardProxyServerTest
         scenario2.setKeyManagerPassword("keypwd");
         // TODO: add more SslContextFactory configurations/scenarios?
 
-        return Stream.of(
-                scenario1, scenario2
-        ).map(Arguments::of);
+        return Stream.of(scenario1, scenario2).map(Arguments::of);
     }
 
     private SslContextFactory serverSslContextFactory;
@@ -209,6 +207,7 @@ public class ForwardProxyServerTest
         clientSsl.setKeyStorePath(keyStorePath);
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.setKeyManagerPassword("keypwd");
+        clientSsl.setEndpointIdentificationAlgorithm(null);
 
         HttpClient httpClient = new HttpClient(clientSsl);
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());

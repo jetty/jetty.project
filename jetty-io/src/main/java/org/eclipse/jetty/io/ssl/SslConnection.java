@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,7 +76,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * be called again and make another best effort attempt to progress the connection.
  *
  */
-public class SslConnection extends AbstractConnection
+public class SslConnection extends AbstractConnection implements Connection.UpgradeTo
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
     private static final String TLS_1_3 = "TLSv1.3";
@@ -258,6 +258,22 @@ public class SslConnection extends AbstractConnection
     public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
     {
         this._allowMissingCloseMessage = allowMissingCloseMessage;
+    }
+
+    private void acquireEncryptedInput()
+    {
+        if (_encryptedInput == null)
+            _encryptedInput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
+    }
+
+    @Override
+    public void onUpgradeTo(ByteBuffer buffer)
+    {
+        if (BufferUtil.hasContent(buffer))
+        {
+            acquireEncryptedInput();
+            BufferUtil.append(_encryptedInput, buffer);
+        }
     }
 
     @Override
@@ -526,8 +542,7 @@ public class SslConnection extends AbstractConnection
                                     throw new IllegalStateException("Unexpected HandshakeStatus " + status);
                             }
 
-                            if (_encryptedInput == null)
-                                _encryptedInput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
+                            acquireEncryptedInput();
 
                             // can we use the passed buffer if it is big enough
                             ByteBuffer app_in;
