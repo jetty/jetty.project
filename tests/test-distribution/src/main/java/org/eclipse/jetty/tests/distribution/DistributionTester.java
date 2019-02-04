@@ -185,7 +185,7 @@ public class DistributionTester
     /**
      * Resolves an artifact given its Maven coordinates.
      *
-     * @param coordinates <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>
+     * @param coordinates &lt;groupId>:&lt;artifactId>[:&lt;extension>[:&lt;classifier>]]:&lt;version>
      * @return the artifact
      * @see #installWarFile(File, String)
      */

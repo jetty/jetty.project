@@ -280,8 +280,8 @@
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
           <useReleaseProfile>false</useReleaseProfile>
-          <goals>deploy</goals>
-          <arguments>-Peclipse-release</arguments>
+          <goals>javadoc:aggregate-jar deploy</goals>
+          <arguments>-Peclipse-release -Paggregate-javadoc-jar</arguments>
           <preparationGoals>clean install</preparationGoals>
           <mavenExecutorId>forked-path</mavenExecutorId>
         </configuration>
@@ -537,10 +537,8 @@
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
             <show>protected</show>
-            <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
-            <links>
-              <link>https://docs.oracle.com/javase/8/docs/api/</link>
-            </links>
+            <attach>true</attach>
+            <excludePackageNames>com.acme,org.slf4j*,org.mortbay*,*.jmh*,org.eclipse.jetty.embedded*,org.eclipse.jetty.example.asyncrest*,org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
         </plugin>
         <plugin>
@@ -1222,6 +1220,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
@@ -1278,38 +1277,6 @@
                 </configuration>
               </execution>
             </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <!--
-      Usage:
-      Javadoc aggregation for Jetty website
-      > mvn clean install -Dtest=foo
-      > mvn -Paggregate-site javadoc:aggregate -Dtest=foo
-     -->
-    <profile>
-      <id>aggregate-site</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <configuration>
-              <excludePackageNames>com.acme,*.jmh</excludePackageNames>
-              <links>
-                <link>http://docs.oracle.com/javase/8/docs/api/</link>
-                <link>http://docs.oracle.com/javaee/7/api</link>
-                <link>http://junit.sourceforge.net/javadoc/</link>
-              </links>
-              <tags>
-                <tag>
-                  <name>org.apache.xbean.XBean</name>
-                  <placement>X</placement>
-                  <head />
-                </tag>
-              </tags>
-            </configuration>
           </plugin>
         </plugins>
       </build>
