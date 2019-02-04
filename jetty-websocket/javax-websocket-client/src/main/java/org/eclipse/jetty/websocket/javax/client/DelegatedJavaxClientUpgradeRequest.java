@@ -16,32 +16,37 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.internal;
-
-import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+package org.eclipse.jetty.websocket.javax.client;
 
 import java.net.URI;
 import java.security.Principal;
 
-public class UpgradeRequestAdapter implements UpgradeRequest
-{
-    private final ServletUpgradeRequest servletRequest;
+import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 
-    public UpgradeRequestAdapter(ServletUpgradeRequest servletRequest)
+/**
+ * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpRequest}
+ * in the {@link UpgradeRequest} interface.
+ */
+public class DelegatedJavaxClientUpgradeRequest implements UpgradeRequest
+{
+    private final ClientUpgradeRequest delegate;
+
+    public DelegatedJavaxClientUpgradeRequest(ClientUpgradeRequest delegate)
     {
-        this.servletRequest = servletRequest;
+        this.delegate = delegate;
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        return servletRequest.getUserPrincipal();
+        // User Principal not available from Client API
+        return null;
     }
 
     @Override
     public URI getRequestURI()
     {
-        return this.servletRequest.getRequestURI();
+        return delegate.getURI();
     }
 }

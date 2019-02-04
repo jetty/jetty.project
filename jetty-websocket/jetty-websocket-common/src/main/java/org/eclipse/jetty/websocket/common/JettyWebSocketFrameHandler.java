@@ -141,13 +141,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 openHandle.invoke();
 
-            futureSession.complete(session);
             callback.succeeded();
+            futureSession.complete(session);
         }
         catch (Throwable cause)
         {
-            // TODO should futureSession be failed here?
             callback.failed(new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause));
+            futureSession.completeExceptionally(cause);
         }
     }
 
@@ -236,7 +236,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         // No message sink is active
         if (activeMessageSink == null)
+        {
+            callback.succeeded();
             return;
+        }
 
         // Accept the payload into the message sink
         activeMessageSink.accept(frame, callback);

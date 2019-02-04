@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -229,16 +230,14 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 openHandle.invoke();
 
             container.addBean(session, true);
-            futureSession.complete(session);
             callback.succeeded();
+            futureSession.complete(session);
         }
         catch (Throwable cause)
         {
             Exception wse = new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause);
-
-            // TODO This feels like double handling of the exception? Review need for futureSession
-            futureSession.completeExceptionally(wse);
             callback.failed(wse);
+            futureSession.completeExceptionally(wse);
         }
     }
 

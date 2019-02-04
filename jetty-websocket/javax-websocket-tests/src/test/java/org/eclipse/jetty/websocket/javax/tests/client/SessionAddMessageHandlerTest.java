@@ -84,7 +84,7 @@ public class SessionAddMessageHandlerTest
 
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
-        frameHandler = frameHandlerFactory.newJavaxFrameHandler(ei, handshakeRequest, handshakeResponse, futureSession);
+        frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest, handshakeResponse, futureSession);
         frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Session

@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.MessageHandler;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -33,6 +26,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.MessageHandler;
+import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
 public class ChatWebSocketClient
 {
@@ -51,7 +51,7 @@ public class ChatWebSocketClient
 
         URI wsUri = baseWebsocketUri.resolve("/chat");
         handler = MessageHandler.from(this::onText, null);
-        UpgradeRequest request = UpgradeRequest.from(client, wsUri, handler);
+        ClientUpgradeRequest request = ClientUpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);
         handler.sendText("[" + name + ": has joined the room]", Callback.NOOP, false);

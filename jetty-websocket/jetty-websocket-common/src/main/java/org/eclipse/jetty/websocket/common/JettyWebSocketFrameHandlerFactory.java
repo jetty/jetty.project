@@ -61,7 +61,6 @@ import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * Factory to create {@link JettyWebSocketFrameHandler} instances suitable for
@@ -351,7 +350,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             assertSignatureValid(endpointClass, onmethod, OnWebSocketFrame.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
-            final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(Frame.class).required();
+            final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(org.eclipse.jetty.websocket.api.extensions.Frame.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, FRAME);
             metadata.setFrameHandler(methodHandle, onmethod);
         }

@@ -18,51 +18,53 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+
+import javax.websocket.Session;
+
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
 
-import javax.websocket.Session;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-
-public class ClientUpgradeRequestImpl extends org.eclipse.jetty.websocket.core.client.UpgradeRequest
+public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
 {
     private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;
-    private final CompletableFuture<Session> futureJavaxSession;
+    private final CompletableFuture<Session> futureSession;
 
-    public ClientUpgradeRequestImpl(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
+    public JavaxClientUpgradeRequest(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
-        this.futureJavaxSession = new CompletableFuture<>();
+        this.futureSession = new CompletableFuture<>();
     }
 
     @Override
     protected void handleException(Throwable failure)
     {
         super.handleException(failure);
-        futureJavaxSession.completeExceptionally(failure);
+        futureSession.completeExceptionally(failure);
     }
 
     @Override
     public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
     {
-        UpgradeRequest upgradeRequest = new DelegatedClientUpgradeRequest(this);
-        UpgradeResponse upgradeResponse = new DelegatedClientUpgradeResponse(response);
+        UpgradeRequest upgradeRequest = new DelegatedJavaxClientUpgradeRequest(this);
+        UpgradeResponse upgradeResponse = new DelegatedJavaxClientUpgradeResponse(response);
 
-        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureJavaxSession);
+        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
 
         return frameHandler;
     }
 
     public CompletableFuture<Session> getFutureSession()
     {
-        return futureJavaxSession;
+        return futureSession;
     }
 }

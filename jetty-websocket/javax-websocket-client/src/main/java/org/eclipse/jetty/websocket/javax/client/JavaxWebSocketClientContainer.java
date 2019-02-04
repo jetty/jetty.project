@@ -125,7 +125,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
      * @param upgradeRequest the upgrade request information
      * @return the future for the session, available on success of connect
      */
-    private CompletableFuture<Session> connect(ClientUpgradeRequestImpl upgradeRequest)
+    private CompletableFuture<Session> connect(JavaxClientUpgradeRequest upgradeRequest)
     {
         CompletableFuture<Session> fut = upgradeRequest.getFutureSession();
         try
@@ -145,7 +145,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         Objects.requireNonNull(configuredEndpoint, "WebSocket configured endpoint cannot be null");
         Objects.requireNonNull(destURI, "Destination URI cannot be null");
 
-        ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
+        JavaxClientUpgradeRequest upgradeRequest = new JavaxClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
         EndpointConfig config = configuredEndpoint.getConfig();
         if (config != null && config instanceof ClientEndpointConfig)
