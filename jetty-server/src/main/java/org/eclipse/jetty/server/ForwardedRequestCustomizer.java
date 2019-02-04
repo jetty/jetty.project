@@ -29,7 +29,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -54,6 +57,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
+    private static final Logger LOG = Log.getLogger(ForwardedRequestCustomizer.class);
+
     private HostPortHttpField _forcedHost;
     private String _forwardedHeader = HttpHeader.FORWARDED.toString();
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
@@ -297,7 +302,7 @@ public class ForwardedRequestCustomizer implements Customizer
         RFC7239 rfc7239 = null;
         String forwardedHost = null;
         String forwardedServer = null;
-        String forwardedFor = null;
+        HostPort forwardedFor = null;
         String forwardedProto = null;
         String forwardedHttps = null;
         
@@ -333,7 +338,7 @@ public class ForwardedRequestCustomizer implements Customizer
                 forwardedServer = getLeftMost(field.getValue());
             
             if (forwardedFor==null && _forwardedForHeader!=null && _forwardedForHeader.equalsIgnoreCase(name))
-                forwardedFor = getLeftMost(field.getValue());
+                forwardedFor = getRemoteAddr(field.getValue());
             
             if (forwardedProto==null && _forwardedProtoHeader!=null && _forwardedProtoHeader.equalsIgnoreCase(name))
                 forwardedProto = getLeftMost(field.getValue());
@@ -389,7 +394,7 @@ public class ForwardedRequestCustomizer implements Customizer
         }
         else if (forwardedFor != null)
         {
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwardedFor,request.getRemotePort()));
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwardedFor.getHost(), (forwardedFor.getPort() > 0) ? forwardedFor.getPort() : request.getRemotePort()));
         }
 
         // handle protocol identifier
@@ -429,6 +434,26 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // The left-most value is the farthest downstream client
         return headerValue.substring(0,commaIndex).trim();
+    }
+
+    protected HostPort getRemoteAddr(String headerValue)
+    {
+        String leftMost = getLeftMost(headerValue);
+        if (leftMost == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return new HostPort(leftMost);
+        }
+        catch (Exception e)
+        {
+            // failed to parse in host[:port] format
+            LOG.ignore(e);
+            return null;
+        }
     }
     
     @Override
