@@ -45,14 +45,6 @@
       <artifactId>jetty-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
-
-<!--
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
-      <scope>provided</scope>
-    </dependency>
--->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>

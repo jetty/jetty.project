@@ -302,7 +302,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>javax.servlet</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/servlet-api</outputDirectory>

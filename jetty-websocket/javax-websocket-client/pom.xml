@@ -85,6 +85,7 @@
                     <include>org.eclipse.jetty.orbit:javax.servlet</include>
                     <include>org.mortbay.jetty:servlet-api</include>
                     <include>jetty:servlet-api</include>
+                    <include>jetty-servlet-api</include>
                   </includes>
                 </bannedDependencies>
               </rules>
