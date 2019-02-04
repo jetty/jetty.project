@@ -69,7 +69,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
 
-        JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxFrameHandler(endpoint,
+        JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxWebSocketFrameHandler(endpoint,
             upgradeRequest, upgradeResponse, new CompletableFuture<>());
 
         return localEndpoint;

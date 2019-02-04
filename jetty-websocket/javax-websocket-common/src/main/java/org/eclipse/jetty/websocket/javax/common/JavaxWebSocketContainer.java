@@ -18,18 +18,19 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-
-import javax.websocket.Extension;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+
+import javax.websocket.Extension;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {
@@ -105,7 +106,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
         CompletableFuture<Session> futureSession)
     {
-        return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
+        return getFrameHandlerFactory().newJavaxWebSocketFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
     }
 
     @Override

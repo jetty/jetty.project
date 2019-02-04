@@ -13,7 +13,7 @@
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Tests</name>
 
    <properties>
-    <bundle-symbolic-name>${project.groupId}.jetty.tests</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.jetty.websocket.tests</bundle-symbolic-name>
   </properties>
 
    <dependencies>
@@ -33,6 +33,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-http-tools</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>compile</scope>
@@ -42,27 +47,21 @@
    <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
         <executions>
           <execution>
-            <id>ban-java-servlet-api</id>
             <goals>
-              <goal>enforce</goal>
+              <goal>manifest</goal>
             </goals>
             <configuration>
-              <rules>
-                <bannedDependencies>
-                  <includes>
-                    <include>javax.servlet</include>
-                    <include>servletapi</include>
-                    <include>org.eclipse.jetty.orbit:javax.servlet</include>
-                    <include>org.mortbay.jetty:servlet-api</include>
-                    <include>jetty:servlet-api</include>
-                    <include>jetty-servlet-api</include>
-                  </includes>
-                </bannedDependencies>
-              </rules>
+              <instructions>
+                <Bundle-Description>jetty.websocket Integration Tests</Bundle-Description>
+                <Export-Package>
+                  org.eclipse.jetty.websocket.jetty.tests.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                </Export-Package>
+              </instructions>
             </configuration>
           </execution>
         </executions>

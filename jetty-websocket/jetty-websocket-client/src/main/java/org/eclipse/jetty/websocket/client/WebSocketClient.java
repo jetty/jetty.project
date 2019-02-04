@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.client.impl.ClientUpgradeRequestImpl;
+import org.eclipse.jetty.websocket.client.impl.JettyClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
@@ -107,7 +107,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      */
     public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request) throws IOException
     {
-        ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, coreClient, request, toUri, websocket);
+        JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
         coreClient.connect(upgradeRequest);
         return upgradeRequest.getFutureSession();
     }

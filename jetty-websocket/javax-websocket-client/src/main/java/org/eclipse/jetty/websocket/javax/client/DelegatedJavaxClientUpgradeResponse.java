@@ -18,24 +18,24 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link HttpResponse}
  * in the {@link UpgradeResponse} interface.
  */
-public class DelegatedClientUpgradeResponse implements UpgradeResponse
+public class DelegatedJavaxClientUpgradeResponse implements UpgradeResponse
 {
     private HttpResponse delegate;
 
-    public DelegatedClientUpgradeResponse(HttpResponse response)
+    public DelegatedJavaxClientUpgradeResponse(HttpResponse response)
     {
         this.delegate = response;
     }

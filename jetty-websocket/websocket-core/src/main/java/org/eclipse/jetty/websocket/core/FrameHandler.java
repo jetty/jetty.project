@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.client.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 /**
@@ -42,8 +42,8 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
  * <li>On the server, the application layer must provide a {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator} instance
  * to negotiate and accept websocket connections, which will return the FrameHandler instance to use from
  * {@link org.eclipse.jetty.websocket.core.server.WebSocketNegotiator#negotiate(Negotiation)}.</li>
- * <li>On the client, the application returns the FrameHandler instance to user from the {@link UpgradeRequest}
- * instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(UpgradeRequest)} method/</li>
+ * <li>On the client, the application returns the FrameHandler instance to user from the {@link ClientUpgradeRequest}
+ * instance that it passes to the {@link org.eclipse.jetty.websocket.core.client.WebSocketCoreClient#connect(ClientUpgradeRequest)} method/</li>
  * </ul>
  * <p>
  * Once instantiated the FrameHandler follows is used as follows:

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.internal;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-
 import java.net.HttpCookie;
 import java.net.URI;
 import java.security.Principal;
@@ -29,11 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class UpgradeRequestAdapter implements UpgradeRequest
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+
+public class DelegatedJettyServletUpgradeRequest implements UpgradeRequest
 {
     private final ServletUpgradeRequest servletRequest;
 
-    public UpgradeRequestAdapter(ServletUpgradeRequest servletRequest)
+    public DelegatedJettyServletUpgradeRequest(ServletUpgradeRequest servletRequest)
     {
         this.servletRequest = servletRequest;
     }
