@@ -144,15 +144,6 @@ public class Session implements SessionHandler.SessionIf
             };
         }
 
-        /**
-         * For backward api compatibility only. 
-         * @see #schedule(long)
-         */
-        @Deprecated
-        public void schedule ()
-        {
-            schedule(calculateInactivityTimeout(System.currentTimeMillis()));
-        }
 
         /**
          * @param time the timeout to set; -1 means that the timer will not be
@@ -544,12 +535,6 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    @Deprecated
-    public void updateInactivityTimer() 
-    {
-        //for backward api compatibility only
-    }
-    
     /**
      * Calculate what the session timer setting should be based on:
      * the time remaining before the session expires 
@@ -1056,18 +1041,6 @@ public class Session implements SessionHandler.SessionIf
         }
 
         return result;
-    }
-
-    /* ------------------------------------------------------------- */
-    /**
-     * Call HttpSessionAttributeListeners as part of invalidating a Session.
-     * 
-     * @throws IllegalStateException if no session manager can be find
-     */
-    @Deprecated
-    protected void doInvalidate() throws IllegalStateException
-    {
-        finishInvalidate();
     }
 
     /* ------------------------------------------------------------- */

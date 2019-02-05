@@ -424,7 +424,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     {
         Connection old_connection = getConnection();
 
-        ByteBuffer buffer = (old_connection instanceof Connection.UpgradeFrom) ?
+        ByteBuffer prefilled = (old_connection instanceof Connection.UpgradeFrom) ?
                 ((Connection.UpgradeFrom)old_connection).onUpgradeFrom() :
                 null;
         old_connection.onClose();
@@ -432,11 +432,11 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} upgrading from {} to {} with {}",
-                    this, old_connection, newConnection, BufferUtil.toDetailString(buffer));
+                    this, old_connection, newConnection, BufferUtil.toDetailString(prefilled));
 
         if (newConnection instanceof Connection.UpgradeTo)
-            ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
-        else if (BufferUtil.hasContent(buffer))
+            ((Connection.UpgradeTo)newConnection).onUpgradeTo(prefilled);
+        else if (BufferUtil.hasContent(prefilled))
             throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
 
         newConnection.onOpen();
