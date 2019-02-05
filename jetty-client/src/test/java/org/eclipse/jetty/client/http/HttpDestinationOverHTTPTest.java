@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,9 +36,17 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 {
@@ -178,10 +183,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test_IdleConnection_IdleTimeout(Scenario scenario) throws Exception
     {
-        start(scenario, new EmptyServerHandler());
-
+        startServer(scenario, new EmptyServerHandler());
         long idleTimeout = 1000;
-        client.setIdleTimeout(idleTimeout);
+        startClient(scenario, null, httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         try (HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {

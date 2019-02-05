@@ -1372,17 +1372,7 @@ public class SessionHandler extends ScopedHandler
         }
     }
     
-    /**
-     * @see #sessionInactivityTimerExpired(Session, long)
-     */
-    @Deprecated
-    public void sessionInactivityTimerExpired (Session session)
-    {
-        //for backwards compilation compatibility only
-        sessionInactivityTimerExpired(session, System.currentTimeMillis());
-    }
-    
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Each session has a timer that is configured to go off

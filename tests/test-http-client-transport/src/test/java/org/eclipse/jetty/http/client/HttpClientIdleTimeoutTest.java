@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +34,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
 {
     private long idleTimeout = 1000;
@@ -52,7 +52,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler()
+        scenario.startServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -65,9 +65,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
                 }
             }
         });
-        scenario.client.stop();
-        scenario.client.setIdleTimeout(idleTimeout);
-        scenario.client.start();
+        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
@@ -126,10 +124,8 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
     public void testIdleClientIdleTimeout(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new EmptyServerHandler());
-        scenario.client.stop();
-        scenario.client.setIdleTimeout(idleTimeout);
-        scenario.client.start();
+        scenario.startServer(new EmptyServerHandler());
+        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         // Make a first request to open a connection.
         ContentResponse response = scenario.client.newRequest(scenario.newURI()).send();

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
@@ -47,7 +49,13 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
 
     public HttpClientTransportOverFCGI(int selectors, String scriptRoot)
     {
-        super(selectors);
+        this(new ClientConnector(), scriptRoot);
+        getClientConnector().setSelectors(selectors);
+    }
+
+    public HttpClientTransportOverFCGI(ClientConnector connector, String scriptRoot)
+    {
+        super(connector);
         this.scriptRoot = scriptRoot;
         setConnectionPoolFactory(destination ->
         {
@@ -70,12 +78,12 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        HttpConnectionOverFCGI connection = newHttpConnection(endPoint, destination, promise);
+        org.eclipse.jetty.io.Connection connection = newHttpConnection(endPoint, destination, promise);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", connection);
         return customize(connection, context);

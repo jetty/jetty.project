@@ -48,6 +48,23 @@ public class Origin
         return address;
     }
 
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        Origin that = (Origin)obj;
+        return scheme.equals(that.scheme) && address.equals(that.address);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(scheme, address);
+    }
+
     public String asString()
     {
         StringBuilder result = new StringBuilder();
@@ -56,20 +73,9 @@ public class Origin
     }
 
     @Override
-    public boolean equals(Object obj)
+    public String toString()
     {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Origin that = (Origin)obj;
-        return scheme.equals(that.scheme) && address.equals(that.address);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = scheme.hashCode();
-        result = 31 * result + address.hashCode();
-        return result;
+        return asString();
     }
 
     public static class Address
@@ -96,8 +102,10 @@ public class Origin
         @Override
         public boolean equals(Object obj)
         {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
             Address that = (Address)obj;
             return host.equals(that.host) && port == that.port;
         }
@@ -105,9 +113,7 @@ public class Origin
         @Override
         public int hashCode()
         {
-            int result = host.hashCode();
-            result = 31 * result + port;
-            return result;
+            return Objects.hash(host, port);
         }
 
         public String asString()

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -30,15 +25,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+
 /**
  * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpResponse}
  * in the {@link UpgradeResponse} interface.
  */
-public class DelegatedClientUpgradeResponse implements UpgradeResponse
+public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
 {
     private HttpResponse delegate;
 
-    public DelegatedClientUpgradeResponse(HttpResponse response)
+    public DelegatedJettyClientUpgradeResponse(HttpResponse response)
     {
         this.delegate = response;
     }

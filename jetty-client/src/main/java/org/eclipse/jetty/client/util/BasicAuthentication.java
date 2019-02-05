@@ -103,7 +103,8 @@ public class BasicAuthentication extends AbstractAuthentication
         @Override
         public void apply(Request request)
         {
-            request.header(header, value);
+            if (!request.getHeaders().contains(header, value))
+                request.header(header, value);
         }
 
         @Override
