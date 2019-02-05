@@ -72,14 +72,15 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      * that are being managed by this node that should be expired.
      * 
      * @param candidates the ids of sessions the SessionCache thinks has expired
+     * @param time the time at which to check for expiry
      * @return the reconciled set of session ids that have been checked in the store
      */
-    public abstract Set<String> doGetExpired (Set<String> candidates);
+    public abstract Set<String> doGetExpired (Set<String> candidates, long time);
     
     
     /**
      * Implemented by subclasses to find sessions for this context in the store
-     * that expired at or before the timeLimit and thus not being actively
+     * that expired at or before the time limit and thus not being actively
      * managed by any node. This method is only called periodically (the period
      * is configurable) to avoid putting too much load on the store.
      * 
@@ -98,14 +99,15 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      * are no longer being actively managed by any node. These are explicitly
      * sessions that do NOT belong to this context (other mechanisms such as
      * doGetExpired take care of those). As they don't belong to this context,
-     * they could not be loaded by us.
+     * they cannot be loaded by us.
      * 
      * This is called only periodically to avoid placing excessive load on the
      * store.
      * 
-     * @param timeLimit
+     * @param timeLimit the upper limit of the expiry time to check.
      */
     public abstract void cleanOrphans (long timeLimit);
+    
 
     @Override
     public void initialize (SessionContext context) throws Exception
@@ -196,11 +198,11 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
+        long now = System.currentTimeMillis();
+        
         // 1. always verify the set of candidates we've been given
         //by the sessioncache
-        Set<String> expired = doGetExpired (candidates);
-
-        long now = System.currentTimeMillis();
+        Set<String> expired = doGetExpired (candidates, now);
 
         // 2. check the backing store to find other sessions
         // in THIS context that expired long ago (ie cannot be actively managed
@@ -210,18 +212,23 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             long expiryTimeLimit = 0;
 
             // if we have never checked for old expired sessions, then only find
-            // those that are very old
+            // those that are very old so we don't find sessions that other nodes
+            // that are also starting up find
             if (_lastExpiryCheckTime <= 0)
                 expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec * 3);
             else
             {
-                // only do the check once every gracePeriod to avoid expensive
-                // searches
-                if (now > (_lastExpiryCheckTime + TimeUnit.SECONDS.toMillis(_gracePeriodSec)))
-                    expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec);
+            	// only do the check once every gracePeriod to avoid expensive searches,
+            	// and find sessions that expired at least one gracePeriod ago
+            	if (now > (_lastExpiryCheckTime + TimeUnit.SECONDS.toMillis(_gracePeriodSec)))
+            		expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec);
             }
-            if (LOG.isDebugEnabled()) LOG.debug("Searching for sessions expired before {} for context {}", expiryTimeLimit, _context.getCanonicalContextPath());
-            expired.addAll(doGetExpired(expiryTimeLimit));
+
+            if (expiryTimeLimit > 0)
+            {
+            	if (LOG.isDebugEnabled()) LOG.debug("Searching for sessions expired before {} for context {}", expiryTimeLimit, _context.getCanonicalContextPath());
+            	expired.addAll(doGetExpired(expiryTimeLimit));
+            }
         }
         finally
         {
@@ -229,9 +236,10 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         }
 
 
-        // 3. Periodically comb the backing store to delete sessions for OTHER
-        // contexts that expired a long time ago (ie not being actively
-        //managed by any node).
+        // 3. Periodically but infrequently comb the backing store to delete sessions for 
+        // OTHER contexts that expired a very long time ago (ie not being actively
+        // managed by any node). As these sessions are not for our context, we 
+        // can't load them, so they must just be forcibly deleted.
         try
         {
             if (now > (_lastOrphanSweepTime + TimeUnit.SECONDS.toMillis(10 * _gracePeriodSec)))

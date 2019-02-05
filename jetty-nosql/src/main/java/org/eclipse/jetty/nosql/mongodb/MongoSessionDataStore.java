@@ -288,7 +288,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
          */
         BasicDBObject mongoKey = new BasicDBObject(__ID, id);
 
-        //DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version_1);
         DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
 
         if (sessionDocument != null)
@@ -366,17 +365,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, long time)
     {
-        long now = System.currentTimeMillis();
-        long upperBound = now;
         Set<String> expiredSessions = new HashSet<>();
         
         //firstly ask mongo to verify if these candidate ids have expired - all of
         //these candidates will be for our node
         BasicDBObject query = new BasicDBObject();     
         query.append(__ID,new BasicDBObject("$in", candidates));
-        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lt", upperBound));  
+        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$le", time));  
 
         DBCursor verifiedExpiredSessions = null;
         try  
@@ -442,6 +439,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             for (DBObject session : oldExpiredSessions)
             {
                 String id = (String)session.get(__ID);
+                
+                //TODO we should verify if there is a session for my context, not any context
                 if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _context, id+" exp="+session.get(__EXPIRY));
                 expiredSessions.add(id);
             }
@@ -458,8 +457,12 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     @Override
     public void cleanOrphans(long timeLimit)
     {
-        // TODO
-
+    	//Delete all session documents where the expiry time (which is always the most
+    	//up-to-date expiry of all contexts sharing that session id) has already past as
+    	//at the timeLimit.
+    	 BasicDBObject query = new BasicDBObject();     
+         query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$le", timeLimit));
+         _dbSessions.remove(query, WriteConcern.SAFE);
     }
 
 

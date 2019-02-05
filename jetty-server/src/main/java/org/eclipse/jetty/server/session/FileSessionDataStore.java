@@ -148,19 +148,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         return Files.deleteIfExists(file.toPath());
     }
     
-    
-    /** 
-     * Check to see which sessions have expired.
-     * 
-     * @param candidates the set of session ids that the SessionCache believes
-     * have expired
-     * @return the complete set of sessions that have expired, including those
-     * that are not currently loaded into the SessionCache
-     */
+
     @Override
-    public Set<String> doGetExpired(final Set<String> candidates)
+    public Set<String> doGetExpired(final Set<String> candidates, long time)
     {
-        final long now = System.currentTimeMillis();
         HashSet<String> expired = new HashSet<>();
         
         //check the candidates
@@ -175,7 +166,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 try
                 {
                     long expiry = getExpiryFromFilename(filename);
-                    if (expiry > 0 && expiry < now)
+                    if (expiry > 0 && expiry <= time)
                         expired.add(id);
                 }
                 catch (Exception e)

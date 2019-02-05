@@ -94,10 +94,9 @@ public class MemcachedTestHelper
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates)
+        public Set<String> doGetExpired(Set<String> candidates, long time)
         {
             Set<String> expiredIds = new HashSet<>();
-            long now = System.currentTimeMillis();
             if (candidates != null)
             {
                 for (String id:candidates)
@@ -105,7 +104,7 @@ public class MemcachedTestHelper
                     SessionData sd = _store.get(id);
                     if (sd == null)
                         expiredIds.add(id);
-                    else if (sd.isExpiredAt(now))
+                    else if (sd.isExpiredAt(time))
                         expiredIds.add(id);
                 }
             }
@@ -113,7 +112,7 @@ public class MemcachedTestHelper
             for (String id:_store.keySet())
             {
                 SessionData sd = _store.get(id);
-                if (sd.isExpiredAt(now))
+                if (sd.isExpiredAt(time))
                     expiredIds.add(id);
             }
             

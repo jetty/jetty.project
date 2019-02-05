@@ -90,7 +90,7 @@ public class TestSessionDataStore extends AbstractSessionDataStore
 
  
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, long time)
     {
        HashSet<String> set = new HashSet<>();
         long now = System.currentTimeMillis();

@@ -105,7 +105,7 @@ public class SessionEvictionFailureTest
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates)
+        public Set<String> doGetExpired(Set<String> candidates, long timeLimit)
         {
             return candidates;
         }

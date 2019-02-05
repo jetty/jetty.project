@@ -138,12 +138,11 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, long time)
     {
        if (candidates == null  || candidates.isEmpty())
            return candidates;
        
-       long now = System.currentTimeMillis();
        
        Set<String> expired = new HashSet<>();
        
@@ -168,7 +167,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                    if (_context.getWorkerName().equals(sd.getLastNode()))
                    {
                        //we are its manager, add it to the expired set if it is expired now
-                       if ((sd.getExpiry() > 0 ) && sd.getExpiry() <= now)
+                       if ((sd.getExpiry() > 0 ) && sd.getExpiry() <= time)
                        {
                            expired.add(candidate);
                            if (LOG.isDebugEnabled())

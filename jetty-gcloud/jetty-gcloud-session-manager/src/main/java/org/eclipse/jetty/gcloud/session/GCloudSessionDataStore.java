@@ -552,18 +552,17 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, long time)
     {
-        long now = System.currentTimeMillis();
         Set<String> expired = new HashSet<String>();
 
         try
         {    
             Set<ExpiryInfo> info = null;
             if (_indexesPresent)
-                info = queryExpiryByIndex(now);
+                info = queryExpiryByIndex(time);
             else
-                info = queryExpiryByEntity(now);
+                info = queryExpiryByEntity(time);
 
             for (ExpiryInfo item:info)
             {

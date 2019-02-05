@@ -779,12 +779,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doGetExpired(Set<String> candidates, long time)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Getting expired sessions at time {}", System.currentTimeMillis());
-
-        long now = System.currentTimeMillis();
+            LOG.debug("Getting expired sessions at time {}", time);
         
         Set<String> expiredSessionKeys = new HashSet<>();
         try (Connection connection = _dbAdaptor.getConnection())
@@ -792,9 +790,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             connection.setAutoCommit(true);
             
             //Select sessions managed by this node for our context that have expired
-            long upperBound = now;
+            long upperBound = time;
             if (LOG.isDebugEnabled())
-                LOG.debug ("{} - Searching for sessions for context {} managed by me and expired before {}",  _context.getWorkerName(), _context.getCanonicalContextPath(),upperBound);
+            	LOG.debug ("{} - Searching for sessions for context {} managed by me and expired before {}",  
+            			_context.getWorkerName(), _context.getCanonicalContextPath(), upperBound);
 
             try (PreparedStatement statement = _sessionTableSchema.getMyExpiredSessionsStatement(connection, _context, upperBound))
             {
@@ -824,9 +823,11 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             }
 
 
+            //Check the candidates that were not reported as expired in the db: they
+            //either do not exist, or they weren't expired (which means some other node
+            //must be managing it)
             if (!notExpiredInDB.isEmpty())
             {
-                //we have some sessions to check
                 try (PreparedStatement checkSessionExists = _sessionTableSchema.getCheckSessionExistsStatement(connection, _context))
                 {
                     for (String k: notExpiredInDB)
@@ -839,7 +840,11 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                                 //session doesn't exist any more, can be expired
                                 expiredSessionKeys.add(k);
                             }
-                            //else its expiry time is fresher in the db than the sessioncache
+                            else
+                            {
+                            	if (LOG.isDebugEnabled())
+                            		LOG.debug("{} Session {} expiry fresher in db than cache, another node must be managing it", _context.getWorkerName(), k);
+                            }
                         }
                         catch (Exception e)
                         {
@@ -863,6 +868,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public Set<String> doGetExpired(long timeLimit)
     {
         Set<String> expired = new HashSet<>();
+        
         //Get sessions for my context but managed by any node that expired at or before the timeLimit   
         try (Connection connection = _dbAdaptor.getConnection())
         {
@@ -880,8 +886,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         String sessionId = result.getString(_sessionTableSchema.getIdColumn());
                         long exp = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
                         expired.add(sessionId);
-                        if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId={} for context={} expiry={}",
-                                                             _context.getWorkerName(),sessionId,_context.getCanonicalContextPath(), exp);
+                        if (LOG.isDebugEnabled())
+                        	LOG.debug ("{}- Found expired sessionId={} for context={} expiry={}",
+                        			_context.getWorkerName(),sessionId,_context.getCanonicalContextPath(), exp);
                     }
                 }
             }

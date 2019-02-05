@@ -108,14 +108,13 @@ public class HazelcastSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired( Set<String> candidates )
+    public Set<String> doGetExpired( Set<String> candidates, long time)
     {
         if (candidates == null || candidates.isEmpty())
         {
             return Collections.emptySet();
         }
         
-        long now = System.currentTimeMillis();
         return candidates.stream().filter( candidate -> {
             
             if (LOG.isDebugEnabled())
@@ -139,7 +138,7 @@ public class HazelcastSessionDataStore
                     if (_context.getWorkerName().equals(sd.getLastNode()))
                     {
                         //we are its manager, add it to the expired set if it is expired now
-                        if ((sd.getExpiry() > 0 ) && sd.getExpiry() <= now)
+                        if ((sd.getExpiry() > 0 ) && sd.getExpiry() <= time)
                         {
                             if (LOG.isDebugEnabled())
                             {
