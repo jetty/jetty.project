@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -325,7 +326,6 @@ public class HttpClientTLSTest
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
-
         SslContextFactory serverTLSFactory = createSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -405,7 +405,6 @@ public class HttpClientTLSTest
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
-
         SslContextFactory serverTLSFactory = createSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -526,5 +525,31 @@ public class HttpClientTLSTest
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
+    }
+
+    @Test
+    public void testHostNameVerificationFailure() throws Exception
+    {
+        SslContextFactory serverTLSFactory = createSslContextFactory();
+        startServer(serverTLSFactory, new EmptyServerHandler());
+
+        SslContextFactory clientTLSFactory = createSslContextFactory();
+        // Make sure the host name is not verified at the TLS level.
+        clientTLSFactory.setEndpointIdentificationAlgorithm(null);
+        // Add host name verification after the TLS handshake.
+        clientTLSFactory.setHostnameVerifier((host, session) -> false);
+        startClient(clientTLSFactory);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .send(result ->
+                {
+                    Throwable failure = result.getFailure();
+                    if (failure instanceof SSLPeerUnverifiedException)
+                        latch.countDown();
+                });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

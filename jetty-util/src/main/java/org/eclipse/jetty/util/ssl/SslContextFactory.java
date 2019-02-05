@@ -51,6 +51,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.CertPathTrustManagerParameters;
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SNIHostName;
@@ -194,6 +195,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private int _renegotiationLimit = 5;
     private Factory _factory;
     private PKIXCertPathChecker _pkixCertPathChecker;
+    private HostnameVerifier _hostnameVerifier;
 
     /**
      * Construct an instance of SslContextFactory
@@ -1594,6 +1596,16 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setSslSessionTimeout(int sslSessionTimeout)
     {
         _sslSessionTimeout = sslSessionTimeout;
+    }
+
+    public HostnameVerifier getHostnameVerifier()
+    {
+        return _hostnameVerifier;
+    }
+
+    public void setHostnameVerifier(HostnameVerifier hostnameVerifier)
+    {
+        _hostnameVerifier = hostnameVerifier;
     }
 
     /**

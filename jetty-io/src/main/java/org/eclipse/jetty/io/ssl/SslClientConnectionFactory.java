@@ -23,7 +23,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLPeerUnverifiedException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -100,6 +103,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
 
+        sslConnection.addHandshakeListener(new HTTPSHandshakeListener(context));
         customize(sslConnection, context);
 
         return sslConnection;
@@ -123,5 +127,38 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             connector.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
         return ClientConnectionFactory.super.customize(connection, context);
+    }
+
+    private class HTTPSHandshakeListener implements SslHandshakeListener
+    {
+        private final Map<String, Object> context;
+
+        private HTTPSHandshakeListener(Map<String, Object> context)
+        {
+            this.context = context;
+        }
+
+        @Override
+        public void handshakeSucceeded(Event event) throws SSLException
+        {
+            HostnameVerifier verifier = sslContextFactory.getHostnameVerifier();
+            if (verifier != null)
+            {
+                String host = (String)context.get(SSL_PEER_HOST_CONTEXT_KEY);
+                try
+                {
+                    if (!verifier.verify(host, event.getSSLEngine().getSession()))
+                        throw new SSLPeerUnverifiedException("Host name verification failed for host: " + host);
+                }
+                catch (SSLException x)
+                {
+                    throw x;
+                }
+                catch (Throwable x)
+                {
+                    throw (SSLException)new SSLPeerUnverifiedException("Host name verification failed for host: " + host).initCause(x);
+                }
+            }
+        }
     }
 }
