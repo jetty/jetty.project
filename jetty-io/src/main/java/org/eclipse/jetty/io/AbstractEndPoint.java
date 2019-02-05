@@ -432,7 +432,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} upgrading from {} to {} with {}",
-                    this, old_connection, newConnection, BufferUtil.toDetailString(prefilled));
+                    this, old_connection, newConnection, BufferUtil.toDetailString(buffer));
 
         if (newConnection instanceof Connection.UpgradeTo)
             ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
