@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom, WriteFlusher.Listener
+public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     public static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.asString());
@@ -194,6 +194,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             return buffer;
         }
         return null;
+    }
+
+    @Override
+    public void onUpgradeTo(ByteBuffer buffer)
+    {
+        if (BufferUtil.hasContent(buffer))
+            BufferUtil.append(getRequestBuffer(), buffer);
     }
 
     @Override
@@ -500,7 +507,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        if (isRequestBufferEmpty())
+            fillInterested();
+        else
+            getExecutor().execute(this);
     }
 
     @Override

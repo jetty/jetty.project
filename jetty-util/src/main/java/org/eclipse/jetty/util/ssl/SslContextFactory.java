@@ -188,7 +188,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private int _sslSessionCacheSize = -1;
     private int _sslSessionTimeout = -1;
     private SSLContext _setContext;
-    private String _endpointIdentificationAlgorithm = null;
+    private String _endpointIdentificationAlgorithm = "HTTPS";
     private boolean _trustAll;
     private boolean _renegotiationAllowed = true;
     private int _renegotiationLimit = 5;

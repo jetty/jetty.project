@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -60,6 +61,20 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
+    private static final boolean FORCE_SELECT_NOW;
+    static
+    {
+        String property = System.getProperty("org.eclipse.jetty.io.forceSelectNow");
+        if (property != null)
+        {
+            FORCE_SELECT_NOW = Boolean.parseBoolean(property);
+        }
+        else
+        {
+            property = System.getProperty("os.name");
+            FORCE_SELECT_NOW = property != null && property.toLowerCase(Locale.ENGLISH).contains("windows");
+        }
+    }
 
     private final AtomicBoolean _started = new AtomicBoolean(false);
     private boolean _selecting = false;
@@ -457,7 +472,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         if (Thread.interrupted() && !isRunning())
                             throw new ClosedSelectorException();
 
-                        selected = selector.selectNow();
+                        if (FORCE_SELECT_NOW)
+                            selected = selector.selectNow();
                     }
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
