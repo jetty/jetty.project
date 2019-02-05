@@ -198,7 +198,7 @@ public class ResourceCollection extends Resource
     @Override
     public Resource addPath(String path) throws IOException, MalformedURLException
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         if(path==null)
@@ -302,7 +302,7 @@ public class ResourceCollection extends Resource
     @Override
     public boolean exists()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         return true;
@@ -312,7 +312,7 @@ public class ResourceCollection extends Resource
     @Override
     public File getFile() throws IOException
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
@@ -328,7 +328,7 @@ public class ResourceCollection extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
@@ -344,7 +344,7 @@ public class ResourceCollection extends Resource
     @Override 
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
@@ -360,7 +360,7 @@ public class ResourceCollection extends Resource
     @Override
     public String getName()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
@@ -376,7 +376,7 @@ public class ResourceCollection extends Resource
     @Override
     public URL getURL()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
@@ -392,7 +392,7 @@ public class ResourceCollection extends Resource
     @Override
     public boolean isDirectory()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         return true;
@@ -402,7 +402,7 @@ public class ResourceCollection extends Resource
     @Override
     public long lastModified()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
@@ -428,7 +428,7 @@ public class ResourceCollection extends Resource
     @Override
     public String[] list()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         HashSet<String> set = new HashSet<String>();
@@ -446,7 +446,7 @@ public class ResourceCollection extends Resource
     @Override
     public void close()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
@@ -476,7 +476,7 @@ public class ResourceCollection extends Resource
     @Override
     public String toString()
     {
-        if(_resources==null)
+        if(_resources==null || _resources.length==0)
             return "[]";
         
         return String.valueOf(Arrays.asList(_resources));
