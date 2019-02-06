@@ -533,7 +533,8 @@ public class WebAppClassLoader extends URLClassLoader
                     // If it is a server class, doesn't matter as we have loaded it from the 
                     // webapp
                     webapp_class = this.findClass(name);
-                    resolveClass(webapp_class);
+                    if (resolve)
+                        resolveClass(webapp_class);
                     if (LOG.isDebugEnabled())
                         LOG.debug("PLP webapp loaded {}",webapp_class);
                     return webapp_class;
