@@ -18,18 +18,156 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@ExtendWith(WorkDirExtension.class)
 public class ResourceCollectionTest
 {
+    public WorkDir workdir;
+
+    @Test
+    public void testUnsetCollection_ThrowsISE()
+    {
+        ResourceCollection coll = new ResourceCollection();
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    @Test
+    public void testEmptyResourceArray_ThrowsISE()
+    {
+        ResourceCollection coll = new ResourceCollection(new Resource[0]);
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    @Test
+    public void testResourceArrayWithNull_ThrowsISE()
+    {
+        ResourceCollection coll = new ResourceCollection(new Resource[]{null});
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    @Test
+    public void testEmptyStringArray_ThrowsISE()
+    {
+        ResourceCollection coll = new ResourceCollection(new String[0]);
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    @Test
+    public void testStringArrayWithNull_ThrowsISE()
+    {
+        ResourceCollection coll = new ResourceCollection(new String[]{null});
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    @Test
+    public void testNullCsv_ThrowsIAE()
+    {
+        assertThrows(IllegalArgumentException.class, ()->{
+            String csv = null;
+            new ResourceCollection(csv); // throws IAE
+        });
+    }
+
+    @Test
+    public void testEmptyCsv_ThrowsIAE()
+    {
+        assertThrows(IllegalArgumentException.class, ()->{
+            String csv = "";
+            new ResourceCollection(csv); // throws IAE
+        });
+    }
+
+    @Test
+    public void testBlankCsv_ThrowsIAE()
+    {
+        assertThrows(IllegalArgumentException.class, () -> {
+            String csv = ",,,,";
+            new ResourceCollection(csv); // throws IAE
+        });
+    }
+
+    @Test
+    public void testSetResourceNull_ThrowsISE()
+    {
+        // Create a ResourceCollection with one valid entry
+        Path path = MavenTestingUtils.getTargetPath();
+        PathResource resource = new PathResource(path);
+        ResourceCollection coll = new ResourceCollection(resource);
+
+        // Reset collection to invalid state
+        coll.setResources(null);
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    @Test
+    public void testSetResourceEmpty_ThrowsISE()
+    {
+        // Create a ResourceCollection with one valid entry
+        Path path = MavenTestingUtils.getTargetPath();
+        PathResource resource = new PathResource(path);
+        ResourceCollection coll = new ResourceCollection(resource);
+
+        // Reset collection to invalid state
+        coll.setResources(new Resource[0]);
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    @Test
+    public void testSetResourceAllNulls_ThrowsISE()
+    {
+        // Create a ResourceCollection with one valid entry
+        Path path = MavenTestingUtils.getTargetPath();
+        PathResource resource = new PathResource(path);
+        ResourceCollection coll = new ResourceCollection(resource);
+
+        // Reset collection to invalid state
+        coll.setResources(new Resource[]{null,null,null});
+
+        assertThrowIllegalStateException(coll);
+    }
+
+    private void assertThrowIllegalStateException(ResourceCollection coll)
+    {
+        assertThrows(IllegalStateException.class, ()->coll.addPath("foo"));
+        assertThrows(IllegalStateException.class, ()->coll.findResource("bar"));
+        assertThrows(IllegalStateException.class, ()->coll.exists());
+        assertThrows(IllegalStateException.class, ()->coll.getFile());
+        assertThrows(IllegalStateException.class, ()->coll.getInputStream());
+        assertThrows(IllegalStateException.class, ()->coll.getReadableByteChannel());
+        assertThrows(IllegalStateException.class, ()->coll.getURL());
+        assertThrows(IllegalStateException.class, ()->coll.getName());
+        assertThrows(IllegalStateException.class, ()->coll.isDirectory());
+        assertThrows(IllegalStateException.class, ()->coll.lastModified());
+        assertThrows(IllegalStateException.class, ()->coll.list());
+        assertThrows(IllegalStateException.class, ()->coll.close());
+        assertThrows(IllegalStateException.class, ()->
+        {
+            Path destPath = workdir.getPathFile("bar");
+            coll.copyTo(destPath.toFile());
+        });
+    }
 
     @Test
     public void testMutlipleSources1() throws Exception
