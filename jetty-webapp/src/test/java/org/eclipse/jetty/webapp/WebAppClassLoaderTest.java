@@ -106,9 +106,9 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
 
-        assertCanLoadClass("com.i2shar.extone.Main");
-        assertCanLoadClass("com.i2shar.exttwo.Main");
-        assertCantLoadClass("com.i2shar.extthree.Main");
+        assertCanLoadClass("org.acme.extone.Main");
+        assertCanLoadClass("org.acme.exttwo.Main");
+        assertCantLoadClass("org.acme.extthree.Main");
 
         assertCantLoadClass("org.eclipse.jetty.webapp.Configuration");
 
@@ -124,9 +124,9 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
 
-        assertCanLoadClass("com.i2shar.extone.Main");
-        assertCanLoadClass("com.i2shar.exttwo.Main");
-        assertCantLoadClass("com.i2shar.extthree.Main");
+        assertCanLoadClass("org.acme.extone.Main");
+        assertCanLoadClass("org.acme.exttwo.Main");
+        assertCantLoadClass("org.acme.extthree.Main");
 
         assertCantLoadClass("org.eclipse.jetty.webapp.Configuration");
 
