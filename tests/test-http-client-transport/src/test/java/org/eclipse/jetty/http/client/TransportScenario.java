@@ -298,6 +298,8 @@ public class TransportScenario
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientThreads.setDetailedDump(true);
+        SslContextFactory sslContextFactory = newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         client = newHttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
@@ -322,13 +324,7 @@ public class TransportScenario
 
     public void startServer(Handler handler) throws Exception
     {
-        sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-        sslContextFactory.setTrustStorePassword("storepwd");
-        sslContextFactory.setUseCipherSuitesOrder(true);
-        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
+        sslContextFactory = newSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         serverThreads.setDetailedDump(true);
@@ -354,6 +350,18 @@ public class TransportScenario
         {
             e.printStackTrace();
         }
+    }
+
+    protected SslContextFactory newSslContextFactory()
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+        sslContextFactory.setTrustStorePassword("storepwd");
+        sslContextFactory.setUseCipherSuitesOrder(true);
+        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
+        return sslContextFactory;
     }
 
     public void stopClient() throws Exception
