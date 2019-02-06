@@ -80,7 +80,12 @@ public class HazelcastSessionDataStore
     public boolean delete( String id )
         throws Exception
     {
-        return sessionDataMap == null ? false : sessionDataMap.remove( getCacheKey( id ) ) != null;
+        if (sessionDataMap == null)
+            return false;
+        
+        //use delete which does not deserialize the SessionData object being removed
+        sessionDataMap.delete( getCacheKey(id));
+        return true;
     }
 
     public IMap<String, SessionData> getSessionDataMap()
