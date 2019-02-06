@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -72,6 +66,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public class ForwardProxyTLSServerTest
 {
     @SuppressWarnings("Duplicates")
@@ -88,9 +88,7 @@ public class ForwardProxyTLSServerTest
         scenario2.setKeyManagerPassword("keypwd");
         // TODO: add more SslContextFactory configurations/scenarios?
 
-        return Stream.of(
-                scenario1, scenario2
-        ).map(Arguments::of);
+        return Stream.of(scenario1, scenario2).map(Arguments::of);
     }
 
     private SslContextFactory proxySslContextFactory;
@@ -109,7 +107,7 @@ public class ForwardProxyTLSServerTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        serverConnector = new ServerConnector(server, newSslContextFactory());
+        serverConnector = new ServerConnector(server, newServerSslContextFactory());
         server.addConnector(serverConnector);
         server.setHandler(handler);
         server.start();
@@ -139,13 +137,21 @@ public class ForwardProxyTLSServerTest
         return new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxySslContextFactory != null);
     }
 
-    private static SslContextFactory newSslContextFactory()
+    private static SslContextFactory newServerSslContextFactory()
     {
         SslContextFactory sslContextFactory = new SslContextFactory();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
+        return sslContextFactory;
+
+    }
+
+    private static SslContextFactory newClientSslContextFactory()
+    {
+        SslContextFactory sslContextFactory = newServerSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         return sslContextFactory;
     }
 
@@ -182,7 +188,7 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new ServerHandler());
         startProxy();
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
@@ -218,7 +224,7 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new ServerHandler());
         startProxy();
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
@@ -265,7 +271,7 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new ServerHandler());
         startProxy();
 
-        final HttpClient httpClient = new HttpClient(newSslContextFactory());
+        final HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
@@ -351,7 +357,7 @@ public class ForwardProxyTLSServerTest
             }
         });
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         // Short idle timeout for HttpClient.
         httpClient.setIdleTimeout(idleTimeout);
@@ -390,7 +396,7 @@ public class ForwardProxyTLSServerTest
         int proxyPort = proxyConnector.getLocalPort();
         stopProxy();
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), proxySslContextFactory != null));
         httpClient.start();
 
@@ -418,7 +424,7 @@ public class ForwardProxyTLSServerTest
         stopServer();
         startProxy();
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
@@ -450,7 +456,7 @@ public class ForwardProxyTLSServerTest
             }
         });
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
@@ -574,7 +580,7 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new ServerHandler());
         startProxy(connectHandler);
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         HttpProxy httpProxy = newHttpProxy();
         if (includeAddress)
             httpProxy.getIncludedAddresses().add("localhost:" + serverConnector.getLocalPort());
@@ -626,7 +632,7 @@ public class ForwardProxyTLSServerTest
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.start();
 
-        HttpClient httpClient = new HttpClient(newSslContextFactory());
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
         httpClient.start();
 
