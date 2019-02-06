@@ -21,6 +21,7 @@ package org.eclipse.jetty.hazelcast.session;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
@@ -183,12 +184,46 @@ public class HazelcastSessionDataStore
         } ).collect( Collectors.toSet() );
         
         
-        EntryObject eo = new PredicateBuilder().getEntryObject();
-        Predicate predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
-        Collection<SessionData> expiredSessions = sessionDataMap.values(predicate);
+        //Now find other sessions in hazelcast that have expired
+        final AtomicReference<Set<String>> reference = new AtomicReference<>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
         
-        for (SessionData sd: expiredSessions)
-            expiredSessionIds.add(sd.getId());
+        Runnable r = new Runnable()
+        {
+            @Override
+            public void run ()
+            {
+                try
+                {
+                    Set<String> ids = new HashSet<>();
+                    EntryObject eo = new PredicateBuilder().getEntryObject();
+                    Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
+                    Collection<SessionData> results = sessionDataMap.values(predicate);
+                    if (results != null)
+                    {
+                        for (SessionData sd: results)
+                            ids.add(sd.getId());
+                    }
+                    reference.set(ids);
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        };
+
+        _context.run(r);
+        if (exception.get() != null)
+        {
+            LOG.warn("Error querying for expired sessions {}", exception.get());
+            return expiredSessionIds;
+        }
+
+        if (reference.get() != null)
+        {
+           expiredSessionIds.addAll(reference.get());
+        }
         
         return expiredSessionIds;
     }
