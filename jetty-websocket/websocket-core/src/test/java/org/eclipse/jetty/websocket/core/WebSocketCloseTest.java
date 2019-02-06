@@ -293,7 +293,6 @@ public class WebSocketCloseTest extends WebSocketTester
         server.handler.getCoreSession().demand(1);
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NO_CLOSE));
-        assertThat(server.handler.closeStatus.getReason(), containsString("IOException"));
     }
 
     @Test
@@ -306,7 +305,6 @@ public class WebSocketCloseTest extends WebSocketTester
         server.handler.getCoreSession().demand(1);
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NO_CLOSE));
-        assertThat(server.handler.closeStatus.getReason(), containsString("IOException"));
     }
 
     @Test

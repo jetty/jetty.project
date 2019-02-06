@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
@@ -167,12 +168,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
 
+        Throwable t = new ClosedChannelException();
+
         if (!channel.isClosed())
-        {
-            IOException e = new IOException("Closed");
-            channel.onClosed(e);
-        }
-        flusher.onClose();
+            channel.onEof();
+
+        flusher.onClose(t);
 
         super.onClose();
     }
@@ -410,7 +411,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                         onFrame(frame);
 
                     if (!moreDemand())
-                    {
                         return;
                     }
                 }
@@ -436,7 +436,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (filled < 0)
                 {
                     releaseNetworkBuffer();
-                    channel.onClosed(new IOException("Read EOF"));
+                    channel.onEof();
                     return;
                 }
 
@@ -595,13 +595,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (channel.getBehavior() == Behavior.CLIENT)
         {
-            Frame wsf = frame;
             byte[] mask = new byte[4];
             random.nextBytes(mask);
-            wsf.setMask(mask);
+            frame.setMask(mask);
         }
-        flusher.enqueue(frame, callback, batch);
-        flusher.iterate();
+
+        if (flusher.enqueue(frame, callback, batch))
+            flusher.iterate();
     }
 
     private class Flusher extends FrameFlusher
@@ -615,7 +615,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         public void onCompleteFailure(Throwable x)
         {
             super.onCompleteFailure(x);
-            channel.processConnectionError(x,NOOP);
+            channel.processConnectionError(x, NOOP);
         }
     }
 }

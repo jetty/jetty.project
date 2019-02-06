@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -291,11 +292,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         return this.connection.getBufferPool();
     }
 
-    public void onClosed(Throwable cause)
+    public void onEof()
     {
-        CloseStatus closeStatus = new CloseStatus(CloseStatus.NO_CLOSE, cause == null?null:cause.toString());
-        if (channelState.onClosed(closeStatus))
-            closeConnection(cause, closeStatus, NOOP);
+        if (channelState.onEof())
+            closeConnection(new ClosedChannelException(), channelState.getCloseStatus(), Callback.NOOP);
     }
 
     public void closeConnection(Throwable cause, CloseStatus closeStatus, Callback callback)
