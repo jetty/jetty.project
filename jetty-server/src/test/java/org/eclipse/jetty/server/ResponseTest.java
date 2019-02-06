@@ -18,21 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -62,6 +47,7 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -85,6 +71,21 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseTest
 {
@@ -676,7 +677,9 @@ public class ResponseTest
 
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
-        assertEquals("Database Error", response.getReason());
+        assertEquals("Server Error", response.getReason());
+        assertThat(BufferUtil.toString(_content), containsString("Database Error"));
+
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
 
         response = getResponse();
@@ -689,7 +692,8 @@ public class ResponseTest
 
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
-        assertEquals("Super Nanny", response.getReason());
+        assertEquals(HttpStatus.Code.NOT_ACCEPTABLE.getMessage(), response.getReason());
+        assertThat(BufferUtil.toString(_content), containsString("Super Nanny"));
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
     }
     
@@ -707,7 +711,8 @@ public class ResponseTest
 
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
-        assertEquals("Database Error", response.getReason());
+        assertEquals("Server Error", response.getReason());
+        assertThat(BufferUtil.toString(_content), is(""));
         assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
 
         response = getResponse();
@@ -720,7 +725,8 @@ public class ResponseTest
 
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
-        assertEquals("Super Nanny", response.getReason());
+        assertEquals(HttpStatus.Code.NOT_ACCEPTABLE.getMessage(), response.getReason());
+        assertThat(BufferUtil.toString(_content), is(""));
         assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
     }
 
@@ -1384,6 +1390,7 @@ public class ResponseTest
     {
         _channel.recycle();
         _channel.getRequest().setMetaData(new MetaData.Request("GET",new HttpURI("/path/info"),HttpVersion.HTTP_1_0,new HttpFields()));
+        BufferUtil.clear(_content);
         return _channel.getResponse();
     }
 

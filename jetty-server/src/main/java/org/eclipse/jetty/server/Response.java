@@ -633,13 +633,9 @@ public class Response implements HttpServletResponse
 
         Request request = _channel.getRequest();
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        _reason=HttpStatus.getMessage(code);
         if (message==null)
-        {    
-            _reason=HttpStatus.getMessage(code);
             message=cause==null?_reason:cause.toString();
-        }    
-        else
-            _reason=message;
 
         // If we are allowed to have a body, then produce the error page.
         if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
@@ -873,19 +869,19 @@ public class Response implements HttpServletResponse
 
     @Override
     @Deprecated
-    public void setStatus(int sc, String sm)
+    public void setStatus(int sc, String  message)
     {
-        setStatusWithReason(sc,sm);
+        setStatusWithReason(sc, null);
     }
 
-    public void setStatusWithReason(int sc, String sm)
+    public void setStatusWithReason(int sc, String message)
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
         if (!isIncluding())
         {
             _status = sc;
-            _reason = sm;
+            _reason = message;
         }
     }
 

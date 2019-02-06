@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -41,6 +37,10 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ErrorPageTest
 {
@@ -168,7 +168,7 @@ public class ErrorPageTest
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
             String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
-            assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad query encoding"));
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 400"));

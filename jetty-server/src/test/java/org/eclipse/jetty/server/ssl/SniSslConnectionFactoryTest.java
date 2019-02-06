@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -69,6 +63,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SniSslConnectionFactoryTest
 {
@@ -268,8 +268,9 @@ public class SniSslConnectionFactoryTest
             output.flush();
 
             response = response(input);
+            String body = IO.toString(input);
             assertThat(response,startsWith("HTTP/1.1 400 "));
-            assertThat(response, containsString("Host does not match SNI"));
+            assertThat(body, containsString("Host does not match SNI"));
         }
         finally
         {
@@ -326,7 +327,8 @@ public class SniSslConnectionFactoryTest
 
             response = response(input);
             assertTrue(response.startsWith("HTTP/1.1 400 "));
-            assertThat(response, Matchers.containsString("Host does not match SNI"));
+            String body = IO.toString(input);
+            assertThat(body, Matchers.containsString("Host does not match SNI"));
         }
         finally
         {
