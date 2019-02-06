@@ -172,6 +172,19 @@ public class CloseStatus
         return null;
     }
 
+    public static boolean isOrdinary(CloseStatus closeStatus)
+    {
+        switch (closeStatus.getCode())
+        {
+            case NORMAL:
+            case SHUTDOWN:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
     public int getCode()
     {
         return code;

@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -26,13 +33,6 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.BeforeEach;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -122,6 +122,20 @@ public class WebSocketTester
             Parser.ParsedFrame frame = parser.parse(buffer);
             if (frame != null)
                 return frame;
+        }
+    }
+
+    protected void receiveEof(InputStream in) throws IOException
+    {
+        ByteBuffer buffer = bufferPool.acquire(4096, false);
+        while (true)
+        {
+            BufferUtil.flipToFill(buffer);
+            int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+            if (len < 0)
+                return;
+
+            throw new IllegalStateException("unexpected content");
         }
     }
 }

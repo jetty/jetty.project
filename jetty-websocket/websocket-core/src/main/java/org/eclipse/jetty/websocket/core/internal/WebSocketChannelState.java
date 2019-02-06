@@ -149,11 +149,7 @@ public class WebSocketChannelState
         synchronized (this)
         {
             if (!isOutputOpen())
-            {
-                if (opcode == OpCode.CLOSE && CloseStatus.getCloseStatus(frame) instanceof WebSocketChannel.AbnormalCloseStatus)
-                    _channelState = State.CLOSED;
                 throw new IllegalStateException(_channelState.toString());
-            }
 
             if (opcode == OpCode.CLOSE)
             {

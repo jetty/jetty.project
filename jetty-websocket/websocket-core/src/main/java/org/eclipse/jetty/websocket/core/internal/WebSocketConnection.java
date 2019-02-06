@@ -348,12 +348,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand > 0)
+            if (demand != 0)
                 return true;
 
-            if (demand == 0)
-                fillingAndParsing = false;
-
+            fillingAndParsing = false;
             if (networkBuffer.isEmpty())
                 releaseNetworkBuffer();
 
@@ -373,10 +371,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (!fillingAndParsing)
                 throw new IllegalStateException();
 
-            if (demand < 0)
-                return false;
+            if (demand > 0)
+                demand--;
 
-            demand--;
             return true;
         }
     }
@@ -412,7 +409,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
                     if (!moreDemand())
                         return;
-                    }
                 }
 
                 // buffer must be empty here because parser is fully consuming
@@ -530,43 +526,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             parser,
             flusher,
             generator);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-
-        EndPoint endp = getEndPoint();
-        if (endp != null)
-        {
-            result = prime * result + endp.getLocalAddress().hashCode();
-            result = prime * result + endp.getRemoteAddress().hashCode();
-        }
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        WebSocketConnection other = (WebSocketConnection)obj;
-        EndPoint endp = getEndPoint();
-        EndPoint otherEndp = other.getEndPoint();
-        if (endp == null)
-        {
-            if (otherEndp != null)
-                return false;
-        }
-        else if (!endp.equals(otherEndp))
-            return false;
-        return true;
     }
 
     /**
