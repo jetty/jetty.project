@@ -1598,11 +1598,26 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         _sslSessionTimeout = sslSessionTimeout;
     }
 
+    /**
+     * @return the HostnameVerifier used by a client to verify host names in the server certificate
+     */
     public HostnameVerifier getHostnameVerifier()
     {
         return _hostnameVerifier;
     }
 
+    /**
+     * <p>Sets a {@code HostnameVerifier} used by a client to verify host names in the server certificate.</p>
+     * <p>The {@code HostnameVerifier} works in conjunction with {@link #setEndpointIdentificationAlgorithm(String)}.</p>
+     * <p>When {@code endpointIdentificationAlgorithm=="HTTPS"} (the default) the JDK TLS implementation
+     * checks that the host name indication set by the client matches the host names in the server certificate.
+     * If this check passes successfully, the {@code HostnameVerifier} is invoked and the application
+     * can perform additional checks and allow/deny the connection to the server.</p>
+     * <p>When {@code endpointIdentificationAlgorithm==null} the JDK TLS implementation will not check
+     * the host names, and any check is therefore performed only by the {@code HostnameVerifier.}</p>
+     *
+     * @param hostnameVerifier the HostnameVerifier used by a client to verify host names in the server certificate
+     */
     public void setHostnameVerifier(HostnameVerifier hostnameVerifier)
     {
         _hostnameVerifier = hostnameVerifier;
