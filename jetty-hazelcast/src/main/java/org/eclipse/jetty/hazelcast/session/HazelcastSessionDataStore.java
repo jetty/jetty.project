@@ -20,6 +20,7 @@ package org.eclipse.jetty.hazelcast.session;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
@@ -74,7 +75,12 @@ public class HazelcastSessionDataStore
     public boolean delete( String id )
         throws Exception
     {
-        return sessionDataMap == null ? false : sessionDataMap.remove( getCacheKey( id ) ) != null;
+        if (sessionDataMap == null)
+            return false;
+        
+        //use delete which does not deserialize the SessionData object being removed
+        sessionDataMap.delete( getCacheKey(id));
+        return true;
     }
 
     public IMap<String, SessionData> getSessionDataMap()
