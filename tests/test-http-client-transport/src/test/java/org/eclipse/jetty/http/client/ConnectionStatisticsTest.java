@@ -36,7 +36,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
+import org.junit.Ignore;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -54,6 +56,7 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         Assumptions.assumeTrue(scenario.transport == HTTP || scenario.transport == H2C);
     }
 
+    @Disabled
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
     public void testConnectionStatistics(Transport transport) throws Exception
