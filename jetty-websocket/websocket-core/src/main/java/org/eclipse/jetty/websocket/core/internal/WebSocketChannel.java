@@ -383,9 +383,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         CloseStatus closeStatus = abnormalCloseStatusFor(cause);
 
         if (closeStatus.getCode() == CloseStatus.PROTOCOL)
-            close(closeStatus, NOOP);
+            close(closeStatus, callback);
         else if (channelState.onClosed(closeStatus))
             closeConnection(cause, closeStatus, callback);
+        else
+            callback.failed(cause);
     }
 
     /**
@@ -416,7 +418,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (LOG.isDebugEnabled())
             LOG.debug("ConnectionState: Transition to CONNECTED");
 
-        Callback openCallback =  Callback.from(()->
+        Callback openCallback = Callback.from(()->
                 {
                     channelState.onOpen();
                     if (!demanding)
@@ -505,13 +507,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
                     Callback closeConnectionCallback = Callback.from(
                             ()->closeConnection(cause, channelState.getCloseStatus(), callback),
-                            x->closeConnection(cause, channelState.getCloseStatus(), Callback.from(
-                                    ()-> callback.failed(x),
-                                    x2->
-                                    {
-                                        x.addSuppressed(x2);
-                                        callback.failed(x);
-                                    })));
+                            t->closeConnection(cause, channelState.getCloseStatus(), Callback.from(callback, t)));
 
                     flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
                 }
@@ -528,13 +524,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (closeStatus instanceof AbnormalCloseStatus && channelState.onClosed(closeStatus))
-                    closeConnection(null, closeStatus, Callback.from(
-                            ()->callback.failed(ex),
-                            x2->
-                            {
-                                ex.addSuppressed(x2);
-                                callback.failed(ex);
-                            }));
+                    closeConnection(null, closeStatus, Callback.from(callback, ex));
                 else
                     callback.failed(ex);
             }

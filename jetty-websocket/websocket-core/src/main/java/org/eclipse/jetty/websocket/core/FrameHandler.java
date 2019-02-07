@@ -66,10 +66,14 @@ public interface FrameHandler extends IncomingFrames
     /**
      * Async notification that Connection is being opened.
      * <p>
-     * FrameHandler can write during this call, but will not receive frames until
-     * the onOpen() completes.
+     * FrameHandler can write during this call, but can not receive frames until the callback is succeeded.
      * </p>
-     *
+     * <p>
+     * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if not
+     * auto-demanding or call {@link CoreSession#demand(long)} if demanding.
+     * If the FrameHandler fails the callback a close frame will be sent with {@link CloseStatus#SERVER_ERROR} and
+     * the connection will be closed. <br>
+     * </p>
      * @param coreSession the channel associated with this connection.
      * @param callback the callback to indicate success in processing (or failure)
      */
@@ -93,7 +97,8 @@ public interface FrameHandler extends IncomingFrames
     /**
      * An error has occurred or been detected in websocket-core and being reported to FrameHandler.
      * A call to onError will be followed by a call to {@link #onClosed(CloseStatus, Callback)} giving the close status
-     * derived from the error.
+     * derived from the error. This will not be called more than once, {@link #onClosed(CloseStatus, Callback)}
+     * will be called on the callback completion.
      *
      * @param cause the reason for the error
      * @param callback the callback to indicate success in processing (or failure)
@@ -105,6 +110,7 @@ public interface FrameHandler extends IncomingFrames
      * <p>
      * The connection is now closed, no reading or writing is possible anymore.
      * Implementations of FrameHandler can cleanup their resources for this connection now.
+     * This method will be called only once.
      * </p>
      *
      * @param closeStatus the close status received from remote, or in the case of abnormal closure from local.

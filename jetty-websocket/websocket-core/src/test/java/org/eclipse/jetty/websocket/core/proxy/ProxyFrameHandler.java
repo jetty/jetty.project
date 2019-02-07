@@ -14,14 +14,46 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
 class ProxyFrameHandler implements FrameHandler
 {
-    String name = "[PROXY_SERVER]";
+    static class FailedCoreSession extends CoreSession.Empty
+    {
+        private Throwable throwable;
+        private Callback callback;
+
+        public FailedCoreSession(Throwable throwable, Callback callback)
+        {
+            this.throwable = throwable;
+            this.callback = callback;
+        }
+
+        public Throwable getThrowable()
+        {
+            return throwable;
+        }
+
+        public Callback getCallback()
+        {
+            return callback;
+        }
+
+        public void failed(Throwable t)
+        {
+            throwable.addSuppressed(t);
+            failed();
+        }
+
+        public void failed()
+        {
+            callback.failed(throwable);
+        }
+    }
+
+    String name = "[ClientToProxy]";
 
     URI serverUri;
     WebSocketCoreClient client = new WebSocketCoreClient();
 
     CoreSession clientSession;
-    volatile CoreSession serverSession;
-
+    AtomicReference<CoreSession> serverSession = new AtomicReference<>();
 
     AtomicReference<Callback> closeFrameCallback = new AtomicReference<>();
 
@@ -47,23 +79,27 @@ class ProxyFrameHandler implements FrameHandler
 
         try
         {
-            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, new ProxyFrameHandlerClient());
-            client.connect(upgradeRequest).whenComplete((s,t)->{
+            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, new ServerToProxyFrameHandler());
+            client.connect(upgradeRequest).whenComplete((s, t) ->
+            {
                 if (t != null)
                 {
+                    // If an onError callback was waiting to be completed in onOpen we must fail it.
+                    CoreSession session = this.serverSession.get();
+                    if (session instanceof FailedCoreSession)
+                        ((FailedCoreSession)session).failed(t);
+
                     callback.failed(t);
                 }
                 else
                 {
-                    serverSession = s;
                     callback.succeeded();
                 }
             });
         }
         catch (IOException e)
         {
-            e.printStackTrace();
-            clientSession.close(CloseStatus.SERVER_ERROR, "proxy failed to connect to server", Callback.NOOP);
+            clientSession.close(CloseStatus.SERVER_ERROR, e.getMessage(), Callback.from(callback,e));
         }
     }
 
@@ -71,45 +107,54 @@ class ProxyFrameHandler implements FrameHandler
     public void onFrame(Frame frame, Callback callback)
     {
         System.err.println(name + " onFrame(): " + frame);
-        onFrame(serverSession, frame, callback);
+        onFrame(serverSession.get(), frame, callback);
     }
 
     private void onFrame(CoreSession session, Frame frame, Callback callback)
     {
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-
-            Callback closeCallback = Callback.NOOP;
-
-            // If we have already received a close frame then we can succeed both callbacks
-            if (!closeFrameCallback.compareAndSet(null, callback))
-            {
-                closeCallback = Callback.from(()->
-                {
-                    closeFrameCallback.get().succeeded();
-                    callback.succeeded();
-                }, (t)->
-                {
-                    closeFrameCallback.get().failed(t);
-                    callback.failed(t);
-                });
-            }
-
-            session.sendFrame(frame, closeCallback, false);
-            return;
+            if (closeFrameCallback.compareAndSet(null, callback))
+                halfClose(session, frame, callback);
+            else
+                fullClose(session, frame, callback);
         }
         else
         {
-            session.sendFrame(Frame.copy(frame), callback, false);
+            session.sendFrame(frame, callback, false);
         }
     }
+
+    public void halfClose(CoreSession session, Frame frame , Callback callback)
+    {
+        Callback closeCallback = Callback.from(() -> {}, (t) -> callback.failed(t));
+        session.sendFrame(frame, closeCallback, false);
+    }
+
+    public void fullClose(CoreSession session, Frame frame , Callback callback)
+    {
+        Callback closeCallback = Callback.from(() ->
+        {
+            closeFrameCallback.get().succeeded();
+            callback.succeeded();
+        }, (t) ->
+        {
+            closeFrameCallback.get().failed(t);
+            callback.failed(t);
+        });
+
+        session.sendFrame(frame, closeCallback, false);
+    }
+
 
     @Override
     public void onError(Throwable cause, Callback callback)
     {
         System.err.println(name + " onError(): " + cause);
         cause.printStackTrace();
-        callback.succeeded();
+
+        if (!serverSession.compareAndSet(null, new FailedCoreSession(cause, callback)))
+            serverSession.get().close(CloseStatus.SHUTDOWN, cause.getMessage(), callback);
     }
 
     @Override
@@ -119,14 +164,24 @@ class ProxyFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
-    class ProxyFrameHandlerClient implements FrameHandler
+    class ServerToProxyFrameHandler implements FrameHandler
     {
-        String name = "[PROXY_CLIENT]";
+        String name = "[ServerToProxy]";
 
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
         {
-            serverSession = coreSession;
+            if (!serverSession.compareAndSet(null, coreSession))
+            {
+                if (!(serverSession.get() instanceof FailedCoreSession))
+                    throw new IllegalStateException("session is already set");
+
+                FailedCoreSession session = (FailedCoreSession)serverSession.get();
+                session.failed();
+                callback.failed(session.getThrowable());
+                return;
+            }
+
             callback.succeeded();
         }
 
@@ -142,7 +197,7 @@ class ProxyFrameHandler implements FrameHandler
         {
             System.err.println(name + " onError(): " + cause);
             cause.printStackTrace();
-            callback.succeeded();
+            clientSession.close(CloseStatus.SERVER_ERROR, cause.getMessage(), callback);
         }
 
         @Override
