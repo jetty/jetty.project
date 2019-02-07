@@ -759,7 +759,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
         }
 
-        private void handshakeSucceeded()
+        private void handshakeSucceeded() throws SSLException
         {
             if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.SUCCEEDED))
             {
@@ -1182,7 +1182,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
         }
 
-        private void notifyHandshakeSucceeded(SSLEngine sslEngine)
+        private void notifyHandshakeSucceeded(SSLEngine sslEngine) throws SSLException
         {
             SslHandshakeListener.Event event = null;
             for (SslHandshakeListener listener : handshakeListeners)
@@ -1192,6 +1192,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 try
                 {
                     listener.handshakeSucceeded(event);
+                }
+                catch (SSLException x)
+                {
+                    throw x;
                 }
                 catch (Throwable x)
                 {
