@@ -28,13 +28,20 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Proxy;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -54,6 +61,7 @@ public abstract class AbstractSessionDataStoreTest
     public static final long ANCIENT_TIMESTAMP = 100L;
     public static final long RECENT_TIMESTAMP = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(3*GRACE_PERIOD_SEC);
     
+    protected URLClassLoader _contextClassLoader;
 
     
     
@@ -77,9 +85,36 @@ public abstract class AbstractSessionDataStoreTest
     @Test
     public void testStoreSession() throws Exception
     {
+        /*
+         * File foobarJar = MavenTestingUtils.getTestResourceFile("foobar.jar");
+         * URL[] foobarUrls = new URL[]{foobarJar.toURI().toURL()};
+         * URLClassLoader loaderWithFoo = new URLClassLoader(foobarUrls,
+         * Thread.currentThread().getContextClassLoader());
+         * 
+         * System.err.println("FOO "+foobarJar.toURI().toURL());
+         */
+        
+        InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
+        System.err.println("foostream");
+        File foodir = new File (MavenTestingUtils.getTargetDir(), "foo");
+        foodir.mkdirs();
+        File fooclass = new File (foodir, "Foo.class");
+        System.err.println("fooclass");
+        IO.copy(foostream, new FileOutputStream(fooclass));
+        
+        assertTrue(fooclass.exists());
+        assertTrue(fooclass.length() != 0);
+        
+        URL[] foodirUrls = new URL[]{foodir.toURI().toURL()};
+        System.err.println(foodir.toURI().toURL());
+        _contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
+        System.err.println("copied");
+        
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");       
+        context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
+        
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -88,13 +123,37 @@ public abstract class AbstractSessionDataStoreTest
         
         store.start();
         
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        SessionData data = null;
+        try
+        {
+            Thread.currentThread().setContextClassLoader(_contextClassLoader);
+            Class fooclazz = Class.forName("Foo", true, _contextClassLoader);
+            System.err.println("loaded Foo.class");
+            Object o = fooclazz.newInstance();
+            System.err.println("Made foo inst: "+ o);
         //create a session
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", 100, now, now-1, -1);//never expires
-        data.setAttribute("a", "b");
+        data = store.newSessionData("1234", 100, now, now-1, -1);//never expires
         data.setLastNode(sessionContext.getWorkerName());
+
+        
+        data.setAttribute("a", fooclazz.newInstance());
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
         
         store.store("1234", data);
+        
+        System.err.println("Stored FOO");
+        
+        System.err.println(checkSessionPersisted(data));
         
         //check that the store contains all of the session data
         assertTrue(checkSessionPersisted(data));
