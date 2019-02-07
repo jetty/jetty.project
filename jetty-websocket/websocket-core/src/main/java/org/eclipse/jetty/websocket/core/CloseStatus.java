@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Utf8Appendable;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 
 /**
  * Representation of a WebSocket Close (status code &amp; reason)
@@ -45,6 +45,7 @@ public class CloseStatus
     public static final int FAILED_TLS_HANDSHAKE = 1015;
 
     public static final CloseStatus NO_CODE_STATUS = new CloseStatus(NO_CODE);
+    public static final CloseStatus NO_CLOSE_STATUS = new CloseStatus(NO_CLOSE);
     public static final CloseStatus NORMAL_STATUS = new CloseStatus(NORMAL);
 
     static final int MAX_REASON_PHRASE = Frame.MAX_CONTROL_PAYLOAD - 2;
@@ -169,6 +170,19 @@ public class CloseStatus
         if (frame.getOpCode()==OpCode.CLOSE)
             return new CloseStatus(frame);
         return null;
+    }
+
+    public static boolean isOrdinary(CloseStatus closeStatus)
+    {
+        switch (closeStatus.getCode())
+        {
+            case NORMAL:
+            case SHUTDOWN:
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     public int getCode()

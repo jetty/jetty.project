@@ -122,6 +122,25 @@ public class WebSocketChannelState
         }
     }
 
+    public boolean onEof()
+    {
+        synchronized (this)
+        {
+            switch (_channelState)
+            {
+                case CLOSED:
+                case ISHUT:
+                    return false;
+
+                default:
+                    if (_closeStatus == null || CloseStatus.isOrdinary(_closeStatus))
+                        _closeStatus = CloseStatus.NO_CLOSE_STATUS;
+                    _channelState = State.CLOSED;
+                    return true;
+            }
+        }
+    }
+
     public boolean onOutgoingFrame(Frame frame) throws ProtocolException
     {
         byte opcode = frame.getOpCode();
@@ -130,11 +149,7 @@ public class WebSocketChannelState
         synchronized (this)
         {
             if (!isOutputOpen())
-            {
-                if (opcode == OpCode.CLOSE && CloseStatus.getCloseStatus(frame) instanceof WebSocketChannel.AbnormalCloseStatus)
-                    _channelState = State.CLOSED;
                 throw new IllegalStateException(_channelState.toString());
-            }
 
             if (opcode == OpCode.CLOSE)
             {

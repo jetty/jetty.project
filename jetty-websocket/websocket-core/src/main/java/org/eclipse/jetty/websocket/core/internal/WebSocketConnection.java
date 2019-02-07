@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
@@ -167,12 +168,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
 
+        Throwable t = new ClosedChannelException();
+
         if (!channel.isClosed())
-        {
-            IOException e = new IOException("Closed");
-            channel.onClosed(e);
-        }
-        flusher.onClose();
+            channel.onEof();
+
+        flusher.onClose(t);
 
         super.onClose();
     }
@@ -347,12 +348,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand > 0)
+            if (demand != 0)
                 return true;
 
-            if (demand == 0)
-                fillingAndParsing = false;
-
+            fillingAndParsing = false;
             if (networkBuffer.isEmpty())
                 releaseNetworkBuffer();
 
@@ -372,10 +371,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (!fillingAndParsing)
                 throw new IllegalStateException();
 
-            if (demand < 0)
-                return false;
+            if (demand > 0)
+                demand--;
 
-            demand--;
             return true;
         }
     }
@@ -410,9 +408,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                         onFrame(frame);
 
                     if (!moreDemand())
-                    {
                         return;
-                    }
                 }
 
                 // buffer must be empty here because parser is fully consuming
@@ -436,7 +432,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (filled < 0)
                 {
                     releaseNetworkBuffer();
-                    channel.onClosed(new IOException("Read EOF"));
+                    channel.onEof();
                     return;
                 }
 
@@ -532,43 +528,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             generator);
     }
 
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-
-        EndPoint endp = getEndPoint();
-        if (endp != null)
-        {
-            result = prime * result + endp.getLocalAddress().hashCode();
-            result = prime * result + endp.getRemoteAddress().hashCode();
-        }
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        WebSocketConnection other = (WebSocketConnection)obj;
-        EndPoint endp = getEndPoint();
-        EndPoint otherEndp = other.getEndPoint();
-        if (endp == null)
-        {
-            if (otherEndp != null)
-                return false;
-        }
-        else if (!endp.equals(otherEndp))
-            return false;
-        return true;
-    }
-
     /**
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
@@ -595,13 +554,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (channel.getBehavior() == Behavior.CLIENT)
         {
-            Frame wsf = frame;
             byte[] mask = new byte[4];
             random.nextBytes(mask);
-            wsf.setMask(mask);
+            frame.setMask(mask);
         }
-        flusher.enqueue(frame, callback, batch);
-        flusher.iterate();
+
+        if (flusher.enqueue(frame, callback, batch))
+            flusher.iterate();
     }
 
     private class Flusher extends FrameFlusher
@@ -615,7 +574,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         public void onCompleteFailure(Throwable x)
         {
             super.onCompleteFailure(x);
-            channel.processConnectionError(x,NOOP);
+            channel.processConnectionError(x, NOOP);
         }
     }
 }
