@@ -215,11 +215,15 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
-    public void onClose()
+    public void onClose(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onClose {}",this);
-
+        {
+            if (cause==null)
+                LOG.debug("onClose {}", this);
+            else
+                LOG.debug("onClose " + this, cause);
+        }
         for (Listener listener : _listeners)
             onClosed(listener);
     }

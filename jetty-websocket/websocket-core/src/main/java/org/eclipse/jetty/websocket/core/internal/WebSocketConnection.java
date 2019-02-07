@@ -163,19 +163,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * Not related to WebSocket close handshake.
      */
     @Override
-    public void onClose()
+    public void onClose(Throwable cause)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
 
-        Throwable t = new ClosedChannelException();
-
         if (!channel.isClosed())
             channel.onEof();
-
-        flusher.onClose(t);
-
-        super.onClose();
+        flusher.onClose(cause);
+        super.onClose(cause);
     }
 
 

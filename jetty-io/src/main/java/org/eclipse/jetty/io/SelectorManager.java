@@ -337,12 +337,13 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * <p>Callback method invoked when a connection is closed.</p>
      *
      * @param connection the connection just closed
+     * @param cause the cause of the close or null for normal close
      */
-    public void connectionClosed(Connection connection)
+    public void connectionClosed(Connection connection, Throwable cause)
     {
         try
         {
-            connection.onClose();
+            connection.onClose(cause);
         }
         catch (Throwable x)
         {

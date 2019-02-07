@@ -94,9 +94,9 @@ public class NetworkTrafficSelectChannelEndPoint extends SocketChannelEndPoint
     }
 
     @Override
-    public void onClose()
+    public void onClose(Throwable cause)
     {
-        super.onClose();
+        super.onClose(cause);
         if (listeners != null && !listeners.isEmpty())
         {
             for (NetworkTrafficListener listener : listeners)

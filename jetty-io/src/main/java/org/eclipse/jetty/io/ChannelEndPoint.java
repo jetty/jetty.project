@@ -208,16 +208,16 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
-    public void onClose()
+    public void onClose(Throwable cause)
     {
         try
         {
-            super.onClose();
+            super.onClose(cause);
         }
         finally
         {
             if (_selector!=null)
-                _selector.destroyEndPoint(this);
+                _selector.destroyEndPoint(this, cause);
         }
     }
 

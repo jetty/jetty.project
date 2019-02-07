@@ -108,11 +108,11 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     }
 
     @Override
-    public void onClose()
+    public void onClose(Throwable cause)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Close {} ", this);
-        super.onClose();
+        super.onClose(cause);
 
         LifeCycle.stop(strategy);
     }

@@ -284,10 +284,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     }
 
     @Override
-    public void onClose()
+    public void onClose(Throwable cause)
     {
-        _decryptedEndPoint.getConnection().onClose();
-        super.onClose();
+        _decryptedEndPoint.getConnection().onClose(cause);
+        super.onClose(cause);
     }
 
     @Override

@@ -661,9 +661,9 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
-        public void close()
+        public void close(Throwable cause)
         {
-            _endp.close();
+            _endp.close(cause);
         }
 
         @Override
@@ -739,9 +739,9 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
-        public void onClose()
+        public void onClose(Throwable cause)
         {
-            _endp.onClose();
+            _endp.onClose(cause);
         }
 
         @Override

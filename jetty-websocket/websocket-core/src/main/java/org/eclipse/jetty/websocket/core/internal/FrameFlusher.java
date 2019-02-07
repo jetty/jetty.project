@@ -41,6 +41,7 @@ public class FrameFlusher extends IteratingCallback
 {
     public static final Frame FLUSH_FRAME = new Frame(OpCode.BINARY);
     private static final Logger LOG = Log.getLogger(FrameFlusher.class);
+    private static final Throwable CLOSED_CHANNEL = new ClosedChannelException();
 
     private final ByteBufferPool bufferPool;
     private final EndPoint endPoint;
@@ -86,14 +87,11 @@ public class FrameFlusher extends IteratingCallback
         return failure==null;
     }
 
-    public void onClose(Throwable t)
+    public void onClose(Throwable cause)
     {
-        if (t == null)
-            t = new ClosedChannelException();
-
         synchronized (this)
         {
-            closedCause = t;
+            closedCause = cause == null ? CLOSED_CHANNEL : cause;
         }
 
         iterate();

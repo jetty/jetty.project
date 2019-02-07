@@ -150,7 +150,16 @@ public interface EndPoint extends Closeable
      * Close any backing stream associated with the endpoint
      */
     @Override
-    void close();
+    default void close()
+    {
+        close (null);
+    }
+
+    /**
+     * Close any backing stream associated with the endpoint, passing a cause
+     * @param cause the reason for the close or null
+     */
+    void close(Throwable cause);
 
     /**
      * Fill the passed buffer with data from this endpoint.  The bytes are appended to any
@@ -248,15 +257,16 @@ public interface EndPoint extends Closeable
 
     /**
      * <p>Callback method invoked when this {@link EndPoint} is opened.</p>
-     * @see #onClose()
+     * @see #onClose(Throwable)
      */
     void onOpen();
 
     /**
      * <p>Callback method invoked when this {@link EndPoint} is close.</p>
+     * @param cause The reason for the close, or null if a normal close.
      * @see #onOpen()
      */
-    void onClose();
+    void onClose(Throwable cause);
 
     /** Is the endpoint optimized for DirectBuffer usage
      * @return True if direct buffers can be used optimally.

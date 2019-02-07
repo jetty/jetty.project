@@ -56,8 +56,9 @@ public interface Connection extends Closeable
     /**
      * <p>Callback method invoked when this connection is closed.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
+     * @param cause The cause of the close or null for a normal close
      */
-    public void onClose();
+    public void onClose(Throwable cause);
 
     /**
      * @return the {@link EndPoint} associated with this Connection.
