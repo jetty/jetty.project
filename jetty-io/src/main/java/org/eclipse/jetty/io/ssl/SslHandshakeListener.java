@@ -22,6 +22,7 @@ import java.util.EventListener;
 import java.util.EventObject;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 /**
  * <p>Implementations of this interface are notified of TLS handshake events.</p>
@@ -36,7 +37,7 @@ public interface SslHandshakeListener extends EventListener
      *
      * @param event the event object carrying information about the TLS handshake event
      */
-    default void handshakeSucceeded(Event event)
+    default void handshakeSucceeded(Event event) throws SSLException
     {
     }
 

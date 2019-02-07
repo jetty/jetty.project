@@ -33,11 +33,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.NegotiatingClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.ALPNProcessor.Client;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFactory implements SslHandshakeListener
+public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFactory
 {
     private static final Logger LOG = Log.getLogger(ALPNClientConnectionFactory.class);
 
