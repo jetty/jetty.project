@@ -348,7 +348,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand != 0)
+            if (demand != 0) //if demand was canceled, this creates synthetic demand in order to read until EOF
                 return true;
 
             fillingAndParsing = false;

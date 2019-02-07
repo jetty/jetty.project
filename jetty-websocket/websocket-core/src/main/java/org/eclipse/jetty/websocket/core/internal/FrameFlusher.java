@@ -64,6 +64,15 @@ public class FrameFlusher extends IteratingCallback
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
     }
 
+
+    /**
+     * Enqueue a Frame to be written to the endpoint.
+     * @param frame The frame to queue
+     * @param callback The callback to call once the frame is sent
+     * @param batch True if batch mode is to be used
+     * @return returns true if the frame was enqueued and iterate needs to be called, returns false if the
+     * FrameFlusher was closed
+     */
     public boolean enqueue(Frame frame, Callback callback, boolean batch)
     {
         Entry entry = new Entry(frame, callback, batch);

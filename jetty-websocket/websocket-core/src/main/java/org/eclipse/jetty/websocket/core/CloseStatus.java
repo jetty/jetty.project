@@ -172,12 +172,14 @@ public class CloseStatus
         return null;
     }
 
+    // TODO consider defining a precedence for every CloseStatus, and change ChannelState only if higher precedence
     public static boolean isOrdinary(CloseStatus closeStatus)
     {
         switch (closeStatus.getCode())
         {
             case NORMAL:
             case SHUTDOWN:
+            case NO_CODE:
                 return true;
 
             default:
