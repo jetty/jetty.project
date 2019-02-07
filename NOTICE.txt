@@ -105,7 +105,7 @@ The following artifacts are CDDL + GPLv2 with classpath exception.
 
 https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html
 
-org.eclipse.jetty.toolchain:jetty-schemas
+org.eclipse.jetty.toolchain:jetty-servlet-api
 
 ------
 Assorted

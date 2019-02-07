@@ -105,10 +105,10 @@ public class TestJettyOSGiBootWithAnnotations
     @Test
     public void testIndex() throws Exception
     {
-        
+
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-            
+
         HttpClient client = new HttpClient();
         try
         {

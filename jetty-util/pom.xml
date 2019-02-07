@@ -66,7 +66,7 @@
             </systemPropertyVariables>
             <argLine>
               @{argLine} ${jetty.surefire.argLine}
-              --add-modules javax.servlet.api,org.slf4j
+              --add-modules jetty.servlet.api,org.slf4j
             </argLine>
           </configuration>
         </plugin>
@@ -75,8 +75,8 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

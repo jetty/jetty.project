@@ -158,8 +158,7 @@ Note: order presented here is how they would appear on the classpath.
  1:      1.4.1.v201005082020 | ${jetty.base}/lib/ext/javax.mail.glassfish-1.4.1.v201005082020.jar
  2:          {VERSION} | ${jetty.base}/lib/ext/test-mock-resources-{VERSION}.jar
  3:                    (dir) | ${jetty.home}/resources
- 4:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
- 5:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
+ 4:                    3.1.0 | ${jetty.home}/lib/jetty-servlet-api-4.0.2.jar
  6:          {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
  7:          {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
  8:          {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar

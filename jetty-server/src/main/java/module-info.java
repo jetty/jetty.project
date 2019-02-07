@@ -25,7 +25,7 @@ module org.eclipse.jetty.server
     exports org.eclipse.jetty.server.handler.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.server.session;
 
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.io;

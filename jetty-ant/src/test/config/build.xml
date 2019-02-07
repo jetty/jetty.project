@@ -29,12 +29,9 @@
       <loginServices>
         <hashLoginService name="Test Realm" config="realm.properties"/>
       </loginServices>
-      <webApp 
-              war="test.war" 
-              contextpath="/test" >
+      <webApp war="test.war" contextpath="/test" >
         <attributes>
-          <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/servlet-api-[^/]*\.jar$"/>
-
+          <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/jetty-servlet-api-[^/]*\.jar$"/>
         </attributes>
       </webApp>
     </jetty.run>

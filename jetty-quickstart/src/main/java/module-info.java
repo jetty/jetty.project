@@ -20,7 +20,7 @@ module org.eclipse.jetty.quickstart
 {
     exports org.eclipse.jetty.quickstart;
 
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.annotations;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;

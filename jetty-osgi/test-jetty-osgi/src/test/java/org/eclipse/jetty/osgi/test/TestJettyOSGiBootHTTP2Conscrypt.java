@@ -127,7 +127,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-        
+
         HTTP2Client client = new HTTP2Client();
         try 
         {

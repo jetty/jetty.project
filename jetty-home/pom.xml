@@ -285,20 +285,12 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>javax.servlet</groupId>
-                  <artifactId>javax.servlet-api</artifactId>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-servlet-api</artifactId>
                   <version>${servlet.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>servlet-api-4.0.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-schemas</artifactId>
-                  <version>${servlet.schema.version}</version>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-schemas-4.0.jar</destFileName>
+                  <destFileName>jetty-servlet-api-${servlet.api.version}.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -310,7 +302,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>javax.servlet</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/servlet-api</outputDirectory>

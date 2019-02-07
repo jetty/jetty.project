@@ -13,8 +13,7 @@ logging
 threadpool
 
 [lib]
-lib/servlet-api-4.0.jar
-lib/jetty-schemas-4.0.jar
+lib/jetty-servlet-api-4.0.*.jar
 lib/jetty-http-${jetty.version}.jar
 lib/jetty-server-${jetty.version}.jar
 lib/jetty-xml-${jetty.version}.jar
@@ -23,9 +22,6 @@ lib/jetty-io-${jetty.version}.jar
 
 [xml]
 etc/jetty.xml
-
-[jpms]
-patch-module: servlet.api=lib/jetty-schemas-${servlet.schema.version}.jar
 
 [ini-template]
 ### Common HTTP configuration

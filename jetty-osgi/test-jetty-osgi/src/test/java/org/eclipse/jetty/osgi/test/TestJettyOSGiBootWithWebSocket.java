@@ -97,7 +97,7 @@ public class TestJettyOSGiBootWithWebSocket
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-        
+
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 

@@ -22,8 +22,8 @@
         <configuration>
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.http2.http.client.transport=javax.servlet.api
-            --add-modules javax.servlet.api
+            --add-reads org.eclipse.jetty.http2.http.client.transport=jetty.servlet.api
+            --add-modules jetty.servlet.api
           </argLine>
         </configuration>
       </plugin>

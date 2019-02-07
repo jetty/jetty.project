@@ -24,7 +24,7 @@ module org.eclipse.jetty.webapp
 
     requires java.instrument;
     requires java.xml;
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.security;

@@ -28,10 +28,6 @@
       <artifactId>org.eclipse.osgi.services</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-schemas</artifactId>
-    </dependency>
   </dependencies>
 
   <build>

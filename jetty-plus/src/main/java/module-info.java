@@ -35,7 +35,7 @@ module org.eclipse.jetty.plus
     requires org.eclipse.jetty.webapp;
     requires org.eclipse.jetty.xml;
     requires static java.sql;
-    requires static javax.servlet.api;
+    requires static jetty.servlet.api;
     requires static org.eclipse.jetty.server;
     requires static org.eclipse.jetty.servlet;
 

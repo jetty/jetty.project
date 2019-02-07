@@ -26,7 +26,7 @@ module org.eclipse.jetty.http
 
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.io;
-    requires static javax.servlet.api;
+    requires static jetty.servlet.api;
 
     uses HttpFieldPreEncoder;
 

@@ -21,7 +21,7 @@ module org.eclipse.jetty.rewrite
     exports org.eclipse.jetty.rewrite;
     exports org.eclipse.jetty.rewrite.handler;
 
-    requires javax.servlet.api;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.io;

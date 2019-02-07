@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
@@ -100,6 +101,11 @@ public class TestOSGiUtil
         return res;
     }
  
+    public static Option optionalRemoteDebug()
+    {
+        return CoreOptions.when(Boolean.getBoolean("pax.exam.debug.remote"))
+                .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
+    }
      
     public static List<Option> coreJettyDependencies()
     {
@@ -108,7 +114,7 @@ public class TestOSGiUtil
         String mavenRepoPath = System.getProperty( "mavenRepoPath" );
         if (!StringUtil.isBlank(mavenRepoPath))
             res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-osgi-servlet-api" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-servlet-api" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
@@ -276,6 +282,22 @@ public class TestOSGiUtil
         SslContextFactory sslContextFactory = new SslContextFactory(true);
         sslContextFactory.setEndpointIdentificationAlgorithm("");
         return sslContextFactory;
+    }
+
+    public static List<Option> jettyLogging()
+    {
+        List<Option> options = new ArrayList<>();
+        // SLF4J Specific (possible set of options)
+        /*
+        options.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.slf4j").artifactId("jul-to-slf4j").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().start());
+        options.add(mavenBundle().groupId("log4j").artifactId("log4j").versionAsInProject().start());
+        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(Slf4jLog.class.getName()));
+         */
+        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(StdErrLog.class.getName()));
+        options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
+        return options;
     }
 
     protected static void testHttpServiceGreetings(BundleContext bundleContext, String protocol, int port) throws Exception

@@ -30,7 +30,7 @@ module org.eclipse.jetty.apache.jsp
     requires java.xml;
     requires org.eclipse.jetty.util;
     requires org.mortbay.apache.jasper;
-    requires static javax.servlet.api;
+    requires static jetty.servlet.api;
 
     provides Log with JuliLog;
     provides ServletContainerInitializer with JettyJasperInitializer;

@@ -246,8 +246,7 @@ Modules for tag '*':
            : Enables the core Jetty server on the classpath.
      Depend: threadpool
    Optional: jvm, ext, resources, logging
-        LIB: lib/servlet-api-3.1.jar
-        LIB: lib/jetty-schemas-3.1.jar
+        LIB: lib/jetty-servlet-api-4.0.2.jar
         LIB: lib/jetty-http-${jetty.version}.jar
         LIB: lib/jetty-server-${jetty.version}.jar
         LIB: lib/jetty-xml-${jetty.version}.jar
