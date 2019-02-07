@@ -143,7 +143,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             HostnameVerifier verifier = sslContextFactory.getHostnameVerifier();
             if (verifier != null)
             {
-                String host = (String)context.get(SSL_PEER_HOST_CONTEXT_KEY);
+                InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.SOCKET_ADDRESS_CONTEXT_KEY);
+                String host = address.getHostString();
                 try
                 {
                     if (!verifier.verify(host, event.getSSLEngine().getSession()))
