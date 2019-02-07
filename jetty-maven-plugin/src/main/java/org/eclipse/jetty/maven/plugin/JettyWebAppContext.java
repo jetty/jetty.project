@@ -62,7 +62,7 @@ public class JettyWebAppContext extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(JettyWebAppContext.class);
 
-    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/[^/]*servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
+    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/jetty-servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
 
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
 

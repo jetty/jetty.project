@@ -150,7 +150,7 @@
            <war>src/main/webapp</war>
            <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
            <contextPath>/test-spec</contextPath>
-            <containerIncludeJarPattern>.*/javax.servlet-[^/]*\.jar$</containerIncludeJarPattern>
+            <containerIncludeJarPattern>.*/jetty-servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
             <configurationDiscovered>true</configurationDiscovered>
             <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
          </webAppConfig>

@@ -76,7 +76,7 @@ public class OneWebAppWithJsp
         // scan for them instead.
         webapp.setAttribute(
                 "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$" );
+                ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$" );
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to
