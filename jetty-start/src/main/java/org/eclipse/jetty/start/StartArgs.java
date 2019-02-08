@@ -585,6 +585,7 @@ public class StartArgs
                 }
             }
         }
+        jmodAdds.add("ALL-MODULE-PATH");
         StartLog.debug("Expanded JPMS directives:%nadd-modules: %s%npatch-modules: %s%nadd-opens: %s%nadd-exports: %s%nadd-reads: %s",
                 jmodAdds, jmodPatch, jmodOpens, jmodExports, jmodReads);
     }
@@ -1110,7 +1111,8 @@ public class StartArgs
         if ("--jpms".equals(arg))
         {
             jpms = true;
-            // Need to fork because we cannot use JDK 9 Module APIs.
+            // Forking is simpler; otherwise we need to add the
+            // JPMS directives such as "--add-modules" via API.
             exec = true;
             return;
         }
