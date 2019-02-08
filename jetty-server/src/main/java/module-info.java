@@ -19,17 +19,20 @@
 module org.eclipse.jetty.server
 {
     exports org.eclipse.jetty.server;
-    exports org.eclipse.jetty.server.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.server.handler;
     exports org.eclipse.jetty.server.handler.gzip;
     exports org.eclipse.jetty.server.handler.jmx to org.eclipse.jetty.jmx;
+    exports org.eclipse.jetty.server.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.server.session;
 
     requires jetty.servlet.api;
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.util;
+
+    // Only required if using DatabaseAdaptor/JDBCSessionDataStore.
     requires static java.sql;
     requires static java.naming;
+    // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 }

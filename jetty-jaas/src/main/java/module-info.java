@@ -24,8 +24,10 @@ module org.eclipse.jetty.jaas
 
     requires java.naming;
     requires jetty.servlet.api;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.security;
+    requires org.eclipse.jetty.server;
+    requires org.eclipse.jetty.util;
+
+    // Only required if using JDBCLoginModule.
     requires static java.sql;
 }

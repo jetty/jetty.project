@@ -24,9 +24,12 @@ module org.eclipse.jetty.jndi
     exports org.eclipse.jetty.jndi.local;
 
     requires java.naming;
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.server;
+    requires org.eclipse.jetty.util;
+
+    // Only required if using DataSourceCloser.
     requires static java.sql;
+    // Only required if using MailSessionReference.
     requires static javax.mail.glassfish;
     requires static org.eclipse.jetty.security;
 }

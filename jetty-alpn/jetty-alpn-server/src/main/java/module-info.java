@@ -22,9 +22,9 @@ module org.eclipse.jetty.alpn.server
 {
     exports org.eclipse.jetty.alpn.server;
 
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.server;
+    requires org.eclipse.jetty.util;
 
     uses ALPNProcessor.Server;
 }

@@ -16,13 +16,20 @@
 //  ========================================================================
 //
 
+// This module is a mixed bag of things.
+// There are some utility classes that only depend on Servlet APIs,
+// but other utility classes that depend on some Jetty module.
 module org.eclipse.jetty.servlets
 {
     exports org.eclipse.jetty.servlets;
 
-    requires static jetty.servlet.api;
-    requires static org.eclipse.jetty.util;
+    requires jetty.servlet.api;
+
+    // Only required if using CloseableDoSFilter.
     requires static org.eclipse.jetty.io;
+    // Only required if using DoSFilter, PushCacheFilter, etc.
     requires static org.eclipse.jetty.http;
     requires static org.eclipse.jetty.server;
+    // Only required if using CrossOriginFilter, DoSFilter, etc.
+    requires static org.eclipse.jetty.util;
 }

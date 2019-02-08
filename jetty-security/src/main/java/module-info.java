@@ -22,9 +22,12 @@ module org.eclipse.jetty.security
     exports org.eclipse.jetty.security.authentication;
 
     requires jetty.servlet.api;
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.server;
+    requires org.eclipse.jetty.util;
+
+    // Only required if using JDBCLoginService.
     requires static java.sql;
+    // Only required if using SPNEGO.
     requires static java.security.jgss;
 }

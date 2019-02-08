@@ -32,12 +32,17 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.thread;
     exports org.eclipse.jetty.util.thread.strategy;
 
+    // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
     requires static java.desktop;
+    // Only required if using X509.
     requires static java.naming;
+    // Only required if using JavaUtilLog.
     requires static java.logging;
+    // Only required if using DriverManagerLeakPreventer.
     requires static java.sql;
+    // Only required if using DOMLeakPreventer.
     requires static java.xml;
-    requires static jetty.servlet.api;
+    // Only required when using Jetty logging.
     requires static org.slf4j;
 
     uses CredentialProvider;

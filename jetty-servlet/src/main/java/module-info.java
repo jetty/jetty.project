@@ -27,8 +27,13 @@ module org.eclipse.jetty.servlet
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.security;
+
+    // Only required if using StatisticsServlet.
     requires static java.management;
+    // Only required if using IntrospectorCleaner.
     requires static java.desktop;
+    // Only required if using StatisticsServlet.
     requires static org.eclipse.jetty.io;
+    // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 }
