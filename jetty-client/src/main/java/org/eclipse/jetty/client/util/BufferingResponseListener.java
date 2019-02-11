@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * specified to the constructors.</p>
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
+ * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
  */
 public abstract class BufferingResponseListener extends Listener.Adapter
 {
