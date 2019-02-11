@@ -9,7 +9,7 @@
   <name>Jetty :: OSGi ALPN Fragment</name>
   <packaging>jar</packaging>
   <properties>
-    <bundle-symbolic-name>org.eclipse.jetty.osgi.alpn.fragment</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.alpn.fragment</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>
