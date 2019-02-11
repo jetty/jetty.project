@@ -11,7 +11,7 @@
   <packaging>jar</packaging>
 
   <properties>
-    <jetty.home>${project.build.outputDirectory}/jetty_home</jetty.home>
+    <bundle-symbolic-name>${project.groupId}.test_distribution</bundle-symbolic-name>
     <mavenResolver.version>1.3.1</mavenResolver.version>
   </properties>
 

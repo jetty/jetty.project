@@ -27,25 +27,22 @@ public class HttpModuleTests
     @Test
     public void http_module() throws Exception
     {
-        DistributionTester distributionTester = DistributionTester.Builder.newInstance() //
-                .jettyVersion(System.getProperty("jetty_version")) //
-                .mavenLocalRepository(System.getProperty("mavenRepoPath")) //
-                .waitStartTime(30) //
-                .build(); //
-        try
+
+        try(DistributionTester distributionTester = DistributionTester.Builder.newInstance() //
+            .jettyVersion(System.getProperty("jetty_version")) //
+            .mavenLocalRepository(System.getProperty("mavenRepoPath")) //
+            .waitStartTime(30) //
+            .build())
         {
             distributionTester.start("--create-startd", "--approve-all-licenses", "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,jmx-remote,servlet,servlets");
             distributionTester.stop();
 
             File war = distributionTester.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + System.getProperty("jetty_version"));
             distributionTester.installWarFile(war, "test");
-            distributionTester.start();
-            distributionTester.assertLogsContains("Started @");
-            distributionTester.assertUrlStatus("/test/index.jsp", 200);
-            distributionTester.assertUrlContains("/test/index.jsp", "Hello");
-        } finally {
-            distributionTester.stop();
-            distributionTester.cleanup();
+            distributionTester.start()  //
+                        .assertLogsContains("Started @") //
+                        .assertUrlStatus("/test/index.jsp", 200) //
+                        .assertUrlContains("/test/index.jsp", "Hello");
         }
 
     }
