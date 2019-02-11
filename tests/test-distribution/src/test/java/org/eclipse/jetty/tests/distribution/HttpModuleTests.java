@@ -38,8 +38,6 @@ public class HttpModuleTests
             distributionRunner.start("--create-startd", "--approve-all-licenses", "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,jmx-remote,servlet,servlets");
             distributionRunner.stop();
 
-            Path jettyBase = distributionRunner.getJettyBase();
-
             File war = distributionRunner.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + System.getProperty("jetty_version"));
             distributionRunner.installWarFile(war, "test");
             distributionRunner.start();
