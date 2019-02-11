@@ -14,48 +14,12 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
 class ProxyFrameHandler implements FrameHandler
 {
-    static class FailedCoreSession extends CoreSession.Empty
-    {
-        private Throwable throwable;
-        private Callback callback;
-
-        public FailedCoreSession(Throwable throwable, Callback callback)
-        {
-            this.throwable = throwable;
-            this.callback = callback;
-        }
-
-        public Throwable getThrowable()
-        {
-            return throwable;
-        }
-
-        public Callback getCallback()
-        {
-            return callback;
-        }
-
-        public void failed(Throwable t)
-        {
-            throwable.addSuppressed(t);
-            failed();
-        }
-
-        public void failed()
-        {
-            callback.failed(throwable);
-        }
-    }
-
-    String name = "[ClientToProxy]";
-
-    URI serverUri;
-    WebSocketCoreClient client = new WebSocketCoreClient();
-
-    CoreSession clientSession;
-    AtomicReference<CoreSession> serverSession = new AtomicReference<>();
-
-    AtomicReference<Callback> closeFrameCallback = new AtomicReference<>();
+    private String name = "[ClientToProxy]";
+    private URI serverUri;
+    private WebSocketCoreClient client = new WebSocketCoreClient();
+    private CoreSession clientSession;
+    private AtomicReference<CoreSession> serverSession = new AtomicReference<>();
+    private AtomicReference<Callback> closeFrameCallback = new AtomicReference<>();
 
     public ProxyFrameHandler()
     {
@@ -84,10 +48,27 @@ class ProxyFrameHandler implements FrameHandler
             {
                 if (t != null)
                 {
-                    // If an onError callback was waiting to be completed in onOpen we must fail it.
+                    // We have failed to create the client so onClosed will never be called
+                    // so it is our responsibility to close the WebSocketCoreClient
+                    try
+                    {
+                        client.stop();
+                    }
+                    catch (Exception e)
+                    {
+                        t.addSuppressed(e);
+                    }
+
+                    // If an onError callback was waiting to be completed in serverToProxyFH onOpen, then we must fail it.
                     CoreSession session = this.serverSession.get();
                     if (session instanceof FailedCoreSession)
-                        ((FailedCoreSession)session).failed(t);
+                    {
+                        FailedCoreSession failedSession = (FailedCoreSession)session;
+                        failedSession.failed(t);
+                        t.addSuppressed(failedSession.getThrowable());
+                    }
+                    else
+                        throw new IllegalStateException("onOpen was called but this callback was failed?");
 
                     callback.failed(t);
                 }
@@ -121,28 +102,22 @@ class ProxyFrameHandler implements FrameHandler
         }
         else
         {
+            System.err.println(name + " forwardFrame(): " + frame);
             session.sendFrame(frame, callback, false);
         }
     }
 
-    public void halfClose(CoreSession session, Frame frame , Callback callback)
+    private void halfClose(CoreSession session, Frame frame , Callback callback)
     {
-        Callback closeCallback = Callback.from(() -> {}, (t) -> callback.failed(t));
+        Callback closeCallback = Callback.from(() -> {}, callback::failed);
+        System.err.println(name + " halfClose()");
         session.sendFrame(frame, closeCallback, false);
     }
 
-    public void fullClose(CoreSession session, Frame frame , Callback callback)
+    private void fullClose(CoreSession session, Frame frame , Callback callback)
     {
-        Callback closeCallback = Callback.from(() ->
-        {
-            closeFrameCallback.get().succeeded();
-            callback.succeeded();
-        }, (t) ->
-        {
-            closeFrameCallback.get().failed(t);
-            callback.failed(t);
-        });
-
+        Callback closeCallback = Callback.from(closeFrameCallback.get(), callback);
+        System.err.println(name + " fullClose()");
         session.sendFrame(frame, closeCallback, false);
     }
 
@@ -164,6 +139,7 @@ class ProxyFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
+
     class ServerToProxyFrameHandler implements FrameHandler
     {
         String name = "[ServerToProxy]";
@@ -173,9 +149,6 @@ class ProxyFrameHandler implements FrameHandler
         {
             if (!serverSession.compareAndSet(null, coreSession))
             {
-                if (!(serverSession.get() instanceof FailedCoreSession))
-                    throw new IllegalStateException("session is already set");
-
                 FailedCoreSession session = (FailedCoreSession)serverSession.get();
                 session.failed();
                 callback.failed(session.getThrowable());
@@ -204,7 +177,49 @@ class ProxyFrameHandler implements FrameHandler
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
             System.err.println(name + " onClosed(): " + closeStatus);
-            callback.succeeded();
+
+            try
+            {
+                client.stop();
+                callback.succeeded();
+            }
+            catch (Exception e)
+            {
+                callback.failed(e);
+            }
+        }
+    }
+
+    static class FailedCoreSession extends CoreSession.Empty
+    {
+        private Throwable throwable;
+        private Callback callback;
+
+        public FailedCoreSession(Throwable throwable, Callback callback)
+        {
+            this.throwable = throwable;
+            this.callback = callback;
+        }
+
+        public Throwable getThrowable()
+        {
+            return throwable;
+        }
+
+        public Callback getCallback()
+        {
+            return callback;
+        }
+
+        public void failed(Throwable t)
+        {
+            throwable.addSuppressed(t);
+            failed();
+        }
+
+        public void failed()
+        {
+            callback.failed(throwable);
         }
     }
 }

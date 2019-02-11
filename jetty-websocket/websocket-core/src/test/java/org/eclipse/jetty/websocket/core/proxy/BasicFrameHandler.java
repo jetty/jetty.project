@@ -61,6 +61,7 @@ class BasicFrameHandler implements FrameHandler
 
     public void sendText(String message)
     {
+        System.err.println(name + " sendText(): " + message);
         Frame textFrame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(message));
         session.sendFrame(textFrame, Callback.NOOP, false);
     }
@@ -90,7 +91,10 @@ class BasicFrameHandler implements FrameHandler
             System.err.println(name + " onFrame(): " + frame);
 
             if (frame.isDataFrame())
+            {
+                System.err.println(name + " echoDataFrame(): " + frame);
                 session.sendFrame(new Frame(frame.getOpCode(), frame.getPayload()), callback, false);
+            }
             else
                 callback.succeeded();
 
