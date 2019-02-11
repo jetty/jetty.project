@@ -18,49 +18,37 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class HttpModuleTests
 {
     @Test
     public void http_module() throws Exception
     {
-        // System.getProperty( "jetty_home" )
-        DistributionTester distributionTester = DistributionTester.Builder.newInstance() //
+        DistributionRunner distributionRunner = DistributionRunner.Builder.newInstance() //
                 .jettyVersion(System.getProperty("jetty_version")) //
                 .mavenLocalRepository(System.getProperty("mavenRepoPath")) //
                 .waitStartTime(30) //
                 .build(); //
         try
         {
-            distributionTester.start("--create-startd", "--approve-all-licenses", "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,jmx-remote,servlet,servlets");
-            distributionTester.stop();
+            distributionRunner.start("--create-startd", "--approve-all-licenses", "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,jmx-remote,servlet,servlets");
+            distributionRunner.stop();
 
-            Path jettyBase = distributionTester.getJettyBase();
+            Path jettyBase = distributionRunner.getJettyBase();
 
-            File war = distributionTester.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + System.getProperty("jetty_version"));
-            distributionTester.installWarFile(war, "test");
-            distributionTester.start();
-            distributionTester.assertLogsContains("Started @");
-            distributionTester.assertUrlStatus("/test/index.jsp", 200);
-            distributionTester.assertUrlContains("/test/index.jsp", "Hello");
+            File war = distributionRunner.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + System.getProperty("jetty_version"));
+            distributionRunner.installWarFile(war, "test");
+            distributionRunner.start();
+            distributionRunner.assertLogsContains("Started @");
+            distributionRunner.assertUrlStatus("/test/index.jsp", 200);
+            distributionRunner.assertUrlContains("/test/index.jsp", "Hello");
         } finally {
-            distributionTester.stop();
-            distributionTester.cleanup();
+            distributionRunner.stop();
+            distributionRunner.cleanup();
         }
 
     }

@@ -35,7 +35,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -81,7 +83,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <b>So API can change without any further notice.</b>
  * </p>
  */
-public class DistributionTester {
+public class DistributionRunner {
 
     private Process pid;
 
@@ -103,23 +105,29 @@ public class DistributionTester {
     private String jettyHome;
     private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
 
-    private static final Logger LOGGER = Log.getLogger(DistributionTester.class);
+    private static final Logger LOGGER = Log.getLogger(DistributionRunner.class);
 
     private List<String> logs = new ArrayList<>();
 
     private HttpClient httpClient;
 
-    private DistributionTester(Path jettyBase)
+    private Map<String,String> mavenRemoteRepositories = new HashMap<>();
+
+    private DistributionRunner(Path jettyBase)
             throws Exception {
         this.jettyBase = jettyBase;
     }
 
-    private DistributionTester initialise() throws Exception {
+    /**
+     *
+     * @return DistributionRunner setup jettyHome directory and start httpClient.
+     * @throws Exception
+     */
+    private DistributionRunner initialise() throws Exception {
 
         if (StringUtils.isNotEmpty(jettyHome)) {
             jettyHomeDir = Paths.get(jettyHome).toFile();
         } else {
-            // 9.4.14.v20181114 9.4.15-SNAPSHOT
             jettyHomeDir = resolveDistribution(this.jettyVersion);
         }
 
@@ -130,14 +138,28 @@ public class DistributionTester {
 
     }
 
+    /**
+     * start the instance with no arguments
+     * @throws Exception
+     */
     public void start() throws Exception {
         start(Collections.emptyList());
     }
 
+    /**
+     * start the instance with the arguments
+     * @param args arguments to use to start the distribution
+     * @throws Exception
+     */
     public void start(String... args) throws Exception {
         start(Arrays.asList(args));
     }
 
+    /**
+     * start the instance with the arguments
+     * @param args arguments to use to start the distribution
+     * @throws Exception
+     */
     public void start(List<String> args)
             throws Exception {
 
@@ -239,7 +261,7 @@ public class DistributionTester {
                     // using LOGGER generates too long lines..
                     //LOGGER.info("[{}] {}",mode, line);
                     System.out.println("[" + mode + "] " + line);
-                    DistributionTester.this.logs.add(line);
+                    DistributionRunner.this.logs.add(line);
                 }
             } catch (IOException ignore) {
                 // ignore
@@ -446,7 +468,16 @@ public class DistributionTester {
     }
 
     private List<RemoteRepository> newRepositories(RepositorySystem system, RepositorySystemSession session) {
-        return new ArrayList<>(Collections.singletonList(newCentralRepository()));
+        List<RemoteRepository> remoteRepositories = new ArrayList<>(this.mavenRemoteRepositories.size()+1);
+        this.mavenRemoteRepositories.entrySet().stream().forEach(stringStringEntry -> {
+            remoteRepositories.add(new RemoteRepository.Builder(stringStringEntry.getKey(), "default", stringStringEntry.getValue()).build());
+        });
+        remoteRepositories.add(newCentralRepository());
+        return remoteRepositories;
+    }
+
+    private static RemoteRepository newCentralRepository() {
+        return new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     }
 
     private DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system) {
@@ -480,10 +511,6 @@ public class DistributionTester {
     }
 
 
-    private static RemoteRepository newCentralRepository() {
-        return new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
-    }
-
 
     private String getJavaBin() {
         String javaexes[] = new String[]{"java", "java.exe"};
@@ -498,6 +525,7 @@ public class DistributionTester {
         return "java";
     }
 
+    ?
     public void stop()
             throws Exception {
 
@@ -514,12 +542,25 @@ public class DistributionTester {
             LOGGER.info("still alive so force destroy process");
             this.pid.destroyForcibly();
         }
+        if(httpClient!=null&&httpClient.isRunning()){
+            httpClient.stop();
+        }
     }
 
+    /**
+     * remove the content from JettyBase directory
+     * @throws IOException
+     */
     public void cleanJettyBase() throws IOException {
         FileUtils.cleanDirectory(this.jettyBase.toFile());
     }
 
+    /**
+     * Method to use in finally block of a test and when using @After in a unit test.
+     * if running, it stops the distribution.
+     * Cleanup JettyBase and JettyHome directories
+     * @throws Exception
+     */
     public void cleanup() throws Exception {
         stop();
         if (Files.exists(this.jettyBase)) {
@@ -530,17 +571,28 @@ public class DistributionTester {
             // cleanup jetty distribution
             IO.delete(this.jettyHomeDir);
         }
-
     }
 
+    /**
+     *
+     * @return the directory used as JettyBase
+     */
     public Path getJettyBase() {
         return jettyBase;
     }
 
+    /**
+     *
+     * @return the {@link URI} to use to access the jetty instance (random port has been detected)
+     */
     public URI getBaseUri() {
         return baseUri;
     }
 
+    /**
+     *
+     * @return the connection to use to access JMX (if configured)
+     */
     public String getJmxUrl() {
         return jmxUrl;
     }
@@ -564,42 +616,104 @@ public class DistributionTester {
 
         private long waitStartTime = 60;
 
+        private long maxWaitToStop = 60000;
+
+        private Map<String,String> mavenRemoteRepositories = new HashMap<>();
+
+        /**
+         *
+         * @param jettyVersion the version to use (format: 9.4.14.v20181114 9.4.15-SNAPSHOT).
+         *          The distribution will be downloaded from local repository or remote
+         * @return the {@link Builder}
+         */
         public Builder jettyVersion(String jettyVersion) {
             this.jettyVersion = jettyVersion;
             return this;
         }
 
+        /**
+         *
+         * @param jettyHome Path to the local exploded jetty distribution
+         * if configured the jettyVersion parameter will not be used
+         * @return the {@link Builder}
+         */
         public Builder jettyHome(String jettyHome) {
             this.jettyHome = jettyHome;
             return this;
         }
 
+        /**
+         *
+         * @param mavenLocalRepository Path to the local maven repository
+         * @return the {@link Builder}
+         */
         public Builder mavenLocalRepository(String mavenLocalRepository) {
             this.mavenLocalRepository = mavenLocalRepository;
             return this;
         }
 
+        /**
+         *
+         * @param waitStartTime the maximum time in seconds to wait the start of the distribution
+         * @return the {@link Builder}
+         */
         public Builder waitStartTime(long waitStartTime) {
             this.waitStartTime = waitStartTime;
             return this;
         }
 
+        /**
+         *
+         * @param maxWaitToStop the maximum time in seconds to wait after stop the distribution
+         * process before forcing the stop.
+         * @return the {@link Builder}
+         */
+        public Builder maxWaitToStop(long maxWaitToStop) {
+            this.maxWaitToStop = maxWaitToStop;
+            return this;
+        }
+
+        /**
+         *
+         * If needed to resolve JettyDistribtion from another Maven remote repositories
+         * @param id the id
+         * @param url the Maven remote repository url
+         * @return the {@link Builder}
+         */
+        public Builder addRemoteRepository(String id, String url) {
+            this.mavenRemoteRepositories.put(id, url);
+            return this;
+        }
+
+        /**
+         *
+         * @return an empty instance of {@link Builder}
+         */
         public static Builder newInstance() {
             return new Builder();
         }
 
-        public DistributionTester build()
+        /**
+         *
+         * @return a new configured instance of {@link DistributionRunner}
+         * @throws Exception
+         */
+        public DistributionRunner build()
                 throws Exception {
             if (jettyBase == null) {
                 this.jettyBase = Files.createTempDirectory("jetty_base_test");
                 this.jettyBase.toFile().deleteOnExit();
             }
-            DistributionTester distributionTester = new DistributionTester(jettyBase);
-            distributionTester.jettyVersion = jettyVersion;
-            distributionTester.jettyHome = jettyHome;
-            distributionTester.mavenLocalRepository = mavenLocalRepository;
-            distributionTester.waitStartTime = waitStartTime;
-            return distributionTester.initialise();
+            DistributionRunner distributionRunner = new DistributionRunner(jettyBase);
+            distributionRunner.jettyVersion = jettyVersion;
+            distributionRunner.jettyHome = jettyHome;
+            distributionRunner.mavenLocalRepository = mavenLocalRepository;
+            distributionRunner.waitStartTime = waitStartTime;
+            distributionRunner.maxWaitToStop = maxWaitToStop;
+            if(!this.mavenRemoteRepositories.isEmpty()) {
+                distributionRunner.mavenRemoteRepositories.putAll(this.mavenRemoteRepositories);
+            }
+            return distributionRunner.initialise();
         }
     }
 }
