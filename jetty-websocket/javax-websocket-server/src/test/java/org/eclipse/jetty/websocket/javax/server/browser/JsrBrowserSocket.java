@@ -16,11 +16,14 @@
 //  ========================================================================
 //
 
-package examples;
+package org.eclipse.jetty.websocket.javax.server.browser;
 
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
 
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -29,12 +32,10 @@ import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Locale;
-import java.util.Random;
-import java.util.Set;
+
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 @ServerEndpoint(value = "/", subprotocols = { "tool" }, configurator = JsrBrowserConfigurator.class)
 public class JsrBrowserSocket
