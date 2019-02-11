@@ -83,7 +83,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <b>So API can change without any further notice.</b>
  * </p>
  */
-public class DistributionRunner {
+public class DistributionTester {
 
     private Process pid;
 
@@ -105,7 +105,7 @@ public class DistributionRunner {
     private String jettyHome;
     private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
 
-    private static final Logger LOGGER = Log.getLogger(DistributionRunner.class);
+    private static final Logger LOGGER = Log.getLogger(DistributionTester.class);
 
     private List<String> logs = new ArrayList<>();
 
@@ -113,17 +113,17 @@ public class DistributionRunner {
 
     private Map<String,String> mavenRemoteRepositories = new HashMap<>();
 
-    private DistributionRunner(Path jettyBase)
+    private DistributionTester(Path jettyBase)
             throws Exception {
         this.jettyBase = jettyBase;
     }
 
     /**
      *
-     * @return DistributionRunner setup jettyHome directory and start httpClient.
+     * @return DistributionTester setup jettyHome directory and start httpClient.
      * @throws Exception
      */
-    private DistributionRunner initialise() throws Exception {
+    private DistributionTester initialise() throws Exception {
 
         if (StringUtils.isNotEmpty(jettyHome)) {
             jettyHomeDir = Paths.get(jettyHome).toFile();
@@ -261,7 +261,7 @@ public class DistributionRunner {
                     // using LOGGER generates too long lines..
                     //LOGGER.info("[{}] {}",mode, line);
                     System.out.println("[" + mode + "] " + line);
-                    DistributionRunner.this.logs.add(line);
+                    DistributionTester.this.logs.add(line);
                 }
             } catch (IOException ignore) {
                 // ignore
@@ -698,25 +698,25 @@ public class DistributionRunner {
 
         /**
          *
-         * @return a new configured instance of {@link DistributionRunner}
+         * @return a new configured instance of {@link DistributionTester}
          * @throws Exception
          */
-        public DistributionRunner build()
+        public DistributionTester build()
                 throws Exception {
             if (jettyBase == null) {
                 this.jettyBase = Files.createTempDirectory("jetty_base_test");
                 this.jettyBase.toFile().deleteOnExit();
             }
-            DistributionRunner distributionRunner = new DistributionRunner(jettyBase);
-            distributionRunner.jettyVersion = jettyVersion;
-            distributionRunner.jettyHome = jettyHome;
-            distributionRunner.mavenLocalRepository = mavenLocalRepository;
-            distributionRunner.waitStartTime = waitStartTime;
-            distributionRunner.maxWaitToStop = maxWaitToStop;
+            DistributionTester distributionTester = new DistributionTester(jettyBase);
+            distributionTester.jettyVersion = jettyVersion;
+            distributionTester.jettyHome = jettyHome;
+            distributionTester.mavenLocalRepository = mavenLocalRepository;
+            distributionTester.waitStartTime = waitStartTime;
+            distributionTester.maxWaitToStop = maxWaitToStop;
             if(!this.mavenRemoteRepositories.isEmpty()) {
-                distributionRunner.mavenRemoteRepositories.putAll(this.mavenRemoteRepositories);
+                distributionTester.mavenRemoteRepositories.putAll(this.mavenRemoteRepositories);
             }
-            return distributionRunner.initialise();
+            return distributionTester.initialise();
         }
     }
 }

@@ -21,32 +21,31 @@ package org.eclipse.jetty.tests.distribution;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.nio.file.Path;
 
 public class HttpModuleTests
 {
     @Test
     public void http_module() throws Exception
     {
-        DistributionRunner distributionRunner = DistributionRunner.Builder.newInstance() //
+        DistributionTester distributionTester = DistributionTester.Builder.newInstance() //
                 .jettyVersion(System.getProperty("jetty_version")) //
                 .mavenLocalRepository(System.getProperty("mavenRepoPath")) //
                 .waitStartTime(30) //
                 .build(); //
         try
         {
-            distributionRunner.start("--create-startd", "--approve-all-licenses", "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,jmx-remote,servlet,servlets");
-            distributionRunner.stop();
+            distributionTester.start("--create-startd", "--approve-all-licenses", "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,jmx-remote,servlet,servlets");
+            distributionTester.stop();
 
-            File war = distributionRunner.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + System.getProperty("jetty_version"));
-            distributionRunner.installWarFile(war, "test");
-            distributionRunner.start();
-            distributionRunner.assertLogsContains("Started @");
-            distributionRunner.assertUrlStatus("/test/index.jsp", 200);
-            distributionRunner.assertUrlContains("/test/index.jsp", "Hello");
+            File war = distributionTester.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + System.getProperty("jetty_version"));
+            distributionTester.installWarFile(war, "test");
+            distributionTester.start();
+            distributionTester.assertLogsContains("Started @");
+            distributionTester.assertUrlStatus("/test/index.jsp", 200);
+            distributionTester.assertUrlContains("/test/index.jsp", "Hello");
         } finally {
-            distributionRunner.stop();
-            distributionRunner.cleanup();
+            distributionTester.stop();
+            distributionTester.cleanup();
         }
 
     }
