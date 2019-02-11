@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -29,28 +25,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.URI;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -71,142 +60,76 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>
- * Please note this class is use for Jetty Distribution testing.
- * <b>So API can change without any further notice.</b>
- * </p>
+ * <p>Helper class to test the Jetty Distribution</p>.
+ * <p>API can change without any further notice.</p>
  */
-public class DistributionTester implements Closeable
+public class DistributionTester
 {
-
     private static final Logger LOGGER = Log.getLogger(DistributionTester.class);
 
-    private Process pid;
-    private URI baseUri;
-    private String jmxUrl;
     private Config config;
     private List<ConsoleStreamer> consoleStreamers = new ArrayList<>();
     private List<String> logs = new ArrayList<>();
-    private HttpClient httpClient;
 
-    private static class Config
+    private DistributionTester(Config config)
     {
-        private long waitStartTime = 60;
-
-        private long maxWaitToStop = 60000;
-
-        private TimeUnit timeUnit = TimeUnit.SECONDS;
-
-        private Path jettyBase;
-
-        private File jettyHomeDir;
-
-        private String jettyVersion;
-        private String jettyHome;
-        private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
-        private Map<String, String> mavenRemoteRepositories = new HashMap<>();
-    }
-
-
-    private DistributionTester(Config config) {
         this.config = config;
     }
 
-
     /**
-     * start the instance with no arguments
-     */
-    public DistributionTester start() throws Exception
-    {
-        start(Collections.emptyList());
-        return this;
-    }
-
-    /**
-     * start the instance with the arguments
+     * Starts the instance with the given arguments
      *
      * @param args arguments to use to start the distribution
      */
-    public DistributionTester start(String... args) throws Exception
+    public DistributionTester.Run start(String... args) throws Exception
     {
-        start(Arrays.asList(args));
-        return this;
+        return start(Arrays.asList(args));
     }
 
     /**
-     * start the instance with the arguments
+     * Start the instance with the arguments
      *
      * @param args arguments to use to start the distribution
      */
-    public DistributionTester start(List<String> args)
-            throws Exception
+    public DistributionTester.Run start(List<String> args) throws Exception
     {
-
         // do we want to be sure and use "--testing-mode" to not break surefire with a System.exit ???
 
         logs.clear();
 
         List<String> commands = new ArrayList<>();
-        commands.add(getJavaBin());
-
-        commands.add("-Djetty.home=" + config.jettyHomeDir.getAbsolutePath());
-        commands.add("-Djetty.base=" + config.jettyBase.toAbsolutePath().toString());
-
+        commands.add(getJavaExecutable());
         commands.add("-jar");
-        commands.add(config.jettyHomeDir.getAbsolutePath() + "/start.jar");
-        commands.add("jetty.http.port=0");
-
+        commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
         commands.addAll(args);
 
-        ProcessBuilder pbCmd = new ProcessBuilder(commands);
-        pbCmd.directory(config.jettyHomeDir);
-
+        File workingDir = config.jettyBase.toFile();
         LOGGER.info("Executing: {}", commands);
-        LOGGER.info("Working Dir: {}", config.jettyHomeDir.getAbsolutePath());
+        LOGGER.info("Working Dir: {}", workingDir.getAbsolutePath());
 
-        pbCmd = new ProcessBuilder(commands);
-        pid = pbCmd.start();
+        ProcessBuilder pbCmd = new ProcessBuilder(commands);
+        pbCmd.directory(workingDir);
+        Process process = pbCmd.start();
 
-        ConsoleParser parser = new ConsoleParser();
-        List<String[]> jmxList = parser.newPattern("JMX Remote URL: (.*)", 0);
-        // Started ServerConnector@76f2bbc1{HTTP/1.1,[http/1.1]}{0.0.0.0:50214}
-        List<String[]> connList =
-                parser.newPattern("[A-Za-z]*Connector@.*\\{.*\\}\\{(.*)\\:([0-9]*)}", 1);
+        consoleStreamers.add(startPump("STDOUT", process.getInputStream()));
+        consoleStreamers.add(startPump("STDERR", process.getErrorStream()));
 
-        consoleStreamers.add(startPump("STDOUT", parser, this.pid.getInputStream()));
-        consoleStreamers.add(startPump("STDERR", parser, this.pid.getErrorStream()));
+        return new Run(process);
+    }
 
-        try {
-            long start = System.currentTimeMillis();
-            parser.waitForDone(config.waitStartTime, config.timeUnit);
-            LOGGER.info("wait start {}", System.currentTimeMillis() - start);
-
-
-            if (!jmxList.isEmpty()) {
-                this.jmxUrl = jmxList.get(0)[0];
-                LOGGER.info("## Found JMX connector at {}", this.jmxUrl);
-            }
-
-            if (!connList.isEmpty()) {
-                String[] params = connList.get(0);
-                if (params.length == 2) {
-                    this.baseUri = URI.create("http://localhost:" + params[1]);
-                }
-                LOGGER.info("## Found Jetty connector at port: {}", params[1]);
-            }
-
-        } catch (InterruptedException e) {
-            pid.destroy();
+    public int randomPort() throws IOException
+    {
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress("localhost", 0));
+            return server.getLocalPort();
         }
-        return this;
     }
 
     public void installWarFile(File warFile, String context) throws IOException
@@ -214,49 +137,8 @@ public class DistributionTester implements Closeable
         //webapps
         Path webapps = Paths.get(config.jettyBase.toString(), "webapps", context);
         if (!Files.exists(webapps))
-        {
             Files.createDirectories(webapps);
-        }
         unzip(warFile, webapps.toFile());
-    }
-
-    //---------------------------------------
-    // Assert methods
-    //---------------------------------------
-
-    public DistributionTester assertLogsContains(String txt)
-    {
-        assertTrue(logs.stream().filter(s -> StringUtils.contains(s, txt)).count() > 0);
-        return this;
-    }
-
-
-    public DistributionTester assertUrlStatus(String url, int expectedStatus)
-    {
-        try
-        {
-            ContentResponse contentResponse = httpClient.GET(getBaseUri() + url);
-            int status = contentResponse.getStatus();
-            assertEquals(expectedStatus, status, () -> "status not " + expectedStatus + " but " + status);
-        } catch (InterruptedException | ExecutionException | TimeoutException e)
-        {
-            fail(e.getMessage(), e);
-        }
-        return this;
-    }
-
-    public DistributionTester assertUrlContains(String url, String content)
-    {
-        try
-        {
-            ContentResponse contentResponse = httpClient.GET(getBaseUri() + url);
-            String contentResponseStr = contentResponse.getContentAsString();
-            assertTrue(StringUtils.contains(contentResponseStr, content), () -> "content not containing '" + content + "'");
-        } catch (InterruptedException | ExecutionException | TimeoutException e)
-        {
-            fail(e.getMessage(), e);
-        }
-        return this;
     }
 
     /**
@@ -273,207 +155,49 @@ public class DistributionTester implements Closeable
 
         ArtifactRequest artifactRequest = new ArtifactRequest();
         artifactRequest.setArtifact(artifact);
-        artifactRequest.setRepositories(newRepositories(repositorySystem, newRepositorySystemSession(repositorySystem)));
+        artifactRequest.setRepositories(newRepositories());
         ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
 
         artifact = artifactResult.getArtifact();
         return artifact.getFile();
     }
 
-    /**
-     * @return the directory used as JettyBase
-     */
-    public Path getJettyBase()
+    private void init() throws Exception
     {
-        return config.jettyBase;
-    }
+        if (config.jettyHome == null)
+            config.jettyHome = resolveDistribution(config.jettyVersion);
 
-    /**
-     * @return the {@link URI} to use to access the jetty instance (random port has been detected)
-     */
-    public URI getBaseUri()
-    {
-        return baseUri;
-    }
-
-    /**
-     * @return the connection to use to access JMX (if configured)
-     */
-    public String getJmxUrl()
-    {
-        return jmxUrl;
-    }
-
-    /**
-     * @return DistributionTester setup jettyHome directory and start httpClient.
-     */
-    private DistributionTester initialise() throws Exception
-    {
         if (config.jettyBase == null)
         {
-            config.jettyBase = Files.createTempDirectory("jetty_base_test");
-            config.jettyBase.toFile().deleteOnExit();
+            config.jettyBase = Files.createTempDirectory("jetty_base_");
         }
-
-        if (StringUtils.isNotEmpty(config.jettyHome))
+        else
         {
-            config.jettyHomeDir = Paths.get(config.jettyHome).toFile();
-        } else
-        {
-            config.jettyHomeDir = resolveDistribution(config.jettyVersion);
+            if (!config.jettyBase.isAbsolute())
+                config.jettyBase = config.jettyHome.resolve(config.jettyBase);
         }
-
-        this.httpClient = new HttpClient();
-        httpClient.start();
-        return this;
     }
 
-
-    private ConsoleStreamer startPump(String mode, ConsoleParser parser, InputStream inputStream)
+    private String getJavaExecutable()
     {
-        ConsoleStreamer pump = new ConsoleStreamer(mode, inputStream);
-        pump.setParser(parser);
+        String[] javaExecutables = new String[]{"java", "java.exe"};
+        File javaHomeDir = new File(System.getProperty("java.home"));
+        for (String javaExecutable : javaExecutables)
+        {
+            File javaFile = new File(javaHomeDir, "bin" + File.separator + javaExecutable);
+            if (javaFile.exists() && javaFile.isFile())
+                return javaFile.getAbsolutePath();
+        }
+        return "java";
+    }
+
+    private ConsoleStreamer startPump(String mode, InputStream stream)
+    {
+        ConsoleStreamer pump = new ConsoleStreamer(stream);
         Thread thread = new Thread(pump, "ConsoleStreamer/" + mode);
         thread.start();
         return pump;
     }
-
-    /**
-     * Simple streamer for the console output from a Process
-     */
-    private class ConsoleStreamer
-            implements Runnable
-    {
-        private String mode;
-
-        private BufferedReader reader;
-
-        private ConsoleParser parser;
-
-        private volatile boolean stop;
-
-        public ConsoleStreamer(String mode, InputStream is)
-        {
-            this.mode = mode;
-            this.reader = new BufferedReader(new InputStreamReader(is));
-        }
-
-        public void setParser(ConsoleParser connector)
-        {
-            this.parser = connector;
-        }
-
-        @Override
-        public void run()
-        {
-            String line;
-            try {
-                while ((line = reader.readLine()) != null && !stop) {
-                    if (parser != null) {
-                        parser.parse(line);
-                    }
-                    // using LOGGER generates too long lines..
-                    //LOGGER.info("[{}] {}",mode, line);
-                    System.out.println("[" + mode + "] " + line);
-                    DistributionTester.this.logs.add(line);
-                }
-            } catch (IOException ignore) {
-                // ignore
-            } finally {
-                IO.close(reader);
-            }
-        }
-    }
-
-    private static class ConsoleParser
-    {
-        private List<ConsolePattern> patterns = new ArrayList<>();
-
-        private CountDownLatch latch;
-
-        private int count;
-
-        public List<String[]> newPattern(String exp, int cnt)
-        {
-            ConsolePattern pat = new ConsolePattern(exp, cnt);
-            patterns.add(pat);
-            count += cnt;
-            return pat.getMatches();
-        }
-
-        public void parse(String line)
-        {
-            for (ConsolePattern pat : patterns)
-            {
-                Matcher mat = pat.getMatcher(line);
-                if (mat.find())
-                {
-                    int num = 0, count = mat.groupCount();
-                    String[] match = new String[count];
-                    while (num++ < count)
-                    {
-                        match[num - 1] = mat.group(num);
-                    }
-                    pat.getMatches().add(match);
-
-                    if (pat.getCount() > 0)
-                    {
-                        getLatch().countDown();
-                    }
-                }
-            }
-        }
-
-        public void waitForDone(long timeout, TimeUnit unit)
-                throws InterruptedException
-        {
-            getLatch().await(timeout, unit);
-        }
-
-        private CountDownLatch getLatch()
-        {
-            synchronized (this)
-            {
-                if (latch == null)
-                {
-                    latch = new CountDownLatch(count);
-                }
-            }
-            return latch;
-        }
-    }
-
-    private static class ConsolePattern
-    {
-        private Pattern pattern;
-
-        private List<String[]> matches;
-
-        private int count;
-
-        ConsolePattern(String exp, int cnt)
-        {
-            pattern = Pattern.compile(exp);
-            matches = new ArrayList<>();
-            count = cnt;
-        }
-
-        public Matcher getMatcher(String line)
-        {
-            return pattern.matcher(line);
-        }
-
-        public List<String[]> getMatches()
-        {
-            return matches;
-        }
-
-        public int getCount()
-        {
-            return count;
-        }
-    }
-
 
     private void unzip(File zipFile, File output) throws IOException
     {
@@ -486,10 +210,12 @@ public class DistributionTester implements Closeable
                 if (entry.isDirectory())
                 {
                     File dir = new File(output, entry.getName());
-                    if (!Files.exists(dir.toPath())) {
+                    if (!Files.exists(dir.toPath()))
+                    {
                         Files.createDirectories(dir.toPath());
                     }
-                } else
+                }
+                else
                 {
                     // Read zipEntry and write to a file.
                     File file = new File(output, entry.getName());
@@ -508,22 +234,18 @@ public class DistributionTester implements Closeable
         }
     }
 
-    //---------------------------------------
-    // Maven Utils methods
-    //---------------------------------------
-
-    private File resolveDistribution(String version) throws Exception
+    private Path resolveDistribution(String version) throws Exception
     {
         File artifactFile = resolveArtifact("org.eclipse.jetty:jetty-distribution:zip:" + version);
 
         // create tmp directory to unzip distribution
-        Path tmp = Files.createTempDirectory("jetty_test");
-        tmp.toFile().deleteOnExit();
+        Path tmp = Files.createTempDirectory("jetty_home_");
+        File tmpFile = tmp.toFile();
 
-        unzip(artifactFile, tmp.toFile());
-        return new File(tmp.toFile(), "jetty-distribution-" + version);
+        unzip(artifactFile, tmpFile);
+
+        return tmp.resolve("jetty-distribution-" + version);
     }
-
 
     private RepositorySystem newRepositorySystem()
     {
@@ -545,12 +267,10 @@ public class DistributionTester implements Closeable
         return locator.getService(RepositorySystem.class);
     }
 
-    private List<RemoteRepository> newRepositories(RepositorySystem system, RepositorySystemSession session)
+    private List<RemoteRepository> newRepositories()
     {
         List<RemoteRepository> remoteRepositories = new ArrayList<>(config.mavenRemoteRepositories.size() + 1);
-        config.mavenRemoteRepositories.entrySet().stream().forEach( stringStringEntry ->
-            remoteRepositories.add(new RemoteRepository.Builder(stringStringEntry.getKey(), "default", stringStringEntry.getValue()).build())
-        );
+        config.mavenRemoteRepositories.forEach((key, value) -> remoteRepositories.add(new RemoteRepository.Builder(key, "default", value).build()));
         remoteRepositories.add(newCentralRepository());
         return remoteRepositories;
     }
@@ -564,7 +284,6 @@ public class DistributionTester implements Closeable
     {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
 
-
         LocalRepository localRepo = new LocalRepository(config.mavenLocalRepository);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
 
@@ -574,6 +293,62 @@ public class DistributionTester implements Closeable
         return session;
     }
 
+    public Path getJettyHome()
+    {
+        return config.jettyHome;
+    }
+
+    private static class Config
+    {
+        private Path jettyBase;
+        private Path jettyHome;
+        private String jettyVersion;
+        private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
+        private Map<String, String> mavenRemoteRepositories = new HashMap<>();
+    }
+
+    /**
+     * Simple streamer for the console output from a Process
+     */
+    private class ConsoleStreamer implements Runnable
+    {
+        private final BufferedReader reader;
+        private volatile boolean stop;
+
+        public ConsoleStreamer(InputStream stream)
+        {
+            this.reader = new BufferedReader(new InputStreamReader(stream));
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                String line;
+                while ((line = reader.readLine()) != null && !stop)
+                {
+                    LOGGER.info("{}", line);
+                    DistributionTester.this.logs.add(line);
+                }
+            }
+            catch (IOException ignore)
+            {
+                // ignore
+            }
+            finally
+            {
+                IO.close(reader);
+            }
+        }
+
+        public void stop()
+        {
+            stop = true;
+            IO.close(reader);
+        }
+    }
+
     private static class LogTransferListener extends AbstractTransferListener
     {
         // no op
@@ -581,138 +356,136 @@ public class DistributionTester implements Closeable
 
     private static class LogRepositoryListener extends AbstractRepositoryListener
     {
-
         @Override
-        public void artifactDownloaded(RepositoryEvent event) {
+        public void artifactDownloaded(RepositoryEvent event)
+        {
             LOGGER.debug("distribution downloaded to {}", event.getFile());
         }
 
         @Override
-        public void artifactResolved(RepositoryEvent event) {
+        public void artifactResolved(RepositoryEvent event)
+        {
             LOGGER.debug("distribution resolved to {}", event.getFile());
         }
     }
 
-
-    private String getJavaBin()
+    public class Run implements Closeable
     {
-        String javaexes[] = new String[]{"java", "java.exe"};
+        private final Process process;
 
-        File javaHomeDir = new File(System.getProperty("java.home"));
-        for (String javaexe : javaexes)
+        public Run(Process process)
         {
-            File javabin = new File(javaHomeDir, FS.separators("bin/" + javaexe));
-            if (javabin.exists() && javabin.isFile()) {
-                return javabin.getAbsolutePath();
-            }
+            this.process = process;
         }
-        return "java";
+
+        /**
+         * Waits for the given time for the distribution to stop.
+         *
+         * @param time the time to wait
+         * @param unit the unit of time
+         * @return true if the distribution process is terminated, false if the timeout elapsed
+         * @throws InterruptedException if the wait is interrupted
+         */
+        public boolean awaitFor(long time, TimeUnit unit) throws InterruptedException
+        {
+            boolean result = process.waitFor(time, unit);
+            if (result)
+                stopConsoleStreamers();
+            return result;
+        }
+
+        public int getExitValue()
+        {
+            return process.exitValue();
+        }
+
+        /**
+         * Stops the distribution.
+         *
+         * @see #awaitFor(long, TimeUnit)
+         */
+        public void stop()
+        {
+            process.destroy();
+            stopConsoleStreamers();
+        }
+
+        public void destroy()
+        {
+            process.destroyForcibly();
+            stopConsoleStreamers();
+        }
+
+        private void stopConsoleStreamers()
+        {
+            consoleStreamers.forEach(ConsoleStreamer::stop);
+        }
+
+        /**
+         * Method to use in finally block of a test and when using @After in a unit test.
+         * if running, it stops the distribution.
+         * Cleanup JettyBase and JettyHome directories
+         */
+        @Override
+        public void close()
+        {
+            destroy();
+        }
+
+        public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
+        {
+            long end = System.nanoTime() + unit.toNanos(time);
+            while (System.nanoTime() < end)
+            {
+                boolean result = logs.stream().anyMatch(s -> s.contains(txt));
+                if (result)
+                    return true;
+                Thread.sleep(250);
+            }
+            return false;
+        }
     }
 
-    /**
-     * Stop the distribution
-     */
-    public void stop()
-            throws IOException
-    {
-        long start = System.currentTimeMillis();
-        while (this.pid.isAlive() && (System.currentTimeMillis() - start < config.maxWaitToStop))
-        {
-            this.pid.destroy();
-            if (this.pid.isAlive())
-            {
-                // wait a bit to try again
-                try
-                {
-                    Thread.sleep(500);
-                } catch (InterruptedException e)
-                {
-                    throw new IOException(e.getMessage(),e);
-                }
-            }
-        }
-        // still alive so force stop
-        if (this.pid.isAlive())
-        {
-            LOGGER.info("still alive so force destroy process");
-            this.pid.destroyForcibly();
-        }
-        consoleStreamers.forEach(consoleStreamer -> consoleStreamer.stop=true);
-    }
-
-    /**
-     * Method to use in finally block of a test and when using @After in a unit test.
-     * if running, it stops the distribution.
-     * Cleanup JettyBase and JettyHome directories
-     */
-    public void close() throws IOException
-    {
-        stop();
-        if (httpClient != null && httpClient.isRunning()) {
-            try
-            {
-                httpClient.stop();
-            } catch (Exception e)
-            {
-                throw new IOException(e.getMessage(),e);
-            }
-        }
-        if (Files.exists(config.jettyBase))
-        {
-            // cleanup jetty base
-            IO.delete(config.jettyBase.toFile());
-        }
-        if (Files.exists(config.jettyHomeDir.toPath()))
-        {
-            // cleanup jetty distribution
-            IO.delete(config.jettyHomeDir);
-        }
-    }
-
-
-    //---------------------------------------
-    // Builder class
-    //---------------------------------------
     public static class Builder
     {
+        private Config config = new Config();
+
         private Builder()
         {
-            // no op
         }
-
-        private Path jettyBase;
-
-        private String jettyVersion;
-
-        private String jettyHome;
-
-        private String mavenLocalRepository;
-
-        private long waitStartTime = 60;
-
-        private long maxWaitToStop = 60000;
-
-        private Map<String, String> mavenRemoteRepositories = new HashMap<>();
 
         /**
          * @param jettyVersion the version to use (format: 9.4.14.v20181114 9.4.15-SNAPSHOT).
-         * The distribution will be downloaded from local repository or remote
+         *                     The distribution will be downloaded from local repository or remote
          * @return the {@link Builder}
          */
         public Builder jettyVersion(String jettyVersion)
         {
-            this.jettyVersion = jettyVersion;
+            config.jettyVersion = jettyVersion;
             return this;
         }
 
         /**
          * @param jettyHome Path to the local exploded jetty distribution
-         * if configured the jettyVersion parameter will not be used
+         *                  if configured the jettyVersion parameter will not be used
          * @return the {@link Builder}
          */
-        public Builder jettyHome(String jettyHome)
+        public Builder jettyHome(Path jettyHome)
         {
-            this.jettyHome = jettyHome;
+            config.jettyHome = jettyHome;
+            return this;
+        }
+
+        /**
+         * <p>Sets the path for the Jetty Base directory.</p>
+         * <p>If the path is relative, it will be resolved against the Jetty Home directory.</p>
+         *
+         * @param jettyBase Path to the local Jetty Base directory
+         * @return the {@link Builder}
+         */
+        public Builder jettyBase(Path jettyBase)
+        {
+            config.jettyBase = jettyBase;
             return this;
         }
 
@@ -722,41 +495,20 @@ public class DistributionTester implements Closeable
          */
         public Builder mavenLocalRepository(String mavenLocalRepository)
         {
-            this.mavenLocalRepository = mavenLocalRepository;
+            config.mavenLocalRepository = mavenLocalRepository;
             return this;
         }
 
         /**
-         * @param waitStartTime the maximum time in seconds to wait the start of the distribution
-         * @return the {@link Builder}
-         */
-        public Builder waitStartTime(long waitStartTime)
-        {
-            this.waitStartTime = waitStartTime;
-            return this;
-        }
-
-        /**
-         * @param maxWaitToStop the maximum time in seconds to wait after stop the distribution
-         * process before forcing the stop.
-         * @return the {@link Builder}
-         */
-        public Builder maxWaitToStop(long maxWaitToStop)
-        {
-            this.maxWaitToStop = maxWaitToStop;
-            return this;
-        }
-
-        /**
-         * If needed to resolve JettyDistribtion from another Maven remote repositories
+         * If needed to resolve the Jetty distribution from another Maven remote repositories
          *
-         * @param id the id
+         * @param id  the id
          * @param url the Maven remote repository url
          * @return the {@link Builder}
          */
         public Builder addRemoteRepository(String id, String url)
         {
-            this.mavenRemoteRepositories.put(id, url);
+            config.mavenRemoteRepositories.put(id, url);
             return this;
         }
 
@@ -771,21 +523,11 @@ public class DistributionTester implements Closeable
         /**
          * @return a new configured instance of {@link DistributionTester}
          */
-        public DistributionTester build()
-                throws Exception
+        public DistributionTester build() throws Exception
         {
-            Config config = new Config();
-            config.jettyBase = jettyBase;
-            config.jettyVersion = jettyVersion;
-            config.jettyHome = jettyHome;
-            config.mavenLocalRepository = mavenLocalRepository;
-            config.waitStartTime = waitStartTime;
-            config.maxWaitToStop = maxWaitToStop;
-            if (!this.mavenRemoteRepositories.isEmpty())
-            {
-                config.mavenRemoteRepositories.putAll(this.mavenRemoteRepositories);
-            }
-            return new DistributionTester(config).initialise();
+            DistributionTester tester = new DistributionTester(config);
+            tester.init();
+            return tester;
         }
     }
 }
