@@ -525,7 +525,10 @@ public class DistributionRunner {
         return "java";
     }
 
-    ?
+    /**
+     * Stop the distribution
+     * @throws Exception
+     */
     public void stop()
             throws Exception {
 
@@ -541,9 +544,6 @@ public class DistributionRunner {
         if(this.pid.isAlive()){
             LOGGER.info("still alive so force destroy process");
             this.pid.destroyForcibly();
-        }
-        if(httpClient!=null&&httpClient.isRunning()){
-            httpClient.stop();
         }
     }
 
@@ -563,6 +563,9 @@ public class DistributionRunner {
      */
     public void cleanup() throws Exception {
         stop();
+        if(httpClient!=null&&httpClient.isRunning()){
+            httpClient.stop();
+        }
         if (Files.exists(this.jettyBase)) {
             // cleanup jetty base
             IO.delete(this.jettyBase.toFile());
