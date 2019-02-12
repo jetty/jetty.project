@@ -42,7 +42,7 @@ module org.eclipse.jetty.util
     requires static java.sql;
     // Only required if using DOMLeakPreventer.
     requires static java.xml;
-    // Only required when using Jetty logging.
+    // Only required if using Slf4jLog.
     requires static org.slf4j;
 
     uses CredentialProvider;

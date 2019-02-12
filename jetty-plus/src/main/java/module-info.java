@@ -29,18 +29,16 @@ module org.eclipse.jetty.plus
 
     requires java.naming;
     requires java.transaction;
+    requires jetty.servlet.api;
     requires org.eclipse.jetty.jndi;
     requires org.eclipse.jetty.security;
+    requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.webapp;
     requires org.eclipse.jetty.xml;
 
     // Only required if using DataSourceLoginService.
     requires static java.sql;
-    // Only required if using ContainerInitializer.
-    requires static jetty.servlet.api;
-    // Only required if using DataSourceLoginService.
-    requires static org.eclipse.jetty.server;
     // Only required if using RunAs.
     requires static org.eclipse.jetty.servlet;
 
