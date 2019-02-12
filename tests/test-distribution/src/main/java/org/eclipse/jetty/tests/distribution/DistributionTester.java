@@ -130,18 +130,21 @@ public class DistributionTester
      */
     public DistributionTester.Run start(List<String> args) throws Exception
     {
+        File jettyBaseDir = config.jettyBase.toFile();
+        Path workDir = Files.createDirectories(jettyBaseDir.toPath().resolve("work"));
+
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
+        commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
         commands.addAll(args);
 
-        File workingDir = config.jettyBase.toFile();
         LOGGER.info("Executing: {}", commands);
-        LOGGER.info("Working Dir: {}", workingDir.getAbsolutePath());
+        LOGGER.info("Working Dir: {}", jettyBaseDir.getAbsolutePath());
 
         ProcessBuilder pbCmd = new ProcessBuilder(commands);
-        pbCmd.directory(workingDir);
+        pbCmd.directory(jettyBaseDir);
         Process process = pbCmd.start();
 
         return new Run(process);
