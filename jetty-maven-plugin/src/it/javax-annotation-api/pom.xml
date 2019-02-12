@@ -19,7 +19,6 @@
     <maven.compiler.target>8</maven.compiler.target>
     <!--maven.compiler.release>11</maven.compiler.release-->
     <jetty.port.file>${project.build.directory}/jetty-run-mojo-annotation.txt</jetty.port.file>
-    <annotation-api.version>@javax.annotation-api@</annotation-api.version>
   </properties>
 
   <dependencies>
@@ -30,8 +29,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
       <version>@annotation-api.version@</version>
     </dependency>
     <dependency>
@@ -100,14 +99,9 @@
 
     <extensions>
       <extension>
-        <groupId>javax.annotation</groupId>
-        <artifactId>javax.annotation-api</artifactId>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
         <version>@annotation-api.version@</version>
-      </extension>
-      <extension>
-        <groupId>javax.annotation</groupId>
-        <artifactId>jsr250-api</artifactId>
-        <version>@jsr250-api.version@</version>
       </extension>
     </extensions>
   </build>
