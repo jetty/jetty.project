@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -125,12 +124,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final Generator generator;
     private final Parser parser;
     private final WebSocketPolicy policy;
-    private final AtomicBoolean suspendToken;
+    private final Suspender suspender;
     private final FrameFlusher flusher;
     private final String id;
     private WebSocketSession session;
     private List<ExtensionConfig> extensions;
-    private boolean isFilling;
     private ByteBuffer prefillBuffer;
     private ReadMode readMode = ReadMode.PARSE;
     private IOState ioState;
@@ -147,7 +145,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.parser = new Parser(policy,bufferPool);
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
-        this.suspendToken = new AtomicBoolean(false);
+        this.suspender = new Suspender();
         this.ioState = new IOState();
         this.ioState.addListener(this);
         this.flusher = new Flusher(bufferPool,generator,endp);
@@ -302,7 +300,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public boolean isReading()
     {
-        return isFilling;
+        return !suspender.isSuspended();
     }
 
     /**
@@ -384,8 +382,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         try
         {
-            isFilling = true;
-
             if(readMode == ReadMode.PARSE)
             {
                 readMode = readParse(buffer);
@@ -400,13 +396,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             bufferPool.release(buffer);
         }
 
-        if ((readMode != ReadMode.EOF) && (suspendToken.get() == false))
+        if (readMode == ReadMode.EOF)
+        {
+            suspender.eof();
+        }
+        else if (!suspender.activateRequestedSuspend())
         {
             fillInterested();
-        }
-        else
-        {
-            isFilling = false;
         }
     }
 
@@ -586,12 +582,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void resume()
     {
-        if (suspendToken.getAndSet(false))
+        if (suspender.requestResume())
         {
-            if (!isReading())
-            {
-                fillInterested();
-            }
+            fillInterested();
         }
     }
 
@@ -627,7 +620,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public SuspendToken suspend()
     {
-        suspendToken.set(true);
+        suspender.requestSuspend();
         return this;
     }
 
