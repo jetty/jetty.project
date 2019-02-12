@@ -617,7 +617,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-unixsocket</artifactId>
+      <artifactId>jetty-unixsocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
