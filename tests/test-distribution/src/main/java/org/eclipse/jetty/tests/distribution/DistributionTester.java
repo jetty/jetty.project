@@ -67,14 +67,46 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>Helper class to test the Jetty Distribution</p>.
  * <p>API can change without any further notice.</p>
+ * <p>Usage:</p>
+ * <pre>
+ * // Create the distribution.
+ * String jettyVersion = "9.4.14.v20181114";
+ * DistributionTester distribution = DistributionTester.Builder.newInstance()
+ *         .jettyVersion(jettyVersion)
+ *         .jettyBase(Paths.get("demo-base"))
+ *         .build();
+ *
+ * // The first run initializes the Jetty Base.
+ * try (DistributionTester.Run run1 = distribution.start("--create-startd", "--add-to-start=http2c,jsp,deploy"))
+ * {
+ *     assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+ *     assertEquals(0, run1.getExitValue());
+ *
+ *     // Install a web application.
+ *     File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+ *     distribution.installWarFile(war, "test");
+ *
+ *     // The second run starts the distribution.
+ *     int port = 9090;
+ *     try (DistributionTester.Run run = distribution.start("jetty.http.port=" + port))
+ *     {
+ *         // Wait for Jetty to be fully started.
+ *         assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+ *
+ *         // Make a HTTP request to the web application.
+ *         HttpClient client = new HttpClient();
+ *         client.start();
+ *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+ *         assertEquals(HttpStatus.OK_200, response.getStatus());
+ *     }
+ * }
+ * </pre>
  */
 public class DistributionTester
 {
     private static final Logger LOGGER = Log.getLogger(DistributionTester.class);
 
     private Config config;
-    private List<ConsoleStreamer> consoleStreamers = new ArrayList<>();
-    private List<String> logs = new ArrayList<>();
 
     private DistributionTester(Config config)
     {
@@ -82,7 +114,7 @@ public class DistributionTester
     }
 
     /**
-     * Starts the instance with the given arguments
+     * Starts the distribution with the given arguments
      *
      * @param args arguments to use to start the distribution
      */
@@ -92,16 +124,12 @@ public class DistributionTester
     }
 
     /**
-     * Start the instance with the arguments
+     * Start the distribution with the arguments
      *
      * @param args arguments to use to start the distribution
      */
     public DistributionTester.Run start(List<String> args) throws Exception
     {
-        // do we want to be sure and use "--testing-mode" to not break surefire with a System.exit ???
-
-        logs.clear();
-
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
         commands.add("-jar");
@@ -116,13 +144,14 @@ public class DistributionTester
         pbCmd.directory(workingDir);
         Process process = pbCmd.start();
 
-        consoleStreamers.add(startPump("STDOUT", process.getInputStream()));
-        consoleStreamers.add(startPump("STDERR", process.getErrorStream()));
-
         return new Run(process);
     }
 
-    public int randomPort() throws IOException
+    /**
+     * @return a free port chosen by the OS that can be used to listen to
+     * @throws IOException if a free port is not available
+     */
+    public int freePort() throws IOException
     {
         try (ServerSocket server = new ServerSocket())
         {
@@ -132,6 +161,13 @@ public class DistributionTester
         }
     }
 
+    /**
+     * Installs in {@code ${jetty.base}/webapps} the given war file under the given context path.
+     *
+     * @param warFile the war file to install
+     * @param context the context path
+     * @throws IOException if the installation fails
+     */
     public void installWarFile(File warFile, String context) throws IOException
     {
         //webapps
@@ -142,8 +178,11 @@ public class DistributionTester
     }
 
     /**
+     * Resolves an artifact given its Maven coordinates.
+     *
      * @param coordinates <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>
      * @return the artifact
+     * @see #installWarFile(File, String)
      */
     public File resolveArtifact(String coordinates) throws ArtifactResolutionException
     {
@@ -189,14 +228,6 @@ public class DistributionTester
                 return javaFile.getAbsolutePath();
         }
         return "java";
-    }
-
-    private ConsoleStreamer startPump(String mode, InputStream stream)
-    {
-        ConsoleStreamer pump = new ConsoleStreamer(stream);
-        Thread thread = new Thread(pump, "ConsoleStreamer/" + mode);
-        thread.start();
-        return pump;
     }
 
     private void unzip(File zipFile, File output) throws IOException
@@ -293,11 +324,6 @@ public class DistributionTester
         return session;
     }
 
-    public Path getJettyHome()
-    {
-        return config.jettyHome;
-    }
-
     private static class Config
     {
         private Path jettyBase;
@@ -309,51 +335,14 @@ public class DistributionTester
         @Override
         public String toString()
         {
-            return "Config{" + "jettyBase=" + jettyBase + ", jettyHome=" + jettyHome + ", jettyVersion='" + jettyVersion
-                + '\'' + ", mavenLocalRepository='" + mavenLocalRepository + '\'' + ", mavenRemoteRepositories="
-                + mavenRemoteRepositories + '}';
-        }
-    }
-
-    /**
-     * Simple streamer for the console output from a Process
-     */
-    private class ConsoleStreamer implements Runnable
-    {
-        private final BufferedReader reader;
-        private volatile boolean stop;
-
-        public ConsoleStreamer(InputStream stream)
-        {
-            this.reader = new BufferedReader(new InputStreamReader(stream));
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                String line;
-                while ((line = reader.readLine()) != null && !stop)
-                {
-                    LOGGER.info("{}", line);
-                    DistributionTester.this.logs.add(line);
-                }
-            }
-            catch (IOException ignore)
-            {
-                // ignore
-            }
-            finally
-            {
-                IO.close(reader);
-            }
-        }
-
-        public void stop()
-        {
-            stop = true;
-            IO.close(reader);
+            return String.format("%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
+                    getClass().getSimpleName(),
+                    hashCode(),
+                    jettyBase,
+                    jettyHome,
+                    jettyVersion,
+                    mavenLocalRepository,
+                    mavenRemoteRepositories);
         }
     }
 
@@ -377,17 +366,32 @@ public class DistributionTester
         }
     }
 
-    public class Run implements Closeable
+    /**
+     * A distribution run wraps the process that started the Jetty distribution.
+     */
+    public static class Run implements Closeable
     {
         private final Process process;
+        private final List<ConsoleStreamer> consoleStreamers = new ArrayList<>();
+        private final List<String> logs = new ArrayList<>();
 
-        public Run(Process process)
+        private Run(Process process)
         {
             this.process = process;
+            consoleStreamers.add(startPump("STDOUT", process.getInputStream()));
+            consoleStreamers.add(startPump("STDERR", process.getErrorStream()));
+        }
+
+        private ConsoleStreamer startPump(String mode, InputStream stream)
+        {
+            ConsoleStreamer pump = new ConsoleStreamer(stream);
+            Thread thread = new Thread(pump, "ConsoleStreamer/" + mode);
+            thread.start();
+            return pump;
         }
 
         /**
-         * Waits for the given time for the distribution to stop.
+         * Waits for the given time for the distribution process to stop.
          *
          * @param time the time to wait
          * @param unit the unit of time
@@ -402,13 +406,17 @@ public class DistributionTester
             return result;
         }
 
-        public int getExitValue()
+        /**
+         * @return the distribution process exit value
+         * @throws IllegalThreadStateException if the distribution process is not terminated yet
+         */
+        public int getExitValue() throws IllegalThreadStateException
         {
             return process.exitValue();
         }
 
         /**
-         * Stops the distribution.
+         * Stops the distribution process.
          *
          * @see #awaitFor(long, TimeUnit)
          */
@@ -418,6 +426,9 @@ public class DistributionTester
             stopConsoleStreamers();
         }
 
+        /**
+         * Forcibly destroys the distribution process.
+         */
         public void destroy()
         {
             process.destroyForcibly();
@@ -430,9 +441,7 @@ public class DistributionTester
         }
 
         /**
-         * Method to use in finally block of a test and when using @After in a unit test.
-         * if running, it stops the distribution.
-         * Cleanup JettyBase and JettyHome directories
+         * @see #destroy()
          */
         @Override
         public void close()
@@ -440,6 +449,15 @@ public class DistributionTester
             destroy();
         }
 
+        /**
+         * Awaits the console logs to contain the given text, for the given amount of time.
+         *
+         * @param txt the text that must be present in the console logs
+         * @param time the time to wait
+         * @param unit the unit of time
+         * @return true if the text was found, false if the timeout elapsed
+         * @throws InterruptedException if the wait is interrupted
+         */
         public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
         {
             long end = System.nanoTime() + unit.toNanos(time);
@@ -451,6 +469,48 @@ public class DistributionTester
                 Thread.sleep(250);
             }
             return false;
+        }
+
+        /**
+         * Simple streamer for the console output from a Process
+         */
+        private class ConsoleStreamer implements Runnable
+        {
+            private final BufferedReader reader;
+            private volatile boolean stop;
+
+            public ConsoleStreamer(InputStream stream)
+            {
+                this.reader = new BufferedReader(new InputStreamReader(stream));
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    String line;
+                    while ((line = reader.readLine()) != null && !stop)
+                    {
+                        LOGGER.info("{}", line);
+                        logs.add(line);
+                    }
+                }
+                catch (IOException ignore)
+                {
+                    // ignore
+                }
+                finally
+                {
+                    IO.close(reader);
+                }
+            }
+
+            public void stop()
+            {
+                stop = true;
+                IO.close(reader);
+            }
         }
     }
 

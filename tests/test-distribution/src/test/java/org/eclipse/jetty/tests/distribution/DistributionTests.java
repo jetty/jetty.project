@@ -53,7 +53,7 @@ public class DistributionTests extends AbstractDistributionTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            int port = distribution.randomPort();
+            int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
@@ -90,7 +90,7 @@ public class DistributionTests extends AbstractDistributionTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            int port = distribution.randomPort();
+            int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
@@ -127,7 +127,7 @@ public class DistributionTests extends AbstractDistributionTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            int port = distribution.randomPort();
+            int port = distribution.freePort();
             String[] args2 = {
                     "--jpms",
                     "jetty.http.port=" + port
@@ -167,7 +167,7 @@ public class DistributionTests extends AbstractDistributionTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            int port = distribution.randomPort();
+            int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
@@ -192,11 +192,8 @@ public class DistributionTests extends AbstractDistributionTest
                 .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
-        int port = distribution.randomPort();
-        String[] args1 = {
-                "jetty.http.port=" + port
-        };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        int port = distribution.freePort();
+        try (DistributionTester.Run run1 = distribution.start("jetty.http.port=" + port))
         {
             assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
 
