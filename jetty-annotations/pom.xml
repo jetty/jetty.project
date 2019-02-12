@@ -75,8 +75,8 @@
     </dependency>
 
     <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>javax.transaction-api</artifactId>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

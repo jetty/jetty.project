@@ -140,7 +140,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
@@ -158,7 +158,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
@@ -527,8 +527,8 @@
       <artifactId>javax.annotation-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>javax.transaction-api</artifactId>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
     </dependency>
 
     <dependency>

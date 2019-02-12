@@ -125,8 +125,8 @@
       <artifactId>javax.mail.glassfish</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>javax.transaction-api</artifactId>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>

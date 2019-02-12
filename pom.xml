@@ -970,9 +970,9 @@
         <version>1.4.1.v201005082020</version>
       </dependency>
       <dependency>
-        <groupId>javax.transaction</groupId>
-        <artifactId>javax.transaction-api</artifactId>
-        <version>1.3</version>
+        <groupId>jakarta.transaction</groupId>
+        <artifactId>jakarta.transaction-api</artifactId>
+        <version>1.3.2</version>
       </dependency>
       <!-- maven deps -->
       <dependency>

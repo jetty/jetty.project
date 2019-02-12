@@ -54,7 +54,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeArtifactIds>javax.transaction-api,javax.mail.glassfish,test-mock-resources</includeArtifactIds>
+              <includeArtifactIds>jakarta.transaction-api,javax.mail.glassfish,test-mock-resources</includeArtifactIds>
               <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>
@@ -113,8 +113,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>javax.transaction-api</artifactId>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
       <scope>provided</scope>
     </dependency>
    <dependency>
