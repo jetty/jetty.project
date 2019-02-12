@@ -305,6 +305,14 @@ public class DistributionTester
         private String jettyVersion;
         private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
         private Map<String, String> mavenRemoteRepositories = new HashMap<>();
+
+        @Override
+        public String toString()
+        {
+            return "Config{" + "jettyBase=" + jettyBase + ", jettyHome=" + jettyHome + ", jettyVersion='" + jettyVersion
+                + '\'' + ", mavenLocalRepository='" + mavenLocalRepository + '\'' + ", mavenRemoteRepositories="
+                + mavenRemoteRepositories + '}';
+        }
     }
 
     /**

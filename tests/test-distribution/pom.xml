@@ -17,6 +17,12 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-distribution</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
     </dependency>
