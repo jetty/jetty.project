@@ -22,8 +22,8 @@ module org.eclipse.jetty.alpn.client
 {
     exports org.eclipse.jetty.alpn.client;
 
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.util;
 
     uses ALPNProcessor.Client;
 }

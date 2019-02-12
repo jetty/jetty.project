@@ -20,9 +20,9 @@ module org.eclipse.jetty.http2.client
 {
     exports org.eclipse.jetty.http2.client;
 
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.alpn.client;
+    requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.http2.common;
+    requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.util;
 }

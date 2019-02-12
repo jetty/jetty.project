@@ -25,19 +25,19 @@ module org.eclipse.jetty.webapp
     requires java.instrument;
     requires java.xml;
     requires jetty.servlet.api;
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.security;
     requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.servlet;
+    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.xml;
 
     uses Configuration;
 
     provides Configuration with
             org.eclipse.jetty.webapp.FragmentConfiguration,
-            org.eclipse.jetty.webapp.JettyWebXmlConfiguration,
             org.eclipse.jetty.webapp.JaasConfiguration,
+            org.eclipse.jetty.webapp.JettyWebXmlConfiguration,
             org.eclipse.jetty.webapp.JmxConfiguration,
             org.eclipse.jetty.webapp.JndiConfiguration,
             org.eclipse.jetty.webapp.JspConfiguration,

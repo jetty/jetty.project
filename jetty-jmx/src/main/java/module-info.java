@@ -20,8 +20,12 @@ module org.eclipse.jetty.jmx
 {
     exports org.eclipse.jetty.jmx;
 
-    requires transitive java.management;
+    requires org.eclipse.jetty.util;
+
+    // Only required if using ConnectorServer.
     requires static java.management.rmi;
     requires static java.rmi;
-    requires org.eclipse.jetty.util;
+
+    // Applications that use ObjectMBean must use JMX classes too.
+    requires transitive java.management;
 }

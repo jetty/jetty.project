@@ -25,17 +25,17 @@ module org.eclipse.jetty.annotations
 {
     exports org.eclipse.jetty.annotations;
 
-    requires java.naming;
     requires java.annotation;
+    requires java.naming;
     requires jetty.servlet.api;
-    requires org.objectweb.asm;
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.plus;
+    requires org.eclipse.jetty.security;
     requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.servlet;
-    requires org.eclipse.jetty.security;
+    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.webapp;
+    requires org.objectweb.asm;
 
     uses ServletContainerInitializer;
 

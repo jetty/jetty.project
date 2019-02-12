@@ -24,8 +24,10 @@ module org.eclipse.jetty.http
     exports org.eclipse.jetty.http;
     exports org.eclipse.jetty.http.pathmap;
 
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.util;
+
+    // Only required if using the MultiPart classes.
     requires static jetty.servlet.api;
 
     uses HttpFieldPreEncoder;

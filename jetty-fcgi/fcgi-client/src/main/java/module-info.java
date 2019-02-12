@@ -23,8 +23,8 @@ module org.eclipse.jetty.fcgi.client
     exports org.eclipse.jetty.fcgi.generator to org.eclipse.jetty.fcgi.server;
     exports org.eclipse.jetty.fcgi.parser to org.eclipse.jetty.fcgi.server;
 
-    requires org.eclipse.jetty.util;
+    requires org.eclipse.jetty.client;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.client;
+    requires org.eclipse.jetty.util;
 }

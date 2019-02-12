@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-servlet-api</artifactId>
-      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
 
     <dependency>

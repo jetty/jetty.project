@@ -28,5 +28,7 @@ module org.eclipse.jetty.deploy
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.webapp;
     requires org.eclipse.jetty.xml;
+
+    // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 }

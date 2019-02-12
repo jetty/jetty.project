@@ -25,8 +25,8 @@ module org.eclipse.jetty.http2.common
     exports org.eclipse.jetty.http2.generator;
     exports org.eclipse.jetty.http2.parser;
 
-    requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.http2.hpack;
+    requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.util;
 }
