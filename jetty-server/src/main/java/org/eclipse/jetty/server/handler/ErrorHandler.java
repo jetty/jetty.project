@@ -139,7 +139,14 @@ public class ErrorHandler extends AbstractHandler
 
         if (_cacheControl != null)
             response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
-        generateAcceptableResponse(baseRequest,request,response,response.getStatus(),baseRequest.getResponse().getReason());
+
+        String message = (String)request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
+        if (message==null)
+            message = baseRequest.getResponse().getReason();
+        if (message==null)
+            message = HttpStatus.getMessage(response.getStatus());
+
+        generateAcceptableResponse(baseRequest,request,response,response.getStatus(),message);
     }
 
     /** 

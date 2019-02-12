@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.eclipse.jetty.server.Dispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("unused")
 public class ValidUrlRuleTest extends AbstractRuleTestCase
@@ -61,16 +62,16 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     }
 
     @Test
-    public void testInvalidUrlWithReason() throws Exception
+    public void testInvalidUrlWithMessage() throws Exception
     {
         _rule.setCode("405");
-        _rule.setReason("foo");
+        _rule.setMessage("foo");
         _request.setURIPathQuery("/%00/");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
         assertEquals(405,_response.getStatus());
-        assertEquals("foo",_response.getReason());
+        assertEquals( "foo", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
     }
     
     @Test
@@ -83,7 +84,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
         assertEquals(405,_response.getStatus());
-        assertEquals("foo",_response.getReason());
+        assertEquals( "foo", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
     }
     
     @Disabled("Not working in jetty-9")
@@ -97,7 +98,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
         assertEquals(405,_response.getStatus());
-        assertEquals("foo",_response.getReason());
+        assertEquals( "foo", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
     }
 
     @Disabled("Not working in jetty-9")

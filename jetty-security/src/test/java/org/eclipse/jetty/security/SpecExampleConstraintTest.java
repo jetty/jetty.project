@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.security;
 
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -47,6 +42,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -323,7 +323,7 @@ public class SpecExampleConstraintTest
         response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("chris:password") + "\r\n" +
                                            "\r\n");
-        assertThat(response,startsWith("HTTP/1.1 403 !"));
+        assertThat(response,startsWith("HTTP/1.1 403 "));
         
         //a user in role HOMEOWNER can do a GET
         response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +

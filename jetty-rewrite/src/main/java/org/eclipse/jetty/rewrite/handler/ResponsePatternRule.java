@@ -30,23 +30,23 @@ import org.eclipse.jetty.util.annotation.Name;
  */
 public class ResponsePatternRule extends PatternRule
 {
-    private String _code;
-    private String _reason;
+    private int _code;
+    private String _message;
 
     /* ------------------------------------------------------------ */
     public ResponsePatternRule()
     {
-        this(null,null,"");
+        this(null,null,null);
     }
 
     /* ------------------------------------------------------------ */
-    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("reason") String reason)
+    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("message") String message)
     {
         super(pattern);
         _handling = true;
         _terminating = true;
         setCode(code);
-        setReason(reason);
+        setMessage(message);
     }
 
     /* ------------------------------------------------------------ */
@@ -56,19 +56,34 @@ public class ResponsePatternRule extends PatternRule
      */
     public void setCode(String code)
     {
-        _code = code;
+        _code = code==null ? 0 : Integer.parseInt(code);
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Sets the reason for the response status code. Reasons will only reflect
      * if the code value is greater or equal to 400.
-     * 
+     * @deprecated Reason has been replaced by message
      * @param reason the reason
+     * @see #setMessage(String)
      */
+    @Deprecated
     public void setReason(String reason)
     {
-        _reason = reason;
+        setMessage(reason);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
+     * Reasons will only reflect
+     * if the code value is greater or equal to 400.
+     *
+     * @param message the reason
+     */
+    public void setMessage(String message)
+    {
+        _message = message;
     }
 
     /* ------------------------------------------------------------ */
@@ -79,16 +94,13 @@ public class ResponsePatternRule extends PatternRule
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        int code = Integer.parseInt(_code);
-
         // status code 400 and up are error codes
-        if (code >= 400)
+        if (_code>0)
         {
-            response.sendError(code, _reason);
-        }
-        else
-        {
-            response.setStatus(code);
+            if (_message != null && !_message.isEmpty())
+                response.sendError(_code, _message);
+            else
+                response.setStatus(_code);
         }
         return target;
     }
@@ -100,6 +112,6 @@ public class ResponsePatternRule extends PatternRule
     @Override
     public String toString()
     {
-        return super.toString()+"["+_code+","+_reason+"]";
+        return super.toString()+"["+_code+","+ _message +"]";
     }
 }

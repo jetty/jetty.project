@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 
+import org.eclipse.jetty.server.Dispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ResponsePatternRuleTest extends AbstractRuleTestCase
 {
@@ -38,57 +40,27 @@ public class ResponsePatternRuleTest extends AbstractRuleTestCase
     }
 
     @Test
-    public void testStatusCodeNoReason() throws IOException
+    public void testStatusCodeNoMessage() throws IOException
     {
-        for (int i = 1; i < 400; i++)
+        for (int i = 1; i < 600; i++)
         {
             _rule.setCode("" + i);
+            _rule.setMessage(null);
             _rule.apply(null, _request, _response);
 
             assertEquals(i, _response.getStatus());
+            assertNull(_request.getAttribute(Dispatcher.ERROR_MESSAGE));
         }
     }
 
     @Test
-    public void testStatusCodeWithReason() throws IOException
+    public void testStatusCodeMessage() throws IOException
     {
-        for (int i = 1; i < 400; i++)
-        {
-            _rule.setCode("" + i);
-            _rule.setReason("reason" + i);
-            _rule.apply(null, _request, _response);
+        _rule.setCode("499");
+        _rule.setMessage("Message 499");
+        _rule.apply(null, _request, _response);
 
-            assertEquals(i, _response.getStatus());
-            assertEquals(null, _response.getReason());
-        }
-    }
-
-    @Test
-    public void testErrorStatusNoReason() throws IOException
-    {
-        for (int i = 400; i < 600; i++)
-        {
-            _rule.setCode("" + i);
-            _rule.apply(null, _request, _response);
-
-            assertEquals(i, _response.getStatus());
-            assertEquals("", _response.getReason());
-            super.reset();
-        }
-    }
-
-    @Test
-    public void testErrorStatusWithReason() throws IOException
-    {
-        for (int i = 400; i < 600; i++)
-        {
-            _rule.setCode("" + i);
-            _rule.setReason("reason-" + i);
-            _rule.apply(null, _request, _response);
-
-            assertEquals(i, _response.getStatus());
-            assertEquals("reason-" + i, _response.getReason());
-            super.reset();
-        }
+        assertEquals(499, _response.getStatus());
+        assertEquals( "Message 499", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
     }
 }

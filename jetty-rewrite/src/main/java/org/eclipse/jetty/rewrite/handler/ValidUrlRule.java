@@ -42,7 +42,7 @@ public class ValidUrlRule extends Rule
     private static final Logger LOG = Log.getLogger(ValidUrlRule.class);
 
     String _code = "400";
-    String _reason = "Illegal Url";
+    String _message = "Illegal Url";
     
     public ValidUrlRule()
     {
@@ -64,13 +64,26 @@ public class ValidUrlRule extends Rule
 
     /* ------------------------------------------------------------ */
     /**
-     * Sets the reason for the response status code. Reasons will only reflect if the code value is greater or equal to 400.
+     * Sets the reason for the response status code.
      * 
      * @param reason the reason
+     * @deprecated use {@link #setMessage(String)}
      */
+    @Deprecated
     public void setReason(String reason)
     {
-        _reason = reason;
+        _message = reason;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
+     *
+     * @param message the message
+     */
+    public void setMessage(String message)
+    {
+        _message = message;
     }
 
     @Override
@@ -90,14 +103,10 @@ public class ValidUrlRule extends Rule
                 int code = Integer.parseInt(_code);
 
                 // status code 400 and up are error codes so include a reason
-                if (code >= 400)
-                {
-                    response.sendError(code,_reason);
-                }
+                if (_message!=null && !_message.isEmpty())
+                    response.sendError(code, _message);
                 else
-                {
                     response.setStatus(code);
-                }
 
                 // we have matched, return target and consider it is handled
                 return target;
@@ -121,6 +130,6 @@ public class ValidUrlRule extends Rule
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _code + ":" + _reason + "]";
+        return super.toString() + "[" + _code + ":" + _message + "]";
     }
 }
