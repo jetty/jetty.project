@@ -124,7 +124,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final Generator generator;
     private final Parser parser;
     private final WebSocketPolicy policy;
-    private final Suspender suspender;
+    private final ReadState readState;
     private final FrameFlusher flusher;
     private final String id;
     private WebSocketSession session;
@@ -145,7 +145,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.parser = new Parser(policy,bufferPool);
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
-        this.suspender = new Suspender();
+        this.readState = new ReadState();
         this.ioState = new IOState();
         this.ioState.addListener(this);
         this.flusher = new Flusher(bufferPool,generator,endp);
@@ -300,7 +300,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public boolean isReading()
     {
-        return !suspender.isSuspended();
+        return readState.isReading();
     }
 
     /**
@@ -397,13 +397,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
 
         if (readMode == ReadMode.EOF)
-        {
-            suspender.eof();
-        }
-        else if (!suspender.activateRequestedSuspend())
-        {
+            readState.eof();
+        else if (!readState.suspend())
             fillInterested();
-        }
     }
 
     @Override
@@ -582,10 +578,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void resume()
     {
-        if (suspender.requestResume())
-        {
+        if (readState.resume())
             fillInterested();
-        }
     }
 
     /**
@@ -620,7 +614,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public SuspendToken suspend()
     {
-        suspender.requestSuspend();
+        readState.suspending();
         return this;
     }
 
@@ -644,43 +638,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 getClass().getSimpleName(),
                 hashCode(),
                 ioState,flusher,generator,parser);
-    }
-    
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-
-        EndPoint endp = getEndPoint();
-        if(endp != null)
-        {
-            result = prime * result + endp.getLocalAddress().hashCode();
-            result = prime * result + endp.getRemoteAddress().hashCode();
-        }
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        AbstractWebSocketConnection other = (AbstractWebSocketConnection)obj;
-        EndPoint endp = getEndPoint();
-        EndPoint otherEndp = other.getEndPoint();
-        if (endp == null)
-        {
-            if (otherEndp != null)
-                return false;
-        }
-        else if (!endp.equals(otherEndp))
-            return false;
-        return true;
     }
 
     /**
