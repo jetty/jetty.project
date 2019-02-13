@@ -45,7 +45,6 @@ pipeline {
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
             mavenBuild("jdk11", "-Pmongodb install", "maven3", false)
-            junit '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
             maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
           }

@@ -1,18 +1,21 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>example-async-rest</artifactId>
-       <version>9.4.15-SNAPSHOT</version>
-  </parent>  
+    <version>9.4.15-SNAPSHOT</version>
+  </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.example-async-rest</groupId>
   <artifactId>example-async-rest-jar</artifactId>
   <packaging>jar</packaging>
   <name>Example Async Rest :: Jar</name>
-  <url>http://www.eclipse.org/jetty</url>
+
   <properties>
-    <bundle-symbolic-name>${project.groupId}.examples.async.rest</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.parent.groupId}.examples.async.rest</bundle-symbolic-name>
   </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

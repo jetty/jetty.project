@@ -49,7 +49,7 @@ import org.junit.jupiter.api.Disabled;
 public class TestableJettyServer
 {
     private List<URL> _xmlConfigurations;
-    private final Map<String,String> _properties = new HashMap<String, String>();
+    private final Map<String,String> _properties = new HashMap<>();
     private Server _server;
     private int _serverPort;
     private String _scheme = HttpScheme.HTTP.asString();
@@ -60,7 +60,7 @@ public class TestableJettyServer
 
     public TestableJettyServer() throws IOException
     {
-        _xmlConfigurations = new ArrayList<URL>();
+        _xmlConfigurations = new ArrayList<>();
         Properties properties = new Properties();
 
         /* Establish Popular Directories */
