@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -46,7 +45,7 @@ public interface Dumpable
      * The indent should not be applied to the first object dumped.
      * @param out The appendable to dump to
      * @param indent The indent to apply after any new lines.
-     * @throws IOException
+     * @throws IOException if unable to write to Appendable
      */
     void dump(Appendable out,String indent) throws IOException;
 

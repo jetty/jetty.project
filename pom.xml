@@ -539,8 +539,7 @@
             <show>protected</show>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
-              <link>http://docs.oracle.com/javase/8/docs/api/</link>
-              <link>http://docs.oracle.com/javaee/7/api/</link>
+              <link>https://docs.oracle.com/javase/8/docs/api/</link>
             </links>
           </configuration>
         </plugin>
