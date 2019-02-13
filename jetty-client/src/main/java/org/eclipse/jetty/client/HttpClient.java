@@ -182,12 +182,6 @@ public class HttpClient extends ContainerLifeCycle
     {
         this.transport = transport;
         addBean(transport);
-
-        if (sslContextFactory == null)
-        {
-            sslContextFactory = new SslContextFactory(false);
-            sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-        }
         this.sslContextFactory = sslContextFactory;
         addBean(sslContextFactory);
         addBean(handlers);
