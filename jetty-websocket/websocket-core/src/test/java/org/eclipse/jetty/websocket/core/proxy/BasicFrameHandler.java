@@ -66,9 +66,9 @@ class BasicFrameHandler implements FrameHandler
         session.sendFrame(textFrame, Callback.NOOP, false);
     }
 
-    public void close() throws InterruptedException
+    public void close(String message) throws InterruptedException
     {
-        session.close(CloseStatus.NORMAL, "standard close", Callback.NOOP);
+        session.close(CloseStatus.NORMAL, message, Callback.NOOP);
         awaitClose();
     }
 
@@ -78,9 +78,9 @@ class BasicFrameHandler implements FrameHandler
     }
 
 
-    public static class EchoHandler extends BasicFrameHandler
+    public static class ServerEchoHandler extends BasicFrameHandler
     {
-        public EchoHandler(String name)
+        public ServerEchoHandler(String name)
         {
             super(name);
         }
@@ -89,6 +89,7 @@ class BasicFrameHandler implements FrameHandler
         public void onFrame(Frame frame, Callback callback)
         {
             System.err.println(name + " onFrame(): " + frame);
+            receivedFrames.offer(Frame.copy(frame));
 
             if (frame.isDataFrame())
             {
@@ -96,9 +97,10 @@ class BasicFrameHandler implements FrameHandler
                 session.sendFrame(new Frame(frame.getOpCode(), frame.getPayload()), callback, false);
             }
             else
+            {
                 callback.succeeded();
+            }
 
-            receivedFrames.offer(Frame.copy(frame));
         }
     }
 }

@@ -2,8 +2,10 @@ package org.eclipse.jetty.websocket.core.proxy;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -16,23 +18,19 @@ class ProxyFrameHandler implements FrameHandler
 {
     private String name = "[ClientToProxy]";
     private URI serverUri;
-    private WebSocketCoreClient client = new WebSocketCoreClient();
+    private WebSocketCoreClient client;
     private CoreSession clientSession;
     private AtomicReference<CoreSession> serverSession = new AtomicReference<>();
     private AtomicReference<Callback> closeFrameCallback = new AtomicReference<>();
 
-    public ProxyFrameHandler()
+    private static CoreSession EMPTY_SESSION = new CoreSession.Empty();
+
+    protected BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+
+    public ProxyFrameHandler(WebSocketCoreClient client, URI serverUri)
     {
-        try
-        {
-            serverUri = new URI("ws://localhost:8080/server");
-            client.start();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        this.client = client;
+        this.serverUri = serverUri;
     }
 
     @Override
@@ -48,27 +46,35 @@ class ProxyFrameHandler implements FrameHandler
             {
                 if (t != null)
                 {
-                    // We have failed to create the client so onClosed will never be called
-                    // so it is our responsibility to close the WebSocketCoreClient
-                    try
-                    {
-                        client.stop();
-                    }
-                    catch (Exception e)
-                    {
-                        t.addSuppressed(e);
-                    }
-
                     // If an onError callback was waiting to be completed in serverToProxyFH onOpen, then we must fail it.
-                    CoreSession session = this.serverSession.get();
-                    if (session instanceof FailedCoreSession)
+                    while (true)
                     {
-                        FailedCoreSession failedSession = (FailedCoreSession)session;
-                        failedSession.failed(t);
-                        t.addSuppressed(failedSession.getThrowable());
+                        CoreSession session = serverSession.get();
+
+                        if (session == null)
+                        {
+                            if (serverSession.compareAndSet(null, EMPTY_SESSION))
+                                break;
+                        }
+                        else if (session == EMPTY_SESSION)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            if (serverSession.compareAndSet(session, EMPTY_SESSION))
+                            {
+                                if (session instanceof FailedCoreSession)
+                                {
+                                    FailedCoreSession failedSession = (FailedCoreSession)session;
+                                    failedSession.failed(t);
+                                    t.addSuppressed(failedSession.getThrowable());
+                                }
+
+                                break;
+                            }
+                        }
                     }
-                    else
-                        throw new IllegalStateException("onOpen was called but this callback was failed?");
 
                     callback.failed(t);
                 }
@@ -80,7 +86,7 @@ class ProxyFrameHandler implements FrameHandler
         }
         catch (IOException e)
         {
-            clientSession.close(CloseStatus.SERVER_ERROR, e.getMessage(), Callback.from(callback,e));
+            callback.failed(e);
         }
     }
 
@@ -88,6 +94,7 @@ class ProxyFrameHandler implements FrameHandler
     public void onFrame(Frame frame, Callback callback)
     {
         System.err.println(name + " onFrame(): " + frame);
+        receivedFrames.offer(Frame.copy(frame));
         onFrame(serverSession.get(), frame, callback);
     }
 
@@ -128,8 +135,28 @@ class ProxyFrameHandler implements FrameHandler
         System.err.println(name + " onError(): " + cause);
         cause.printStackTrace();
 
-        if (!serverSession.compareAndSet(null, new FailedCoreSession(cause, callback)))
-            serverSession.get().close(CloseStatus.SHUTDOWN, cause.getMessage(), callback);
+        while (true)
+        {
+            CoreSession session = serverSession.get();
+            if (session == EMPTY_SESSION)
+            {
+                callback.failed(cause);
+                break;
+            }
+            else if (session == null)
+            {
+                if (serverSession.compareAndSet(null, new FailedCoreSession(cause, callback)))
+                    break;
+            }
+            else
+            {
+                if (serverSession.compareAndSet(session, EMPTY_SESSION))
+                {
+                    serverSession.get().close(CloseStatus.SHUTDOWN, cause.getMessage(), callback);
+                    break;
+                }
+            }
+        }
     }
 
     @Override
@@ -162,6 +189,7 @@ class ProxyFrameHandler implements FrameHandler
         public void onFrame(Frame frame, Callback callback)
         {
             System.err.println(name + " onFrame(): " + frame);
+            receivedFrames.offer(Frame.copy(frame));
             ProxyFrameHandler.this.onFrame(clientSession, frame, callback);
         }
 
@@ -177,16 +205,7 @@ class ProxyFrameHandler implements FrameHandler
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
             System.err.println(name + " onClosed(): " + closeStatus);
-
-            try
-            {
-                client.stop();
-                callback.succeeded();
-            }
-            catch (Exception e)
-            {
-                callback.failed(e);
-            }
+            callback.succeeded();
         }
     }
 
