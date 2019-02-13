@@ -16,23 +16,35 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.impl;
+package org.eclipse.jetty.websocket.core.client;
+
+import java.io.InputStream;
+import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
-class DefaultHttpClientProvider
+class XmlBasedHttpClientProvider
 {
-    public static HttpClient newHttpClient()
+    public static HttpClient get()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        HttpClient client = new HttpClient(sslContextFactory);
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        String name = "WebSocketClient@" + client.hashCode();
-        threadPool.setName(name);
-        threadPool.setDaemon(true);
-        client.setExecutor(threadPool);
-        return client;
+        URL resource = Thread.currentThread().getContextClassLoader().getResource("jetty-websocket-httpclient.xml");
+        if (resource == null)
+        {
+            return null;
+        }
+
+        try (InputStream in = resource.openStream())
+        {
+            XmlConfiguration configuration = new XmlConfiguration(in);
+            return (HttpClient)configuration.configure();
+        }
+        catch (Throwable t)
+        {
+            Log.getLogger(XmlBasedHttpClientProvider.class).warn("Unable to load: " + resource, t);
+        }
+
+        return null;
     }
 }

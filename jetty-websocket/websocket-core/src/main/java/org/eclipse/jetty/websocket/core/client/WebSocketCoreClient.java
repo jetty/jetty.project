@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -61,12 +60,9 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public WebSocketCoreClient(HttpClient httpClient, FrameHandler.Customizer customizer)
     {
-        if (httpClient==null)
-        {
-            httpClient = new HttpClient(new SslContextFactory());
-            httpClient.getSslContextFactory().setEndpointIdentificationAlgorithm("HTTPS");
-            httpClient.setName(String.format("%s@%x",getClass().getSimpleName(),hashCode()));
-        }
+        if (httpClient == null)
+            httpClient = HttpClientProvider.get();
+
         this.httpClient = httpClient;
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.objectFactory = new DecoratedObjectFactory();

@@ -16,12 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.impl;
+package org.eclipse.jetty.websocket.core.client;
+
+import java.lang.reflect.Method;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
-
-import java.lang.reflect.Method;
 
 public final class HttpClientProvider
 {
@@ -31,7 +31,7 @@ public final class HttpClientProvider
         {
             if (Class.forName("org.eclipse.jetty.xml.XmlConfiguration") != null)
             {
-                Class<?> xmlClazz = Class.forName("org.eclipse.jetty.websocket.client.XmlBasedHttpClientProvider");
+                Class<?> xmlClazz = Class.forName("org.eclipse.jetty.websocket.core.client.XmlBasedHttpClientProvider");
                 Method getMethod = xmlClazz.getMethod("get");
                 Object ret = getMethod.invoke(null);
                 if ((ret != null) && (ret instanceof HttpClient))
