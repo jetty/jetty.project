@@ -26,6 +26,7 @@ import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -60,7 +61,7 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(Resource... resources)
     {
-        List<Resource> list = new ArrayList<Resource>();
+        List<Resource> list = new ArrayList<>();
         for (Resource r : resources)
         {
             if (r == null)
@@ -69,17 +70,14 @@ public class ResourceCollection extends Resource
             }
             if (r instanceof ResourceCollection)
             {
-                for (Resource r2 : ((ResourceCollection) r).getResources())
-                {
-                    list.add(r2);
-                }
+                Collections.addAll(list, ((ResourceCollection) r).getResources());
             }
             else
             {
                 list.add(r);
             }
         }
-        _resources = list.toArray(new Resource[list.size()]);
+        _resources = list.toArray(new Resource[0]);
         for (Resource r : _resources)
         {
             assertResourceValid(r);
@@ -107,7 +105,7 @@ public class ResourceCollection extends Resource
             {
                 if (strResource == null || strResource.length() == 0)
                 {
-                    throw new IllegalStateException("empty resource path not supported");
+                    throw new IllegalArgumentException("empty/null resource path not supported");
                 }
                 Resource resource = Resource.newResource(strResource);
                 assertResourceValid(resource);
@@ -306,58 +304,6 @@ public class ResourceCollection extends Resource
         return null;
     }
 
-    /**
-     * @param path the path to look for
-     * @return the resource(file) if found, returns a list of resource dirs if its a dir, else null.
-     * @throws IOException if unable to look for path
-     * @throws MalformedURLException if failed to look for path due to url issue
-     */
-    protected Object findResource(String path) throws IOException, MalformedURLException
-    {
-        assertResourcesSet();
-
-        Resource resource = null;
-        ArrayList<Resource> resources = null;
-        int i = 0;
-        for (; i < _resources.length; i++)
-        {
-            resource = _resources[i].addPath(path);
-            if (resource.exists())
-            {
-                if (resource.isDirectory())
-                {
-                    break;
-                }
-
-                return resource;
-            }
-        }
-
-        for (i++; i < _resources.length; i++)
-        {
-            Resource r = _resources[i].addPath(path);
-            if (r.exists() && r.isDirectory())
-            {
-                if (resource != null)
-                {
-                    resources = new ArrayList<>();
-                    resources.add(resource);
-                }
-                resources.add(r);
-            }
-        }
-
-        if (resource != null)
-        {
-            return resource;
-        }
-        if (resources != null)
-        {
-            return resources;
-        }
-        return null;
-    }
-
     @Override
     public boolean delete() throws SecurityException
     {
@@ -493,10 +439,7 @@ public class ResourceCollection extends Resource
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
-            for (String s : r.list())
-            {
-                set.add(s);
-            }
+            Collections.addAll(set, r.list());
         }
         String[] result = set.toArray(new String[0]);
         Arrays.sort(result);

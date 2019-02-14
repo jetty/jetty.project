@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,11 +75,10 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testStringArrayWithNull_ThrowsISE()
+    public void testStringArrayWithNull_ThrowsIAE()
     {
-        ResourceCollection coll = new ResourceCollection(new String[]{null});
-
-        assertThrowIllegalStateException(coll);
+        assertThrows(IllegalArgumentException.class,
+                ()-> new ResourceCollection(new String[]{null}));
     }
 
     @Test
@@ -143,25 +145,25 @@ public class ResourceCollectionTest
         ResourceCollection coll = new ResourceCollection(resource);
 
         // Reset collection to invalid state
-        coll.setResources(new Resource[]{null,null,null});
+        assertThrows(IllegalStateException.class, ()-> coll.setResources(new Resource[]{null, null, null}));
 
-        assertThrowIllegalStateException(coll);
+        // Ensure not modified.
+        assertThat(coll.getResources().length, is(1));
     }
 
     private void assertThrowIllegalStateException(ResourceCollection coll)
     {
         assertThrows(IllegalStateException.class, ()->coll.addPath("foo"));
-        assertThrows(IllegalStateException.class, ()->coll.findResource("bar"));
-        assertThrows(IllegalStateException.class, ()->coll.exists());
-        assertThrows(IllegalStateException.class, ()->coll.getFile());
-        assertThrows(IllegalStateException.class, ()->coll.getInputStream());
-        assertThrows(IllegalStateException.class, ()->coll.getReadableByteChannel());
-        assertThrows(IllegalStateException.class, ()->coll.getURL());
-        assertThrows(IllegalStateException.class, ()->coll.getName());
-        assertThrows(IllegalStateException.class, ()->coll.isDirectory());
-        assertThrows(IllegalStateException.class, ()->coll.lastModified());
-        assertThrows(IllegalStateException.class, ()->coll.list());
-        assertThrows(IllegalStateException.class, ()->coll.close());
+        assertThrows(IllegalStateException.class, coll::exists);
+        assertThrows(IllegalStateException.class, coll::getFile);
+        assertThrows(IllegalStateException.class, coll::getInputStream);
+        assertThrows(IllegalStateException.class, coll::getReadableByteChannel);
+        assertThrows(IllegalStateException.class, coll::getURL);
+        assertThrows(IllegalStateException.class, coll::getName);
+        assertThrows(IllegalStateException.class, coll::isDirectory);
+        assertThrows(IllegalStateException.class, coll::lastModified);
+        assertThrows(IllegalStateException.class, coll::list);
+        assertThrows(IllegalStateException.class, coll::close);
         assertThrows(IllegalStateException.class, ()->
         {
             Path destPath = workdir.getPathFile("bar");
@@ -219,11 +221,8 @@ public class ResourceCollectionTest
                 "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
 
-        File dest = File.createTempFile("copyto",null);
-        if (dest.exists())
-            dest.delete();
-        dest.mkdir();
-        dest.deleteOnExit();
+        File dest = MavenTestingUtils.getTargetTestingDir("copyto");
+        FS.ensureDirExists(dest);
         rc.copyTo(dest);
 
         Resource r = Resource.newResource(dest.toURI());
@@ -241,7 +240,7 @@ public class ResourceCollectionTest
     static String getContent(Resource r, String path) throws Exception
     {
         StringBuilder buffer = new StringBuilder();
-        String line = null;
+        String line;
         try (BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream())))
         {
             while((line=br.readLine())!=null)
