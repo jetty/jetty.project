@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
@@ -31,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -56,8 +51,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PushCacheFilterTest extends AbstractTest
 {
@@ -86,11 +84,11 @@ public class PushCacheFilterTest extends AbstractTest
     {
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
-        final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
+        final byte[] secondaryData = "SECONDARY".getBytes(StandardCharsets.UTF_8);
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 String requestURI = req.getRequestURI();
                 ServletOutputStream output = resp.getOutputStream();
@@ -188,11 +186,11 @@ public class PushCacheFilterTest extends AbstractTest
     {
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
-        final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
+        final byte[] secondaryData = "SECONDARY".getBytes(StandardCharsets.UTF_8);
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 String requestURI = req.getRequestURI();
                 ServletOutputStream output = resp.getOutputStream();
@@ -276,11 +274,11 @@ public class PushCacheFilterTest extends AbstractTest
     {
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
-        final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
+        final byte[] secondaryData = "SECONDARY".getBytes(StandardCharsets.UTF_8);
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 String requestURI = req.getRequestURI();
                 ServletOutputStream output = resp.getOutputStream();
@@ -385,7 +383,7 @@ public class PushCacheFilterTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 String requestURI = request.getRequestURI();
                 final ServletOutputStream output = response.getOutputStream();
@@ -470,7 +468,7 @@ public class PushCacheFilterTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 String requestURI = request.getRequestURI();
                 final ServletOutputStream output = response.getOutputStream();
@@ -654,7 +652,7 @@ public class PushCacheFilterTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 ServletOutputStream output = response.getOutputStream();
                 String credentials = request.getParameter("credentials");
@@ -749,7 +747,7 @@ public class PushCacheFilterTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
             {
                 String requestURI = request.getRequestURI();
                 if (requestURI.endsWith(primaryResource))
@@ -845,11 +843,11 @@ public class PushCacheFilterTest extends AbstractTest
     {
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
-        final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
+        final byte[] secondaryData = "SECONDARY".getBytes(StandardCharsets.UTF_8);
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 String requestURI = req.getRequestURI();
                 ServletOutputStream output = resp.getOutputStream();
@@ -931,11 +929,11 @@ public class PushCacheFilterTest extends AbstractTest
     {
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
-        final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
+        final byte[] secondaryData = "SECONDARY".getBytes(StandardCharsets.UTF_8);
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 String requestURI = req.getRequestURI();
                 ServletOutputStream output = resp.getOutputStream();
