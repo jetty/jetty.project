@@ -156,7 +156,7 @@ public class HandlerCollection extends AbstractHandlerContainer
      * This implementation adds the passed handler to the end of the existing collection of handlers.
      * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)
      */
-    public void addHandler(Handler handler)
+    public synchronized void addHandler(Handler handler)
     {
         setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
     }
@@ -166,13 +166,13 @@ public class HandlerCollection extends AbstractHandlerContainer
      * This implementation adds the passed handler to the start of the existing collection of handlers.
      * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)
      */
-    public void prependHandler(Handler handler)
+    public synchronized void prependHandler(Handler handler)
     {
         setHandlers(ArrayUtil.prependToArray(handler, getHandlers(), Handler.class));
     }
 
     /* ------------------------------------------------------------ */
-    public void removeHandler(Handler handler)
+    public synchronized void removeHandler(Handler handler)
     {
         Handler[] handlers = getHandlers();
 
