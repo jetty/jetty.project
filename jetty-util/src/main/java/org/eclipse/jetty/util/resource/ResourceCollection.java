@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A collection of resources (dirs).
@@ -40,13 +38,9 @@ import org.eclipse.jetty.util.log.Logger;
  * The first resource in the collection is the main resource.
  * If a resource is not found in the main resource, it looks it up in 
  * the order the resources were constructed.
- * 
- * 
- *
  */
 public class ResourceCollection extends Resource
 {
-    private static final Logger LOG = Log.getLogger(ResourceCollection.class);
     private Resource[] _resources;
 
     /* ------------------------------------------------------------ */
@@ -110,7 +104,7 @@ public class ResourceCollection extends Resource
             for(String strResource: resources)
             {
                 if(strResource == null || strResource.length() == 0)
-                    continue; // skip null and empty string only (whitespace only is valid)
+                    throw new IllegalStateException("empty resource path not supported");
                 Resource resource = Resource.newResource(strResource);
                 assertResourceValid(resource);
                 res.add(resource);
@@ -173,11 +167,6 @@ public class ResourceCollection extends Resource
         List<Resource> res = new ArrayList<>();
         for (Resource resource : resources)
         {
-            if (resource == null)
-            {
-                continue;
-            }
-
             assertResourceValid(resource);
             res.add(resource);
         }
@@ -219,8 +208,9 @@ public class ResourceCollection extends Resource
             while(tokenizer.hasMoreTokens())
             {
                 String token = tokenizer.nextToken().trim();
-                // TODO: we should not trim here, as whitespace is valid for paths
-                if (token == null || token.length() == 0)
+                // TODO: If we want to support CSV tokens with spaces then we should not trim here
+                //       However, if we decide to to this, then CVS formatting/syntax becomes more strict.
+                if (token.length() == 0)
                     continue; // skip
                 Resource resource = Resource.newResource(token);
                 assertResourceValid(resource);
@@ -542,11 +532,18 @@ public class ResourceCollection extends Resource
     private void assertResourcesSet()
     {
         if (_resources == null || _resources.length == 0)
+        {
             throw new IllegalStateException("*resources* not set.");
+        }
     }
 
     private void assertResourceValid(Resource resource)
     {
+        if (resource == null)
+        {
+            throw new IllegalStateException("Null resource not supported");
+        }
+
         if (!resource.exists() || !resource.isDirectory())
         {
             throw new IllegalArgumentException(resource + " is not an existing directory.");
