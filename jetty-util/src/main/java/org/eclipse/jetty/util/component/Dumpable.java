@@ -45,7 +45,7 @@ public interface Dumpable
      * The indent should not be applied to the first object dumped.
      * @param out The appendable to dump to
      * @param indent The indent to apply after any new lines.
-     * @throws IOException if thrown by the Appendable
+     * @throws IOException if unable to write to Appendable
      */
     void dump(Appendable out,String indent) throws IOException;
 
