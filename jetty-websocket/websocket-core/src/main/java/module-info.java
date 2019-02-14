@@ -37,8 +37,10 @@ module org.eclipse.jetty.websocket.core
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.server;
-    requires static org.eclipse.jetty.xml;
     requires org.eclipse.jetty.util;
+
+    // Only required if using XmlBasedHttpClientProvider.
+    requires static org.eclipse.jetty.xml;
 
     uses Extension;
 

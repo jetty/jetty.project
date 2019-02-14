@@ -25,9 +25,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-class XmlBasedHttpClientProvider
+class XmlHttpClientProvider implements HttpClientProvider
 {
-    public static HttpClient get()
+    @Override
+    public HttpClient newHttpClient()
     {
         URL resource = Thread.currentThread().getContextClassLoader().getResource("jetty-websocket-httpclient.xml");
         if (resource == null)
@@ -42,7 +43,7 @@ class XmlBasedHttpClientProvider
         }
         catch (Throwable t)
         {
-            Log.getLogger(XmlBasedHttpClientProvider.class).warn("Unable to load: " + resource, t);
+            Log.getLogger(XmlHttpClientProvider.class).warn("Unable to load: " + resource, t);
         }
 
         return null;

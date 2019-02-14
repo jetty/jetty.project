@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -61,7 +62,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
     public WebSocketCoreClient(HttpClient httpClient, FrameHandler.Customizer customizer)
     {
         if (httpClient == null)
-            httpClient = HttpClientProvider.get();
+            httpClient = Objects.requireNonNull(HttpClientProvider.get());
 
         this.httpClient = httpClient;
         this.extensionRegistry = new WebSocketExtensionRegistry();

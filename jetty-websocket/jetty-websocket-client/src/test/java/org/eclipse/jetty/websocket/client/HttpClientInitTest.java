@@ -46,7 +46,7 @@ public class HttpClientInitTest
             assertThat("Executor exists", executor, notNullValue());
             assertThat("Executor instanceof", executor, instanceOf(QueuedThreadPool.class));
             QueuedThreadPool threadPool = (QueuedThreadPool)executor;
-            assertThat("QueuedThreadPool.name", threadPool.getName(), startsWith("Jetty-WebSocketClient@"));
+            assertThat("QueuedThreadPool.name", threadPool.getName(), startsWith("WebSocketClient@"));
         }
         finally
         {
