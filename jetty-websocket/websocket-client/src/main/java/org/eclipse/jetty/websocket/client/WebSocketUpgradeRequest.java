@@ -516,7 +516,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
                 // wrap in UpgradeException 
                 handleException(new UpgradeException(requestURI,responseStatusCode,responseLine,failure));
             }
-        } else if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
+        }
+        else if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
             handleException(new UpgradeException(requestURI,responseStatusCode,"Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
