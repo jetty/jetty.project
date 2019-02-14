@@ -25,11 +25,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletContext;
@@ -55,13 +53,11 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.OriginInfo;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -796,9 +792,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         Resource quickStartWebXml = _quickStartWebXml;
         if (_quickStartWebXml == null)
-            quickStartWebXml = context.getBaseResource().addPath("/WEB-INF/quickstart-web.xml");
-        if (!quickStartWebXml.exists())
-            quickStartWebXml.getFile().createNewFile();
+            quickStartWebXml = context.getWebInf().addPath("/quickstart-web.xml");
         try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile(),false))
         {
             generateQuickStartWebXml(context,fos);

@@ -74,14 +74,11 @@ public class ResourceCollection extends Resource
             }
             else
             {
+                assertResourceValid(r);
                 list.add(r);
             }
         }
         _resources = list.toArray(new Resource[0]);
-        for (Resource r : _resources)
-        {
-            assertResourceValid(r);
-        }
     }
 
     /**

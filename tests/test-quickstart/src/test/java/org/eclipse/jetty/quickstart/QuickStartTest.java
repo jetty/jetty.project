@@ -18,23 +18,28 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QuickStartTest
 {
@@ -89,8 +94,11 @@ public class QuickStartTest
     public void testSpecWar() throws Exception
     {
         PreconfigureSpecWar.main(new String[]{});
-        
-        WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-spec-preconfigured/WEB-INF/quickstart-web.xml"));
+
+        Path webXmlPath = MavenTestingUtils.getTargetPath().resolve("test-spec-preconfigured/WEB-INF/quickstart-web.xml");
+        assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
+
+        WebDescriptor descriptor = new WebDescriptor(new PathResource(webXmlPath));
         descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
         descriptor.parse();
         Node node = descriptor.getRoot();
@@ -99,7 +107,7 @@ public class QuickStartTest
         System.setProperty("jetty.home", "target");
         
         //war file or dir to start
-        String war = "target/test-spec-preconfigured";
+        String war =  "target/test-spec-preconfigured";
         
         //optional jetty context xml file to configure the webapp
         Resource contextXml = Resource.newResource("src/test/resources/test-spec.xml");
