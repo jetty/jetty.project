@@ -262,7 +262,7 @@
   </reporting>
   <profiles>
     <profile>
-      <id>site-jar</id>
+      <id>eclipse-release</id>
       <build>
         <plugins>
           <plugin>
