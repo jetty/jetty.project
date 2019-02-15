@@ -153,7 +153,7 @@ public class ContextHandlerCollection extends HandlerCollection
      * @see org.eclipse.jetty.server.server.handler.HandlerCollection#setHandlers(org.eclipse.jetty.server.server.Handler[])
      */
     @Override
-    public void setHandlers(Handler[] handlers)
+    public synchronized void setHandlers(Handler[] handlers)
     {
         super.setHandlers(handlers);
         if (isStarted())
