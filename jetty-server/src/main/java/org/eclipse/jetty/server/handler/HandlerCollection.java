@@ -84,7 +84,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     /**
      * @param handlers The handlers to set.
      */
-    public void setHandlers(Handler[] handlers)
+    public synchronized void setHandlers(Handler[] handlers)
     {
         if (!_mutableWhenRunning && isStarted())
             throw new IllegalStateException(STARTED);
