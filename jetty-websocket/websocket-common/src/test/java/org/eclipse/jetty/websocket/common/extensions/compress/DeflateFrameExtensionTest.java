@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -61,8 +55,13 @@ import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
@@ -435,11 +434,6 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
                 {
                     throw new RuntimeIOException(x);
                 }
-            }
-
-            @Override
-            public void incomingError(Throwable t)
-            {
             }
         });
 

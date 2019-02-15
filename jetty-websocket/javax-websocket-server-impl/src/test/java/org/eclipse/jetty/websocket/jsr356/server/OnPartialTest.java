@@ -18,17 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -36,15 +32,19 @@ import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTrackingSocket;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class OnPartialTest
 {
@@ -78,14 +78,15 @@ public class OnPartialTest
         // Create Local JsrSession
         String id = "testSession";
         URI requestURI = URI.create("ws://localhost/" + id);
-        DummyConnection connection = new DummyConnection();
+        LocalWebSocketConnection connection = new LocalWebSocketConnection(id, new MappedByteBufferPool());
         ClientContainer container = new ClientContainer();
         container.start();
         
         @SuppressWarnings("resource")
-        JsrSession session = new JsrSession(container,id,requestURI,driver,connection);
+        JsrSession session = new JsrSession(container, id, requestURI, driver, connection);
         session.start();
         session.open();
+        driver.openSession(session);
         return driver;
     }
 

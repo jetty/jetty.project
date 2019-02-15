@@ -22,34 +22,36 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
-public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames, ConnectionStateListener
+public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(LocalWebSocketConnection.class);
     private final String id;
     private final ByteBufferPool bufferPool;
     private final Executor executor;
+    private final ConnectionState connectionState = new ConnectionState();
+    private WebSocketSession session;
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
     private IncomingFrames incoming;
-    private IOState ioState = new IOState();
 
     public LocalWebSocketConnection(ByteBufferPool bufferPool)
     {
-        this("anon",bufferPool);
+        this("anon", bufferPool);
     }
 
     public LocalWebSocketConnection(String id, ByteBufferPool bufferPool)
@@ -57,44 +59,65 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         this.id = id;
         this.bufferPool = bufferPool;
         this.executor = new ExecutorThreadPool();
-        this.ioState.addListener(this);
     }
 
     @Override
-    public Executor getExecutor()
+    public boolean canReadWebSocketFrames()
     {
-        return executor;
+        return connectionState.canReadWebSocketFrames();
     }
 
     @Override
-    public void setSession(WebSocketSession session)
+    public boolean canWriteWebSocketFrames()
     {
+        return connectionState.canWriteWebSocketFrames();
     }
 
     @Override
-    public void onLocalClose(CloseInfo closeInfo)
+    public void close(Throwable cause)
     {
-        ioState.onCloseLocal(closeInfo);
+        Callback callback = Callback.NOOP;
+        if (cause instanceof CloseException)
+        {
+            callback = new DisconnectCallback();
+        }
+        close(cause, callback);
     }
 
-    public void connect()
+    @Override
+    public void close(CloseInfo close, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("connect()");
-        ioState.onConnected();
+        if (connectionState.closing())
+        {
+            // pretend we sent the close frame and the remote responded
+            session.callApplicationOnClose(close);
+            disconnect();
+        }
+        else
+        {
+            if (callback != null)
+            {
+                callback.failed(new IllegalStateException("Local Close already called"));
+            }
+        }
     }
 
     @Override
     public void disconnect()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("disconnect()");
+        connectionState.disconnected();
     }
 
     @Override
     public ByteBufferPool getBufferPool()
     {
         return this.bufferPool;
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        return executor;
     }
 
     @Override
@@ -115,12 +138,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public IOState getIOState()
-    {
-        return ioState;
-    }
-
-    @Override
     public InetSocketAddress getLocalAddress()
     {
         return null;
@@ -133,21 +150,25 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
+    public void setMaxIdleTimeout(long ms)
+    {
+    }
+
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return policy;
+    }
+
+    public void setPolicy(WebSocketPolicy policy)
+    {
+        this.policy = policy;
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
         return null;
-    }
-
-    @Override
-    public void incomingError(Throwable e)
-    {
-        incoming.incomingError(e);
     }
 
     @Override
@@ -159,7 +180,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public boolean isOpen()
     {
-        return getIOState().isOpen();
+        return true;
     }
 
     @Override
@@ -169,33 +190,15 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public void onConnectionStateChange(ConnectionState state)
+    public boolean opened()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Connection State Change: {}",state);
-        switch (state)
-        {
-            case CLOSED:
-                this.disconnect();
-                break;
-            case CLOSING:
-                if (ioState.wasRemoteCloseInitiated())
-                {
-                    // send response close frame
-                    CloseInfo close = ioState.getCloseInfo();
-                    LOG.debug("write close frame: {}",close);
-                    ioState.onCloseLocal(close);
-                }
-            default:
-                break;
-        }
+        return connectionState.opened();
     }
 
-    public void open()
+    @Override
+    public boolean opening()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("open()");
-        ioState.onOpened();
+        return connectionState.opening();
     }
 
     @Override
@@ -204,12 +207,13 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public void resume()
+    public void remoteClose(CloseInfo close)
     {
+        close(close, Callback.NOOP);
     }
 
     @Override
-    public void setMaxIdleTimeout(long ms)
+    public void resume()
     {
     }
 
@@ -219,9 +223,10 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         this.incoming = incoming;
     }
 
-    public void setPolicy(WebSocketPolicy policy)
+    @Override
+    public void setSession(WebSocketSession session)
     {
-        this.policy = policy;
+        this.session = session;
     }
 
     @Override
@@ -231,8 +236,57 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
+    public String toStateString()
+    {
+        return connectionState.toString();
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s[%s]",LocalWebSocketConnection.class.getSimpleName(),id);
+        return String.format("%s[%s]", LocalWebSocketConnection.class.getSimpleName(), id);
+    }
+
+    private void close(Throwable cause, Callback callback)
+    {
+        session.callApplicationOnError(cause);
+        close(new CloseInfo(StatusCode.SERVER_ERROR, cause.getMessage()), callback);
+    }
+
+    private class DisconnectCallback implements Callback
+    {
+        @Override
+        public void failed(Throwable x)
+        {
+            disconnect();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            disconnect();
+        }
+    }
+
+    private class CallbackBridge implements WriteCallback
+    {
+        final Callback callback;
+
+        public CallbackBridge(Callback callback)
+        {
+            this.callback = callback;
+        }
+
+        @Override
+        public void writeFailed(Throwable x)
+        {
+            callback.failed(x);
+        }
+
+        @Override
+        public void writeSuccess()
+        {
+            callback.succeeded();
+        }
     }
 }

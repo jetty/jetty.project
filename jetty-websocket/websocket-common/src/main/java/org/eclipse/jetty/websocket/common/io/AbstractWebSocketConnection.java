@@ -33,6 +33,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,39 +48,54 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+
+import static org.eclipse.jetty.websocket.api.WebSocketBehavior.SERVER;
 
 /**
  * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link org.eclipse.jetty.io.Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, Dumpable
 {
+
+    private static class CallbackBridge implements WriteCallback
+    {
+        private final Callback callback;
+
+        public CallbackBridge(Callback callback)
+        {
+            this.callback = callback != null ? callback : Callback.NOOP;
+        }
+
+        @Override
+        public void writeFailed(Throwable x)
+        {
+            callback.failed(x);
+        }
+
+        @Override
+        public void writeSuccess()
+        {
+            callback.succeeded();
+        }
+    }
+
     private class Flusher extends FrameFlusher
     {
         private Flusher(ByteBufferPool bufferPool, Generator generator, EndPoint endpoint)
         {
-            super(bufferPool,generator,endpoint,getPolicy().getMaxBinaryMessageBufferSize(),8);
+            super(bufferPool, generator, endpoint, getPolicy().getMaxBinaryMessageBufferSize(), 8);
         }
 
         @Override
         public void onCompleteFailure(Throwable failure)
         {
             super.onCompleteFailure(failure);
-            notifyError(failure);
-            if (ioState.wasAbnormalClose())
-            {
-                LOG.ignore(failure);
-                return;
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug("Write flush failure", failure);
-            ioState.onWriteFailure(failure);
-            disconnect();
+            AbstractWebSocketConnection.this.close(failure);
         }
     }
 
@@ -124,31 +141,28 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final Generator generator;
     private final Parser parser;
     private final WebSocketPolicy policy;
-    private final ReadState readState;
+    private final ReadState readState = new ReadState();
+    private final ConnectionState connectionState = new ConnectionState();
     private final FrameFlusher flusher;
     private final String id;
     private WebSocketSession session;
-    private List<ExtensionConfig> extensions;
+    private List<ExtensionConfig> extensions = new ArrayList<>();
     private ByteBuffer prefillBuffer;
     private ReadMode readMode = ReadMode.PARSE;
-    private IOState ioState;
     private Stats stats = new Stats();
+    private CloseInfo fatalCloseInfo;
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        super(endp,executor);
+        super(endp, executor);
 
         this.id = Long.toString(ID_GEN.incrementAndGet());
         this.policy = policy;
         this.bufferPool = bufferPool;
-        this.generator = new Generator(policy,bufferPool);
-        this.parser = new Parser(policy,bufferPool);
+        this.generator = new Generator(policy, bufferPool);
+        this.parser = new Parser(policy, bufferPool);
         this.scheduler = scheduler;
-        this.extensions = new ArrayList<>();
-        this.readState = new ReadState();
-        this.ioState = new IOState();
-        this.ioState.addListener(this);
-        this.flusher = new Flusher(bufferPool,generator,endp);
+        this.flusher = new Flusher(bufferPool, generator, endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
     }
@@ -159,20 +173,110 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return super.getExecutor();
     }
 
-    @Override
-    public void onLocalClose(CloseInfo close)
+    public void close(CloseInfo close, final Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Local Close Confirmed {}",close);
-
-        if (close.isAbnormal())
+        if (connectionState.closing())
         {
-            ioState.onAbnormalClose(close);
+            boolean transmit = close.getStatusCode() == StatusCode.NO_CODE || StatusCode.isTransmittable(close.getStatusCode());
+            if (transmit)
+            {
+                CloseFrame frame = close.asFrame();
+                outgoingFrame(frame, new CallbackBridge(callback), BatchMode.OFF);
+
+                if (StatusCode.isFatal(close.getStatusCode()))
+                {
+                    fatalCloseInfo = close;
+                }
+            }
+            else
+            {
+                disconnect();
+            }
         }
         else
         {
-            ioState.onCloseLocal(close);
+            if (callback != null)
+            {
+                callback.failed(new IllegalStateException("Local Close already called"));
+            }
         }
+    }
+
+    /**
+     * Close the connection based on the throwable
+     *
+     * @param cause the cause
+     */
+    public void close(Throwable cause)
+    {
+        session.callApplicationOnError(cause);
+
+        int statusCode = policy.getBehavior() == SERVER ? StatusCode.SERVER_ERROR : StatusCode.ABNORMAL;
+
+        if (cause instanceof CloseException)
+        {
+            statusCode = ((CloseException) cause).getStatusCode();
+        }
+        String reason = cause.getMessage();
+        if (StringUtil.isBlank(reason))
+        {
+            // an exception without a message.
+            reason = cause.getClass().getSimpleName();
+        }
+
+        CloseInfo closeInfo = new CloseInfo(statusCode, reason);
+        session.callApplicationOnClose(closeInfo);
+        close(closeInfo, new DisconnectCallback(this));
+    }
+
+    @Override
+    public boolean canWriteWebSocketFrames()
+    {
+        return connectionState.canWriteWebSocketFrames();
+    }
+
+    @Override
+    public boolean canReadWebSocketFrames()
+    {
+        return connectionState.canReadWebSocketFrames();
+    }
+
+    @Override
+    public String toStateString()
+    {
+        return connectionState.toString();
+    }
+
+    @Override
+    public boolean opening()
+    {
+        return connectionState.opening();
+    }
+
+    @Override
+    public boolean opened()
+    {
+        if (connectionState.opened())
+        {
+            if (BufferUtil.hasContent(prefillBuffer))
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Parsing Upgrade prefill buffer ({} remaining)", prefillBuffer.remaining());
+                }
+                parser.parse(prefillBuffer);
+            }
+            fillInterested();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void remoteClose(CloseInfo close)
+    {
+        session.callApplicationOnClose(close);
+        close(close, new DisconnectCallback(this));
     }
 
     @Override
@@ -194,20 +298,35 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void close()
     {
-        session.close();
+        close(new CloseInfo(), Callback.NOOP);
     }
 
     @Override
     public void disconnect()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} disconnect()",policy.getBehavior());
-        flusher.terminate(new EOFException("Disconnected"), false);
-        EndPoint endPoint = getEndPoint();
-        // We need to gently close first, to allow
-        // SSL close alerts to be sent by Jetty
-        endPoint.shutdownOutput();
-        endPoint.close();
+        if (connectionState.disconnected())
+        {
+            /* Use prior Fatal Close Info if present, otherwise
+             * because if could be from a failed close handshake where
+             * the local initiated, but the remote never responded.
+             */
+            CloseInfo closeInfo = fatalCloseInfo;
+            if(closeInfo == null)
+            {
+                closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
+            }
+            session.callApplicationOnClose(closeInfo);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} disconnect()", policy.getBehavior());
+            }
+            flusher.terminate(new EOFException("Disconnected"));
+            EndPoint endPoint = getEndPoint();
+            // We need to gently close first, to allow
+            // SSL close alerts to be sent by Jetty
+            endPoint.shutdownOutput();
+            endPoint.close();
+        }
     }
 
     @Override
@@ -250,12 +369,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public long getIdleTimeout()
     {
         return getEndPoint().getIdleTimeout();
-    }
-
-    @Override
-    public IOState getIOState()
-    {
-        return ioState;
     }
 
     @Override
@@ -303,86 +416,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return readState.isReading();
     }
 
-    /**
-     * Physical connection disconnect.
-     * <p>
-     * Not related to WebSocket close handshake.
-     */
-    @Override
-    public void onClose()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} onClose()",policy.getBehavior());
-        super.onClose();
-        ioState.onDisconnected();
-    }
-
-    @Override
-    public void onConnectionStateChange(ConnectionState state)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} Connection State Change: {}",policy.getBehavior(),state);
-
-        switch (state)
-        {
-            case OPEN:
-                if (BufferUtil.hasContent(prefillBuffer))
-                {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Parsing Upgrade prefill buffer ({} remaining)",prefillBuffer.remaining());
-                    }
-                    parser.parse(prefillBuffer);
-                }
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("OPEN: normal fillInterested");
-                }
-                // TODO: investigate what happens if a failure occurs during prefill, and an attempt to write close fails,
-                // should a fill interested occur? or just a quick disconnect?
-                fillInterested();
-                break;
-            case CLOSED:
-                if (LOG.isDebugEnabled())
-                    LOG.debug("CLOSED - wasAbnormalClose: {}", ioState.wasAbnormalClose());
-                if (ioState.wasAbnormalClose())
-                {
-                    // Fire out a close frame, indicating abnormal shutdown, then disconnect
-                    session.close(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
-                }
-                else
-                {
-                    // Just disconnect
-                    this.disconnect();
-                }
-                break;
-            case CLOSING:
-                if (LOG.isDebugEnabled())
-                    LOG.debug("CLOSING - wasRemoteCloseInitiated: {}", ioState.wasRemoteCloseInitiated());
-
-                // First occurrence of .onCloseLocal or .onCloseRemote use
-                if (ioState.wasRemoteCloseInitiated())
-                {
-                    CloseInfo close = ioState.getCloseInfo();
-                    session.close(close.getStatusCode(), close.getReason());
-                }
-            default:
-                break;
-        }
-    }
-
     @Override
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable()",policy.getBehavior());
+        {
+            LOG.debug("{} onFillable()", policy.getBehavior());
+        }
         stats.countOnFillableEvents.incrementAndGet();
 
-        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
+        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(), true);
 
         try
         {
-            if(readMode == ReadMode.PARSE)
+            if (readMode == ReadMode.PARSE)
             {
                 readMode = readParse(buffer);
             }
@@ -397,9 +444,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
 
         if (readMode == ReadMode.EOF)
+        {
             readState.eof();
+        }
         else if (!readState.suspend())
+        {
             fillInterested();
+        }
     }
 
     @Override
@@ -414,63 +465,28 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
      * to read bytes from the connection
+     *
      * @param prefilled the bytes of prefilled content encountered during upgrade
      */
     protected void setInitialBuffer(ByteBuffer prefilled)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("set Initial Buffer - {}",BufferUtil.toDetailString(prefilled));
+            LOG.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
         }
         prefillBuffer = prefilled;
     }
 
-    private void notifyError(Throwable t)
-    {
-        getParser().getIncomingFramesHandler().incomingError(t);
-    }
-
-    @Override
-    public void onOpen()
-    {
-        if(LOG.isDebugEnabled())
-            LOG.debug("[{}] {}.onOpened()",policy.getBehavior(),this.getClass().getSimpleName());
-        super.onOpen();
-        this.ioState.onOpened();
-    }
-
     /**
      * Event for no activity on connection (read or write)
+     *
      * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
     @Override
     protected boolean onReadTimeout(Throwable timeout)
     {
-        IOState state = getIOState();
-        ConnectionState cstate = state.getConnectionState();
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} Read Timeout - {}",policy.getBehavior(),cstate);
-
-        if (cstate == ConnectionState.CLOSED)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onReadTimeout - Connection Already CLOSED");
-            // close already completed, extra timeouts not relevant
-            // allow underlying connection and endpoint to disconnect on its own
-            return true;
-        }
-
-        try
-        {
-            notifyError(timeout);
-        }
-        finally
-        {
-            // This is an Abnormal Close condition
-            session.close(StatusCode.SHUTDOWN,"Idle Timeout");
-        }
-
-        return false;
+        close(new CloseException(StatusCode.SHUTDOWN, timeout));
+        return false; // let websocket perform close handshake
     }
 
     /**
@@ -481,10 +497,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("outgoingFrame({}, {})",frame,callback);
+            LOG.debug("outgoingFrame({}, {})", frame, callback);
         }
 
-        flusher.enqueue(frame,callback,batchMode);
+        if (flusher.enqueue(frame, callback, batchMode))
+        {
+            flusher.iterate();
+        }
     }
 
     private ReadMode readDiscard(ByteBuffer buffer)
@@ -502,13 +521,17 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 else if (filled < 0)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
+                    {
+                        LOG.debug("read - EOF Reached (remote: {})", getRemoteAddress());
+                    }
                     return ReadMode.EOF;
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Discarded {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
+                    {
+                        LOG.debug("Discarded {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
+                    }
                 }
             }
         }
@@ -530,13 +553,15 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         try
         {
             // Process the content from the Endpoint next
-            while(true)  // TODO: should this honor the LogicalConnection.suspend() ?
+            while (true)  // TODO: should this honor the LogicalConnection.suspend() ?
             {
                 int filled = endPoint.fill(buffer);
                 if (filled < 0)
                 {
-                    LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
-                    ioState.onReadFailure(new EOFException("Remote Read EOF"));
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("read - EOF Reached (remote: {})", getRemoteAddress());
+                    }
                     return ReadMode.EOF;
                 }
                 else if (filled == 0)
@@ -547,30 +572,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
+                    LOG.debug("Filled {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
                 }
                 parser.parse(buffer);
             }
         }
-        catch (IOException e)
-        {
-            LOG.warn(e);
-            session.notifyError(e);
-            session.abort(StatusCode.PROTOCOL,e.getMessage());
-            return ReadMode.DISCARD;
-        }
-        catch (CloseException e)
-        {
-            LOG.debug(e);
-            session.notifyError(e);
-            session.close(e.getStatusCode(),e.getMessage());
-            return ReadMode.DISCARD;
-        }
         catch (Throwable t)
         {
-            LOG.warn(t);
-            session.abort(StatusCode.ABNORMAL,t.getMessage());
-            // TODO: should probably only switch to discard if a non-ws-endpoint error
+            close(t);
             return ReadMode.DISCARD;
         }
     }
@@ -579,7 +588,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void resume()
     {
         if (readState.resume())
+        {
             fillInterested();
+        }
     }
 
     /**
@@ -587,8 +598,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * <p>
      * This list is negotiated during the WebSocket Upgrade Request/Response handshake.
      *
-     * @param extensions
-     *            the list of negotiated extensions in use.
+     * @param extensions the list of negotiated extensions in use.
      */
     public void setExtensions(List<ExtensionConfig> extensions)
     {
@@ -619,25 +629,30 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public String dumpSelf() {
+    public String dumpSelf()
+    {
         return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
-    public void dump(Appendable out, String indent) throws IOException {
+    public void dump(Appendable out, String indent) throws IOException
+    {
         EndPoint endp = getEndPoint();
         Object endpRef = endp.toString();
-        if(endp instanceof AbstractEndPoint)
+        if (endp instanceof AbstractEndPoint)
+        {
             endpRef = ((AbstractEndPoint) endp).toEndPointString();
-        Dumpable.dumpObjects(out, indent, this, endpRef, ioState, flusher, generator, parser);
+        }
+        Dumpable.dumpObjects(out, indent, this, endpRef, flusher, generator, parser);
     }
 
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x[ios=%s,f=%s,g=%s,p=%s]",
+        return String.format("%s@%x[s=%s,f=%s,g=%s,p=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
-                ioState,flusher,generator,parser);
+                connectionState,
+                flusher, generator, parser);
     }
 
     /**
@@ -648,11 +663,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onUpgradeTo(ByteBuffer prefilled)
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(prefilled));
         }
-    
+
         setInitialBuffer(prefilled);
     }
 }

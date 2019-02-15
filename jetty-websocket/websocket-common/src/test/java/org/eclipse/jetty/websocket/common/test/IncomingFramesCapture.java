@@ -18,33 +18,23 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+
 
 public class IncomingFramesCapture implements IncomingFrames
 {
-    private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
     private LinkedBlockingQueue<WebSocketFrame> frames = new LinkedBlockingQueue<>();
-    private LinkedBlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
-
-    public void assertErrorCount(int expectedCount)
-    {
-        assertThat("Captured error count",errors.size(),is(expectedCount));
-    }
 
     public void assertFrameCount(int expectedCount)
     {
@@ -64,11 +54,6 @@ public class IncomingFramesCapture implements IncomingFrames
         assertThat("Captured frame count",frames.size(),is(expectedCount));
     }
 
-    public void assertHasErrors(Class<? extends WebSocketException> errorType, int expectedCount)
-    {
-        assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
-    }
-
     public void assertHasFrame(byte op)
     {
         assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
@@ -83,11 +68,6 @@ public class IncomingFramesCapture implements IncomingFrames
     public void assertHasNoFrames()
     {
         assertThat("Frame count",frames.size(),is(0));
-    }
-
-    public void assertNoErrors()
-    {
-        assertThat("Error count",errors.size(),is(0));
     }
 
     public void clear()
@@ -106,24 +86,6 @@ public class IncomingFramesCapture implements IncomingFrames
         }
     }
 
-    public int getErrorCount(Class<? extends Throwable> errorType)
-    {
-        int count = 0;
-        for (Throwable error : errors)
-        {
-            if (errorType.isInstance(error))
-            {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    public Queue<Throwable> getErrors()
-    {
-        return errors;
-    }
-
     public int getFrameCount(byte op)
     {
         int count = 0;
@@ -140,13 +102,6 @@ public class IncomingFramesCapture implements IncomingFrames
     public Queue<WebSocketFrame> getFrames()
     {
         return frames;
-    }
-
-    @Override
-    public void incomingError(Throwable e)
-    {
-        LOG.debug(e);
-        errors.add(e);
     }
 
     @Override

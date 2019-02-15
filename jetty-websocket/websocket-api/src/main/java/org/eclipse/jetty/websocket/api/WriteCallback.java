@@ -35,7 +35,7 @@ public interface WriteCallback
      * @param x
      *            the reason for the write failure
      */
-    public void writeFailed(Throwable x);
+    void writeFailed(Throwable x);
 
     /**
      * <p>
@@ -44,5 +44,5 @@ public interface WriteCallback
      * 
      * @see #writeFailed(Throwable)
      */
-    public abstract void writeSuccess();
+    void writeSuccess();
 }

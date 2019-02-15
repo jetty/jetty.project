@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
@@ -43,5 +44,10 @@ public class LargeEchoConfiguredSocket
     {
         // reply with echo
         session.getAsyncRemote().sendText(msg);
+    }
+
+    @OnError
+    public void onError(Throwable cause)
+    {
     }
 }

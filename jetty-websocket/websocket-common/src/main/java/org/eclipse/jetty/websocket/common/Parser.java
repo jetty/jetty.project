@@ -212,6 +212,8 @@ public class Parser
 
         if (incomingFramesHandler == null)
         {
+            if(LOG.isDebugEnabled())
+                LOG.debug("No IncomingFrames Handler to notify");
             return;
         }
         try
