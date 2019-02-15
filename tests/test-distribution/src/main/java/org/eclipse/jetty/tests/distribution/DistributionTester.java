@@ -35,6 +35,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -376,7 +378,7 @@ public class DistributionTester
     {
         private final Process process;
         private final List<ConsoleStreamer> consoleStreamers = new ArrayList<>();
-        private final List<String> logs = new ArrayList<>();
+        private final Queue<String> logs = new ConcurrentLinkedQueue<>();
 
         private Run(Process process)
         {
