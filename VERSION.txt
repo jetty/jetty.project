@@ -1,3 +1,5 @@
+jetty-9.4.16-SNAPSHOT
+
 jetty-9.4.15.v20190215 - 15 February 2019
  + 113 Add support for NCSA Extended Log File Format
  + 150 extraClasspath() method on WebAppContext dont support dir path
