@@ -39,15 +39,20 @@ public interface HttpClientProvider
             Log.getLogger(HttpClientProvider.class).ignore(ignore);
         }
 
-        return new HttpClientProvider(){}.newHttpClient();
+        return HttpClientProvider.newDefaultHttpClient();
     }
 
-    default HttpClient newHttpClient()
+    private static HttpClient newDefaultHttpClient()
     {
         HttpClient client = new HttpClient(new SslContextFactory());
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("WebSocketClient@" + client.hashCode());
         client.setExecutor(threadPool);
         return client;
+    }
+
+    default HttpClient newHttpClient()
+    {
+        return newDefaultHttpClient();
     }
 }
