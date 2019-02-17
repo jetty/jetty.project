@@ -263,10 +263,7 @@ public class FrameFlusher extends IteratingCallback
             entry.release();
         }
         entries.clear();
-        if (endPoint instanceof AbstractEndPoint)
-            ((AbstractEndPoint)endPoint).close(failure);
-        else
-            endPoint.close();
+        endPoint.close(failure);
     }
 
     private void releaseAggregate()
