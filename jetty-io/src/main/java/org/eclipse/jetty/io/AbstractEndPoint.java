@@ -175,7 +175,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         close(null);
     }
 
-    protected final void close(Throwable failure)
+    public final void close(Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("close({}) {}",failure,this);
