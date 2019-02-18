@@ -511,10 +511,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public void onClose()
+    public void onClose(Throwable cause)
     {
-        _sendCallback.close();
-        super.onClose();
+        if (cause==null)
+            _sendCallback.close();
+        else
+            _sendCallback.failed(cause);
+        super.onClose(cause);
     }
 
     @Override

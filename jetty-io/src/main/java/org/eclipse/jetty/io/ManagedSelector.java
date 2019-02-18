@@ -270,13 +270,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             LOG.debug("Created {}", endPoint);
     }
 
-    public void destroyEndPoint(final EndPoint endPoint)
+    public void destroyEndPoint(final EndPoint endPoint, Throwable cause)
     {
         // Waking up the selector is necessary to clean the
         // cancelled-key set and tell the TCP stack that the
         // socket is closed (so that senders receive RST).
         wakeup();
-        execute(new DestroyEndPoint(endPoint));
+        execute(new DestroyEndPoint(endPoint, cause));
     }
 
     private int getActionSize()
@@ -942,10 +942,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private class DestroyEndPoint implements Runnable, Closeable
     {
         private final EndPoint endPoint;
+        private final Throwable cause;
 
-        public DestroyEndPoint(EndPoint endPoint)
+        public DestroyEndPoint(EndPoint endPoint, Throwable cause)
         {
             this.endPoint = endPoint;
+            this.cause = cause;
         }
 
         @Override
@@ -955,7 +957,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 LOG.debug("Destroyed {}", endPoint);
             Connection connection = endPoint.getConnection();
             if (connection != null)
-                _selectorManager.connectionClosed(connection);
+                _selectorManager.connectionClosed(connection, cause);
             _selectorManager.endPointClosed(endPoint);
         }
 

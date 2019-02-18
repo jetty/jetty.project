@@ -232,13 +232,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     {
     }
 
-    protected void onClose(Throwable failure)
-    {
-        super.onClose();
-        _writeFlusher.onFail(failure);
-        _fillInterest.onFail(failure);
-    }
-
     @Override
     public boolean isOutputShutdown()
     {
@@ -347,12 +340,27 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public void onClose()
+    public final void onClose()
+    {
+        onClose(null);
+    }
+
+    @Override
+    public void onClose(Throwable failure)
     {
         super.onClose();
-        _writeFlusher.onClose();
-        _fillInterest.onClose();
+        if (failure==null)
+        {
+            _writeFlusher.onClose();
+            _fillInterest.onClose();
+        }
+        else
+        {
+            _writeFlusher.onFail(failure);
+            _fillInterest.onFail(failure);
+        }
     }
+
 
     @Override
     public void fillInterested(Callback callback)
@@ -427,7 +435,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         ByteBuffer prefilled = (old_connection instanceof Connection.UpgradeFrom) ?
                 ((Connection.UpgradeFrom)old_connection).onUpgradeFrom() :
                 null;
-        old_connection.onClose();
+        old_connection.onClose(null);
         old_connection.getEndPoint().setConnection(newConnection);
 
         if (LOG.isDebugEnabled())

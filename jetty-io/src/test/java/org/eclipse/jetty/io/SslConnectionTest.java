@@ -203,9 +203,9 @@ public class SslConnectionTest
         }
 
         @Override
-        public void onClose()
+        public void onClose(Throwable cause)
         {
-            super.onClose();
+            super.onClose(cause);
         }
 
         @Override

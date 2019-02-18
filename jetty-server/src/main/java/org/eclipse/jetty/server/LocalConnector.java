@@ -324,13 +324,13 @@ public class LocalConnector extends AbstractConnector
         }
 
         @Override
-        public void onClose()
+        public void onClose(Throwable cause)
         {
             Connection connection = getConnection();
             if (connection!=null)
-              connection.onClose();
+              connection.onClose(cause);
             LocalConnector.this.onEndPointClosed(this);
-            super.onClose();
+            super.onClose(cause);
             _closed.countDown();
         }
 
