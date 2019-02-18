@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.core.proxy;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
@@ -38,7 +39,6 @@ class WebSocketProxy
         this.client = client;
         this.serverUri = serverUri;
     }
-
     class Client2Proxy implements FrameHandler
     {
         private CoreSession client;
@@ -48,11 +48,20 @@ class WebSocketProxy
         private Throwable error;
 
         public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+        protected CountDownLatch closed = new CountDownLatch(1);
+
+        public State getState()
+        {
+            synchronized (this)
+            {
+                return state;
+            }
+        }
 
         @Override
         public void onOpen(CoreSession session, Callback callback)
         {
-            System.err.println("[Client2Proxy] onOpen: " + session);
+            System.err.println(toString() + " onOpen(): " + session);
 
             Throwable failure = null;
             synchronized (lock)
@@ -78,6 +87,8 @@ class WebSocketProxy
 
         private void onOpenSuccess(Callback callback)
         {
+            System.err.println(toString() + " onOpenSuccess()");
+
             boolean failServer2Proxy = false;
             Throwable failure = null;
             synchronized (lock)
@@ -109,6 +120,8 @@ class WebSocketProxy
 
         private void onOpenFail(Callback callback, Throwable t)
         {
+            System.err.println(toString() + " onOpenFail(): " + t);
+
             Throwable failure = t;
             synchronized (lock)
             {
@@ -135,7 +148,7 @@ class WebSocketProxy
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
-            System.err.println("[Client2Proxy] onFrame(): " + frame);
+            System.err.println(toString() + " onFrame(): " + frame);
             receivedFrames.offer(Frame.copy(frame));
 
             Callback sendCallback = callback;
@@ -177,8 +190,7 @@ class WebSocketProxy
         @Override
         public void onError(Throwable failure, Callback callback)
         {
-            System.err.println("[Client2Proxy] onError(): " + failure);
-            failure.printStackTrace();
+            System.err.println(toString() + " onError(): " + failure);
 
             boolean failServer2Proxy;
             synchronized (lock)
@@ -206,7 +218,7 @@ class WebSocketProxy
 
         public void fail(Throwable failure, Callback callback)
         {
-            System.err.println("[Client2Proxy] fail(): " + failure);
+            System.err.println(toString() + " fail(): " + failure);
 
             Callback sendCallback = null;
             synchronized (lock)
@@ -239,13 +251,14 @@ class WebSocketProxy
         @Override
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
-            System.err.println("[Client2Proxy] onClosed(): " + closeStatus);
+            System.err.println(toString() + " onClosed(): " + closeStatus);
+            closed.countDown();
             callback.succeeded();
         }
 
         public void send(Frame frame, Callback callback)
         {
-            System.err.println("[Client2Proxy] onClosed(): " + frame);
+            System.err.println(toString() + " send(): " + frame);
 
             Callback sendCallback = callback;
             Throwable failure = null;
@@ -281,6 +294,15 @@ class WebSocketProxy
             else
                 client.sendFrame(frame, sendCallback, false);
         }
+
+        @Override
+        public String toString()
+        {
+            synchronized (lock)
+            {
+                return "[Client2Proxy," + state + "] ";
+            }
+        }
     }
 
     class Server2Proxy implements FrameHandler
@@ -292,10 +314,19 @@ class WebSocketProxy
         private Throwable error;
 
         public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+        protected CountDownLatch closed = new CountDownLatch(1);
+
+        public State getState()
+        {
+            synchronized (this)
+            {
+                return state;
+            }
+        }
 
         public void connect(Callback callback)
         {
-            System.err.println("[Server2Proxy] connect()");
+            System.err.println(toString() + " connect()");
 
             Throwable failure = null;
             synchronized (lock)
@@ -338,6 +369,8 @@ class WebSocketProxy
 
         private void onConnectSuccess(CoreSession s, Callback callback)
         {
+            System.err.println(toString() + " onConnectSuccess(): " + s);
+
             Callback sendCallback = null;
             Throwable failure = null;
             synchronized (lock)
@@ -368,6 +401,8 @@ class WebSocketProxy
 
         private void onConnectFailure(Throwable t, Callback callback)
         {
+            System.err.println(toString() + " onConnectFailure(): " + t);
+
             Throwable failure = t;
             synchronized (lock)
             {
@@ -375,6 +410,7 @@ class WebSocketProxy
                 {
                     case CONNECTING:
                         state = State.FAILED;
+                        error = t;
                         break;
 
                     case FAILED:
@@ -392,7 +428,7 @@ class WebSocketProxy
         @Override
         public void onOpen(CoreSession session, Callback callback)
         {
-            System.err.println("[Server2Proxy] onOpen(): " + session);
+            System.err.println(toString() + " onOpen(): " + session);
 
             Throwable failure = null;
             synchronized (lock)
@@ -423,7 +459,7 @@ class WebSocketProxy
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
-            System.err.println("[Server2Proxy] onFrame(): " + frame);
+            System.err.println(toString() + " onFrame(): " + frame);
             receivedFrames.offer(Frame.copy(frame));
 
             Callback sendCallback = callback;
@@ -466,8 +502,7 @@ class WebSocketProxy
         @Override
         public void onError(Throwable failure, Callback callback)
         {
-            System.err.println("[Server2Proxy] onError(): " + failure);
-            failure.printStackTrace();
+            System.err.println(toString() + " onError(): " + failure);
 
             boolean failClient2Proxy = false;
             synchronized (lock)
@@ -495,13 +530,14 @@ class WebSocketProxy
         @Override
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
-            System.err.println("[Server2Proxy] onClosed(): " + closeStatus);
+            System.err.println(toString() + " onClosed(): " + closeStatus);
+            closed.countDown();
             callback.succeeded();
         }
 
         public void fail(Throwable failure, Callback callback)
         {
-            System.err.println("[Server2Proxy] fail(): " + failure);
+            System.err.println(toString() + " fail(): " + failure);
 
             Callback sendCallback = null;
             synchronized (lock)
@@ -532,7 +568,7 @@ class WebSocketProxy
 
         public void send(Frame frame, Callback callback)
         {
-            System.err.println("[Server2Proxy] send(): " + frame);
+            System.err.println(toString() + " send(): " + frame);
 
             Callback sendCallback = callback;
             Throwable failure = null;
@@ -567,6 +603,15 @@ class WebSocketProxy
                 callback.failed(failure);
             else
                 server.sendFrame(frame, sendCallback, false);
+        }
+
+        @Override
+        public String toString()
+        {
+            synchronized (lock)
+            {
+                return "[Server2Proxy," + state + "] ";
+            }
         }
     }
 }

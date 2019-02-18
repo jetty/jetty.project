@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.core.proxy;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -16,6 +17,7 @@ class BasicFrameHandler implements FrameHandler
 {
     protected String name;
     protected CoreSession session;
+    protected CountDownLatch opened = new CountDownLatch(1);
     protected CountDownLatch closed = new CountDownLatch(1);
 
     protected BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
@@ -30,8 +32,8 @@ class BasicFrameHandler implements FrameHandler
     public void onOpen(CoreSession coreSession, Callback callback)
     {
         session = coreSession;
-
         System.err.println(name + " onOpen(): " + session);
+        opened.countDown();
         callback.succeeded();
     }
 
@@ -47,7 +49,6 @@ class BasicFrameHandler implements FrameHandler
     public void onError(Throwable cause, Callback callback)
     {
         System.err.println(name + " onError(): " + cause);
-        cause.printStackTrace();
         callback.succeeded();
     }
 
@@ -66,20 +67,40 @@ class BasicFrameHandler implements FrameHandler
         session.sendFrame(textFrame, Callback.NOOP, false);
     }
 
-    public void close(String message) throws InterruptedException
+    public void sendFrame(Frame frame)
+    {
+        System.err.println(name + " sendFrame(): " + frame);
+        session.sendFrame(frame, Callback.NOOP, false);
+    }
+
+    public void close(String message) throws Exception
     {
         session.close(CloseStatus.NORMAL, message, Callback.NOOP);
         awaitClose();
     }
 
-    public void awaitClose() throws InterruptedException
+    public void awaitClose() throws Exception
     {
-        closed.await(5, TimeUnit.SECONDS);
+        if (!closed.await(5, TimeUnit.SECONDS))
+            throw new TimeoutException();
     }
 
 
     public static class ServerEchoHandler extends BasicFrameHandler
     {
+        private boolean throwOnFrame;
+        private boolean noResponse;
+
+        public void throwOnFrame()
+        {
+            throwOnFrame = true;
+        }
+
+        public void noResponseOnFrame()
+        {
+            noResponse = true;
+        }
+
         public ServerEchoHandler(String name)
         {
             super(name);
@@ -90,6 +111,12 @@ class BasicFrameHandler implements FrameHandler
         {
             System.err.println(name + " onFrame(): " + frame);
             receivedFrames.offer(Frame.copy(frame));
+
+            if (throwOnFrame)
+                throw new RuntimeException("intentionally throwing in server onFrame()");
+
+            if (noResponse)
+                return;
 
             if (frame.isDataFrame())
             {

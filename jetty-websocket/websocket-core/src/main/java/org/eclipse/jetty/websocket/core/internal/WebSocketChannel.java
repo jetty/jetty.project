@@ -524,7 +524,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (closeStatus instanceof AbnormalCloseStatus && channelState.onClosed(closeStatus))
-                    closeConnection(null, closeStatus, Callback.from(callback, ex));
+                    closeConnection(AbnormalCloseStatus.getCause(closeStatus), closeStatus, Callback.from(callback, ex));
                 else
                     callback.failed(ex);
             }
