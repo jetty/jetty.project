@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.javax.server;
 
 import java.net.URI;
@@ -16,9 +34,6 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerContainer;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
@@ -30,9 +45,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.examples.GetHttpSessionSocket;
 import org.eclipse.jetty.websocket.javax.server.examples.MyAuthedSocket;
 import org.eclipse.jetty.websocket.javax.server.examples.StreamingEchoSocket;
@@ -136,12 +148,9 @@ public class WebSocketServerExamplesTest
     @Test
     public void testMyAuthedSocket() throws Exception
     {
+        //HttpClient is configured for BasicAuthentication with the XmlHttpClientProvider
         URI uri = URI.create("ws://localhost:8080/secured/socket");
-        HttpClient client = new HttpClient(new SslContextFactory()); // TODO: use HttpClientProvider from issue #3341
-        AuthenticationStore authenticationStore = client.getAuthenticationStore();
-        authenticationStore.addAuthentication(new BasicAuthentication(uri, "testRealm", "user", "password"));
-        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer(new WebSocketCoreClient(client));
-        clientContainer.start(); // TODO: use container provider
+        WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
         try(Session session = clientContainer.connectToServer(clientEndpoint, uri))
@@ -152,8 +161,6 @@ public class WebSocketServerExamplesTest
 
         String msg = clientEndpoint.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat(msg, is("hello world"));
-
-        clientContainer.stop();
     }
 
     @Test
