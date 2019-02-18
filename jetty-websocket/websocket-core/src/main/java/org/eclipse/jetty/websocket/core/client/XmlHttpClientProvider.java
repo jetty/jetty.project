@@ -16,35 +16,36 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.impl;
+package org.eclipse.jetty.websocket.core.client;
+
+import java.io.InputStream;
+import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
-import java.lang.reflect.Method;
-
-public final class HttpClientProvider
+class XmlHttpClientProvider implements HttpClientProvider
 {
-    public static HttpClient get()
+    @Override
+    public HttpClient newHttpClient()
     {
-        try
+        URL resource = Thread.currentThread().getContextClassLoader().getResource("jetty-websocket-httpclient.xml");
+        if (resource == null)
         {
-            if (Class.forName("org.eclipse.jetty.xml.XmlConfiguration") != null)
-            {
-                Class<?> xmlClazz = Class.forName("org.eclipse.jetty.websocket.client.XmlBasedHttpClientProvider");
-                Method getMethod = xmlClazz.getMethod("get");
-                Object ret = getMethod.invoke(null);
-                if ((ret != null) && (ret instanceof HttpClient))
-                {
-                    return (HttpClient)ret;
-                }
-            }
-        }
-        catch (Throwable ignore)
-        {
-            Log.getLogger(HttpClientProvider.class).ignore(ignore);
+            return null;
         }
 
-        return DefaultHttpClientProvider.newHttpClient();
+        try (InputStream in = resource.openStream())
+        {
+            XmlConfiguration configuration = new XmlConfiguration(in);
+            return (HttpClient)configuration.configure();
+        }
+        catch (Throwable t)
+        {
+            Log.getLogger(XmlHttpClientProvider.class).warn("Unable to load: " + resource, t);
+        }
+
+        return null;
     }
 }

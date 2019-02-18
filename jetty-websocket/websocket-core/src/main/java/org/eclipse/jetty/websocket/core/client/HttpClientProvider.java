@@ -16,23 +16,43 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.impl;
+package org.eclipse.jetty.websocket.core.client;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-class DefaultHttpClientProvider
+public interface HttpClientProvider
 {
-    public static HttpClient newHttpClient()
+    static HttpClient get()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        HttpClient client = new HttpClient(sslContextFactory);
+        try
+        {
+            HttpClientProvider xmlProvider = new XmlHttpClientProvider();
+            HttpClient client = xmlProvider.newHttpClient();
+            if (client != null)
+                return client;
+        }
+        catch (Throwable ignore)
+        {
+            Log.getLogger(HttpClientProvider.class).ignore(ignore);
+        }
+
+        return HttpClientProvider.newDefaultHttpClient();
+    }
+
+    private static HttpClient newDefaultHttpClient()
+    {
+        HttpClient client = new HttpClient(new SslContextFactory());
         QueuedThreadPool threadPool = new QueuedThreadPool();
-        String name = "WebSocketClient@" + client.hashCode();
-        threadPool.setName(name);
-        threadPool.setDaemon(true);
+        threadPool.setName("WebSocketClient@" + client.hashCode());
         client.setExecutor(threadPool);
         return client;
+    }
+
+    default HttpClient newHttpClient()
+    {
+        return newDefaultHttpClient();
     }
 }

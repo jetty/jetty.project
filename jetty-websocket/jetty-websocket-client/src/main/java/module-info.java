@@ -27,7 +27,4 @@ module org.eclipse.jetty.websocket.jetty.client
     requires org.eclipse.jetty.websocket.jetty.api;
     requires org.eclipse.jetty.websocket.core;
     requires org.eclipse.jetty.websocket.jetty.common;
-
-    // Only required if using XmlBasedHttpClientProvider.
-    requires static org.eclipse.jetty.xml;
 }
