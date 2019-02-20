@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configure class="org.eclipse.jetty.client.HttpClient">
+  <Arg>
+    <New class="org.eclipse.jetty.util.ssl.SslContextFactory"/>
+  </Arg>
+  <Call name="getAuthenticationStore">
+    <Call name="addAuthentication">
+      <Arg>
+        <New class="org.eclipse.jetty.client.util.BasicAuthentication">
+          <Arg>
+            <New class="java.net.URI" arg="ws://localhost:8080/secured/socket"/>
+          </Arg>
+          <Arg>testRealm</Arg>
+          <Arg>user</Arg>
+          <Arg>password</Arg>
+        </New>
+      </Arg>
+    </Call>
+  </Call>
+</Configure>

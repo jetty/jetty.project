@@ -16,18 +16,34 @@
 //  ========================================================================
 //
 
-package examples;
+package org.eclipse.jetty.websocket.javax.server.examples;
 
+import java.io.IOException;
+
+import javax.servlet.http.HttpSession;
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value = "/secured/socket", configurator = MyAuthedConfigurator.class)
-public class MyAuthedSocket
+@ServerEndpoint(value = "/example", configurator = GetHttpSessionConfigurator.class)
+public class GetHttpSessionSocket
 {
-    @OnMessage
-    public String onMessage(String msg)
+    private Session wsSession;
+    @SuppressWarnings("unused")
+    private HttpSession httpSession;
+
+    @OnOpen
+    public void open(Session session, EndpointConfig config)
     {
-        // echo the message back to the remote
-        return msg;
+        this.wsSession = session;
+        this.httpSession = (HttpSession)config.getUserProperties().get(HttpSession.class.getName());
+    }
+
+    @OnMessage
+    public void echo(String msg) throws IOException
+    {
+        wsSession.getBasicRemote().sendText(msg);
     }
 }

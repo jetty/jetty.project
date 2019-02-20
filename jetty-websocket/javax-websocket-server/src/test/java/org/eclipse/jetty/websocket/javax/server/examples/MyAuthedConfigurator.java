@@ -16,36 +16,33 @@
 //  ========================================================================
 //
 
-package examples;
+package org.eclipse.jetty.websocket.javax.server.examples;
 
-import org.eclipse.jetty.http.QuotedCSV;
+import java.security.Principal;
 
-import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
-import java.util.Collections;
-import java.util.List;
 
-public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator
+public class MyAuthedConfigurator extends ServerEndpointConfig.Configurator
 {
     @Override
     public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
     {
+        // Is Authenticated?
+        Principal principal = request.getUserPrincipal();
+        if (principal == null)
+        {
+            throw new RuntimeException("Not authenticated");
+        }
+
+        // Is Authorized?
+        if (!request.isUserInRole("websocket"))
+        {
+            throw new RuntimeException("Not authorized");
+        }
+
+        // normal operation
         super.modifyHandshake(sec, request, response);
-        sec.getUserProperties().put("userAgent", getHeaderValue(request, "User-Agent"));
-        sec.getUserProperties().put("requestedExtensions", getHeaderValue(request, "Sec-WebSocket-Extensions"));
-    }
-
-    private String getHeaderValue(HandshakeRequest request, String key)
-    {
-        List<String> values = request.getHeaders().get(key);
-        return QuotedCSV.join(values);
-    }
-
-    @Override
-    public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested)
-    {
-        return Collections.emptyList();
     }
 }

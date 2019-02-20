@@ -16,33 +16,19 @@
 //  ========================================================================
 //
 
-package examples;
+package org.eclipse.jetty.websocket.javax.server.examples;
 
 import javax.servlet.http.HttpSession;
-import javax.websocket.EndpointConfig;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.server.HandshakeRequest;
+import javax.websocket.server.ServerEndpointConfig;
 
-@ServerEndpoint(value = "/example", configurator = GetHttpSessionConfigurator.class)
-public class GetHttpSessionSocket
+public class GetHttpSessionConfigurator extends ServerEndpointConfig.Configurator
 {
-    private Session wsSession;
-    @SuppressWarnings("unused")
-    private HttpSession httpSession;
-
-    @OnOpen
-    public void open(Session session, EndpointConfig config)
+    @Override
+    public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response)
     {
-        this.wsSession = session;
-        this.httpSession = (HttpSession)config.getUserProperties().get(HttpSession.class.getName());
-    }
-
-    @OnMessage
-    public void echo(String msg) throws IOException
-    {
-        wsSession.getBasicRemote().sendText(msg);
+        HttpSession httpSession = (HttpSession)request.getHttpSession();
+        config.getUserProperties().put(HttpSession.class.getName(), httpSession);
     }
 }

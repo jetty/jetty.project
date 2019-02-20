@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package examples;
+package org.eclipse.jetty.websocket.javax.server.browser;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
