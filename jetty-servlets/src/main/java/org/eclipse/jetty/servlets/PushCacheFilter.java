@@ -23,6 +23,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -41,14 +42,11 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.PushBuilder;
 
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -121,11 +119,11 @@ public class PushCacheFilter implements Filter
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
         HttpServletRequest request = (HttpServletRequest)req;
-        Request jettyRequest = Request.getBaseRequest(request);
 
+        PushBuilder pushBuilder = request.newPushBuilder();
         if (HttpVersion.fromString(request.getProtocol()).getVersion() < 20 ||
                 !HttpMethod.GET.is(request.getMethod()) ||
-                !jettyRequest.isPushSupported())
+                pushBuilder == null)
         {
             chain.doFilter(req, resp);
             return;
@@ -133,33 +131,22 @@ public class PushCacheFilter implements Filter
 
         long now = System.nanoTime();
 
-        // Iterating over fields is more efficient than multiple gets
-        HttpFields fields = jettyRequest.getHttpFields();
         boolean conditional = false;
         String referrer = null;
-        loop:
-        for (int i = 0; i < fields.size(); i++)
+        List<String> headerNames = Collections.list(request.getHeaderNames());
+        for (String headerName : headerNames)
         {
-            HttpField field = fields.getField(i);
-            HttpHeader header = field.getHeader();
-            if (header == null)
-                continue;
-
-            switch (header)
+            if (HttpHeader.IF_MATCH.is(headerName) ||
+                    HttpHeader.IF_MODIFIED_SINCE.is(headerName) ||
+                    HttpHeader.IF_NONE_MATCH.is(headerName) ||
+                    HttpHeader.IF_UNMODIFIED_SINCE.is(headerName))
             {
-                case IF_MATCH:
-                case IF_MODIFIED_SINCE:
-                case IF_NONE_MATCH:
-                case IF_UNMODIFIED_SINCE:
-                    conditional = true;
-                    break loop;
-
-                case REFERER:
-                    referrer = field.getValue();
-                    break;
-
-                default:
-                    break;
+                conditional = true;
+                break;
+            }
+            else if (HttpHeader.REFERER.is(headerName))
+            {
+                referrer = request.getHeader(headerName);
             }
         }
 
@@ -274,8 +261,6 @@ public class PushCacheFilter implements Filter
         // Push associated resources.
         if (!conditional && !primaryResource._associated.isEmpty())
         {
-            PushBuilder pushBuilder = jettyRequest.newPushBuilder();
-
             // Breadth-first push of associated resources.
             Queue<PrimaryResource> queue = new ArrayDeque<>();
             queue.offer(primaryResource);
