@@ -155,9 +155,12 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     public void setHandlers(Handler[] handlers)
     {
-        super.setHandlers(handlers);
-        if (isStarted())
-            mapContexts();
+        synchronized (this)
+        {
+            super.setHandlers(handlers);
+            if (isStarted())
+                mapContexts();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -176,10 +179,6 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Handler[] handlers = getHandlers();
-        if (handlers==null || handlers.length==0)
-            return;
-
         HttpChannelState async = baseRequest.getHttpChannelState();
         if (async.isAsync())
         {
@@ -196,19 +195,19 @@ public class ContextHandlerCollection extends HandlerCollection
             }
         }
         
-        // data structure which maps a request to a context; first-best match wins
-        // { context path => [ context ] }
-        // }
         if (target.startsWith("/"))
         {
+            Trie<Map.Entry<String,Branch[]>> pathBranches = _pathBranches;
+            if (pathBranches==null)
+                return;
+
             int limit = target.length()-1;
 
             while (limit>=0)
             {
                 // Get best match
-                Map.Entry<String,Branch[]> branches = _pathBranches.getBest(target,1,limit);
-                
-                
+                Map.Entry<String,Branch[]> branches = pathBranches.getBest(target,1,limit);
+
                 if (branches==null)
                     break;
                 
@@ -228,7 +227,9 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         else
         {
-            // This may not work in all circumstances... but then I think it should never be called
+            Handler[] handlers = getHandlers();
+            if (handlers==null)
+                return;
             for (int i=0;i<handlers.length;i++)
             {
                 handlers[i].handle(target,baseRequest, request, response);

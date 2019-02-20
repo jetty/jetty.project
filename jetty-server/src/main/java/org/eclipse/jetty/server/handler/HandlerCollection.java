@@ -86,44 +86,48 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void setHandlers(Handler[] handlers)
     {
-        if (!_mutableWhenRunning && isStarted())
-            throw new IllegalStateException(STARTED);
-
-        if (handlers!=null)
+        synchronized (this)
         {
-            // check for loops
-            for (Handler handler:handlers)
-                if (handler == this || (handler instanceof HandlerContainer &&
-                    Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
-                        throw new IllegalStateException("setHandler loop");
-          
-            // Set server
-            for (Handler handler:handlers)
-                if (handler.getServer()!=getServer())
-                    handler.setServer(getServer());
+            if (!_mutableWhenRunning && isStarted())
+                throw new IllegalStateException(STARTED);
+
+            if (handlers!=null)
+            {
+                // check for loops
+                for (Handler handler:handlers)
+                    if (handler == this || (handler instanceof HandlerContainer &&
+                        Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
+                            throw new IllegalStateException("setHandler loop");
+
+                // Set server
+                for (Handler handler:handlers)
+                    if (handler.getServer()!=getServer())
+                        handler.setServer(getServer());
+            }
+            Handler[] old=_handlers;
+            _handlers = handlers;
+            updateBeans(old, handlers);
         }
-        Handler[] old=_handlers;;
-        _handlers = handlers;
-        updateBeans(old, handlers);
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
-        if (_handlers!=null && isStarted())
+        if (isStarted())
         {
+            Handler[] handlers = _handlers;
+            if (handlers==null || handlers.length==0)
+                return;
+
             MultiException mex=null;
 
-            for (int i=0;i<_handlers.length;i++)
+            for (int i=0;i<handlers.length;i++)
             {
                 try
                 {
-                    _handlers[i].handle(target,baseRequest, request, response);
+                    handlers[i].handle(target,baseRequest, request, response);
                 }
                 catch(IOException e)
                 {
@@ -147,7 +151,6 @@ public class HandlerCollection extends AbstractHandlerContainer
                 else
                     throw new ServletException(mex);
             }
-
         }
     }
 
@@ -158,7 +161,10 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void addHandler(Handler handler)
     {
-        setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
+        synchronized(this)
+        {
+            setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -168,16 +174,22 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void prependHandler(Handler handler)
     {
-        setHandlers(ArrayUtil.prependToArray(handler, getHandlers(), Handler.class));
+        synchronized (this)
+        {
+            setHandlers(ArrayUtil.prependToArray(handler, getHandlers(), Handler.class));
+        }
     }
 
     /* ------------------------------------------------------------ */
     public void removeHandler(Handler handler)
     {
-        Handler[] handlers = getHandlers();
+        synchronized (this)
+        {
+            Handler[] handlers = getHandlers();
 
-        if (handlers!=null && handlers.length>0 )
-            setHandlers(ArrayUtil.removeFromArray(handlers, handler));
+            if (handlers!=null && handlers.length>0 )
+                setHandlers(ArrayUtil.removeFromArray(handlers, handler));
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -196,8 +208,12 @@ public class HandlerCollection extends AbstractHandlerContainer
     {
         if (!isStopped())
             throw new IllegalStateException("!STOPPED");
-        Handler[] children=getChildHandlers();
-        setHandlers(null);
+        Handler[] children;
+        synchronized (this)
+        {
+            children = getChildHandlers();
+            setHandlers(null);
+        }
         for (Handler child: children)
             child.destroy();
         super.destroy();
