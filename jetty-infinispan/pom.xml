@@ -10,7 +10,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan</bundle-symbolic-name>
-    <infinispan.version>9.1.0.Final</infinispan.version>
+    <infinispan.version>9.4.8.Final</infinispan.version>
   </properties>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -36,19 +36,19 @@
   </build>
   <dependencies>
     <dependency>
-         <groupId>org.infinispan</groupId>
-         <artifactId>infinispan-core</artifactId>
-         <version>${infinispan.version}</version>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-core</artifactId>
+      <version>${infinispan.version}</version>
     </dependency>
     <dependency>
-         <groupId>org.infinispan.protostream</groupId>
-         <artifactId>protostream</artifactId>
-         <version>4.1.0.Final</version>
+      <groupId>org.infinispan.protostream</groupId>
+      <artifactId>protostream</artifactId>
+      <version>4.2.2.Final</version>
     </dependency>
     <dependency>
-       <groupId>org.eclipse.jetty</groupId>
-       <artifactId>jetty-server</artifactId>
-       <version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
