@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryStreamSocket;
@@ -55,22 +54,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class LocalEndpointMetadataTest
 {
     public static final Matcher<Object> EXISTS = notNullValue();
-    public static QueuedThreadPool threadpool;
+    public static DummyContainer container;
 
     @BeforeAll
     public static void startContainer() throws Exception
     {
-        threadpool = new QueuedThreadPool();
-        threadpool.start();
+        container = new DummyContainer();
+        container.start();
     }
 
     @AfterAll
     public static void stopContainer() throws Exception
     {
-        threadpool.stop();
+        container.stop();
     }
 
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(threadpool);
+    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
 
     private JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {

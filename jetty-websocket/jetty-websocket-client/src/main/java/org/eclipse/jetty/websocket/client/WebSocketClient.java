@@ -24,16 +24,19 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -43,14 +46,20 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.impl.JettyClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.common.SessionTracker;
+import org.eclipse.jetty.websocket.common.WebSocketContainer;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
-public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy
+public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer
 {
+    private static final Logger LOG = Log.getLogger(WebSocketClient.class);
     private final WebSocketCoreClient coreClient;
     private final int id = ThreadLocalRandom.current().nextInt();
     private final JettyWebSocketFrameHandlerFactory frameHandlerFactory;
+    private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
+    private final SessionTracker sessionTracker = new SessionTracker();
     private ClassLoader contextClassLoader;
     private DecoratedObjectFactory objectFactory;
     private WebSocketExtensionRegistry extensionRegistry;
@@ -88,7 +97,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         this.contextClassLoader = this.getClass().getClassLoader();
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(getExecutor());
+        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
+        this.sessionListeners.add(sessionTracker);
+        addBean(sessionTracker);
     }
 
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
@@ -122,6 +133,34 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public WebSocketBehavior getBehavior()
     {
         return WebSocketBehavior.CLIENT;
+    }
+
+    @Override
+    public void addSessionListener(WebSocketSessionListener listener)
+    {
+        sessionListeners.add(listener);
+    }
+
+    @Override
+    public boolean removeSessionListener(WebSocketSessionListener listener)
+    {
+        return sessionListeners.remove(listener);
+    }
+
+    @Override
+    public void notifySessionListeners(Consumer<WebSocketSessionListener> consumer)
+    {
+        for (WebSocketSessionListener listener : sessionListeners)
+        {
+            try
+            {
+                consumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     @Override
@@ -224,6 +263,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         return getHttpClient().getByteBufferPool();
     }
 
+    @Override
     public Executor getExecutor()
     {
         return getHttpClient().getExecutor();
@@ -246,7 +286,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 
     public Collection<Session> getOpenSessions()
     {
-        return Collections.unmodifiableSet(new HashSet<>(getBeans(Session.class)));
+        return sessionTracker.getSessions();
     }
 
     public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
