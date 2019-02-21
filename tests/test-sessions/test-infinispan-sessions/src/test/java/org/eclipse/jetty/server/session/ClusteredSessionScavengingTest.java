@@ -22,6 +22,8 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 /**
  * ClusteredSessionScavengingTest
@@ -52,6 +54,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
+    @DisabledOnJre( JRE.JAVA_12 )
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
