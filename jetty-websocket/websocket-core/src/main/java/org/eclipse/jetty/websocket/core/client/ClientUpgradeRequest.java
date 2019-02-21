@@ -46,6 +46,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -338,6 +339,10 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, negotiated);
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
+
+        for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
+            wsConnection.addListener(listener);
+
         wsChannel.setWebSocketConnection(wsConnection);
 
         wsClient.customize(wsChannel);
