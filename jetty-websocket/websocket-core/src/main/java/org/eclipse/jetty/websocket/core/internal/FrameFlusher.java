@@ -26,7 +26,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -52,6 +51,7 @@ public class FrameFlusher extends IteratingCallback
     private final List<Entry> entries;
     private final List<ByteBuffer> buffers;
     private ByteBuffer batchBuffer = null;
+    private boolean canEnqueue = true;
     private Throwable closedCause;
 
     public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
@@ -78,22 +78,48 @@ public class FrameFlusher extends IteratingCallback
     {
         Entry entry = new Entry(frame, callback, batch);
         byte opCode = frame.getOpCode();
-        Throwable failure = null;
+
+        Throwable dead;
 
         synchronized (this)
         {
-            if (closedCause != null)
-                failure = closedCause;
-            else if (opCode == OpCode.PING || opCode == OpCode.PONG)
-                queue.offerFirst(entry);
+            if (canEnqueue)
+            {
+                dead = closedCause;
+                if (dead == null)
+                {
+                    if (opCode == OpCode.PING || opCode == OpCode.PONG)
+                    {
+                        queue.offerFirst(entry);
+                    }
+                    else
+                    {
+                        queue.offerLast(entry);
+                    }
+
+                    if (opCode == OpCode.CLOSE)
+                    {
+                        this.canEnqueue = false;
+                    }
+                }
+            }
             else
-                queue.offerLast(entry);
+            {
+                dead = new ClosedChannelException();
+            }
         }
 
-        if (failure != null)
-            callback.failed(failure);
+        if (dead == null)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Enqueued {} to {}", entry, this);
+            }
+            return true;
+        }
 
-        return failure==null;
+        notifyCallbackFailure(callback, dead);
+        return false;
     }
 
     public void onClose(Throwable cause)
