@@ -53,13 +53,13 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
