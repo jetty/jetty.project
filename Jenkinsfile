@@ -54,24 +54,13 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "install javadoc:javadoc -DskipTests", "maven3", true)
+            mavenBuild("jdk11", "install javadoc:javadoc -DskipTests", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
           }
         }
-
-                /* Deprecated in Jetty build, will be removed in future.
-                stage("Build Compact3") {
-                    agent { node { label 'linux' } }
-                    options { timeout(time: 120, unit: 'MINUTES') }
-                    steps {
-                        mavenBuild("jdk11", "-Pcompact3 install -DskipTests")
-                        warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-                    }
-                }
-                */
-            }
-        }
+      }
     }
+  }
 }
 
 /**
