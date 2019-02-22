@@ -50,7 +50,7 @@
         <configuration>
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
-            --add-opens org.eclipse.jetty.websocket.javax.server/org.eclipse.jetty.websocket.javax.server.examples=org.eclipse.jetty.websocket.javax.common
+            --add-exports org.eclipse.jetty.websocket.javax.server/org.eclipse.jetty.websocket.javax.server.examples=org.eclipse.jetty.websocket.javax.common
             --add-reads org.eclipse.jetty.websocket.javax.server=org.eclipse.jetty.security
             --add-reads org.eclipse.jetty.websocket.javax.common=org.eclipse.jetty.websocket.javax.server
           </argLine>
