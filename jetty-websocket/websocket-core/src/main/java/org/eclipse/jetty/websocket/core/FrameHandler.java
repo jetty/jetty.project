@@ -69,8 +69,8 @@ public interface FrameHandler extends IncomingFrames
      * FrameHandler can write during this call, but can not receive frames until the callback is succeeded.
      * </p>
      * <p>
-     * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if not
-     * auto-demanding or call {@link CoreSession#demand(long)} if demanding.
+     * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if
+     * not demanding or can now call {@link CoreSession#demand(long)} to receive frames if demanding.
      * If the FrameHandler fails the callback a close frame will be sent with {@link CloseStatus#SERVER_ERROR} and
      * the connection will be closed. <br>
      * </p>
@@ -85,9 +85,8 @@ public interface FrameHandler extends IncomingFrames
      * sequentially to satisfy all outstanding demand signaled by calls to
      * {@link CoreSession#demand(long)}.
      * Control and Data frames are passed to this method.
-     * Control frames that require a response (eg PING and CLOSE) may be responded to by the
-     * the handler, but if an appropriate response is not sent once the callback is succeeded,
-     * then a response will be generated and sent.
+     * Close frames may be responded to by the handler, but if an appropriate close response is not
+     * sent once the callback is succeeded, then a response close will be generated and sent.
      *
      * @param frame    the raw frame
      * @param callback the callback to indicate success in processing frame (or failure)

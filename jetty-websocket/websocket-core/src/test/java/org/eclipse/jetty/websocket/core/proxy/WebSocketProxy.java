@@ -38,8 +38,8 @@ class WebSocketProxy
         NOT_OPEN,
         CONNECTING,
         OPEN,
-        ICLOSED,
-        OCLOSED,
+        ISHUT,
+        OSHUT,
         CLOSED,
         FAILED
     }
@@ -107,7 +107,6 @@ class WebSocketProxy
         {
             System.err.println(toString() + " onOpenSuccess()");
 
-            boolean failServer2Proxy = false;
             Throwable failure = null;
             synchronized (lock)
             {
@@ -119,7 +118,6 @@ class WebSocketProxy
 
                     case FAILED:
                         failure = error;
-                        failServer2Proxy = true;
                         break;
 
                     default:
@@ -128,10 +126,8 @@ class WebSocketProxy
                 }
             }
 
-            if (failServer2Proxy)
+            if (failure != null)
                 server2Proxy.fail(failure, callback);
-            else if (failure != null)
-                callback.failed(failure);
             else
                 callback.succeeded();
         }
@@ -152,6 +148,7 @@ class WebSocketProxy
 
                     case FAILED:
                         failure = error;
+                        failure.addSuppressed(t);
                         break;
 
                     default:
@@ -178,13 +175,15 @@ class WebSocketProxy
                     case OPEN:
                         if (frame.getOpCode() == OpCode.CLOSE)
                         {
-                            state = State.ICLOSED;
+                            state = State.ISHUT;
+                            // the callback is saved until a close response comes in sendFrame from Server2Proxy
+                            // if the callback was completed here then core would send its own close response
                             closeCallback = callback;
                             sendCallback = Callback.from(()->{}, callback::failed);
                         }
                         break;
 
-                    case OCLOSED:
+                    case OSHUT:
                         if (frame.getOpCode() == OpCode.CLOSE)
                             state = State.CLOSED;
                         break;
@@ -248,7 +247,7 @@ class WebSocketProxy
                         sendCallback = Callback.from(callback, failure);
                         break;
 
-                    case ICLOSED:
+                    case ISHUT:
                         state = State.FAILED;
                         Callback doubleCallback = Callback.from(callback, closeCallback);
                         sendCallback = Callback.from(doubleCallback, failure);
@@ -286,10 +285,10 @@ class WebSocketProxy
                 {
                     case OPEN:
                         if (frame.getOpCode() == OpCode.CLOSE)
-                            state = State.OCLOSED;
+                            state = State.OSHUT;
                         break;
 
-                    case ICLOSED:
+                    case ISHUT:
                         if (frame.getOpCode() == OpCode.CLOSE)
                         {
                             state = State.CLOSED;
@@ -376,7 +375,9 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        state = State.FAILED;
+                        error = new IllegalStateException();
+                        failure = error;
                         break;
                 }
             }
@@ -389,7 +390,6 @@ class WebSocketProxy
         {
             System.err.println(toString() + " onConnectSuccess(): " + s);
 
-            Callback sendCallback = null;
             Throwable failure = null;
             synchronized (lock)
             {
@@ -400,19 +400,18 @@ class WebSocketProxy
 
                     case FAILED:
                         failure = error;
-                        sendCallback = Callback.from(callback, failure);
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        state = State.FAILED;
+                        error = new IllegalStateException();
+                        failure = error;
                         break;
                 }
             }
 
-            if (sendCallback != null)
-                s.close(CloseStatus.SHUTDOWN, failure.getMessage(), sendCallback);
-            else if (failure != null)
-                callback.failed(failure);
+            if (failure != null)
+                s.close(CloseStatus.SHUTDOWN, failure.getMessage(), Callback.from(callback, failure));
             else
                 callback.succeeded();
         }
@@ -436,10 +435,13 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        state = State.FAILED;
+                        error = new IllegalStateException();
+                        failure = error;
                         break;
                 }
             }
+
             callback.failed(failure);
         }
 
@@ -489,13 +491,13 @@ class WebSocketProxy
                     case OPEN:
                         if (frame.getOpCode() == OpCode.CLOSE)
                         {
-                            state = State.ICLOSED;
+                            state = State.ISHUT;
                             closeCallback = callback;
                             sendCallback = Callback.from(()->{}, callback::failed);
                         }
                         break;
 
-                    case OCLOSED:
+                    case OSHUT:
                         if (frame.getOpCode() == OpCode.CLOSE)
                             state = State.CLOSED;
                         break;
@@ -567,7 +569,7 @@ class WebSocketProxy
                         sendCallback = Callback.from(callback, failure);
                         break;
 
-                    case ICLOSED:
+                    case ISHUT:
                         state = State.FAILED;
                         Callback doubleCallback = Callback.from(callback, closeCallback);
                         sendCallback =  Callback.from(doubleCallback, failure);
@@ -596,10 +598,10 @@ class WebSocketProxy
                 {
                     case OPEN:
                         if (frame.getOpCode() == OpCode.CLOSE)
-                            state = State.OCLOSED;
+                            state = State.OSHUT;
                         break;
 
-                    case ICLOSED:
+                    case ISHUT:
                         if (frame.getOpCode() == OpCode.CLOSE)
                         {
                             state = State.CLOSED;

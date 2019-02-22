@@ -153,7 +153,7 @@ public class WebSocketProxyTest
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/a"), clientHandler);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientHandler);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
         response.get(5, TimeUnit.SECONDS);
         clientHandler.sendText("hello world");
@@ -264,7 +264,7 @@ public class WebSocketProxyTest
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
         BasicFrameHandler clientHandler = new BasicFrameHandler("CLIENT");
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/test"), clientHandler);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientHandler);
 
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
         response.get(5, TimeUnit.SECONDS);
@@ -276,33 +276,10 @@ public class WebSocketProxyTest
         CloseStatus closeStatus;
         Frame frame;
 
-        // Client
-        frame = clientHandler.receivedFrames.poll();
-        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.SERVER_ERROR));
-
         // Client2Proxy
         frame = proxyClientSide.receivedFrames.poll();
         assertThat(frame.getOpCode(), is(OpCode.TEXT));
         assertThat(frame.getPayloadAsUTF8(), is("hello world"));
-
-        frame = proxyClientSide.receivedFrames.poll();
-        closeStatus = CloseStatus.getCloseStatus(frame);
-        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
-        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
-
-        frame = proxyClientSide.receivedFrames.poll();
-        assertNull(frame);
-        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
-
-        // Server2Proxy
-        frame = proxyServerSide.receivedFrames.poll();
-        closeStatus = CloseStatus.getCloseStatus(frame);
-        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
-        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
-
-        frame = proxyServerSide.receivedFrames.poll();
-        assertNull(frame);
-        assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.CLOSED));
 
         // Server
         frame = serverFrameHandler.receivedFrames.poll();
@@ -310,6 +287,30 @@ public class WebSocketProxyTest
         assertThat(frame.getPayloadAsUTF8(), is("hello world"));
         frame = serverFrameHandler.receivedFrames.poll();
         assertNull(frame);
+
+        // Server2Proxy
+        frame = proxyServerSide.receivedFrames.poll();
+        closeStatus = CloseStatus.getCloseStatus(frame);
+        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
+
+        // Client
+        frame = clientHandler.receivedFrames.poll();
+        closeStatus = CloseStatus.getCloseStatus(frame);
+        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
+
+        // Client2Proxy receiving close response from Client
+        frame = proxyClientSide.receivedFrames.poll();
+        closeStatus = CloseStatus.getCloseStatus(frame);
+        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
+
+        // Check Proxy is in expected final state
+        assertNull(proxyClientSide.receivedFrames.poll());
+        assertNull(proxyServerSide.receivedFrames.poll());
+        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
+        assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.CLOSED));
     }
 
     @Test
@@ -328,13 +329,10 @@ public class WebSocketProxyTest
                 receivedFrames.offer(Frame.copy(frame));
             }
         };
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/test"), clientHandler);
 
-        CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> response = _client.connect(clientHandler, new URI("ws://localhost:8080/proxy/"));
         response.get(5, TimeUnit.SECONDS);
-
         clientHandler.sendText("hello world");
-
         clientHandler.awaitClose();
         serverFrameHandler.awaitClose();
         awaitProxyClose(proxyClientSide, proxyServerSide);
@@ -342,22 +340,16 @@ public class WebSocketProxyTest
         CloseStatus closeStatus;
         Frame frame;
 
-        // Client
-        frame = clientHandler.receivedFrames.poll();
-        closeStatus = CloseStatus.getCloseStatus(frame);
-        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
-        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
-        frame = clientHandler.receivedFrames.poll();
-        assertNull(frame);
-
         // Client2Proxy
         frame = proxyClientSide.receivedFrames.poll();
         assertThat(frame.getOpCode(), is(OpCode.TEXT));
         assertThat(frame.getPayloadAsUTF8(), is("hello world"));
 
-        frame = proxyClientSide.receivedFrames.poll();
-        assertNull(frame);
-        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.FAILED));
+        // Server
+        frame = serverFrameHandler.receivedFrames.poll();
+        assertThat(frame.getOpCode(), is(OpCode.TEXT));
+        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        assertNull(serverFrameHandler.receivedFrames.poll());
 
         // Server2Proxy
         frame = proxyServerSide.receivedFrames.poll();
@@ -365,15 +357,19 @@ public class WebSocketProxyTest
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
 
-        frame = proxyServerSide.receivedFrames.poll();
-        assertNull(frame);
-        assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.FAILED));
+        // Client
+        frame = clientHandler.receivedFrames.poll();
+        closeStatus = CloseStatus.getCloseStatus(frame);
+        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
+        assertNull(clientHandler.receivedFrames.poll());
 
-        // Server
-        frame = serverFrameHandler.receivedFrames.poll();
-        assertThat(frame.getOpCode(), is(OpCode.TEXT));
-        assertThat(frame.getPayloadAsUTF8(), is("hello world"));
-        frame = serverFrameHandler.receivedFrames.poll();
-        assertNull(frame);
+        // Client2Proxy does NOT receive close response from the client and fails
+        assertNull(proxyClientSide.receivedFrames.poll());
+        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.FAILED));
+
+        // Server2Proxy is failed by the Client2Proxy
+        assertNull(proxyServerSide.receivedFrames.poll());
+        assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.FAILED));
     }
 }

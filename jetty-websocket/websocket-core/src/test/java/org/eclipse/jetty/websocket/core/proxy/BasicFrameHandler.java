@@ -107,16 +107,10 @@ class BasicFrameHandler implements FrameHandler
     public static class ServerEchoHandler extends BasicFrameHandler
     {
         private boolean throwOnFrame;
-        private boolean noResponse;
 
         public void throwOnFrame()
         {
             throwOnFrame = true;
-        }
-
-        public void noResponseOnFrame()
-        {
-            noResponse = true;
         }
 
         public ServerEchoHandler(String name)
@@ -133,9 +127,6 @@ class BasicFrameHandler implements FrameHandler
             if (throwOnFrame)
                 throw new RuntimeException("intentionally throwing in server onFrame()");
 
-            if (noResponse)
-                return;
-
             if (frame.isDataFrame())
             {
                 System.err.println(name + " echoDataFrame(): " + frame);
@@ -145,7 +136,6 @@ class BasicFrameHandler implements FrameHandler
             {
                 callback.succeeded();
             }
-
         }
     }
 }
