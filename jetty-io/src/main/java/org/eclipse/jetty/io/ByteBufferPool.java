@@ -56,6 +56,13 @@ public interface ByteBufferPool
      */
     public void release(ByteBuffer buffer);
 
+    /**
+     * <p>Creates a new ByteBuffer of the given capacity and the given directness.</p>
+     *
+     * @param capacity the ByteBuffer capacity
+     * @param direct the ByteBuffer directness
+     * @return a newly allocated ByteBuffer
+     */
     default ByteBuffer newByteBuffer(int capacity, boolean direct)
     {
         return direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
@@ -131,10 +138,10 @@ public interface ByteBufferPool
         private final int _capacity;
         private final AtomicInteger _space;
 
-        public Bucket(ByteBufferPool pool, int bufferSize, int maxSize)
+        public Bucket(ByteBufferPool pool, int capacity, int maxSize)
         {
             _pool = pool;
-            _capacity = bufferSize;
+            _capacity = capacity;
             _space = maxSize > 0 ? new AtomicInteger(maxSize) : null;
         }
 
@@ -204,7 +211,7 @@ public interface ByteBufferPool
         @Override
         public String toString()
         {
-            return String.format("Bucket@%x{%d/%d}", hashCode(), size(), _capacity);
+            return String.format("%s@%x{%d/%d}", getClass().getSimpleName(), hashCode(), size(), _capacity);
         }
     }
 }

@@ -20,93 +20,115 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+
+/**
+ * <p>A ByteBuffer pool where ByteBuffers are held in queues that are held in array elements.</p>
+ * <p>Given a capacity {@code factor} of 1024, the first array element holds a queue of ByteBuffers
+ * each of capacity 1024, the second array element holds a queue of ByteBuffers each of capacity
+ * 2048, and so on.</p>
+ */
+@ManagedObject
 public class ArrayByteBufferPool implements ByteBufferPool
 {
-    private final int _min;
-    private final int _maxQueue;
+    private final int _minCapacity;
     private final ByteBufferPool.Bucket[] _direct;
     private final ByteBufferPool.Bucket[] _indirect;
-    private final int _inc;
+    private final int _factor;
 
+    /**
+     * Creates a new ArrayByteBufferPool with a default configuration.
+     */
     public ArrayByteBufferPool()
     {
-        this(-1,-1,-1,-1);
+        this(-1, -1, -1, -1);
     }
 
-    public ArrayByteBufferPool(int minSize, int increment, int maxSize)
+    /**
+     * Creates a new ArrayByteBufferPool with the given configuration.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     */
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity)
     {
-        this(minSize,increment,maxSize,-1);
+        this(minCapacity, factor, maxCapacity, -1);
     }
-    
-    public ArrayByteBufferPool(int minSize, int increment, int maxSize, int maxQueue)
+
+    /**
+     * Creates a new ArrayByteBufferPool with the given configuration.
+     *
+     * @param minCapacity the minimum ByteBuffer capacity
+     * @param factor the capacity factor
+     * @param maxCapacity the maximum ByteBuffer capacity
+     * @param maxQueueLength the maximum ByteBuffer queue length
+     */
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxQueueLength)
     {
-        if (minSize<=0)
-            minSize=0;
-        if (increment<=0)
-            increment=1024;
-        if (maxSize<=0)
-            maxSize=64*1024;
-        if (minSize>=increment)
-            throw new IllegalArgumentException("minSize >= increment");
-        if ((maxSize%increment)!=0 || increment>=maxSize)
-            throw new IllegalArgumentException("increment must be a divisor of maxSize");
-        _min=minSize;
-        _inc=increment;
+        if (minCapacity <= 0)
+            minCapacity = 0;
+        if (factor <= 0)
+            factor = 1024;
+        if (maxCapacity <= 0)
+            maxCapacity = 64 * 1024;
+        if ((maxCapacity % factor) != 0 || factor >= maxCapacity)
+            throw new IllegalArgumentException("The capacity factor must be a divisor of maxCapacity");
+        _minCapacity = minCapacity;
+        _factor = factor;
 
-        _direct=new ByteBufferPool.Bucket[maxSize/increment];
-        _indirect=new ByteBufferPool.Bucket[maxSize/increment];
-        _maxQueue=maxQueue;
+        int length = maxCapacity / factor;
+        _direct = new ByteBufferPool.Bucket[length];
+        _indirect = new ByteBufferPool.Bucket[length];
 
-        int size=0;
-        for (int i=0;i<_direct.length;i++)
+        int capacity = 0;
+        for (int i = 0; i < _direct.length; ++i)
         {
-            size+=_inc;
-            _direct[i]=new ByteBufferPool.Bucket(this,size,_maxQueue);
-            _indirect[i]=new ByteBufferPool.Bucket(this,size,_maxQueue);
+            capacity += _factor;
+            _direct[i] = new ByteBufferPool.Bucket(this, capacity, maxQueueLength);
+            _indirect[i] = new ByteBufferPool.Bucket(this, capacity, maxQueueLength);
         }
     }
 
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
-        ByteBufferPool.Bucket bucket = bucketFor(size,direct);
-        if (bucket==null)
-            return newByteBuffer(size,direct);
-            
+        ByteBufferPool.Bucket bucket = bucketFor(size, direct);
+        if (bucket == null)
+            return newByteBuffer(size, direct);
         return bucket.acquire(direct);
-            
     }
 
     @Override
     public void release(ByteBuffer buffer)
     {
-        if (buffer!=null)
-        {    
-            ByteBufferPool.Bucket bucket = bucketFor(buffer.capacity(),buffer.isDirect());
-            if (bucket!=null)
+        if (buffer != null)
+        {
+            ByteBufferPool.Bucket bucket = bucketFor(buffer.capacity(), buffer.isDirect());
+            if (bucket != null)
                 bucket.release(buffer);
         }
     }
 
+    @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
     public void clear()
     {
-        for (int i=0;i<_direct.length;i++)
+        for (int i = 0; i < _direct.length; ++i)
         {
             _direct[i].clear();
             _indirect[i].clear();
         }
     }
 
-    private ByteBufferPool.Bucket bucketFor(int size,boolean direct)
+    private ByteBufferPool.Bucket bucketFor(int capacity, boolean direct)
     {
-        if (size<=_min)
+        if (capacity <= _minCapacity)
             return null;
-        int b=(size-1)/_inc;
-        if (b>=_direct.length)
+        int b = (capacity - 1) / _factor;
+        if (b >= _direct.length)
             return null;
-        ByteBufferPool.Bucket bucket = direct?_direct[b]:_indirect[b];
-                
-        return bucket;
+        return bucketsFor(direct)[b];
     }
 
     // Package local for testing
