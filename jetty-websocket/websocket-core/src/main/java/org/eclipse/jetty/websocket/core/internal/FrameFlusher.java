@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -53,6 +54,8 @@ public class FrameFlusher extends IteratingCallback
     private ByteBuffer batchBuffer = null;
     private boolean canEnqueue = true;
     private Throwable closedCause;
+    private LongAdder messagesOut = new LongAdder();
+    private LongAdder bytesOut = new LongAdder();
 
     public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
@@ -159,6 +162,9 @@ public class FrameFlusher extends IteratingCallback
                     break;
                 }
 
+                if(entry.frame.isFin())
+                    messagesOut.increment();
+
                 int batchSpace = batchBuffer == null?bufferSize:BufferUtil.space(batchBuffer);
 
                 boolean batch = entry.batch
@@ -224,6 +230,8 @@ public class FrameFlusher extends IteratingCallback
 
         if (flush)
         {
+            for (ByteBuffer bb : buffers)
+                bytesOut.add(bb.limit() - bb.position());
             endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
             buffers.clear();
         }
@@ -258,10 +266,10 @@ public class FrameFlusher extends IteratingCallback
         for (Entry entry : entries)
         {
             hadEntries = true;
-            notifyCallbackSuccess(entry.callback);
-            entry.release();
             if (entry.frame.getOpCode() == OpCode.CLOSE)
                 endPoint.shutdownOutput();
+            notifyCallbackSuccess(entry.callback);
+            entry.release();
         }
         entries.clear();
         return hadEntries;
@@ -331,6 +339,16 @@ public class FrameFlusher extends IteratingCallback
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while notifying failure of callback " + callback, x);
         }
+    }
+
+    public long getMessagesOut()
+    {
+        return messagesOut.longValue();
+    }
+
+    public long getBytesOut()
+    {
+        return bytesOut.longValue();
     }
 
     @Override
