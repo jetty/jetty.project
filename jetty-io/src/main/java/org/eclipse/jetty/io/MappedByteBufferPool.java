@@ -105,11 +105,14 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
     public ByteBuffer acquire(int size, boolean direct)
     {
         int b = bucketFor(size);
+        int capacity = b * getCapacityFactor();
         ConcurrentMap<Integer, Bucket> buffers = bucketsFor(direct);
         Bucket bucket = buffers.get(b);
         if (bucket == null)
-            return newByteBuffer(b * getCapacityFactor(), direct);
-        ByteBuffer buffer = bucket.acquire(direct);
+            return newByteBuffer(capacity, direct);
+        ByteBuffer buffer = bucket.acquire();
+        if (buffer == null)
+            return newByteBuffer(capacity, direct);
         decrementMemory(buffer);
         return buffer;
     }

@@ -64,13 +64,11 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         int capacity = buffer.capacity();
         long maxMemory = direct ? _maxDirectMemory : _maxHeapMemory;
         AtomicLong memory = direct ? _directMemory : _heapMemory;
-        if (maxMemory <= 0)
-            return true;
         while (true)
         {
             long current = memory.get();
             long value = current + capacity;
-            if (value > maxMemory)
+            if (maxMemory > 0 && value > maxMemory)
                 return false;
             if (memory.compareAndSet(current, value))
                 return true;

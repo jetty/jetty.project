@@ -145,6 +145,22 @@ public interface ByteBufferPool
             _space = maxSize > 0 ? new AtomicInteger(maxSize) : null;
         }
 
+        public ByteBuffer acquire()
+        {
+            ByteBuffer buffer = queuePoll();
+            if (buffer == null)
+                return null;
+            if (_space != null)
+                _space.incrementAndGet();
+            return buffer;
+        }
+
+        /**
+         * @param direct whether to create a direct buffer when none is available
+         * @return a ByteBuffer
+         * @deprecated use {@link #acquire()} instead
+         */
+        @Deprecated
         public ByteBuffer acquire(boolean direct)
         {
             ByteBuffer buffer = queuePoll();

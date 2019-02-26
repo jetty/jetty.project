@@ -100,13 +100,13 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
+        int capacity = size < _minCapacity ? size : (bucketFor(size) + 1) * getCapacityFactor();
         ByteBufferPool.Bucket bucket = bucketFor(size, direct, null);
         if (bucket == null)
-        {
-            int capacity = size < _minCapacity ? size : (bucketFor(size) + 1) * getCapacityFactor();
             return newByteBuffer(capacity, direct);
-        }
-        ByteBuffer buffer = bucket.acquire(direct);
+        ByteBuffer buffer = bucket.acquire();
+        if (buffer == null)
+            return newByteBuffer(capacity, direct);
         decrementMemory(buffer);
         return buffer;
     }
