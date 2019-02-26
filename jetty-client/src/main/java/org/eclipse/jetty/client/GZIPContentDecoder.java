@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 
 /**
@@ -25,7 +27,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
  */
 public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecoder implements ContentDecoder
 {
-    private static final int DEFAULT_BUFFER_SIZE = 2048;
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
 
     public GZIPContentDecoder()
     {
@@ -40,6 +42,13 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)
     {
         super(byteBufferPool, bufferSize);
+    }
+
+    @Override
+    protected boolean decodedChunk(ByteBuffer chunk)
+    {
+        super.decodedChunk(chunk);
+        return true;
     }
 
     /**
