@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -125,11 +124,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private static String __serverInfo = "jetty/" + Server.getVersion();
 
-    /**
-     * If a context attribute with this name is set, it is interpreted as a comma separated list of attribute name. Any other context attributes that are set
-     * with a name from this list will result in a call to {@link #setManagedAttribute(String, Object)}, which typically initiates the creation of a JMX MBean
-     * for the attribute value.
-     */
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
     /* ------------------------------------------------------------ */
@@ -1559,12 +1553,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    @Deprecated
-    public void setManagedAttribute(String name, Object value)
-    {
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @param classLoader
      *            The classLoader to set.
@@ -2762,29 +2750,28 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        @Deprecated
+        @Deprecated(since = "Servlet API 2.1")
         public Servlet getServlet(String name) throws ServletException
         {
             return null;
         }
 
-        @SuppressWarnings("unchecked")
         @Override
-        @Deprecated
+        @Deprecated(since = "Servlet API 2.1")
         public Enumeration<String> getServletNames()
         {
             return Collections.enumeration(Collections.EMPTY_LIST);
         }
 
-        @SuppressWarnings("unchecked")
         @Override
-        @Deprecated
+        @Deprecated(since = "Servlet API 2.0")
         public Enumeration<Servlet> getServlets()
         {
             return Collections.enumeration(Collections.EMPTY_LIST);
         }
 
         @Override
+        @Deprecated(since = "Servlet API 2.1")
         public void log(Exception exception, String msg)
         {
             LOG.warn(msg,exception);

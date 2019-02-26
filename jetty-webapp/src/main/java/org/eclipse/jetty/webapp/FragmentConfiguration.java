@@ -61,22 +61,6 @@ public class FragmentConfiguration extends AbstractConfiguration
      * @param metaData the metadata to populate with fragments
      * 
      * @throws Exception if unable to find web fragments
-     * @deprecated
-     */
-    public void findWebFragments (final WebAppContext context, final MetaData metaData)
-    throws Exception
-    {
-        addWebFragments(context, metaData);
-    }
-    
-    /* ------------------------------------------------------------------------------- */
-    /**
-     * Add in fragment descriptors that have already been discovered by MetaInfConfiguration
-     * 
-     * @param context the web app context to look in
-     * @param metaData the metadata to populate with fragments
-     * 
-     * @throws Exception if unable to find web fragments
      */
     public void addWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
     {

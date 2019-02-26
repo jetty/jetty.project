@@ -46,40 +46,6 @@ public class QuickStartWebApp extends WebAppContext
         setCopyWebInf(false);
     }
 
-    @Deprecated
-    public boolean isPreconfigure()
-    {
-        switch(_quickStartConfiguration.getMode())
-        {
-            case AUTO:
-            case GENERATE:
-                return true;
-            default: return false;
-        }
-    }
-    
-    @Deprecated
-    public void setPreconfigure(boolean preconfigure)
-    {
-        _quickStartConfiguration.setMode(preconfigure?Mode.GENERATE:Mode.DISABLED);
-    }
-
-    @Deprecated
-    public boolean isAutoPreconfigure()
-    {
-        switch(_quickStartConfiguration.getMode())
-        {
-            case AUTO: return true;
-            default: return false;
-        }
-    }
-
-    @Deprecated
-    public void setAutoPreconfigure(boolean autoPrecompile)
-    {
-        _quickStartConfiguration.setMode(autoPrecompile?Mode.AUTO:Mode.DISABLED);
-    }
-
     public void setOriginAttribute (String name)
     {
         setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE,name);

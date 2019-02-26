@@ -61,7 +61,7 @@ public class ServerWithAnnotations
         new Transaction(new com.acme.MockUserTransaction());
 
         // Define an env entry with webapp scope.
-        new EnvEntry(webapp, "maxAmount", new Double(100), true);
+        new EnvEntry(webapp, "maxAmount", 100D, true);
 
         // Register a mock DataSource scoped to the webapp
         new Resource(webapp, "jdbc/mydatasource", new com.acme.MockDataSource());

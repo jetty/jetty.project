@@ -31,7 +31,7 @@ public class CharacterDecoder extends AbstractDecoder implements Decoder.Text<Ch
     @Override
     public Character decode(String s) throws DecodeException
     {
-        return Character.valueOf(s.charAt(0));
+        return s.charAt(0);
     }
 
     @Override

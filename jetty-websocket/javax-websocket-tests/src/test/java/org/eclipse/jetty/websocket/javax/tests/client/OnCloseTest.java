@@ -23,7 +23,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Session;
 
@@ -99,7 +98,7 @@ public class OnCloseTest
     @MethodSource("data")
     public void testOnCloseCall(Case testcase) throws Exception
     {
-        WSEventTracker endpoint = (WSEventTracker)testcase.closeClass.newInstance();
+        WSEventTracker endpoint = (WSEventTracker)testcase.closeClass.getConstructor().newInstance();
 
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
         // TODO: use ConfiguredEndpoint here?

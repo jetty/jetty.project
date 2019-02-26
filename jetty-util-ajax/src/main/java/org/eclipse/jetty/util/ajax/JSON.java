@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.ajax;
 
 import java.io.Externalizable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -30,7 +29,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -144,11 +142,6 @@ public class JSON
         return DEFAULT;
     }
 
-    @Deprecated
-    public static void setDefault(JSON json)
-    {
-    }
-
     public static String toString(Object object)
     {
         StringBuilder buffer = new StringBuilder(DEFAULT.getStringBufferSize());
@@ -214,34 +207,6 @@ public class JSON
     public static Object parse(Reader in, boolean stripOuterComment) throws IOException
     {
         return DEFAULT.parse(new ReaderSource(in),stripOuterComment);
-    }
-
-    /**
-     * @param in
-     *            Reader containing JSON object or array.
-     * @return A Map, Object array or primitive array parsed from the JSON.
-     * @throws IOException if unable to parse
-     * @deprecated use {@link #parse(Reader)}
-     */
-    @Deprecated
-    public static Object parse(InputStream in) throws IOException
-    {
-        return DEFAULT.parse(new StringSource(IO.toString(in)),false);
-    }
-
-    /**
-     * @param in
-     *            Stream containing JSON object or array.
-     * @param stripOuterComment
-     *            If true, an outer comment around the JSON is ignored.
-     * @return A Map, Object array or primitive array parsed from the JSON.
-     * @throws IOException if unable to parse
-     * @deprecated use {@link #parse(Reader, boolean)}
-     */
-    @Deprecated
-    public static Object parse(InputStream in, boolean stripOuterComment) throws IOException
-    {
-        return DEFAULT.parse(new StringSource(IO.toString(in)),stripOuterComment);
     }
 
     private void quotedEscape(Appendable buffer, String input)
@@ -363,12 +328,6 @@ public class JSON
         return parse(source);
     }
 
-    @Deprecated
-    public void append(StringBuffer buffer, Object object)
-    {
-        append((Appendable)buffer,object);
-    }
-
     /**
      * Append object as JSON to string buffer.
      *
@@ -442,12 +401,6 @@ public class JSON
         }
     }
 
-    @Deprecated
-    public void appendNull(StringBuffer buffer)
-    {
-        appendNull((Appendable)buffer);
-    }
-
     public void appendNull(Appendable buffer)
     {
         try
@@ -458,12 +411,6 @@ public class JSON
         {
             throw new RuntimeException(e);
         }
-    }
-
-    @Deprecated
-    public void appendJSON(final StringBuffer buffer, final Convertor convertor, final Object object)
-    {
-        appendJSON((Appendable)buffer,convertor,object);
     }
 
     public void appendJSON(final Appendable buffer, final Convertor convertor, final Object object)
@@ -483,12 +430,6 @@ public class JSON
         });
     }
 
-    @Deprecated
-    public void appendJSON(final StringBuffer buffer, Convertible converter)
-    {
-        appendJSON((Appendable)buffer,converter);
-    }
-
     public void appendJSON(final Appendable buffer, Convertible converter)
     {
         ConvertableOutput out=new ConvertableOutput(buffer);
@@ -496,21 +437,9 @@ public class JSON
         out.complete();
     }
 
-    @Deprecated
-    public void appendJSON(StringBuffer buffer, Generator generator)
-    {
-        generator.addJSON(buffer);
-    }
-
     public void appendJSON(Appendable buffer, Generator generator)
     {
         generator.addJSON(buffer);
-    }
-
-    @Deprecated
-    public void appendMap(StringBuffer buffer, Map<?,?> map)
-    {
-        appendMap((Appendable)buffer,map);
     }
 
     public void appendMap(Appendable buffer, Map<?,?> map)
@@ -543,12 +472,6 @@ public class JSON
         }
     }
 
-    @Deprecated
-    public void appendArray(StringBuffer buffer, Collection collection)
-    {
-        appendArray((Appendable)buffer,collection);
-    }
-
     public void appendArray(Appendable buffer, Collection collection)
     {
         try
@@ -579,12 +502,6 @@ public class JSON
         }
     }
 
-    @Deprecated
-    public void appendArray(StringBuffer buffer, Object array)
-    {
-    appendArray((Appendable)buffer,array);
-    }
-
     public void appendArray(Appendable buffer, Object array)
     {
         try
@@ -613,12 +530,6 @@ public class JSON
         }
     }
 
-    @Deprecated
-    public void appendBoolean(StringBuffer buffer, Boolean b)
-    {
-        appendBoolean((Appendable)buffer,b);
-    }
-
     public void appendBoolean(Appendable buffer, Boolean b)
     {
         try
@@ -636,12 +547,6 @@ public class JSON
         }
     }
 
-    @Deprecated
-    public void appendNumber(StringBuffer buffer, Number number)
-    {
-        appendNumber((Appendable)buffer,number);
-    }
-
     public void appendNumber(Appendable buffer, Number number)
     {
         try
@@ -657,12 +562,6 @@ public class JSON
         {
             throw new RuntimeException(e);
         }
-    }
-
-    @Deprecated
-    public void appendString(StringBuffer buffer, String string)
-    {
-        appendString((Appendable)buffer,string);
     }
 
     public void appendString(Appendable buffer, String string)
@@ -1341,8 +1240,7 @@ public class JSON
                     break doubleLoop;
             }
         }
-        return new Double(buffer.toString());
-
+        return Double.parseDouble(buffer.toString());
     }
 
     protected void seekTo(char seek, Source source)

@@ -519,12 +519,6 @@ public class MimeTypes
         return __assumedEncodings;
     }
 
-    @Deprecated
-    public static String inferCharsetFromContentType(String contentType)
-    {
-        return getCharsetAssumedFromContentType(contentType);
-    }
-    
     public static String getCharsetInferredFromContentType(String contentType)
     {
         return __inferredEncodings.get(contentType);

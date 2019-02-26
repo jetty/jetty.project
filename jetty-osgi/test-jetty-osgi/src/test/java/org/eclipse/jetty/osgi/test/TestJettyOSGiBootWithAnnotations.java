@@ -18,15 +18,8 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -40,6 +33,11 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
@@ -59,6 +57,7 @@ public class TestJettyOSGiBootWithAnnotations
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-annotations.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
@@ -100,8 +99,6 @@ public class TestJettyOSGiBootWithAnnotations
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
-
-
     @Test
     public void testIndex() throws Exception
     {
@@ -117,19 +114,22 @@ public class TestJettyOSGiBootWithAnnotations
             assertNotNull(port);
             
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/index.html");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
-            assertTrue(content.contains("Test WebApp"));
+            TestOSGiUtil.assertContains("Response contents", content, "Test WebApp");
             
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
+            TestOSGiUtil.assertContains("Response contents", content,
+                    "<p><b>Result: <span class=\"pass\">PASS</span></p>");
             
             response = client.GET("http://127.0.0.1:" + port + "/frag.html");
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            assertTrue(content.contains("<h1>FRAGMENT</h1>"));
+            TestOSGiUtil.assertContains("Response contents", content,"<h1>FRAGMENT</h1>");
         }
         finally
         {

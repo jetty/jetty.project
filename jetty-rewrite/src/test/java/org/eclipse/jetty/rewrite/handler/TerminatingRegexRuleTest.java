@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,6 +29,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class TerminatingRegexRuleTest extends AbstractRuleTestCase
 {
@@ -60,9 +59,7 @@ public class TerminatingRegexRuleTest extends AbstractRuleTestCase
         TerminatingRegexRule rule1 = new TerminatingRegexRule();
         rule1.setRegex("^/login.jsp$");
         rewriteHandler.addRule(rule1);
-        RedirectRegexRule rule2 = new RedirectRegexRule();
-        rule2.setRegex("^/login.*$");
-        rule2.setReplacement("http://login.company.com/");
+        RedirectRegexRule rule2 = new RedirectRegexRule("^/login.*$", "http://login.company.com/");
         rewriteHandler.addRule(rule2);
 
         start(false);

@@ -54,8 +54,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -304,7 +304,7 @@ public class Runner
                             stopKey = sysProps[1];
                             break;
                         } else if("STOP.PORT".equals( sysProps[0] )){
-                            stopPort = Integer.valueOf(sysProps[1]);
+                            stopPort = Integer.parseInt(sysProps[1]);
                             break;
                         }
                     }
@@ -436,7 +436,7 @@ public class Runner
                             if (contextPathSet)
                                 handler.setContextPath(contextPath);
                             _contexts.addHandler(handler);
-                            String containerIncludeJarPattern = (String)handler.getAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN);
+                            String containerIncludeJarPattern = (String)handler.getAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN);
                             if (containerIncludeJarPattern == null)
                                 containerIncludeJarPattern = __containerIncludeJarPattern;
                             else
@@ -447,7 +447,7 @@ public class Runner
                                 }
                             }
 
-                            handler.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, containerIncludeJarPattern);
+                            handler.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, containerIncludeJarPattern);
                             
                             //check the configurations, if not explicitly set up, then configure all of them
                             if (handler instanceof WebAppContext)
@@ -462,7 +462,7 @@ public class Runner
                             // assume it is a WAR file
                             WebAppContext webapp = new WebAppContext(_contexts, ctx.toString(), contextPath);
                             webapp.setConfigurationClasses(__plusConfigurationClasses);
-                            webapp.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN,
+                            webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
                                     __containerIncludeJarPattern);
                         }
                     }

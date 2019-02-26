@@ -20,11 +20,9 @@ package org.eclipse.jetty.webapp;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.ListIterator;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TopologicalSort;
-import org.eclipse.jetty.util.annotation.Name;
 
 /* ------------------------------------------------------------------------------- */
 /** A pluggable Configuration for {@link WebAppContext}s.
@@ -147,55 +145,4 @@ public interface Configuration
      * @return true if configuration should be aborted
      */
     boolean abort(WebAppContext context);
-
-    /**
-     * @deprecated Use {@link Configurations}
-     */
-    @Deprecated
-    class ClassList extends Configurations
-    {
-        @Deprecated
-        public void addAfter(@Name("afterClass") String afterClass,@Name("configClass")String... configClass)
-        {
-            if (configClass!=null && afterClass!=null)
-            {
-                ListIterator<Configuration> iter = _configurations.listIterator();
-                while (iter.hasNext())
-                {
-                    Configuration c=iter.next();
-                    
-                    if (afterClass.equals(c.getClass().getName()) || afterClass.equals(c.replaces().getName()))
-                    {
-                        for (String cc: configClass)
-                            iter.add(newConfiguration(cc));
-                        return;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("afterClass '"+afterClass+"' not found in "+this);
-        }
-
-        @Deprecated
-        public void addBefore(@Name("beforeClass") String beforeClass,@Name("configClass")String... configClass)
-        {
-            if (configClass!=null && beforeClass!=null)
-            {
-                ListIterator<Configuration> iter = _configurations.listIterator();
-                while (iter.hasNext())
-                {
-                    Configuration c=iter.next();
-                    
-                    if (beforeClass.equals(c.getClass().getName()) || beforeClass.equals(c.replaces().getName()))
-                    {
-                        iter.previous();
-                        for (String cc: configClass)
-                            iter.add(newConfiguration(cc));
-                        return;
-                    }
-                }
-            }
-            
-            throw new IllegalArgumentException("beforeClass '"+beforeClass+"' not found in "+this);
-        }
-    }
 }

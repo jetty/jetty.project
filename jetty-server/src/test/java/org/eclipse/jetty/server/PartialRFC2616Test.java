@@ -18,15 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -37,9 +29,15 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PartialRFC2616Test
 {
@@ -272,8 +270,9 @@ public class PartialRFC2616Test
     public void test4_1() throws Exception
     {
         int offset=0;
+
         // If _content length not used, second request will not be read.
-        String response = connector.getResponses(
+        LocalEndPoint endp = connector.executeRequest(
                 "\r\n" +
                         "GET /R1 HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
@@ -290,10 +289,19 @@ public class PartialRFC2616Test
                         "Connection: close\r\n" +
                         "\r\n" 
                 );
+
+
+        String response = endp.getResponse();
         offset=checkContains(response,offset,"HTTP/1.1 200 OK","2. identity")+10;
         offset=checkContains(response,offset,"/R1","2. identity")+3;
+
+        response = endp.getResponse();
+        offset=0;
         offset=checkContains(response,offset,"HTTP/1.1 200 OK","2. identity")+10;
         offset=checkContains(response,offset,"/R2","2. identity")+3;
+
+        response = endp.getResponse();
+        offset=0;
         checkNotContained(response,offset,"HTTP/1.1 200 OK","2. identity");
         checkNotContained(response,offset,"/R3","2. identity");
     }

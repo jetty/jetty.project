@@ -20,17 +20,9 @@
 package org.eclipse.jetty.server.session;
 
 
-
-
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -43,6 +35,10 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * SessionEvictionFailureTest
@@ -146,7 +142,7 @@ public class SessionEvictionFailureTest
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                session.setAttribute("aaa", new Integer(0));
+                session.setAttribute("aaa", 0);
             }
             else if ("test".equals(action))
             {
@@ -154,7 +150,7 @@ public class SessionEvictionFailureTest
                assertNotNull(session);
                Integer count = (Integer)session.getAttribute("aaa");
                assertNotNull(count);
-               session.setAttribute("aaa", new Integer(count.intValue()+1));
+                session.setAttribute("aaa", (count.intValue() + 1));
             }
         }
     }

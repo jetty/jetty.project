@@ -78,7 +78,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testInvalidJsp() throws Exception
     {
         _rule.setCode("405");
-        _rule.setReason("foo");
+        _rule.setMessage("foo");
         _request.setURIPathQuery("/jsp/bean1.jsp%00");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -92,7 +92,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testInvalidShamrock() throws Exception
     {
         _rule.setCode("405");
-        _rule.setReason("foo");
+        _rule.setMessage("foo");
         _request.setURIPathQuery("/jsp/shamrock-%00%E2%98%98.jsp");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -106,7 +106,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testValidShamrock() throws Exception
     {
         _rule.setCode("405");
-        _rule.setReason("foo");
+        _rule.setMessage("foo");
         _request.setURIPathQuery("/jsp/shamrock-%E2%98%98.jsp");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);

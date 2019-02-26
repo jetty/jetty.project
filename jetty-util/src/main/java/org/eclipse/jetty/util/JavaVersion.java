@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * Java Version Utility class.
  * <p>Parses java versions to extract a consistent set of version parts</p>
@@ -123,29 +120,6 @@ public class JavaVersion
     public int getMicro()
     {
         return micro;
-    }
-
-    /**
-     * <p>Returns the update number version, such as {@code 92} for JDK 1.8.0_92 and {@code 0} for JDK 9.2.4.</p>
-     *
-     * @return the update number version
-     */
-    @Deprecated
-    public int getUpdate()
-    {
-        return 0;
-    }
-
-    /**
-     * <p>Returns the remaining string after the version numbers, such as {@code -internal} for
-     * JDK 1.8.0_92-internal and {@code -ea} for JDK 9-ea, or {@code +13} for JDK 9.2.4+13.</p>
-     *
-     * @return the remaining string after the version numbers
-     */
-    @Deprecated
-    public String getSuffix()
-    {
-        return null;
     }
 
     @Override

@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -48,7 +47,6 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiPartFormDataCompliance;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -363,10 +361,10 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
-                assertNotNull (m);
+                MultiParts m = (MultiParts) sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                assertNotNull(m);
                 ContextHandler.Context c = m.getContext();
-                assertNotNull (c);
+                assertNotNull(c);
                 assertTrue(c == sre.getServletContext());
                 assertTrue(!m.isEmpty());
                 assertTrue(testTmpDir.list().length == 2);
@@ -380,92 +378,28 @@ public class RequestTest
         _server.setHandler(contextHandler);
         _server.start();
 
-        String multipart =  "--AaB03x\r\n"+
-        "content-disposition: form-data; name=\"field1\"\r\n"+
-        "\r\n"+
-        "Joe Blow\r\n"+
-        "--AaB03x\r\n"+
-        "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r\n"+
-        "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
-        "\r\n"+
-        "000000000000000000000000000000000000000000000000000\r\n"+
-        "--AaB03x--\r\n";
+        String multipart = "--AaB03x\r\n" +
+                "content-disposition: form-data; name=\"field1\"\r\n" +
+                "\r\n" +
+                "Joe Blow\r\n" +
+                "--AaB03x\r\n" +
+                "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r\n" +
+                "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
+                "\r\n" +
+                "000000000000000000000000000000000000000000000000000\r\n" +
+                "--AaB03x--\r\n";
 
-        String request="GET /foo/x.html HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
-        "Content-Length: "+multipart.getBytes().length+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        multipart;
+        String request = "GET /foo/x.html HTTP/1.1\r\n" +
+                "Host: whatever\r\n" +
+                "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
+                "Content-Length: " + multipart.getBytes().length + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                multipart;
 
-        String responses=_connector.getResponse(request);
+        String responses = _connector.getResponse(request);
         //System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
-    }
-    
-    @Test
-    public void testUtilMultiPart() throws Exception
-    {
-        final File testTmpDir = File.createTempFile("reqtest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
-
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setContextPath("/foo");
-        contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
-        contextHandler.addEventListener(new MultiPartCleanerListener()
-        {
-
-            @Override
-            public void requestDestroyed(ServletRequestEvent sre)
-            {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
-                assertNotNull (m);
-                ContextHandler.Context c = m.getContext();
-                assertNotNull (c);
-                assertTrue(c == sre.getServletContext());
-                assertTrue(!m.isEmpty());
-                assertTrue(testTmpDir.list().length == 2);
-                super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
-            }
-
-        });
-        _server.stop();
-        _server.setHandler(contextHandler);
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.LEGACY);
-        _server.start();
-
-        String multipart =  "      --AaB03x\r"+
-        "content-disposition: form-data; name=\"field1\"\r"+
-        "\r"+
-        "Joe Blow\r"+
-        "--AaB03x\r"+
-        "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r"+
-        "Content-Type: text/plain;charset=ISO-8859-1\r"+
-        "\r"+
-        "000000000000000000000000000000000000000000000000000\r"+
-        "--AaB03x--\r";
-
-        String request="GET /foo/x.html HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
-        "Content-Length: "+multipart.getBytes().length+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        multipart;
-
-        String responses=_connector.getResponse(request);
-        //System.err.println(responses);
-        assertThat(responses, Matchers.startsWith("HTTP/1.1 200"));
-        assertThat(responses, Matchers.containsString("Violation: CR_LINE_TERMINATION"));
-        assertThat(responses, Matchers.containsString("Violation: NO_CRLF_AFTER_PREAMBLE"));
     }
 
     @Test
@@ -485,7 +419,6 @@ public class RequestTest
      
         _server.stop();
         _server.setHandler(contextHandler);
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.RFC7578);
         _server.start();
 
         String multipart =  "      --AaB03x\r"+

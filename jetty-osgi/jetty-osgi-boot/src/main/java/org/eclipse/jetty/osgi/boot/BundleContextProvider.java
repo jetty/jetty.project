@@ -168,9 +168,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         }
         
         String contextFiles  = (String)bundle.getHeaders().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
-        if (contextFiles == null)
-            contextFiles = (String)bundle.getHeaders().get(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH);
-        
+
         if (contextFiles == null)
             return false;
         

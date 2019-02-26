@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -42,6 +37,10 @@ import org.eclipse.jetty.server.Request;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario>
 {
@@ -109,7 +108,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
     {
         init(transport);
         int multiplex = 1;
-        if (scenario.isHttp2Based())
+        if (scenario.transport.isHttp2Based())
             multiplex = 4;
         int maxMultiplex = multiplex;
 

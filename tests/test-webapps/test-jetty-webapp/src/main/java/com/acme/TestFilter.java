@@ -21,7 +21,6 @@ package com.acme;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -32,7 +31,6 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -96,7 +94,7 @@ public class TestFilter implements Filter
         {
             old_value=(Integer)request.getAttribute("testFilter");
 
-            Integer value=(old_value==null)?new Integer(1):new Integer(old_value.intValue()+1);
+            Integer value = (old_value == null) ? 1 : old_value + 1;
 
             request.setAttribute("testFilter", value);
 

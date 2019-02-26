@@ -31,7 +31,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -641,25 +640,6 @@ public class DoSFilter implements Filter
         return false;
     }
 
-    @Deprecated
-    protected boolean checkWhitelist(List<String> whitelist, String candidate)
-    {
-        for (String address : whitelist)
-        {
-            if (address.contains("/"))
-            {
-                if (subnetMatch(address, candidate))
-                    return true;
-            }
-            else
-            {
-                if (address.equals(candidate))
-                    return true;
-            }
-        }
-        return false;
-    }
-
     protected boolean subnetMatch(String subnetAddress, String address)
     {
         Matcher cidrMatcher = CIDR_PATTERN.matcher(subnetAddress);
@@ -714,7 +694,7 @@ public class DoSFilter implements Filter
         {
             byte[] result = new byte[4];
             for (int i = 0; i < result.length; ++i)
-                result[i] = Integer.valueOf(ipv4Matcher.group(i + 1)).byteValue();
+                result[i] = ((Integer) Integer.parseInt(ipv4Matcher.group(i + 1))).byteValue();
             return result;
         }
         else

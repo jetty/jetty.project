@@ -62,15 +62,9 @@ public class HttpStatus
     public final static int GONE_410 = 410;
     public final static int LENGTH_REQUIRED_411 = 411;
     public final static int PRECONDITION_FAILED_412 = 412;
-    @Deprecated
-    public final static int REQUEST_ENTITY_TOO_LARGE_413 = 413;
     public final static int PAYLOAD_TOO_LARGE_413 = 413;
-    @Deprecated
-    public final static int REQUEST_URI_TOO_LONG_414 = 414;
     public final static int URI_TOO_LONG_414 = 414;
     public final static int UNSUPPORTED_MEDIA_TYPE_415 = 415;
-    @Deprecated
-    public final static int REQUESTED_RANGE_NOT_SATISFIABLE_416 = 416;
     public final static int RANGE_NOT_SATISFIABLE_416 = 416;
     public final static int EXPECTATION_FAILED_417 = 417;
     public final static int IM_A_TEAPOT_418 = 418;

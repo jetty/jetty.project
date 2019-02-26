@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,7 +25,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /**
@@ -80,13 +77,6 @@ public class HashLoginService extends AbstractLoginService
         return _config;
     }
 
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public Resource getConfigResource()
-    {
-        return null;
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -188,7 +178,7 @@ public class HashLoginService extends AbstractLoginService
                 LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " hotReload: " + hotReload);
             PropertyUserStore propertyUserStore = new PropertyUserStore();
             propertyUserStore.setHotReload(hotReload);
-            propertyUserStore.setConfigPath(_config);
+            propertyUserStore.setConfig(_config);
             propertyUserStore.start();
             _userStore = propertyUserStore;
             _userStoreAutoCreate = true;

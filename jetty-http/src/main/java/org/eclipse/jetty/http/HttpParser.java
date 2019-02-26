@@ -1909,17 +1909,6 @@ public class HttpParser
          */
         public default void badMessage(BadMessageException failure)
         {
-            badMessage(failure.getCode(), failure.getReason());
-        }
-
-        /**
-         * @param status The status to send
-         * @param reason The reason for the bad message
-         * @deprecated use {@link #badMessage(BadMessageException)} instead
-         */
-        @Deprecated
-        public default void badMessage(int status, String reason)
-        {
         }
 
         /* ------------------------------------------------------------ */
@@ -1964,12 +1953,9 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public interface ComplianceHandler extends HttpHandler
     {
-        @Deprecated
-        public default void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason) {}
-        
         public default void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String details)
         {
-            onComplianceViolation(compliance,HttpCompliance.requiredCompliance(violation), details);
+
         }
     }
 

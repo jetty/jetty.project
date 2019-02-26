@@ -169,7 +169,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public synchronized void setServlet(Servlet servlet)
     {
         if (servlet==null || servlet instanceof SingleThreadModel)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(SingleThreadModel.class.getName() + " has been deprecated since Servlet API 2.4");
 
         _extInstance=true;
         _servlet=servlet;
@@ -407,6 +407,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         synchronized (this)
         {
+            // TODO: remove support for deprecated SingleThreadModel??
             if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
                 _servlet = new SingleThreadedWrapper();
         }
@@ -812,13 +813,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         MultipartConfigElement mpce = ((Registration)getRegistration()).getMultipartConfig();
         if (mpce != null)
             baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
-    }
-
-    @Deprecated
-    public Servlet ensureInstance()
-            throws ServletException, UnavailableException
-    {
-        return getServlet();
     }
 
     /* ------------------------------------------------------------ */

@@ -212,7 +212,6 @@ public class LikeJettyXml
         lowResourcesMonitor.setPeriod(1000);
         lowResourcesMonitor.setLowResourcesIdleTimeout(200);
         lowResourcesMonitor.setMonitorThreads(true);
-        lowResourcesMonitor.setMaxConnections(0);
         lowResourcesMonitor.setMaxMemory(0);
         lowResourcesMonitor.setMaxLowResourcesTime(5000);
         server.addBean(lowResourcesMonitor);

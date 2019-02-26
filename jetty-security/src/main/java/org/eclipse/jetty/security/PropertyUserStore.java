@@ -122,17 +122,6 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         return _configPath;
     }
 
-    /**
-     * Set the Config Path from a String reference to a file
-     *
-     * @param configFile the config file can a be a file path or a reference to a file within a jar file {@code jar:file:}
-     */
-    @Deprecated
-    public void setConfigPath(String configFile)
-    {
-        setConfig(configFile);
-    }
-
     private Path extractPackedFile(JarFileResource configResource) throws IOException
     {
         String uri = configResource.getURI().toASCIIString();
@@ -154,17 +143,6 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             setHotReload(false);
         }
         return extractedPath;
-    }
-
-    /**
-     * Set the Config Path from a {@link File} reference
-     *
-     * @param configFile the config file
-     */
-    @Deprecated
-    public void setConfigPath(File configFile)
-    {
-        setConfigFile(configFile);
     }
 
     /**

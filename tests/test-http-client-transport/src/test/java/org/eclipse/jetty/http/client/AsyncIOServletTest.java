@@ -36,7 +36,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.ReadListener;
@@ -1076,7 +1075,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         // the server passes the response to encrypt and write, SSLEngine
         // only generates the close alert back, without encrypting the
         // response, so we need to skip the transports over TLS.
-        Assumptions.assumeFalse(scenario.isTransportSecure());
+        Assumptions.assumeFalse(scenario.transport.isTlsBased());
 
         String content = "jetty";
         int responseCode = HttpStatus.NO_CONTENT_204;

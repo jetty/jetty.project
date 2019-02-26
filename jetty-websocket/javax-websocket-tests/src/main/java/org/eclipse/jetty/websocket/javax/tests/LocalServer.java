@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.OnMessage;
@@ -119,15 +118,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     public URI getWsUri(Class<?> testClazz, String testName)
     {
         return wsUri.resolve("?testclass=" + testClazz + "&testname=" + testName);
-    }
-
-    /**
-     * @deprecated use {@link #getTestWsUri(Class, String)} instead
-     */
-    @Deprecated
-    public URI getUntrustedWsUri(Class<?> clazz, String testName)
-    {
-        return getTestWsUri(clazz, testName);
     }
 
     public URI getTestWsUri(Class<?> clazz, String testName)

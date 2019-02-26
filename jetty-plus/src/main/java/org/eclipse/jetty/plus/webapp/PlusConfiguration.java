@@ -19,7 +19,6 @@
 package org.eclipse.jetty.plus.webapp;
 
 import java.util.Random;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
@@ -116,7 +115,7 @@ public class PlusConfiguration extends AbstractConfiguration
         try
         {
             Random random = new Random ();
-            _key = new Integer(random.nextInt());
+            _key = random.nextInt();
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             compCtx.addToEnvironment("org.eclipse.jetty.jndi.lock", _key);

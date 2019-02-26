@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.net.InetSocketAddress;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -460,24 +459,6 @@ public class ForwardedRequestCustomizer implements Customizer
     public String toString()
     {
         return String.format("%s@%x",this.getClass().getSimpleName(),hashCode());
-    }
-
-    @Deprecated
-    public String getHostHeader()
-    {
-        return _forcedHost.getValue();
-    }
-    
-    /**
-     * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
-     *
-     * @param hostHeader
-     *            The value of the host header to force.
-     */
-    @Deprecated
-    public void setHostHeader(String hostHeader)
-    {
-        _forcedHost = new HostPortHttpField(hostHeader);
     }
 
     private final class RFC7239 extends QuotedCSV

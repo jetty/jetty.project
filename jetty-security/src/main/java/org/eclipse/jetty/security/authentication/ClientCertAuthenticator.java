@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty.security.authentication;
 
-import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.Principal;
 import java.security.cert.CRL;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -139,11 +137,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         }
     }
 
-    @Deprecated
-    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
-    {
-        return getKeyStore(storePath, storeType, storeProvider, storePassword);
-    }
     /* ------------------------------------------------------------ */
     /**
      * Loads keystore using an input stream or a file path in the same

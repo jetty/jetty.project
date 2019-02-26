@@ -42,7 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -80,10 +79,9 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiPartFormDataCompliance;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.Session;
@@ -279,13 +277,6 @@ public class Request implements HttpServletRequest
     public boolean isPushSupported()
     {
         return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public PushBuilder getPushBuilder()
-    {
-        return newPushBuilder();
     }
 
     /* ------------------------------------------------------------ */
@@ -1192,10 +1183,8 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.ServletRequest#getRealPath(java.lang.String)
-     */
     @Override
+    @Deprecated(since = "Servlet API 2.1")
     public String getRealPath(String path)
     {
         if (_context == null)
@@ -1680,6 +1669,7 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdFromUrl()
      */
     @Override
+    @Deprecated(since = "Servlet API 2.1")
     public boolean isRequestedSessionIdFromUrl()
     {
         return _requestedSessionId != null && !_requestedSessionIdFromCookie;
@@ -2395,25 +2385,11 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    
+
     private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException
     {
-        MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
-        if(LOG.isDebugEnabled())
-            LOG.debug("newMultiParts {} {}",compliance, this);
-        
-        switch(compliance)
-        {
-            case RFC7578:
-                return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
-                
-            case LEGACY: 
-            default:
-                return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
-                    (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
-                        
-        }
+        return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
+                (_context != null ? (File) _context.getAttribute("javax.servlet.context.tempdir") : null), this);
     }
 
     /* ------------------------------------------------------------ */

@@ -40,8 +40,8 @@
 	    <!-- add a regex rewrite redirect -->
 	    <Item>
 	      <New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">
-		<Set name="regex">/redirect/(.*)</Set>
-		<Set name="replacement">/tests/$1</Set>
+		      <Set name="regex">/redirect/(.*)</Set>
+		      <Set name="location">/tests/$1</Set>
 	      </New>
 	    </Item>
 	  </Array>

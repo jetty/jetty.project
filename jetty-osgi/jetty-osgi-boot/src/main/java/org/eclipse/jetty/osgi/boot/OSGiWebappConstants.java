@@ -67,82 +67,47 @@ public class OSGiWebappConstants
     public static final String JETTY_CONTEXT_FILE_PATH = "Jetty-ContextFilePath";
 
     /** path within the bundle to the folder that contains the basic resources. */
-    @Deprecated
-    public static final String JETTY_WAR_FOLDER_PATH = "Jetty-WarFolderPath";
     public static final String JETTY_WAR_RESOURCE_PATH = "Jetty-WarResourcePath";
 
     /** path within a fragment hosted by a web-bundle to a folder that contains basic resources.
      * the path is appended to the lookup path where jetty locates static resources */
-    @Deprecated
-    public static final String JETTY_WAR_FRAGMENT_FOLDER_PATH = "Jetty-WarFragmentFolderPath";
     public static final String JETTY_WAR_FRAGMENT_RESOURCE_PATH = "Jetty-WarFragmentResourcePath";
-    
 
     /** path within a fragment hosted by a web-bundle to a folder that contains basic resources.
      * The path is prefixed to the lookup path where jetty locates static resources:
      * this will override static resources with the same name in the web-bundle. */
-    @Deprecated
-    public static final String JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH = "Jetty-WarPatchFragmentFolderPath";
     public static final String JETTY_WAR_PREPEND_FRAGMENT_RESOURCE_PATH = "Jetty-WarPrependFragmentResourcePath";
 
-  
-    /** installation path of webapp bundle
-     *
+    /**
+     * installation path of webapp bundle
      */
     public static final String JETTY_BUNDLE_ROOT = "bundle.root";
-    /** 
-     * web app context path 
-     * @deprecated see RFC66_WEB_CONTEXTPATH
-     */
-    public static final String SERVICE_PROP_CONTEXT_PATH = "contextPath";
 
-    
-    /** 
-     * Path to the web application base folder 
-     * @deprecated see JETTY_WAR_FOLDER_PATH
-     */
-    public static final String SERVICE_PROP_WAR = "war";
-
-    /** 
+    /**
      * Extra classpath
-     * @deprecated see JETTY_EXTRA_CLASSPATH 
      */
-    public static final String SERVICE_PROP_EXTRA_CLASSPATH = "extraClasspath";
-    
     public static final String JETTY_EXTRA_CLASSPATH = "Jetty-extraClasspath";
 
-    /** 
-     * jetty context file path 
-     * @deprecated see JETTY_CONTEXT_FILE_PATH
-     */
-    public static final String SERVICE_PROP_CONTEXT_FILE_PATH = "contextFilePath";
-
-    /** 
+    /**
      * web.xml file path 
-     * @deprecated see JETTY_WEB_XML_PATH
      */
-    public static final String SERVICE_PROP_WEB_XML_PATH = "webXmlFilePath";
-    
     public static final String JETTY_WEB_XML_PATH = "Jetty-WebXmlFilePath";
+
 
     /** 
      * defaultweb.xml file path 
-     * @deprecated see JETTY_DEFAULT_WEB_XML_PATH
      */
-    public static final String SERVICE_PROP_DEFAULT_WEB_XML_PATH = "defaultWebXmlFilePath";
-    
     public static final String JETTY_DEFAULT_WEB_XML_PATH = "Jetty-defaultWebXmlFilePath";
+
 
     /**
      * path to the base folder that overrides the computed bundle installation
      * location if not null useful to install webapps or jetty context files
      * that are in fact not embedded in a bundle
-     * @deprecated see JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE
      */
-    public static final String SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE = "thisBundleInstall";
-    
     public static final String JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE = "Jetty-bundleInstall";
-    
+
+
     /**
      * Comma separated list of bundles that contain tld file used by the webapp.
      */

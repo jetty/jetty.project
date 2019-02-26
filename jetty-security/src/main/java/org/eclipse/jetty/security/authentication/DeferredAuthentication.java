@@ -24,7 +24,6 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -186,6 +185,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
+        @Deprecated(since = "Servlet API 2.1")
         public String encodeRedirectUrl(String url)
         {
             return null;
@@ -198,6 +198,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
+        @Deprecated(since = "Servlet API 2.1")
         public String encodeUrl(String url)
         {
             return null;
@@ -239,6 +240,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
+        @Deprecated(since = "Servlet API 2.1")
         public void setStatus(int sc, String sm)
         {
         }

@@ -434,31 +434,6 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * Returns the socket close linger time.
-     *
-     * @return -1 as the socket close linger time is always disabled.
-     * @see java.net.StandardSocketOptions#SO_LINGER
-     * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
-     */
-    @ManagedAttribute(value = "Socket close linger time. Deprecated, always returns -1", readonly = true)
-    @Deprecated
-    public int getSoLingerTime()
-    {
-        return -1;
-    }
-
-    /**
-     * @param lingerTime the socket close linger time; use -1 to disable.
-     * @see java.net.StandardSocketOptions#SO_LINGER
-     * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
-     */
-    @Deprecated
-    public void setSoLingerTime(int lingerTime)
-    {
-        LOG.warn("Ignoring deprecated socket close linger time");
-    }
-
-    /**
      * @return the accept queue size
      */
     @ManagedAttribute("Accept Queue size")

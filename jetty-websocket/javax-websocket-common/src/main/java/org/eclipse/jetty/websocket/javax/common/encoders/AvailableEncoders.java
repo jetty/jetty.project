@@ -18,13 +18,7 @@
 
 package org.eclipse.jetty.websocket.javax.common.encoders;
 
-import org.eclipse.jetty.websocket.javax.common.InitException;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
-
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,6 +26,13 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
+
+import org.eclipse.jetty.websocket.javax.common.InitException;
+import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
 
 public class AvailableEncoders implements Predicate<Class<?>>
 {
@@ -271,7 +272,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
                 return registeredEncoder.instance;
             }
 
-            registeredEncoder.instance = registeredEncoder.encoder.newInstance();
+            registeredEncoder.instance = registeredEncoder.encoder.getConstructor().newInstance();
             registeredEncoder.instance.init(this.config);
             return registeredEncoder.instance;
         }
@@ -279,7 +280,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
         {
             throw new InvalidWebSocketException("No Encoder found for type " + type);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new InitException("Unable to init Encoder for type:" + type.getName(), e);
         }

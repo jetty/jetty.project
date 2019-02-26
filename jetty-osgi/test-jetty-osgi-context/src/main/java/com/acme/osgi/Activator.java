@@ -20,7 +20,6 @@ package com.acme.osgi;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
@@ -62,7 +61,7 @@ public class Activator implements BundleActivator
             
         });
         Dictionary props = new Hashtable();
-        props.put("contextPath","/acme");
+        props.put("Web-ContextPath","/acme");
         props.put("Jetty-ContextFilePath", "acme.xml");
         _sr = context.registerService(ContextHandler.class.getName(),ch,props);
     }

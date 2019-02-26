@@ -1601,7 +1601,7 @@ public abstract class RFC2616BaseTest
 
         HttpTester.Response response = http.request(req1);
 
-        assertThat("BadByteRange: '" + rangedef + "'", response.getStatus(), is(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE_416));
+        assertThat("BadByteRange: '" + rangedef + "'", response.getStatus(), is(HttpStatus.RANGE_NOT_SATISFIABLE_416));
     }
 
     /**

@@ -243,22 +243,22 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                 // looked up.
                 for (Bundle frag : fragments)
                 {
-                    String path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FRAGMENT_FOLDER_PATH,OSGiWebappConstants.JETTY_WAR_FRAGMENT_RESOURCE_PATH,frag.getHeaders());
+                    String path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
                     convertFragmentPathToResource(path, frag, appendedResourcesPath);
-                    path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_PREPEND_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
+                    path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_PREPEND_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
                     convertFragmentPathToResource(path, frag, prependedResourcesPath);
                 }
                 if (!appendedResourcesPath.isEmpty())
                 {
                     LinkedHashSet<Resource> resources = new LinkedHashSet<Resource>();
                     //Add in any existing setting of extra resource dirs
-                    Set<Resource> resourceDirs = (Set<Resource>)context.getAttribute(WebInfConfiguration.RESOURCE_DIRS);
+                    Set<Resource> resourceDirs = (Set<Resource>)context.getAttribute(MetaInfConfiguration.RESOURCE_DIRS);
                     if (resourceDirs != null && !resourceDirs.isEmpty())
                         resources.addAll(resourceDirs);
                     //Then append the values from JETTY_WAR_FRAGMENT_FOLDER_PATH
                     resources.addAll(appendedResourcesPath.values());
                     
-                    context.setAttribute(WebInfConfiguration.RESOURCE_DIRS, resources);
+                    context.setAttribute(MetaInfConfiguration.RESOURCE_DIRS, resources);
                 }
             }
         }

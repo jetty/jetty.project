@@ -26,8 +26,6 @@ import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
@@ -245,11 +243,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         executor.execute(channel);
     }
 
-    private long getBlockingTimeout()
-    {
-        return getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
-    }
-
     @Override
     public int read() throws IOException
     {
@@ -266,17 +259,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l;
         synchronized (_inputQ)
         {
-            if (!isAsync())
-            {
-                // Setup blocking only if not async
-                if (_blockUntil == 0)
-                {
-                    long blockingTimeout = getBlockingTimeout();
-                    if (blockingTimeout > 0)
-                        _blockUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(blockingTimeout);
-                }
-            }
-
             // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
@@ -555,13 +537,6 @@ public class HttpInput extends ServletInputStream implements Runnable
             long timeout = 0;
             while (true)
             {
-                if (_blockUntil != 0)
-                {
-                    timeout = TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime());
-                    if (timeout <= 0)
-                        throw new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout()));
-                }
-
                 // This method is called from a loop, so we just
                 // need to check the timeout before and after waiting.
                 if (loop)

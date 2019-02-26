@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class RedirectRegexRuleTest extends AbstractRuleTestCase
 {
@@ -45,9 +45,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
     @Test
     public void testLocationWithReplacementGroupEmpty() throws IOException
     {
-        RedirectRegexRule rule = new RedirectRegexRule();
-        rule.setRegex("/my/dir/file/(.*)$");
-        rule.setReplacement("http://www.mortbay.org/$1");
+        RedirectRegexRule rule = new RedirectRegexRule("/my/dir/file/(.*)$", "http://www.mortbay.org/$1");
 
         // Resource is dir
         rule.matchAndApply("/my/dir/file/", _request, _response);
@@ -57,9 +55,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
     @Test
     public void testLocationWithPathReplacement() throws IOException
     {
-        RedirectRegexRule rule = new RedirectRegexRule();
-        rule.setRegex("/documentation/(.*)$");
-        rule.setReplacement("/docs/$1");
+        RedirectRegexRule rule = new RedirectRegexRule("/documentation/(.*)$", "/docs/$1");
 
         // Resource is dir
         rule.matchAndApply("/documentation/top.html", _request, _response);
@@ -69,9 +65,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
     @Test
     public void testLocationWithReplacmentGroupSimple() throws IOException
     {
-        RedirectRegexRule rule = new RedirectRegexRule();
-        rule.setRegex("/my/dir/file/(.*)$");
-        rule.setReplacement("http://www.mortbay.org/$1");
+        RedirectRegexRule rule = new RedirectRegexRule("/my/dir/file/(.*)$", "http://www.mortbay.org/$1");
 
         // Resource is an image
         rule.matchAndApply("/my/dir/file/image.png", _request, _response);
@@ -81,9 +75,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
     @Test
     public void testLocationWithReplacementGroupDeepWithParams() throws IOException
     {
-        RedirectRegexRule rule = new RedirectRegexRule();
-        rule.setRegex("/my/dir/file/(.*)$");
-        rule.setReplacement("http://www.mortbay.org/$1");
+        RedirectRegexRule rule = new RedirectRegexRule("/my/dir/file/(.*)$", "http://www.mortbay.org/$1");
 
         // Resource is api with parameters
         rule.matchAndApply("/my/dir/file/api/rest/foo?id=100&sort=date", _request, _response);
@@ -95,7 +87,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTestCase
     {
         RedirectRegexRule rule = new RedirectRegexRule();
         rule.setRegex("/api/(.*)$");
-        rule.setReplacement("http://api.company.com/$1");
+        rule.setLocation("http://api.company.com/$1");
         rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
 
         // Resource is api with parameters

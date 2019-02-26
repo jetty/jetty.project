@@ -18,21 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,24 +30,34 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-
-import javax.net.ssl.SSLException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
@@ -85,7 +80,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         super.before();
         if (_httpConfiguration!=null)
         {
-            _httpConfiguration.setBlockingTimeout(-1L);
             _httpConfiguration.setMinRequestDataRate(-1);
             _httpConfiguration.setIdleTimeout(-1);
         }
@@ -290,8 +284,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Disabled // TODO make more stable
     public void testNoBlockingTimeoutRead() throws Exception
     {
-        _httpConfiguration.setBlockingTimeout(-1L);
-        
         configureServer(new EchoHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
@@ -350,72 +342,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     @Tag("Unstable")
     @Disabled // TODO make more stable
-    public void testBlockingTimeoutRead() throws Exception
-    {
-        _httpConfiguration.setBlockingTimeout(750L);
-        
-        configureServer(new EchoHandler());
-        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
-        InputStream is=client.getInputStream();
-        assertFalse(client.isClosed());
-
-        OutputStream os=client.getOutputStream();
-
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        os.write(("GET / HTTP/1.1\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "Transfer-Encoding: chunked\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Connection: close\r\n" +
-                "\r\n"+
-                "5\r\n"+
-                "LMNOP\r\n")
-                .getBytes("utf-8"));
-        os.flush();
-
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
-        {
-            Thread.sleep(300);
-            os.write("1".getBytes("utf-8"));
-            os.flush();
-            Thread.sleep(300);
-            os.write("0".getBytes("utf-8"));
-            os.flush();
-            Thread.sleep(300);
-            os.write("\r".getBytes("utf-8"));
-            os.flush();
-            Thread.sleep(300);
-            os.write("\n".getBytes("utf-8"));
-            os.flush();
-            Thread.sleep(300);
-            os.write("0123456789ABCDEF\r\n".getBytes("utf-8"));
-            os.write("0\r\n".getBytes("utf-8"));
-            os.write("\r\n".getBytes("utf-8"));
-            os.flush();   
-        }
-        catch(Exception e)
-        {
-        }
-        long duration=TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-        assertThat(duration,greaterThan(500L));
-        
-        try
-        {
-            // read the response
-            String response = IO.toString(is);
-            assertThat(response,startsWith("HTTP/1.1 500 "));
-            assertThat(response,containsString("InterruptedIOException"));
-        }
-        catch(SSLException e)
-        {
-        }
-
-    }
-
-    @Test
-    @Tag("Unstable")
-    @Disabled // TODO make more stable
     public void testNoBlockingTimeoutWrite() throws Exception
     {
         configureServer(new HugeResponseHandler());
@@ -452,57 +378,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             assertThat(line,notNullValue());
             assertEquals(1022,line.length());
         }
-    }
-
-    @Test
-    @Tag("Unstable")
-    @Disabled // TODO make more stable
-    public void testBlockingTimeoutWrite() throws Exception
-    {
-        _httpConfiguration.setBlockingTimeout(750L);
-        configureServer(new HugeResponseHandler());
-        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
-
-        assertFalse(client.isClosed());
-
-        OutputStream os=client.getOutputStream();
-        BufferedReader is=new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.ISO_8859_1),2048);
-
-        os.write((
-                "GET / HTTP/1.0\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "connection: keep-alive\r\n"+
-                "Connection: close\r\n"+
-        "\r\n").getBytes("utf-8"));
-        os.flush();
-        
-        // read the header
-        String line=is.readLine();
-        assertThat(line,startsWith("HTTP/1.1 200 OK"));
-        while(line.length()!=0)
-            line=is.readLine();
-
-        long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class,AbstractConnection.class))
-        {
-            for (int i=0;i<(128*1024);i++)
-            {
-                if (i%1028==0)
-                {
-                    Thread.sleep(20);
-                    // System.err.println("read "+TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
-                }
-                line=is.readLine();
-                if (line==null)
-                    break;
-            }
-        }
-        catch(Throwable e)
-        {}
-        long end=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        long duration = end-start;
-        assertThat(duration,lessThan(20L*128L));
     }
     
     @Test

@@ -633,7 +633,7 @@ public class ParserTest
 
         for (int i = 0; i < bytes.length; ++i)
         {
-            bytes[i] = Integer.valueOf(Integer.toOctalString(i)).byteValue();
+            bytes[i] = (byte) (i & 0xff);
         }
 
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);

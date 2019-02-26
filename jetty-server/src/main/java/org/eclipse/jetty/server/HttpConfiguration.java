@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.MultiPartFormDataCompliance;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
@@ -64,7 +63,6 @@ public class HttpConfiguration implements Dumpable
     private int _headerCacheSize=4*1024;
     private int _securePort;
     private long _idleTimeout=-1;
-    private long _blockingTimeout=-1;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true;
     private boolean _sendXPoweredBy = false;
@@ -78,7 +76,6 @@ public class HttpConfiguration implements Dumpable
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
-    private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.RFC7578;
     private boolean _notifyRemoteAsyncErrors = true;
 
     /**
@@ -131,7 +128,6 @@ public class HttpConfiguration implements Dumpable
         _secureScheme=config._secureScheme;
         _securePort=config._securePort;
         _idleTimeout=config._idleTimeout;
-        _blockingTimeout=config._blockingTimeout;
         _sendDateHeader=config._sendDateHeader;
         _sendServerVersion=config._sendServerVersion;
         _sendXPoweredBy=config._sendXPoweredBy;
@@ -242,41 +238,6 @@ public class HttpConfiguration implements Dumpable
     public void setIdleTimeout(long timeoutMs)
     {
         _idleTimeout=timeoutMs;
-    }
-
-    /**
-     * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total operation (as opposed to the idle timeout that applies to the time no 
-     * data is being sent). This applies only to blocking operations and does not affect
-     * asynchronous read and write.</p>
-     *
-     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
-     * @deprecated Replaced by {@link #getMinResponseDataRate()} and {@link #getMinRequestDataRate()}
-     */
-    @ManagedAttribute(value = "Total timeout in ms for blocking I/O operations. DEPRECATED!", readonly = true)
-    @Deprecated
-    public long getBlockingTimeout()
-    {
-        return _blockingTimeout;
-    }
-
-    /**
-     * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total operation (as opposed to the idle timeout that applies to the time no 
-     * data is being sent).This applies only to blocking operations and does not affect
-     * asynchronous read and write.</p>
-     *
-     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
-     * @deprecated Replaced by {@link #setMinResponseDataRate(long)} and {@link #setMinRequestDataRate(long)}
-     */
-    @Deprecated
-    public void setBlockingTimeout(long blockingTimeout)
-    {
-        if (blockingTimeout>0)
-            LOG.warn("HttpConfiguration.setBlockingTimeout is deprecated!");
-        _blockingTimeout = blockingTimeout;
     }
 
     public void setPersistentConnectionsEnabled(boolean persistentConnectionsEnabled)
@@ -600,22 +561,6 @@ public class HttpConfiguration implements Dumpable
         _responseCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
     }
 
-
-    /**
-     * Sets the compliance level for multipart/form-data handling.
-     * 
-     * @param multiPartCompliance The multipart/form-data compliance level.
-     */
-    public void setMultiPartFormDataCompliance(MultiPartFormDataCompliance multiPartCompliance)
-    {
-        _multiPartCompliance = multiPartCompliance==null?MultiPartFormDataCompliance.RFC7578:multiPartCompliance;
-    }
-
-    public MultiPartFormDataCompliance getMultipartFormDataCompliance()
-    {
-        return _multiPartCompliance;
-    }
-    
     /**
      * @param notifyRemoteAsyncErrors whether remote errors, when detected, are notified to async applications
      */
@@ -651,7 +596,6 @@ public class HttpConfiguration implements Dumpable
             "secureScheme=" + _secureScheme,
             "securePort=" + _securePort,
             "idleTimeout=" + _idleTimeout,
-            "blockingTimeout=" + _blockingTimeout,
             "sendDateHeader=" + _sendDateHeader,
             "sendServerVersion=" + _sendServerVersion,
             "sendXPoweredBy=" + _sendXPoweredBy,
@@ -660,8 +604,8 @@ public class HttpConfiguration implements Dumpable
             "maxErrorDispatches=" + _maxErrorDispatches,
             "minRequestDataRate=" + _minRequestDataRate,
             "minResponseDataRate=" + _minResponseDataRate,
-            "cookieCompliance=" + _requestCookieCompliance,
-            "setRequestCookieCompliance=" + _responseCookieCompliance,
+            "requestCookieCompliance=" + _requestCookieCompliance,
+            "responseCookieCompliance=" + _responseCookieCompliance,
             "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors
         );
     }

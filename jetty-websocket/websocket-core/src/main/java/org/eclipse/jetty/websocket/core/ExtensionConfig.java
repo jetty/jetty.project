@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.util.ArrayTrie;
-import org.eclipse.jetty.util.Trie;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -30,6 +26,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Trie;
 
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.
@@ -185,7 +185,7 @@ public class ExtensionConfig
         {
             return defValue;
         }
-        return Integer.valueOf(val);
+        return Integer.parseInt(val);
     }
 
     public final String getParameter(String key, String defValue)

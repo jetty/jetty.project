@@ -23,7 +23,6 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URL;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -86,17 +85,9 @@ public class ShutdownHandler extends HandlerWrapper
     /**
      * Creates a listener that lets the server be shut down remotely (but only from localhost).
      *
-     * @param server
-     *            the Jetty instance that should be shut down
      * @param shutdownToken
      *            a secret password to avoid unauthorized shutdown attempts
      */
-    @Deprecated
-    public ShutdownHandler(Server server, String shutdownToken)
-    {
-        this(shutdownToken);
-    }
-
     public ShutdownHandler(String shutdownToken)
     {
         this(shutdownToken,false,false);

@@ -158,12 +158,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
     }
 
-    @Deprecated
-    public HttpContent lookup(String pathInContext) throws IOException
-    {
-        return getContent(pathInContext, _maxCachedFileSize);
-    }
-
     /**
      * <p>Returns an entry from the cache, or creates a new one.</p>
      *

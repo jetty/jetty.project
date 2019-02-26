@@ -18,16 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.internal.Parser;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.internal.Parser;
 
 public class ParserCapture
 {
@@ -50,23 +47,6 @@ public class ParserCapture
             if (!onFrame(frame))
                 break;
         }
-    }
-
-    public void assertHasFrame(byte opCode, int expectedCount)
-    {
-        int count = 0;
-        for (Frame frame : framesQueue)
-        {
-            if (frame.getOpCode() == opCode)
-                count++;
-        }
-        assertThat("Frames[op=" + opCode + "].count", count, is(expectedCount));
-    }
-
-    @Deprecated
-    public BlockingQueue<Frame> getFrames()
-    {
-        return framesQueue;
     }
 
     public boolean onFrame(Frame frame)

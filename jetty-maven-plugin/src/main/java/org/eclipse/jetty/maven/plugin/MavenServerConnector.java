@@ -99,15 +99,6 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         this.idleTimeout = idleTimeout;
     }
 
-    /**
-     * @param lingerTime the socket close linger time
-     * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
-     */
-    @Deprecated
-    public void setSoLingerTime(int lingerTime)
-    {
-    }
-    
     @Override
     protected void doStart() throws Exception
     {

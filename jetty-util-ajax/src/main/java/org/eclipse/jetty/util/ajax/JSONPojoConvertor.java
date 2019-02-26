@@ -45,7 +45,7 @@ public class JSONPojoConvertor implements JSON.Convertor
 {
     private static final Logger LOG = Log.getLogger(JSONPojoConvertor.class);
     public static final Object[] GETTER_ARG = new Object[]{}, NULL_ARG = new Object[]{null};
-    private static final Map<Class<?>, NumberType> __numberTypes = new HashMap<Class<?>, NumberType>();
+    private static final Map<Class<?>, NumberType> __numberTypes = new HashMap<>();
     
     public static NumberType getNumberType(Class<?> clazz)
     {
@@ -382,7 +382,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         @Override
         public Object getActualValue(Number number)
         {            
-            return new Short(number.shortValue());
+            return number.shortValue();
         } 
     };
 
@@ -390,8 +390,8 @@ public class JSONPojoConvertor implements JSON.Convertor
     {
         @Override
         public Object getActualValue(Number number)
-        {            
-            return new Integer(number.intValue());
+        {
+            return number.intValue();
         }
     };
     
@@ -400,7 +400,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         @Override
         public Object getActualValue(Number number)
         {            
-            return new Float(number.floatValue());
+            return number.floatValue();
         }      
     };
 
@@ -408,8 +408,8 @@ public class JSONPojoConvertor implements JSON.Convertor
     {
         @Override
         public Object getActualValue(Number number)
-        {            
-            return number instanceof Long ? number : new Long(number.longValue());
+        {
+            return number instanceof Long ? number : (Long) number.longValue();
         }     
     };
 
@@ -417,8 +417,8 @@ public class JSONPojoConvertor implements JSON.Convertor
     {
         @Override
         public Object getActualValue(Number number)
-        {            
-            return number instanceof Double ? number : new Double(number.doubleValue());
+        {
+            return number instanceof Double ? number : (Double) number.doubleValue();
         }       
     };
 

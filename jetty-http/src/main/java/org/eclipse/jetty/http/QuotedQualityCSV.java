@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.http;
 
-import static java.lang.Integer.MIN_VALUE;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
+
+import static java.lang.Integer.MIN_VALUE;
 
 /* ------------------------------------------------------------ */
 /**
@@ -36,10 +36,10 @@ import java.util.function.Function;
  * @see "https://tools.ietf.org/html/rfc7231#section-5.3.1"
  */
 public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
-{    
-    private final static Double ZERO=new Double(0.0);
-    private final static Double ONE=new Double(1.0);
-    
+{
+    private final static Double ZERO = 0.0D;
+    private final static Double ONE = 1.0D;
+
 
     /**
      * Function to apply a most specific MIME encoding secondary ordering 
@@ -121,8 +121,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             try
             {
                 q=(_keepQuotes && buffer.charAt(paramValue)=='"')
-                    ?new Double(buffer.substring(paramValue+1,buffer.length()-1))
-                    :new Double(buffer.substring(paramValue));
+                    ? (Double) Double.parseDouble(buffer.substring(paramValue + 1, buffer.length() - 1))
+                    : (Double) Double.parseDouble(buffer.substring(paramValue));
             }
             catch(Exception e)
             {

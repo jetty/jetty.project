@@ -64,7 +64,7 @@ public class ClassLoaderDump implements Dumpable
         }
         else if (_loader.getDefinedPackages()!=null)
         {
-            DumpableCollection packages = DumpableCollection.from("packages", _loader.getDefinedPackages());
+            DumpableCollection packages = DumpableCollection.from("packages", (Object[]) _loader.getDefinedPackages());
             ClassLoader parent = _loader.getParent();
             if (parent==Server.class.getClassLoader())
                 Dumpable.dumpObjects(out,indent,_loader,packages,"Server loader: " + parent);

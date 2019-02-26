@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,6 +32,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResourceCacheTest
 {
@@ -305,7 +305,7 @@ public class ResourceCacheTest
 
     static String getContent(CachedContentFactory rc, String path) throws Exception
     {
-        HttpContent content = rc.lookup(path);
+        HttpContent content = rc.getContent(path, rc.getMaxCachedFileSize());
         if (content==null)
             return null;
 

@@ -233,7 +233,7 @@ public abstract class AbstractLogger implements Logger
     {
         if (isDebugEnabled())
         {
-            debug(msg,new Object[] { new Long(arg) });
+            debug(msg,new Object[] {arg});
         }
     }
 }

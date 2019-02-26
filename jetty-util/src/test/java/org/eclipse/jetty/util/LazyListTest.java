@@ -865,7 +865,7 @@ public class LazyListTest
         assertNull(LazyList.remove(input,null));
         assertNull(LazyList.remove(input,"a"));
         assertNull(LazyList.remove(input,new ArrayList<Object>()));
-        assertNull(LazyList.remove(input,Integer.valueOf(42)));
+        assertNull(LazyList.remove(input, (Integer) 42));
     }
 
     /**
@@ -1228,7 +1228,7 @@ public class LazyListTest
         ArrayList l=new ArrayList();
         l.add("a");
         l.add(null);
-        l.add(new Integer(2));
+        l.add(2);
         String[] a=LazyList.toStringArray(l);
 
         assertEquals(3,a.length);

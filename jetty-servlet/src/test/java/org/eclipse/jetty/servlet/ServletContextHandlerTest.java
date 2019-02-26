@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
@@ -34,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -70,6 +60,15 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletContextHandlerTest
 {
@@ -523,34 +522,6 @@ public class ServletContextHandlerTest
     }
     
     /**
-     * Test behavior of legacy ServletContextHandler.Decorator, with
-     * new DecoratedObjectFactory class
-     * @throws Exception on test failure
-     */
-    @SuppressWarnings("deprecation")
-    @Test
-    public void testLegacyDecorator() throws Exception
-    {
-        ServletContextHandler context = new ServletContextHandler();
-        context.addDecorator(new DummyLegacyDecorator());
-        _server.setHandler(context);
-        
-        context.addServlet(DecoratedObjectFactoryServlet.class, "/objfactory/*");
-        _server.start();
-
-        String response= _connector.getResponse("GET /objfactory/ HTTP/1.0\r\n\r\n");
-        assertThat("Response status code", response, containsString("200 OK"));
-        
-        String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
-        assertThat("Has context attribute", response, containsString(expected));
-        
-        assertThat("Decorators size", response, containsString("Decorators.size = [2]"));
-        
-        expected = String.format("decorator[] = %s", DummyLegacyDecorator.class.getName());
-        assertThat("Specific Legacy Decorator", response, containsString(expected));
-    }
-    
-    /**
      * Test behavior of new {@link org.eclipse.jetty.util.Decorator}, with
      * new DecoratedObjectFactory class
      * @throws Exception on test failure
@@ -605,20 +576,6 @@ public class ServletContextHandlerTest
         }
     }
     
-    public static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
-    {
-        @Override
-        public <T> T decorate(T o)
-        {
-            return o;
-        }
-
-        @Override
-        public void destroy(Object o)
-        {
-        }
-    }
-
     public static class DecoratedObjectFactoryServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;

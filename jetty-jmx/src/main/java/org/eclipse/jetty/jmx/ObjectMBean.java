@@ -121,17 +121,6 @@ public class ObjectMBean implements DynamicMBean
         return this._mbeanContainer;
     }
 
-    /**
-     * @param o the object to wrap as MBean
-     * @return a new instance of an MBean for the object or null if the MBean cannot be created
-     * @deprecated Use {@link MBeanContainer#mbeanFor(Object)} instead
-     */
-    @Deprecated
-    public static Object mbeanFor(Object o)
-    {
-        return MBeanContainer.mbeanFor(null, o);
-    }
-
     @Override
     public MBeanInfo getMBeanInfo()
     {

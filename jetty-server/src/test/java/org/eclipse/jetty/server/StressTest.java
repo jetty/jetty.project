@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.condition.OS.MAC;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
@@ -32,7 +25,6 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -49,6 +41,13 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.condition.OS.MAC;
 
 @Disabled
 @Tag("stress")
@@ -389,9 +388,9 @@ public class StressTest
                     System.err.println(bind+","+flush+","+read);
                 }
 
-                _latencies[0].add((i==0)?new Long(bind):0);
-                _latencies[1].add((i==0)?new Long(bind+flush):flush);
-                _latencies[5].add((i==0)?new Long(bind+flush+read):(flush+read));
+                _latencies[0].add((i == 0) ? bind : 0L);
+                _latencies[1].add((i == 0) ? (bind + flush) : flush);
+                _latencies[5].add((i == 0) ? (bind + flush + read) : (flush + read));
             }
         }
         else
@@ -411,12 +410,12 @@ public class StressTest
                 Socket socket = new Socket("localhost", _connector.getLocalPort());
                 socket.setSoTimeout(10000);
 
-                _latencies[0].add(new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start));
+                _latencies[0].add((TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start));
 
                 socket.getOutputStream().write(request.getBytes());
                 socket.getOutputStream().flush();
 
-                _latencies[1].add(new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start));
+                _latencies[1].add((TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start));
 
                 String response = IO.toString(socket.getInputStream());
                 socket.close();
@@ -429,7 +428,7 @@ public class StressTest
                 assertThat(uri, response, startsWith("DATA "+__tests[i]));
                 long latency=end-start;
 
-                _latencies[5].add(new Long(latency));
+                _latencies[5].add(latency);
             }
         }
     }
@@ -460,14 +459,14 @@ public class StressTest
             long delay=received-start;
             if (delay<0)
                 delay=0;
-            _latencies[2].add(new Long(delay));
-            _latencies[3].add(new Long(now-start));
+            _latencies[2].add(delay);
+            _latencies[3].add((now - start));
 
             response.setStatus(200);
             response.getOutputStream().print("DATA "+request.getPathInfo()+"\n\n");
             baseRequest.setHandled(true);
 
-            _latencies[4].add(new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start));
+            _latencies[4].add((TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start));
 
             return;
         }

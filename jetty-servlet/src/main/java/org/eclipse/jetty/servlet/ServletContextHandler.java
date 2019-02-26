@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -750,44 +749,6 @@ public class ServletContextHandler extends ContextHandler
         return _objFactory;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The decorator list used to resource inject new Filters, Servlets and EventListeners
-     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
-     */
-    @Deprecated
-    public List<Decorator> getDecorators()
-    {
-        List<Decorator> ret = new ArrayList<ServletContextHandler.Decorator>();
-        for (org.eclipse.jetty.util.Decorator decorator : _objFactory)
-        {
-            ret.add(new LegacyDecorator(decorator));
-        }
-        return Collections.unmodifiableList(ret);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param decorators The list of {@link Decorator}s
-     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
-     */
-    @Deprecated
-    public void setDecorators(List<Decorator> decorators)
-    {
-        _objFactory.setDecorators(decorators);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param decorator The decorator to add
-     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
-     */
-    @Deprecated
-    public void addDecorator(Decorator decorator)
-    {
-        _objFactory.addDecorator(decorator);
-    }
-    
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
@@ -1563,48 +1524,6 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
             addRoles(roleNames);
-
-
-        }
-
-    }
-
-
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * Legacy Interface to decorate loaded classes.
-     * <p>
-     * Left for backwards compatibility with Weld / CDI
-     * @deprecated use new {@link org.eclipse.jetty.util.Decorator} 
-     */
-    @Deprecated
-    public interface Decorator extends org.eclipse.jetty.util.Decorator
-    {
-    }
-    
-    /**
-     * Implementation of the legacy interface to decorate loaded classes.
-     */
-    private static class LegacyDecorator implements Decorator
-    {
-        private org.eclipse.jetty.util.Decorator decorator;
-        
-        public LegacyDecorator(org.eclipse.jetty.util.Decorator decorator)
-        {
-            this.decorator = decorator;
-        }
-
-        @Override
-        public <T> T decorate(T o)
-        {
-            return decorator.decorate(o);
-        }
-
-        @Override
-        public void destroy(Object o)
-        {
-            decorator.destroy(o);
         }
     }
 }

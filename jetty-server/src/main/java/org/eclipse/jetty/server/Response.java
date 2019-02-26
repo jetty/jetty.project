@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -572,14 +571,14 @@ public class Response implements HttpServletResponse
     }
 
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public String encodeUrl(String url)
     {
         return encodeURL(url);
     }
 
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public String encodeRedirectUrl(String url)
     {
         return encodeRedirectURL(url);
@@ -868,7 +867,7 @@ public class Response implements HttpServletResponse
     }
 
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public void setStatus(int sc, String  message)
     {
         setStatusWithReason(sc, null);
@@ -1307,12 +1306,6 @@ public class Response implements HttpServletResponse
     public void resetBuffer()
     {
         _out.resetBuffer();
-    }
-
-    @Deprecated
-    public void setTrailerHttpFields(Supplier<HttpFields> trailers)
-    {
-        this._trailers = trailers;
     }
 
     @Override
