@@ -20,6 +20,7 @@
 === Managing Jetty Base and Jetty Home
 
 Instead of managing multiple Jetty implementations out of several different distribution locations, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment(s) (known as `${jetty.base}`).
+In addition to easy management of multiple server instances, is allows for quick, drop-in upgrades of Jetty.
 There should always only be *one* Jetty Home (per version of Jetty), but there can be multiple Jetty Base directories that reference it.
 
 Jetty Base::

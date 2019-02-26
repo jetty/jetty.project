@@ -44,7 +44,7 @@ In either case the syntax of the XML file is the same:
 
 ==== For All Apps on a Server
 
-Set an attribute on the Server instance for which you want to modify the maximum form content size:
+Set an attribute in `jetty.xml` on the Server instance for which you want to modify the maximum form content size:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -56,7 +56,32 @@ Set an attribute on the Server instance for which you want to modify the maximum
 </Configure>
 ----
 
+____
+[IMPORTANT]
+It is important to remember that you should *not* modify the XML files in your `$JETTY_HOME`.
+If you do for some reason feel you want to change the way an XML file operates, it is best to make a copy of it in your `$JETTY_BASE` in an `/etc` directory.
+Jetty will always look first to the `$JETTY_BASE` for configuration.
+____
+
 ==== For All Apps in the JVM
 
 Use the system property `org.eclipse.jetty.server.Request.maxFormContentSize`.
-This can be set on the command line or in the `start.ini` or `start.d\server.ini` file.
+This can be set on the command line or in the `$JETTY_BASE\start.ini` or any `$JETTY_BASE\start.d\*.ini` link:#startup-modules[module ini file.]
+Using `$JETTY_BASE\start.d\server.ini` as an example:
+
+[source, console, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: server
+# Enables the core Jetty server on the classpath.
+# ---------------------------------------
+--module=server
+
+### Common HTTP configuration
+## Scheme to use to build URIs for secure redirects
+# jetty.httpConfig.secureScheme=https
+
+...
+
+-Dorg.eclipse.jetty.server.Request.maxFormContentSize=200000
+----
