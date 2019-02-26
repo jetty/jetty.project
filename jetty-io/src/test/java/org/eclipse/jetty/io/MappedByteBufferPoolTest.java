@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -155,5 +157,38 @@ public class MappedByteBufferPoolTest
 
         bufferPool.release(buffer3);
         assertEquals(2, bucket.size());
+    }
+
+    @Test
+    public void testMaxMemory()
+    {
+        int factor = 1024;
+        int maxMemory = 10 * 1024;
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor, -1, null, -1, maxMemory);
+
+        int capacity = 3 * 1024;
+        ByteBuffer[] buffers = new ByteBuffer[maxMemory / capacity + 1];
+        for (int i = 0; i < buffers.length; ++i)
+            buffers[i] = bufferPool.acquire(capacity, true);
+
+        // Return all the buffers, but only some is retained by the pool.
+        for (ByteBuffer buffer : buffers)
+            bufferPool.release(buffer);
+
+        ConcurrentMap<Integer, Bucket> directMap = bufferPool.bucketsFor(true);
+        assertEquals(1, directMap.size());
+        Bucket bucket = directMap.values().iterator().next();
+        assertEquals(buffers.length - 1, bucket.size());
+
+        long memory1 = bufferPool.getMemory(true);
+        assertThat(memory1, lessThanOrEqualTo((long)maxMemory));
+
+        ByteBuffer buffer = bufferPool.acquire(capacity, true);
+        long memory2 = bufferPool.getMemory(true);
+        assertThat(memory2, lessThan(memory1));
+
+        bufferPool.release(buffer);
+        long memory3 = bufferPool.getMemory(true);
+        assertEquals(memory1, memory3);
     }
 }

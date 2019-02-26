@@ -131,7 +131,7 @@ public interface ByteBufferPool
         }
     }
 
-    class Bucket
+    public static class Bucket
     {
         private final Deque<ByteBuffer> _queue = new ConcurrentLinkedDeque<>();
         private final ByteBufferPool _pool;

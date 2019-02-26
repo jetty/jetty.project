@@ -22,10 +22,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
 
 /**
  * <p>A ByteBuffer pool where ByteBuffers are held in queues that are held in a Map.</p>
@@ -34,12 +34,11 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
  * queue of ByteBuffers each of capacity 2048, and so on.</p>
  */
 @ManagedObject
-public class MappedByteBufferPool implements ByteBufferPool
+public class MappedByteBufferPool extends AbstractByteBufferPool
 {
-    private final ConcurrentMap<Integer, Bucket> directBuffers = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Integer, Bucket> heapBuffers = new ConcurrentHashMap<>();
-    private final int _factor;
-    private final int _maxQueueLength;
+    private final ConcurrentMap<Integer, Bucket> _directBuffers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, Bucket> _heapBuffers = new ConcurrentHashMap<>();
+    private final Function<Integer, Bucket> _newBucket;
 
     /**
      * Creates a new MappedByteBufferPool with a default configuration.
@@ -60,20 +59,46 @@ public class MappedByteBufferPool implements ByteBufferPool
     }
 
     /**
-     * Creates a new MappedByteBufferPool with the given capacity factor and max queue length.
+     * Creates a new MappedByteBufferPool with the given configuration.
      *
      * @param factor the capacity factor
      * @param maxQueueLength the maximum ByteBuffer queue length
      */
     public MappedByteBufferPool(int factor, int maxQueueLength)
     {
-        _factor = factor <= 0 ? 1024 : factor;
-        _maxQueueLength = maxQueueLength;
+        this(factor, maxQueueLength, null);
+    }
+
+    /**
+     * Creates a new MappedByteBufferPool with the given configuration.
+     *
+     * @param factor the capacity factor
+     * @param maxQueueLength the maximum ByteBuffer queue length
+     * @param newBucket the function that creates a Bucket
+     */
+    public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket)
+    {
+        this(factor, maxQueueLength, newBucket, -1, -1);
+    }
+
+    /**
+     * Creates a new MappedByteBufferPool with the given configuration.
+     *
+     * @param factor the capacity factor
+     * @param maxQueueLength the maximum ByteBuffer queue length
+     * @param newBucket the function that creates a Bucket
+     * @param maxHeapMemory the max heap memory in bytes
+     * @param maxDirectMemory the max direct memory in bytes
+     */
+    public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket, long maxHeapMemory, long maxDirectMemory)
+    {
+        super(factor, maxQueueLength, maxHeapMemory, maxDirectMemory);
+        _newBucket = newBucket != null ? newBucket : this::newBucket;
     }
 
     private Bucket newBucket(int key)
     {
-        return new Bucket(this, key * _factor, _maxQueueLength);
+        return new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
     }
 
     @Override
@@ -83,8 +108,10 @@ public class MappedByteBufferPool implements ByteBufferPool
         ConcurrentMap<Integer, Bucket> buffers = bucketsFor(direct);
         Bucket bucket = buffers.get(b);
         if (bucket == null)
-            return newByteBuffer(b * _factor, direct);
-        return bucket.acquire(direct);
+            return newByteBuffer(b * getCapacityFactor(), direct);
+        ByteBuffer buffer = bucket.acquire(direct);
+        decrementMemory(buffer);
+        return buffer;
     }
 
     @Override
@@ -93,29 +120,33 @@ public class MappedByteBufferPool implements ByteBufferPool
         if (buffer == null)
             return; // nothing to do
 
-        // validate that this buffer is from this pool
-        assert ((buffer.capacity() % _factor) == 0);
+        int capacity = buffer.capacity();
+        // Validate that this buffer is from this pool.
+        assert ((capacity % getCapacityFactor()) == 0);
 
-        int b = bucketFor(buffer.capacity());
+        int b = bucketFor(capacity);
         ConcurrentMap<Integer, Bucket> buckets = bucketsFor(buffer.isDirect());
+        Bucket bucket = buckets.computeIfAbsent(b, _newBucket);
 
-        Bucket bucket = buckets.computeIfAbsent(b, this::newBucket);
-        bucket.release(buffer);
+        if (incrementMemory(buffer))
+            bucket.release(buffer);
     }
 
-    @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
+    @Override
     public void clear()
     {
-        directBuffers.values().forEach(Bucket::clear);
-        directBuffers.clear();
-        heapBuffers.values().forEach(Bucket::clear);
-        heapBuffers.clear();
+        super.clear();
+        _directBuffers.values().forEach(Bucket::clear);
+        _directBuffers.clear();
+        _heapBuffers.values().forEach(Bucket::clear);
+        _heapBuffers.clear();
     }
 
     private int bucketFor(int size)
     {
-        int bucket = size / _factor;
-        if (size % _factor > 0)
+        int factor = getCapacityFactor();
+        int bucket = size / factor;
+        if (bucket * factor != size)
             ++bucket;
         return bucket;
     }
@@ -123,7 +154,7 @@ public class MappedByteBufferPool implements ByteBufferPool
     // Package local for testing
     ConcurrentMap<Integer, Bucket> bucketsFor(boolean direct)
     {
-        return direct ? directBuffers : heapBuffers;
+        return direct ? _directBuffers : _heapBuffers;
     }
 
     public static class Tagged extends MappedByteBufferPool
