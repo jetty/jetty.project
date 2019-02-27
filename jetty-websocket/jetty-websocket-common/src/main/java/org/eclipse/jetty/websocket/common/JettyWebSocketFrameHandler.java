@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
     private final Logger log;
-    private final Executor executor;
+    private final WebSocketContainer container;
     private final Object endpointInstance;
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
@@ -73,7 +73,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
 
-    public JettyWebSocketFrameHandler(Executor executor,
+    public JettyWebSocketFrameHandler(WebSocketContainer container,
         Object endpointInstance,
         UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
         MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
@@ -87,7 +87,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
-        this.executor = executor;
+        this.container = container;
         this.endpointInstance = endpointInstance;
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
@@ -131,6 +131,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             pingHandle = JettyWebSocketFrameHandlerFactory.bindTo(pingHandle, session);
             pongHandle = JettyWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
 
+            Executor executor = container.getExecutor();
+
             if (textHandle != null)
                 textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, coreSession.getMaxTextMessageSize());
 
@@ -140,6 +142,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
             if (openHandle != null)
                 openHandle.invoke();
+
+            container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 
             callback.succeeded();
             futureSession.complete(session);
@@ -225,6 +229,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
         callback.succeeded();
+        container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
     }
 
     public String toString()
@@ -332,7 +337,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         acceptMessage(frame, callback);
     }
-
 
     static Throwable convertCause(Throwable cause)
     {

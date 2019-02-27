@@ -80,13 +80,12 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 {
-    private final Executor executor;
+    private final WebSocketContainer container;
     private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
-    public JettyWebSocketFrameHandlerFactory(Executor executor)
+    public JettyWebSocketFrameHandlerFactory(WebSocketContainer container)
     {
-        this.executor = executor;
-        addBean(executor);
+        this.container = container;
     }
 
     public JettyWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -148,7 +147,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             future = new CompletableFuture<>();
 
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
-            executor,
+            container,
             endpointInstance,
             upgradeRequest, upgradeResponse,
             openHandle, closeHandle, errorHandle,

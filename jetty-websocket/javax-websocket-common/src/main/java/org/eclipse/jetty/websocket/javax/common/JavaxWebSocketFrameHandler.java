@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -229,7 +228,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 openHandle.invoke();
 
-            container.addBean(session, true);
+            container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
             callback.succeeded();
             futureSession.complete(session);
         }
@@ -283,8 +282,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
                 closeHandle.invoke(closeReason);
             }
-            container.removeBean(session);
             callback.succeeded();
+            container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
         }
         catch (Throwable cause)
         {
