@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
@@ -80,7 +81,18 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         }
     }
 
-    @ManagedOperation(value = "Returns the memory occupied by this ByteBufferPool in bytes", impact = "INFO")
+    @ManagedAttribute("The bytes retained by direct ByteBuffers")
+    public long getDirectMemory()
+    {
+        return getMemory(true);
+    }
+
+    @ManagedAttribute("The bytes retained by heap ByteBuffers")
+    public long getHeapMemory()
+    {
+        return getMemory(false);
+    }
+
     public long getMemory(boolean direct)
     {
         AtomicLong memory = direct ? _directMemory : _heapMemory;

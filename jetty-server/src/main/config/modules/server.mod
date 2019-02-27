@@ -11,6 +11,7 @@ logging
 
 [depend]
 threadpool
+bytebufferpool
 
 [lib]
 lib/servlet-api-3.1.jar

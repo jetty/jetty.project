@@ -19,8 +19,11 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.IntFunction;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
@@ -194,6 +197,26 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         if (bucket == null && newBucket != null)
             buckets[b] = bucket = newBucket.apply(b + 1);
         return bucket;
+    }
+
+    @ManagedAttribute("The number of pooled direct ByteBuffers")
+    public long getDirectByteBufferCount()
+    {
+        return getByteBufferCount(true);
+    }
+
+    @ManagedAttribute("The number of pooled heap ByteBuffers")
+    public long getHeapByteBufferCount()
+    {
+        return getByteBufferCount(false);
+    }
+
+    private long getByteBufferCount(boolean direct)
+    {
+        return Arrays.stream(bucketsFor(direct))
+                .filter(Objects::nonNull)
+                .mapToLong(Bucket::size)
+                .sum();
     }
 
     // Package local for testing

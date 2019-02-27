@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
@@ -180,6 +181,25 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         if (bucket * factor != size)
             ++bucket;
         return bucket;
+    }
+
+    @ManagedAttribute("The number of pooled direct ByteBuffers")
+    public long getDirectByteBufferCount()
+    {
+        return getByteBufferCount(true);
+    }
+
+    @ManagedAttribute("The number of pooled heap ByteBuffers")
+    public long getHeapByteBufferCount()
+    {
+        return getByteBufferCount(false);
+    }
+
+    private long getByteBufferCount(boolean direct)
+    {
+        return bucketsFor(direct).values().stream()
+                .mapToLong(Bucket::size)
+                .sum();
     }
 
     // Package local for testing
