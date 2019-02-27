@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -51,10 +53,28 @@ public class WebSocketTester
         parser = new Parser(bufferPool);
     }
 
-    protected Socket newClient(int port) throws IOException
+    protected Socket newClient(int port) throws Exception
     {
-        @SuppressWarnings("resource")
-        Socket client = new Socket("127.0.0.1", port);
+        return newClient(port, false);
+    }
+
+    protected Socket newClient(int port, boolean tls) throws Exception
+    {
+        Socket client;
+
+        if (!tls)
+        {
+            client = new Socket();
+        }
+        else
+        {
+            SslContextFactory sslContextFactory = new SslContextFactory(true);
+            sslContextFactory.start();
+            client = sslContextFactory.newSslSocket();
+            sslContextFactory.stop();
+        }
+
+        client.connect(new InetSocketAddress("127.0.0.1", port));
 
         HttpFields fields = new HttpFields();
         fields.add(HttpHeader.HOST, "127.0.0.1");
