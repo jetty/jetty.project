@@ -20,9 +20,7 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool.Bucket;
 import org.junit.jupiter.api.Test;
@@ -33,6 +31,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -184,36 +183,36 @@ public class ArrayByteBufferPoolTest
     public void testMaxMemory()
     {
         int factor = 1024;
-        int maxMemory = 10 * 1024;
+        int maxMemory = 11 * 1024;
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(-1, factor, -1, -1, -1, maxMemory);
+        Bucket[] buckets = bufferPool.bucketsFor(true);
 
-        int capacity = 3 * 1024;
-        ByteBuffer[] buffers = new ByteBuffer[maxMemory / capacity + 1];
-        for (int i = 0; i < buffers.length; ++i)
-            buffers[i] = bufferPool.acquire(capacity, true);
-
-        // Return all the buffers, but only some is retained by the pool.
-        for (ByteBuffer buffer : buffers)
+        // Create the buckets - the oldest is the larger.
+        // 1+2+3+4=10 / maxMemory=11.
+        for (int i = 4; i >= 1; --i)
+        {
+            int capacity = factor * i;
+            ByteBuffer buffer = bufferPool.acquire(capacity, true);
             bufferPool.release(buffer);
+        }
 
-        List<Bucket> directBuckets = Arrays.stream(bufferPool.bucketsFor(true))
-                .filter(Objects::nonNull)
-                .filter(b -> !b.isEmpty())
-                .collect(Collectors.toList());
-        assertEquals(1, directBuckets.size());
-
-        Bucket bucket = directBuckets.get(0);
-        assertEquals(buffers.length - 1, bucket.size());
-
-        long memory1 = bufferPool.getMemory(true);
-        assertThat(memory1, lessThanOrEqualTo((long)maxMemory));
-
-        ByteBuffer buffer = bufferPool.acquire(capacity, true);
-        long memory2 = bufferPool.getMemory(true);
-        assertThat(memory2, lessThan(memory1));
-
+        // Create and release a buffer to exceed the max memory.
+        ByteBuffer buffer = bufferPool.newByteBuffer(2 * factor, true);
         bufferPool.release(buffer);
-        long memory3 = bufferPool.getMemory(true);
-        assertEquals(memory1, memory3);
+
+        // Now the oldest buffer should be gone and we have: 1+2x2+3=8
+        long memory = bufferPool.getMemory(true);
+        assertThat(memory, lessThan((long)maxMemory));
+        assertNull(buckets[3]);
+
+        // Create and release a large buffer.
+        // Max memory is exceeded and buckets 3 and 1 are cleared.
+        // We will have 2x2+7=11.
+        buffer = bufferPool.newByteBuffer(7 * factor, true);
+        bufferPool.release(buffer);
+        memory = bufferPool.getMemory(true);
+        assertThat(memory, lessThanOrEqualTo((long)maxMemory));
+        assertNull(buckets[0]);
+        assertNull(buckets[2]);
     }
 }

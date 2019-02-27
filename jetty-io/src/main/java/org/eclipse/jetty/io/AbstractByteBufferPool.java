@@ -20,6 +20,7 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -54,24 +55,28 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
 
     protected void decrementMemory(ByteBuffer buffer)
     {
-        AtomicLong memory = buffer.isDirect() ? _directMemory : _heapMemory;
-        memory.addAndGet(-buffer.capacity());
+        updateMemory(buffer, false);
     }
 
-    protected boolean incrementMemory(ByteBuffer buffer)
+    protected void incrementMemory(ByteBuffer buffer)
     {
-        boolean direct = buffer.isDirect();
+        updateMemory(buffer, true);
+    }
+
+    private void updateMemory(ByteBuffer buffer, boolean addOrSub)
+    {
+        AtomicLong memory = buffer.isDirect() ? _directMemory : _heapMemory;
         int capacity = buffer.capacity();
+        memory.addAndGet(addOrSub ? capacity : -capacity);
+    }
+
+    protected void releaseExcessMemory(boolean direct, Consumer<Boolean> clearFn)
+    {
         long maxMemory = direct ? _maxDirectMemory : _maxHeapMemory;
-        AtomicLong memory = direct ? _directMemory : _heapMemory;
-        while (true)
+        if (maxMemory > 0)
         {
-            long current = memory.get();
-            long value = current + capacity;
-            if (maxMemory > 0 && value > maxMemory)
-                return false;
-            if (memory.compareAndSet(current, value))
-                return true;
+            while (getMemory(direct) > maxMemory)
+                clearFn.accept(direct);
         }
     }
 

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -128,11 +129,12 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         assert ((capacity % getCapacityFactor()) == 0);
 
         int b = bucketFor(capacity);
-        ConcurrentMap<Integer, Bucket> buckets = bucketsFor(buffer.isDirect());
+        boolean direct = buffer.isDirect();
+        ConcurrentMap<Integer, Bucket> buckets = bucketsFor(direct);
         Bucket bucket = buckets.computeIfAbsent(b, _newBucket);
-
-        if (incrementMemory(buffer))
-            bucket.release(buffer);
+        bucket.release(buffer);
+        incrementMemory(buffer);
+        releaseExcessMemory(direct, this::clearOldestBucket);
     }
 
     @Override
@@ -143,6 +145,32 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         _directBuffers.clear();
         _heapBuffers.values().forEach(Bucket::clear);
         _heapBuffers.clear();
+    }
+
+    private void clearOldestBucket(boolean direct)
+    {
+        long oldest = 0;
+        int index = -1;
+        ConcurrentMap<Integer, Bucket> buckets = bucketsFor(direct);
+        long now = System.nanoTime();
+        for (Map.Entry<Integer, Bucket> entry : buckets.entrySet())
+        {
+            Bucket bucket = entry.getValue();
+            long age = now - bucket.getLastUpdate();
+            if (age > oldest)
+            {
+                oldest = age;
+                index = entry.getKey();
+            }
+        }
+        if (index >= 0)
+        {
+            Bucket bucket = buckets.remove(index);
+            // The same bucket may be concurrently
+            // removed, so we need this null guard.
+            if (bucket != null)
+                bucket.clear(this::decrementMemory);
+        }
     }
 
     private int bucketFor(int size)

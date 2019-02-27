@@ -116,9 +116,14 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     {
         if (buffer == null)
             return;
-        ByteBufferPool.Bucket bucket = bucketFor(buffer.capacity(), buffer.isDirect(), this::newBucket);
-        if (bucket != null && incrementMemory(buffer))
+        boolean direct = buffer.isDirect();
+        ByteBufferPool.Bucket bucket = bucketFor(buffer.capacity(), direct, this::newBucket);
+        if (bucket != null)
+        {
             bucket.release(buffer);
+            incrementMemory(buffer);
+            releaseExcessMemory(direct, this::clearOldestBucket);
+        }
     }
 
     private Bucket newBucket(int key)
@@ -140,6 +145,35 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
             if (bucket != null)
                 bucket.clear();
             _indirect[i] = null;
+        }
+    }
+
+    private void clearOldestBucket(boolean direct)
+    {
+        long oldest = 0;
+        int index = -1;
+        Bucket[] buckets = bucketsFor(direct);
+        long now = System.nanoTime();
+        for (int i = 0; i < buckets.length; ++i)
+        {
+            Bucket bucket = buckets[i];
+            if (bucket == null)
+                continue;
+            long age = now - bucket.getLastUpdate();
+            if (age > oldest)
+            {
+                oldest = age;
+                index = i;
+            }
+        }
+        if (index >= 0)
+        {
+            Bucket bucket = buckets[index];
+            buckets[index] = null;
+            // The same bucket may be concurrently
+            // removed, so we need this null guard.
+            if (bucket != null)
+                bucket.clear(this::decrementMemory);
         }
     }
 
