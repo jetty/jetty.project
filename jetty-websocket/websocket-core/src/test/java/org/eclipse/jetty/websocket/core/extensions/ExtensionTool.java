@@ -41,6 +41,7 @@ import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -95,7 +96,7 @@ public class ExtensionTool
                     Frame frame = parser.parse(buffer);
                     if (frame == null)
                         break;
-                    ext.onFrame(frame, Callback.NOOP);
+                    ext.onFrame(frame, Callback.from(()->{}, Assertions::fail));
                 }
             }
         }

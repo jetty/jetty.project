@@ -63,21 +63,23 @@ public class PerMessageDeflateExtension extends CompressExtension
 
         // This extension requires the RSV1 bit set only in the first frame.
         // Subsequent continuation frames don't have RSV1 set, but are compressed.
-        if (OpCode.isDataFrame(frame.getOpCode()) && frame.getOpCode() != OpCode.CONTINUATION)
+        switch (frame.getOpCode())
         {
-            incomingCompressed = frame.isRsv1();
+            case OpCode.TEXT:
+            case OpCode.BINARY:
+                incomingCompressed = frame.isRsv1();
+                break;
+
+            case OpCode.CONTINUATION:
+                if (frame.isRsv1())
+                    callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
+                break;
         }
 
         if (OpCode.isControlFrame(frame.getOpCode()) || !incomingCompressed)
         {
             nextIncomingFrame(frame, callback);
             return;
-        }
-
-        if (frame.getOpCode() == OpCode.CONTINUATION && frame.isRsv1())
-        {
-            // Per RFC7692 we MUST Fail the websocket connection
-            throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
         }
 
         //TODO fix this to use long instead of int

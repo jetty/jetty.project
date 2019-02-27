@@ -38,7 +38,9 @@ import org.eclipse.jetty.websocket.core.internal.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -240,9 +242,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 "520400"
         );
 
-        Frame txtFrame = new Frame(OpCode.TEXT).setPayload("Hello ").setFin(false);
-        Frame con1Frame = new Frame(OpCode.CONTINUATION).setPayload("World").setFin(false);
-        Frame con2Frame = new Frame(OpCode.CONTINUATION).setPayload("!").setFin(true);
+        Frame txtFrame = new Frame(OpCode.TEXT, false, "Hello ");
+        Frame con1Frame = new Frame(OpCode.CONTINUATION, false, "World");
+        Frame con2Frame = new Frame(OpCode.CONTINUATION, true, "!");
 
         tester.assertHasFrames(txtFrame, con1Frame, con2Frame);
     }
@@ -260,7 +262,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        assertThrows(ProtocolException.class, () ->
+        Throwable t = assertThrows(Throwable.class, () ->
                 tester.parseIncomingHex(// 1 message, 3 frame
                         "410C", // Header TEXT / fin=false / rsv1=true
                         "F248CDC9C95700000000FFFF", // Payload
@@ -269,6 +271,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                         "C003", // Header CONTINUATION / fin=true / rsv1=true
                         "520400" // Payload
                 ));
+
+        assertThat(t.getCause(), instanceOf(ProtocolException.class));
+        assertThat(t.getCause().getMessage(), is("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
     }
 
     /**
@@ -340,8 +345,6 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
-
-    /**
 
      /**
      * Verify that incoming uncompressed frames are properly passed through
@@ -433,6 +436,55 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+    }
+
+    /**
+     * Outgoing Fragmented Message
+     * @throws IOException on test failure
+     */
+    @Test
+    public void testOutgoingFragmentedMessage() throws IOException, InterruptedException
+    {
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ext.init(ExtensionConfig.parse("permessage-deflate"), bufferPool);
+
+        // Setup capture of outgoing frames
+        OutgoingFramesCapture capture = new OutgoingFramesCapture();
+
+        // Wire up stack
+        ext.setNextOutgoingFrames(capture);
+
+        Frame txtFrame = new Frame(OpCode.TEXT, false, "Hello ");
+        Frame con1Frame = new Frame(OpCode.CONTINUATION, false, "World");
+        Frame con2Frame = new Frame(OpCode.CONTINUATION, true, "!");
+        ext.sendFrame(txtFrame, Callback.NOOP, false);
+        ext.sendFrame(con1Frame, Callback.NOOP, false);
+        ext.sendFrame(con2Frame, Callback.NOOP, false);
+
+        capture.assertFrameCount(3);
+
+        Frame capturedFrame;
+
+        capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS);
+        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.TEXT));
+        assertThat("Frame.fin", capturedFrame.isFin(), is(false));
+        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(true));
+        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+
+        capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS);
+        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
+        assertThat("Frame.fin", capturedFrame.isFin(), is(false));
+        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
+        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+
+        capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS);
+        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
+        assertThat("Frame.fin", capturedFrame.isFin(), is(true));
+        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
+        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
     }
 
     @Test
