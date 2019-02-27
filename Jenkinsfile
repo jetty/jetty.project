@@ -50,6 +50,16 @@ pipeline {
           }
         }
 
+        stage("Build / Test - JDK12") {
+          agent { node { label 'linux' } }
+          options { timeout(time: 120, unit: 'MINUTES') }
+          steps {
+            mavenBuild("jdk12", "-Pmongodb install", "maven3", false)
+            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+            maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
+          }
+        }
+
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
