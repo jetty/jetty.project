@@ -50,11 +50,18 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     }
 
 
-    /** 
+    @Override
+    @DisabledOnJre( JRE.JAVA_12 )
+    public void testClusteredScavenge()
+        throws Exception
+    {
+        super.testClusteredScavenge();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
-    @DisabledOnJre( JRE.JAVA_12 )
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
