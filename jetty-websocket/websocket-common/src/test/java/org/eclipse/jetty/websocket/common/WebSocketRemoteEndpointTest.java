@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -37,6 +32,11 @@ import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class WebSocketRemoteEndpointTest
 {
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
@@ -48,8 +48,8 @@ public class WebSocketRemoteEndpointTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
-        conn.connect();
-        conn.open();
+        conn.opening();
+        conn.opened();
 
         // Start text message
         remote.sendPartialString("Hello ",false);
@@ -73,8 +73,8 @@ public class WebSocketRemoteEndpointTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
-        conn.connect();
-        conn.open();
+        conn.opening();
+        conn.opened();
 
         // Start text message
         remote.sendPartialString("Hello ",false);
@@ -98,8 +98,8 @@ public class WebSocketRemoteEndpointTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testInfo.getDisplayName(), bufferPool);
         OutgoingFrames orderingAssert = new SaneFrameOrderingAssertion();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn, orderingAssert);
-        conn.connect();
-        conn.open();
+        conn.opening();
+        conn.opened();
 
         int largeMessageSize = 60000;
         byte buf[] = new byte[largeMessageSize];

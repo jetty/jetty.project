@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -105,12 +102,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
         return policy;
     }
 
-    @Override
-    public void incomingError(Throwable e)
-    {
-        nextIncomingError(e);
-    }
-
     /**
      * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
      * <p>
@@ -148,11 +139,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
     public boolean isRsv3User()
     {
         return false;
-    }
-
-    protected void nextIncomingError(Throwable e)
-    {
-        this.nextIncoming.incomingError(e);
     }
 
     protected void nextIncomingFrame(Frame frame)

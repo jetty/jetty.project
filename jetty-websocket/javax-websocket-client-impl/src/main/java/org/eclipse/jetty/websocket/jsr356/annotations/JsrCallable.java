@@ -160,7 +160,7 @@ public abstract class JsrCallable extends CallableMethod
                         }
                         catch (DecodeException e)
                         {
-                            session.notifyError(e);
+                            session.close(e);
                         }
                     }
                     else

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -195,12 +193,6 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     public boolean hasNegotiatedExtensions()
     {
         return (this.extensions != null) && (this.extensions.size() > 0);
-    }
-
-    @Override
-    public void incomingError(Throwable e)
-    {
-        nextIncoming.incomingError(e);
     }
 
     @Override

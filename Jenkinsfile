@@ -45,7 +45,16 @@ pipeline {
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
             mavenBuild("jdk11", "-Pmongodb install", "maven3", false)
-            junit '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
+            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+            maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
+          }
+        }
+
+        stage("Build / Test - JDK12") {
+          agent { node { label 'linux' } }
+          options { timeout(time: 120, unit: 'MINUTES') }
+          steps {
+            mavenBuild("jdk12", "-Pmongodb install", "maven3", false)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
             maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
           }
@@ -55,7 +64,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "install javadoc:javadoc -DskipTests", "maven3", true)
+            mavenBuild("jdk11", "install javadoc:javadoc -DskipTests", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
           }
         }

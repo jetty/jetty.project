@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.RemoteEndpoint;
@@ -52,7 +51,10 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
         {
             StringBuilder err = new StringBuilder();
             err.append("Unexpected implementation [");
-            err.append(session.getRemote().getClass().getName());
+            if(session.getRemote() == null)
+                err.append("<null>");
+            else
+                err.append(session.getRemote().getClass().getName());
             err.append("].  Expected an instanceof [");
             err.append(WebSocketRemoteEndpoint.class.getName());
             err.append("]");

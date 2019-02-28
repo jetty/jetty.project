@@ -152,19 +152,19 @@ public class LazyListTest
         Object list=null;
         list=LazyList.add(list, null);
         assertEquals(1,LazyList.size(list));
-        assertEquals(null,LazyList.get(list,0));
+        assertNull(LazyList.get(list,0));
 
         list="a";
         list=LazyList.add(list, null);
         assertEquals(2,LazyList.size(list));
         assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(null,LazyList.get(list,1));
+        assertNull(LazyList.get(list,1));
 
         list=LazyList.add(list, null);
         assertEquals(3,LazyList.size(list));
         assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(null,LazyList.get(list,1));
-        assertEquals(null,LazyList.get(list,2));
+        assertNull(LazyList.get(list,1));
+        assertNull(LazyList.get(list,2));
     }
 
     /**
@@ -254,7 +254,7 @@ public class LazyListTest
         Object list = LazyList.add(input, 0, null);
         assertNotNull(list);
         assertEquals(2,LazyList.size(list));
-        assertEquals(null, LazyList.get(list,0));
+        assertNull( LazyList.get(list,0));
         assertEquals(LazyList.get(list, 1), "a");
     }
 

@@ -56,6 +56,7 @@ import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.junit.jupiter.api.Assertions;
 
 
 /**
@@ -315,19 +316,15 @@ public class JettyDistro
 
         // The actual jetty-distribution-${version} directory is under this directory.
         // Lets find it.
-        File subdirs[] = distroUnpackDir.listFiles(new FileFilter()
-        {
-            @Override
-            public boolean accept(File path)
+        File subdirs[] = distroUnpackDir.listFiles( path ->
             {
                 if (!path.isDirectory())
                 {
                     return false;
                 }
-
                 return path.getName().startsWith(artifactName + "-");
             }
-        });
+        );
 
         if (subdirs.length == 0)
         {
@@ -550,7 +547,7 @@ public class JettyDistro
 
         if (cmdLine == null || !cmdLine.contains("XmlConfiguration"))
         {
-            fail("Unable to get Jetty command line");
+            Assertions.fail( "Unable to get Jetty command line");
         }
 
         // Need to breakdown commandline into parts, as spaces in command line will cause failures.
@@ -595,7 +592,7 @@ public class JettyDistro
         catch (InterruptedException e)
         {
             pid.destroy();
-            fail("Unable to get required information within time limit");
+            Assertions.fail( "Unable to get required information within time limit");
         }
     }
 
@@ -804,7 +801,7 @@ public class JettyDistro
             }
         }
 
-        fail("Unable to find java bin");
+        Assertions.fail( "Unable to find java bin");
         return "java";
     }
 

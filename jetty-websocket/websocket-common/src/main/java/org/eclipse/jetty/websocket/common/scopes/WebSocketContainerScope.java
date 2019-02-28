@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
+import java.util.Collection;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 
 /**
  * Defined Scope for a WebSocketContainer.
@@ -59,6 +60,7 @@ public interface WebSocketContainerScope
      */
     WebSocketPolicy getPolicy();
 
+
     /**
      * The SslContextFactory in use by the container.
      * 
@@ -72,18 +74,10 @@ public interface WebSocketContainerScope
      * @return true if container is started and running
      */
     boolean isRunning();
-    
-    /**
-     * A Session has been opened
-     * 
-     * @param session the session that was opened
-     */
-    void onSessionOpened(WebSocketSession session);
-    
-    /**
-     * A Session has been closed
-     * 
-     * @param session the session that was closed
-     */
-    void onSessionClosed(WebSocketSession session);
+
+    void addSessionListener(WebSocketSessionListener listener);
+
+    void removeSessionListener(WebSocketSessionListener listener);
+
+    Collection<WebSocketSessionListener> getSessionListeners();
 }

@@ -347,14 +347,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public class IncomingCapture implements IncomingFrames
     {
         public final LinkedBlockingQueue<WebSocketFrame> incomingFrames = new LinkedBlockingQueue<>();
-        public final LinkedBlockingQueue<Throwable> incomingErrors = new LinkedBlockingQueue<>();
         public Consumer<Frame> frameConsumer;
-
-        @Override
-        public void incomingError(Throwable cause)
-        {
-            incomingErrors.offer(cause);
-        }
 
         @Override
         public void incomingFrame(Frame frame)

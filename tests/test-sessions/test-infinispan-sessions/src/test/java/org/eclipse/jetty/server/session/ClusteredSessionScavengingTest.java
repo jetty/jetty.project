@@ -22,6 +22,8 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 /**
  * ClusteredSessionScavengingTest
@@ -48,7 +50,15 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     }
 
 
-    /** 
+    @Override
+    @DisabledOnJre( JRE.JAVA_12 )
+    public void testClusteredScavenge()
+        throws Exception
+    {
+        super.testClusteredScavenge();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override

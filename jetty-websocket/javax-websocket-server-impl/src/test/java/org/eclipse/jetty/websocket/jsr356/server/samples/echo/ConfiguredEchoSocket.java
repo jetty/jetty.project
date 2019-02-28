@@ -25,14 +25,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.TimeEncoder;
 
@@ -47,6 +49,7 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.beans.TimeEncoder;
         configurator = EchoSocketConfigurator.class)
 public class ConfiguredEchoSocket
 {
+    private static final Logger LOG = Log.getLogger(ConfiguredEchoSocket.class);
     private Session session;
     private EndpointConfig config;
     private ServerEndpointConfig serverConfig;
@@ -59,6 +62,15 @@ public class ConfiguredEchoSocket
         if (config instanceof ServerEndpointConfig)
         {
             this.serverConfig = (ServerEndpointConfig)config;
+        }
+    }
+
+    @OnError
+    public void onError(Throwable cause)
+    {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug(cause);
         }
     }
 

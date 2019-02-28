@@ -251,7 +251,6 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         lockMsg(MsgType.BLOCKING);
         try
         {
-            connection.getIOState().assertOutputOpen();
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("sendBytes with {}", BufferUtil.toDetailString(data));
@@ -302,18 +301,10 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     public void uncheckedSendFrame(WebSocketFrame frame, WriteCallback callback)
     {
-        try
-        {
-            BatchMode batchMode = BatchMode.OFF;
-            if (frame.isDataFrame())
-                batchMode = getBatchMode();
-            connection.getIOState().assertOutputOpen();
-            outgoing.outgoingFrame(frame, callback, batchMode);
-        }
-        catch (IOException e)
-        {
-            callback.writeFailed(e);
-        }
+        BatchMode batchMode = BatchMode.OFF;
+        if (frame.isDataFrame())
+            batchMode = getBatchMode();
+        outgoing.outgoingFrame(frame, callback, batchMode);
     }
 
     @Override

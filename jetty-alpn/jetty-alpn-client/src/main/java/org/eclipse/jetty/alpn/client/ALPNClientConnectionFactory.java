@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.alpn.client;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,11 +33,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.NegotiatingClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.ALPNProcessor.Client;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFactory implements SslHandshakeListener
+public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFactory
 {
     private static final Logger LOG = Log.getLogger(ALPNClientConnectionFactory.class);
 
@@ -96,7 +94,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
     }
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         SSLEngine engine = (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY);
         for (Client processor : processors)
