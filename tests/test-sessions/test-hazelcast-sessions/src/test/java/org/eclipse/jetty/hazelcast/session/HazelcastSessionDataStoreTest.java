@@ -152,6 +152,15 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return _testHelper.checkSessionPersisted(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader (_contextClassLoader); 
+        try
+        {
+            return _testHelper.checkSessionPersisted(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old); 
+        }   
     }
 }

@@ -78,41 +78,32 @@ public abstract class AbstractSessionDataStoreTest
     
     
     /**
-     * Test that the store can persist a session.
+     * Test that the store can persist a session. The session uses an attribute
+     * class that is only known to the webapp classloader. This tests that
+     * we use the webapp loader when we serialize the session data (ie save the session).
      * 
      * @throws Exception 
      */
     @Test
     public void testStoreSession() throws Exception
     {
-        /*
-         * File foobarJar = MavenTestingUtils.getTestResourceFile("foobar.jar");
-         * URL[] foobarUrls = new URL[]{foobarJar.toURI().toURL()};
-         * URLClassLoader loaderWithFoo = new URLClassLoader(foobarUrls,
-         * Thread.currentThread().getContextClassLoader());
-         * 
-         * System.err.println("FOO "+foobarJar.toURI().toURL());
-         */
-        
+        //Use a class that would only be known to the webapp classloader
         InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
-        System.err.println("foostream");
         File foodir = new File (MavenTestingUtils.getTargetDir(), "foo");
         foodir.mkdirs();
         File fooclass = new File (foodir, "Foo.class");
-        System.err.println("fooclass");
         IO.copy(foostream, new FileOutputStream(fooclass));
         
         assertTrue(fooclass.exists());
         assertTrue(fooclass.length() != 0);
         
         URL[] foodirUrls = new URL[]{foodir.toURI().toURL()};
-        System.err.println(foodir.toURI().toURL());
         _contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
-        System.err.println("copied");
         
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        //use the classloader with the special class in it
         context.setClassLoader(_contextClassLoader);
         
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
@@ -120,40 +111,53 @@ public abstract class AbstractSessionDataStoreTest
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
-        
+
         store.start();
-        
+
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         SessionData data = null;
         try
         {
             Thread.currentThread().setContextClassLoader(_contextClassLoader);
             Class fooclazz = Class.forName("Foo", true, _contextClassLoader);
-            System.err.println("loaded Foo.class");
-            Object o = fooclazz.newInstance();
-            System.err.println("Made foo inst: "+ o);
-        //create a session
-        long now = System.currentTimeMillis();
-        data = store.newSessionData("1234", 100, now, now-1, -1);//never expires
-        data.setLastNode(sessionContext.getWorkerName());
+            //create a session
+            long now = System.currentTimeMillis();
+            data = store.newSessionData("1234", 100, now, now-1, -1);//never expires
+            data.setLastNode(sessionContext.getWorkerName());
 
-        
-        data.setAttribute("a", fooclazz.newInstance());
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
+            //Make an attribute that uses the class only known to the webapp classloader
+            data.setAttribute("a", fooclazz.getConstructor(null).newInstance());
         }
         finally
         {
             Thread.currentThread().setContextClassLoader(old);
         }
+
+        //store the session, using a different thread to ensure
+        //that the thread is adorned with the webapp classloader
+        //before serialization
+        final SessionData finalData = data;
         
-        store.store("1234", data);
-        
-        System.err.println("Stored FOO");
-        
-        System.err.println(checkSessionPersisted(data));
+        Runnable r = new Runnable()
+        {
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    store.store("1234", finalData);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        };
+       
+        Thread t = new Thread(r, "saver");
+        t.start();
+        t.join(TimeUnit.SECONDS.toMillis(10));
         
         //check that the store contains all of the session data
         assertTrue(checkSessionPersisted(data));
@@ -207,33 +211,31 @@ public abstract class AbstractSessionDataStoreTest
      * 
      * @throws Exception
      */
-    @Test
-    public void testStoreObjectAttributes() throws Exception
-    {
-        //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");       
-        SessionDataStoreFactory factory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
-        store.initialize(sessionContext);
-        
-        store.start();
-        
-        //create a session
-        SessionData data = store.newSessionData("1234", 100, 200, 199, -1);//never expires
-        TestFoo testFoo = new TestFoo();
-        testFoo.setInt(33);
-        FooInvocationHandler handler = new FooInvocationHandler(testFoo);
-        Foo foo = (Foo)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[] {Foo.class}, handler);
-        data.setAttribute("foo", foo);
-        data.setLastNode(sessionContext.getWorkerName());
-        
-        //test that it can be persisted
-        store.store("1234", data);
-        checkSessionPersisted(data);
-    }
+    /*
+     * @Test public void testStoreObjectAttributes() throws Exception { //create
+     * the SessionDataStore ServletContextHandler context = new
+     * ServletContextHandler(ServletContextHandler.SESSIONS);
+     * context.setContextPath("/test"); SessionDataStoreFactory factory =
+     * createSessionDataStoreFactory();
+     * ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(
+     * GRACE_PERIOD_SEC); SessionDataStore store =
+     * factory.getSessionDataStore(context.getSessionHandler()); SessionContext
+     * sessionContext = new SessionContext("foo", context.getServletContext());
+     * store.initialize(sessionContext);
+     * 
+     * store.start();
+     * 
+     * //create a session SessionData data = store.newSessionData("1234", 100,
+     * 200, 199, -1);//never expires TestFoo testFoo = new TestFoo();
+     * testFoo.setInt(33); FooInvocationHandler handler = new
+     * FooInvocationHandler(testFoo); Foo foo =
+     * (Foo)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(
+     * ), new Class[] {Foo.class}, handler); data.setAttribute("foo", foo);
+     * data.setLastNode(sessionContext.getWorkerName());
+     * 
+     * //test that it can be persisted store.store("1234", data);
+     * checkSessionPersisted(data); }
+     */
 
     /**
      * Test that we can load a persisted session.

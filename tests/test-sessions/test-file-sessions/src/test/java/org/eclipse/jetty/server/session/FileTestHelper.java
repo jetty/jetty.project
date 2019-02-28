@@ -223,7 +223,6 @@ public class FileTestHelper
             //same values
             for (String name:data.getKeys())
             {
-                System.err.println("CHecking attribute "+name);
                 assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
             }
         }

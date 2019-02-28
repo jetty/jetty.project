@@ -88,13 +88,10 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        System.err.println("CONTEXT CLASSLOADER "+ _contextClassLoader);
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader (_contextClassLoader); 
         try
         {
-            System.err.println("Checking persistence");
-            
             return FileTestHelper.checkSessionPersisted(data);
         }
         catch (Throwable e)
@@ -112,11 +109,7 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Test
     public void testStoreSession() throws Exception
     {
-        try {
         super.testStoreSession();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     
