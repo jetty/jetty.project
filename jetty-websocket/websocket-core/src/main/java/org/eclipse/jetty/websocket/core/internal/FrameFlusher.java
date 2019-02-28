@@ -162,8 +162,7 @@ public class FrameFlusher extends IteratingCallback
                     break;
                 }
 
-                if(entry.frame.isFin())
-                    messagesOut.increment();
+                messagesOut.increment();
 
                 int batchSpace = batchBuffer == null?bufferSize:BufferUtil.space(batchBuffer);
 
@@ -230,9 +229,16 @@ public class FrameFlusher extends IteratingCallback
 
         if (flush)
         {
+            int i = 0;
+            int bytes = 0;
+            ByteBuffer bufferArray[] = new ByteBuffer[buffers.size()];
             for (ByteBuffer bb : buffers)
-                bytesOut.add(bb.limit() - bb.position());
-            endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
+            {
+                bytes += bb.limit() - bb.position();
+                bufferArray[i++] = bb;
+            }
+            bytesOut.add(bytes);
+            endPoint.write(this, bufferArray);
             buffers.clear();
         }
         else

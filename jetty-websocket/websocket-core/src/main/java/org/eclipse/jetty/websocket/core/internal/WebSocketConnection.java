@@ -402,8 +402,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     if (frame == null)
                         break;
 
-                    if (frame.isFin())
-                        messagesIn.increment();
+                    messagesIn.increment();
 
                     if (meetDemand())
                         onFrame(frame);
