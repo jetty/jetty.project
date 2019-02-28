@@ -150,17 +150,16 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
 
     private void clearOldestBucket(boolean direct)
     {
-        long oldest = 0;
+        long oldest = Long.MAX_VALUE;
         int index = -1;
         ConcurrentMap<Integer, Bucket> buckets = bucketsFor(direct);
-        long now = System.nanoTime();
         for (Map.Entry<Integer, Bucket> entry : buckets.entrySet())
         {
             Bucket bucket = entry.getValue();
-            long age = now - bucket.getLastUpdate();
-            if (age > oldest)
+            long lastUpdate = bucket.getLastUpdate();
+            if (lastUpdate < oldest)
             {
-                oldest = age;
+                oldest = lastUpdate;
                 index = entry.getKey();
             }
         }

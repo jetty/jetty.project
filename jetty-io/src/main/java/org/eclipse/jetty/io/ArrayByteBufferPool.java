@@ -153,19 +153,18 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
 
     private void clearOldestBucket(boolean direct)
     {
-        long oldest = 0;
+        long oldest = Long.MAX_VALUE;
         int index = -1;
         Bucket[] buckets = bucketsFor(direct);
-        long now = System.nanoTime();
         for (int i = 0; i < buckets.length; ++i)
         {
             Bucket bucket = buckets[i];
             if (bucket == null)
                 continue;
-            long age = now - bucket.getLastUpdate();
-            if (age > oldest)
+            long lastUpdate = bucket.getLastUpdate();
+            if (lastUpdate < oldest)
             {
-                oldest = age;
+                oldest = lastUpdate;
                 index = i;
             }
         }

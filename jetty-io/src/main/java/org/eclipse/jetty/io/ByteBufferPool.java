@@ -139,7 +139,7 @@ public interface ByteBufferPool
         private final int _capacity;
         private final int _maxSize;
         private final AtomicInteger _size;
-        private long _lastUpdate;
+        private long _lastUpdate = System.nanoTime();
 
         public Bucket(ByteBufferPool pool, int capacity, int maxSize)
         {
