@@ -134,7 +134,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             }
             buffer.setLength(Math.max(0, paramName - 1));
 
-            if (!((Double)1.0D).equals(q))
+            if (q!=1.0D)
                 // replace assumed quality
                 _quality.set(_quality.size() - 1, q);
         }
