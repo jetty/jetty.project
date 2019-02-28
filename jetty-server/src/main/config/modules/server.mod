@@ -11,6 +11,7 @@ logging
 
 [depend]
 threadpool
+bytebufferpool
 
 [lib]
 lib/jetty-servlet-api-4.0.*.jar
