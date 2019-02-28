@@ -25,29 +25,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.RawFrameBuilder;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
-import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
-import org.eclipse.jetty.websocket.core.TestWebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketServer;
 import org.eclipse.jetty.websocket.core.WebSocketTester;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -82,7 +71,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
@@ -97,7 +86,7 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(frame.getPayloadAsUTF8(), is("Hello!"));
 
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
-            assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
             frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
             MatcherAssert.assertThat(frame.getOpCode(), Matchers.is(OpCode.CLOSE));
@@ -117,7 +106,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
@@ -139,10 +128,10 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(frame.getPayloadAsUTF8(), is("World"));
 
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
-            assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
+            assertFalse(serverHandler.closed.await(250, TimeUnit.MILLISECONDS));
 
             serverHandler.getCoreSession().demand(1);
-            assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
+            assertTrue(serverHandler.closed.await(10, TimeUnit.SECONDS));
             frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));
@@ -185,7 +174,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
@@ -226,7 +215,7 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(serverHandler.receivedFrames.poll().getPayload().array(), sameInstance(second));
             assertThat(first, not(sameInstance(second)));
 
-            ByteBufferPool pool = server.server.getConnectors()[0].getByteBufferPool();
+            ByteBufferPool pool = server.getServer().getConnectors()[0].getByteBufferPool();
 
             assertThat(pool.acquire(first.length, false).array(), not(sameInstance(first)));
             receivedCallbacks.poll().succeeded();
@@ -249,13 +238,13 @@ public class WebSocketServerTest extends WebSocketTester
     {
         TestFrameHandler serverHandler = new TestFrameHandler();
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
         {
             client.getOutputStream().write(RawFrameBuilder.buildFrame((byte)4, "payload", true));
-            assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
 
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
@@ -269,14 +258,14 @@ public class WebSocketServerTest extends WebSocketTester
     {
         TestFrameHandler serverHandler = new TestFrameHandler();
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
         {
             // Write client close without masking!
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, false));
-            assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));
@@ -314,7 +303,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
@@ -380,7 +369,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
@@ -448,7 +437,7 @@ public class WebSocketServerTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(0, serverHandler);
+        server = new WebSocketServer(serverHandler);
         server.start();
 
         try (Socket client = newClient(server.getLocalPort()))
@@ -482,76 +471,6 @@ public class WebSocketServerTest extends WebSocketTester
             frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-        }
-    }
-
-    static class WebSocketServer extends AbstractLifeCycle
-    {
-        private static Logger LOG = Log.getLogger(WebSocketServer.class);
-        private final Server server;
-        private final TestFrameHandler handler;
-
-        public void doStart() throws Exception
-        {
-            server.start();
-        }
-
-        public void doStop() throws Exception
-        {
-            server.stop();
-        }
-
-        public int getLocalPort()
-        {
-            return server.getBean(NetworkConnector.class).getLocalPort();
-        }
-
-        public WebSocketServer(int port, TestFrameHandler frameHandler)
-        {
-            this.handler = frameHandler;
-            server = new Server();
-            server.getBean(QueuedThreadPool.class).setName("WSCoreServer");
-            ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
-
-            connector.addBean(new RFC6455Handshaker());
-            connector.setPort(port);
-            connector.setIdleTimeout(1000000);
-            server.addConnector(connector);
-
-            ContextHandler context = new ContextHandler("/");
-            server.setHandler(context);
-            WebSocketNegotiator negotiator = new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(),
-                connector.getByteBufferPool(), frameHandler);
-
-            WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
-            context.setHandler(upgradeHandler);
-        }
-
-        public void sendFrame(Frame frame)
-        {
-            handler.getCoreSession().sendFrame(frame, Callback.NOOP, false);
-        }
-
-        public void sendText(String line)
-        {
-            LOG.info("sending {}...", line);
-
-            handler.sendText(line);
-        }
-
-        public BlockingQueue<Frame> getFrames()
-        {
-            return handler.getFrames();
-        }
-
-        public void close()
-        {
-            handler.getCoreSession().close(CloseStatus.NORMAL, "WebSocketServer Initiated Close", Callback.NOOP);
-        }
-
-        public boolean isOpen()
-        {
-            return handler.getCoreSession().isOutputOpen();
         }
     }
 }

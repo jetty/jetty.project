@@ -18,14 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-
-import java.io.IOException;
-import java.util.List;
 
 public class TestWebSocketNegotiator implements WebSocketNegotiator
 {
@@ -33,6 +34,14 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     final WebSocketExtensionRegistry extensionRegistry;
     final ByteBufferPool bufferPool;
     private final FrameHandler frameHandler;
+
+    public TestWebSocketNegotiator(FrameHandler frameHandler)
+    {
+        this.objectFactory = new DecoratedObjectFactory();
+        this.extensionRegistry = new WebSocketExtensionRegistry();
+        this.bufferPool = new MappedByteBufferPool();
+        this.frameHandler = frameHandler;
+    }
 
     public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool,
         FrameHandler frameHandler)

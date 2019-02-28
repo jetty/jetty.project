@@ -132,7 +132,6 @@ public class FrameFlusherTest
         });
 
         serverTask.get();
-        System.out.printf("Received: %,d frames%n", endPoint.incomingFrames.size());
     }
 
     public static class CapturingEndPoint extends MockEndpoint

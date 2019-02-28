@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MessageHandlerTest
 {
-
     // Testing with 4 byte UTF8 character "\uD842\uDF9F"
     static String fourByteUtf8String = "\uD842\uDF9F";
     static byte[] fourByteUtf8Bytes = fourByteUtf8String.getBytes(StandardCharsets.UTF_8);
