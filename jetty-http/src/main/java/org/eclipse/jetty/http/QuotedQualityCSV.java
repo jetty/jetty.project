@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.log.Log;
+
 /* ------------------------------------------------------------ */
 /**
  * Implements a quoted comma separated list of quality values
@@ -37,21 +39,16 @@ import java.util.function.Function;
  */
 public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 {    
-    private final static Double ZERO=new Double(0.0);
-    private final static Double ONE=new Double(1.0);
-    
+    private final static Double ZERO = 0.0D;
+    private final static Double ONE = 1.0D;
 
     /**
-     * Function to apply a most specific MIME encoding secondary ordering 
+     * Lambda to apply a most specific MIME encoding secondary ordering
      */
-    public static Function<String, Integer> MOST_SPECIFIC = new Function<String, Integer>()
+    public static Function<String, Integer> MOST_SPECIFIC = s ->
     {
-        @Override
-        public Integer apply(String s)
-        {
-            String[] elements = s.split("/");
-            return 1000000*elements.length+1000*elements[0].length()+elements[elements.length-1].length();
-        }
+        String[] elements = s.split("/");
+        return 1000000*elements.length+1000*elements[0].length()+elements[elements.length-1].length();
     };
     
     private final List<Double> _quality = new ArrayList<>();
@@ -74,7 +71,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV(String[] preferredOrder)
     {
-        this((s) -> {
+        this((s) ->
+        {
             for (int i=0;i<preferredOrder.length;++i)
                 if (preferredOrder[i].equals(s))
                     return preferredOrder.length-i;
@@ -101,6 +99,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     protected void parsedValue(StringBuffer buffer)
     {
         super.parsedValue(buffer);
+
+        // Assume a quality of ONE
         _quality.add(ONE);
     }
 
@@ -108,30 +108,32 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     @Override
     protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
     {
-        if (paramName<0)
+        if (paramName < 0)
         {
-            if (buffer.charAt(buffer.length()-1)==';')
-                buffer.setLength(buffer.length()-1);
+            if (buffer.charAt(buffer.length() - 1) == ';')
+                buffer.setLength(buffer.length() - 1);
         }
-        else if (paramValue>=0 && 
-            buffer.charAt(paramName)=='q' && paramValue>paramName && 
-            buffer.length()>=paramName && buffer.charAt(paramName+1)=='=')
+        else if (paramValue >= 0 &&
+                buffer.charAt(paramName) == 'q' && paramValue > paramName &&
+                buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
         {
             Double q;
             try
             {
-                q=(_keepQuotes && buffer.charAt(paramValue)=='"')
-                    ?new Double(buffer.substring(paramValue+1,buffer.length()-1))
-                    :new Double(buffer.substring(paramValue));
+                q = (_keepQuotes && buffer.charAt(paramValue) == '"')
+                        ? Double.valueOf(buffer.substring(paramValue + 1, buffer.length() - 1))
+                        : Double.valueOf(buffer.substring(paramValue));
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                q=ZERO;
-            }            
-            buffer.setLength(Math.max(0,paramName-1));
-            
-           if (!ONE.equals(q))
-               _quality.set(_quality.size()-1,q);
+                Log.getLogger(QuotedQualityCSV.class).ignore(e);
+                q = ZERO;
+            }
+            buffer.setLength(Math.max(0, paramName - 1));
+
+            if (!ONE.equals(q))
+                // replace assumed quality
+                _quality.set(_quality.size() - 1, q);
         }
     }
 
