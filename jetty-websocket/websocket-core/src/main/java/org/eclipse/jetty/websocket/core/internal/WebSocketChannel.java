@@ -440,6 +440,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         catch (Throwable t)
         {
             openCallback.failed(t);
+
+            /*
+            This is double handling of the exception but we need to do this because we have two separate
+            mechanisms for returning the CoreSession, onOpen and the CompletableFuture and both the onOpen callback
+            and the CompletableFuture require the exception.
+             */
+            throw new RuntimeException(t);
         }
 
     }

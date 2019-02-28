@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -57,6 +58,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebSocketProxyTest
 {
@@ -231,7 +233,8 @@ public class WebSocketProxyTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketChannel.class))
         {
             CompletableFuture<CoreSession> response = _client.connect(clientHandler, new URI("ws://localhost:8080/proxy/"));
-            response.get(5, TimeUnit.SECONDS);
+            Exception e = assertThrows(ExecutionException.class, ()->response.get(5, TimeUnit.SECONDS));
+            assertThat(e.getMessage(), containsString("simulated client onOpen error"));
             clientHandler.awaitClose();
             serverFrameHandler.awaitClose();
             awaitProxyClose(proxyClientSide, proxyServerSide);
