@@ -38,17 +38,20 @@ import org.eclipse.jetty.util.log.Log;
  * @see "https://tools.ietf.org/html/rfc7231#section-5.3.1"
  */
 public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
-{    
-    private final static Double ZERO = 0.0D;
-    private final static Double ONE = 1.0D;
-
+{
     /**
-     * Lambda to apply a most specific MIME encoding secondary ordering
+     * Lambda to apply a most specific MIME encoding secondary ordering.
+     * @see "https://tools.ietf.org/html/rfc7231#section-5.3.2"
      */
-    public static Function<String, Integer> MOST_SPECIFIC = s ->
+    public static Function<String, Integer> MOST_SPECIFIC_MIME_ORDERING = s ->
     {
-        String[] elements = s.split("/");
-        return 1000000*elements.length+1000*elements[0].length()+elements[elements.length-1].length();
+        if ("*/*".equals(s))
+            return 0;
+        if (s.endsWith("/*"))
+            return 1;
+        if (s.indexOf(';')<0)
+            return 2;
+        return 3;
     };
     
     private final List<Double> _quality = new ArrayList<>();
@@ -61,7 +64,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV()
     {
-        this((s) -> 0);
+        this((Function)null);
     }
 
     /* ------------------------------------------------------------ */
@@ -91,7 +94,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV(Function<String, Integer> secondaryOrdering)
     {
-        this._secondaryOrdering = secondaryOrdering;
+        this._secondaryOrdering = secondaryOrdering == null ? s->0 : secondaryOrdering;
     }
     
     /* ------------------------------------------------------------ */
@@ -101,7 +104,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         super.parsedValue(buffer);
 
         // Assume a quality of ONE
-        _quality.add(ONE);
+        _quality.add(1.0D);
     }
 
     /* ------------------------------------------------------------ */
@@ -127,11 +130,11 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             catch (Exception e)
             {
                 Log.getLogger(QuotedQualityCSV.class).ignore(e);
-                q = ZERO;
+                q = 0.0D;
             }
             buffer.setLength(Math.max(0, paramName - 1));
 
-            if (!ONE.equals(q))
+            if (!((Double)1.0D).equals(q))
                 // replace assumed quality
                 _quality.set(_quality.size() - 1, q);
         }
@@ -157,7 +160,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     {
         _sorted=true;
 
-        Double last = ZERO;
+        Double last = 0.0D;
         int lastSecondaryOrder = Integer.MIN_VALUE;
 
         for (int i = _values.size(); i-- > 0;)
@@ -172,7 +175,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 _values.set(i + 1, v);
                 _quality.set(i, _quality.get(i + 1));
                 _quality.set(i + 1, q);
-                last = ZERO;
+                last = 0.0D;
                 lastSecondaryOrder=0;
                 i = _values.size();
                 continue;
@@ -183,7 +186,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         }
         
         int last_element=_quality.size();
-        while(last_element>0 && _quality.get(--last_element).equals(ZERO))
+        while(last_element>0 && _quality.get(--last_element).equals(0.0D))
         {
             _quality.remove(last_element);
             _values.remove(last_element);

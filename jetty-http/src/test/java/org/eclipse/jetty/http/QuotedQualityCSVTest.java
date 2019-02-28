@@ -61,7 +61,7 @@ public class QuotedQualityCSVTest
     @Test
     public void test7231_5_3_2_example3_most_specific()
     {
-        QuotedQualityCSV values = new QuotedQualityCSV(QuotedQualityCSV.MOST_SPECIFIC);
+        QuotedQualityCSV values = new QuotedQualityCSV(QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
         values.addValue("text/*, text/plain, text/plain;format=flowed, */*");
         
         assertThat(values,Matchers.contains("text/plain;format=flowed","text/plain","text/*","*/*"));
