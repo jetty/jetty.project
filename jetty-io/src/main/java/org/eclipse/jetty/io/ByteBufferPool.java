@@ -135,15 +135,13 @@ public interface ByteBufferPool
     public static class Bucket
     {
         private final Deque<ByteBuffer> _queue = new ConcurrentLinkedDeque<>();
-        private final ByteBufferPool _pool;
         private final int _capacity;
         private final int _maxSize;
         private final AtomicInteger _size;
         private long _lastUpdate = System.nanoTime();
 
-        public Bucket(ByteBufferPool pool, int capacity, int maxSize)
+        public Bucket(int capacity, int maxSize)
         {
-            _pool = pool;
             _capacity = capacity;
             _maxSize = maxSize;
             _size = maxSize > 0 ? new AtomicInteger() : null;
@@ -154,22 +152,6 @@ public interface ByteBufferPool
             ByteBuffer buffer = queuePoll();
             if (buffer == null)
                 return null;
-            if (_size != null)
-                _size.decrementAndGet();
-            return buffer;
-        }
-
-        /**
-         * @param direct whether to create a direct buffer when none is available
-         * @return a ByteBuffer
-         * @deprecated use {@link #acquire()} instead
-         */
-        @Deprecated
-        public ByteBuffer acquire(boolean direct)
-        {
-            ByteBuffer buffer = queuePoll();
-            if (buffer == null)
-                return _pool.newByteBuffer(_capacity, direct);
             if (_size != null)
                 _size.decrementAndGet();
             return buffer;

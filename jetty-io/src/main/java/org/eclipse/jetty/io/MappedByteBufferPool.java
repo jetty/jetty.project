@@ -100,7 +100,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
 
     private Bucket newBucket(int key)
     {
-        return new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
+        return new Bucket(key * getCapacityFactor(), getMaxQueueLength());
     }
 
     @Override
