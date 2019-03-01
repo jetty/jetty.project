@@ -338,6 +338,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             WebSocketConstants.SPEC_VERSION_STRING);
 
         WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, negotiated);
+        wsClient.customize(wsChannel);
+
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
 
         for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
@@ -345,7 +347,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         wsChannel.setWebSocketConnection(wsConnection);
 
-        wsClient.customize(wsChannel);
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
         // Now swap out the connection
