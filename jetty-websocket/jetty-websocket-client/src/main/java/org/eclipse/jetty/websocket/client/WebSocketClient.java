@@ -50,6 +50,7 @@ import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
 public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer
@@ -118,7 +119,23 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      */
     public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request) throws IOException
     {
+        return connect(websocket, toUri, request, null);
+    }
+
+    /**
+     * Connect to remote websocket endpoint
+     *
+     * @param websocket the websocket object
+     * @param toUri     the websocket uri to connect to
+     * @param request   the upgrade request information
+     * @param listener  the upgrade listener
+     * @return the future for the session, available on success of connect
+     * @throws IOException if unable to connect
+     */
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener listener) throws IOException
+    {
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
+        upgradeRequest.addListener(listener);
         coreClient.connect(upgradeRequest);
         return upgradeRequest.getFutureSession();
     }
