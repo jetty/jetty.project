@@ -108,6 +108,7 @@ public class WebSocketStatsTest
         @Override
         public void configure(WebSocketServletFactory factory)
         {
+            factory.setAutoFragment(false);
             factory.addMapping("/",(req, resp)->new EchoSocket());
         }
     }
