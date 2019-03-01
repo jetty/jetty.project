@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
@@ -370,27 +369,6 @@ public class MultiPartFormInputStream
         }
         
         return true;
-    }
-    
-    /**
-     * Get the already parsed parts.
-     *
-     * @return the parts that were parsed
-     */
-    @Deprecated
-    public Collection<Part> getParsedParts()
-    {
-        if (_parts == null)
-            return Collections.emptyList();
-        
-        Collection<List<Part>> values = _parts.values();
-        List<Part> parts = new ArrayList<>();
-        for (List<Part> o : values)
-        {
-            List<Part> asList = LazyList.getList(o, false);
-            parts.addAll(asList);
-        }
-        return parts;
     }
     
     /**

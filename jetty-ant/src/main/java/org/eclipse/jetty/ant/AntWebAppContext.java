@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.Manifest;
-
 import javax.servlet.Servlet;
 
 import org.apache.tools.ant.AntClassLoader;
@@ -248,12 +247,6 @@ public class AntWebAppContext extends WebAppContext
                                         String implVendor, URL sealBase) throws IllegalArgumentException
         {
             return super.definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
-        }
-
-        @Override
-        protected Package getPackage(String name)
-        {
-            return super.getPackage(name);
         }
 
         @Override

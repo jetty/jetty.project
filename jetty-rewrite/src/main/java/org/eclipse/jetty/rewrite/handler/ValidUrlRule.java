@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -60,19 +59,6 @@ public class ValidUrlRule extends Rule
     public void setCode(String code)
     {
         _code = code;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Sets the reason for the response status code.
-     * 
-     * @param reason the reason
-     * @deprecated use {@link #setMessage(String)}
-     */
-    @Deprecated
-    public void setReason(String reason)
-    {
-        _message = reason;
     }
 
     /* ------------------------------------------------------------ */

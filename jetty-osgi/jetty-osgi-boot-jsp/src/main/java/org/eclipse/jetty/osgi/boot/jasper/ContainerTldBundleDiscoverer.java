@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
-
 import javax.servlet.jsp.JspFactory;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
+import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.util.log.Log;
@@ -102,7 +101,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 
         Bundle[] bundles = FrameworkUtil.getBundle(ContainerTldBundleDiscoverer.class).getBundleContext().getBundles();
         HashSet<URL> urls = new HashSet<URL>();
-        String tmp = System.getProperty(OSGiWebInfConfiguration.SYS_PROP_TLD_BUNDLES); //comma separated exact names
+        String tmp = System.getProperty(OSGiMetaInfConfiguration.SYS_PROP_TLD_BUNDLES); //comma separated exact names
         List<String> sysNames =   new ArrayList<String>();
         if (tmp != null)
         {
@@ -110,7 +109,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
             while (tokenizer.hasMoreTokens())
                 sysNames.add(tokenizer.nextToken());
         }
-        tmp = (String) deploymentManager.getContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN); //bundle name patterns
+        tmp = (String) deploymentManager.getContextAttribute(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN); //bundle name patterns
     
         Pattern pattern = (tmp==null? null : Pattern.compile(tmp));
         
@@ -122,13 +121,13 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
             if (pattern == null)
             {
                 pattern = Pattern.compile(jstlBundle.getSymbolicName());
-                deploymentManager.setContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN, jstlBundle.getSymbolicName());
+                deploymentManager.setContextAttribute(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, jstlBundle.getSymbolicName());
             }
             else if (!(pattern.matcher(jstlBundle.getSymbolicName()).matches()))
             {
                 String s = tmp+"|"+jstlBundle.getSymbolicName();
                 pattern = Pattern.compile(s);
-                deploymentManager.setContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN, s);
+                deploymentManager.setContextAttribute(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, s);
             }
         }
 

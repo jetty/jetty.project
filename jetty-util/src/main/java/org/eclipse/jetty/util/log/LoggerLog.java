@@ -207,7 +207,7 @@ public class LoggerLog extends AbstractLogger
 
         try
         {
-            _debugMAA.invoke(_logger, new Object[]{new Long(value)});
+            _debugMAA.invoke(_logger, new Object[]{value});
         }
         catch (Exception e)
         {

@@ -21,7 +21,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -201,17 +200,6 @@ public class RewriteHandler extends HandlerWrapper
         _rules.setRules(rules);
     }
 
-    /*------------------------------------------------------------ */
-    /**
-     * Assigns the rules to process.
-     * @param rules a {@link RuleContainer} containing other rules to process
-     */
-    @Deprecated
-    public void setRules(RuleContainer rules)
-    {
-        _rules = rules;
-    }
-    
     /*------------------------------------------------------------ */
     /**
      * Assigns the rules to process.

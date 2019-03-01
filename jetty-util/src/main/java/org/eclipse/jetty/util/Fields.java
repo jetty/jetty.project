@@ -309,7 +309,7 @@ public class Fields implements Iterable<Fields.Field>
         public Integer getValueAsInt()
         {
             final String value = getValue();
-            return value == null ? null : Integer.valueOf(value);
+            return value == null ? null : (Integer) Integer.parseInt(value);
         }
 
         /**

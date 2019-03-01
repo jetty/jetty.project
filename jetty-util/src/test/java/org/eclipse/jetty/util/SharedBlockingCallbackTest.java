@@ -18,26 +18,24 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SharedBlockingCallbackTest
 {
@@ -46,12 +44,6 @@ public class SharedBlockingCallbackTest
     final AtomicInteger notComplete = new AtomicInteger();
     final SharedBlockingCallback sbcb= new SharedBlockingCallback()
     {
-        @Override
-        protected long getIdleTimeout()
-        {
-            return 150;
-        }
-
         @Override
         protected void notComplete(Blocker blocker)
         {
@@ -217,37 +209,6 @@ public class SharedBlockingCallbackTest
         assertEquals(1,notComplete.get());
     }
     
-    @Test
-    public void testBlockerTimeout() throws Exception
-    {
-        LOG.info("Succeeded after ... warning is expected...");
-        Blocker b0=null;
-        try
-        {
-            try (Blocker blocker=sbcb.acquire())
-            {
-                b0=blocker;
-                Thread.sleep(400);
-                blocker.block();
-            }
-            fail("Should have thrown IOException");
-        }
-        catch(IOException e)
-        {
-            Throwable cause = e.getCause();
-            assertThat(cause,instanceOf(TimeoutException.class));
-        }
-        
-        assertEquals(0,notComplete.get());
-
-        try (Blocker blocker=sbcb.acquire())
-        {
-            assertThat(blocker,not(sameInstance(b0)));
-            b0.succeeded();
-            blocker.succeeded();
-        }
-    }
-
     @Test
     public void testInterruptedException() throws Exception
     {

@@ -96,7 +96,7 @@
            <New class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
              <Set name="pattern">/400Error</Set>
              <Set name="code">400</Set>
-             <Set name="reason">ResponsePatternRule Demo</Set>
+             <Set name="message">ResponsePatternRule Demo</Set>
           </New>
         </Arg>
       </Call>

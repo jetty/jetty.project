@@ -774,16 +774,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     }
 
     /**
-     * @param queue the job queue
-     * @deprecated pass the queue to the constructor instead
-     */
-    @Deprecated
-    public void setQueue(BlockingQueue<Runnable> queue)
-    {
-        throw new UnsupportedOperationException("Use constructor injection");
-    }
-
-    /**
      * @param id the thread ID to interrupt.
      * @return true if the thread was found and interrupted.
      */

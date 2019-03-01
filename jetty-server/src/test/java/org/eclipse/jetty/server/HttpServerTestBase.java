@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -898,7 +897,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 if (line.length() == 0)
                     break;
                 int len = line.length();
-                assertEquals(Integer.valueOf(chunk, 16).intValue(), len);
+                assertEquals(Integer.parseInt(chunk, 16), len);
                 if (max < len)
                     max = len;
             }

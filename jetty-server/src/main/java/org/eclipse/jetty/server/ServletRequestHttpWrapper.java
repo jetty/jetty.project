@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Enumeration;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
@@ -193,6 +192,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     }
 
     @Override
+    @Deprecated(since = "Servlet API 2.1")
     public boolean isRequestedSessionIdFromUrl()
     {
         return false;

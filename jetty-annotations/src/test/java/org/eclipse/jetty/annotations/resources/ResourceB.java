@@ -35,7 +35,7 @@ public class ResourceB extends ResourceA
     private Integer f;//test no inheritance of private fields
     
     @Resource
-    private Integer p = new Integer(8); //test no injection because no value
+    private Integer p = 8; //test no injection because no value
     
     //test no annotation
     public void z()

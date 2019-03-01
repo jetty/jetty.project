@@ -39,7 +39,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -217,12 +216,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 for (int i=0; i<tmp.length; i++)
                 {
                     String s = tmp[i].trim();
-                    _indexMap.put(s, Integer.valueOf(i));
+                    _indexMap.put(s, i);
                     if ("*".equals(s))
                     {
                         if (_star != null)
                             throw new IllegalArgumentException("Duplicate wildcards in ServletContainerInitializer ordering "+ordering);
-                        _star = Integer.valueOf(i);
+                        _star = i;
                     }
                     
                 }

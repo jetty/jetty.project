@@ -82,8 +82,19 @@ public class Util
             return (String)manifest.get(name);
         return (String)manifest.get(altName);
     }
-    
-  
+
+    /**
+     * Get the value of a manifest header.
+     *
+     * @param name the name of the header
+     * @param manifest the dictionary
+     * @return the value from the manifest
+     */
+    public static String getManifestHeaderValue (String name, Dictionary<String,String> manifest)
+    {
+        return getManifestHeaderValue(name, null, manifest);
+    }
+
     
     /* ------------------------------------------------------------ */
     /**

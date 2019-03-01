@@ -18,18 +18,12 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.ops4j.pax.exam.CoreOptions.options;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -47,6 +41,11 @@ import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * TestJettyOSGiBootWithBundle
@@ -120,7 +119,7 @@ public class TestJettyOSGiBootWithBundle
             client.start();
             String tmp = System.getProperty("boot.bundle.port");
             assertNotNull(tmp);
-            int port = Integer.valueOf(tmp.trim()).intValue();
+            int port = Integer.parseInt(tmp.trim());
             ContentResponse response = client.GET("http://127.0.0.1:" + port);
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             String content = new String(response.getContent());

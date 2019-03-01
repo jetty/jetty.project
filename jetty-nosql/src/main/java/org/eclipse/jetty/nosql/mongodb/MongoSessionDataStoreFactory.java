@@ -21,15 +21,12 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
 
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.server.session.SessionDataStore;
-
-
-import com.mongodb.Mongo;
-import com.mongodb.MongoException;
-import com.mongodb.MongoURI;
 
 /**
  * MongoSessionDataStoreFactory
@@ -135,16 +132,16 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
         store.setSavePeriodSec(getSavePeriodSec());
-        Mongo mongo;
+        MongoClient mongo;
 
         if (!StringUtil.isBlank(getConnectionString()))
-            mongo = new Mongo(new MongoURI(getConnectionString()));
+            mongo = new MongoClient(new MongoClientURI(getConnectionString()));
         else if (!StringUtil.isBlank(getHost()) && getPort() != -1)
-            mongo = new Mongo(getHost(), getPort());
+            mongo = new MongoClient(getHost(), getPort());
         else if (!StringUtil.isBlank(getHost()))
-            mongo = new Mongo(getHost());
+            mongo = new MongoClient(getHost());
         else
-            mongo = new Mongo();
+            mongo = new MongoClient();
         store.setDBCollection(mongo.getDB(getDbName()).getCollection(getCollectionName()));
         return store;
     }

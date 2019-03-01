@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -114,7 +113,7 @@ public class ErrorHandlerTest
                 
                 if(target.startsWith("/badmessage/"))
                 {
-                    throw new ServletException(new BadMessageException(Integer.valueOf(target.substring(12))));
+                    throw new ServletException(new BadMessageException(Integer.parseInt(target.substring(12))));
                 }
             }
         });
@@ -141,7 +140,7 @@ public class ErrorHandlerTest
                 
                 if(target.startsWith("/badmessage/"))
                 {
-                    throw new ServletException(new BadMessageException(Integer.valueOf(target.substring(12))));
+                    throw new ServletException(new BadMessageException(Integer.parseInt(target.substring(12))));
                 }
             }
         });

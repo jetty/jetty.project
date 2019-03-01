@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util.log;
 
 
-
 /**
  * Slf4jLog Logger
  */
@@ -101,7 +100,7 @@ public class Slf4jLog extends AbstractLogger
     public void debug(String msg, long arg)
     {
         if (isDebugEnabled())
-            _logger.debug(msg, new Object[]{new Long(arg)});
+            _logger.debug(msg, new Object[]{arg});
     }
 
     @Override

@@ -134,20 +134,6 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    @Deprecated
-    public boolean getSendServerVersion ()
-    {
-        return (_send&SEND_SERVER)!=0;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void setSendServerVersion (boolean sendServerVersion)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /* ------------------------------------------------------------ */
     public State getState()
     {
         return _state;
@@ -385,14 +371,6 @@ public class HttpGenerator
 
     }
     
-    
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public Result generateResponse(MetaData.Response info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
-    {
-        return generateResponse(info,false,header,chunk,content,last);
-    }
-
     /* ------------------------------------------------------------ */
     public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {

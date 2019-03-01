@@ -208,7 +208,7 @@ public abstract class WebSocketServlet extends HttpServlet
             Constructor<?> constructor;
             try
             {
-                constructor = endpointClass.getDeclaredConstructor(null);
+                constructor = endpointClass.getDeclaredConstructor();
             }
             catch (NoSuchMethodException e)
             {

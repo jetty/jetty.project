@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -25,11 +30,6 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
-
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,12 +87,6 @@ public class ParserCapture
                 count++;
         }
         assertThat("Frames[op=" + opCode + "].count", count, is(expectedCount));
-    }
-
-    @Deprecated
-    public BlockingQueue<Frame> getFrames()
-    {
-        return framesQueue;
     }
 
     public boolean onFrame(Frame frame)

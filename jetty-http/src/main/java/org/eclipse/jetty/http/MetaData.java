@@ -60,16 +60,6 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
-     * @deprecated use {@link #getHttpVersion()} instead
-     * @return the HTTP version of this MetaData object
-     */
-    @Deprecated
-    public HttpVersion getVersion()
-    {
-        return getHttpVersion();
-    }
-
-    /**
      * @return the HTTP version of this MetaData object
      */
     public HttpVersion getHttpVersion()

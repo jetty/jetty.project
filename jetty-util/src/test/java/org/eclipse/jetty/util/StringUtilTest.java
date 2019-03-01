@@ -21,16 +21,15 @@ package org.eclipse.jetty.util;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StringUtilTest
@@ -103,19 +102,6 @@ public class StringUtilTest
 
     @Test
     @SuppressWarnings("ReferenceEquality")
-    public void testUnquote()
-    {
-        String uq =" not quoted ";
-        assertTrue(StringUtil.unquote(uq)==uq);
-        assertEquals(StringUtil.unquote("' quoted string '")," quoted string ");
-        assertEquals(StringUtil.unquote("\" quoted string \"")," quoted string ");
-        assertEquals(StringUtil.unquote("' quoted\"string '")," quoted\"string ");
-        assertEquals(StringUtil.unquote("\" quoted'string \"")," quoted'string ");
-    }
-
-
-    @Test
-    @SuppressWarnings("ReferenceEquality")
     public void testNonNull()
     {
         String nn="non empty string";
@@ -146,28 +132,6 @@ public class StringUtilTest
         assertEquals("ab0c10fff0",buf.toString());
 
     }
-
-    @Test
-    @Deprecated
-    public void testSidConversion() throws Exception
-    {
-        String sid4 = "S-1-4-21-3623811015-3361044348-30300820";
-        String sid5 = "S-1-5-21-3623811015-3361044348-30300820-1013";
-        String sid6 = "S-1-6-21-3623811015-3361044348-30300820-1013-23445";
-        String sid12 = "S-1-12-21-3623811015-3361044348-30300820-1013-23445-21-3623811015-3361044348-30300820-1013-23445";
-
-        byte[] sid4Bytes = StringUtil.sidStringToBytes(sid4);
-        byte[] sid5Bytes = StringUtil.sidStringToBytes(sid5);
-        byte[] sid6Bytes = StringUtil.sidStringToBytes(sid6);
-        byte[] sid12Bytes = StringUtil.sidStringToBytes(sid12);
-
-        assertEquals(sid4, StringUtil.sidBytesToString(sid4Bytes));
-        assertEquals(sid5, StringUtil.sidBytesToString(sid5Bytes));
-        assertEquals(sid6, StringUtil.sidBytesToString(sid6Bytes));
-        assertEquals(sid12, StringUtil.sidBytesToString(sid12Bytes));
-
-    }
-
 
     public static void main(String[] arg) throws Exception
     {

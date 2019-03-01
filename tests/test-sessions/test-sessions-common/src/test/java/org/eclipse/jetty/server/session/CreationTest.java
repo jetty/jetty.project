@@ -19,16 +19,9 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -45,8 +38,13 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 
@@ -381,7 +379,7 @@ public class CreationTest
             {
                 HttpSession session = request.getSession(true);
                 _id = session.getId();
-                session.setAttribute("value", new Integer(1));
+                session.setAttribute("value", 1);
 
                 ServletContext contextB = getServletContext().getContext("/contextB");
                 RequestDispatcher dispatcherB = contextB.getRequestDispatcher(request.getServletPath());
@@ -410,7 +408,7 @@ public class CreationTest
             {
                 HttpSession session = request.getSession(true);
                 _id = session.getId();
-                session.setAttribute("value", new Integer(1));
+                session.setAttribute("value", 1);
 
                 String check = request.getParameter("check");
                 if (!StringUtil.isBlank(check) && _store != null)

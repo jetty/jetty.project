@@ -46,8 +46,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
 
 /**
  * JettyWebAppContext
@@ -350,17 +350,17 @@ public class JettyWebAppContext extends WebAppContext
         // classpath
         // that will be scanned - note that by default NO jars are scanned
         String tmp = _containerIncludeJarPattern;
-        if (tmp == null || "".equals(tmp)) tmp = (String) getAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN);
+        if (tmp == null || "".equals(tmp)) tmp = (String) getAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN);
 
         tmp = addPattern(tmp, DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN);
-        setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, tmp);
+        setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, tmp);
 
         // Allow user to set up pattern of jar names from WEB-INF that will be
         // scanned.
         // Note that by default ALL jars considered to be in WEB-INF will be
         // scanned - setting
         // a pattern restricts scanning
-        if (_webInfIncludeJarPattern != null) setAttribute(WebInfConfiguration.WEBINF_JAR_PATTERN, _webInfIncludeJarPattern);
+        if (_webInfIncludeJarPattern != null) setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, _webInfIncludeJarPattern);
 
         // Set up the classes dirs that comprises the equivalent of
         // WEB-INF/classes

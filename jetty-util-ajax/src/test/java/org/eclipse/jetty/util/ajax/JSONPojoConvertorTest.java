@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.concurrent.TimeUnit;
-
-import org.junit.jupiter.api.Test;
 
 
 /**
@@ -45,15 +45,15 @@ public class JSONPojoConvertorTest
         Foo foo = new Foo();
         foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
-        foo._int2 = new Integer(2);
+        foo._int2 = 2;
         foo._long1 = 1000001l;
-        foo._long2 = new Long(1000002l);
+        foo._long2 = 1000002l;
         foo._float1 = 10.11f;
-        foo._float2 = new Float(10.22f);
+        foo._float2 = 10.22f;
         foo._double1 = 10000.11111d;
-        foo._double2 = new Double(10000.22222d);
-        foo._char1='a';
-        foo._char2=new Character('b');
+        foo._double2 = 10000.22222d;
+        foo._char1 = 'a';
+        foo._char2 = 'b';
 
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo), new Baz[]{
             new Baz("baz0", Boolean.TRUE, null), new Baz("baz1", Boolean.FALSE, null)
@@ -93,15 +93,15 @@ public class JSONPojoConvertorTest
         Foo foo = new Foo();
         foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
-        foo._int2 = new Integer(2);
+        foo._int2 = 2;
         foo._long1 = 1000001l;
-        foo._long2 = new Long(1000002l);
+        foo._long2 = 1000002l;
         foo._float1 = 10.11f;
-        foo._float2 = new Float(10.22f);
+        foo._float2 = 10.22f;
         foo._double1 = 10000.11111d;
-        foo._double2 = new Double(10000.22222d);
-        foo._char1='a';
-        foo._char2=new Character('b');
+        foo._double2 = 10000.22222d;
+        foo._char1 = 'a';
+        foo._char2 = 'b';
 
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo));
         // bar.setColor(Color.Blue);

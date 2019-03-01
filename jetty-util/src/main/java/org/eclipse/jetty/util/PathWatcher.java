@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -55,6 +51,10 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 /**
  * Watch a Path (and sub directories) for Path changes.
@@ -688,13 +688,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return type;
         }
         
-        @Deprecated
-        public int getCount()
-        {
-            return 1;
-        }
-        
-        /** 
+        /**
          * @see java.lang.Object#hashCode()
          */
         @Override

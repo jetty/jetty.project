@@ -107,12 +107,6 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         return null;
     }
 
-    @Deprecated
-    protected boolean isEnabled()
-    {
-        return (_fileOut != null);
-    }
-
     /**
      * Set the number of days before rotated log files are deleted.
      *

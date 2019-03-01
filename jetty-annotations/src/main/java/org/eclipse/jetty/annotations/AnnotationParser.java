@@ -26,7 +26,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -570,22 +569,6 @@ public class AnnotationParser
         if (existing != null)
             LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
     }
-    
-
-    /**
-     * Get the locations of the given classname. There may be more than one
-     * location if there are duplicates of the same class.
-     * 
-     * @param classname the name of the class
-     * @return an immutable list of locations
-     * 
-     * @deprecated List of duplicate locations no longer stored
-     */
-    @Deprecated
-    public List<String> getParsedLocations (String classname)
-    {
-        return Collections.emptyList();
-    }
 
     /**
      * Parse a given class
@@ -753,22 +736,6 @@ public class AnnotationParser
         }
         
         me.ifExceptionThrow();
-    }
-
-    /**
-     * Parse classes in the supplied classloader. 
-     * Only class files in jar files will be scanned.
-     * 
-     * @param handlers the handlers to look for classes in 
-     * @param loader the classloader for the classes
-     * @param visitParents if true, visit parent classloaders too
-     * @param nullInclusive if true, an empty pattern means all names match, if false, none match
-     * @throws Exception if unable to parse
-     */
-    @Deprecated
-    public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive) throws Exception
-    {
-        throw new UnsupportedOperationException();
     }
 
     /**

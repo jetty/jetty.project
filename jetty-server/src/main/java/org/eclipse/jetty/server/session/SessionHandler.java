@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static java.lang.Math.round;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,7 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -66,6 +63,8 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static java.lang.Math.round;
 
 /* ------------------------------------------------------------ */
 /**
@@ -199,15 +198,18 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
+    @Deprecated(since = "Servlet API 2.1")
     static final HttpSessionContext __nullSessionContext=new HttpSessionContext()
     {
         @Override
+        @Deprecated(since = "Servlet API 2.1")
         public HttpSession getSession(String sessionId)
         {
             return null;
         }
 
         @Override
+        @Deprecated(since = "Servlet API 2.1")
         @SuppressWarnings({ "rawtypes", "unchecked" })
         public Enumeration getIds()
         {
@@ -215,9 +217,6 @@ public class SessionHandler extends ScopedHandler
         }
     };
 
-    
-   
-   
     /**
      * Setting of max inactive interval for new sessions
      * -1 means no timeout
@@ -438,12 +437,6 @@ public class SessionHandler extends ScopedHandler
         {
             LOG.warn(e);
         }
-    }
-
-    @Deprecated
-    public void complete(Session session, Request baseRequest)
-    {
-        ensureCompletion(baseRequest);
     }
 
     private void ensureCompletion(Request baseRequest)

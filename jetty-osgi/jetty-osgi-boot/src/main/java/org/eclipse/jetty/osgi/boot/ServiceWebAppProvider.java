@@ -171,40 +171,26 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
         
         String contextPath = (String)serviceRef.getProperty(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
         if (contextPath == null)
-            contextPath = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH);
-        if (contextPath == null)
             return false; //No context path
      
-        String base = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
-        if (base == null)
-            base = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH);
-        if (base == null)
-            base = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_WAR);
-        
+        String base = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH);
+
        if (base == null)
            return false; //No webapp base
         
         String webdefaultXml = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
-        if (webdefaultXml == null)
-            webdefaultXml = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_DEFAULT_WEB_XML_PATH);
         if (webdefaultXml != null)
             properties.put(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH, webdefaultXml);
 
         String webXml = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WEB_XML_PATH);
-        if (webXml == null)
-            webXml = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_WEB_XML_PATH);
         if (webXml != null)
             properties.put(OSGiWebappConstants.JETTY_WEB_XML_PATH, webXml);
 
         String extraClassPath = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH);
-        if (extraClassPath == null)
-            extraClassPath = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH);
         if (extraClassPath != null)
             properties.put(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH, extraClassPath);
 
         String bundleInstallOverride = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
-        if (bundleInstallOverride == null)
-            bundleInstallOverride = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE);
         if (bundleInstallOverride != null)
             properties.put(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE, bundleInstallOverride);
 

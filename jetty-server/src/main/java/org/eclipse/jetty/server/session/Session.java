@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionActivationListener;
@@ -622,7 +621,7 @@ public class Session implements SessionHandler.SessionIf
      * @see javax.servlet.http.HttpSession#getSessionContext()
      */
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public HttpSessionContext getSessionContext()
     {
         checkValidForRead();
@@ -720,7 +719,7 @@ public class Session implements SessionHandler.SessionIf
      * @see javax.servlet.http.HttpSession#getValue(java.lang.String)
      */
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.2")
     public Object getValue(String name)
     {
         try (Lock lock = _lock.lock())
@@ -775,11 +774,11 @@ public class Session implements SessionHandler.SessionIf
 
     /* ------------------------------------------------------------- */
     /**
-     * @deprecated As of Version 2.2, this method is replaced by
+     * @deprecated As of Servlet 2.2, this method is replaced by
      *             {@link #getAttributeNames}
      */
-    @Deprecated
     @Override
+    @Deprecated(since = "Servlet API 2.2")
     public String[] getValueNames() throws IllegalStateException
     {
         try (Lock lock = _lock.lock())
@@ -822,7 +821,7 @@ public class Session implements SessionHandler.SessionIf
      *      java.lang.Object)
      */
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.2")
     public void putValue(String name, Object value)
     {
         setAttribute(name, value);
@@ -843,7 +842,7 @@ public class Session implements SessionHandler.SessionIf
      * @see javax.servlet.http.HttpSession#removeValue(java.lang.String)
      */
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public void removeValue(String name)
     {
         setAttribute(name, null);
