@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-
-import java.util.LinkedList;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -32,10 +28,14 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
-    private LinkedList<WebSocketFrame> frames = new LinkedList<>();
+    private LinkedBlockingDeque<WebSocketFrame> frames = new LinkedBlockingDeque<>();
 
     public void assertFrameCount(int expectedCount)
     {
@@ -60,11 +60,12 @@ public class OutgoingFramesCapture implements OutgoingFrames
     public void dump()
     {
         System.out.printf("Captured %d outgoing writes%n",frames.size());
-        for (int i = 0; i < frames.size(); i++)
+        int i=0;
+        for (WebSocketFrame frame: frames)
         {
-            Frame frame = frames.get(i);
             System.out.printf("[%3d] %s%n",i,frame);
             System.out.printf("      %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            i++;
         }
     }
 
@@ -81,7 +82,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
         return count;
     }
 
-    public LinkedList<WebSocketFrame> getFrames()
+    public LinkedBlockingDeque<WebSocketFrame> getFrames()
     {
         return frames;
     }
