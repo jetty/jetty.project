@@ -20,9 +20,12 @@ package org.eclipse.jetty.runner;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -97,7 +100,7 @@ public class Runner
      */
     public class Classpath
     {
-        private  List<URL> _classpath = new ArrayList<>();
+        private  List<URI> _classpath = new ArrayList<>();
 
         public void addJars (Resource lib) throws IOException
         {
@@ -123,8 +126,7 @@ public class Runner
                         if (lowerCasePath.endsWith(".jar") ||
                             lowerCasePath.endsWith(".zip"))
                         {
-                            URL url = item.getURL();
-                            _classpath.add(url);
+                            _classpath.add(item.getURI());
                         }
                     }
                 }
@@ -136,13 +138,13 @@ public class Runner
         {
             if (path == null || !path.exists())
                 throw new IllegalStateException ("No such path: "+path);
-            _classpath.add(path.getURL());
+            _classpath.add(path.getURI());
         }
 
 
-        public URL[] asArray ()
+        public URI[] asArray ()
         {
-            return _classpath.toArray(new URL[_classpath.size()]);
+            return _classpath.toArray(new URI[0]);
         }
     }
 
@@ -325,7 +327,7 @@ public class Runner
                             for (String cfg : _configFiles) 
                             {
                                 try (Resource resource = Resource.newResource(cfg)) {
-                                    XmlConfiguration xmlConfiguration = new XmlConfiguration(resource.getURL());
+                                    XmlConfiguration xmlConfiguration = new XmlConfiguration(resource.getURI());
                                     xmlConfiguration.configure(_server);
                                 }
                             }
@@ -430,7 +432,7 @@ public class Runner
                         if (!ctx.isDirectory() && ctx.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                         {
                             // It is a context config file
-                            XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx.getURL());
+                            XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx.getURI());
                             xmlConfiguration.getIdMap().put("Server", _server);
                             ContextHandler handler = (ContextHandler) xmlConfiguration.configure();
                             if (contextPathSet)
@@ -522,21 +524,37 @@ public class Runner
         _server.join();
     }
 
+    private URL toURL(URI uri)
+    {
+        try
+        {
+            return uri.toURL();
+        }
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Establish a classloader with custom paths (if any)
      */
     protected void initClassLoader()
     {
-        URL[] paths = _classpath.asArray();
+        URL[] paths = Arrays.stream(_classpath.asArray()).map(this::toURL).toArray(URL[]::new);
 
-        if (_classLoader==null && paths !=null && paths.length > 0)
+        if (_classLoader == null && paths.length > 0)
         {
-            ClassLoader context=Thread.currentThread().getContextClassLoader();
+            ClassLoader context = Thread.currentThread().getContextClassLoader();
 
-            if (context==null)
-                _classLoader=new URLClassLoader(paths);
+            if (context == null)
+            {
+                _classLoader = new URLClassLoader(paths);
+            }
             else
-                _classLoader=new URLClassLoader(paths, context);
+            {
+                _classLoader = new URLClassLoader(paths, context);
+            }
 
             Thread.currentThread().setContextClassLoader(_classLoader);
         }

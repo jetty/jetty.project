@@ -22,7 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -380,16 +380,16 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public URL getURL()
+    public URI getURI()
     {
         assertResourcesSet();
 
         for (Resource r : _resources)
         {
-            URL url = r.getURL();
-            if (url != null)
+            URI uri = r.getURI();
+            if (uri != null)
             {
-                return url;
+                return uri;
             }
         }
         return null;

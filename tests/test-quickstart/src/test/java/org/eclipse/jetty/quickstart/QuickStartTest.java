@@ -74,7 +74,7 @@ public class QuickStartTest
         if (contextXml != null)
         {
             // System.err.println("Applying "+contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml.getURL());  
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml.getURI());
             xmlConfiguration.configure(webapp);   
         }
         
@@ -123,7 +123,7 @@ public class QuickStartTest
         if (contextXml != null)
         {
             // System.err.println("Applying "+contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml.getURL());  
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml.getURI());
             xmlConfiguration.configure(webapp);   
         }
         

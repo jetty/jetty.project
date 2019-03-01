@@ -19,30 +19,24 @@
 package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
-import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -380,11 +374,17 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                
                 Thread.currentThread().setContextClassLoader(_webApp.getClassLoader());
 
+                URI contextXmlUri = null;
+
                 //TODO replace this with getting the InputStream so we don't cache in URL
                 //Try looking for a context xml file in META-INF with a specific name
-                URL contextXmlUrl = _bundle.getEntry("/META-INF/jetty-webapp-context.xml");
-                
-                if (contextXmlUrl == null)
+                URL url = _bundle.getEntry("/META-INF/jetty-webapp-context.xml");
+                if(url != null)
+                {
+                    contextXmlUri = url.toURI();
+                }
+
+                if (contextXmlUri == null)
                 {
                     //Didn't find specially named file, try looking for a property that names a context xml file to use
                     if (_properties != null)
@@ -401,18 +401,20 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                                     jettyHome =  System.getProperty(OSGiServerConstants.JETTY_HOME);
                                 Resource res = findFile(filename, jettyHome, overrideBundleInstallLocation, _bundle);
                                 if (res != null)
-                                    contextXmlUrl = res.getURL();
+                                {
+                                    contextXmlUri = res.getURI();
+                                }
                             }
                         }
                     }
                 }
-                if (contextXmlUrl == null) 
+                if (contextXmlUri == null)
                     return;
 
                 // Apply it just as the standard jetty ContextProvider would do
-                LOG.info("Applying " + contextXmlUrl + " to " + _webApp);
+                LOG.info("Applying " + contextXmlUri + " to " + _webApp);
 
-                XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUrl);
+                XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUri);
                 WebAppClassLoader.runWithServerClassAccess(()->
                 {
                     HashMap<String,String> properties = new HashMap<>();

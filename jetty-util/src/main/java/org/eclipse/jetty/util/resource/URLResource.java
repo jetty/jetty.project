@@ -22,10 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.ReadableByteChannel;
-import java.security.Permission;
 
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -154,12 +155,19 @@ public class URLResource extends Resource
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns an URL representing the given resource
+     * Returns a URI representing the given resource
      */
     @Override
-    public URL getURL()
+    public URI getURI()
     {
-        return _url;
+        try
+        {
+            return _url.toURI();
+        }
+        catch (URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */

@@ -29,6 +29,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -186,6 +187,23 @@ public class XmlConfiguration
         synchronized (__parser)
         {
             _url=configuration;
+            setConfig(__parser.parse(configuration.toString()));
+            _dtd=__parser.getDTD();
+        }
+    }
+
+    /**
+     * Reads and parses the XML configuration file.
+     *
+     * @param configuration the URI of the XML configuration
+     * @throws IOException if the configuration could not be read
+     * @throws SAXException if the configuration could not be parsed
+     */
+    public XmlConfiguration(URI configuration) throws SAXException, IOException
+    {
+        synchronized (__parser)
+        {
+            _url=configuration.toURL();
             setConfig(__parser.parse(configuration.toString()));
             _dtd=__parser.getDTD();
         }

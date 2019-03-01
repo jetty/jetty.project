@@ -46,17 +46,11 @@ public class JarFileResource extends JarResource
     private String _path;
     private boolean _exists;
     
-    /* -------------------------------------------------------- */
-    protected JarFileResource(URL url)
-    {
-        super(url);
-    }
-    
     /* ------------------------------------------------------------ */
     protected JarFileResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
-    }   
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -377,24 +371,6 @@ public class JarFileResource extends JarResource
         return -1;
     }
 
-    
-    /**
-     * Take a Resource that possibly might use URLConnection caching
-     * and turn it into one that doesn't.
-     * @param resource the JarFileResource to obtain without URLConnection caching. 
-     * @return the non-caching resource
-     */
-    public static Resource getNonCachingResource (Resource resource)
-    {
-        if (!(resource instanceof JarFileResource))
-            return resource;
-        
-        JarFileResource oldResource = (JarFileResource)resource;
-        
-        JarFileResource newResource = new JarFileResource(oldResource.getURL(), false);
-        return newResource;
-    }
-    
     /**
      * Check if this jar:file: resource is contained in the
      * named resource. Eg <code>jar:file:///a/b/c/foo.jar!/x.html</code> isContainedIn <code>file:///a/b/c/foo.jar</code>
