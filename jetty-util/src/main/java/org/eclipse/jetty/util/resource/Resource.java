@@ -349,35 +349,13 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract long length();
     
-
-    /* ------------------------------------------------------------ */
-    /**
-     * URL representing the resource.
-     * 
-     * @return an URL representing the given resource
-     * @deprecated use {{@link #getURI()}.toURL() instead.
-     */
-    @Deprecated
-    public abstract URL getURL();
-
     /* ------------------------------------------------------------ */
     /**
      * URI representing the resource.
      * 
      * @return an URI representing the given resource
      */
-    public URI getURI()
-    {
-        try
-        {
-            return getURL().toURI();
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-    
+    public abstract URI getURI();
 
     /* ------------------------------------------------------------ */
     /**

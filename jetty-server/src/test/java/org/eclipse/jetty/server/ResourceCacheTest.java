@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -288,19 +286,6 @@ public class ResourceCacheTest
 
         assertEquals(getContent(cache, "four.txt"), "4 - four");
         assertEquals(getContent(cache, "four"), "4 - four (no extension)");
-    }
-
-    
-    static String getContent(Resource r, String path) throws Exception
-    {
-        StringBuilder buffer = new StringBuilder();
-        String line = null;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream())))
-        {
-            while((line=br.readLine())!=null)
-                buffer.append(line);
-        }
-        return buffer.toString();
     }
 
     static String getContent(CachedContentFactory rc, String path) throws Exception
