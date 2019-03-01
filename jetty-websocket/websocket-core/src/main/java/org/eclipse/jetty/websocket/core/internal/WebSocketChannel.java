@@ -77,6 +77,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private int outputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
     private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
+    private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
 
     public WebSocketChannel(FrameHandler handler,
         Behavior behavior,
@@ -222,13 +223,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public Duration getIdleTimeout()
     {
-        return Duration.ofMillis(getConnection().getEndPoint().getIdleTimeout());
+        if (getConnection() == null)
+            return idleTimeout;
+        else
+            return Duration.ofMillis(getConnection().getEndPoint().getIdleTimeout());
     }
 
     @Override
     public void setIdleTimeout(Duration timeout)
     {
-        getConnection().getEndPoint().setIdleTimeout(timeout == null?0:timeout.toMillis());
+        if (getConnection() == null)
+            idleTimeout = timeout;
+        else
+            getConnection().getEndPoint().setIdleTimeout(timeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -255,6 +262,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         this.connection = connection;
+        getConnection().getEndPoint().setIdleTimeout(idleTimeout.toMillis());
     }
 
     /**
