@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import java.nio.ByteBuffer;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.Decoder.Binary;
@@ -54,14 +55,19 @@ public class BinaryWholeMessage extends SimpleBinaryMessage
 
         DecoderFactory.Wrapper decoder = msgWrapper.getDecoder();
         Decoder.Binary<Object> binaryDecoder = (Binary<Object>)decoder.getDecoder();
-        try
+        ByteBuffer msg = BufferUtil.toBuffer(data);
+
+        if (binaryDecoder.willDecode(msg.slice()))
         {
-            Object obj = binaryDecoder.decode(BufferUtil.toBuffer(data));
-            wholeHandler.onMessage(obj);
-        }
-        catch (DecodeException e)
-        {
-            throw new WebSocketException("Unable to decode binary data",e);
+            try
+            {
+                Object obj = binaryDecoder.decode(msg);
+                wholeHandler.onMessage(obj);
+            }
+            catch (DecodeException e)
+            {
+                throw new WebSocketException("Unable to decode binary data", e);
+            }
         }
     }
 }
