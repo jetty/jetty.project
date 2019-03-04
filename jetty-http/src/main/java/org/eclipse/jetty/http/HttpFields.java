@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -450,7 +450,7 @@ public class HttpFields implements Iterable<HttpField>
      * @param secondaryOrdering Function to apply an ordering other than specified by quality
      * @return List the values in quality order with the q param and OWS stripped
      */
-    public List<String> getQualityCSV(HttpHeader header, Function<String, Integer> secondaryOrdering)
+    public List<String> getQualityCSV(HttpHeader header, ToIntFunction<String> secondaryOrdering)
     {
         QuotedQualityCSV values = null;
         for (HttpField f : this)
