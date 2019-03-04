@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.core.TestUpgradeHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 /**
  * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -78,9 +77,7 @@ public class AutobahnWebSocketServer
             server,
             new HttpConnectionFactory()
         );
-        connector.addBean(new RFC6455Handshaker());
 
-        //connector.setPort(9001);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
 
