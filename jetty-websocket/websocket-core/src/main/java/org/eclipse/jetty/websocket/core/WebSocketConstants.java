@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 
 public final class WebSocketConstants
 {
@@ -33,7 +32,6 @@ public final class WebSocketConstants
     public static final int DEFAULT_INPUT_BUFFER_SIZE = 4 * 1024;
     public static final int DEFAULT_OUTPUT_BUFFER_SIZE = 4 * 1024;
     public static final boolean DEFAULT_AUTO_FRAGMENT = true;
-    public static final Duration DEFAULT_IDLE_TIMEOUT = Duration.ZERO;
 
     /**
      * Globally Unique Identifier for use in WebSocket handshake within {@code Sec-WebSocket-Accept} and <code>Sec-WebSocket-Key</code> http headers.
