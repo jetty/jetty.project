@@ -18,19 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -52,8 +47,12 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
-
 import org.junit.jupiter.api.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @SuppressWarnings("Duplicates")
 public class FragmentExtensionTest
@@ -155,7 +154,7 @@ public class FragmentExtensionTest
      * @throws IOException on test failure
      */
     @Test
-    public void testOutgoingFramesByMaxLength() throws IOException
+    public void testOutgoingFramesByMaxLength() throws IOException, InterruptedException
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
@@ -197,11 +196,11 @@ public class FragmentExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<WebSocketFrame> frames = capture.getFrames();
+        LinkedBlockingDeque<WebSocketFrame> frames = capture.getFrames();
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            WebSocketFrame actualFrame = frames.get(i);
+            WebSocketFrame actualFrame = frames.poll(1, SECONDS);
             WebSocketFrame expectedFrame = expectedFrames.get(i);
 
             // System.out.printf("actual: %s%n",actualFrame);
@@ -266,11 +265,11 @@ public class FragmentExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<WebSocketFrame> frames = capture.getFrames();
+        LinkedBlockingDeque<WebSocketFrame> frames = capture.getFrames();
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            WebSocketFrame actualFrame = frames.get(i);
+            WebSocketFrame actualFrame = frames.poll(1, SECONDS);
             WebSocketFrame expectedFrame = expectedFrames.get(i);
 
             // Validate Frame
