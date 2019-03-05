@@ -58,7 +58,7 @@ public class MongoTestHelper
         try
         {
             _mongoClient =
-                new MongoClient( System.getProperty( "embedmongo.host" ), Integer.getInteger( "embedmongoPort" ) );
+                    new MongoClient( System.getProperty( "embedmongo.host" ), Integer.getInteger( "embedmongoPort" ) );
         }
         catch ( UnknownHostException e )
         {

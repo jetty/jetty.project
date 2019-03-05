@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * FileSessionDataStoreTest
@@ -68,7 +69,17 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return (FileTestHelper.getFile(data.getId()) != null);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader (_contextClassLoader); 
+        try
+        {
+            return (FileTestHelper.getFile(data.getId()) != null);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old); 
+        }
+       
     }
 
     /** 
@@ -77,7 +88,29 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return FileTestHelper.checkSessionPersisted(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader (_contextClassLoader); 
+        try
+        {
+            return FileTestHelper.checkSessionPersisted(data);
+        }
+        catch (Throwable e)
+        {
+            e.printStackTrace();
+            throw e;
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old); 
+        }
     }
 
+    @Override
+    @Test
+    public void testStoreSession() throws Exception
+    {
+        super.testStoreSession();
+    }
+
+    
 }
