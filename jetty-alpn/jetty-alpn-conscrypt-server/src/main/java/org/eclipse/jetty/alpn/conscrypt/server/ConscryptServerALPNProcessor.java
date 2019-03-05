@@ -18,13 +18,15 @@
 
 package org.eclipse.jetty.alpn.conscrypt.server;
 
-import java.lang.reflect.Method;
 import java.security.Security;
 import java.util.List;
 import java.util.function.BiFunction;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 
+import org.conscrypt.ApplicationProtocolSelector;
+import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnection;
 import org.eclipse.jetty.io.Connection;
@@ -60,9 +62,10 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
     {
         try
         {
-            Method method = sslEngine.getClass().getMethod("setHandshakeApplicationProtocolSelector", BiFunction.class);
-            method.setAccessible(true);
-            method.invoke(sslEngine,new ALPNCallback((ALPNServerConnection)connection));
+            // with java 9+ we must use
+            //sslEngine.setHandshakeApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection));
+            Conscrypt.setApplicationProtocolSelector(sslEngine,
+                                                      toApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection)));
         }
         catch (RuntimeException x)
         {
@@ -72,6 +75,24 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
         {
             throw new RuntimeException(x);
         }
+    }
+
+    private static ApplicationProtocolSelector toApplicationProtocolSelector(BiFunction<SSLEngine, List<String>, String> selector)
+    {
+        return new ApplicationProtocolSelector()
+        {
+            @Override
+            public String selectApplicationProtocol(SSLEngine engine, List<String> protocols)
+            {
+                return selector.apply(engine, protocols);
+            }
+
+            @Override
+            public String selectApplicationProtocol(SSLSocket socket, List<String> protocols)
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     private final class ALPNCallback implements BiFunction<SSLEngine,List<String>,String>, SslHandshakeListener
