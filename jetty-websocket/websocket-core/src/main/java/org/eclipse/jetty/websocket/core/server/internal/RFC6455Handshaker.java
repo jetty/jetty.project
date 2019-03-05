@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -181,6 +182,10 @@ public final class RFC6455Handshaker implements Handshaker
 
         // Create the Channel
         WebSocketChannel channel = newWebSocketChannel(handler, negotiated);
+        if (defaultCustomizer!=null)
+            defaultCustomizer.customize(channel);
+        negotiator.customize(channel);
+
         if (LOG.isDebugEnabled())
             LOG.debug("channel {}", channel);
 
@@ -198,9 +203,6 @@ public final class RFC6455Handshaker implements Handshaker
             connection.addListener(listener);
 
         channel.setWebSocketConnection(connection);
-        if (defaultCustomizer!=null)
-            defaultCustomizer.customize(channel);
-        negotiator.customize(channel);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();

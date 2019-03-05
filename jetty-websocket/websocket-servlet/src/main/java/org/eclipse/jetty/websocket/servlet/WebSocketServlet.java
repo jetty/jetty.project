@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -158,10 +159,7 @@ public abstract class WebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        // Often this servlet is used together with the WebSocketUpgradeFilter,
-        // so upgrade requests will normally be upgraded by the filter.  But we
-        // can do it here as well if for some reason the filter did not match.
-        if (mapping.upgrade(req, resp, null))
+        if (mapping.upgrade(req, resp, customizer))
             return;
 
         // If we reach this point, it means we had an incoming request to upgrade
