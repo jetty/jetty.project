@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
@@ -28,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -62,11 +58,16 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.InputStreamSo
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.nullValue;
 
 public class EchoTest
 {
@@ -84,7 +85,7 @@ public class EchoTest
         EchoCase.add(TESTCASES,BooleanTextSocket.class).addMessage(Boolean.FALSE).expect("false");
         EchoCase.add(TESTCASES,BooleanTextSocket.class).addMessage("true").expect("true");
         EchoCase.add(TESTCASES,BooleanTextSocket.class).addMessage("TRUe").expect("true");
-        EchoCase.add(TESTCASES,BooleanTextSocket.class).addMessage("Apple").expect("false");
+        EchoCase.add(TESTCASES,BooleanTextSocket.class).addMessage("Apple").expect(null); // fails willDecode
         EchoCase.add(TESTCASES,BooleanTextSocket.class).addMessage("false").expect("false");
 
         EchoCase.add(TESTCASES,BooleanObjectTextSocket.class).addMessage(true).expect("true");
@@ -278,7 +279,8 @@ public class EchoTest
             for (String expected : testcase.expectedStrings)
             {
                 String actual = received.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-                assertThat("Received Echo Responses",actual,containsString(expected));
+                Matcher expectation = expected == null ? nullValue() : containsString(expected);
+                assertThat("Received Echo Responses", actual, expectation);
             }
         }
         finally

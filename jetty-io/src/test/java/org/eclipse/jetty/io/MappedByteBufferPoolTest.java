@@ -29,7 +29,10 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -155,5 +158,42 @@ public class MappedByteBufferPoolTest
 
         bufferPool.release(buffer3);
         assertEquals(2, bucket.size());
+    }
+
+    @Test
+    public void testMaxMemory()
+    {
+        int factor = 1024;
+        int maxMemory = 11 * 1024;
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(factor, -1, null, -1, maxMemory);
+        ConcurrentMap<Integer, Bucket> buckets = bufferPool.bucketsFor(true);
+
+        // Create the buckets - the oldest is the larger.
+        // 1+2+3+4=10 / maxMemory=11.
+        for (int i = 4; i >= 1; --i)
+        {
+            int capacity = factor * i;
+            ByteBuffer buffer = bufferPool.acquire(capacity, true);
+            bufferPool.release(buffer);
+        }
+
+        // Create and release a buffer to exceed the max memory.
+        ByteBuffer buffer = bufferPool.newByteBuffer(2 * factor, true);
+        bufferPool.release(buffer);
+
+        // Now the oldest buffer should be gone and we have: 1+2x2+3=8
+        long memory = bufferPool.getMemory(true);
+        assertThat(memory, lessThan((long)maxMemory));
+        assertNull(buckets.get(4));
+
+        // Create and release a large buffer.
+        // Max memory is exceeded and buckets 3 and 1 are cleared.
+        // We will have 2x2+7=11.
+        buffer = bufferPool.newByteBuffer(7 * factor, true);
+        bufferPool.release(buffer);
+        memory = bufferPool.getMemory(true);
+        assertThat(memory, lessThanOrEqualTo((long)maxMemory));
+        assertNull(buckets.get(1));
+        assertNull(buckets.get(3));
     }
 }

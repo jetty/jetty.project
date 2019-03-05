@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -60,7 +61,7 @@ public interface ByteBufferPool
      * <p>Creates a new ByteBuffer of the given capacity and the given directness.</p>
      *
      * @param capacity the ByteBuffer capacity
-     * @param direct the ByteBuffer directness
+     * @param direct   the ByteBuffer directness
      * @return a newly allocated ByteBuffer
      */
     default ByteBuffer newByteBuffer(int capacity, boolean direct)
@@ -131,54 +132,80 @@ public interface ByteBufferPool
         }
     }
 
-    class Bucket
+    public static class Bucket
     {
         private final Deque<ByteBuffer> _queue = new ConcurrentLinkedDeque<>();
         private final ByteBufferPool _pool;
         private final int _capacity;
-        private final AtomicInteger _space;
+        private final int _maxSize;
+        private final AtomicInteger _size;
+        private long _lastUpdate = System.nanoTime();
 
         public Bucket(ByteBufferPool pool, int capacity, int maxSize)
         {
             _pool = pool;
             _capacity = capacity;
-            _space = maxSize > 0 ? new AtomicInteger(maxSize) : null;
+            _maxSize = maxSize;
+            _size = maxSize > 0 ? new AtomicInteger() : null;
         }
 
+        public ByteBuffer acquire()
+        {
+            ByteBuffer buffer = queuePoll();
+            if (buffer == null)
+                return null;
+            if (_size != null)
+                _size.decrementAndGet();
+            return buffer;
+        }
+
+        /**
+         * @param direct whether to create a direct buffer when none is available
+         * @return a ByteBuffer
+         * @deprecated use {@link #acquire()} instead
+         */
+        @Deprecated
         public ByteBuffer acquire(boolean direct)
         {
             ByteBuffer buffer = queuePoll();
             if (buffer == null)
                 return _pool.newByteBuffer(_capacity, direct);
-            if (_space != null)
-                _space.incrementAndGet();
+            if (_size != null)
+                _size.decrementAndGet();
             return buffer;
         }
 
         public void release(ByteBuffer buffer)
         {
+            _lastUpdate = System.nanoTime();
             BufferUtil.clear(buffer);
-            if (_space == null)
+            if (_size == null)
                 queueOffer(buffer);
-            else if (_space.decrementAndGet() >= 0)
+            else if (_size.incrementAndGet() <= _maxSize)
                 queueOffer(buffer);
             else
-                _space.incrementAndGet();
+                _size.decrementAndGet();
         }
 
         public void clear()
         {
-            if (_space == null)
+            clear(null);
+        }
+
+        void clear(Consumer<ByteBuffer> memoryFn)
+        {
+            int size = _size == null ? 0 : _size.get() - 1;
+            while (size >= 0)
             {
-                queueClear();
-            }
-            else
-            {
-                int s = _space.getAndSet(0);
-                while (s-- > 0)
+                ByteBuffer buffer = queuePoll();
+                if (buffer == null)
+                    break;
+                if (memoryFn != null)
+                    memoryFn.accept(buffer);
+                if (_size != null)
                 {
-                    if (queuePoll() == null)
-                        _space.incrementAndGet();
+                    _size.decrementAndGet();
+                    --size;
                 }
             }
         }
@@ -193,11 +220,6 @@ public interface ByteBufferPool
             return _queue.poll();
         }
 
-        private void queueClear()
-        {
-            _queue.clear();
-        }
-
         boolean isEmpty()
         {
             return _queue.isEmpty();
@@ -208,10 +230,15 @@ public interface ByteBufferPool
             return _queue.size();
         }
 
+        long getLastUpdate()
+        {
+            return _lastUpdate;
+        }
+
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%d/%d}", getClass().getSimpleName(), hashCode(), size(), _capacity);
+            return String.format("%s@%x{%d/%d@%d}", getClass().getSimpleName(), hashCode(), size(), _maxSize, _capacity);
         }
     }
 }

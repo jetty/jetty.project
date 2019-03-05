@@ -26,6 +26,10 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <Arg name="threadpool"><Ref refid="threadPool"/></Arg>
 
+    <Call name="addBean">
+      <Arg><Ref refid="byteBufferPool"/></Arg>
+    </Call>
+
     <!-- =========================================================== -->
     <!-- Add shared Scheduler instance                               -->
     <!-- =========================================================== -->
