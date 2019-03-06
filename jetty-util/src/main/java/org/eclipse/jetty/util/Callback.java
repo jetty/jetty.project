@@ -210,6 +210,31 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * Create a nested callback which always fails the nested callback on completion.
+     * @param callback The nested callback
+     * @param cause The cause to fail the nested callback, if the new callback is failed the reason
+     *             will be added to this cause as a suppressed exception.
+     * @return a new callback.
+     */
+    static Callback from(Callback callback, Throwable cause)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                callback.failed(cause);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                cause.addSuppressed(x);
+                callback.failed(cause);
+            }
+        };
+    }
 
     class Completing implements Callback
     {

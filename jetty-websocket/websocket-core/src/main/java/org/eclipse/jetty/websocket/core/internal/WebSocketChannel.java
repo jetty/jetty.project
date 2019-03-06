@@ -395,9 +395,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         CloseStatus closeStatus = abnormalCloseStatusFor(cause);
 
         if (closeStatus.getCode() == CloseStatus.PROTOCOL)
-            close(closeStatus, NOOP);
+            close(closeStatus, callback);
         else if (channelState.onClosed(closeStatus))
             closeConnection(cause, closeStatus, callback);
+        else
+            callback.failed(cause);
     }
 
     /**
@@ -428,7 +430,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (LOG.isDebugEnabled())
             LOG.debug("ConnectionState: Transition to CONNECTED");
 
-        Callback openCallback =  Callback.from(()->
+        Callback openCallback = Callback.from(()->
                 {
                     channelState.onOpen();
                     if (!demanding)
@@ -450,6 +452,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         catch (Throwable t)
         {
             openCallback.failed(t);
+
+            /* This is double handling of the exception but we need to do this because we have two separate
+            mechanisms for returning the CoreSession, onOpen and the CompletableFuture and both the onOpen callback
+            and the CompletableFuture require the exception. */
+            throw new RuntimeException(t);
         }
 
     }
@@ -481,9 +488,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             assertValidIncoming(frame);
         }
-        catch (Throwable ex)
+        catch (Throwable t)
         {
-            callback.failed(ex);
+            callback.failed(t);
             return;
         }
 
@@ -497,9 +504,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             assertValidOutgoing(frame);
         }
-        catch (Throwable ex)
+        catch (Throwable t)
         {
-            callback.failed(ex);
+            callback.failed(t);
             return;
         }
 
@@ -517,13 +524,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
                     Callback closeConnectionCallback = Callback.from(
                             ()->closeConnection(cause, channelState.getCloseStatus(), callback),
-                            x->closeConnection(cause, channelState.getCloseStatus(), Callback.from(
-                                    ()-> callback.failed(x),
-                                    x2->
-                                    {
-                                        x.addSuppressed(x2);
-                                        callback.failed(x);
-                                    })));
+                            t->closeConnection(cause, channelState.getCloseStatus(), Callback.from(callback, t)));
 
                     flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
                 }
@@ -534,24 +535,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             }
             flusher.iterate();
         }
-        catch (Throwable ex)
+        catch (Throwable t)
         {
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (closeStatus instanceof AbnormalCloseStatus && channelState.onClosed(closeStatus))
-                    closeConnection(null, closeStatus, Callback.from(
-                            ()->callback.failed(ex),
-                            x2->
-                            {
-                                ex.addSuppressed(x2);
-                                callback.failed(ex);
-                            }));
+                    closeConnection(AbnormalCloseStatus.getCause(closeStatus), closeStatus, Callback.from(callback, t));
                 else
-                    callback.failed(ex);
+                    callback.failed(t);
             }
             else
-                callback.failed(ex);
+                callback.failed(t);
         }
     }
 
