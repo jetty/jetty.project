@@ -92,7 +92,16 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-       return MongoTestHelper.checkSessionPersisted(data);
+       ClassLoader old = Thread.currentThread().getContextClassLoader();
+       Thread.currentThread().setContextClassLoader (_contextClassLoader); 
+       try
+       {
+           return MongoTestHelper.checkSessionPersisted(data);
+       }
+       finally
+       {
+           Thread.currentThread().setContextClassLoader(old); 
+       }
     }
     
     
