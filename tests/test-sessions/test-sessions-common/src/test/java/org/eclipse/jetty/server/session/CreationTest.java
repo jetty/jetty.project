@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -33,11 +34,13 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -236,12 +239,60 @@ public class CreationTest
             server1.stop();
         }
     }
-    
-    
-    
-    
-    
-    
+
+
+
+    /**
+     * Create and then invalidate and then create a session in the same request
+     * @throws Exception
+     */
+    @Test
+    public void testSessionCreateInvalidateCreate() throws Exception
+    {
+        String contextPath = "";
+        String servletMapping = "/server";
+        int inactivePeriod = 20;
+        int scavengePeriod = 3;
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        TestServlet servlet = new TestServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        ServletContextHandler contextHandler = server1.addContext(contextPath);
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        contextHandler.addEventListener(scopeListener);
+        contextHandler.addServlet(holder, servletMapping);
+        servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
+        server1.start();
+        int port1 = server1.getPort();
+
+        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        {
+            HttpClient client = new HttpClient();
+            client.start();
+            String url = "http://localhost:" + port1 + contextPath + servletMapping+"?action=createinvcreate&check=false";
+
+            CountDownLatch synchronizer = new CountDownLatch(1);
+            scopeListener.setExitSynchronizer(synchronizer);
+
+            //make a request to set up a session on the server
+            ContentResponse response = client.GET(url);
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+
+            //ensure request has finished being handled
+            synchronizer.await(5, TimeUnit.SECONDS);
+
+            //check that the session does not exist
+            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            assertThat(response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
+        }
+        finally
+        {
+            server1.stop();
+        }
+    }
+
     /**
      * Create a session in a context, forward to another context and create a 
      * session in it too. Check that both sessions exist after the response
@@ -434,6 +485,14 @@ public class CreationTest
                     session.invalidate();
                     assertNull(request.getSession(false));
                     assertNotNull(session);
+                }
+                else if ("createinvcreate".equals(action))
+                {
+                    session.invalidate();
+                    assertNull(request.getSession(false));
+                    assertNotNull(session);
+                    session = request.getSession(true);
+                    _id = session.getId();
                 }
             }
         }

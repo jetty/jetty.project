@@ -1641,7 +1641,7 @@ public class SessionHandler extends ScopedHandler
                 HttpCookie cookie = access(existingSession,request.isSecure());
                 // Handle changed ID or max-age refresh, but only if this is not a redispatched request
                 if ((cookie != null) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
-                    baseRequest.getResponse().addCookie(cookie);
+                    baseRequest.getResponse().replaceCookie(cookie);
             }
 
             if (LOG.isDebugEnabled())
