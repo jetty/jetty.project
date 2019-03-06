@@ -27,7 +27,6 @@ import java.util.List;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
-import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -516,7 +515,13 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
+    public boolean isHeaderCacheCaseSensitive()
+    {
+        return getHttpConfiguration().isHeaderCacheCaseSensitive();
+    }
+
+    @Override
+    public void onComplianceViolation(HttpCompliance compliance, HttpCompliance.Violation violation, String details)
     {
         if (_httpConnection.isRecordHttpComplianceViolations())
         {
@@ -524,8 +529,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 _complianceViolations = new ArrayList<>();
             }
-            String record = String.format("%s (see %s) in mode %s for %s in %s", 
-                violation.getDescription(), violation.getURL(), compliance, reason, getHttpTransport());
+            String record = String.format("%s (see %s) in mode %s for %s in %s",
+                    violation.description, violation.url, compliance, details, getHttpTransport());
             _complianceViolations.add(record);
             if (LOG.isDebugEnabled())
                 LOG.debug(record);

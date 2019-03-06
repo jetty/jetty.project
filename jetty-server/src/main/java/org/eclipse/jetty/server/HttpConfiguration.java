@@ -61,6 +61,7 @@ public class HttpConfiguration implements Dumpable
     private int _requestHeaderSize=8*1024;
     private int _responseHeaderSize=8*1024;
     private int _headerCacheSize=4*1024;
+    private boolean _headerCacheCaseSensitive=false;
     private int _securePort;
     private long _idleTimeout=-1;
     private String _secureScheme = HttpScheme.HTTPS.asString();
@@ -195,6 +196,12 @@ public class HttpConfiguration implements Dumpable
     public int getHeaderCacheSize()
     {
         return _headerCacheSize;
+    }
+
+    @ManagedAttribute("True if the header field cache is case sensitive")
+    public boolean isHeaderCacheCaseSensitive()
+    {
+        return _headerCacheCaseSensitive;
     }
 
     @ManagedAttribute("The port to which Integral or Confidential security constraints are redirected")
@@ -388,6 +395,11 @@ public class HttpConfiguration implements Dumpable
     public void setHeaderCacheSize(int headerCacheSize)
     {
         _headerCacheSize = headerCacheSize;
+    }
+
+    public void setHeaderCacheCaseSensitive(boolean headerCacheCaseSensitive)
+    {
+        this._headerCacheCaseSensitive = headerCacheCaseSensitive;
     }
 
     /**

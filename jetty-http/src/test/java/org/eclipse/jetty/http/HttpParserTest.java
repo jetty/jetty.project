@@ -30,7 +30,10 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTILINE_FIELD_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -130,7 +133,7 @@ public class HttpParserTest
         assertEquals("/999", _uriOrStatus);
         assertEquals("HTTP/0.9", _versionOrReason);
         assertEquals(-1, _headers);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_0_9));
+        assertThat(_complianceViolation, contains(HttpCompliance.Violation.HTTP_0_9));
     }
 
     @Test
@@ -159,7 +162,7 @@ public class HttpParserTest
         assertEquals("/222", _uriOrStatus);
         assertEquals("HTTP/0.9", _versionOrReason);
         assertEquals(-1, _headers);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_0_9));
+        assertThat(_complianceViolation, contains(HttpCompliance.Violation.HTTP_0_9));
     }
 
     @Test
@@ -304,7 +307,7 @@ public class HttpParserTest
         assertEquals("value extra", _val[1]);
         assertEquals("Name2", _hdr[2]);
         assertEquals("value2", _val[2]);
-        assertThat(_complianceViolation, contains(NO_FIELD_FOLDING,NO_FIELD_FOLDING));
+        assertThat(_complianceViolation, contains(MULTILINE_FIELD_VALUE,MULTILINE_FIELD_VALUE));
     }
 
     @Test
@@ -322,7 +325,7 @@ public class HttpParserTest
         parseAll(parser, buffer);
 
         assertThat(_bad, Matchers.notNullValue());
-        assertThat(_bad, containsString("Header Folding"));
+        assertThat(_bad, containsString("Line Folding not supported"));
         assertThat(_complianceViolation,Matchers.empty());
     }
     
@@ -807,7 +810,7 @@ public class HttpParserTest
         parseAll(parser, buffer);
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.METHOD_CASE_SENSITIVE));
+        assertThat(_complianceViolation, contains(CASE_INSENSITIVE_METHOD));
     }
 
     @Test
@@ -857,7 +860,7 @@ public class HttpParserTest
                         "HOST: localhost\r\n" +
                         "cOnNeCtIoN: ClOsE\r\n" +
                         "\r\n");
-        HttpParser.RequestHandler handler = new Handler();
+        HttpParser.RequestHandler handler = new Handler(true);
         HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
         parseAll(parser, buffer);
         assertNull(_bad);
@@ -869,7 +872,7 @@ public class HttpParserTest
         assertEquals("cOnNeCtIoN", _hdr[1]);
         assertEquals("ClOsE", _val[1]);
         assertEquals(1, _headers);
-        assertThat(_complianceViolation, contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE));
+        assertThat(_complianceViolation, contains(CASE_SENSITIVE_FIELD_NAME, CASE_SENSITIVE_FIELD_NAME));
     }
 
     @Test
@@ -1862,7 +1865,7 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertThat(_complianceViolation, contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @Test
@@ -1891,7 +1894,7 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertThat(_complianceViolation, contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @Test
@@ -2185,10 +2188,22 @@ public class HttpParserTest
     private boolean _early;
     private boolean _headerCompleted;
     private boolean _messageCompleted;
-    private final List<HttpComplianceSection> _complianceViolation = new ArrayList<>();
+    private final List<HttpCompliance.Violation> _complianceViolation = new ArrayList<>();
     
     private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, HttpParser.ComplianceHandler
     {
+        private boolean _headerCacheCaseSensitive;
+
+        public Handler()
+        {
+            this(false);
+        }
+
+        public Handler(boolean headerCacheCaseSensitive)
+        {
+            _headerCacheCaseSensitive = headerCacheCaseSensitive;
+        }
+
         @Override
         public boolean content(ByteBuffer ref)
         {
@@ -2295,7 +2310,13 @@ public class HttpParserTest
         }
 
         @Override
-        public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
+        public boolean isHeaderCacheCaseSensitive()
+        {
+            return _headerCacheCaseSensitive;
+        }
+
+        @Override
+        public void onComplianceViolation(HttpCompliance compliance, HttpCompliance.Violation violation, String reason)
         {
             _complianceViolation.add(violation);
         }

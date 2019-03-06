@@ -374,7 +374,13 @@ public class LocalConnector extends AbstractConnector
                 {
                     return 0;
                 }
-                
+
+                @Override
+                public boolean isHeaderCacheCaseSensitive()
+                {
+                    return false;
+                }
+
                 @Override
                 public void earlyEOF()
                 {                
