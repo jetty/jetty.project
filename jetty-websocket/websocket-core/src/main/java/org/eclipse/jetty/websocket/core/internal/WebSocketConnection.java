@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -64,6 +64,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private long demand;
     private boolean fillingAndParsing;
+    private LongAdder messagesIn = new LongAdder();
+    private LongAdder bytesIn = new LongAdder();
 
     // Read / Parse variables
     private RetainableByteBuffer networkBuffer;
@@ -400,6 +402,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     if (frame == null)
                         break;
 
+                    messagesIn.increment();
+
                     if (meetDemand())
                         onFrame(frame);
 
@@ -438,6 +442,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     fillInterested();
                     return;
                 }
+
+                bytesIn.add(filled);
             }
         }
         catch (Throwable t)
@@ -538,6 +544,30 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
 
         setInitialBuffer(prefilled);
+    }
+
+    @Override
+    public long getMessagesIn()
+    {
+        return messagesIn.longValue();
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return bytesIn.longValue();
+    }
+
+    @Override
+    public long getMessagesOut()
+    {
+        return flusher.getMessagesOut();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return flusher.getBytesOut();
     }
 
     /**
