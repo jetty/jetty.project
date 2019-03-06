@@ -145,6 +145,8 @@ public class ClientSessionsTest
 
                 String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
                 assertThat("Message", received, containsString("Hello World!"));
+
+                sess.close(StatusCode.NORMAL, null);
             }
 
             cliSock.assertReceivedCloseEvent(30000, is(StatusCode.NORMAL));

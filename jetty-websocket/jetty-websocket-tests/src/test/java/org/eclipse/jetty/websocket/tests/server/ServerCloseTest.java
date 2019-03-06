@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -148,7 +149,7 @@ public class ServerCloseTest
             // Verify that server socket got close event
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
             assertThat("Fast Close Latch", serverEndpoint.closeLatch.await(5, SECONDS), is(true));
-            assertThat("Fast Close.statusCode", serverEndpoint.closeStatusCode, is(StatusCode.ABNORMAL));
+            assertThat("Fast Close.statusCode", serverEndpoint.closeStatusCode, is(StatusCode.NORMAL));
         }
         finally
         {
@@ -172,7 +173,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(FastFailEndpoint.class, WebSocketSessionImpl.class))
+        try(StacklessLogging ignore = new StacklessLogging(WebSocketChannel.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -219,12 +220,13 @@ public class ServerCloseTest
             clientEndpoint.getEndPoint().close();
 
             // Verify that client got close
-            clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Disconnected"));
+            clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
 
             // Verify that server socket got close event
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-            serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Disconnected"));
-        } finally
+            serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
+        }
+        finally
         {
             close(session);
         }

@@ -118,18 +118,19 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @param websocket the websocket object
      * @param toUri     the websocket uri to connect to
      * @param request   the upgrade request information
-     * @param listener  the upgrade listener
+     * @param upgradeListener  the upgrade listener
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener listener) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener upgradeListener) throws IOException
     {
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
             coreClient.addBean(listener);
             
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
-        if (listener != null)
-            upgradeRequest.addListener(listener);
+        if (upgradeListener != null)
+            upgradeRequest.addListener(upgradeListener);
+
         coreClient.connect(upgradeRequest);
         return upgradeRequest.getFutureSession();
     }
