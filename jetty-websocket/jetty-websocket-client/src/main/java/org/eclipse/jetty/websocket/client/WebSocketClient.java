@@ -135,7 +135,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener listener) throws IOException
     {
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
-        upgradeRequest.addListener(listener);
+        if (listener != null)
+            upgradeRequest.addListener(listener);
         coreClient.connect(upgradeRequest);
         return upgradeRequest.getFutureSession();
     }
