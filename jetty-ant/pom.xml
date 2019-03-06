@@ -26,7 +26,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-start</excludeArtifactIds>
+              <excludeArtifactIds>jetty-tutorial,jetty-start</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${project.build.directory}/test-lib</outputDirectory>
             </configuration>

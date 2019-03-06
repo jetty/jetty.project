@@ -142,7 +142,7 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
-    <!-- dependencies that jetty-all needs (some optional) -->
+    <!-- dependencies that jetty-tutorial needs (some optional) -->
     <dependency>
       <groupId>javax.websocket</groupId>
       <artifactId>javax.websocket-api</artifactId>

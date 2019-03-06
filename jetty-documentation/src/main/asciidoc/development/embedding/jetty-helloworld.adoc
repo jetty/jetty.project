@@ -26,7 +26,7 @@ This section provides a tutorial that shows how you can quickly develop embedded
 
 Jetty is decomposed into many jars and dependencies to achieve a minimal footprint by selecting the minimal set of jars.
 Typically it is best to use something like link:#jetty-maven-helloworld[Maven] to manage jars, however this tutorial uses an aggregate Jar that contains all of the required Jetty classes in one Jar.
-You can manually download the aggregate link:https://repo1.maven.org/maven2/org/eclipse/jetty/aggregate/jetty-all/{VERSION}/jetty-all-{VERSION}-uber.jar[`jetty-all.jar`] using `curl` or a browser.
+You can manually download the aggregate link:https://repo1.maven.org/maven2/org/eclipse/jetty/aggregate/jetty-tutorial/{VERSION}/jetty-tutorial-{VERSION}-uber.jar[`jetty-tutorial.jar`] using `curl` or a browser.
 
 ____
 [NOTE]
@@ -36,7 +36,7 @@ ____
 
 ____
 [IMPORTANT]
-The `jetty-all` jar referenced in this section is for example purposes only and should not be used outside of this context.
+The `jetty-tutorial` jar referenced in this section is for example purposes only and should not be used outside of this context.
 Please consider using link:#jetty-maven-helloworld[Maven] to manage your project dependencies.
 ____
 
@@ -46,7 +46,7 @@ Use curl as follows:
 ....
 > mkdir Demo
 > cd Demo
-> curl -o jetty-all-uber.jar https://repo1.maven.org/maven2/org/eclipse/jetty/aggregate/jetty-all/{VERSION}/jetty-all-{VERSION}-uber.jar
+> curl -o jetty-tutorial-uber.jar https://repo1.maven.org/maven2/org/eclipse/jetty/aggregate/jetty-tutorial/{VERSION}/jetty-tutorial-{VERSION}-uber.jar
 ....
 
 [[writing-helloworld-example]]
@@ -69,7 +69,7 @@ The following command compiles the HelloWorld class:
 [source, screen, subs="{sub-order}"]
 ....
 > mkdir classes
-> javac -d classes -cp jetty-all-uber.jar HelloWorld.java
+> javac -d classes -cp jetty-tutorial-uber.jar HelloWorld.java
 ....
 
 [[running-handler-and-server]]
@@ -79,7 +79,7 @@ The following command runs the HelloWorld example:
 
 [source, screen, subs="{sub-order}"]
 ....
-> java -cp classes:jetty-all-uber.jar org.eclipse.jetty.embedded.HelloWorld
+> java -cp classes:jetty-tutorial-uber.jar org.eclipse.jetty.embedded.HelloWorld
 ....
 
 You can now point your browser at http://localhost:8080/[http://localhost:8080] to see your hello world page.

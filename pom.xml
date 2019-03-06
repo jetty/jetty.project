@@ -1123,7 +1123,7 @@
     <profile>
       <id>eclipse-release</id>
       <modules>
-        <module>aggregates/jetty-all</module>
+        <module>aggregates/jetty-tutorial</module>
       </modules>
       <build>
         <plugins>
@@ -1198,7 +1198,7 @@
     <profile>
       <id>ci</id>
       <modules>
-        <module>aggregates/jetty-all</module>
+        <module>aggregates/jetty-tutorial</module>
       </modules>
     </profile>
     <profile>

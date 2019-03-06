@@ -147,7 +147,7 @@ Note that as the Jetty Maven Plugin is a general tool for running webapps, it ma
 // If the `QuickStateWebApp` method `setAutoPreconfigure(true)` is called (see example in myapp.xml above), then the first time the webapp is deployed a `WEB-INF/quickstart-web.xml` file will be generated that contains the effective `web.xml` for all the discovered configuration.
 // On subsequent deployments, all the discovery steps are skipped and the `quickstart-web.xml` is used directly to configure the web application.
 //
-// It is also possible to preconfigure a war file manually by running the class link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[org.eclipse.jetty.quickstart.PreconfigureQuickStartWar] with the jetty-all-uber (aggregate) jar:
+// It is also possible to preconfigure a war file manually by running the class link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[org.eclipse.jetty.quickstart.PreconfigureQuickStartWar] with the jetty-tutorial-uber (aggregate) jar:
 //
 //
 // This will create the `quickstart-web.xml` file before the first deployment.

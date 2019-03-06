@@ -15,10 +15,10 @@ A TestServer and TestClient class are available, and can be run either directly 
 imported), or from the command line with
 
 
-  java -cp jetty-aggregate/jetty-all/target/jetty-all-7.x.y.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
+  java -cp jetty-aggregate/jetty-tutorial/target/jetty-tutorial-7.x.y.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
   org.eclipse.jetty.websocket.TestServer  --help 
 
-  java -cp jetty-aggregate/jetty-all/target/jetty-all-7.x.y.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
+  java -cp jetty-aggregate/jetty-tutorial/target/jetty-tutorial-7.x.y.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
   org.eclipse.jetty.websocket.TestClient --help
 
 

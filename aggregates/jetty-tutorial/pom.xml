@@ -7,9 +7,9 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.aggregate</groupId>
-  <artifactId>jetty-all</artifactId>
-  <name>Jetty :: Aggregate :: All core Jetty</name>
-  <description>UberJar for Core Jetty features</description>
+  <artifactId>jetty-tutorial</artifactId>
+  <name>Jetty :: Aggregate :: Tutorial Artifact for Embedded Jetty Documentation</name>
+  <description>UberJar for learning about Embedded Jetty via the Jetty Documentation</description>
   <packaging>pom</packaging>
   <url>http://www.eclipse.org/jetty</url>
   <properties>
@@ -207,7 +207,7 @@
       <artifactId>http2-client</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- dependencies that jetty-all needs (some optional) -->
+    <!-- dependencies that jetty-tutorial needs (some optional) -->
     <dependency>
       <groupId>javax.websocket</groupId>
       <artifactId>javax.websocket-api</artifactId>
