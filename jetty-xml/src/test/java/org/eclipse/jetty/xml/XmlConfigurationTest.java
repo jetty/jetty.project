@@ -22,10 +22,14 @@ import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -980,5 +984,25 @@ public class XmlConfigurationTest
             assertThat(propName, tc.getTestString(), is(notNullValue()));
             assertThat(propName, tc.getTestString(), startsWith("file:"));
         }
+    }
+    
+    @Test
+    public void testJettyStandardIdsAndProperties_JettyWebappsUri() throws Exception
+    {
+    	Path war = MavenTestingUtils.getTargetPath("no.war");
+    	XmlConfiguration configuration =
+                new XmlConfiguration("" +
+                        "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                        "  <Set name=\"TestString\">" +
+                        "    <Property name=\"" + "jetty.webapps.uri" + "\"/>" +
+                        "  </Set>" +
+                        "</Configure>");
+
+        configuration.setJettyStandardIdsAndProperties(null, Resource.newResource(war));
+
+        TestConfiguration tc = new TestConfiguration();
+        configuration.configure(tc);
+
+        assertThat("jetty.webapps.uri", tc.getTestString(), is(XmlConfiguration.normalizeURI(war.getParent().toUri().toString())));
     }
 }
