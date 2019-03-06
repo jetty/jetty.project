@@ -51,9 +51,6 @@ public class SessionRenewTest
 {
     protected TestServer _server;
     
- 
-    
-    
     /**
      * Tests renewing a session id when sessions are not being cached.
      * @throws Exception
@@ -236,9 +233,7 @@ public class SessionRenewTest
                 assertNull(session);
 
                 if (((Session)afterSession).isIdChanged())
-                {
-                    ((org.eclipse.jetty.server.Response)response).addCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
-                }
+                    ((org.eclipse.jetty.server.Response)response).replaceCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
             }
         }
     }
