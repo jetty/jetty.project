@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -86,7 +87,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     // TODO: obtain shared (per server scheduler, somehow)
-    private final Scheduler scheduler = new ScheduledExecutorScheduler();
+    private final Scheduler scheduler = new ScheduledExecutorScheduler(String.format("WebSocket-Scheduler-%x",hashCode()),true);
     private final List<WebSocketSessionListener> listeners = new ArrayList<>();
     private final String supportedVersions;
     private final WebSocketPolicy defaultPolicy;
