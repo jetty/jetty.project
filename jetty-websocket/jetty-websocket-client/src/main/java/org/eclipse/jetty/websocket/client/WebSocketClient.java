@@ -73,7 +73,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public WebSocketClient()
     {
         this(null);
-        coreClient.getHttpClient().setName("Jetty-WebSocketClient@" + hashCode());
     }
 
     /**
@@ -85,6 +84,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     {
         coreClient = new WebSocketCoreClient(httpClient, configurationCustomizer);
         addManaged(coreClient);
+
+        if (httpClient == null)
+            coreClient.getHttpClient().setName("Jetty-WebSocketClient@" + hashCode());
 
         objectFactory = new DecoratedObjectFactory();
         extensionRegistry = new WebSocketExtensionRegistry();
