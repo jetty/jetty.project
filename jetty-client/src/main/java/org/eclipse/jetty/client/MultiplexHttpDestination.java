@@ -23,16 +23,25 @@ import java.util.function.Function;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
+/**
+ * <p>A destination for those transports that are multiplex (e.g. HTTP/2).</p>
+ * <p>Transports that negotiate the protocol, and therefore do not know in advance
+ * whether they are duplex or multiplex, should use this class and when the
+ * cardinality is known call {@link #setMaxRequestsPerConnection(int)} with
+ * the proper cardinality.</p>
+ * <p>If the cardinality is {@code 1}, the behavior of this class is similar
+ * to that of {@link DuplexHttpDestination}.</p>
+ */
 public class MultiplexHttpDestination extends HttpDestination implements HttpDestination.Multiplexed
 {
-    public MultiplexHttpDestination(HttpClient client, Info info)
+    public MultiplexHttpDestination(HttpClient client, Key key)
     {
-        this(client, info, Function.identity());
+        this(client, key, Function.identity());
     }
 
-    public MultiplexHttpDestination(HttpClient client, Info info, Function<ClientConnectionFactory, ClientConnectionFactory> factoryFn)
+    public MultiplexHttpDestination(HttpClient client, Key key, Function<ClientConnectionFactory, ClientConnectionFactory> factoryFn)
     {
-        super(client, info, factoryFn);
+        super(client, key, factoryFn);
     }
 
     @ManagedAttribute(value = "The maximum number of concurrent requests per connection")

@@ -53,9 +53,9 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Info info)
+    public HttpDestination newHttpDestination(HttpDestination.Key key)
     {
-        return new DuplexHttpDestination(getHttpClient(), info);
+        return new DuplexHttpDestination(getHttpClient(), key);
     }
 
     @Override

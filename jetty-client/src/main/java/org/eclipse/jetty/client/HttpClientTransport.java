@@ -43,14 +43,12 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * Sets the {@link HttpClient} instance on this transport.
      * <p>
      * This is needed because of a chicken-egg problem: in order to create the {@link HttpClient}
-     * a {@link HttpClientTransport} is needed, that therefore cannot have a reference yet to the
+     * a HttpClientTransport is needed, that therefore cannot have a reference yet to the
      * {@link HttpClient}.
      *
      * @param client the {@link HttpClient} that uses this transport.
      */
     public void setHttpClient(HttpClient client);
-
-    public HttpDestination newHttpDestination(HttpDestination.Info info);
 
     /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
@@ -58,20 +56,15 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * {@link HttpDestination} controls the destination-connection cardinality: protocols like
      * HTTP have 1-N cardinality, while multiplexed protocols like HTTP/2 have a 1-1 cardinality.
      *
-     * @param origin the destination origin
+     * @param key the destination key
      * @return a new, transport-specific, {@link HttpDestination} object
-     * @deprecated use {@link #newHttpDestination(HttpDestination.Info)} instead
      */
-    @Deprecated
-    public default HttpDestination newHttpDestination(Origin origin)
-    {
-        return newHttpDestination(new HttpDestination.Info(origin, null));
-    }
+    public HttpDestination newHttpDestination(HttpDestination.Key key);
 
     /**
      * Establishes a physical connection to the given {@code address}.
      *
-     *  @param address the address to connect to
+     * @param address the address to connect to
      * @param context the context information to establish the connection
      */
     public void connect(InetSocketAddress address, Map<String, Object> context);
@@ -86,9 +79,19 @@ public interface HttpClientTransport extends ClientConnectionFactory
      */
     public void setConnectionPoolFactory(ConnectionPool.Factory factory);
 
+    /**
+     * Specifies whether a {@link HttpClientTransport} is dynamic.
+     */
     @FunctionalInterface
     public interface Dynamic
     {
-        public HttpDestination.Protocol getProtocol(HttpRequest request);
+        /**
+         * Creates a new Key with the given request and origin.
+         *
+         * @param request the request that triggers the creation of the Key
+         * @param origin the origin of the server for the request
+         * @return a Key that identifies a destination
+         */
+        public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin);
     }
 }

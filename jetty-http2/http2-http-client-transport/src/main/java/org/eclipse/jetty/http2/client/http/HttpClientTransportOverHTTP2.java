@@ -105,9 +105,9 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Info info)
+    public HttpDestination newHttpDestination(HttpDestination.Key key)
     {
-        return new MultiplexHttpDestination(getHttpClient(), info);
+        return new MultiplexHttpDestination(getHttpClient(), key);
     }
 
     @Override

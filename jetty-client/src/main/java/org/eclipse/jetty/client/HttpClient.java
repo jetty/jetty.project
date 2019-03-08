@@ -124,7 +124,7 @@ public class HttpClient extends ContainerLifeCycle
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
-    private final ConcurrentMap<HttpDestination.Info, HttpDestination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<HttpDestination.Key, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
@@ -543,14 +543,8 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Destination getDestination(String scheme, String host, int port)
     {
-        return destinationFor(scheme, host, port);
-    }
-
-    @Deprecated
-    protected HttpDestination destinationFor(String scheme, String host, int port)
-    {
         Origin origin = createOrigin(scheme, host, port);
-        return resolveDestination(new HttpDestination.Info(origin, null));
+        return resolveDestination(new HttpDestination.Key(origin, null));
     }
 
     private Origin createOrigin(String scheme, String host, int port)
@@ -566,15 +560,15 @@ public class HttpClient extends ContainerLifeCycle
         return new Origin(scheme, host, port);
     }
 
-    private HttpDestination resolveDestination(HttpDestination.Info info)
+    private HttpDestination resolveDestination(HttpDestination.Key key)
     {
-        HttpDestination destination = destinations.get(info);
+        HttpDestination destination = destinations.get(key);
         if (destination == null)
         {
-            destination = getTransport().newHttpDestination(info);
+            destination = getTransport().newHttpDestination(key);
             // Start the destination before it's published to other threads.
             addManaged(destination);
-            HttpDestination existing = destinations.putIfAbsent(info, destination);
+            HttpDestination existing = destinations.putIfAbsent(key, destination);
             if (existing != null)
             {
                 removeBean(destination);
@@ -592,7 +586,7 @@ public class HttpClient extends ContainerLifeCycle
     protected boolean removeDestination(HttpDestination destination)
     {
         removeBean(destination);
-        return destinations.remove(destination.getInfo(), destination);
+        return destinations.remove(destination.getKey(), destination);
     }
 
     /**
@@ -606,14 +600,15 @@ public class HttpClient extends ContainerLifeCycle
     protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
         Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());
-        HttpDestination.Protocol protocol = null;
         HttpClientTransport transport = getTransport();
+        HttpDestination.Key destinationKey = null;
         if (transport instanceof HttpClientTransport.Dynamic)
-            protocol = ((HttpClientTransport.Dynamic)transport).getProtocol(request);
+            destinationKey = ((HttpClientTransport.Dynamic)transport).newDestinationKey(request, origin);
+        if (destinationKey == null)
+            destinationKey = new HttpDestination.Key(origin, null);
         if (LOG.isDebugEnabled())
-            LOG.debug("Selected {} for {}", protocol, request);
-        HttpDestination.Info destinationInfo = new HttpDestination.Info(origin, protocol);
-        HttpDestination destination = resolveDestination(destinationInfo);
+            LOG.debug("Selected {} for {}", destinationKey, request);
+        HttpDestination destination = resolveDestination(destinationKey);
         destination.send(request, listeners);
     }
 

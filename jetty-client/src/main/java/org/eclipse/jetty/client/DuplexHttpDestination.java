@@ -18,15 +18,20 @@
 
 package org.eclipse.jetty.client;
 
+/**
+ * <p>A destination for those network transports that are duplex (e.g. HTTP/1.1 and FastCGI).</p>
+ *
+ * @see MultiplexHttpDestination
+ */
 public class DuplexHttpDestination extends HttpDestination
 {
     public DuplexHttpDestination(HttpClient client, Origin origin)
     {
-        this(client, new Info(origin, null));
+        this(client, new Key(origin, null));
     }
 
-    public DuplexHttpDestination(HttpClient client, Info info)
+    public DuplexHttpDestination(HttpClient client, Key key)
     {
-        super(client, info);
+        super(client, key);
     }
 }

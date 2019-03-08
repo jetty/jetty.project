@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Promise;
 
 public class HttpClientConnectionFactory implements ClientConnectionFactory
 {
-    public static final Info HTTP = new Info(List.of("http/1.1"), new HttpClientConnectionFactory());
+    public static final Info HTTP11 = new Info(List.of("http/1.1"), new HttpClientConnectionFactory());
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)

@@ -47,6 +47,11 @@ public interface ClientConnectionFactory
         return connection;
     }
 
+    /**
+     * <p>A holder for a list of protocol strings identifying a network protocol
+     * (for example {@code ["h2", "h2-17", "h2-16"]}) and a {@link ClientConnectionFactory}
+     * that creates connections that speak that network protocol.</p>
+     */
     public static class Info
     {
         private final List<String> protocols;
@@ -68,6 +73,12 @@ public interface ClientConnectionFactory
             return factory;
         }
 
+        /**
+         * Tests whether one of the protocols of this class is also present in the given candidates list.
+         *
+         * @param candidates the candidates to match against
+         * @return whether one of the protocols of this class is present in the candidates
+         */
         public boolean matches(List<String> candidates)
         {
             return protocols.stream().anyMatch(candidates::contains);

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
@@ -40,15 +42,61 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 
+/**
+ * <p>A {@link HttpClientTransport} that can dynamically switch among different application protocols.</p>
+ * <p>Applications create HttpClientTransportDynamic instances specifying all the <em>application protocols</em>
+ * it supports, in order of preference. The typical case is when the server supports both HTTP/1.1 and
+ * HTTP/2, but the client does not know that. In this case, the application will create a
+ * HttpClientTransportDynamic in this way:</p>
+ * <pre>
+ * ClientConnector clientConnector = new ClientConnector();
+ * // Configure the clientConnector.
+ *
+ * // Prepare the application protocols.
+ * HttpClientConnectionFactory.Key h1 = HttpClientConnectionFactory.HTTP;
+ * HTTP2Client http2Client = new HTTP2Client(clientConnector);
+ * ClientConnectionFactory.Key h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
+ *
+ * // Create the HttpClientTransportDynamic, preferring h2 over h1.
+ * HttpClientTransport transport = new HttpClientTransportDynamic(clientConnector, h2, h1);
+ *
+ * // Create the HttpClient.
+ * client = new HttpClient(transport);
+ * </pre>
+ * <p>Note how in the code above the HttpClientTransportDynamic has been created with the <em>application
+ * protocols</em> {@code h2} and {@code h1}, without the need to specify TLS (which is implied by the request
+ * scheme) or ALPN (which is implied by HTTP/2 over TLS).</p>
+ * <p>When a request is first sent, a destination needs to be created, and the {@link org.eclipse.jetty.client.Origin}
+ * {@code (scheme, host, port)} is not enough to identify the destination because the same origin may speak
+ * different protocols.
+ * For example, the Jetty server supports speaking clear-text {@code http/1.1} and {@code h2c} on the same port.
+ * Imagine a client sending a {@code h2c} request to that port; this will create a destination and connections
+ * that speak {@code h2c}; it won't be possible to use the connections from that destination to send
+ * {@code http/1.1} requests.
+ * Therefore a destination is identified by a {@link org.eclipse.jetty.client.HttpDestination.Key} and
+ * applications can customize the creation of the destination key (for example depending on request protocol
+ * version, or request headers, or request attributes, or even request path) by overriding
+ * {@link #newDestinationKey(HttpRequest, Origin)}.</p>
+ */
 public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport implements HttpClientTransport.Dynamic
 {
     private final List<ClientConnectionFactory.Info> factoryInfos;
+    private final List<String> protocols;
 
+    /**
+     * Creates a transport that speaks only HTTP/1.1.
+     */
     public HttpClientTransportDynamic()
     {
-        this(new ClientConnector(), HttpClientConnectionFactory.HTTP);
+        this(new ClientConnector(), HttpClientConnectionFactory.HTTP11);
     }
 
+    /**
+     * Creates a transport with the given {@link ClientConnector} and the given <em>application protocols</em>.
+     *
+     * @param connector the ClientConnector used by this transport
+     * @param factoryInfos the <em>application protocols</em> that this transport can speak
+     */
     public HttpClientTransportDynamic(ClientConnector connector, ClientConnectionFactory.Info... factoryInfos)
     {
         super(connector);
@@ -56,6 +104,10 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         if (factoryInfos.length == 0)
             throw new IllegalArgumentException("Missing ClientConnectionFactory");
         this.factoryInfos = Arrays.asList(factoryInfos);
+        this.protocols = Arrays.stream(factoryInfos)
+                .flatMap(info -> info.getProtocols().stream())
+                .distinct()
+                .collect(Collectors.toList());
         for (ClientConnectionFactory.Info factoryInfo : factoryInfos)
             addBean(factoryInfo);
         setConnectionPoolFactory(destination ->
@@ -63,35 +115,40 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     }
 
     @Override
-    public HttpDestination.Protocol getProtocol(HttpRequest request)
+    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
     {
-        HttpVersion version = request.getVersion();
-        if (HttpScheme.HTTPS.is(request.getScheme()))
+        boolean ssl = HttpScheme.HTTPS.is(request.getScheme());
+        String http2 = ssl ? "h2" : "h2c";
+        List<String> protocols = List.of();
+        if (request.getVersion() == HttpVersion.HTTP_2)
         {
-            List<String> protocols = version == HttpVersion.HTTP_2 ? List.of("h2") : List.of("h2", "http/1.1");
-            if (findClientConnectionFactoryInfo(protocols).isPresent())
-                return new HttpDestination.Protocol(protocols, true);
+            // The application is explicitly asking for HTTP/2, so exclude HTTP/1.1.
+            if (this.protocols.contains(http2))
+                protocols = List.of(http2);
         }
         else
         {
-            List<String> protocols = version == HttpVersion.HTTP_2 ? List.of("h2c") : List.of("http/1.1", "h2c");
-            if (findClientConnectionFactoryInfo(protocols).isPresent())
-                return new HttpDestination.Protocol(protocols, false);
+            // Preserve the order of protocols chosen by the application.
+            protocols = this.protocols.stream()
+                    .filter(p -> p.equals("http/1.1") || p.equals(http2))
+                    .collect(Collectors.toList());
         }
-        return null;
+        if (protocols.isEmpty())
+            return new HttpDestination.Key(origin, null);
+        return new HttpDestination.Key(origin, new HttpDestination.Protocol(protocols, ssl));
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Info info)
+    public HttpDestination newHttpDestination(HttpDestination.Key key)
     {
-        return new MultiplexHttpDestination(getHttpClient(), info);
+        return new MultiplexHttpDestination(getHttpClient(), key);
     }
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        HttpDestination.Protocol protocol = destination.getInfo().getProtocol();
+        HttpDestination.Protocol protocol = destination.getKey().getProtocol();
         ClientConnectionFactory.Info factoryInfo;
         if (protocol == null)
         {
@@ -121,6 +178,8 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             String protocol = alpnConnection.getProtocol();
             if (LOG.isDebugEnabled())
                 LOG.debug("ALPN negotiated {} among {}", protocol, alpnConnection.getProtocols());
+            if (protocol == null)
+                throw new IOException("Could not negotiate protocol among " + alpnConnection.getProtocols());
             List<String> protocols = List.of(protocol);
             Info factoryInfo = findClientConnectionFactoryInfo(protocols)
                     .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + protocol));
