@@ -118,7 +118,7 @@ public class ClientCloseTest
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
-        JettyWebSocketServletContainerInitializer.configure(context);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
         context.setContextPath("/");
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {

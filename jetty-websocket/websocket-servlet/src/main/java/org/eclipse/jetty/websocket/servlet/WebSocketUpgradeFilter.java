@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -82,7 +83,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
         for (FilterHolder holder : servletHandler.getFilters())
         {
-            if (holder.getInitParameter(MAPPING_INIT_PARAM) != null)
+            if (holder.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM) != null)
                 return holder;
         }
 
@@ -100,7 +101,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
         holder.setName(name);
-        holder.setInitParameter(MAPPING_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
+        holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
 
         holder.setAsyncSupported(true);
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
@@ -110,7 +111,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return holder;
     }
 
-    public final static String MAPPING_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
+    public final static String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
 
     private final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
     private WebSocketMapping mapping;
@@ -157,7 +158,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     {
         final ServletContext context = config.getServletContext();
 
-        String mappingKey = config.getInitParameter(MAPPING_INIT_PARAM);
+        String mappingKey = config.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM);
         if (mappingKey != null)
             mapping = WebSocketMapping.ensureMapping(context, mappingKey);
         else
@@ -192,5 +193,10 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         String autoFragment = config.getInitParameter("autoFragment");
         if (autoFragment != null)
             defaultCustomizer.setAutoFragment(Boolean.parseBoolean(autoFragment));
+    }
+
+    @Override
+    public void destroy()
+    {
     }
 }

@@ -147,7 +147,7 @@ public class WebSocketStatsTest
         contextHandler.addServlet(MyWebSocketServlet.class, "/testPath");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configure(contextHandler);
+        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
         client = new WebSocketClient();
 
         server.start();

@@ -61,11 +61,11 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
     private static final Logger LOG = Log.getLogger(WebSocketMapping.class);
 
-    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
+    public static WebSocketMapping getMapping(ServletContext servletContext, String mappingKey)
     {
         ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
-
         Object mappingObject = contextHandler.getAttribute(mappingKey);
+
         if (mappingObject!=null)
         {
             if (WebSocketMapping.class.isInstance(mappingObject))
@@ -73,14 +73,24 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             else
                 throw new IllegalStateException(
                         String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
-                        mappingKey, mappingObject.toString()));
+                                mappingKey, mappingObject.toString()));
         }
-        else
+
+        return null;
+    }
+
+    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
+    {
+        ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
+        WebSocketMapping mapping = getMapping(servletContext, mappingKey);
+
+        if (mapping == null)
         {
-            WebSocketMapping mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(servletContext));
+            mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(servletContext));
             contextHandler.setAttribute(mappingKey, mapping);
-            return mapping;
         }
+
+        return mapping;
     }
 
     public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.servlet.WebSocketMapping";

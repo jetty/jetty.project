@@ -36,6 +36,8 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,11 +94,14 @@ public class JettyWebSocketTest
         }
     }
 
+    Server server;
+    WebSocketClient client;
 
-    @Test
-    public void test() throws Exception
+
+    @BeforeEach
+    public void start() throws Exception
     {
-        Server server = new Server();
+        server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(8080);
         server.addConnector(connector);
@@ -108,39 +113,42 @@ public class JettyWebSocketTest
         contextHandler.addServlet(MyWebSocketServlet.class, "/testPath1");
         contextHandler.addServlet(MyWebSocketServlet.class, "/testPath2");
 
-        try
+        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        server.start();
+
+        client = new WebSocketClient();
+        client.start();
+    }
+
+
+    @AfterEach
+    public void stop() throws Exception
+    {
+        client.stop();
+        server.stop();
+    }
+
+    @Test
+    public void test() throws Exception
+    {
+        URI uri = URI.create("ws://localhost:8080/testPath1");
+        EventSocket socket = new EventSocket();
+        CompletableFuture<Session> connect = client.connect(socket, uri);
+        try(Session session = connect.get(5, TimeUnit.SECONDS))
         {
-            JettyWebSocketServletContainerInitializer.configure(contextHandler);
-            server.start();
-
-            WebSocketClient client = new WebSocketClient();
-            client.start();
-
-            URI uri = URI.create("ws://localhost:8080/testPath1");
-            EventSocket socket = new EventSocket();
-            CompletableFuture<Session> connect = client.connect(socket, uri);
-            try(Session session = connect.get(5, TimeUnit.SECONDS))
-            {
-                session.getRemote().sendString("hello world");
-            }
-            assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
-
-
-            uri = URI.create("ws://localhost:8080/testPath2");
-            socket = new EventSocket();
-            connect = client.connect(socket, uri);
-            try(Session session = connect.get(5, TimeUnit.SECONDS))
-            {
-                session.getRemote().sendString("hello world");
-            }
-            assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
-
-
-            server.stop();
+            session.getRemote().sendString("hello world");
         }
-        catch (Throwable t)
+        assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
+
+
+        uri = URI.create("ws://localhost:8080/testPath2");
+        socket = new EventSocket();
+        connect = client.connect(socket, uri);
+        try(Session session = connect.get(5, TimeUnit.SECONDS))
         {
-            t.printStackTrace();
+            session.getRemote().sendString("hello world");
         }
+
+        assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
     }
 }

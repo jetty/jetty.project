@@ -81,7 +81,7 @@ public class SlowClientTest
             }
         });
         context.addServlet(websocket, "/ws");
-        JettyWebSocketServletContainerInitializer.configure(context);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         HandlerList handlers = new HandlerList();
         handlers.addHandler(context);

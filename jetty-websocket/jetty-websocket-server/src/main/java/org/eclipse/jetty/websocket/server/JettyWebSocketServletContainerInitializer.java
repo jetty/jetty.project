@@ -20,15 +20,19 @@ package org.eclipse.jetty.websocket.server;
 
 import java.util.Collections;
 import java.util.Set;
+
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
 /**
  * ServletContext configuration for Jetty Native WebSockets API.
@@ -62,20 +66,22 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         }
     }
 
-    public static void configure(ServletContextHandler contextHandler)
+    public static void configureContext(ServletContextHandler context)
     {
         JettyWebSocketServletContainerInitializer sci = new JettyWebSocketServletContainerInitializer();
-        JettyWebSocketEmbeddedStarter starter = new JettyWebSocketEmbeddedStarter(sci, contextHandler);
-        contextHandler.addBean(starter);
+        JettyWebSocketEmbeddedStarter starter = new JettyWebSocketEmbeddedStarter(sci, context);
+        context.addBean(starter);
     }
 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext servletContext) throws ServletException
     {
         WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(servletContext);
+        FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(servletContext);
+        WebSocketMapping mapping = WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY);
         JettyServerFrameHandlerFactory factory = JettyServerFrameHandlerFactory.ensureFactory(servletContext);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onStartup {} {}", components, factory);
+            LOG.debug("onStartup {} {} {} {}", factory, mapping, filterHolder, components);
     }
 }
