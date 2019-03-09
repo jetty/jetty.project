@@ -739,6 +739,9 @@ sslContextFactory.setProvider("Conscrypt");
 
 If you are using the Jetty Distribution, please see the section on enabling the link:#jetty-conscrypt-distribution[Conscrypt SSL module.]
 
+If you are using Conscrypt with Java 8, you must exclude `TLSv1.3` protocol as it is now enabled per default with Conscrypt 2.0.0 but not supported by Java 8.
+
+
 ==== Configuring SNI
 
 From Java 8, the JVM contains support for the http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name Indicator (SNI)] extension, which allows a SSL connection handshake to indicate one or more DNS names that it applies to.
