@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +81,11 @@ public class ConscryptHTTP2ServerTest
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setProvider("Conscrypt");
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        if (JavaVersion.VERSION.getPlatform() < 9)
+        {
+            // conscrypt enable TLSv1.3 per default but it's not supported in jdk8
+            sslContextFactory.addExcludeProtocols( "TLSv1.3" );
+        }
         return sslContextFactory;
     }
 
