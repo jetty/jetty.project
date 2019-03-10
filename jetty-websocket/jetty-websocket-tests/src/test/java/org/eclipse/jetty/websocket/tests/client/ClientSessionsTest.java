@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
@@ -105,12 +105,12 @@ public class ClientSessionsTest
 
         client.addSessionListener(new WebSocketSessionListener() {
             @Override
-            public void onWebSocketSessionOpened(WebSocketSessionImpl session)
+            public void onWebSocketSessionOpened(WebSocketSession session)
             {
             }
 
             @Override
-            public void onWebSocketSessionClosed(WebSocketSessionImpl session)
+            public void onWebSocketSessionClosed(WebSocketSession session)
             {
                 onSessionCloseLatch.countDown();
             }

@@ -22,7 +22,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -64,12 +64,12 @@ public class ClientOpenSessionTracker implements Connection.Listener, WebSocketS
     }
 
     @Override
-    public void onWebSocketSessionOpened(WebSocketSessionImpl session)
+    public void onWebSocketSessionOpened(WebSocketSession session)
     {
     }
 
     @Override
-    public void onWebSocketSessionClosed(WebSocketSessionImpl session)
+    public void onWebSocketSessionClosed(WebSocketSession session)
     {
         this.closeSessionLatch.countDown();
     }

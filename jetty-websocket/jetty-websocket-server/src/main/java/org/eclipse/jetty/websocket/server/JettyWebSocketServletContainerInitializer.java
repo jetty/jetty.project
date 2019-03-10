@@ -45,10 +45,10 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
         WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
-        JettyServerFrameHandlerFactory.ensureFactory(context.getServletContext());
+        JettyServerFrameHandlerFactory factory = JettyServerFrameHandlerFactory.ensureFactory(context.getServletContext());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onStartup {} {} {} {}", container, mapping, filterHolder, components);
+            LOG.debug("configureContext {} {} {} {} {}", container, mapping, filterHolder, components, factory);
 
         return container;
     }

@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
@@ -212,7 +212,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSessionImpl.class))
+        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -253,7 +253,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSessionImpl.class))
+        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 
