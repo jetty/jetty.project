@@ -179,7 +179,6 @@ To allow the greatest degree of flexibility in using JAAS with web applications,
 Note that you don't ordinarily need to set these explicitly, as Jetty has defaults which will work in 99% of cases.
 However, should you need to, you can configure:
 
-* a policy for role-based authorization (Default: `org.eclipse.jetty.jaas.StrictRoleCheckPolicy`)
 * a CallbackHandler (Default: `org.eclipse.jetty.jaas.callback.DefaultCallbackHandler`)
 * a list of classnames for the Principal implementation that equate to a user role (Default: `org.eclipse.jetty.jaas.JAASRole`)
 
@@ -190,9 +189,6 @@ Here's an example of setting each of these (to their default values):
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
   <Set name="LoginModuleName">xyz</Set>
-  <Set name="RoleCheckPolicy">
-    <New class="org.eclipse.jetty.jaas.StrictRoleCheckPolicy"/>
-  </Set>
   <Set name="CallbackHandlerClass">
        org.eclipse.jetty.jaas.callback.DefaultCallbackHandler
   </Set>
@@ -203,16 +199,6 @@ Here's an example of setting each of these (to their default values):
   </Set>
 </New>
 ----
-
-===== RoleCheckPolicy
-
-The `RoleCheckPolicy` must be an implementation of the `org.eclipse.jetty.jaas.RoleCheckPolicy` interface and its purpose is to help answer the question "is User X in Role Y" for role-based authorization requests.
-The default implementation distributed with Jetty is the `org.eclipse.jetty.jaas.StrictRoleCheckPolicy`, which will assess a user as having a particular role if that role is at the top of the stack of roles that have been temporarily pushed onto the user.
-If the user has no temporarily assigned roles, the role is amongst those configured for the user.
-
-Roles can be temporarily assigned to a user programmatically by using the `pushRole(String rolename)` method of the `org.eclipse.jetty.jaas.JAASUserPrincipal` class.
-
-For the majority of webapps, the default `StrictRoleCheckPolicy` will be quite adequate, however you may provide your own implementation and set it on your `JAASLoginService` instance.
 
 ===== CallbackHandler
 
