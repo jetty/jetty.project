@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.util.Collections;
 import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
@@ -27,7 +26,6 @@ import javax.servlet.ServletException;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -41,47 +39,24 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
 {
     private static final Logger LOG = Log.getLogger(JettyWebSocketServletContainerInitializer.class);
 
-    public static class JettyWebSocketEmbeddedStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
+    public static JettyWebSocketServerContainer configureContext(ServletContextHandler context)
     {
-        private ServletContainerInitializer sci;
-        private ServletContextHandler context;
+        WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());
+        FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
+        WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
+        JettyServerFrameHandlerFactory.ensureFactory(context.getServletContext());
 
-        public JettyWebSocketEmbeddedStarter(ServletContainerInitializer sci, ServletContextHandler context)
-        {
-            this.sci = sci;
-            this.context = context;
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("onStartup {} {} {} {}", container, mapping, filterHolder, components);
 
-        public void doStart()
-        {
-            try
-            {
-                Set<Class<?>> c = Collections.emptySet();
-                sci.onStartup(c, context.getServletContext());
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    public static void configureContext(ServletContextHandler context)
-    {
-        JettyWebSocketServletContainerInitializer sci = new JettyWebSocketServletContainerInitializer();
-        JettyWebSocketEmbeddedStarter starter = new JettyWebSocketEmbeddedStarter(sci, context);
-        context.addBean(starter);
+        return container;
     }
 
     @Override
-    public void onStartup(Set<Class<?>> c, ServletContext servletContext) throws ServletException
+    public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
     {
-        WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(servletContext);
-        FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(servletContext);
-        WebSocketMapping mapping = WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY);
-        JettyServerFrameHandlerFactory factory = JettyServerFrameHandlerFactory.ensureFactory(servletContext);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("onStartup {} {} {} {}", factory, mapping, filterHolder, components);
+        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(context,"Jetty WebSocket SCI");
+        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
     }
 }
