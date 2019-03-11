@@ -171,7 +171,7 @@ public class ConnectHandler extends HandlerWrapper
         {
             scheduler = getServer().getBean(Scheduler.class);
             if (scheduler == null)
-                scheduler = new ScheduledExecutorScheduler(String.format("Proxy-Scheduler-%x", hashCode()), true);
+                scheduler = new ScheduledExecutorScheduler(String.format("Proxy-Scheduler-%x", hashCode()), false);
             addBean(scheduler);
         }
 

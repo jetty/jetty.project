@@ -523,7 +523,7 @@ public class SessionHandler extends ScopedHandler
             _scheduler = server.getBean(Scheduler.class);
             if (_scheduler == null)
             {            
-                _scheduler = new ScheduledExecutorScheduler(String.format("Session-Scheduler-%x",hashCode()), true);
+                _scheduler = new ScheduledExecutorScheduler(String.format("Session-Scheduler-%x",hashCode()), false);
                 _ownScheduler = true;
                 _scheduler.start();
             }

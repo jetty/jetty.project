@@ -121,7 +121,7 @@ public class HouseKeeper extends AbstractLifeCycle
 
             if (_scheduler == null)
             {
-                _scheduler = new ScheduledExecutorScheduler(String.format("Session-HouseKeeper-%x",hashCode()),true);
+                _scheduler = new ScheduledExecutorScheduler(String.format("Session-HouseKeeper-%x",hashCode()),false);
                 _ownScheduler = true;
                 _scheduler.start();
                 if (LOG.isDebugEnabled()) LOG.debug("Using own scheduler for scavenging");

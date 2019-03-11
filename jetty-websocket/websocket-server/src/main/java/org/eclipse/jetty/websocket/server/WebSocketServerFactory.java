@@ -87,7 +87,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     // TODO: obtain shared (per server scheduler, somehow)
-    private final Scheduler scheduler = new ScheduledExecutorScheduler(String.format("WebSocket-Scheduler-%x",hashCode()),true);
+    private final Scheduler scheduler = new ScheduledExecutorScheduler(String.format("WebSocket-Scheduler-%x",hashCode()),false);
     private final List<WebSocketSessionListener> listeners = new ArrayList<>();
     private final String supportedVersions;
     private final WebSocketPolicy defaultPolicy;
