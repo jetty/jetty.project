@@ -54,6 +54,7 @@ public class HashLoginService extends AbstractLoginService
     private boolean hotReload = false; // default is not to reload
     private UserStore _userStore;
     private boolean _userStoreAutoCreate = false;
+    private boolean startUserStore = false;
 
 
     /* ------------------------------------------------------------ */
@@ -127,13 +128,55 @@ public class HashLoginService extends AbstractLoginService
     }
 
     /**
+     * Will we automatically start/stop the user store?
+     *
+     * @return true if doStart and doStop will call start/stop on the user store
+     */
+    public boolean isStartUserStoreEnabled()
+    {
+        return startUserStore;
+    }
+
+    /**
+     * Enable calling start/stop on the configured user store.
+     *
+     * @param enable true to enable, false to disable
+     */
+    public void setStartUserStoreEnabled(boolean enable)
+    {
+        this.startUserStore = enable;
+    }
+
+    /**
      * Configure the {@link UserStore} implementation to use.
      * If none, for backward compat if none the {@link PropertyUserStore} will be used
      * @param userStore the {@link UserStore} implementation to use
      */
     public void setUserStore(UserStore userStore)
     {
+        this.setUserStore(userStore, false);
+    }
+
+    /**
+     * Configure the {@link UserStore} implementation to use.
+     * If none, for backward compat if none the {@link PropertyUserStore} will be used
+     * @param userStore the {@link UserStore} implementation to use
+     * @param startUserStore true if doStart/doStop should call start/stop on the user store.
+     */
+    public void setUserStore(UserStore userStore, boolean startUserStore)
+    {
         this._userStore = userStore;
+        this.startUserStore = startUserStore;
+    }
+
+
+    /**
+     * Return the {@link UserStore} instance being used
+     * @return the {@link UserStore} instance being used.
+     */
+    public UserStore getUserStore()
+    {
+        return this._userStore;
     }
 
     /* ------------------------------------------------------------ */
@@ -192,6 +235,9 @@ public class HashLoginService extends AbstractLoginService
             propertyUserStore.start();
             _userStore = propertyUserStore;
             _userStoreAutoCreate = true;
+        } else if (this.startUserStore) {
+            // if the userstore was configured for us, start it if requested
+            _userStore.start();
         }
     }
 
@@ -203,7 +249,7 @@ public class HashLoginService extends AbstractLoginService
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_userStore != null && _userStoreAutoCreate)
+        if (_userStore != null && (_userStoreAutoCreate || startUserStore))
             _userStore.stop();
         _userStore = null;
     }
