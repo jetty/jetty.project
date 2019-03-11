@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -41,9 +42,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class ProxyProtocolClientConnectionFactory implements ClientConnectionFactory
 {
     private final ClientConnectionFactory connectionFactory;
-    private final Supplier<InetSocketAddress> proxiedAddressSupplier;
+    private final Supplier<Origin.Address> proxiedAddressSupplier;
 
-    public ProxyProtocolClientConnectionFactory(ClientConnectionFactory connectionFactory, Supplier<InetSocketAddress> proxiedAddressSupplier)
+    public ProxyProtocolClientConnectionFactory(ClientConnectionFactory connectionFactory, Supplier<Origin.Address> proxiedAddressSupplier)
     {
         this.connectionFactory = connectionFactory;
         this.proxiedAddressSupplier = proxiedAddressSupplier;
@@ -78,27 +79,20 @@ public class ProxyProtocolClientConnectionFactory implements ClientConnectionFac
 
         protected void writePROXYLine()
         {
-            InetSocketAddress proxiedSocketAddress = proxiedAddressSupplier.get();
-            if (proxiedSocketAddress == null)
+            Origin.Address proxiedAddress = proxiedAddressSupplier.get();
+            if (proxiedAddress == null)
             {
                 failed(new IllegalArgumentException("Missing proxied socket address"));
                 return;
             }
-            InetAddress proxiedAddress = proxiedSocketAddress.getAddress();
-            if (proxiedAddress == null)
-            {
-                failed(new IllegalArgumentException("Unresolved proxied socket address " + proxiedSocketAddress));
-                return;
-            }
-
-            String proxiedIP = proxiedAddress.getHostAddress();
-            int proxiedPort = proxiedSocketAddress.getPort();
+            String proxiedIP = proxiedAddress.getHost();
+            int proxiedPort = proxiedAddress.getPort();
             InetSocketAddress serverSocketAddress = getEndPoint().getRemoteAddress();
             InetAddress serverAddress = serverSocketAddress.getAddress();
             String serverIP = serverAddress.getHostAddress();
             int serverPort = serverSocketAddress.getPort();
 
-            boolean ipv6 = proxiedAddress instanceof Inet6Address && serverAddress instanceof Inet6Address;
+            boolean ipv6 = serverAddress instanceof Inet6Address;
             String line = String.format("PROXY %s %s %s %d %d\r\n", ipv6 ? "TCP6" : "TCP4" , proxiedIP, serverIP, proxiedPort, serverPort);
             if (LOG.isDebugEnabled())
                 LOG.debug("Writing PROXY line: {}", line.trim());

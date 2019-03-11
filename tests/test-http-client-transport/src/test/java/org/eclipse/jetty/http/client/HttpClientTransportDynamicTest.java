@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -391,7 +390,7 @@ public class HttpClientTransportDynamicTest
 
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(newSslContextFactory(true));
-        HttpClientConnectionFactory.Info h1 = new ClientConnectionFactory.Info(List.of("http/1.1"), new HttpClientConnectionFactory());
+        ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
 
         Map<HttpRequest, String> mapping = new ConcurrentHashMap<>();
         client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1)
@@ -411,7 +410,7 @@ public class HttpClientTransportDynamicTest
                 return new MultiplexHttpDestination(client, key, factory -> new ProxyProtocolClientConnectionFactory(factory, () ->
                 {
                     String[] address = key.getKind().split(":");
-                    return new InetSocketAddress(address[0], Integer.parseInt(address[1]));
+                    return new Origin.Address(address[0], Integer.parseInt(address[1]));
                 }));
             }
         });
