@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -34,6 +35,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
@@ -44,17 +47,17 @@ import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
-public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, LifeCycle.Listener
+public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, LifeCycle.Listener
 {
 
     public static JettyWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
-        ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
+        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
         JettyWebSocketServerContainer container = contextHandler.getBean(JettyWebSocketServerContainer.class);
-        if (container==null)
+        if (container == null)
         {
             // Find Pre-Existing executor
             Executor executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
@@ -63,8 +66,10 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
             // Create the Jetty ServerContainer implementation
             container = new JettyWebSocketServerContainer(
+                    contextHandler,
                     WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
                     WebSocketComponents.ensureWebSocketComponents(servletContext), executor);
+            servletContext.setAttribute(WebSocketContainer.class.getName(), container);
             contextHandler.addManaged(container);
             contextHandler.addLifeCycleListener(container);
         }
@@ -85,32 +90,37 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     /**
      * Main entry point for {@link JettyWebSocketServletContainerInitializer}.
-     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     *
+     * @param webSocketMapping    the {@link WebSocketMapping} that this container belongs to
      * @param webSocketComponents the {@link WebSocketComponents} instance to use
-     * @param executor the {@link Executor} to use
+     * @param executor            the {@link Executor} to use
      */
-    public JettyWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
+    public JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
     {
         this.webSocketMapping = webSocketMapping;
         this.webSocketComponents = webSocketComponents;
         this.executor = executor;
-        this.frameHandlerFactory = new JettyServerFrameHandlerFactory(this);
+
+        // Ensure there is a FrameHandlerFactory
+        JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
+        if (factory == null)
+        {
+            factory = new JettyServerFrameHandlerFactory(this);
+            contextHandler.addManaged(factory);
+            contextHandler.addLifeCycleListener(factory);
+        }
+        frameHandlerFactory = factory;
 
         addSessionListener(sessionTracker);
     }
 
-
     public void addMapping(String pathSpec, WebSocketCreator creator)
     {
-        addMapping(WebSocketMapping.parsePathSpec(pathSpec), creator);
-    }
-
-    public void addMapping(PathSpec pathSpec, WebSocketCreator creator) throws WebSocketException
-    {
-        if (webSocketMapping.getMapping(pathSpec) != null)
+        PathSpec ps = WebSocketMapping.parsePathSpec(pathSpec);
+        if (webSocketMapping.getMapping(ps) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
-        webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, customizer);
+        webSocketMapping.addMapping(ps, creator, frameHandlerFactory, customizer);
     }
 
     @Override
@@ -151,5 +161,71 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public Collection<Session> getOpenSessions()
     {
         return sessionTracker.getSessions();
+    }
+
+    @Override
+    public WebSocketBehavior getBehavior()
+    {
+        return WebSocketBehavior.SERVER;
+    }
+
+    @Override
+    public Duration getIdleTimeout()
+    {
+        return customizer.getIdleTimeout();
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return customizer.getInputBufferSize();
+    }
+
+    @Override
+    public int getOutputBufferSize()
+    {
+        return customizer.getOutputBufferSize();
+    }
+
+    @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return customizer.getMaxBinaryMessageSize();
+    }
+
+    @Override
+    public long getMaxTextMessageSize()
+    {
+        return customizer.getMaxTextMessageSize();
+    }
+
+    @Override
+    public void setIdleTimeout(Duration duration)
+    {
+        customizer.setIdleTimeout(duration);
+    }
+
+    @Override
+    public void setInputBufferSize(int size)
+    {
+        customizer.setInputBufferSize(size);
+    }
+
+    @Override
+    public void setOutputBufferSize(int size)
+    {
+        customizer.setOutputBufferSize(size);
+    }
+
+    @Override
+    public void setMaxBinaryMessageSize(long size)
+    {
+        customizer.setMaxBinaryMessageSize(size);
+    }
+
+    @Override
+    public void setMaxTextMessageSize(long size)
+    {
+        customizer.setMaxTextMessageSize(size);
     }
 }

@@ -38,22 +38,6 @@ public class JettyServerFrameHandlerFactory
     extends JettyWebSocketFrameHandlerFactory
     implements FrameHandlerFactory, LifeCycle.Listener
 {
-    public static JettyServerFrameHandlerFactory ensureFactory(ServletContext servletContext)
-    {
-        ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Jetty Websocket");
-
-        JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
-        if (factory == null)
-        {
-            JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(servletContext);
-            servletContext.setAttribute(WebSocketContainer.class.getName(), container);
-            factory = new JettyServerFrameHandlerFactory(container);
-            contextHandler.addManaged(factory);
-            contextHandler.addLifeCycleListener(factory);
-        }
-        return factory;
-    }
-
     public JettyServerFrameHandlerFactory(WebSocketContainer container)
     {
         super(container);

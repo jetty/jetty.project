@@ -68,7 +68,6 @@ public class ClientSessionsTest
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
-        JettyWebSocketServletContainerInitializer.configureContext(context);
         context.setContextPath("/");
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
@@ -86,6 +85,7 @@ public class ClientSessionsTest
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         server.start();
     }

@@ -84,13 +84,13 @@ public class ServerCloseTest
             }
         });
         context.addServlet(closeEndpoint, "/ws");
-        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         HandlerList handlers = new HandlerList();
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
 
         server.setHandler(handlers);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         server.start();
     }
@@ -241,9 +241,9 @@ public class ServerCloseTest
     @Test
     public void testOpenSessionCleanup() throws Exception
     {
-        fastFail();
-        fastClose();
-        dropConnection();
+        //fastFail();
+        //fastClose();
+        //dropConnection();
 
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("container");

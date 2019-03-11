@@ -45,10 +45,9 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
         WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
-        JettyServerFrameHandlerFactory factory = JettyServerFrameHandlerFactory.ensureFactory(context.getServletContext());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("configureContext {} {} {} {} {}", container, mapping, filterHolder, components, factory);
+            LOG.debug("configureContext {} {} {} {}", container, mapping, filterHolder, components);
 
         return container;
     }
