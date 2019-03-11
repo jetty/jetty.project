@@ -22,7 +22,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,28 +59,14 @@ public class SharedBlockingCallback
     private final Condition _complete = _lock.newCondition();
     private Blocker _blocker = new Blocker();
 
-    @Deprecated
-    protected long getIdleTimeout()
-    {
-        return -1;
-    }
-
     public Blocker acquire() throws IOException
     {
-        long idle = getIdleTimeout();
         _lock.lock();
         try
         {
             while (_blocker._state != IDLE)
             {
-                if (idle>0 && (idle < Long.MAX_VALUE/2))
-                {
-                    // Wait a little bit longer than the blocker might block
-                    if (!_idle.await(idle*2,TimeUnit.MILLISECONDS))
-                        throw new IOException(new TimeoutException());
-                }
-                else
-                    _idle.await();
+                _idle.await();
             }
             _blocker._state = null;
             return _blocker;
@@ -195,29 +180,12 @@ public class SharedBlockingCallback
          */
         public void block() throws IOException
         {
-            long idle = getIdleTimeout();
             _lock.lock();
             try
             {
                 while (_state == null)
                 {
-                    if (idle > 0)
-                    {
-                        // Waiting here may compete with the idle timeout mechanism,
-                        // so here we wait a little bit longer to favor the normal
-                        // idle timeout mechanism that will call failed(Throwable).
-                        long excess = Math.min(idle / 2, 1000);
-                        if (!_complete.await(idle + excess, TimeUnit.MILLISECONDS))
-                        {
-                            // Method failed(Throwable) has not been called yet,
-                            // so we will synthesize a special TimeoutException.
-                            _state = new BlockerTimeoutException();
-                        }
-                    }
-                    else
-                    {
-                        _complete.await();
-                    }
+                    _complete.await();
                 }
 
                 if (_state == SUCCEEDED)

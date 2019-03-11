@@ -22,13 +22,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Dictionary;
 import java.util.Hashtable;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.BundleActivator;
@@ -78,8 +76,8 @@ public class Activator implements BundleActivator
         WebAppContext webapp = new WebAppContext();
         webapp.addServlet(new ServletHolder(new TestServlet()), "/mime");
         Dictionary props = new Hashtable();
-        props.put("war","webappA");
-        props.put("contextPath","/acme");
+        props.put("Jetty-WarResourcePath","webappA");
+        props.put("Web-ContextPath","/acme");
         props.put("managedServerName", "defaultJettyServer");
         _srA = context.registerService(WebAppContext.class.getName(),webapp,props);
         
@@ -87,8 +85,8 @@ public class Activator implements BundleActivator
         //deployed by another bundle
         WebAppContext webappB = new WebAppContext();
         Dictionary propsB = new Hashtable();
-        propsB.put("war", "webappB");
-        propsB.put("contextPath", "/acme");
+        propsB.put("Jetty-WarResourcePath", "webappB");
+        propsB.put("Web-ContextPath", "/acme");
         propsB.put("managedServerName", "fooServer");
         _srB = context.registerService(WebAppContext.class.getName(), webappB, propsB);
     }

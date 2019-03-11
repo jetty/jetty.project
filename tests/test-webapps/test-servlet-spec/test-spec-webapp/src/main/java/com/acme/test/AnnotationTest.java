@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
@@ -310,19 +309,19 @@ public class AnnotationTest extends HttpServlet
             if (maxAmount==null)
                 out.println("<p><b>Result: "+envResult+":  <span class=\"fail\">FAIL");
             else
-                out.println("<p><b>Result: "+envResult+": "+(maxAmount.compareTo(new Double(55))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
+                out.println("<p><b>Result: "+envResult+": "+(maxAmount.compareTo(55D)==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult+"</b>");
 
             if (minAmount==null)
                 out.println("<p><b>Result: "+envResult2+":  <span class=\"fail\">FAIL");
             else
-                out.println("<br/><b>Result: "+envResult2+": "+(minAmount.compareTo(new Double("0.99"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
+                out.println("<br/><b>Result: "+envResult2+": "+(minAmount.compareTo(0.99D)==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult2+"</b>");
 
             if (avgAmount==null)
                 out.println("<p><b>Result: "+envResult3+":  <span class=\"fail\">FAIL");
             else
-                out.println("<br/><b>Result: "+envResult3+": "+(avgAmount.compareTo(new Double("1.25"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
+                out.println("<br/><b>Result: "+envResult3+": "+(avgAmount.compareTo(1.25D)==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult3+"</b></p>");     
             
             out.println("<h2>@Resource Injection for UserTransaction </h2>");

@@ -18,6 +18,20 @@
 
 package org.eclipse.jetty.http2.client;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -38,19 +52,11 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class TrailersTest extends AbstractTest
@@ -245,7 +251,8 @@ public class TrailersTest extends AbstractTest
                 Request jettyRequest = (Request)request;
                 Response jettyResponse = jettyRequest.getResponse();
                 HttpFields trailers = new HttpFields();
-                jettyResponse.setTrailerHttpFields(() -> trailers);
+                jettyResponse.setTrailerFields(() ->
+                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
                 jettyResponse.getOutputStream().write("hello_trailers".getBytes(StandardCharsets.UTF_8));
                 jettyResponse.flushBuffer();

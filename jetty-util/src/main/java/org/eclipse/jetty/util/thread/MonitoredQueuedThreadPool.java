@@ -63,7 +63,7 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
                 long queueLatency = System.nanoTime() - begin;
                 queueStats.decrement();
                 threadStats.increment();
-                queueLatencyStats.set(queueLatency);
+                queueLatencyStats.record(queueLatency);
                 long start = System.nanoTime();
                 try
                 {
@@ -73,7 +73,7 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
                 {
                     long taskLatency = System.nanoTime() - start;
                     threadStats.decrement();
-                    taskLatencyStats.set(taskLatency);
+                    taskLatencyStats.record(taskLatency);
                 }
             }
 

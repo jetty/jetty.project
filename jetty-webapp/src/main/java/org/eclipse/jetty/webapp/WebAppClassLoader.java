@@ -591,29 +591,6 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param transformer the transformer to add
-     * @deprecated {@link #addTransformer(ClassFileTransformer)} instead
-     */
-    @Deprecated
-    public void addClassFileTransformer(ClassFileTransformer transformer)
-    {
-        _transformers.add(transformer);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param transformer the transformer to remove
-     * @return true if transformer was removed
-     * @deprecated use {@link #removeTransformer(ClassFileTransformer)} instead
-     */
-    @Deprecated
-    public boolean removeClassFileTransformer(ClassFileTransformer transformer)
-    {
-        return _transformers.remove(transformer);
-    }
-
-    /* ------------------------------------------------------------ */
     public void addTransformer(ClassFileTransformer transformer)
     {
         _transformers.add(transformer);

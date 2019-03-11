@@ -31,12 +31,9 @@ import java.security.MessageDigest;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
@@ -53,6 +50,7 @@ import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
@@ -65,7 +63,6 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class GzipTester
@@ -414,7 +411,8 @@ public class GzipTester
             IO.copy(bais,digester);
 
             String actualSha1Sum = Hex.asHex(digest.digest());
-            String expectedSha1Sum = loadExpectedSha1Sum(testResourceSha1Sum);
+            File sha1File = MavenTestingUtils.getTestResourceFile(testResourceSha1Sum);
+            String expectedSha1Sum = Sha1Sum.loadSha1(sha1File);
             assertEquals(expectedSha1Sum,actualSha1Sum,requestedFilename + " / SHA1Sum of content");
         }
         finally
@@ -434,19 +432,6 @@ public class GzipTester
             String value = message.get(name);
             LOG.debug("dumpHeaders:   {} = {}",name,value);
         }
-    }
-
-    /**
-     * @deprecated use {@link org.eclipse.jetty.toolchain.test.Sha1Sum} instead
-     */
-    private String loadExpectedSha1Sum(String testResourceSha1Sum) throws IOException
-    {
-        File sha1File = MavenTestingUtils.getTestResourceFile(testResourceSha1Sum);
-        String contents = IO.readToString(sha1File);
-        Pattern pat = Pattern.compile("^[0-9A-Fa-f]*");
-        Matcher mat = pat.matcher(contents);
-        assertTrue(mat.find(),"Should have found HEX code in SHA1 file: " + sha1File);
-        return mat.group();
     }
 
     public HttpTester.Response executeRequest(String method, String path, int idleFor, TimeUnit idleUnit) throws Exception

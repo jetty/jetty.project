@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -106,7 +106,7 @@ public class GeneratorParserRoundtripTest
         }
 
         // Validate
-        Frame txt = (Frame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertTrue(txt.isMasked(), "Text.isMasked");
         assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
     }

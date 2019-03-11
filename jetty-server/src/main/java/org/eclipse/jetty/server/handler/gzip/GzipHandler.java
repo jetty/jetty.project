@@ -31,7 +31,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.*;
+import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.DeflaterPool;
 import org.eclipse.jetty.server.HttpOutput;
@@ -529,18 +535,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         Set<String> includes=_paths.getIncluded();
         return includes.toArray(new String[includes.size()]);
-    }
-
-    /**
-     * Get the current filter list of included HTTP methods
-     *
-     * @return the filter list of included HTTP methods
-     * @deprecated use {@link #getIncludedMethods()} instead.  (Will be removed in Jetty 10)
-     */
-    @Deprecated
-    public String[] getMethods()
-    {
-        return getIncludedMethods();
     }
 
     /**

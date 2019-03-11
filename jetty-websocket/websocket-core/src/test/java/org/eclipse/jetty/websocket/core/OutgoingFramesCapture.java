@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -35,12 +35,6 @@ public class OutgoingFramesCapture implements OutgoingFrames
     public void assertFrameCount(int expectedCount)
     {
         assertThat("Frame Count", frames.size(), is(expectedCount));
-    }
-
-    @Deprecated
-    public void assertHasFrame(byte opCode, int expectedCount)
-    {
-        assertHasOpCount(opCode, expectedCount);
     }
 
     public void assertHasOpCount(byte opCode, int expectedCount)

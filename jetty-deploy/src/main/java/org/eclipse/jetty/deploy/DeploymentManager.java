@@ -119,7 +119,7 @@ public class DeploymentManager extends ContainerLifeCycle
         void setLifeCycleNode(Node node)
         {
             this.lifecyleNode = node;
-            this.stateTimestamps.put(node,Long.valueOf(System.currentTimeMillis()));
+            this.stateTimestamps.put(node, System.currentTimeMillis());
         }
     }
 

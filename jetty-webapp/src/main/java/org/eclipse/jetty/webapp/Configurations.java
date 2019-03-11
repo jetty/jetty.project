@@ -19,11 +19,9 @@
 package org.eclipse.jetty.webapp;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -40,7 +38,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
@@ -134,7 +131,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                     __unavailable.add(configuration);
                     continue;
                 }
-                __known.add((Configuration)clazz.newInstance());
+                __known.add(clazz.getConstructor().newInstance());
                 __knownByClassName.add(c);
             }
             catch (Exception e)
@@ -181,13 +178,6 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         return configurations;
     }
 
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public static Configurations serverDefault(Server server)
-    {
-        return getServerDefault(server);
-    }
-    
     /* ------------------------------------------------------------ */
     /** Get/Create the server default Configuration ClassList.
      * <p>Get the class list from: a Server bean; or the attribute (which can

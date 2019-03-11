@@ -40,11 +40,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(JettyWebXmlConfiguration.class);
 
-    /** The value of this property points to the WEB-INF directory of
-     * the web-app currently installed.
-     * it is passed as a property to the jetty-web.xml file */
-    @Deprecated
-    public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
     public static final String PROPERTY_WEB_INF_URI = "web-inf.uri";
     public static final String PROPERTY_WEB_INF = "web-inf";
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
@@ -110,7 +105,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     {
         jetty_config.setJettyStandardIdsAndProperties(context.getServer(),null);
         Map<String,String> props = jetty_config.getProperties();
-        props.put(PROPERTY_THIS_WEB_INF_URL, web_inf.getURI().toString());  
         props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(web_inf.getURI().toString()));
         props.put(PROPERTY_WEB_INF, web_inf.toString());
     }

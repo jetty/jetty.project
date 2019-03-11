@@ -409,19 +409,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public URL getURL()
-    {
-        try
-        {
-            return path.toUri().toURL();
-        }
-        catch (MalformedURLException e)
-        {
-            return null;
-        }
-    }
-
-    @Override
     public int hashCode()
     {
         final int prime = 31;

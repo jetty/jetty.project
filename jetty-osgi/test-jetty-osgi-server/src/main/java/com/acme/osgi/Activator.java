@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.webapp.Configurations;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -68,7 +67,7 @@ public class Activator implements BundleActivator
         });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-        //server.setDumpAfterStart(true);
+        // server.setDumpAfterStart(true);
 
         String[] list = new String[]{
                 "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",

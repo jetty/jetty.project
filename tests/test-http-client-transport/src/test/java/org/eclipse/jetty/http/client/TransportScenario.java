@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -116,25 +115,7 @@ public class TransportScenario
 
     public String getScheme()
     {
-        return isTransportSecure() ? "https" : "http";
-    }
-
-    @Deprecated
-    public boolean isHttp1Based()
-    {
-        return transport.isHttp1Based();
-    }
-
-    @Deprecated
-    public boolean isTransportSecure()
-    {
-        return transport.isTlsBased();
-    }
-
-    @Deprecated
-    public boolean isHttp2Based()
-    {
-        return transport.isHttp2Based();
+        return transport.isTlsBased() ? "https" : "http";
     }
 
     public HTTP2Client newHTTP2Client()

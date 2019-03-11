@@ -152,7 +152,7 @@ public class HpackContext
 
                     case C_STATUS:
                     {
-                        entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,Integer.valueOf(value)));
+                        entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,value));
                         break;
                     }
 

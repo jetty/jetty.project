@@ -33,7 +33,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
@@ -153,34 +152,6 @@ public class MultiPartCaptureTest
     }
 
     public WorkDir testingDir;
-
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testUtilParse(String rawPrefix) throws Exception
-    {
-        Path multipartRawFile = MavenTestingUtils.getTestResourcePathFile("multipart/" + rawPrefix + ".raw");
-        Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + rawPrefix + ".expected.txt");
-        MultipartExpectations multipartExpectations = new MultipartExpectations(expectationPath);
-
-        Path outputDir = testingDir.getEmptyPathDir();
-        MultipartConfigElement config = newMultipartConfigElement(outputDir);
-        try (InputStream in = Files.newInputStream(multipartRawFile))
-        {
-            MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
-
-            multipartExpectations.checkParts(parser.getParts(),s->
-            { 
-                try
-                {
-                    return parser.getPart(s);
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                } 
-            });
-        }
-    }
 
     @ParameterizedTest
     @MethodSource("data")

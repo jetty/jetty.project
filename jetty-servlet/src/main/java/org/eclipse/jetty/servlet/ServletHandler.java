@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -358,22 +357,6 @@ public class ServletHandler extends ScopedHandler
     public FilterHolder[] getFilters()
     {
         return _filters;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * ServletHolder matching path.
-     *
-     * @param target Path within _context or servlet name
-     * @return PathMap Entries pathspec to ServletHolder
-     * @deprecated Use {@link #getMappedServlet(String)}
-     */
-    @Deprecated
-    public MappedResource<ServletHolder> getHolderEntry(String target)
-    {
-        if (target.startsWith("/"))
-            return getMappedServlet(target);
-        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1068,22 +1051,6 @@ public class ServletHandler extends ScopedHandler
             throw e;
         }
 
-    }
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * Convenience method to add a filter with a mapping
-     *
-     * @param className the filter class name
-     * @param pathSpec the path spec
-     * @param dispatches the dispatcher types for this filter
-     * @return the filter holder created
-     * @deprecated use {@link #addFilterWithMapping(Class, String, EnumSet)} instead
-     */
-    @Deprecated
-    public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
-    {
-        return addFilterWithMapping(className, pathSpec, dispatches);
     }
 
     /* ------------------------------------------------------------ */

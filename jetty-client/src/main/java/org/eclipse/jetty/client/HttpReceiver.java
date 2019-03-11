@@ -21,7 +21,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -339,35 +338,7 @@ public abstract class HttpReceiver
         }
         else
         {
-            try
-            {
-                List<ByteBuffer> decodeds = new ArrayList<>(2);
-                while (buffer.hasRemaining())
-                {
-                    ByteBuffer decoded = decoder.decode(buffer);
-                    if (!decoded.hasRemaining())
-                        continue;
-                    decodeds.add(decoded);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
-                }
-
-                if (decodeds.isEmpty())
-                {
-                    callback.succeeded();
-                }
-                else
-                {
-                    int size = decodeds.size();
-                    CountingCallback counter = new CountingCallback(callback, size);
-                    for (ByteBuffer decoded : decodeds)
-                        notifier.notifyContent(response, decoded, counter, contentListeners);
-                }
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
+            new Decoder(notifier, response, decoder, buffer, callback).iterate();
         }
 
         if (updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
@@ -614,5 +585,48 @@ public abstract class HttpReceiver
          * The response is failed
          */
         FAILURE
+    }
+
+    private class Decoder extends IteratingNestedCallback
+    {
+        private final ResponseNotifier notifier;
+        private final HttpResponse response;
+        private final ContentDecoder decoder;
+        private final ByteBuffer buffer;
+        private ByteBuffer decoded;
+
+        public Decoder(ResponseNotifier notifier, HttpResponse response, ContentDecoder decoder, ByteBuffer buffer, Callback callback)
+        {
+            super(callback);
+            this.notifier = notifier;
+            this.response = response;
+            this.decoder = decoder;
+            this.buffer = buffer;
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            while (true)
+            {
+                decoded = decoder.decode(buffer);
+                if (decoded.hasRemaining())
+                    break;
+                if (!buffer.hasRemaining())
+                    return Action.SUCCEEDED;
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
+
+            notifier.notifyContent(response, decoded, this, contentListeners);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            decoder.release(decoded);
+            super.succeeded();
+        }
     }
 }

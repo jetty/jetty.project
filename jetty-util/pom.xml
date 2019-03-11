@@ -54,31 +54,22 @@
           </instructions>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+          </systemPropertyVariables>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules org.slf4j
+          </argLine>
+        </configuration>
+      </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <systemPropertyVariables>
-              <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
-            </systemPropertyVariables>
-            <argLine>
-              @{argLine} ${jetty.surefire.argLine}
-              --add-modules jetty.servlet.api,org.slf4j
-            </argLine>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-perf-helper</artifactId>

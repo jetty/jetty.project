@@ -71,16 +71,6 @@ public class SampleStatistic
     }
 
     /**
-     * @param sample the value to record.
-     * @deprecated use {@link #record(long)} instead
-     */
-    @Deprecated
-    public void set(long sample)
-    {
-        record(sample);
-    }
-
-    /**
      * @return the max value of the recorded samples
      */
     public long getMax()

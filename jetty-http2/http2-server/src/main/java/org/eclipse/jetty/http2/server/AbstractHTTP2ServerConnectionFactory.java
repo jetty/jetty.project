@@ -176,27 +176,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
-    /**
-     * @return -1
-     * @deprecated feature removed, no replacement
-     */
-    @Deprecated
-    public int getReservedThreads()
-    {
-        return -1;
-    }
-
-    /**
-     * @param threads ignored
-     * @deprecated feature removed, no replacement
-     * @throws UnsupportedOperationException when invoked
-     */
-    @Deprecated
-    public void setReservedThreads(int threads)
-    {
-        throw new UnsupportedOperationException();
-    }
-
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;

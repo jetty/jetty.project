@@ -134,26 +134,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
-     * @return -1
-     * @deprecated
-     */
-    @Deprecated
-    public int getReservedThreads()
-    {
-        return -1;
-    }
-
-    /**
-     * @param threads ignored
-     * @deprecated
-     */
-    @Deprecated
-    public void setReservedThreads(int threads)
-    {
-        throw new UnsupportedOperationException();
-    }
-    
-    /**
      * Executes the given task in a different thread.
      *
      * @param task the task to execute

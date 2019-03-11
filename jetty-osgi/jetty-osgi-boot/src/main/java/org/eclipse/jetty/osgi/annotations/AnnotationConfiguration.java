@@ -22,11 +22,10 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
+import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -117,7 +116,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         
         Bundle webbundle = (Bundle) context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         @SuppressWarnings("unchecked")
-        Set<Bundle> fragAndRequiredBundles = (Set<Bundle>)context.getAttribute(OSGiWebInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
+        Set<Bundle> fragAndRequiredBundles = (Set<Bundle>)context.getAttribute(OSGiMetaInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
         if (fragAndRequiredBundles != null)
         {
             //index and scan fragments

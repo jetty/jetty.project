@@ -18,12 +18,19 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
+import java.io.IOException;
+import java.util.concurrent.Executor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -45,11 +52,6 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.concurrent.Executor;
 
 public final class RFC6455Handshaker implements Handshaker
 {
@@ -180,6 +182,10 @@ public final class RFC6455Handshaker implements Handshaker
 
         // Create the Channel
         WebSocketChannel channel = newWebSocketChannel(handler, negotiated);
+        if (defaultCustomizer!=null)
+            defaultCustomizer.customize(channel);
+        negotiator.customize(channel);
+
         if (LOG.isDebugEnabled())
             LOG.debug("channel {}", channel);
 
@@ -193,10 +199,10 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
+        for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
+            connection.addListener(listener);
+
         channel.setWebSocketConnection(connection);
-        if (defaultCustomizer!=null)
-            defaultCustomizer.customize(channel);
-        negotiator.customize(channel);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();

@@ -61,7 +61,7 @@ public class ServerWithJNDI
         // <env-entry-type>java.lang.Integer</env-entry-type>
         // <env-entry-value>4000</env-entry-value>
         // </env-entry>
-        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "woggle", new Integer(4000), false);
+        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "woggle", 4000, false);
 
         // Define an env entry with webapp scope.
         // At runtime, the webapp accesses this as java:comp/env/wiggle
@@ -74,7 +74,7 @@ public class ServerWithJNDI
         // Note that the last arg of "true" means that this definition for
         // "wiggle" would override an entry of the
         // same name in web.xml
-        new org.eclipse.jetty.plus.jndi.EnvEntry(webapp, "wiggle", new Double(100), true);
+        new org.eclipse.jetty.plus.jndi.EnvEntry(webapp, "wiggle", 100D, true);
 
         // Register a reference to a mail service scoped to the webapp.
         // This must be linked to the webapp by an entry in web.xml:

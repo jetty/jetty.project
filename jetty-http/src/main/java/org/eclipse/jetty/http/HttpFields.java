@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -31,12 +30,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -52,9 +50,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpFields implements Iterable<HttpField>
 {
-    @Deprecated
-    public static final String __separators = ", \t";
-
     private static final Logger LOG = Log.getLogger(HttpFields.class);
 
     private HttpField[] _fields;
@@ -225,12 +220,6 @@ public class HttpFields implements Iterable<HttpField>
         return false;
     }
 
-    @Deprecated
-    public String getStringField(HttpHeader header)
-    {
-        return get(header);
-    }
-    
     public String get(HttpHeader header)
     {
         for (int i=0;i<_size;i++)
@@ -242,12 +231,6 @@ public class HttpFields implements Iterable<HttpField>
         return null;
     }
 
-    @Deprecated
-    public String getStringField(String name)
-    {
-        return get(name);
-    }
-    
     public String get(String header)
     {
         for (int i=0;i<_size;i++)
@@ -438,13 +421,26 @@ public class HttpFields implements Iterable<HttpField>
      */
     public List<String> getQualityCSV(HttpHeader header)
     {
+        return getQualityCSV(header,null);
+    }
+
+    /**
+     * Get multiple field values of the same name, split and
+     * sorted as a {@link QuotedQualityCSV}
+     *
+     * @param header The header
+     * @param secondaryOrdering Function to apply an ordering other than specified by quality
+     * @return List the values in quality order with the q param and OWS stripped
+     */
+    public List<String> getQualityCSV(HttpHeader header, ToIntFunction<String> secondaryOrdering)
+    {
         QuotedQualityCSV values = null;
         for (HttpField f : this)
         {
             if (f.getHeader()==header)
             {
                 if (values==null)
-                    values = new QuotedQualityCSV();
+                    values = new QuotedQualityCSV(secondaryOrdering);
                 values.addValue(f.getValue());
             }
         }

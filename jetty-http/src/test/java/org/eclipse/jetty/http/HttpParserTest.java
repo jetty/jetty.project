@@ -18,6 +18,18 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jetty.http.HttpParser.State;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -29,26 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.eclipse.jetty.http.HttpParser.State;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 public class HttpParserTest
 {
-    static
-    {
-        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME);
-    }
-    
     /**
      * Parse until {@link State#END} state.
      * If the parser is already in the END state, then it is {@link HttpParser#reset()} and re-parsed.
@@ -448,74 +442,6 @@ public class HttpParserTest
         assertEquals("Name1", _hdr[2]);
         assertEquals("", _val[2]);
         assertEquals(2, _headers);
-    }
-
-    @Test
-    public void testSpaceinNameCustom0() throws Exception
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-                "GET / HTTP/1.0\r\n" +
-                        "Host: localhost\r\n" +
-                        "Name with space: value\r\n" +
-                        "Other: value\r\n" +
-                        "\r\n");
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.CUSTOM0);
-        parseAll(parser, buffer);
-        
-        assertThat(_bad, containsString("Illegal character"));
-        assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
-    }
-
-    @Test
-    public void testNoColonCustom0() throws Exception
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-                "GET / HTTP/1.0\r\n" +
-                        "Host: localhost\r\n" +
-                        "Name \r\n" +
-                        "Other: value\r\n" +
-                        "\r\n");
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.CUSTOM0);
-        parseAll(parser, buffer);
-        
-        assertThat(_bad, containsString("Illegal character"));
-        assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
-    }
-
-    @Test
-    public void testTrailingSpacesInHeaderNameInCustom0Mode() throws Exception
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-                "HTTP/1.1 204 No Content\r\n" +
-                "Access-Control-Allow-Headers : Origin\r\n" +
-                "Other\t : value\r\n" +
-                "\r\n");
-
-        HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.CUSTOM0);
-        parseAll(parser, buffer);
-
-        assertTrue(_headerCompleted);
-        assertTrue(_messageCompleted);
-
-        assertEquals("HTTP/1.1", _methodOrVersion);
-        assertEquals("204", _uriOrStatus);
-        assertEquals("No Content", _versionOrReason);
-        assertEquals(null, _content);
-
-        assertEquals(1, _headers);
-        System.out.println(Arrays.asList(_hdr));
-        System.out.println(Arrays.asList(_val));
-        assertEquals("Access-Control-Allow-Headers", _hdr[0]);
-        assertEquals("Origin", _val[0]);
-        assertEquals("Other", _hdr[1]);
-        assertEquals("value", _val[1]);
-
-        assertThat(_complianceViolation, contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME,HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
     }
 
     @Test

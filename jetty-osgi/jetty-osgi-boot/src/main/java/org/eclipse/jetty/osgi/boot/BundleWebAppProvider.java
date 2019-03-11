@@ -181,7 +181,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             Dictionary<String,String> headers = bundle.getHeaders();
 
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
-            String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
+            String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
             if (resourcePath != null)
             {
                 String base = resourcePath;

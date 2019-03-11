@@ -18,18 +18,12 @@
 
 package org.eclipse.jetty.annotations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.ServletContainerInitializer;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -41,6 +35,11 @@ import org.eclipse.jetty.webapp.RelativeOrdering;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestAnnotationConfiguration
 {
@@ -121,7 +120,7 @@ public class TestAnnotationConfiguration
         WebAppContext context25 = new WebAppContext();
         context25.setClassLoader(Thread.currentThread().getContextClassLoader());
         context25.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
-        context25.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, new Integer(0));
+        context25.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context25.getMetaData().setWebXml(Resource.newResource(web25));
         context25.getServletContext().setEffectiveMajorVersion(2);
         context25.getServletContext().setEffectiveMinorVersion(5);
@@ -133,7 +132,7 @@ public class TestAnnotationConfiguration
         WebAppContext context25b = new WebAppContext();
         context25b.setClassLoader(Thread.currentThread().getContextClassLoader());
         context25b.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
-        context25b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, new Integer(0));        
+        context25b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context25b.setConfigurationDiscovered(true);
         context25b.getMetaData().setWebXml(Resource.newResource(web25));
         context25b.getServletContext().setEffectiveMajorVersion(2);
@@ -146,7 +145,7 @@ public class TestAnnotationConfiguration
         WebAppContext context31 = new WebAppContext();
         context31.setClassLoader(Thread.currentThread().getContextClassLoader());
         context31.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
-        context31.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, new Integer(0));        
+        context31.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context31.getMetaData().setWebXml(Resource.newResource(web31true));
         context31.getServletContext().setEffectiveMajorVersion(3);
         context31.getServletContext().setEffectiveMinorVersion(1);
@@ -158,7 +157,7 @@ public class TestAnnotationConfiguration
         WebAppContext context31b = new WebAppContext();
         context31b.setClassLoader(Thread.currentThread().getContextClassLoader());
         context31b.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
-        context31b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, new Integer(0));        
+        context31b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context31b.getMetaData().setWebXml(Resource.newResource(web31false));
         context31b.getServletContext().setEffectiveMajorVersion(3);
         context31b.getServletContext().setEffectiveMinorVersion(1);

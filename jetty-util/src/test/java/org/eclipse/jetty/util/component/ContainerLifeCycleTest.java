@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.util.component;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -35,6 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContainerLifeCycleTest
 {
@@ -637,19 +637,19 @@ public class ContainerLifeCycleTest
         TestContainerLifeCycle leaf = new TestContainerLifeCycle();
         right.addBean(leaf);
 
-        root.addBean(Integer.valueOf(0));
-        root.addBean(Integer.valueOf(1));
-        left.addBean(Integer.valueOf(2));
-        right.addBean(Integer.valueOf(3));
-        leaf.addBean(Integer.valueOf(4));
+        root.addBean(0);
+        root.addBean(1);
+        left.addBean(2);
+        right.addBean(3);
+        leaf.addBean(4);
         leaf.addBean("leaf");
 
         assertThat(root.getBeans(Container.class), containsInAnyOrder(left,right));
-        assertThat(root.getBeans(Integer.class), containsInAnyOrder(Integer.valueOf(0),Integer.valueOf(1)));
+        assertThat(root.getBeans(Integer.class), containsInAnyOrder(0, 1));
         assertThat(root.getBeans(String.class), containsInAnyOrder());
 
         assertThat(root.getContainedBeans(Container.class), containsInAnyOrder(left,right,leaf));
-        assertThat(root.getContainedBeans(Integer.class), containsInAnyOrder(Integer.valueOf(0),Integer.valueOf(1),Integer.valueOf(2),Integer.valueOf(3),Integer.valueOf(4)));
+        assertThat(root.getContainedBeans(Integer.class), containsInAnyOrder(0, 1, 2, 3, 4));
         assertThat(root.getContainedBeans(String.class), containsInAnyOrder("leaf"));
     }
 }

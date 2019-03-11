@@ -144,7 +144,7 @@ public class JarResource extends URLResource
         if(LOG.isDebugEnabled())
             LOG.debug("Extract "+this+" to "+directory);
         
-        String urlString = this.getURL().toExternalForm().trim();
+        String urlString = this.getURI().toASCIIString().trim();
         int endOfJarUrl = urlString.indexOf("!/");
         int startOfJarUrl = (endOfJarUrl >= 0?4:0);
         

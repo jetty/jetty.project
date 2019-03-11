@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -106,7 +105,7 @@ public class TestOSGiUtil
         return CoreOptions.when(Boolean.getBoolean("pax.exam.debug.remote"))
                 .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
     }
-     
+
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<>();
@@ -298,6 +297,11 @@ public class TestOSGiUtil
         options.add(systemProperty("org.eclipse.jetty.util.log.class").value(StdErrLog.class.getName()));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
         return options;
+    }
+
+    public static void assertContains(String message, String haystack, String needle)
+    {
+        assertTrue(message + "\nContains: <" + needle + ">\nIn:\n" + haystack, haystack.contains(needle));
     }
 
     protected static void testHttpServiceGreetings(BundleContext bundleContext, String protocol, int port) throws Exception

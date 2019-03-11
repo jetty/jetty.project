@@ -24,13 +24,14 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -195,6 +196,94 @@ public class Response implements HttpServletResponse
                 cookie.isHttpOnly());
     }
 
+    /**
+     * Replace (or add) a cookie.
+     * Using name, path and domain, look for a matching set-cookie header and replace it.
+     * @param cookie The cookie to add/replace
+     */
+    public void replaceCookie(HttpCookie cookie)
+    {
+        for (ListIterator<HttpField> i = _fields.listIterator(); i.hasNext();)
+        {
+            HttpField field = i.next();
+
+            if (field.getHeader() == HttpHeader.SET_COOKIE)
+            {
+                String old_set_cookie = field.getValue();
+                String name = cookie.getName();
+                if (!old_set_cookie.startsWith(name) || old_set_cookie.length()<= name.length() || old_set_cookie.charAt(name.length())!='=')
+                    continue;
+
+                String domain = cookie.getDomain();
+                if (domain!=null)
+                {
+                    if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
+                    {
+                        StringBuilder buf = new StringBuilder();
+                        buf.append(";Domain=");
+                        quoteOnlyOrAppend(buf,domain,isQuoteNeededForCookie(domain));
+                        domain = buf.toString();
+                    }
+                    else
+                    {
+                        domain = ";Domain="+domain;
+                    }
+                    if (!old_set_cookie.contains(domain))
+                        continue;
+                }
+                else if (old_set_cookie.contains(";Domain="))
+                    continue;
+
+                String path = cookie.getPath();
+                if (path!=null)
+                {
+                    if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
+                    {
+                        StringBuilder buf = new StringBuilder();
+                        buf.append(";Path=");
+                        quoteOnlyOrAppend(buf,path,isQuoteNeededForCookie(path));
+                        path = buf.toString();
+                    }
+                    else
+                    {
+                        path = ";Path="+path;
+                    }
+                    if (!old_set_cookie.contains(path))
+                        continue;
+                }
+                else if (old_set_cookie.contains(";Path="))
+                    continue;
+
+                if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance() == CookieCompliance.RFC2965)
+                    i.set(new HttpField(HttpHeader.CONTENT_ENCODING.SET_COOKIE, newRFC2965SetCookie(
+                            cookie.getName(),
+                            cookie.getValue(),
+                            cookie.getDomain(),
+                            cookie.getPath(),
+                            cookie.getMaxAge(),
+                            cookie.getComment(),
+                            cookie.isSecure(),
+                            cookie.isHttpOnly(),
+                            cookie.getVersion())
+                    ));
+                else
+                    i.set(new HttpField(HttpHeader.CONTENT_ENCODING.SET_COOKIE, newRFC6265SetCookie(
+                            cookie.getName(),
+                            cookie.getValue(),
+                            cookie.getDomain(),
+                            cookie.getPath(),
+                            cookie.getMaxAge(),
+                            cookie.isSecure(),
+                            cookie.isHttpOnly()
+                    )));
+                return;
+            }
+        }
+
+        // Not replaced, so add normally
+        addCookie(cookie);
+    }
+
     @Override
     public void addCookie(Cookie cookie)
     {
@@ -259,6 +348,18 @@ public class Response implements HttpServletResponse
             final boolean isSecure,
             final boolean isHttpOnly)
     {
+        String set_cookie = newRFC6265SetCookie(name, value, domain, path, maxAge, isSecure, isHttpOnly);
+
+        // add the set cookie
+        _fields.add(HttpHeader.SET_COOKIE, set_cookie);
+
+        // Expire responses with set-cookie headers so they do not get cached.
+        _fields.put(__EXPIRES_01JAN1970);
+        
+    }
+
+    private String newRFC6265SetCookie(String name, String value, String domain, String path, long maxAge, boolean isSecure, boolean isHttpOnly)
+    {
         // Check arguments
         if (name == null || name.length() == 0)
             throw new IllegalArgumentException("Bad cookie name");
@@ -273,11 +374,11 @@ public class Response implements HttpServletResponse
         StringBuilder buf = __cookieBuilder.get();
         buf.setLength(0);
         buf.append(name).append('=').append(value==null?"":value);
-        
+
         // Append path
         if (path!=null && path.length()>0)
             buf.append(";Path=").append(path);
-        
+
         // Append domain
         if (domain!=null && domain.length()>0)
             buf.append(";Domain=").append(domain);
@@ -302,15 +403,9 @@ public class Response implements HttpServletResponse
             buf.append(";Secure");
         if (isHttpOnly)
             buf.append(";HttpOnly");
-        
-        // add the set cookie
-        _fields.add(HttpHeader.SET_COOKIE, buf.toString());
-
-        // Expire responses with set-cookie headers so they do not get cached.
-        _fields.put(__EXPIRES_01JAN1970);
-        
+        return buf.toString();
     }
-    
+
     /**
      * Format a set cookie value
      *
@@ -335,6 +430,17 @@ public class Response implements HttpServletResponse
             final boolean isHttpOnly,
             int version)
     {
+        String set_cookie = newRFC2965SetCookie(name, value, domain, path, maxAge, comment, isSecure, isHttpOnly, version);
+
+        // add the set cookie
+        _fields.add(HttpHeader.SET_COOKIE, set_cookie);
+
+        // Expire responses with set-cookie headers so they do not get cached.
+        _fields.put(__EXPIRES_01JAN1970);
+    }
+
+    private String newRFC2965SetCookie(String name, String value, String domain, String path, long maxAge, String comment, boolean isSecure, boolean isHttpOnly, int version)
+    {
         // Check arguments
         if (name == null || name.length() == 0)
             throw new IllegalArgumentException("Bad cookie name");
@@ -348,7 +454,7 @@ public class Response implements HttpServletResponse
         quoteOnlyOrAppend(buf,name,quote_name);
 
         buf.append('=');
-       
+
         // Append the value
         boolean quote_value=isQuoteNeededForCookie(value);
         quoteOnlyOrAppend(buf,value,quote_value);
@@ -414,12 +520,7 @@ public class Response implements HttpServletResponse
             buf.append(";Comment=");
             quoteOnlyOrAppend(buf,comment,isQuoteNeededForCookie(comment));
         }
-        
-        // add the set cookie
-        _fields.add(HttpHeader.SET_COOKIE, buf.toString());
-
-        // Expire responses with set-cookie headers so they do not get cached.
-        _fields.put(__EXPIRES_01JAN1970);
+        return buf.toString();
     }
 
 
@@ -572,14 +673,14 @@ public class Response implements HttpServletResponse
     }
 
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public String encodeUrl(String url)
     {
         return encodeURL(url);
     }
 
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public String encodeRedirectUrl(String url)
     {
         return encodeRedirectURL(url);
@@ -868,7 +969,7 @@ public class Response implements HttpServletResponse
     }
 
     @Override
-    @Deprecated
+    @Deprecated(since = "Servlet API 2.1")
     public void setStatus(int sc, String  message)
     {
         setStatusWithReason(sc, null);
@@ -1307,12 +1408,6 @@ public class Response implements HttpServletResponse
     public void resetBuffer()
     {
         _out.resetBuffer();
-    }
-
-    @Deprecated
-    public void setTrailerHttpFields(Supplier<HttpFields> trailers)
-    {
-        this._trailers = trailers;
     }
 
     @Override

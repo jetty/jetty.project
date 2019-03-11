@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-
+import java.util.function.Consumer;
 import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
@@ -30,13 +32,24 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {
+    private final static Logger LOG = Log.getLogger(JavaxWebSocketContainer.class);
+    private final SessionTracker sessionTracker = new SessionTracker();
     private long defaultAsyncSendTimeout = -1;
     private int defaultMaxBinaryMessageBufferSize = 64 * 1024;
     private int defaultMaxTextMessageBufferSize = 64 * 1024;
+    private List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
+
+    public JavaxWebSocketContainer()
+    {
+        addSessionListener(sessionTracker);
+        addBean(sessionTracker);
+    }
 
     public abstract ByteBufferPool getBufferPool();
 
@@ -100,7 +113,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
      */
     public Set<javax.websocket.Session> getOpenSessions()
     {
-        return new HashSet<>(getBeans(JavaxWebSocketSession.class));
+        return sessionTracker.getSessions();
     }
 
     public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
@@ -118,4 +131,45 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     protected abstract WebSocketExtensionRegistry getExtensionRegistry();
 
     protected abstract JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory();
+
+    /**
+     * Register a WebSocketSessionListener with the container
+     *
+     * @param listener the listener
+     */
+    public void addSessionListener(JavaxWebSocketSessionListener listener)
+    {
+        sessionListeners.add(listener);
+    }
+
+    /**
+     * Remove a WebSocketSessionListener from the container
+     *
+     * @param listener the listener
+     * @return true if listener was present and removed
+     */
+    public boolean removeSessionListener(JavaxWebSocketSessionListener listener)
+    {
+        return sessionListeners.remove(listener);
+    }
+
+    /**
+     * Notify Session Listeners of events
+     *
+     * @param consumer the consumer to pass to each listener
+     */
+    public void notifySessionListeners(Consumer<JavaxWebSocketSessionListener> consumer)
+    {
+        for (JavaxWebSocketSessionListener listener : sessionListeners)
+        {
+            try
+            {
+                consumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
 }

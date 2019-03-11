@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -76,7 +75,6 @@ public class HttpServerTestFixture
     {
         _connector = connector;
         _httpConfiguration=_connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
-        _httpConfiguration.setBlockingTimeout(-1);
         _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
         _server.setHandler(handler);

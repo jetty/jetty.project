@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -338,7 +337,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         // Only run this test for transports over TLS.
-        Assumptions.assumeTrue(scenario.isTransportSecure());
+        Assumptions.assumeTrue(scenario.transport.isTlsBased());
 
         scenario.startServer(new EmptyServerHandler());
 

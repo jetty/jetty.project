@@ -22,18 +22,11 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
-import org.eclipse.jetty.http.MultiPartInputStreamParser;
-import org.eclipse.jetty.http.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
@@ -104,78 +97,5 @@ public interface MultiParts extends Closeable
             return _context;
         }
 
-    }
-    
-    @SuppressWarnings("deprecation")
-    class MultiPartsUtilParser implements MultiParts
-    {   
-        private final MultiPartInputStreamParser _utilParser;
-        private final ContextHandler.Context _context;
-
-        public MultiPartsUtilParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request) throws IOException
-        {
-            _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
-            _context = request.getContext();
-            _utilParser.getParts();
-
-            EnumSet<NonCompliance> nonComplianceWarnings = _utilParser.getNonComplianceWarnings();
-            if (!nonComplianceWarnings.isEmpty())
-            {
-                @SuppressWarnings("unchecked")
-                List<String> violations = (List<String>)request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
-                if (violations==null)
-                {
-                    violations = new ArrayList<>();
-                    request.setAttribute(HttpCompliance.VIOLATIONS_ATTR,violations);
-                }
-
-                for(NonCompliance nc : nonComplianceWarnings)
-                    violations.add(nc.name()+": "+nc.getURL());
-            }
-        }
-
-        @Override
-        public Collection<Part> getParts()
-        {
-            try
-            {
-                return _utilParser.getParts();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public Part getPart(String name)
-        {
-            try
-            {
-                return _utilParser.getPart(name);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public void close()
-        {
-            _utilParser.deleteParts();
-        }
-
-        @Override
-        public boolean isEmpty()
-        {
-            return _utilParser.getParsedParts().isEmpty();
-        }
-
-        @Override
-        public Context getContext()
-        {
-            return _context;
-        }
     }
 }

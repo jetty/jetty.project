@@ -20,7 +20,6 @@ package org.eclipse.jetty.security.jaspi.modules;
 
 import java.io.IOException;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;

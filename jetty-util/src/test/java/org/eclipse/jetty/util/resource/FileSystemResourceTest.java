@@ -578,26 +578,6 @@ public class FileSystemResourceTest
         }
     }
 
-    @SuppressWarnings("deprecation")
-    @ParameterizedTest
-    @MethodSource("fsResourceProvider")
-    public void testGetURL(Class<PathResource> resourceClass) throws Exception
-    {
-        Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
-        Path file = dir.resolve("foo");
-        Files.createFile(file);
-
-        URL expected = file.toUri().toURL();
-
-        try (Resource base = newResource(resourceClass, dir.toFile()))
-        {
-            Resource foo = base.addPath("foo");
-            assertThat("getURL",foo.getURL(),is(expected));
-        }
-    }
-
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
     public void testList(Class<PathResource> resourceClass) throws Exception

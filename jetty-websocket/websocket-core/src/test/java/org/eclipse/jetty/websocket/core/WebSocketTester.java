@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +32,10 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,8 +45,23 @@ import static org.hamcrest.Matchers.startsWith;
 public class WebSocketTester
 {
     private static String NON_RANDOM_KEY = new String(B64Code.encode("0123456701234567".getBytes()));
+    private static SslContextFactory sslContextFactory;
     protected ByteBufferPool bufferPool;
     protected Parser parser;
+
+    @BeforeAll
+    public static void startSslContextFactory() throws Exception
+    {
+        sslContextFactory = new SslContextFactory(true);
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        sslContextFactory.start();
+    }
+
+    @AfterAll
+    public static void stopSslContextFactory() throws Exception
+    {
+        sslContextFactory.stop();
+    }
 
     @BeforeEach
     public void before()
@@ -51,10 +70,30 @@ public class WebSocketTester
         parser = new Parser(bufferPool);
     }
 
-    protected Socket newClient(int port) throws IOException
+    protected Socket newClient(int port) throws Exception
     {
-        @SuppressWarnings("resource")
-        Socket client = new Socket("127.0.0.1", port);
+        return newClient(port, false, null);
+    }
+
+    protected Socket newClient(int port, boolean tls) throws Exception
+    {
+        return newClient(port, tls, null);
+    }
+    
+    protected Socket newClient(int port, String extensions) throws Exception
+    {
+        return newClient(port, false, extensions);
+    }
+    
+    protected Socket newClient(int port, boolean tls, String extensions) throws Exception
+    {
+        Socket client;
+        if (!tls)
+            client = new Socket();
+        else
+            client = sslContextFactory.newSslSocket();
+
+        client.connect(new InetSocketAddress("127.0.0.1", port));
 
         HttpFields fields = new HttpFields();
         fields.add(HttpHeader.HOST, "127.0.0.1");
@@ -65,6 +104,8 @@ public class WebSocketTester
         fields.add(HttpHeader.PRAGMA, "no-cache");
         fields.add(HttpHeader.CACHE_CONTROL, "no-cache");
         fields.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "test");
+        if (extensions != null)
+            fields.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensions);
 
         client.getOutputStream().write(("GET / HTTP/1.1\r\n" + fields.toString()).getBytes(StandardCharsets.ISO_8859_1));
 

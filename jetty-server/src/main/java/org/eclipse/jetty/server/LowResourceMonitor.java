@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -29,15 +38,6 @@ import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 
 /**
  *
@@ -48,11 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <li>If {@link #setMaxMemory(long)} is non zero then low resources is detected if the JVMs
  * {@link Runtime} instance has {@link Runtime#totalMemory()} minus {@link Runtime#freeMemory()}
  * greater than {@link #getMaxMemory()}</li>
- * <li>If {@link #setMaxConnections(int)} is non zero then low resources is detected if the total number
- * of connections exceeds {@link #getMaxConnections()}.  This feature is deprecated and replaced by
- * {@link ConnectionLimit}</li>
  * </ul>
- *
  */
 @ManagedObject ("Monitor for low resource conditions and activate a low resource mode if detected")
 public class LowResourceMonitor extends ContainerLifeCycle
@@ -114,48 +110,6 @@ public class LowResourceMonitor extends ContainerLifeCycle
         else
             getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
     }
-
-    /**
-     * @return The maximum connections allowed for the monitored connectors before low resource handling is activated
-     * @deprecated Replaced by ConnectionLimit
-     */
-    @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
-    @Deprecated
-    public int getMaxConnections()
-    {
-        for(MaxConnectionsLowResourceCheck lowResourceCheck : getBeans(MaxConnectionsLowResourceCheck.class))
-        {
-            if (lowResourceCheck.getMaxConnections()>0)
-            {
-                return lowResourceCheck.getMaxConnections();
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * @param maxConnections The maximum connections before low resources state is triggered
-     * @deprecated Replaced by ConnectionLimit
-     */
-    @Deprecated
-    public void setMaxConnections(int maxConnections)
-    {
-        if (maxConnections>0)
-        {
-            if (getBeans(MaxConnectionsLowResourceCheck.class).isEmpty())
-            {
-                addLowResourceCheck(new MaxConnectionsLowResourceCheck(maxConnections));
-            } else
-            {
-                getBeans(MaxConnectionsLowResourceCheck.class).forEach( c -> c.setMaxConnections( maxConnections ) );
-            }
-        }
-        else
-        {
-            getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
-        }
-    }
-
 
     @ManagedAttribute("The reasons the monitored connectors are low on resources")
     public String getReasons()
@@ -542,29 +496,6 @@ public class LowResourceMonitor extends ContainerLifeCycle
 
         public MaxConnectionsLowResourceCheck(int maxConnections)
         {
-            this.maxConnections = maxConnections;
-        }
-
-        /**
-         * @return The maximum connections allowed for the monitored connectors before low resource handling is activated
-         * @deprecated Replaced by ConnectionLimit
-         */
-        @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
-        @Deprecated
-        public int getMaxConnections()
-        {
-            return maxConnections;
-        }
-
-        /**
-         * @param maxConnections The maximum connections before low resources state is triggered
-         * @deprecated Replaced by ConnectionLimit
-         */
-        @Deprecated
-        public void setMaxConnections(int maxConnections)
-        {
-            if (maxConnections>0)
-                LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
             this.maxConnections = maxConnections;
         }
 

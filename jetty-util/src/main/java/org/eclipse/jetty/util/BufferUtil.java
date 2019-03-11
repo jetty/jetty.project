@@ -371,19 +371,6 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Put data from one buffer into another, avoiding over/under flows
-     * @param from Buffer to take bytes from in flush mode
-     * @param to   Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
-     * @return number of bytes moved
-     * @deprecated use {@link #append(ByteBuffer, ByteBuffer)}
-     */
-    public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
-    {
-        return append(to,from);
-    }
-
-    /* ------------------------------------------------------------ */
     /** Append bytes to a buffer.
      * @param to Buffer is flush mode
      * @param b bytes to append
@@ -958,17 +945,6 @@ public class BufferUtil
         {
             return channel.map(MapMode.READ_ONLY, 0, file.length());
         }
-    }
-
-    /**
-     * @param buffer the buffer to test
-     * @return {@code false}
-     * @deprecated don't use - there is no way to reliably tell if a ByteBuffer is mapped.
-     */
-    @Deprecated
-    public static boolean isMappedBuffer(ByteBuffer buffer)
-    {
-        return false;
     }
 
     public static ByteBuffer toBuffer(Resource resource,boolean direct) throws IOException

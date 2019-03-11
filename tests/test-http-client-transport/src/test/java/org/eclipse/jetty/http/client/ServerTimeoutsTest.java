@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.FCGI;
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -39,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -68,6 +55,18 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 {
@@ -198,290 +197,6 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         // dispatched, the server should have idle timed it out.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testNoBlockingTimeoutBlockingReadIdleTimeoutFires(Transport transport) throws Exception
-    {
-        init(transport);
-        scenario.httpConfig.setBlockingTimeout(-1);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new BlockingReadHandler(handlerLatch));
-        long idleTimeout = 2500;
-        scenario.setServerIdleTimeout(idleTimeout);
-
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.POST(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
-
-            // Blocking read should timeout.
-            assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-            // Complete the request.
-            contentProvider.close();
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testBlockingTimeoutSmallerThanIdleTimeoutBlockingReadBlockingTimeoutFires(Transport transport) throws Exception
-    {
-        init(transport);
-        long blockingTimeout = 2500;
-        scenario.httpConfig.setBlockingTimeout(blockingTimeout);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new BlockingReadHandler(handlerLatch));
-        long idleTimeout = 3 * blockingTimeout;
-        scenario.setServerIdleTimeout(idleTimeout);
-
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.POST(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
-
-            // Blocking read should timeout.
-            assertTrue(handlerLatch.await(2 * blockingTimeout, TimeUnit.MILLISECONDS));
-            // Complete the request.
-            contentProvider.close();
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testBlockingTimeoutLargerThanIdleTimeoutBlockingReadIdleTimeoutFires(Transport transport) throws Exception
-    {
-        init(transport);
-        long idleTimeout = 2500;
-        long blockingTimeout = 3 * idleTimeout;
-        scenario.httpConfig.setBlockingTimeout(blockingTimeout);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new BlockingReadHandler(handlerLatch));
-        scenario.setServerIdleTimeout(idleTimeout);
-
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.POST(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
-
-            // Blocking read should timeout.
-            assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-            // Complete the request.
-            contentProvider.close();
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testNoBlockingTimeoutBlockingWriteIdleTimeoutFires(Transport transport) throws Exception
-    {
-        init(transport);
-        scenario.httpConfig.setBlockingTimeout(-1);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new BlockingWriteHandler(handlerLatch));
-        long idleTimeout = 2500;
-        scenario.setServerIdleTimeout(idleTimeout);
-
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.newRequest(scenario.newURI())
-                    .onResponseContentAsync((response, content, callback) ->
-                    {
-                        // Do not succeed the callback so the server will block writing.
-                        callbacks.offer(callback);
-                    })
-                    .send(result ->
-                    {
-                        if (result.isFailed())
-                            resultLatch.countDown();
-                    });
-
-            // Blocking write should timeout.
-            assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-            // After the server stopped sending, consume on the client to read the early EOF.
-            while (true)
-            {
-                Callback callback = callbacks.poll(1, TimeUnit.SECONDS);
-                if (callback == null)
-                    break;
-                callback.succeeded();
-            }
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testBlockingTimeoutSmallerThanIdleTimeoutBlockingWriteBlockingTimeoutFires(Transport transport) throws Exception
-    {
-        init(transport);
-        long blockingTimeout = 2500;
-        scenario.httpConfig.setBlockingTimeout(blockingTimeout);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new BlockingWriteHandler(handlerLatch));
-        long idleTimeout = 3 * blockingTimeout;
-        scenario.setServerIdleTimeout(idleTimeout);
-
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.newRequest(scenario.newURI())
-                    .onResponseContentAsync((response, content, callback) ->
-                    {
-                        // Do not succeed the callback so the server will block writing.
-                        callbacks.offer(callback);
-                    })
-                    .send(result ->
-                    {
-                        if (result.isFailed())
-                            resultLatch.countDown();
-                    });
-
-            // Blocking write should timeout.
-            assertTrue(handlerLatch.await(2 * blockingTimeout, TimeUnit.MILLISECONDS));
-            // After the server stopped sending, consume on the client to read the early EOF.
-            while (true)
-            {
-                Callback callback = callbacks.poll(1, TimeUnit.SECONDS);
-                if (callback == null)
-                    break;
-                callback.succeeded();
-            }
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testBlockingTimeoutLargerThanIdleTimeoutBlockingWriteIdleTimeoutFires(Transport transport) throws Exception
-    {
-        init(transport);
-        long idleTimeout = 2500;
-        long blockingTimeout = 3 * idleTimeout;
-        scenario.httpConfig.setBlockingTimeout(blockingTimeout);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new BlockingWriteHandler(handlerLatch));
-        scenario.setServerIdleTimeout(idleTimeout);
-
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.newRequest(scenario.newURI())
-                    .onResponseContentAsync((response, content, callback) ->
-                    {
-                        // Do not succeed the callback so the server will block writing.
-                        callbacks.offer(callback);
-                    })
-                    .send(result ->
-                    {
-                        if (result.isFailed())
-                            resultLatch.countDown();
-                    });
-
-            // Blocking read should timeout.
-            assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-            // After the server stopped sending, consume on the client to read the early EOF.
-            while (true)
-            {
-                Callback callback = callbacks.poll(1, TimeUnit.SECONDS);
-                if (callback == null)
-                    break;
-                callback.succeeded();
-            }
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testBlockingTimeoutWithSlowRead(Transport transport) throws Exception
-    {
-        init(transport);
-        long idleTimeout = 2500;
-        long blockingTimeout = 2 * idleTimeout;
-        scenario.httpConfig.setBlockingTimeout(blockingTimeout);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
-        {
-            @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    ServletInputStream input = request.getInputStream();
-                    while (true)
-                    {
-                        int read = input.read();
-                        if (read < 0)
-                            break;
-                    }
-                }
-                catch (IOException x)
-                {
-                    handlerLatch.countDown();
-                    throw x;
-                }
-            }
-        });
-        scenario.setServerIdleTimeout(idleTimeout);
-
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
-        {
-            DeferredContentProvider contentProvider = new DeferredContentProvider();
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.newRequest(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        // Result may fail to send the whole request body,
-                        // but the response has arrived successfully.
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
-
-            // The writes should be slow but not trigger the idle timeout.
-            long period = idleTimeout / 2;
-            long writes = 2 * (blockingTimeout / period);
-            for (long i = 0; i < writes; ++i)
-            {
-                contentProvider.offer(ByteBuffer.allocate(1));
-                Thread.sleep(period);
-            }
-            contentProvider.close();
-
-            // Blocking read should timeout.
-            assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
     }
 
     @ParameterizedTest

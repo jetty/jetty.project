@@ -77,6 +77,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private int outputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
     private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
+    private Duration idleTimeout;
 
     public WebSocketChannel(FrameHandler handler,
         Behavior behavior,
@@ -222,13 +223,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public Duration getIdleTimeout()
     {
-        return Duration.ofMillis(getConnection().getEndPoint().getIdleTimeout());
+        if (getConnection() == null)
+            return idleTimeout;
+        else
+            return Duration.ofMillis(getConnection().getEndPoint().getIdleTimeout());
     }
 
     @Override
     public void setIdleTimeout(Duration timeout)
     {
-        getConnection().getEndPoint().setIdleTimeout(timeout == null?0:timeout.toMillis());
+        if (getConnection() == null)
+            idleTimeout = timeout;
+        else
+            getConnection().getEndPoint().setIdleTimeout(timeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -255,6 +262,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         this.connection = connection;
+        if (idleTimeout != null)
+        {
+            getConnection().getEndPoint().setIdleTimeout(idleTimeout.toMillis());
+            idleTimeout = null;
+        }
     }
 
     /**
@@ -441,11 +453,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             openCallback.failed(t);
 
-            /*
-            This is double handling of the exception but we need to do this because we have two separate
+            /* This is double handling of the exception but we need to do this because we have two separate
             mechanisms for returning the CoreSession, onOpen and the CompletableFuture and both the onOpen callback
-            and the CompletableFuture require the exception.
-             */
+            and the CompletableFuture require the exception. */
             throw new RuntimeException(t);
         }
 
@@ -478,9 +488,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             assertValidIncoming(frame);
         }
-        catch (Throwable ex)
+        catch (Throwable t)
         {
-            callback.failed(ex);
+            callback.failed(t);
             return;
         }
 
@@ -494,9 +504,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             assertValidOutgoing(frame);
         }
-        catch (Throwable ex)
+        catch (Throwable t)
         {
-            callback.failed(ex);
+            callback.failed(t);
             return;
         }
 
@@ -525,18 +535,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             }
             flusher.iterate();
         }
-        catch (Throwable ex)
+        catch (Throwable t)
         {
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (closeStatus instanceof AbnormalCloseStatus && channelState.onClosed(closeStatus))
-                    closeConnection(AbnormalCloseStatus.getCause(closeStatus), closeStatus, Callback.from(callback, ex));
+                    closeConnection(AbnormalCloseStatus.getCause(closeStatus), closeStatus, Callback.from(callback, t));
                 else
-                    callback.failed(ex);
+                    callback.failed(t);
             }
             else
-                callback.failed(ex);
+                callback.failed(t);
         }
     }
 

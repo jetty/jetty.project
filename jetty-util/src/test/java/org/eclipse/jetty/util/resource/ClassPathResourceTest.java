@@ -81,7 +81,10 @@ public class ClassPathResourceTest
         // A class path must be a directory
         assertTrue(resource.isDirectory(), "Class path must be a directory.");
 
-        assertTrue(resource.getFile().isDirectory(), "Class path returned file must be a directory.");
+        if (!(resource instanceof JarFileResource))
+        {
+            assertTrue(resource.getFile().isDirectory(), "Class path returned file must be a directory.");
+        }
 
         // A class path must exist
         assertTrue(resource.exists(), "Class path resource does not exist.");

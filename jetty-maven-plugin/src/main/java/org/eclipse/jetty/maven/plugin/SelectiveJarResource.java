@@ -127,7 +127,7 @@ public class SelectiveJarResource extends JarResource
         if (!exists())
             return;
         
-        String urlString = this.getURL().toExternalForm().trim();
+        String urlString = this.getURI().toASCIIString().trim();
         int endOfJarUrl = urlString.indexOf("!/");
         int startOfJarUrl = (endOfJarUrl >= 0?4:0);
         

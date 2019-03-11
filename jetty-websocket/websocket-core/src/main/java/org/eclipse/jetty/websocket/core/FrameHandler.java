@@ -70,10 +70,11 @@ public interface FrameHandler extends IncomingFrames
      * </p>
      * <p>
      * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if
-     * not demanding or can now call {@link CoreSession#demand(long)} to receive frames if demanding.
+     * not demanding, or can now call {@link CoreSession#demand(long)} to receive frames if demanding.
      * If the FrameHandler fails the callback a close frame will be sent with {@link CloseStatus#SERVER_ERROR} and
      * the connection will be closed. <br>
      * </p>
+     *
      * @param coreSession the channel associated with this connection.
      * @param callback the callback to indicate success in processing (or failure)
      */

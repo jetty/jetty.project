@@ -20,7 +20,6 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -54,12 +53,6 @@ public class RedirectRegexRule extends RegexRule
         setLocation(location);
     }
 
-    @Deprecated
-    public void setReplacement(String replacement)
-    {
-        _location = replacement;
-    }
-    
     public void setLocation(String location)
     {
         _location = location;

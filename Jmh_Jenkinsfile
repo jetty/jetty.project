@@ -1,6 +1,6 @@
 #!groovy
 
-def branch = params.get("JETTY_BRANCH" ,"jetty-9.4.x")
+def branch = params.get("JETTY_BRANCH" ,"jetty-10.0.x")
 def owner = params.get("REPO_OWNER", "eclipse")
 
 node("linux") {
@@ -26,7 +26,7 @@ node("linux") {
       timeout(time: 15, unit: 'MINUTES') {
         withMaven(
                 maven: mvnName,
-                jdk: "jdk8",
+                jdk: "jdk11",
                 publisherStrategy: 'EXPLICIT',
                 globalMavenSettingsConfig: settingsName,
                 mavenOpts: mavenOpts,

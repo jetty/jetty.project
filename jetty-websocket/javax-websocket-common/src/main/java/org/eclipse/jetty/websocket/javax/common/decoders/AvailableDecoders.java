@@ -18,16 +18,9 @@
 
 package org.eclipse.jetty.websocket.javax.common.decoders;
 
-import org.eclipse.jetty.websocket.javax.common.InitException;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
-
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -35,6 +28,13 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+
+import org.eclipse.jetty.websocket.javax.common.InitException;
+import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
 
 public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredDecoder>
 {
@@ -275,11 +275,11 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
 
         try
         {
-            registeredDecoder.instance = registeredDecoder.decoder.newInstance();
+            registeredDecoder.instance = registeredDecoder.decoder.getConstructor().newInstance();
             registeredDecoder.instance.init(this.config);
             return (T)registeredDecoder.instance;
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new InitException("Unable to init Decoder for type:" + registeredDecoder.decoder.getName(), e);
         }
@@ -295,89 +295,6 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
         catch (NoSuchElementException e)
         {
             throw new InvalidWebSocketException("No Decoder found for type " + type);
-        }
-    }
-
-    // TODO: consider removing (if not used)
-    public static Object decodePrimitive(String value, Class<?> type) throws DecodeException
-    {
-        if (value == null)
-            return null;
-
-        // Simplest (and most common) form of @PathParam
-        if (String.class.isAssignableFrom(type))
-            return value;
-
-        try
-        {
-            // Per JSR356 spec, just the java primitives
-            if (Boolean.class.isAssignableFrom(type))
-            {
-                return new Boolean(value);
-            }
-            if (Boolean.TYPE.isAssignableFrom(type))
-            {
-                return Boolean.parseBoolean(value);
-            }
-            if (Byte.class.isAssignableFrom(type))
-            {
-                return new Byte(value);
-            }
-            if (Byte.TYPE.isAssignableFrom(type))
-            {
-                return Byte.parseByte(value);
-            }
-            if (Character.class.isAssignableFrom(type))
-            {
-                if (value.length() != 1)
-                    throw new DecodeException(value, "Invalid Size: Cannot decode as type " + Character.class.getName());
-                return new Character(value.charAt(0));
-            }
-            if (Character.TYPE.isAssignableFrom(type))
-            {
-                if (value.length() != 1)
-                    throw new DecodeException(value, "Invalid Size: Cannot decode as type " + Character.class.getName());
-                return value.charAt(0);
-            }
-            if (Double.class.isAssignableFrom(type))
-            {
-                return new Double(value);
-            }
-            if (Double.TYPE.isAssignableFrom(type))
-            {
-                return Double.parseDouble(value);
-            }
-            if (Float.class.isAssignableFrom(type))
-            {
-                return new Float(value);
-            }
-            if (Float.TYPE.isAssignableFrom(type))
-            {
-                return Float.parseFloat(value);
-            }
-            if (Integer.class.isAssignableFrom(type))
-            {
-                return new Integer(value);
-            }
-            if (Integer.TYPE.isAssignableFrom(type))
-            {
-                return Integer.parseInt(value);
-            }
-            if (Long.class.isAssignableFrom(type))
-            {
-                return new Long(value);
-            }
-            if (Long.TYPE.isAssignableFrom(type))
-            {
-                return Long.parseLong(value);
-            }
-
-            // Not a primitive!
-            throw new DecodeException(value, "Not a recognized primitive type: " + type);
-        }
-        catch (NumberFormatException e)
-        {
-            throw new DecodeException(value, "Unable to decode as type " + type.getName(), e);
         }
     }
 

@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -56,21 +55,22 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class JettyWebSocketFrameHandlerTest
 {
-    private static QueuedThreadPool executor = new QueuedThreadPool();
+    private static DummyContainer container;
 
     @BeforeAll
     public static void startContainer() throws Exception
     {
-        executor.start();
+        container = new DummyContainer();
+        container.start();
     }
 
     @AfterAll
     public static void stopContainer() throws Exception
     {
-        executor.stop();
+        container.stop();
     }
 
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
+    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
     private FrameHandler.CoreSession channel = new FrameHandler.CoreSession.Empty()
     {
         @Override

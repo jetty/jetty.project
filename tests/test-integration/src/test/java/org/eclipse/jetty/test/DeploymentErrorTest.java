@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -46,8 +40,6 @@ import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -70,6 +62,12 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
@@ -127,21 +125,6 @@ public class DeploymentErrorTest
                         "org.eclipse.jetty.annotations.AnnotationConfiguration",
                         TrackedConfiguration.class.getName()
                         );
-
-        Configurations configurations = Configuration.ClassList.setServerDefault(server);
-        configurations.add(new EnvConfiguration(), new PlusConfiguration(), new TrackedConfiguration());
-
-//        configurations.addAfter(
-//                "org.eclipse.jetty.webapp.FragmentConfiguration",
-//                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-//                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
-//        configurations.addBefore(
-//                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-//                "org.eclipse.jetty.annotations.AnnotationConfiguration");
-//
-//        // Tracking Config
-//        configurations.addBefore("org.eclipse.jetty.webapp.WebInfConfiguration",
-//                TrackedConfiguration.class.getName());
 
         server.start();
         return docroots;
@@ -357,7 +340,7 @@ public class DeploymentErrorTest
             Integer count = contextCounts.get(context.getContextPath());
             if (count == null)
             {
-                count = new Integer(0);
+                count = 0;
             }
             count++;
             contextCounts.put(context.getContextPath(), count);

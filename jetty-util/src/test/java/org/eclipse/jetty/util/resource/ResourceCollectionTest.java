@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 
@@ -31,8 +32,8 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -158,7 +159,7 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, coll::getFile);
         assertThrows(IllegalStateException.class, coll::getInputStream);
         assertThrows(IllegalStateException.class, coll::getReadableByteChannel);
-        assertThrows(IllegalStateException.class, coll::getURL);
+        assertThrows(IllegalStateException.class, coll::getURI);
         assertThrows(IllegalStateException.class, coll::getName);
         assertThrows(IllegalStateException.class, coll::isDirectory);
         assertThrows(IllegalStateException.class, coll::lastModified);
@@ -239,12 +240,17 @@ public class ResourceCollectionTest
 
     static String getContent(Resource r, String path) throws Exception
     {
+        Resource resource = r.addPath(path);
         StringBuilder buffer = new StringBuilder();
-        String line;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream())))
+        try (InputStream in = resource.getInputStream();
+             InputStreamReader reader = new InputStreamReader(in);
+             BufferedReader br = new BufferedReader(reader))
         {
-            while((line=br.readLine())!=null)
+            String line;
+            while ((line = br.readLine()) != null)
+            {
                 buffer.append(line);
+            }
         }
         return buffer.toString();
     }

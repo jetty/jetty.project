@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +28,14 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests for LazyList utility class.
@@ -152,19 +152,19 @@ public class LazyListTest
         Object list=null;
         list=LazyList.add(list, null);
         assertEquals(1,LazyList.size(list));
-        assertEquals(null,LazyList.get(list,0));
+        assertNull(LazyList.get(list,0));
 
         list="a";
         list=LazyList.add(list, null);
         assertEquals(2,LazyList.size(list));
         assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(null,LazyList.get(list,1));
+        assertNull(LazyList.get(list,1));
 
         list=LazyList.add(list, null);
         assertEquals(3,LazyList.size(list));
         assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(null,LazyList.get(list,1));
-        assertEquals(null,LazyList.get(list,2));
+        assertNull(LazyList.get(list,1));
+        assertNull(LazyList.get(list,2));
     }
 
     /**
@@ -254,7 +254,7 @@ public class LazyListTest
         Object list = LazyList.add(input, 0, null);
         assertNotNull(list);
         assertEquals(2,LazyList.size(list));
-        assertEquals(null, LazyList.get(list,0));
+        assertNull( LazyList.get(list,0));
         assertEquals(LazyList.get(list, 1), "a");
     }
 
@@ -865,7 +865,7 @@ public class LazyListTest
         assertNull(LazyList.remove(input,null));
         assertNull(LazyList.remove(input,"a"));
         assertNull(LazyList.remove(input,new ArrayList<Object>()));
-        assertNull(LazyList.remove(input,Integer.valueOf(42)));
+        assertNull(LazyList.remove(input, (Integer) 42));
     }
 
     /**
@@ -1228,7 +1228,7 @@ public class LazyListTest
         ArrayList l=new ArrayList();
         l.add("a");
         l.add(null);
-        l.add(new Integer(2));
+        l.add(2);
         String[] a=LazyList.toStringArray(l);
 
         assertEquals(3,a.length);

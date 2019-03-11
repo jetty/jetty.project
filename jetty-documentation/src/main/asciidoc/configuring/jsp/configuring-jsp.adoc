@@ -171,7 +171,7 @@ The JSP engine has many configuration parameters.
 Some parameters affect only precompilation, and some affect runtime recompilation checking.
 Parameters also differ among the various versions of the JSP engine.
 This page lists the configuration parameters, their meanings, and their default settings.
-Set all parameters on the `org.apache.jasper.JspServlet` instance defined in the link:#webdefault-xml[`webdefault.xml`] file.
+Set all parameters on the `org.apache.jasper.servlet.JspServlet` instance defined in the link:#webdefault-xml[`webdefault.xml`] file.
 
 ____
 [NOTE]

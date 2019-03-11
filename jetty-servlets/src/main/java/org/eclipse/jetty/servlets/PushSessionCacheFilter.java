@@ -23,6 +23,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -32,20 +33,21 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class PushSessionCacheFilter implements Filter
 {
-    private static final String TARGET_ATTR = "PushCacheFilter.target";
-    private static final String TIMESTAMP_ATTR = "PushCacheFilter.timestamp";
+    private static final String RESPONSE_ATTR = "PushSessionCacheFilter.response";
+    private static final String TARGET_ATTR = "PushSessionCacheFilter.target";
+    private static final String TIMESTAMP_ATTR = "PushSessionCacheFilter.timestamp";
     private static final Logger LOG = Log.getLogger(PushSessionCacheFilter.class);
     private final ConcurrentMap<String, Target> _cache = new ConcurrentHashMap<>();
     private long _associateDelay = 5000L;
@@ -56,39 +58,29 @@ public class PushSessionCacheFilter implements Filter
         if (config.getInitParameter("associateDelay") != null)
             _associateDelay = Long.parseLong(config.getInitParameter("associateDelay"));
 
-        // Add a listener that is used to collect information about associated resource,
-        // etags and modified dates
+        // Add a listener that is used to collect information
+        // about associated resource, etags and modified dates.
         config.getServletContext().addListener(new ServletRequestListener()
         {
             // Collect information when request is destroyed.
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                Request request = Request.getBaseRequest(sre.getServletRequest());
+                HttpServletRequest request = (HttpServletRequest)sre.getServletRequest();
                 Target target = (Target)request.getAttribute(TARGET_ATTR);
                 if (target == null)
                     return;
 
-                // Update conditional data
-                Response response = request.getResponse();
-                target._etag = response.getHttpFields().get(HttpHeader.ETAG);
-                target._lastModified = response.getHttpFields().get(HttpHeader.LAST_MODIFIED);
+                // Update conditional data.
+                HttpServletResponse response = (HttpServletResponse)request.getAttribute(RESPONSE_ATTR);
+                target._etag = response.getHeader(HttpHeader.ETAG.asString());
+                target._lastModified = response.getHeader(HttpHeader.LAST_MODIFIED.asString());
 
-                // Don't associate pushes
-                if (request.isPush())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Pushed {} for {}", request.getResponse().getStatus(), request.getRequestURI());
-                    return;
-                }
-                else if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Served {} for {}", request.getResponse().getStatus(), request.getRequestURI());
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Served {} for {}", response.getStatus(), request.getRequestURI());
 
                 // Does this request have a referer?
-                String referer = request.getHttpFields().get(HttpHeader.REFERER);
-
+                String referer = request.getHeader(HttpHeader.REFERER.asString());
                 if (referer != null)
                 {
                     // Is the referer from this contexts?
@@ -99,9 +91,10 @@ public class PushSessionCacheFilter implements Filter
                         if (referer_target != null)
                         {
                             HttpSession session = request.getSession();
+                            @SuppressWarnings("unchecked")
                             ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
                             Long last = timestamps.get(referer_target._path);
-                            if (last != null && (System.currentTimeMillis() - last) < _associateDelay)
+                            if (last != null && TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - last) < _associateDelay)
                             {
                                 if (referer_target._associated.putIfAbsent(target._path, target) == null)
                                 {
@@ -122,16 +115,16 @@ public class PushSessionCacheFilter implements Filter
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
-        // Get Jetty request as these APIs are not yet standard
-        Request baseRequest = Request.getBaseRequest(request);
-        String uri = baseRequest.getRequestURI();
+        req.setAttribute(RESPONSE_ATTR, resp);
+        HttpServletRequest request = (HttpServletRequest)req;
+        String uri = request.getRequestURI();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} push={}", baseRequest.getMethod(), uri, baseRequest.isPush());
+            LOG.debug("{} {}", request.getMethod(), uri);
 
-        HttpSession session = baseRequest.getSession(true);
+        HttpSession session = request.getSession(true);
 
         // find the target for this resource
         Target target = _cache.get(uri);
@@ -144,26 +137,27 @@ public class PushSessionCacheFilter implements Filter
         request.setAttribute(TARGET_ATTR, target);
 
         // Set the timestamp for this resource in this session
+        @SuppressWarnings("unchecked")
         ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
         if (timestamps == null)
         {
             timestamps = new ConcurrentHashMap<>();
             session.setAttribute(TIMESTAMP_ATTR, timestamps);
         }
-        timestamps.put(uri, System.currentTimeMillis());
+        timestamps.put(uri, System.nanoTime());
 
-        // push any associated resources
-        if (baseRequest.isPushSupported() && !baseRequest.isPush() && !target._associated.isEmpty())
+        // Push any associated resources.
+        PushBuilder builder = request.newPushBuilder();
+        if (builder != null && !target._associated.isEmpty())
         {
-            boolean conditional = baseRequest.getHttpFields().contains(HttpHeader.IF_NONE_MATCH) ||
-                                  baseRequest.getHttpFields().contains(HttpHeader.IF_MODIFIED_SINCE);
+            boolean conditional = request.getHeader(HttpHeader.IF_NONE_MATCH.asString()) != null ||
+                                  request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) != null;
             // Breadth-first push of associated resources.
             Queue<Target> queue = new ArrayDeque<>();
             queue.offer(target);
             while (!queue.isEmpty())
             {
                 Target parent = queue.poll();
-                PushBuilder builder = baseRequest.newPushBuilder();
                 builder.addHeader("X-Pusher", PushSessionCacheFilter.class.toString());
                 for (Target child : parent._associated.values())
                 {
@@ -180,7 +174,7 @@ public class PushSessionCacheFilter implements Filter
             }
         }
 
-        chain.doFilter(request, response);
+        chain.doFilter(req, resp);
     }
 
     @Override

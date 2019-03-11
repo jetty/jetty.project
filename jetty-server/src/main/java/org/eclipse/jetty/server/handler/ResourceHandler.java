@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -154,33 +153,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Get the minimum content length for async handling.
-     * 
-     * @return The minimum size in bytes of the content before asynchronous handling is used, or -1 for no async handling or 0 (default) for using
-     *         {@link HttpServletResponse#getBufferSize()} as the minimum length.
-     */
-    @Deprecated
-    public int getMinAsyncContentLength()
-    {
-        return -1;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Get minimum memory mapped file content length.
-     * 
-     * @return the minimum size in bytes of a file resource that will be served using a memory mapped buffer, or -1 (default) for no memory mapped buffers.
-     */
-    @Deprecated
-    public int getMinMemoryMappedContentLength()
-    {
-        return -1;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     */
     @Override
     public Resource getResource(String path)
     {
@@ -320,21 +292,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.isEtags();
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @return If set to true, then static content will be served as gzip content encoded if a matching resource is found ending with ".gz"
-     */
-    @Deprecated
-    public boolean isGzip()
-    {
-        for (CompressedContentFormat formats : _resourceService.getPrecompressedFormats())
-        {
-            if (CompressedContentFormat.GZIP._encoding.equals(formats._encoding))
-                return true;
-        }
-        return false;
-    }
-
     /**
      * @return Precompressed resources formats that can be used to serve compressed variant of resources.
      */
@@ -424,17 +381,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
 
     /* ------------------------------------------------------------ */
     /**
-     * @param gzip
-     *            If set to true, then static content will be served as gzip content encoded if a matching resource is found ending with ".gz"
-     */
-    @Deprecated
-    public void setGzip(boolean gzip)
-    {
-        setPrecompressedFormats(gzip?new CompressedContentFormat[]{CompressedContentFormat.GZIP}:new CompressedContentFormat[0]);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @param gzipEquivalentFileExtensions file extensions that signify that a file is gzip compressed. Eg ".svgz"
      */
     public void setGzipEquivalentFileExtensions(List<String> gzipEquivalentFileExtensions)
@@ -456,31 +402,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the minimum content length for async handling.
-     * 
-     * @param minAsyncContentLength
-     *            The minimum size in bytes of the content before asynchronous handling is used, or -1 for no async handling or 0 for using
-     *            {@link HttpServletResponse#getBufferSize()} as the minimum length.
-     */
-    @Deprecated
-    public void setMinAsyncContentLength(int minAsyncContentLength)
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set minimum memory mapped file content length.
-     * 
-     * @param minMemoryMappedFileSize
-     *            the minimum size in bytes of a file resource that will be served using a memory mapped buffer, or -1 for no memory mapped buffers.
-     */
-    @Deprecated
-    public void setMinMemoryMappedContentLength(int minMemoryMappedFileSize)
-    {
     }
 
     /* ------------------------------------------------------------ */

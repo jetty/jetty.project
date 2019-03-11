@@ -25,6 +25,7 @@ import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import javax.websocket.OnMessage;
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@Disabled("Replaced with ServerCloseTest.testOpenSessionCleanup()") // TODO: Remove once ServerCloseTest is fixed
 public class SessionTrackingTest
 {
 

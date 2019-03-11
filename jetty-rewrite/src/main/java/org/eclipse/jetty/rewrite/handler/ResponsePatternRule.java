@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -57,20 +56,6 @@ public class ResponsePatternRule extends PatternRule
     public void setCode(String code)
     {
         _code = code==null ? 0 : Integer.parseInt(code);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Sets the reason for the response status code. Reasons will only reflect
-     * if the code value is greater or equal to 400.
-     * @deprecated Reason has been replaced by message
-     * @param reason the reason
-     * @see #setMessage(String)
-     */
-    @Deprecated
-    public void setReason(String reason)
-    {
-        setMessage(reason);
     }
 
     /* ------------------------------------------------------------ */

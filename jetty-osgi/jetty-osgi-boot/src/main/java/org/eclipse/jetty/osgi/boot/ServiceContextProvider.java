@@ -164,9 +164,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
         {
             //See if there is a context file to apply to this pre-made context
             String contextFile = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
-            if (contextFile == null)
-                contextFile = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH); 
-                  
+
             String[] keys = serviceRef.getPropertyKeys();
             Dictionary<String,Object> properties = new Hashtable<>();
             if (keys != null)

@@ -152,12 +152,6 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
             _excludes.add(e);
     }
     
-    @Deprecated
-    public boolean matches(P t)
-    {
-        return test(t);
-    }
-    
     @Override
     public boolean test(P t)
     {

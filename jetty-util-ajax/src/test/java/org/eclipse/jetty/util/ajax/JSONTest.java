@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.util.ajax;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Array;
@@ -39,6 +32,13 @@ import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class JSONTest
@@ -86,10 +86,10 @@ public class JSONTest
         w1.number=-101;
 
         map.put("n1",null);
-        map.put("n2",new Integer(2));
-        map.put("n3",new Double(-0.00000000003));
+        map.put("n2", 2);
+        map.put("n3", -0.00000000003);
         map.put("n4","4\n\r\t\"4");
-        map.put("n5",new Object[]{"a",new Character('b'),new Integer(3),new String[]{},null,Boolean.TRUE,Boolean.FALSE});
+        map.put("n5",new Object[]{"a",'b', 3,new String[]{},null,Boolean.TRUE,Boolean.FALSE});
         map.put("n6",obj6);
         map.put("n7",obj7);
         map.put("n8",new int[]{1,2,3,4});
@@ -127,7 +127,7 @@ public class JSONTest
     public void testParse()
     {
         Map map = (Map)JSON.parse(test);
-        assertEquals(new Long(100),map.get("onehundred"));
+        assertEquals((long) 100,map.get("onehundred"));
         assertEquals("fred",map.get("name"));
         assertEquals(-0.2,map.get("small"));
         assertTrue(map.get("array").getClass().isArray());
@@ -226,7 +226,7 @@ public class JSONTest
     {
         Map map = (Map)JSON.parse(new StringReader(test));
 
-        assertEquals(new Long(100),map.get("onehundred"));
+        assertEquals((long) 100,map.get("onehundred"));
         assertEquals("fred",map.get("name"));
         assertTrue(map.get("array").getClass().isArray());
         assertTrue(map.get("w0") instanceof Woggle);

@@ -35,6 +35,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -126,10 +129,10 @@ public class FragmentExtensionTest extends AbstractExtensionTest
     /**
      * Verify that outgoing text frames are fragmented by the maxLength configuration.
      *
-     * @throws IOException on test failure
+     * @throws Exception on test failure
      */
     @Test
-    public void testOutgoingFramesByMaxLength() throws IOException
+    public void testOutgoingFramesByMaxLength() throws Exception
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
@@ -169,11 +172,11 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<Frame> frames = new LinkedList<>(capture.frames);
+        BlockingQueue<Frame> frames = capture.frames;
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            Frame actualFrame = frames.get(i);
+            Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
             Frame expectedFrame = expectedFrames.get(i);
 
             // System.out.printf("actual: %s%n",actualFrame);
@@ -198,10 +201,10 @@ public class FragmentExtensionTest extends AbstractExtensionTest
     /**
      * Verify that outgoing text frames are fragmented by default configuration
      *
-     * @throws IOException on test failure
+     * @throws Exception on test failure
      */
     @Test
-    public void testOutgoingFramesDefaultConfig() throws IOException
+    public void testOutgoingFramesDefaultConfig() throws Exception
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
@@ -236,11 +239,11 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<Frame> frames = new LinkedList<>(capture.frames);
+        BlockingQueue<Frame> frames = capture.frames;
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            Frame actualFrame = frames.get(i);
+            Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
             Frame expectedFrame = expectedFrames.get(i);
 
             // Validate Frame

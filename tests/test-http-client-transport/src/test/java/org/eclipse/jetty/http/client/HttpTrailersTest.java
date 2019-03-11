@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.FCGI;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
+import java.util.stream.Collectors;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,6 +35,7 @@ import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -50,6 +45,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class HttpTrailersTest extends AbstractTest<TransportScenario>
 {
@@ -179,7 +180,9 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 trailers.put(trailerName, trailerValue);
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailerHttpFields(() -> trailers);
+                jettyResponse.setTrailerFields(() ->
+                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+
                 if (content != null)
                     response.getOutputStream().write(content);
             }
@@ -223,7 +226,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 HttpFields trailers = new HttpFields();
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailerHttpFields(() -> trailers);
+                jettyResponse.setTrailerFields(() ->
+                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
             }
         });
 
@@ -269,7 +273,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 trailers.put(trailerName, trailerValue);
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailerHttpFields(() -> trailers);
+                jettyResponse.setTrailerFields(() ->
+                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
                 // Write a large content
                 response.getOutputStream().write(content);

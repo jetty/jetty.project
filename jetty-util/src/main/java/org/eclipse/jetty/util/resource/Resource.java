@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -310,25 +309,8 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    protected void finalize()
-    {
-        close();
-    }
-    
-    /* ------------------------------------------------------------ */
     public abstract boolean isContainedIn (Resource r) throws MalformedURLException;
     
-    
-    /* ------------------------------------------------------------ */
-    /** Release any temporary resources held by the resource.
-     * @deprecated use {@link #close()}
-     */
-    public final void release()
-    {
-        close();
-    }
-
     /* ------------------------------------------------------------ */
     /** Release any temporary resources held by the resource.
      */
@@ -367,35 +349,13 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract long length();
     
-
-    /* ------------------------------------------------------------ */
-    /**
-     * URL representing the resource.
-     * 
-     * @return an URL representing the given resource
-     * @deprecated use {{@link #getURI()}.toURL() instead.
-     */
-    @Deprecated
-    public abstract URL getURL();
-
     /* ------------------------------------------------------------ */
     /**
      * URI representing the resource.
      * 
      * @return an URI representing the given resource
      */
-    public URI getURI()
-    {
-        try
-        {
-            return getURL().toURI();
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-    
+    public abstract URI getURI();
 
     /* ------------------------------------------------------------ */
     /**
@@ -500,18 +460,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** 
-     * @param uri the uri to encode
-     * @return null (this is deprecated)
-     * @deprecated use {@link URIUtil} or {@link UrlEncoded} instead
-     */
-    @Deprecated
-    public String encode(String uri)
-    {
-        return null;
-    }
-        
     /* ------------------------------------------------------------ */
     // FIXME: this appears to not be used
     @SuppressWarnings("javadoc")

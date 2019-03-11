@@ -109,8 +109,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             
             //Override for bundle root may have been set
             String bundleOverrideLocation = (String)_properties.get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
-            if (bundleOverrideLocation == null)
-                bundleOverrideLocation = (String)_properties.get(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE);
 
             //Location on filesystem of bundle or the bundle override location
             File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle);
@@ -188,8 +186,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             
             //If a bundle/service property specifies context path, let it override the context xml
             String contextPath = (String)_properties.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
-            if (contextPath == null)
-                contextPath = (String)_properties.get(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH);
             if (contextPath != null)
                 _contextHandler.setContextPath(contextPath);    
             

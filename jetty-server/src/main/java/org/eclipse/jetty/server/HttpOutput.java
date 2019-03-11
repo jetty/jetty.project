@@ -31,7 +31,6 @@ import java.nio.charset.CodingErrorAction;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -1521,15 +1520,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         private WriteBlocker(HttpChannel channel)
         {
             _channel = channel;
-        }
-
-        @Override
-        protected long getIdleTimeout()
-        {
-            long blockingTimeout = _channel.getHttpConfiguration().getBlockingTimeout();
-            if (blockingTimeout == 0)
-                return _channel.getIdleTimeout();
-            return blockingTimeout;
         }
     }
 }

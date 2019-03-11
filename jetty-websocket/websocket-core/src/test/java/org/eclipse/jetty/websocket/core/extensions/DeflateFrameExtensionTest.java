@@ -44,10 +44,8 @@ import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -388,32 +386,24 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         serverExtension.setWebSocketChannel(channelWithMaxMessageSize(maxMessageSize));
 
         // Chain the next element to decompress.
-        clientExtension.setNextOutgoingFrames(new OutgoingFrames()
+        clientExtension.setNextOutgoingFrames((frame, callback, batch) ->
         {
-            @Override
-            public void sendFrame(Frame frame, Callback callback, boolean batch)
-            {
-                LOG.debug("outgoingFrame({})", frame);
-                serverExtension.onFrame(frame, callback);
-                callback.succeeded();
-            }
+            LOG.debug("outgoingFrame({})", frame);
+            serverExtension.onFrame(frame, callback);
+            callback.succeeded();
         });
 
         final ByteArrayOutputStream result = new ByteArrayOutputStream(input.length);
-        serverExtension.setNextIncomingFrames(new IncomingFrames()
+        serverExtension.setNextIncomingFrames((frame, callback) ->
         {
-            @Override
-            public void onFrame(Frame frame, Callback callback)
+            LOG.debug("incomingFrame({})", frame);
+            try
             {
-                LOG.debug("incomingFrame({})", frame);
-                try
-                {
-                    result.write(BufferUtil.toArray(frame.getPayload()));
-                }
-                catch (IOException x)
-                {
-                    throw new RuntimeIOException(x);
-                }
+                result.write(BufferUtil.toArray(frame.getPayload()));
+            }
+            catch (IOException x)
+            {
+                throw new RuntimeIOException(x);
             }
         });
 

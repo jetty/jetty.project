@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +35,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
@@ -268,7 +267,7 @@ public class IdleSessionTest
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                session.setAttribute("value", new Integer(1));
+                session.setAttribute("value", 1);
                 originalId = session.getId();
                 Session s = (Session)session;
                 try (Lock lock = s.lock())
@@ -288,7 +287,7 @@ public class IdleSessionTest
                    assertTrue(s.isResident());
                 }
                 Integer v = (Integer)session.getAttribute("value");
-                session.setAttribute("value", new Integer(v.intValue()+1));
+                session.setAttribute("value", v.intValue()+1);
                 _session = session;
             }
             else if ("testfail".equals(action))

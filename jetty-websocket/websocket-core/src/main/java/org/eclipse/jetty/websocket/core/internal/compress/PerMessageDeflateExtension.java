@@ -31,6 +31,7 @@ import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -62,9 +63,17 @@ public class PerMessageDeflateExtension extends CompressExtension
 
         // This extension requires the RSV1 bit set only in the first frame.
         // Subsequent continuation frames don't have RSV1 set, but are compressed.
-        if (OpCode.isDataFrame(frame.getOpCode()) && frame.getOpCode() != OpCode.CONTINUATION)
+        switch (frame.getOpCode())
         {
-            incomingCompressed = frame.isRsv1();
+            case OpCode.TEXT:
+            case OpCode.BINARY:
+                incomingCompressed = frame.isRsv1();
+                break;
+
+            case OpCode.CONTINUATION:
+                if (frame.isRsv1())
+                    callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
+                break;
         }
 
         if (OpCode.isControlFrame(frame.getOpCode()) || !incomingCompressed)
@@ -76,6 +85,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         //TODO fix this to use long instead of int
         if (getWebSocketChannel().getMaxFrameSize() > Integer.MAX_VALUE)
             throw new IllegalArgumentException("maxFrameSize too large for ByteAccumulator");
+
         ByteAccumulator accumulator = new ByteAccumulator((int)getWebSocketChannel().getMaxFrameSize());
 
         try

@@ -543,7 +543,7 @@ public class GeneratorTest
 
         for (int i = 0; i < bytes.length; ++i)
         {
-            bytes[i] = Integer.valueOf(Integer.toOctalString(i)).byteValue();
+            bytes[i] = (byte) (i & 0xff);
         }
 
         Frame pingFrame = new Frame(OpCode.PING).setPayload(bytes);

@@ -91,6 +91,7 @@
                 </systemProperty>
               </systemProperties>
               <nonBlocking>true</nonBlocking>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>

@@ -18,15 +18,8 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -41,6 +34,11 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * TestJettyOSGiBootWebAppAsService
@@ -65,6 +63,7 @@ public class TestJettyOSGiBootWebAppAsService
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-webapp-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -108,11 +107,17 @@ public class TestJettyOSGiBootWebAppAsService
     @Test
     public void testBundle() throws Exception
     {
-        
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-        
-        
+
+        ServiceReference<?>[] refs = bundleContext.getServiceReferences(WebAppContext.class.getName(), null);
+        assertNotNull(refs);
+        assertEquals(2, refs.length);
+        WebAppContext wac = (WebAppContext) bundleContext.getService(refs[0]);
+        assertEquals("/acme", wac.getContextPath());
+        wac = (WebAppContext) bundleContext.getService(refs[1]);
+        assertEquals("/acme", wac.getContextPath());
+
         // now test getting a static file
         HttpClient client = new HttpClient();
         try
@@ -122,34 +127,30 @@ public class TestJettyOSGiBootWebAppAsService
             assertNotNull(port);
 
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
-            assertTrue(content.indexOf("<h1>Test OSGi WebAppA</h1>") != -1);
+            TestOSGiUtil.assertContains("Response contents", content,
+                    "<h1>Test OSGi WebAppA</h1>");
 
             response = client.GET("http://127.0.0.1:" + port + "/acme/mime");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            assertTrue(content.indexOf("MIMETYPE=application/gzip") != -1);
+            TestOSGiUtil.assertContains("Response contents", content,
+                    "MIMETYPE=application/gzip");
 
             port = System.getProperty("bundle.server.port");
             assertNotNull(port);
 
             response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            assertTrue(content.indexOf("<h1>Test OSGi WebAppB</h1>") != -1);
+            TestOSGiUtil.assertContains("Response contents", content,
+                    "<h1>Test OSGi WebAppB</h1>");
         }
         finally
         {
             client.stop();
         }
 
-        ServiceReference<?>[] refs = bundleContext.getServiceReferences(WebAppContext.class.getName(), null);
-        assertNotNull(refs);
-        assertEquals(2, refs.length);
-        WebAppContext wac = (WebAppContext) bundleContext.getService(refs[0]);
-        assertEquals("/acme", wac.getContextPath());
-        wac = (WebAppContext) bundleContext.getService(refs[1]);
-        assertEquals("/acme", wac.getContextPath());
     }
 }

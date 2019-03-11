@@ -113,7 +113,6 @@ public class PathWatcherDemo implements PathWatcher.Listener
         msg.append(event.getType());
         msg.append("] ");
         msg.append(event.getPath());
-        msg.append(" (count=").append(event.getCount()).append(")");
         if (Files.isRegularFile(event.getPath()))
         {
             try

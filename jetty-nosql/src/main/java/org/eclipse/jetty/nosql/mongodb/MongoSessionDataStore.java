@@ -27,16 +27,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.UnreadableSessionDataException;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
@@ -46,6 +36,15 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
+import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
+import org.eclipse.jetty.server.session.SessionContext;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.UnreadableSessionDataException;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * MongoSessionDataStore
@@ -478,7 +477,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         if (lastSaveTime <= 0)
         {
             upsert = true;
-            version = new Long(1);
+            version = 1L;
             sets.put(__CREATED,data.getCreated());
             sets.put(__VALID,true);
             sets.put(getContextSubfield(__VERSION),version);
@@ -492,7 +491,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         {
             sets.put(getContextSubfield(__LASTSAVED), data.getLastSaved());
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
-            version = new Long(((Number)version).longValue() + 1);
+            version = ((Number)version).longValue() + 1L;
             ((NoSqlSessionData)data).setVersion(version);
             update.put("$inc",_version_1); 
             //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc

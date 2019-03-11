@@ -98,17 +98,6 @@ public class ThreadPoolBudget
         this.warnAt = -1;
     }
 
-    /**
-     * @param pool The pool to budget thread allocation for.
-     * @param warnAt The level of free threads at which a warning is generated.
-     */
-    @Deprecated
-    public ThreadPoolBudget(ThreadPool.SizedThreadPool pool, int warnAt)
-    {
-        this.pool = pool;
-        this.warnAt = warnAt;
-    }
-
     public ThreadPool.SizedThreadPool getSizedThreadPool()
     {
         return pool;
