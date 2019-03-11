@@ -18,20 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
-import org.eclipse.jetty.websocket.javax.tests.LocalServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,9 +25,22 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
+
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
+import org.eclipse.jetty.websocket.javax.tests.LocalServer;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@Disabled("Replaced with ServerCloseTest.testOpenSessionCleanup()") // TODO: Remove once ServerCloseTest is fixed
 public class SessionTrackingTest
 {
 
