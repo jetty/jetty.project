@@ -387,15 +387,18 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         // start connectors last
-        for (Connector connector : _connectors)
+        if (mex.size()==0)
         {
-            try
+            for (Connector connector : _connectors)
             {
-                connector.start();
-            }
-            catch(Throwable e)
-            {
-                mex.add(e);
+                try
+                {
+                    connector.start();
+                }
+                catch (Throwable e)
+                {
+                    mex.add(e);
+                }
             }
         }
 
@@ -412,8 +415,9 @@ public class Server extends HandlerWrapper implements Attributes
             {
                 mex.add(e);
             }
-            mex.ifExceptionThrow();
         }
+
+        mex.ifExceptionThrow();
 
         LOG.info(String.format("Started @%dms",Uptime.getUptime()));
     }
