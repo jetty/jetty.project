@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -234,7 +235,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable cause)
         {
-            Exception wse = new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause);
+            Exception wse = new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause);
             callback.failed(wse);
             futureSession.completeExceptionally(wse);
         }
@@ -283,12 +284,13 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 closeHandle.invoke(closeReason);
             }
             callback.succeeded();
-            container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
         }
         catch (Throwable cause)
         {
-            callback.failed(new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause));
+            callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
         }
+
+        container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
     }
 
     @Override
@@ -306,7 +308,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable t)
         {
-            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getName() + " ERROR method error: " + cause.getMessage(), t);
+            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getSimpleName() + " ERROR method error: " + cause.getMessage(), t);
             wsError.addSuppressed(cause);
             callback.failed(wsError);
             // TODO should futureSession be failed here?
@@ -609,7 +611,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " PONG method error: " + cause.getMessage(), cause);
+                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
             }
         }
         callback.succeeded();

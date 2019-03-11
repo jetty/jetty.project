@@ -134,7 +134,7 @@ public class WebSocketChannelState
 
                 default:
                     if (_closeStatus == null || CloseStatus.isOrdinary(_closeStatus))
-                        _closeStatus = CloseStatus.NO_CLOSE_STATUS;
+                        _closeStatus = new CloseStatus(CloseStatus.NO_CLOSE, "Channel Closed");
                     _channelState = State.CLOSED;
                     return true;
             }

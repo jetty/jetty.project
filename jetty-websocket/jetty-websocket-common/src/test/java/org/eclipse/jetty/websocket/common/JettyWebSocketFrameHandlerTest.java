@@ -121,7 +121,7 @@ public class JettyWebSocketFrameHandlerTest
         // Trigger Events
         localEndpoint.onOpen(channel, Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello?").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
+        localEndpoint.onClosed(new CloseStatus(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -216,6 +216,7 @@ public class JettyWebSocketFrameHandlerTest
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
         localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL), Callback.NOOP);
+        localEndpoint.onClosed(CloseStatus.NORMAL_STATUS, Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -245,7 +246,7 @@ public class JettyWebSocketFrameHandlerTest
         localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
+        localEndpoint.onClosed(new CloseStatus(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -323,7 +324,7 @@ public class JettyWebSocketFrameHandlerTest
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.PONG).setPayload("You there?"), Callback.NOOP);
         localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
+        localEndpoint.onClosed(new CloseStatus(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(

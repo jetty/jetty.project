@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -61,23 +63,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final JettyWebSocketFrameHandlerFactory frameHandlerFactory;
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
-    private ClassLoader contextClassLoader;
+    private final FrameHandler.ConfigurationCustomizer configurationCustomizer = new FrameHandler.ConfigurationCustomizer();
     private DecoratedObjectFactory objectFactory;
     private WebSocketExtensionRegistry extensionRegistry;
-    private int inputBufferSize = 4 * 1024;
-    private int outputBufferSize = 4 * 1024;
-    private long maxBinaryMessageSize = 64 * 1024;
-    private long maxTextMessageSize = 64 * 1024;
 
     /**
      * Instantiate a WebSocketClient with defaults
      */
     public WebSocketClient()
     {
-        this(new WebSocketCoreClient());
-        this.coreClient.getHttpClient().setName("Jetty-WebSocketClient@" + hashCode());
-        // We created WebSocketCoreClient, let lifecycle be managed by us
-        addManaged(coreClient);
+        this(null);
     }
 
     /**
@@ -87,19 +82,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      */
     public WebSocketClient(HttpClient httpClient)
     {
-        this(new WebSocketCoreClient(httpClient));
-        // We created WebSocketCoreClient, let lifecycle be managed by us
+        coreClient = new WebSocketCoreClient(httpClient, configurationCustomizer);
         addManaged(coreClient);
-    }
 
-    private WebSocketClient(WebSocketCoreClient coreClient)
-    {
-        this.coreClient = coreClient;
-        this.contextClassLoader = this.getClass().getClassLoader();
-        this.objectFactory = new DecoratedObjectFactory();
-        this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
-        this.sessionListeners.add(sessionTracker);
+        if (httpClient == null)
+            coreClient.getHttpClient().setName("Jetty-WebSocketClient@" + hashCode());
+
+        objectFactory = new DecoratedObjectFactory();
+        extensionRegistry = new WebSocketExtensionRegistry();
+        frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
+        sessionListeners.add(sessionTracker);
         addBean(sessionTracker);
     }
 
@@ -128,15 +120,19 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @param websocket the websocket object
      * @param toUri     the websocket uri to connect to
      * @param request   the upgrade request information
-     * @param listener  the upgrade listener
+     * @param upgradeListener  the upgrade listener
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener listener) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener upgradeListener) throws IOException
     {
+        for (Connection.Listener listener : getBeans(Connection.Listener.class))
+            coreClient.addBean(listener);
+            
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
-        if (listener != null)
-            upgradeRequest.addListener(listener);
+        if (upgradeListener != null)
+            upgradeRequest.addListener(upgradeListener);
+
         coreClient.connect(upgradeRequest);
         return upgradeRequest.getFutureSession();
     }
@@ -184,61 +180,61 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     @Override
     public Duration getIdleTimeout()
     {
-        return Duration.ofMillis(getHttpClient().getIdleTimeout());
+        return configurationCustomizer.getIdleTimeout();
     }
 
     @Override
     public int getInputBufferSize()
     {
-        return this.inputBufferSize;
+        return configurationCustomizer.getInputBufferSize();
     }
 
     @Override
     public int getOutputBufferSize()
     {
-        return this.outputBufferSize;
+        return configurationCustomizer.getOutputBufferSize();
     }
 
     @Override
     public long getMaxBinaryMessageSize()
     {
-        return this.maxBinaryMessageSize;
+        return configurationCustomizer.getMaxBinaryMessageSize();
     }
 
     @Override
     public long getMaxTextMessageSize()
     {
-        return this.maxTextMessageSize;
+        return configurationCustomizer.getMaxTextMessageSize();
     }
 
     @Override
     public void setIdleTimeout(Duration duration)
     {
-        getHttpClient().setIdleTimeout(duration.toMillis());
+        configurationCustomizer.setIdleTimeout(duration);
     }
 
     @Override
     public void setInputBufferSize(int size)
     {
-        this.inputBufferSize = size;
+        configurationCustomizer.setInputBufferSize(size);
     }
 
     @Override
     public void setOutputBufferSize(int size)
     {
-        this.outputBufferSize = size;
+        configurationCustomizer.setOutputBufferSize(size);
     }
 
     @Override
     public void setMaxBinaryMessageSize(long size)
     {
-        this.maxBinaryMessageSize = size;
+        configurationCustomizer.setMaxBinaryMessageSize(size);
     }
 
     @Override
     public void setMaxTextMessageSize(long size)
     {
-        this.maxTextMessageSize = size;
+        configurationCustomizer.setMaxTextMessageSize(size);
     }
 
     public SocketAddress getBindAddress()

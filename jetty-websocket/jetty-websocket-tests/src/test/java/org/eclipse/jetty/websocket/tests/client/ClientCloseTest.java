@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Server;
@@ -39,12 +38,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -55,7 +54,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -68,7 +66,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
-@Disabled("Needs triage")
 public class ClientCloseTest
 {
     private Server server;
@@ -252,8 +249,8 @@ public class ClientCloseTest
             // client reads -1 (EOF)
             // client triggers close event on client ws-endpoint
             clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-                    is(StatusCode.SHUTDOWN),
-                    containsString("timeout"));
+                    is(StatusCode.ABNORMAL),
+                    containsString("Channel Closed"));
         }
 
         clientSessionTracker.assertClosedProperly(client);
@@ -285,12 +282,11 @@ public class ClientCloseTest
             // client close should occur
             clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
                     is(StatusCode.SHUTDOWN),
-                    containsString("timeout"));
+                    containsString("Timeout"));
 
             // client idle timeout triggers close event on client ws-endpoint
             assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
-            assertThat("OnError", clientSocket.error.get(), instanceOf(CloseException.class));
-            assertThat("OnError.cause", clientSocket.error.get().getCause(), instanceOf(TimeoutException.class));
+            assertThat("OnError", clientSocket.error.get(), instanceOf(WebSocketTimeoutException.class));
         }
 
         clientSessionTracker.assertClosedProperly(client);
@@ -330,7 +326,7 @@ public class ClientCloseTest
         // clients disconnect
         for (int i = 0; i < sessionCount; i++)
         {
-            clientSockets.get(i).assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Disconnected"));
+            clientSockets.get(i).assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
         }
 
         // ensure all Sessions are gone. connections are gone. etc. (client and server)
@@ -370,7 +366,7 @@ public class ClientCloseTest
 
         // client triggers close event on client ws-endpoint
         // assert - close code==1006 (abnormal)
-        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Eof"));
+        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
 
         clientSessionTracker.assertClosedProperly(client);
     }

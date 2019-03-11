@@ -43,7 +43,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -52,7 +51,6 @@ import static org.hamcrest.Matchers.is;
 /**
  * Tests for conditions due to bad networking.
  */
-@Disabled("Needs triage")
 public class BadNetworkTest
 {
     private Server server;

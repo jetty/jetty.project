@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -44,7 +45,7 @@ public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketS
     @Override
     public void onJavaxWebSocketSessionClosed(JavaxWebSocketSession session)
     {
-        sessions.remove(sessions);
+        sessions.remove(session);
     }
 
     @Override

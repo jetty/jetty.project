@@ -150,7 +150,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable cause)
         {
-            callback.failed(new WebSocketException(endpointInstance.getClass().getName() + " OPEN method error: " + cause.getMessage(), cause));
+            callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause));
             futureSession.completeExceptionally(cause);
         }
     }
@@ -172,7 +172,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " FRAME method error: " + cause.getMessage(), cause);
+                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause);
             }
         }
 
@@ -219,7 +219,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable t)
         {
-            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getName() + " ERROR method error: " + cause.getMessage(), t);
+            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getSimpleName() + " ERROR method error: " + cause.getMessage(), t);
             wsError.addSuppressed(cause);
             callback.failed(wsError);
         }
@@ -228,7 +228,18 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        callback.succeeded();
+        try
+        {
+            if (closeHandle != null)
+                closeHandle.invoke(closeStatus.getCode(), closeStatus.getReason());
+
+            callback.succeeded();
+        }
+        catch (Throwable cause)
+        {
+            callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
+        }
+
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
     }
 
@@ -262,18 +273,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     private void onCloseFrame(Frame frame, Callback callback)
     {
-        if (closeHandle != null)
-        {
-            try
-            {
-                CloseStatus close = new CloseStatus(frame.getPayload());
-                closeHandle.invoke(close.getCode(), close.getReason());
-            }
-            catch (Throwable cause)
-            {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " CLOSE method error: " + cause.getMessage(), cause);
-            }
-        }
         callback.succeeded();
     }
 
@@ -296,7 +295,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " PING method error: " + cause.getMessage(), cause);
+                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PING method error: " + cause.getMessage(), cause);
             }
         }
         else
@@ -324,7 +323,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getName() + " PONG method error: " + cause.getMessage(), cause);
+                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
             }
         }
         callback.succeeded();
