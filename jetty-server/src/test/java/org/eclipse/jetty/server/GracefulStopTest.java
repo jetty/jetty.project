@@ -691,7 +691,8 @@ public class GracefulStopTest
             assertThat(e.getMessage(),is("Test start failure"));
         }
 
-        server.getContainedBeans(LifeCycle.class).stream().forEach(lc -> assertTrue(!lc.isRunning()));
+        assertTrue(server.getContainedBeans(LifeCycle.class).stream().noneMatch(LifeCycle::isRunning));
+        assertTrue(server.getContainedBeans(LifeCycle.class).stream().anyMatch(LifeCycle::isFailed));
     }
     
     static class NoopHandler extends AbstractHandler 

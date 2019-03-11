@@ -405,18 +405,6 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpAfterStart())
             dumpStdErr();
 
-        if (mex.size()>0)
-        {
-            try
-            {
-                doStop();
-            }
-            catch(Throwable e)
-            {
-                mex.add(e);
-            }
-        }
-
         mex.ifExceptionThrow();
 
         LOG.info(String.format("Started @%dms",Uptime.getUptime()));
