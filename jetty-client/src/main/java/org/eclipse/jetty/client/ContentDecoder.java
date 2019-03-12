@@ -36,6 +36,15 @@ public interface ContentDecoder
     public abstract ByteBuffer decode(ByteBuffer buffer);
 
     /**
+     * <p>Releases the ByteBuffer returned by {@link #decode(ByteBuffer)}.</p>
+     *
+     * @param decoded the ByteBuffer returned by {@link #decode(ByteBuffer)}
+     */
+    public default void release(ByteBuffer decoded)
+    {
+    }
+
+    /**
      * Factory for {@link ContentDecoder}s; subclasses must implement {@link #newContentDecoder()}.
      * <p>
      * {@link Factory} have an {@link #getEncoding() encoding}, which is the string used in

@@ -104,7 +104,16 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionPersisted(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader (_contextClassLoader); 
+        try
+        {
+            return __testSupport.checkSessionPersisted(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old); 
+        }  
     }
     
     

@@ -1,4 +1,47 @@
-jetty-9.4.15-SNAPSHOT
+jetty-9.4.16-SNAPSHOT
+
+jetty-9.4.15.v20190215 - 15 February 2019
+ + 113 Add support for NCSA Extended Log File Format
+ + 150 extraClasspath() method on WebAppContext dont support dir path
+ + 2646 Better handle concurrent calls to change session id and invalidate
+   within a context
+ + 2718 NPE using more than one Endpoint.publish
+ + 2817 Change HttpClient and WebSocketClient default to always have SSL
+   support enabled
+ + 3030 Enforce Content-Encoding check only on parameter extraction
+ + 3038 SSL Connection Leak
+ + 3049 Warn on common SslContextFactory problematic configurations
+ + 3133 Logging of `key.readyOps()` can throw unchecked `CancelledKeyException`
+ + 3139 NPE on
+   WebSocketServerContainerInitializer.configureContext(ServletContextHandler)
+ + 3146 ServletContainerInitializer from war WEB-INF/classes not executing
+ + 3154 Add support for javax.net.ssl.HostnameVerifier to HttpClient
+ + 3161 Update to Apache JSP 8.5.35
+ + 3178 BufferingResponseListener does not clear buffer in onHeaders
+ + 3186 Jetty maven plugin - javax.annotation.jar picked up from jetty plugin
+   rather than from applications classpath
+ + 3202 jetty-maven plugin in multi-module project not using files from /target
+   folders of sister projects
+ + 3207 Async ServletOutputStream print methods
+ + 3210 Threadpool module creates unmanged threadpool
+ + 3212 Client and server need to to treat an incoming HTTP/2 RST_STREAM frame
+   differently
+ + 3234 AuthenticationProtocolHandler should not cache the failed results
+ + 3240 ALPN support for Java 13
+ + 3241 Missing main manifest attribute in jetty-runner.jar
+ + 3242 Fix WebSocket components dump()
+ + 3278 NullPointerException if base resource is an empty ResourceCollection
+ + 3279 WebSocket write may hang forever
+ + 3302 Support host:port in X-Forwarded-For header in
+   ForwardedRequestCustomizer
+ + 3305 Avoid additional selectNow() on non-Windows runtimes
+ + 3307 WebAppClassLoader loadClass can throw NullPointerException for missing
+   class
+ + 3311 Ability to serve HTTP and HTTPS from the same port
+ + 3317 Improve uncaught exception handler double logging
+ + 3329 Hazelcast delete expired session fails in deserialize
+ + 3350 Do not expect to be able to connect to https URLs with the HttpClient
+   created from a parameterless constructor
 
 jetty-9.4.14.v20181114 - 14 November 2018
  + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls

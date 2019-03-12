@@ -3,7 +3,7 @@
     <parent>
         <artifactId>jetty-project</artifactId>
         <groupId>org.eclipse.jetty</groupId>
-        <version>9.4.15-SNAPSHOT</version>
+        <version>9.4.16-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -19,6 +19,7 @@
         <module>websocket-client</module>
         <module>websocket-server</module>
         <module>websocket-servlet</module>
+        <module>jetty-websocket-tests</module>
         <module>javax-websocket-client-impl</module>
         <module>javax-websocket-server-impl</module>
     </modules>

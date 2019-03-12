@@ -135,7 +135,7 @@ public class CrossOriginFilterTest
         Set<String> fieldNames = response.getFieldNamesCollection();
         assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
         assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), "Vary", not(isIn(fieldNames)));
+        assertThat(response.toString(), "Vary", isIn(fieldNames));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 

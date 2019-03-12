@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
@@ -78,6 +79,15 @@ public class ABSocket
         catch (WebSocketException e)
         {
             LOG.warn("Unable to echo TEXT message",e);
+        }
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onError", cause);
         }
     }
 }

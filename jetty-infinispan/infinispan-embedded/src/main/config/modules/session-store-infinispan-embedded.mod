@@ -13,10 +13,10 @@ infinispan-embedded
 
 [files]
 basehome:modules/session-store-infinispan-embedded/infinispan.xml|etc/infinispan.xml
-maven://org.infinispan/infinispan-embedded/${infinispan.version}|lib/infinispan/infinispan-embedded-${infinispan.version}.jar
+maven://org.infinispan/infinispan-embedded-it/${infinispan.version}|lib/infinispan/infinispan-embedded-it-${infinispan.version}.jar
 
 [ini]
-infinispan.version?=9.1.0.Final
+infinispan.version?=9.4.8.Final
 
 [ini-template]
 #jetty.session.infinispan.idleTimeout.seconds=0

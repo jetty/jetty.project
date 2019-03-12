@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
-import static org.eclipse.jetty.websocket.common.test.MoreMatchers.regex;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-
+import examples.AdapterConnectCloseSocket;
+import examples.AnnotatedBinaryArraySocket;
+import examples.AnnotatedBinaryStreamSocket;
+import examples.AnnotatedFramesSocket;
+import examples.AnnotatedTextSocket;
+import examples.ListenerBasicSocket;
+import examples.ListenerPingPongSocket;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -42,13 +44,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import examples.AdapterConnectCloseSocket;
-import examples.AnnotatedBinaryArraySocket;
-import examples.AnnotatedBinaryStreamSocket;
-import examples.AnnotatedFramesSocket;
-import examples.AnnotatedTextSocket;
-import examples.ListenerBasicSocket;
-import examples.ListenerPingPongSocket;
+import static org.eclipse.jetty.websocket.common.test.MoreMatchers.regex;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 
 public class EventDriverTest
 {
@@ -110,7 +109,7 @@ public class EventDriverTest
         try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
         {
             conn.open();
-            driver.incomingError(new WebSocketException("oof"));
+            driver.onError(new WebSocketException("oof"));
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
             assertThat(socket.capture.safePoll(), startsWith("onConnect"));

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -25,11 +28,13 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 
 public class SimpleContainerScope extends ContainerLifeCycle implements WebSocketContainerScope
 {
@@ -37,7 +42,9 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy policy;
     private final Executor executor;
+    private final Logger logger;
     private SslContextFactory sslContextFactory;
+    private List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
 
     public SimpleContainerScope(WebSocketPolicy policy)
     {
@@ -62,6 +69,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, SslContextFactory ssl, DecoratedObjectFactory objectFactory)
     {
+        this.logger = Log.getLogger(this.getClass());
         this.policy = policy;
         this.bufferPool = bufferPool;
         
@@ -141,16 +149,22 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         this.sslContextFactory = sslContextFactory;
     }
-    
+
     @Override
-    public void onSessionOpened(WebSocketSession session)
+    public void addSessionListener(WebSocketSessionListener listener)
     {
-        /* do nothing */
+        this.sessionListeners.add(listener);
     }
 
     @Override
-    public void onSessionClosed(WebSocketSession session)
+    public void removeSessionListener(WebSocketSessionListener listener)
     {
-        /* do nothing */
+        this.sessionListeners.remove(listener);
+    }
+
+    @Override
+    public Collection<WebSocketSessionListener> getSessionListeners()
+    {
+        return sessionListeners;
     }
 }

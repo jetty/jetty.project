@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 /**
  * ClusteredSessionScavengingTest
  *
- *
  */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
@@ -49,7 +48,15 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     }
 
 
-    /** 
+    @Override
+    @Test
+    public void testClusteredScavenge()
+        throws Exception
+    {
+        super.testClusteredScavenge();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override

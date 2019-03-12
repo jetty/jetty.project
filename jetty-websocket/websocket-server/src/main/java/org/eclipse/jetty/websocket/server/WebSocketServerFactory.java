@@ -29,10 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -67,6 +64,7 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
@@ -81,7 +79,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketContainerScope, WebSocketServletFactory
+public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketContainerScope, WebSocketServletFactory, WebSocketSessionListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
     
@@ -89,7 +87,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     // TODO: obtain shared (per server scheduler, somehow)
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
-    private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
+    private final List<WebSocketSessionListener> listeners = new ArrayList<>();
     private final String supportedVersions;
     private final WebSocketPolicy defaultPolicy;
     private final EventDriverFactory eventDriverFactory;
@@ -184,18 +182,27 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         
         addBean(scheduler);
         addBean(bufferPool);
+        listeners.add(this);
     }
-    
-    public void addSessionListener(WebSocketSession.Listener listener)
+
+    @Override
+    public void addSessionListener(WebSocketSessionListener listener)
     {
-        listeners.add(listener);
+        this.listeners.add(listener);
     }
-    
-    public void removeSessionListener(WebSocketSession.Listener listener)
+
+    @Override
+    public void removeSessionListener(WebSocketSessionListener listener)
     {
-        listeners.remove(listener);
+        this.listeners.remove(listener);
     }
-    
+
+    @Override
+    public Collection<WebSocketSessionListener> getSessionListeners()
+    {
+        return this.listeners;
+    }
+
     @Override
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -516,31 +523,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public void onSessionOpened(WebSocketSession session)
     {
         addManaged(session);
-        notifySessionListeners(listener -> listener.onOpened(session));
     }
-    
+
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
         removeBean(session);
-        notifySessionListeners(listener -> listener.onClosed(session));
     }
-    
-    private void notifySessionListeners(Consumer<WebSocketSession.Listener> consumer)
-    {
-        for (WebSocketSession.Listener listener : listeners)
-        {
-            try
-            {
-                consumer.accept(listener);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Exception while invoking listener " + listener, x);
-            }
-        }
-    }
-    
+
     @Override
     public void register(Class<?> websocketPojo)
     {

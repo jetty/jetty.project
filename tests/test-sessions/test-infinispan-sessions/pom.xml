@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.15-SNAPSHOT</version>
+    <version>9.4.16-SNAPSHOT</version>
   </parent>
   <artifactId>test-infinispan-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
@@ -100,31 +100,31 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
      <groupId>org.infinispan.protostream</groupId>
      <artifactId>protostream</artifactId>
-     <version>4.1.0.Final</version>
+     <version>4.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>

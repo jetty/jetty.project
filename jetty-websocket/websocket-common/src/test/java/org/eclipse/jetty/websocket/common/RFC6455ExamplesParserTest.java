@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,8 +26,10 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Collection of Example packets as found in <a href="https://tools.ietf.org/html/rfc6455#section-5.7">RFC 6455 Examples section</a>
@@ -66,7 +65,6 @@ public class RFC6455ExamplesParserTest
         BufferUtil.flipToFlush(buf,0);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
 
@@ -94,7 +92,6 @@ public class RFC6455ExamplesParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PONG,1);
 
         WebSocketFrame pong = capture.getFrames().poll();
@@ -118,7 +115,6 @@ public class RFC6455ExamplesParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         WebSocketFrame txt = capture.getFrames().poll();
@@ -149,7 +145,6 @@ public class RFC6455ExamplesParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame bin = capture.getFrames().poll();
@@ -188,7 +183,6 @@ public class RFC6455ExamplesParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame bin = capture.getFrames().poll();
@@ -219,7 +213,6 @@ public class RFC6455ExamplesParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         WebSocketFrame ping = capture.getFrames().poll();
@@ -243,7 +236,6 @@ public class RFC6455ExamplesParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         WebSocketFrame txt = capture.getFrames().poll();

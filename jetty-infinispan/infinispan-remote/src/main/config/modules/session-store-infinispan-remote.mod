@@ -12,11 +12,11 @@ infinispan-common
 infinispan-remote
 
 [files]
-maven://org.infinispan/infinispan-remote/${infinispan.version}|lib/infinispan/infinispan-remote-${infinispan.version}.jar
+maven://org.infinispan/infinispan-remote-it/${infinispan.version}|lib/infinispan/infinispan-remote-it-${infinispan.version}.jar
 basehome:modules/session-store-infinispan-remote/resources/hotrod-client.properties|resources/hotrod-client.properties
 
 [ini]
-infinispan.version?=9.1.0.Final
+infinispan.version?=9.4.8.Final
 
 
 [license]

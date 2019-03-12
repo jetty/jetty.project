@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -63,5 +64,14 @@ public class BigEchoSocket
         remote.sendString(message, null);
         if (remote.getBatchMode() == BatchMode.ON)
             remote.flush();
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("onError()", cause);
+        }
     }
 }

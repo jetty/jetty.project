@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -42,8 +36,13 @@ import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TestABCase2
 {
@@ -192,7 +191,6 @@ public class TestABCase2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -222,7 +220,6 @@ public class TestABCase2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -245,7 +242,6 @@ public class TestABCase2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -276,7 +272,6 @@ public class TestABCase2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();

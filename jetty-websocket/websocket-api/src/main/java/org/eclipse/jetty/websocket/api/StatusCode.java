@@ -153,6 +153,26 @@ public final class StatusCode
     public final static int FAILED_TLS_HANDSHAKE = 1015;
 
     /**
+     * Test if provided status code is a fatal failure for bad protocol behavior.
+     *
+     * @param statusCode the status code to test
+     * @return true if fatal status code
+     */
+    @SuppressWarnings("Duplicates")
+    public static boolean isFatal(int statusCode)
+    {
+        return (statusCode == ABNORMAL) ||
+                (statusCode == PROTOCOL) ||
+                (statusCode == MESSAGE_TOO_LARGE) ||
+                (statusCode == BAD_DATA) ||
+                (statusCode == BAD_PAYLOAD) ||
+                (statusCode == POLICY_VIOLATION) ||
+                (statusCode == REQUIRED_EXTENSION) ||
+                (statusCode == SERVER_ERROR) ||
+                (statusCode == SERVICE_RESTART);
+    }
+
+    /**
      * Test if provided status code can be sent/received on a WebSocket close.
      * <p>
      *     This honors the RFC6455 rules and IANA rules.
@@ -160,6 +180,7 @@ public final class StatusCode
      * @param statusCode the statusCode to test
      * @return true if transmittable
      */
+    @SuppressWarnings("Duplicates")
     public static boolean isTransmittable(int statusCode)
     {
         return (statusCode == NORMAL) ||
@@ -173,6 +194,7 @@ public final class StatusCode
                 (statusCode == SERVER_ERROR) ||
                 (statusCode == SERVICE_RESTART) ||
                 (statusCode == TRY_AGAIN_LATER) ||
-                (statusCode == INVALID_UPSTREAM_RESPONSE);
+                (statusCode == INVALID_UPSTREAM_RESPONSE) ||
+                ((statusCode >= 3000) && (statusCode <= 4999));
     }
 }

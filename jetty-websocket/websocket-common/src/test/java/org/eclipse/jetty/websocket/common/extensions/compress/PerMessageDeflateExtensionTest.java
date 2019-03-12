@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -42,11 +42,13 @@ import org.eclipse.jetty.websocket.common.extensions.ExtensionTool.Tester;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
@@ -225,6 +227,56 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     /**
+     * Decode fragmented message (3 parts: TEXT, CONTINUATION, CONTINUATION)
+     */
+    @Test
+    public void testParseFragmentedMessage_Good()
+    {
+        Tester tester = clientExtensions.newTester("permessage-deflate");
+
+        tester.assertNegotiated("permessage-deflate");
+
+        tester.parseIncomingHex(// 1 message, 3 frame
+                "410C", // HEADER TEXT / fin=false / rsv1=true
+                "F248CDC9C95700000000FFFF",
+                "000B", // HEADER CONTINUATION / fin=false / rsv1=false
+                "0ACF2FCA4901000000FFFF",
+                "8003", // HEADER CONTINUATION / fin=true / rsv1=false
+                "520400"
+        );
+
+        Frame txtFrame = new TextFrame().setPayload("Hello ").setFin(false);
+        Frame con1Frame = new ContinuationFrame().setPayload("World").setFin(false);
+        Frame con2Frame = new ContinuationFrame().setPayload("!").setFin(true);
+
+        tester.assertHasFrames(txtFrame, con1Frame, con2Frame);
+    }
+
+    /**
+     * Decode fragmented message (3 parts: TEXT, CONTINUATION, CONTINUATION)
+     * <p>
+     *     Continuation frames have RSV1 set, which MUST result in Failure
+     * </p>
+     */
+    @Test
+    public void testParseFragmentedMessage_BadRsv1()
+    {
+        Tester tester = clientExtensions.newTester("permessage-deflate");
+
+        tester.assertNegotiated("permessage-deflate");
+
+        assertThrows(ProtocolException.class, () ->
+                tester.parseIncomingHex(// 1 message, 3 frame
+                        "410C", // Header TEXT / fin=false / rsv1=true
+                        "F248CDC9C95700000000FFFF", // Payload
+                        "400B", // Header CONTINUATION / fin=false / rsv1=true
+                        "0ACF2FCA4901000000FFFF", // Payload
+                        "C003", // Header CONTINUATION / fin=true / rsv1=true
+                        "520400" // Payload
+                ));
+    }
+
+    /**
      * Incoming PING (Control Frame) should pass through extension unmodified
      */
     @Test
@@ -260,6 +312,44 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
+
+    /**
+     * Incoming Text Message fragmented into 3 pieces.
+     */
+    @Test
+    public void testIncomingFragmented()
+    {
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ext.setBufferPool(bufferPool);
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
+        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
+        ext.setConfig(config);
+
+        // Setup capture of incoming frames
+        IncomingFramesCapture capture = new IncomingFramesCapture();
+
+        // Wire up stack
+        ext.setNextIncomingFrames(capture);
+
+        String payload = "Are you there?";
+        Frame ping = new PingFrame().setPayload(payload);
+        ext.incomingFrame(ping);
+
+        capture.assertFrameCount(1);
+        capture.assertHasFrame(OpCode.PING, 1);
+        WebSocketFrame actual = capture.getFrames().poll();
+
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+
+        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+    }
+
 
     /**
      * Verify that incoming uncompressed frames are properly passed through
@@ -354,6 +444,58 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+    }
+
+    /**
+     * Outgoing Fragmented Message
+     * @throws IOException on test failure
+     */
+    @Test
+    public void testOutgoingFragmentedMessage() throws IOException, InterruptedException
+    {
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ext.setBufferPool(bufferPool);
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
+        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
+        ext.setConfig(config);
+
+        // Setup capture of outgoing frames
+        OutgoingFramesCapture capture = new OutgoingFramesCapture();
+
+        // Wire up stack
+        ext.setNextOutgoingFrames(capture);
+
+        Frame txtFrame = new TextFrame().setPayload("Hello ").setFin(false);
+        Frame con1Frame = new ContinuationFrame().setPayload("World").setFin(false);
+        Frame con2Frame = new ContinuationFrame().setPayload("!").setFin(true);
+        ext.outgoingFrame(txtFrame, null, BatchMode.OFF);
+        ext.outgoingFrame(con1Frame, null, BatchMode.OFF);
+        ext.outgoingFrame(con2Frame, null, BatchMode.OFF);
+
+        capture.assertFrameCount(3);
+
+        WebSocketFrame capturedFrame;
+
+        capturedFrame = capture.getFrames().poll(1, TimeUnit.SECONDS);
+        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.TEXT));
+        assertThat("Frame.fin", capturedFrame.isFin(), is(false));
+        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(true));
+        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+
+        capturedFrame = capture.getFrames().poll(1, TimeUnit.SECONDS);
+        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
+        assertThat("Frame.fin", capturedFrame.isFin(), is(false));
+        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
+        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+
+        capturedFrame = capture.getFrames().poll(1, TimeUnit.SECONDS);
+        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
+        assertThat("Frame.fin", capturedFrame.isFin(), is(true));
+        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
+        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
     }
 
     @Test

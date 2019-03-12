@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -37,7 +38,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
-import java.net.HttpCookie;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -59,6 +59,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -1019,7 +1020,7 @@ public class ResponseTest
     @Test
     public void testAddCookie_JavaNet() throws Exception
     {
-        HttpCookie cookie = new HttpCookie("foo", URLEncoder.encode("bar;baz", UTF_8.toString()));
+        java.net.HttpCookie cookie = new java.net.HttpCookie("foo", URLEncoder.encode("bar;baz", UTF_8.toString()));
         cookie.setPath("/secure");
         
         assertEquals("foo=\"bar%3Bbaz\";$Path=\"/secure\"", cookie.toString());
@@ -1059,6 +1060,38 @@ public class ResponseTest
 
         set = response.getHttpFields().getValues("Set-Cookie");
         assertFalse(set.hasMoreElements());
+    }
+
+    @Test
+    public void testReplaceHttpCookie()
+    {
+        Response response = getResponse();
+
+        response.replaceCookie(new HttpCookie("Foo","123456"));
+        response.replaceCookie(new HttpCookie("Foo","123456", "A", "/path"));
+        response.replaceCookie(new HttpCookie("Foo","123456", "B", "/path"));
+
+        response.replaceCookie(new HttpCookie("Bar","123456"));
+        response.replaceCookie(new HttpCookie("Bar","123456",null, "/left"));
+        response.replaceCookie(new HttpCookie("Bar","123456", null, "/right"));
+
+        response.replaceCookie(new HttpCookie("Bar","value", null, "/right"));
+        response.replaceCookie(new HttpCookie("Bar","value",null, "/left"));
+        response.replaceCookie(new HttpCookie("Bar","value"));
+
+        response.replaceCookie(new HttpCookie("Foo","value", "B", "/path"));
+        response.replaceCookie(new HttpCookie("Foo","value", "A", "/path"));
+        response.replaceCookie(new HttpCookie("Foo","value"));
+
+        assertThat(Collections.list(response.getHttpFields().getValues("Set-Cookie")),
+                contains(
+                        "Foo=value",
+                        "Foo=value;Path=/path;Domain=A",
+                        "Foo=value;Path=/path;Domain=B",
+                        "Bar=value",
+                        "Bar=value;Path=/left",
+                        "Bar=value;Path=/right"
+                ));
     }
 
     @Test

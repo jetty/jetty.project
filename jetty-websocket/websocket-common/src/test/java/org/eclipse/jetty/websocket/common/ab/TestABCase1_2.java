@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -36,8 +33,10 @@ import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Binary Message Spec testing the {@link Generator} and {@link Parser}
@@ -330,7 +329,6 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -364,7 +362,6 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -398,7 +395,6 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -432,7 +428,6 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -467,7 +462,6 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -504,7 +498,6 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -528,7 +521,6 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();

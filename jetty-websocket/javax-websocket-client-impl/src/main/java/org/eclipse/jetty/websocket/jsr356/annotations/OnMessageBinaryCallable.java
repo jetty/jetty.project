@@ -20,10 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -55,12 +53,20 @@ public class OnMessageBinaryCallable extends OnMessageCallable
 
     public Object call(Object endpoint, ByteBuffer buf, boolean partialFlag) throws DecodeException
     {
-        super.args[idxMessageObject] = binaryDecoder.decode(buf);
-        if (idxPartialMessageFlag >= 0)
+        if (binaryDecoder.willDecode(buf.slice()))
         {
-            super.args[idxPartialMessageFlag] = partialFlag;
+            super.args[idxMessageObject] = binaryDecoder.decode(buf);
+            if (idxPartialMessageFlag >= 0)
+            {
+                super.args[idxPartialMessageFlag] = partialFlag;
+            }
+            return super.call(endpoint, super.args);
         }
-        return super.call(endpoint,super.args);
+        else
+        {
+            // Per JSR356, if you cannot decode, discard the message.
+            return null;
+        }
     }
 
     @Override

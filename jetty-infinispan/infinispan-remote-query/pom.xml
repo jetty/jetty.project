@@ -2,14 +2,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>9.4.15-SNAPSHOT</version>
+    <version>9.4.16-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-remote-query</artifactId>
   <name>Jetty :: Infinispan Session Manager Remote</name>
   <url>http://www.eclipse.org/jetty</url>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.infinispan.remote-query</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
   </properties>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -47,6 +47,11 @@
             </goals>
             <configuration>
               <tasks>
+                <replaceregexp file="${project.build.directory}/deps.txt"
+                               match=" *(.*):(.*):jar:(.*):(.*):.*$"
+                               replace="maven://\1/\2/\4/jar/\3|lib/infinispan/\2-\3-\4.jar"
+                               byline="true"
+                />
                 <replaceregexp file="${project.build.directory}/deps.txt"
                                match=" *(.*):(.*):jar:(.*):.*$"
                                replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar"

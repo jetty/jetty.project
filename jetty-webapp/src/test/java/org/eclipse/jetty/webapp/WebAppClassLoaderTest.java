@@ -64,6 +64,7 @@ public class WebAppClassLoaderTest
         _context = new WebAppContext();
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
+        _context.setExtraClasspath("src/test/resources/ext/*");
 
         _loader = new WebAppClassLoader(_context);
         _loader.addJars(webapp.addPath("WEB-INF/lib"));
@@ -105,6 +106,10 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
 
+        assertCanLoadClass("org.acme.extone.Main");
+        assertCanLoadClass("org.acme.exttwo.Main");
+        assertCantLoadClass("org.acme.extthree.Main");
+
         assertCantLoadClass("org.eclipse.jetty.webapp.Configuration");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
@@ -118,6 +123,10 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
+
+        assertCanLoadClass("org.acme.extone.Main");
+        assertCanLoadClass("org.acme.exttwo.Main");
+        assertCantLoadClass("org.acme.extthree.Main");
 
         assertCantLoadClass("org.eclipse.jetty.webapp.Configuration");
 

@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
+import java.util.Collection;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 
 public class DelegatedContainerScope implements WebSocketContainerScope
 {
@@ -72,16 +73,22 @@ public class DelegatedContainerScope implements WebSocketContainerScope
     {
         return this.delegate.isRunning();
     }
-    
+
     @Override
-    public void onSessionOpened(WebSocketSession session)
+    public void addSessionListener(WebSocketSessionListener listener)
     {
-        this.delegate.onSessionOpened(session);
+        this.delegate.addSessionListener(listener);
     }
-    
+
     @Override
-    public void onSessionClosed(WebSocketSession session)
+    public void removeSessionListener(WebSocketSessionListener listener)
     {
-        this.delegate.onSessionClosed(session);
+        this.delegate.removeSessionListener(listener);
+    }
+
+    @Override
+    public Collection<WebSocketSessionListener> getSessionListeners()
+    {
+        return this.delegate.getSessionListeners();
     }
 }
