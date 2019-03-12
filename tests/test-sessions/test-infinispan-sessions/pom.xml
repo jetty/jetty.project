@@ -106,19 +106,19 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>9.1.0.Final</version>
+      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
