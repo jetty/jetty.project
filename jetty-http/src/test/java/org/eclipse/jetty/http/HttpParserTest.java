@@ -30,10 +30,10 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
-import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTILINE_FIELD_VALUE;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -2188,9 +2188,9 @@ public class HttpParserTest
     private boolean _early;
     private boolean _headerCompleted;
     private boolean _messageCompleted;
-    private final List<HttpCompliance.Violation> _complianceViolation = new ArrayList<>();
+    private final List<ComplianceViolation> _complianceViolation = new ArrayList<>();
     
-    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, HttpParser.ComplianceHandler
+    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, ComplianceViolation.Listener
     {
         private boolean _headerCacheCaseSensitive;
 
@@ -2316,7 +2316,7 @@ public class HttpParserTest
         }
 
         @Override
-        public void onComplianceViolation(HttpCompliance compliance, HttpCompliance.Violation violation, String reason)
+        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String reason)
         {
             _complianceViolation.add(violation);
         }

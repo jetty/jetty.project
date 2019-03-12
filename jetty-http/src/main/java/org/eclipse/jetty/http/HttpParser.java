@@ -146,7 +146,7 @@ public class HttpParser
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
     private final ResponseHandler _responseHandler;
-    private final ComplianceHandler _complianceHandler;
+    private final ComplianceViolation.Listener _complianceHandler;
     private final int _maxHeaderBytes;
     private final HttpCompliance _compliance;
     private HttpField _field;
@@ -284,7 +284,7 @@ public class HttpParser
         _responseHandler=responseHandler;
         _maxHeaderBytes=maxHeaderBytes;
         _compliance=compliance;
-        _complianceHandler=(ComplianceHandler)(_handler instanceof ComplianceHandler?_handler:null);
+        _complianceHandler=(ComplianceViolation.Listener)(_handler instanceof ComplianceViolation.Listener?_handler:null);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -298,10 +298,10 @@ public class HttpParser
         if (violation.isAllowedBy(_compliance))
         {
             if (_complianceHandler!=null)
-                _complianceHandler.onComplianceViolation(_compliance, violation, violation.description);
+                _complianceHandler.onComplianceViolation(_compliance, violation, violation.getDescription());
             return;
         }
-        throw new BadMessageException(HttpStatus.BAD_REQUEST_400,violation.description);
+        throw new BadMessageException(HttpStatus.BAD_REQUEST_400,violation.getDescription());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -314,7 +314,7 @@ public class HttpParser
         if (violation.isAllowedBy(_compliance))
         {
             if (_complianceHandler!=null)
-                _complianceHandler.onComplianceViolation(_compliance, violation, violation.description);
+                _complianceHandler.onComplianceViolation(_compliance, violation, violation.getDescription());
             return true;
         }
         return false;
@@ -956,7 +956,7 @@ public class HttpParser
                         {
                             checkViolation(MULTIPLE_CONTENT_LENGTHS);
                             if (convertContentLength(_valueString)!=_contentLength)
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,MULTIPLE_CONTENT_LENGTHS.description);
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,MULTIPLE_CONTENT_LENGTHS.getDescription());
                         }
                         _hasContentLength = true;
 
@@ -1940,17 +1940,6 @@ public class HttpParser
          * @return true if handling parsing should return
          */
         boolean startResponse(HttpVersion version, int status, String reason);
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    public interface ComplianceHandler extends HttpHandler
-    {
-        default void onComplianceViolation(HttpCompliance compliance, HttpCompliance.Violation violation, String details)
-        {
-
-        }
     }
 
     /* ------------------------------------------------------------------------------- */

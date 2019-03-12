@@ -38,12 +38,12 @@ import static java.util.EnumSet.of;
  * A Compliance mode consists of a set of {@link Violation}s which are applied
  * when the mode is enabled.
  */
-public final class HttpCompliance
+public final class HttpCompliance implements ComplianceViolation.Mode
 {
 
     // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
     // the relevant section of the RFC is not strictly adhered to.
-    public enum Violation
+    public enum Violation implements ComplianceViolation
     {
         CASE_SENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Field name is case-insensitive"),
         CASE_INSENSITIVE_METHOD("https://tools.ietf.org/html/rfc7230#section-3.1.1", "Method is case-sensitive"),
@@ -54,8 +54,8 @@ public final class HttpCompliance
         WHITESPACE_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
         NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon");
 
-        public final String url;
-        public final String description;
+        private final String url;
+        private final String description;
 
         Violation(String url, String description)
         {
@@ -63,18 +63,23 @@ public final class HttpCompliance
             this.description = description;
         }
 
-        public boolean isAllowedBy(HttpCompliance compliance)
+        @Override
+        public String getName()
         {
-            return compliance.isAllowed(this);
+            return name();
         }
-    }
 
-    private final String _name;
-    private final Set<Violation> _violations;
+        @Override
+        public String getURL()
+        {
+            return url;
+        }
 
-    public boolean isAllowed(Violation violation)
-    {
-        return _violations.contains(violation);
+        @Override
+        public String getDescription()
+        {
+            return description;
+        }
     }
 
     public final static HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
@@ -95,6 +100,8 @@ public final class HttpCompliance
         String s = System.getProperty(HttpCompliance.class.getName()+property);
         return violationBySpec(s==null?"*":s);
     }
+
+
 
     /**
      * Create violation set from string
@@ -165,6 +172,10 @@ public final class HttpCompliance
         return sections;
     }
 
+
+    private final String _name;
+    private final Set<Violation> _violations;
+
     private HttpCompliance(String name, Set<Violation> violations)
     {
         Objects.nonNull(violations);
@@ -172,6 +183,13 @@ public final class HttpCompliance
         _violations = unmodifiableSet(copyOf(violations));
     }
 
+    @Override
+    public boolean allows(ComplianceViolation violation)
+    {
+        return _violations.contains(violation);
+    }
+
+    @Override
     public String getName()
     {
         return _name;
@@ -181,11 +199,19 @@ public final class HttpCompliance
      * Get the set of {@link Violation}s allowed by this compliance mode.
      * @return The immutable set of {@link Violation}s allowed by this compliance mode.
      */
+    @Override
     public Set<Violation> getAllowed()
     {
         return _violations;
     }
 
+    @Override
+    public Set<Violation> getKnown()
+    {
+        return EnumSet.allOf(Violation.class);
+    }
+
+    // TODO javadoc
     public HttpCompliance with(String name, Violation... violations)
     {
         EnumSet<Violation> union = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
@@ -193,6 +219,7 @@ public final class HttpCompliance
         return new HttpCompliance(name, union);
     }
 
+    // TODO javadoc
     public HttpCompliance without(String name, Violation... violations)
     {
         EnumSet<Violation> remainder = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);

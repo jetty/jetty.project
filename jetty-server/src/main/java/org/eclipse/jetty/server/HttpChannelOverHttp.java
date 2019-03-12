@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
-public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ComplianceHandler
+public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, ComplianceViolation.Listener
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
@@ -521,7 +522,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void onComplianceViolation(HttpCompliance compliance, HttpCompliance.Violation violation, String details)
+    public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
     {
         if (_httpConnection.isRecordHttpComplianceViolations())
         {
@@ -530,7 +531,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 _complianceViolations = new ArrayList<>();
             }
             String record = String.format("%s (see %s) in mode %s for %s in %s",
-                    violation.description, violation.url, compliance, details, getHttpTransport());
+                    violation.getDescription(), violation.getURL(), mode, details, getHttpTransport());
             _complianceViolations.add(record);
             if (LOG.isDebugEnabled())
                 LOG.debug(record);
