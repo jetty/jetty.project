@@ -97,17 +97,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     public final static List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230,RFC2616,LEGACY,RFC2616_LEGACY,RFC7230_LEGACY);
 
-
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 
     private static final Logger LOG = Log.getLogger(HttpParser.class);
-    private static EnumSet<Violation> violationByProperty(String property)
-    {
-        String s = System.getProperty(HttpCompliance.class.getName()+property);
-        return violationBySpec(s==null?"*":s);
-    }
-
-
 
     /**
      * Create violation set from string
