@@ -19,12 +19,13 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -49,10 +50,10 @@ public class HttpConfigurationCustomizerTest
         http.getHttpConfiguration().setSecurePort(9999);
         http.getHttpConfiguration().setSecureScheme("https");
 
+        final PreEncodedHttpField X_XSS_PROTECTION_FIELD = new PreEncodedHttpField("X-XSS-Protection", "1; mode=block");
+
         HttpConnectionFactory https = new HttpConnectionFactory(http.getHttpConfiguration());
         https.getHttpConfiguration().addCustomizer((connector, channelConfig, request) -> {
-            // INVALID: final PreEncodedHttpField X_XSS_PROTECTION_FIELD = new PreEncodedHttpField("X-XSS-Protection", "1; mode=block");
-            final HttpField X_XSS_PROTECTION_FIELD = new HttpField("X-XSS-Protection", "1; mode=block");
             request.setScheme(HttpScheme.HTTPS.asString());
             request.setSecure(true);
             request.getResponse().getHttpFields().add(X_XSS_PROTECTION_FIELD); // test response header
@@ -94,7 +95,6 @@ public class HttpConfigurationCustomizerTest
                 "\r\n";
 
         String rawResponse = localConnector.getResponse(request);
-        System.out.println(rawResponse);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response status", response.getStatus(), is(200));
         assertThat("Response body", response.getContent(), containsString("Success"));

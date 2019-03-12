@@ -300,6 +300,24 @@ public class HttpFieldsTest
     }
 
     @Test
+    public void testPreEncodedField()
+    {
+        ByteBuffer buffer = BufferUtil.allocate(1024);
+
+        PreEncodedHttpField known = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        BufferUtil.clearToFill(buffer);
+        known.putTo(buffer,HttpVersion.HTTP_1_1);
+        BufferUtil.flipToFlush(buffer,0);
+        assertThat(BufferUtil.toString(buffer),is("Connection: close\r\n"));
+
+        PreEncodedHttpField unknown = new PreEncodedHttpField(null, "Header", "Value");
+        BufferUtil.clearToFill(buffer);
+        unknown.putTo(buffer,HttpVersion.HTTP_1_1);
+        BufferUtil.flipToFlush(buffer,0);
+        assertThat(BufferUtil.toString(buffer),is("Header: Value\r\n"));
+    }
+
+    @Test
     public void testAddPreEncodedField()
     {
         final PreEncodedHttpField X_XSS_PROTECTION_FIELD = new PreEncodedHttpField("X-XSS-Protection", "1; mode=block");
