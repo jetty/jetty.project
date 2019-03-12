@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.jetty.util.log.Log;
@@ -92,6 +95,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             Violation.MULTIPLE_CONTENT_LENGTHS);
     public final static HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
 
+    public final static List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230,RFC2616,LEGACY,RFC2616_LEGACY,RFC7230_LEGACY);
+
+
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 
     private static final Logger LOG = Log.getLogger(HttpParser.class);
@@ -113,6 +119,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * but not https://tools.ietf.org/html/rfc7230</dd>
      * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc7230</dd>
      * </dl>
+     * <dt>name</dt><dd>Any of the known modes defined in {@link HttpCompliance#KNOWN_MODES}</dd>
+     * </dl>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
      * with a '-' to exclude thm from the mode.
      * <p>
@@ -121,38 +129,30 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     {
         EnumSet<Violation> sections;
         String[] elements = spec.split("\\s*,\\s*");
-        int i=0;
-
-        switch(elements[i])
+        switch(elements[0])
         {
             case "0":
                 sections = noneOf(Violation.class);
-                i++;
                 break;
 
             case "*":
                 sections = allOf(Violation.class);
-                i++;
-                break;
-
-            case "RFC2616":
-                sections = copyOf(RFC2616.getAllowed());
-                i++;
-                break;
-
-            case "RFC7230":
-                sections = copyOf(RFC7230.getAllowed());
-                i++;
                 break;
 
             default:
-                sections = noneOf(Violation.class);
-                break;
+            {
+                Optional<HttpCompliance> mode =
+                        KNOWN_MODES.stream().filter(m -> m.getName().equals(elements[0])).findFirst();
+                if (mode.isPresent())
+                    sections = copyOf(mode.get().getAllowed());
+                else
+                    sections = noneOf(Violation.class);
+            }
         }
 
-        while(i<elements.length)
+        for (int i=1; i<elements.length; i++)
         {
-            String element = elements[i++];
+            String element = elements[i];
             boolean exclude = element.startsWith("-");
             if (exclude)
                 element = element.substring(1);
@@ -211,7 +211,12 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         return EnumSet.allOf(Violation.class);
     }
 
-    // TODO javadoc
+    /**
+     * Create a new HttpCompliance mode that includes the passed {@link Violation}s.
+     * @param name The name of the new mode
+     * @param violations The violations to include
+     * @return A new {@link HttpCompliance} mode.
+     */
     public HttpCompliance with(String name, Violation... violations)
     {
         EnumSet<Violation> union = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
@@ -219,7 +224,12 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         return new HttpCompliance(name, union);
     }
 
-    // TODO javadoc
+    /**
+     * Create a new HttpCompliance mode that excludes the passed {@link Violation}s.
+     * @param name The name of the new mode
+     * @param violations The violations to exclude
+     * @return A new {@link HttpCompliance} mode.
+     */
     public HttpCompliance without(String name, Violation... violations)
     {
         EnumSet<Violation> remainder = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
