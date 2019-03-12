@@ -27,6 +27,7 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.2</servlet.api.version>
     <jsp.version>9.0.14.1</jsp.version>
+    <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.4.1</conscrypt.version>
@@ -1030,6 +1031,11 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>3.3.2.Final</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
