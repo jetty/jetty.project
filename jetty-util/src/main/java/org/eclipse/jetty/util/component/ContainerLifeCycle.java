@@ -131,7 +131,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         catch (Throwable t)
         {
             // on failure, stop any managed components that have been started
-            for (Bean b : _beans)
+            List<Bean> reverse = new ArrayList<>(_beans);
+            Collections.reverse(reverse);
+            for (Bean b : reverse)
             {
                 if (b._bean instanceof LifeCycle && b._managed == Managed.MANAGED)
                 {
