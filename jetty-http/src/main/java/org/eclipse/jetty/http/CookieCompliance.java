@@ -18,8 +18,89 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
+
+import static java.util.Collections.unmodifiableSet;
+import static java.util.EnumSet.allOf;
+import static java.util.EnumSet.copyOf;
+import static java.util.EnumSet.noneOf;
+
 /**
  * The compliance for Cookie handling.
  *
  */
-public enum CookieCompliance { RFC6265, RFC2965 }
+public class CookieCompliance implements ComplianceViolation.Mode
+{
+
+    enum Violation implements ComplianceViolation
+    {
+        COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
+        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1","Reserved names no longer use '$' prefix")
+        ;
+
+        private final String url;
+        private final String description;
+
+        Violation(String url, String description)
+        {
+            this.url = url;
+            this.description = description;
+        }
+
+        @Override
+        public String getName()
+        {
+            return name();
+        }
+        @Override
+        public String getURL()
+        {
+            return null;
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return null;
+        }
+    }
+
+    public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", noneOf(Violation.class));
+    public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", allOf(Violation.class));
+
+    private final String _name;
+    private final Set<Violation> _violations;
+
+    private CookieCompliance(String name, Set<Violation> violations)
+    {
+        Objects.nonNull(violations);
+        _name = name;
+        _violations = unmodifiableSet(copyOf(violations));
+    }
+
+    @Override
+    public boolean allows(ComplianceViolation violation)
+    {
+        return _violations.contains(violation);
+    }
+
+    @Override
+    public String getName()
+    {
+        return _name;
+    }
+
+    @Override
+    public Set<Violation> getKnown()
+    {
+        return EnumSet.allOf(Violation.class);
+    }
+
+    @Override
+    public Set<Violation> getAllowed()
+    {
+        return _violations;
+    }
+}
