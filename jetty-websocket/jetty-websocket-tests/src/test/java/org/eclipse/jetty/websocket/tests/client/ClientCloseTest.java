@@ -38,6 +38,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -427,7 +429,7 @@ public class ClientCloseTest
         }
 
         @Override
-        public void onWebSocketFrame(org.eclipse.jetty.websocket.api.extensions.Frame frame)
+        public void onWebSocketFrame(Frame frame)
         {
             if (frame.getOpCode() == OpCode.CLOSE)
             {
