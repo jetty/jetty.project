@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.extensions;
+package org.eclipse.jetty.websocket.api;
 
 import java.nio.ByteBuffer;
 

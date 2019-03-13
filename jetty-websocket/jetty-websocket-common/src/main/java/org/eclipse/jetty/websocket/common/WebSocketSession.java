@@ -37,16 +37,16 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-public class WebSocketSessionImpl extends AbstractLifeCycle implements Session, Dumpable
+public class WebSocketSession extends AbstractLifeCycle implements Session, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(WebSocketSessionImpl.class);
+    private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final FrameHandler.CoreSession coreSession;
     private final JettyWebSocketFrameHandler frameHandler;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSessionImpl(
+    public WebSocketSession(
         FrameHandler.CoreSession coreSession,
         JettyWebSocketFrameHandler frameHandler,
         UpgradeRequest upgradeRequest,
@@ -254,6 +254,6 @@ public class WebSocketSessionImpl extends AbstractLifeCycle implements Session, 
     @Override
     public String toString()
     {
-        return String.format("WebSocketSessionImpl[%s,to=%s,%s,%s]", getBehavior(), getIdleTimeout(), coreSession, frameHandler);
+        return String.format("WebSocketSession[%s,to=%s,%s,%s]", getBehavior(), getIdleTimeout(), coreSession, frameHandler);
     }
 }

@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -280,7 +281,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         // Frame Listener
         if (WebSocketFrameListener.class.isAssignableFrom(endpointClass))
         {
-            Method frameMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketFrame", org.eclipse.jetty.websocket.api.extensions.Frame.class);
+            Method frameMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketFrame", Frame.class);
             MethodHandle frame = toMethodHandle(lookup, frameMethod);
             metadata.setFrameHandler(frame, frameMethod);
         }
@@ -349,7 +350,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             assertSignatureValid(endpointClass, onmethod, OnWebSocketFrame.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
-            final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(org.eclipse.jetty.websocket.api.extensions.Frame.class).required();
+            final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(Frame.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, FRAME);
             metadata.setFrameHandler(methodHandle, onmethod);
         }

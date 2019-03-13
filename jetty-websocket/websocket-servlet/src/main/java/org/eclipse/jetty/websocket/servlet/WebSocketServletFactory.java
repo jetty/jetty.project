@@ -21,39 +21,54 @@ package org.eclipse.jetty.websocket.servlet;
 import java.time.Duration;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public interface WebSocketServletFactory
+public interface WebSocketServletFactory extends FrameHandler.Configuration
 {
 
     WebSocketExtensionRegistry getExtensionRegistry();
 
+    @Override
     Duration getIdleTimeout();
 
+    @Override
     void setIdleTimeout(Duration duration);
 
+    @Override
     int getInputBufferSize();
 
+    @Override
     void setInputBufferSize(int bufferSize);
 
+    @Override
     long getMaxFrameSize();
 
+    @Override
     void setMaxFrameSize(long maxFrameSize);
 
+    @Override
     long getMaxBinaryMessageSize();
 
+    @Override
     void setMaxBinaryMessageSize(long bufferSize);
 
+    @Override
     long getMaxTextMessageSize();
 
+    @Override
     void setMaxTextMessageSize(long bufferSize);
 
+    @Override
     int getOutputBufferSize();
 
+    @Override
     void setOutputBufferSize(int bufferSize);
 
+    @Override
     boolean isAutoFragment();
 
+    @Override
     void setAutoFragment(boolean autoFragment);
 
     void addMapping(String pathSpec, WebSocketCreator creator);

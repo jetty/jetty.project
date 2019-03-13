@@ -74,7 +74,6 @@ public class BadNetworkTest
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
-        JettyWebSocketServletContainerInitializer.configure(context);
         context.setContextPath("/");
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
@@ -92,6 +91,7 @@ public class BadNetworkTest
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         server.start();
     }

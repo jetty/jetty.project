@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.websocket.core.Frame;
-
 import java.nio.ByteBuffer;
 
-public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.extensions.Frame
+import org.eclipse.jetty.websocket.core.Frame;
+
+public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Frame
 {
     private final Frame frame;
 

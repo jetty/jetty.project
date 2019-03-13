@@ -22,9 +22,12 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Disabled("Disabled due to Infinispan not supporting JDK 11, see eclipse/jetty.project#3024")
+/**
+ * ClusteredSessionScavengingTest
+ *
+ */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
     public InfinispanTestSupport _testSupport;
@@ -44,6 +47,18 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
             _testSupport.teardown();
     }
 
+
+    @Override
+    @Test
+    public void testClusteredScavenge()
+        throws Exception
+    {
+        super.testClusteredScavenge();
+    }
+
+    /**
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
