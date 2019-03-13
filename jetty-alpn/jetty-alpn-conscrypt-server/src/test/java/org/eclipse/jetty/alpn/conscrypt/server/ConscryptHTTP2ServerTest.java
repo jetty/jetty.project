@@ -63,12 +63,6 @@ public class ConscryptHTTP2ServerTest
         Security.addProvider(new OpenSSLProvider());
     }
 
-    public static void main(String[] args)
-        throws Exception
-    {
-        new ConscryptHTTP2ServerTest().startServer();
-    }
-
     private SslContextFactory newSslContextFactory()
     {
         Path path = Paths.get("src", "test", "resources");
@@ -81,17 +75,16 @@ public class ConscryptHTTP2ServerTest
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setProvider("Conscrypt");
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
-        if (JavaVersion.VERSION.getPlatform() < 9)
+        if (JavaVersion.VERSION.getPlatform()<9)
         {
             // conscrypt enable TLSv1.3 per default but it's not supported in jdk8
-            sslContextFactory.addExcludeProtocols( "TLSv1.3" );
+            sslContextFactory.addExcludeProtocols("TLSv1.3");
         }
         return sslContextFactory;
     }
 
     @BeforeEach
-    public void startServer()
-        throws Exception
+    public void startServer() throws Exception
     {
 
         HttpConfiguration httpsConfig = new HttpConfiguration();
@@ -114,9 +107,7 @@ public class ConscryptHTTP2ServerTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target,Request baseRequest,HttpServletRequest request,
-                                HttpServletResponse response)
-                throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setStatus(200);
                 baseRequest.setHandled(true);
@@ -128,8 +119,7 @@ public class ConscryptHTTP2ServerTest
     }
 
     @AfterEach
-    public void stopServer()
-        throws Exception
+    public void stopServer() throws Exception
     {
         if (server != null)
         {
@@ -139,8 +129,7 @@ public class ConscryptHTTP2ServerTest
 
 
     @Test
-    public void test_simple_query()
-        throws Exception
+    public void test_simple_query() throws Exception
     {
 
         HTTP2Client h2Client = new HTTP2Client();

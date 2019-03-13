@@ -146,10 +146,10 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setProvider("Conscrypt");
             sslContextFactory.setEndpointIdentificationAlgorithm(null);
-            if ( JavaVersion.VERSION.getPlatform() < 9)
+            if ( JavaVersion.VERSION.getPlatform()<9)
             {
                 // conscrypt enable TLSv1.3 per default but it's not supported in jdk8
-                sslContextFactory.addExcludeProtocols( "TLSv1.3" );
+                sslContextFactory.addExcludeProtocols("TLSv1.3");
             }
             HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
             Executor executor = new QueuedThreadPool();

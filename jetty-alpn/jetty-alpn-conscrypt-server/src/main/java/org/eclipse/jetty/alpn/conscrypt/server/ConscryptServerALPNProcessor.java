@@ -62,10 +62,7 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
     {
         try
         {
-            // with java 9+ we must use
-            //sslEngine.setHandshakeApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection));
-            Conscrypt.setApplicationProtocolSelector(sslEngine,
-                                                      toApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection)));
+            Conscrypt.setApplicationProtocolSelector(sslEngine,new ALPNCallback((ALPNServerConnection)connection));
         }
         catch (RuntimeException x)
         {
@@ -77,32 +74,27 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
         }
     }
 
-    private static ApplicationProtocolSelector toApplicationProtocolSelector(BiFunction<SSLEngine, List<String>, String> selector)
-    {
-        return new ApplicationProtocolSelector()
-        {
-            @Override
-            public String selectApplicationProtocol(SSLEngine engine, List<String> protocols)
-            {
-                return selector.apply(engine, protocols);
-            }
-
-            @Override
-            public String selectApplicationProtocol(SSLSocket socket, List<String> protocols)
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    private final class ALPNCallback implements BiFunction<SSLEngine,List<String>,String>, SslHandshakeListener
+    private final class ALPNCallback extends ApplicationProtocolSelector implements BiFunction<SSLEngine,List<String>,String>, SslHandshakeListener
     {
         private final ALPNServerConnection alpnConnection;
 
+
         private ALPNCallback(ALPNServerConnection connection)
         {
-            alpnConnection = connection;            
+            alpnConnection = connection;
             ((DecryptedEndPoint)alpnConnection.getEndPoint()).getSslConnection().addHandshakeListener(this);
+        }
+
+        @Override
+        public String selectApplicationProtocol(SSLEngine engine, List<String> protocols)
+        {
+            return apply(engine, protocols);
+        }
+
+        @Override
+        public String selectApplicationProtocol(SSLSocket socket, List<String> protocols)
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
