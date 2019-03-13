@@ -34,10 +34,12 @@ public abstract class CookieCutter
     protected static final Logger LOG = Log.getLogger(CookieCutter.class);
 
     protected final CookieCompliance _complianceMode;
+    private final ComplianceViolation.Listener _complianceListener;
 
-    protected CookieCutter(CookieCompliance compliance)
+    protected CookieCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
         _complianceMode = compliance;
+        _complianceListener = complianceListener;
     }
 
     protected void parseFields(List<String> rawFields)
@@ -285,9 +287,11 @@ public abstract class CookieCutter
 
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
+        if (_complianceListener != null)
+        {
+            _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
+        }
     }
 
     protected abstract void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment);
-
-
 }

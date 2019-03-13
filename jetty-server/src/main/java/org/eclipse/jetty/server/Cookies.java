@@ -17,11 +17,12 @@
 //
 
 package org.eclipse.jetty.server;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieCutter;
 import org.eclipse.jetty.util.log.Log;
@@ -49,12 +50,12 @@ public class Cookies extends CookieCutter
 
     public Cookies()
     {  
-        this(CookieCompliance.RFC6265);
+        this(CookieCompliance.RFC6265, null);
     }
     
-    public Cookies(CookieCompliance compliance)
+    public Cookies(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
-        super(compliance);
+        super(compliance, complianceListener);
     }
 
     public void addCookieField(String rawField)
