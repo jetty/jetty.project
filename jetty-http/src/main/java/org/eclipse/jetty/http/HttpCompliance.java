@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -31,7 +32,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.complementOf;
-import static java.util.EnumSet.copyOf;
 import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
 
@@ -99,6 +99,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
 
     private final static List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230,RFC2616,LEGACY,RFC2616_LEGACY,RFC7230_LEGACY);
+    private final static AtomicInteger __custom = new AtomicInteger();
 
     public static HttpCompliance valueOf(String name)
     {
@@ -124,9 +125,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * with a '-' to exclude thm from the mode.
      * <p>
      */
-    static EnumSet<Violation> violationBySpec(String spec)
+    public static HttpCompliance from(String spec)
     {
-        EnumSet<Violation> sections;
+        Set<Violation> sections;
         String[] elements = spec.split("\\s*,\\s*");
         switch(elements[0])
         {
@@ -164,10 +165,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
                 sections.remove(section);
             else
                 sections.add(section);
-
         }
 
-        return sections;
+        return new HttpCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
     }
 
 
@@ -178,7 +178,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     {
         Objects.nonNull(violations);
         _name = name;
-        _violations = unmodifiableSet(copyOf(violations));
+        _violations = unmodifiableSet(violations.isEmpty()?noneOf(Violation.class):copyOf(violations));
     }
 
     @Override
@@ -217,8 +217,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      */
     public HttpCompliance with(String name, Violation... violations)
     {
-        EnumSet<Violation> union = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
-        union.addAll(copyOf(asList(violations)));
+        Set<Violation> union = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
+        union.addAll(copyOf(violations));
         return new HttpCompliance(name, union);
     }
 
@@ -230,8 +230,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      */
     public HttpCompliance without(String name, Violation... violations)
     {
-        EnumSet<Violation> remainder = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
-        remainder.removeAll(copyOf(asList(violations)));
+        Set<Violation> remainder = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
+        remainder.removeAll(copyOf(violations));
         return new HttpCompliance(name, remainder);
     }
 
@@ -239,5 +239,20 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     public String toString()
     {
         return String.format("%s%s",_name,_violations);
+    }
+
+
+    private static Set<Violation> copyOf(Violation[] violations)
+    {
+        if (violations==null || violations.length==0)
+            return EnumSet.noneOf(Violation.class);
+        return EnumSet.copyOf(asList(violations));
+    }
+
+    private static Set<Violation> copyOf(Set<Violation> violations)
+    {
+        if (violations==null || violations.isEmpty())
+            return EnumSet.noneOf(Violation.class);
+        return EnumSet.copyOf(violations);
     }
 }

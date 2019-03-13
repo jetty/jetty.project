@@ -41,6 +41,3 @@ etc/jetty-http.xml
 
 ## Connect Timeout in milliseconds
 # jetty.http.connectTimeout=15000
-
-## HTTP Compliance: RFC7230, RFC7230_LEGACY, RFC2616, RFC2616_LEGACY, LEGACY or CUSTOMn
-# jetty.http.compliance=RFC7230_LEGACY
