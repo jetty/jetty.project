@@ -153,7 +153,7 @@ public class XmlConfiguration
                 Path webappPath = webapp.getFile().toPath().toAbsolutePath();
                 getProperties().put("jetty.webapp", webappPath.toString());
                 getProperties().put("jetty.webapps", webappPath.getParent().toString());
-                getProperties().put("jetty.webapps.uri", normalizeURI(webapp.getURI().toString()));
+                getProperties().put("jetty.webapps.uri", normalizeURI(webappPath.getParent().toUri().toString()));
             }
         }
         catch(Exception e)
