@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.api.extensions;
 
-import java.util.Enumeration;
-import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -32,9 +30,6 @@ public interface ExtensionConfig
     interface Parser
     {
         ExtensionConfig parse(String parameterizedName);
-        List<ExtensionConfig> parseEnum(Enumeration<String> valuesEnum);
-        List<ExtensionConfig> parseList(String... rawSecWebSocketExtensions);
-        String toHeaderValue(List<ExtensionConfig> configs);
     }
 
     private static ExtensionConfig.Parser getParser()
@@ -45,21 +40,6 @@ public interface ExtensionConfig
     static ExtensionConfig parse(String parameterizedName)
     {
         return getParser().parse(parameterizedName);
-    }
-
-    static List<ExtensionConfig> parseEnum(Enumeration<String> valuesEnum)
-    {
-        return getParser().parseEnum(valuesEnum);
-    }
-
-    static List<ExtensionConfig> parseList(String... rawSecWebSocketExtensions)
-    {
-        return getParser().parseList(rawSecWebSocketExtensions);
-    }
-
-    static String toHeaderValue(List<ExtensionConfig> configs)
-    {
-        return getParser().toHeaderValue(configs);
     }
 
     String getName();
