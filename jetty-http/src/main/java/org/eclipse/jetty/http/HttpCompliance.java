@@ -110,20 +110,24 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * Create violation set from string
+     * Create compliance set from string.
      * <p>
-     * @param spec A string in the format of a comma separated list starting with one of the following strings:<dl>
+     *     Format:
+     * </p>
+     * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
      * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc2616,
      * but not https://tools.ietf.org/html/rfc7230</dd>
      * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc7230</dd>
-     * </dl>
      * <dt>name</dt><dd>Any of the known modes defined in {@link HttpCompliance#KNOWN_MODES}</dd>
      * </dl>
+     * <p>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
      * with a '-' to exclude thm from the mode.
-     * <p>
+     * </p>
+     * @param spec A string in the format of a comma separated list starting with one of the following strings:
+     * @return the compliance from the string spec
      */
     public static HttpCompliance from(String spec)
     {
