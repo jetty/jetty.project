@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -33,7 +35,6 @@ import static java.util.EnumSet.noneOf;
  */
 public class CookieCompliance implements ComplianceViolation.Mode
 {
-
     enum Violation implements ComplianceViolation
     {
         COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
@@ -69,6 +70,16 @@ public class CookieCompliance implements ComplianceViolation.Mode
 
     public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", noneOf(Violation.class));
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", allOf(Violation.class));
+
+    private final static List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265,RFC2965);
+
+    public static CookieCompliance valueOf(String name)
+    {
+        for (CookieCompliance compliance : KNOWN_MODES)
+            if (compliance.getName().equals(name))
+                return compliance;
+        return null;
+    }
 
     private final String _name;
     private final Set<Violation> _violations;

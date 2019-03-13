@@ -532,9 +532,9 @@ public class HttpConfiguration implements Dumpable
         return _httpCompliance;
     }
 
-    public void setHttpCompliance(HttpCompliance _httpCompliance)
+    public void setHttpCompliance(HttpCompliance httpCompliance)
     {
-        this._httpCompliance = _httpCompliance;
+        _httpCompliance = httpCompliance;
     }
 
     /**
