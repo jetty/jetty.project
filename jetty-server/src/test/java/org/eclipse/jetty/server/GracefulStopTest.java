@@ -670,8 +670,16 @@ public class GracefulStopTest
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-        ContextHandler context0 = new ContextHandler(server,"/zero");
-        ContextHandler context1 = new ContextHandler(server,"/one")
+        AtomicBoolean context0Started = new AtomicBoolean(false);
+        ContextHandler context0 = new ContextHandler("/zero")
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                context0Started.set(true);
+            }
+        };
+        ContextHandler context1 = new ContextHandler("/one")
         {
             @Override
             protected void doStart() throws Exception
@@ -679,7 +687,16 @@ public class GracefulStopTest
                 throw new Exception("Test start failure");
             }
         };
-        contexts.setHandlers(new Handler[]{context0,context1});
+        AtomicBoolean context2Started = new AtomicBoolean(false);
+        ContextHandler context2 = new ContextHandler("/two")
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                context2Started.set(true);
+            }
+        };
+        contexts.setHandlers(new Handler[]{context0, context1, context2});
 
         try
         {
@@ -693,6 +710,8 @@ public class GracefulStopTest
 
         assertTrue(server.getContainedBeans(LifeCycle.class).stream().noneMatch(LifeCycle::isRunning));
         assertTrue(server.getContainedBeans(LifeCycle.class).stream().anyMatch(LifeCycle::isFailed));
+        assertTrue(context0Started.get());
+        assertFalse(context2Started.get());
     }
     
     static class NoopHandler extends AbstractHandler 
