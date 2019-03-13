@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.http;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -32,7 +31,7 @@ public class CookieCutterTest
 {
     private Cookie[] parseCookieHeaders(CookieCompliance compliance,String... headers)
     {
-        TestCutter cutter = new TestCutter(compliance);
+        TestCutter cutter = new TestCutter(compliance, null);
         for (String header : headers)
         {
             cutter.parseFields(header);
@@ -269,14 +268,9 @@ public class CookieCutterTest
     {
         List<Cookie> cookies = new ArrayList<>();
 
-        protected TestCutter()
+        public TestCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
         {
-            this(CookieCompliance.RFC6265);
-        }
-
-        public TestCutter(CookieCompliance compliance)
-        {
-            super(compliance);
+            super(compliance, complianceListener);
         }
 
         @Override

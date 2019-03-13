@@ -512,6 +512,12 @@ public class HttpTester
         {
             return 0;
         }
+
+        @Override
+        public boolean isHeaderCacheCaseSensitive()
+        {
+            return false;
+        }
     }
 
     public static class Request extends Message implements HttpParser.RequestHandler

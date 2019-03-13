@@ -66,6 +66,7 @@ import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -567,6 +568,22 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
+    public ComplianceViolation.Listener getComplianceViolationListener()
+    {
+        if (_channel instanceof ComplianceViolation.Listener)
+        {
+            return (ComplianceViolation.Listener) _channel;
+        }
+
+        ComplianceViolation.Listener listener = _channel.getConnector().getBean(ComplianceViolation.Listener.class);
+        if (listener == null)
+        {
+            listener = _channel.getServer().getBean(ComplianceViolation.Listener.class);
+        }
+        return listener;
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Get Request Attribute.
      * <p>
@@ -763,7 +780,7 @@ public class Request implements HttpServletRequest
             if (field.getHeader()==HttpHeader.COOKIE)
             {
                 if (_cookies==null)
-                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
+                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getComplianceViolationListener());
                 _cookies.addCookieField(field.getValue());
             }
         }
@@ -2038,7 +2055,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies == null)
-            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance());
+            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getComplianceViolationListener());
         _cookies.setCookies(cookies);
     }
 

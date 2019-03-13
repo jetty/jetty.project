@@ -765,9 +765,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onBadMessage(BadMessageException failure)
     {
         int status = failure.getCode();
-        String reason = failure.getReason();
+        String message = failure.getReason();
         if (status < 400 || status > 599)
-            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
+            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, message, failure);
 
         notifyRequestFailure(_request, failure);
 
@@ -793,9 +793,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                 ErrorHandler handler=getServer().getBean(ErrorHandler.class);
                 if (handler!=null)
-                    content=handler.badMessageError(status,reason,fields);
+                    content=handler.badMessageError(status,message,fields);
 
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,status,reason,fields,BufferUtil.length(content)),content ,true);
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,status,null,fields,BufferUtil.length(content)),content ,true);
             }
         }
         catch (IOException e)

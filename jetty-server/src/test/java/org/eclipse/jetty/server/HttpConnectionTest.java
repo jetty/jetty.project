@@ -151,12 +151,14 @@ public class HttpConnectionTest
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
         String request = "GET / HTTP/0.9\r\n\r\n";
         String response = connector.getResponse(request);
-        assertThat(response, containsString("400 Bad Version"));
+        assertThat(response, containsString("400 Bad Request"));
+        assertThat(response, containsString("reason: Bad Version"));
 
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230);
         request = "GET / HTTP/0.9\r\n\r\n";
         response = connector.getResponse(request);
-        assertThat(response, containsString("400 Bad Version"));
+        assertThat(response, containsString("400 Bad Request"));
+        assertThat(response, containsString("reason: Bad Version"));
     }
 
     /**
@@ -365,7 +367,8 @@ public class HttpConnectionTest
     public void testBadPathDotDotPath() throws Exception
     {
         String response=connector.getResponse("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad URI");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"reason: Bad URI");
     }
 
     @Test
@@ -380,28 +383,32 @@ public class HttpConnectionTest
     public void testBadPathEncodedDotDotPath() throws Exception
     {
         String response=connector.getResponse("GET /ooops/%2e%2e/%2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad URI");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"reason: Bad URI");
     }
 
     @Test
     public void testBadDotDotPath() throws Exception
     {
         String response=connector.getResponse("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad URI");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"reason: Bad URI");
     }
 
     @Test
     public void testBadSlashDotDotPath() throws Exception
     {
         String response=connector.getResponse("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad URI");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"reason: Bad URI");
     }
 
     @Test
     public void testEncodedBadDotDotPath() throws Exception
     {
         String response=connector.getResponse("GET %2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad URI");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"reason: Bad URI");
     }
 
     @Test
@@ -538,6 +545,7 @@ public class HttpConnectionTest
     public void testChunkNoTrailer() throws Exception
     {
         // Expect TimeoutException logged
+        connector.setIdleTimeout(1000);
         String response=connector.getResponse("GET /R1 HTTP/1.1\r\n"+
                 "Host: localhost\r\n"+
                 "Transfer-Encoding: chunked\r\n"+

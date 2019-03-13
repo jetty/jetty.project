@@ -24,17 +24,22 @@ import java.util.Locale;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
+
 /** Cookie parser
  */
 public abstract class CookieCutter
 {
     protected static final Logger LOG = Log.getLogger(CookieCutter.class);
 
-    protected final CookieCompliance _compliance;
+    protected final CookieCompliance _complianceMode;
+    private final ComplianceViolation.Listener _complianceListener;
 
-    protected CookieCutter(CookieCompliance compliance)
+    protected CookieCutter(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
-        _compliance = compliance;
+        _complianceMode = compliance;
+        _complianceListener = complianceListener;
     }
 
     protected void parseFields(List<String> rawFields)
@@ -121,7 +126,9 @@ public abstract class CookieCutter
                                 break;
 
                             case ',':
-                                if (_compliance!=CookieCompliance.RFC2965)
+                                if (COMMA_NOT_VALID_OCTET.isAllowedBy(_complianceMode))
+                                    reportComplianceViolation(COMMA_NOT_VALID_OCTET, "Cookie "+cookieName);
+                                else
                                 {
                                     if (quoted)
                                     {
@@ -157,8 +164,9 @@ public abstract class CookieCutter
                                 {
                                     if (name.startsWith("$"))
                                     {
-                                        if (_compliance==CookieCompliance.RFC2965)
+                                        if (RESERVED_NAMES_NOT_DOLLAR_PREFIXED.isAllowedBy(_complianceMode))
                                         {
+                                            reportComplianceViolation(RESERVED_NAMES_NOT_DOLLAR_PREFIXED, "Cookie "+cookieName+" field "+name);
                                             String lowercaseName = name.toLowerCase(Locale.ENGLISH);
                                             switch(lowercaseName)
                                             {
@@ -277,7 +285,13 @@ public abstract class CookieCutter
         }
     }
 
+    protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
+    {
+        if (_complianceListener != null)
+        {
+            _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
+        }
+    }
+
     protected abstract void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment);
-
-
 }
