@@ -189,9 +189,10 @@ public abstract class WebSocketServlet extends HttpServlet
         @Override
         public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
         {
-            // TODO a bit fragile. This code knows that only the JettyFHF is added directly as a been
             ServletContext servletContext = getServletContext();
             ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "WebSocketServlet");
+
+            // TODO: a bit fragile, this code knows that only the JettyFHF is added as a bean
             FrameHandlerFactory frameHandlerFactory = contextHandler.getBean(FrameHandlerFactory.class);
 
             if (frameHandlerFactory==null)

@@ -71,7 +71,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
-    private WebSocketSessionImpl session;
+    private WebSocketSession session;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
         Object endpointInstance,
@@ -108,7 +108,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.customizer = customizer;
     }
 
-    public WebSocketSessionImpl getSession()
+    public WebSocketSession getSession()
     {
         return session;
     }
@@ -120,7 +120,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             customizer.customize(coreSession);
 
-            session = new WebSocketSessionImpl(coreSession, this, upgradeRequest, upgradeResponse);
+            session = new WebSocketSession(coreSession, this, upgradeRequest, upgradeResponse);
 
             frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
             openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);

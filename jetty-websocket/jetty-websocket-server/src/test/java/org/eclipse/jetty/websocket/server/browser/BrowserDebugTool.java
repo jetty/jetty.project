@@ -101,7 +101,7 @@ public class BrowserDebugTool
 
         ServletContextHandler context = new ServletContextHandler();
 
-        JettyWebSocketServletContainerInitializer.configure(context);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         context.setContextPath("/");
         Resource staticResourceBase = findStaticResources();

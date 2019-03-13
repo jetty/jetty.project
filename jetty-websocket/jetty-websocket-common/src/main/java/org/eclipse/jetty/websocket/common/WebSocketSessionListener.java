@@ -23,7 +23,7 @@ package org.eclipse.jetty.websocket.common;
  */
 public interface WebSocketSessionListener
 {
-    void onWebSocketSessionOpened(WebSocketSessionImpl session);
+    void onWebSocketSessionOpened(WebSocketSession session);
 
-    void onWebSocketSessionClosed(WebSocketSessionImpl session);
+    void onWebSocketSessionClosed(WebSocketSession session);
 }
