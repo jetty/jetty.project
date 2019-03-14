@@ -28,7 +28,8 @@ public interface UpgradeListener
      *
      * @param request the request
      */
-    void onHandshakeRequest(HttpRequest request);
+    default void onHandshakeRequest(HttpRequest request)
+    {}
 
     /**
      * Event that triggers after the Handshake response has been received.
@@ -36,5 +37,6 @@ public interface UpgradeListener
      * @param request  the request that was used
      * @param response the response that was received
      */
-    void onHandshakeResponse(HttpRequest request, HttpResponse response);
+    default void onHandshakeResponse(HttpRequest request, HttpResponse response)
+    {}
 }
