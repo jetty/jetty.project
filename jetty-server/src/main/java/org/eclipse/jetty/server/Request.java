@@ -2432,11 +2432,13 @@ public class Request implements HttpServletRequest
     @Override
     public void login(String username, String password) throws ServletException
     {
-        if (_authentication instanceof Authentication.Deferred)
+        if (_authentication instanceof Authentication.LoginAuthentication)
         {
-            _authentication=((Authentication.Deferred)_authentication).login(username,password,this);
-            if (_authentication == null)
+            Authentication auth = ((Authentication.LoginAuthentication)_authentication).login(username,password,this);
+            if (auth == null)
                 throw new Authentication.Failed("Authentication failed for username '"+username+"'");
+            else
+                _authentication = auth;
         }
         else
         {
@@ -2449,8 +2451,7 @@ public class Request implements HttpServletRequest
     public void logout() throws ServletException
     {
         if (_authentication instanceof Authentication.User)
-            ((Authentication.User)_authentication).logout();
-        _authentication=Authentication.UNAUTHENTICATED;
+            _authentication = ((Authentication.User)_authentication).logout(this);
     }
 
     /* ------------------------------------------------------------ */

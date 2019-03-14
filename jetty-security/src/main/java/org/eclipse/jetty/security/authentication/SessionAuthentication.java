@@ -33,17 +33,15 @@ import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
 
 public class SessionAuthentication extends AbstractUserAuthentication implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
     private static final Logger LOG = Log.getLogger(SessionAuthentication.class);
 
     private static final long serialVersionUID = -4643200685888258706L;
-
-
 
     public final static String __J_AUTHENTICATED="org.eclipse.jetty.security.UserIdentity";
 
@@ -92,23 +90,18 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
     }
 
     @Override
+    @Deprecated
     public void logout()
     {
-        if (_session!=null && _session.getAttribute(__J_AUTHENTICATED)!=null)
-            _session.removeAttribute(__J_AUTHENTICATED);
-
-        doLogout();
     }
 
+
+    @Deprecated
     private void doLogout()
     {
-        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
-        if (security!=null)
-            security.logout(this);
-        if (_session!=null)
-            _session.removeAttribute(Session.SESSION_CREATED_SECURE);
     }
 
+    
     @Override
     public String toString()
     {
@@ -118,7 +111,6 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
     @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
-       
     }
 
     @Override
@@ -131,18 +123,15 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
     }
 
     @Override
+    @Deprecated
     public void valueBound(HttpSessionBindingEvent event)
     {
-        if (_session==null)
-        {
-            _session=event.getSession();
-        }
     }
 
     @Override
+    @Deprecated
     public void valueUnbound(HttpSessionBindingEvent event)
     {
-        doLogout();
     }
 
 }

@@ -21,6 +21,11 @@ package org.eclipse.jetty.security;
 import java.io.Serializable;
 import java.util.Set;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.UserIdentity.Scope;
@@ -95,4 +100,23 @@ public abstract class AbstractUserAuthentication implements User, Serializable
         
         return false;
     }
+
+    @Override
+    public Authentication logout (ServletRequest request)
+    {
+        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
+        if (security!=null)
+        {
+            security.logout(this);
+            Authenticator authenticator = security.getAuthenticator();
+            if (authenticator instanceof LoginAuthenticator)
+            {
+                ((LoginAuthenticator)authenticator).logout(request);
+                return new NoAuthentication((LoginAuthenticator)authenticator);
+            }
+        }
+
+        return Authentication.UNAUTHENTICATED;
+    }
+    
 }

@@ -42,8 +42,6 @@ public class UserAuthentication extends AbstractUserAuthentication
     @Override
     public void logout()
     {
-        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
-        if (security!=null)
-            security.logout(this);
     }
+
 }

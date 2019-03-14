@@ -50,7 +50,9 @@ public interface Authentication
         String getAuthMethod();
         UserIdentity getUserIdentity(); 
         boolean isUserInRole(UserIdentity.Scope scope,String role);
+        @Deprecated
         void logout();
+        Authentication logout(ServletRequest request);
     }
     
     /* ------------------------------------------------------------ */
@@ -63,31 +65,13 @@ public interface Authentication
         HttpServletResponse getHttpServletResponse();
     }
     
-    /* ------------------------------------------------------------ */
-    /** A deferred authentication with methods to progress 
-     * the authentication process.
+    /**
+     * An authentication that is capable of performing a programmatic login
+     * operation.
+     *
      */
-    public interface Deferred extends Authentication
+    public interface LoginAuthentication extends Authentication
     {
-        /* ------------------------------------------------------------ */
-        /** Authenticate if possible without sending a challenge.
-         * This is used to check credentials that have been sent for 
-         * non-manditory authentication.
-         * @param request the request
-         * @return The new Authentication state.
-         */
-        Authentication authenticate(ServletRequest request);
-
-        /* ------------------------------------------------------------ */
-        /** Authenticate and possibly send a challenge.
-         * This is used to initiate authentication for previously 
-         * non-manditory authentication.
-         * @param request the request
-         * @param response the response
-         * @return The new Authentication state.
-         */
-        Authentication authenticate(ServletRequest request,ServletResponse response);
-        
         
         /* ------------------------------------------------------------ */
         /** Login with the LOGIN authenticator
@@ -97,6 +81,33 @@ public interface Authentication
          * @return The new Authentication state
          */
         Authentication login(String username,Object password,ServletRequest request);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** A deferred authentication with methods to progress 
+     * the authentication process.
+     */
+    public interface Deferred extends LoginAuthentication
+    {
+        /* ------------------------------------------------------------ */
+        /** Authenticate if possible without sending a challenge.
+         * This is used to check credentials that have been sent for 
+         * non-mandatory authentication.
+         * @param request the request
+         * @return The new Authentication state.
+         */
+        Authentication authenticate(ServletRequest request);
+
+        /* ------------------------------------------------------------ */
+        /** Authenticate and possibly send a challenge.
+         * This is used to initiate authentication for previously 
+         * non-mandatory authentication.
+         * @param request the request
+         * @param response the response
+         * @return The new Authentication state.
+         */
+        Authentication authenticate(ServletRequest request,ServletResponse response);
     }
 
     
@@ -125,6 +136,14 @@ public interface Authentication
     }
 
     public interface SendSuccess extends ResponseSent
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** After a logout, the authentication reverts to a state
+     * where it is possible to programmatically log in again.
+     */
+    public interface NonAuthenticated extends LoginAuthentication
     {
     }
 
