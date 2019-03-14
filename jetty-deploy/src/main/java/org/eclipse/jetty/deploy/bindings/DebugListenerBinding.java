@@ -22,7 +22,6 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.DebugListener;
 
-
 /** A Deployment binding that installs a DebugListener in all deployed contexts
  */
 public class DebugListenerBinding extends DebugBinding

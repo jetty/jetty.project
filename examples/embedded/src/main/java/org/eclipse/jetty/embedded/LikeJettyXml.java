@@ -99,7 +99,7 @@ public class LikeJettyXml
         Server server = new Server(threadPool);
 
         // Scheduler
-        server.addBean(new ScheduledExecutorScheduler());
+        server.addBean(new ScheduledExecutorScheduler(null,false));
 
         // HTTP Configuration
         HttpConfiguration http_config = new HttpConfiguration();
