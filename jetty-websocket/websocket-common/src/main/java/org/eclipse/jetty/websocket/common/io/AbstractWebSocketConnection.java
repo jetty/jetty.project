@@ -446,6 +446,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (readMode == ReadMode.EOF)
         {
             readState.eof();
+
+            // Handle case where the remote connection was abruptly terminated without a close frame
+            CloseInfo close = new CloseInfo(StatusCode.SHUTDOWN);
+            close(close, new DisconnectCallback(this));
         }
         else if (!readState.suspend())
         {
