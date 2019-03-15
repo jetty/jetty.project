@@ -38,7 +38,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 public class CloseTrackingEndpoint extends WebSocketAdapter
 {
@@ -66,11 +65,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
         assertThat("Client Close Event Occurred", closeLatch.await(clientTimeoutMs, TimeUnit.MILLISECONDS), is(true));
         assertThat("Client Close Event Count", closeCount.get(), is(1));
         assertThat("Client Close Event Status Code", closeCode, statusCodeMatcher);
-        if (reasonMatcher == null)
-        {
-            assertThat("Client Close Event Reason", closeReason, nullValue());
-        }
-        else
+        if (reasonMatcher != null)
         {
             assertThat("Client Close Event Reason", closeReason, reasonMatcher);
         }

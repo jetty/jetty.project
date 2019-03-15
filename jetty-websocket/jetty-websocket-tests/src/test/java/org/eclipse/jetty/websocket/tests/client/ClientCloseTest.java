@@ -249,9 +249,8 @@ public class ClientCloseTest
 
             // client reads -1 (EOF)
             // client triggers close event on client ws-endpoint
-            clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-                    is(StatusCode.SHUTDOWN),
-                    containsString("timeout"));
+            // assert - close code==1006 (abnormal) or code==1001 (shutdown)
+            clientSocket.assertReceivedCloseEvent(clientTimeout * 2, anyOf(is(StatusCode.SHUTDOWN), is(StatusCode.ABNORMAL)));
         }
 
         clientSessionTracker.assertClosedProperly(client);
