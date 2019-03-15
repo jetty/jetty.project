@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.alpn.conscrypt.server;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.Security;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
@@ -39,15 +47,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.Security;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -55,13 +54,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class ConscryptHTTP2ServerTest
 {
-
-    Server server = new Server();
-
     static
     {
         Security.addProvider(new OpenSSLProvider());
     }
+
+    private Server server = new Server();
 
     private SslContextFactory newSslContextFactory()
     {
@@ -75,9 +73,9 @@ public class ConscryptHTTP2ServerTest
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setProvider("Conscrypt");
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
-        if (JavaVersion.VERSION.getPlatform()<9)
+        if (JavaVersion.VERSION.getPlatform() < 9)
         {
-            // conscrypt enable TLSv1.3 per default but it's not supported in jdk8
+            // Conscrypt enables TLSv1.3 by default but it's not supported in Java 8.
             sslContextFactory.addExcludeProtocols("TLSv1.3");
         }
         return sslContextFactory;
@@ -86,9 +84,8 @@ public class ConscryptHTTP2ServerTest
     @BeforeEach
     public void startServer() throws Exception
     {
-
         HttpConfiguration httpsConfig = new HttpConfiguration();
-        httpsConfig.setSecureScheme( "https" );
+        httpsConfig.setSecureScheme("https");
 
         httpsConfig.setSendXPoweredBy(true);
         httpsConfig.setSendServerVersion(true);
@@ -100,40 +97,35 @@ public class ConscryptHTTP2ServerTest
         alpn.setDefaultProtocol(http.getProtocol());
         SslConnectionFactory ssl = new SslConnectionFactory(newSslContextFactory(), alpn.getProtocol());
 
-        ServerConnector http2Connector = new ServerConnector(server,ssl,alpn,h2,http);
+        ServerConnector http2Connector = new ServerConnector(server, ssl, alpn, h2, http);
         http2Connector.setPort(0);
         server.addConnector(http2Connector);
 
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 response.setStatus(200);
                 baseRequest.setHandled(true);
             }
-        } );
+        });
 
         server.start();
-
     }
 
     @AfterEach
     public void stopServer() throws Exception
     {
         if (server != null)
-        {
             server.stop();
-        }
     }
 
-
     @Test
-    public void test_simple_query() throws Exception
+    public void testSimpleRequest() throws Exception
     {
-
         HTTP2Client h2Client = new HTTP2Client();
-        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client),newSslContextFactory());
+        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client), newSslContextFactory());
         client.start();
         try
         {
@@ -145,6 +137,5 @@ public class ConscryptHTTP2ServerTest
         {
             client.stop();
         }
-
     }
 }

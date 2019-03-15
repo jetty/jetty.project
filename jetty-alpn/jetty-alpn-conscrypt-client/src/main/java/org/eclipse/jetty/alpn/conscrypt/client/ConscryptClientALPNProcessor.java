@@ -39,7 +39,7 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
     @Override
     public void init()
     {
-        if (Security.getProvider("Conscrypt")==null)
+        if (Security.getProvider("Conscrypt") == null)
         {
             Security.addProvider(new OpenSSLProvider());
             if (LOG.isDebugEnabled())
@@ -90,6 +90,8 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
             {
                 SSLEngine sslEngine = alpnConnection.getSSLEngine();
                 String protocol = Conscrypt.getApplicationProtocol(sslEngine);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Selected {} for {}", protocol, alpnConnection);
                 alpnConnection.selected(protocol);
             }
             catch (Throwable e)
