@@ -21,6 +21,13 @@
       <Get class="org.eclipse.jetty.http2.HTTP2Cipher" name="COMPARATOR"/>
     </Set>
     <Set name="useCipherSuitesOrder">true</Set>
+    <Call name="addExcludeProtocols">
+      <Arg>
+        <Array type="java.lang.String">
+          <Item>TLSv1.3</Item>
+        </Array>
+      </Arg>
+    </Call>
   </Ref>
 
 </Configure>

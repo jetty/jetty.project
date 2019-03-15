@@ -23,7 +23,6 @@ import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -65,7 +64,7 @@ public class OneWebApp
 
         Configurations.setServerDefault(server);
 
-        // Start things up! 
+        // Start things up!
         server.start();
 
         server.dumpStdErr();

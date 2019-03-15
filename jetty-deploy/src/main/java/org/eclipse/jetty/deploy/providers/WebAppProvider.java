@@ -124,7 +124,6 @@ public class WebAppProvider extends ScanningAppProvider
         }
     }
 
-    /* ------------------------------------------------------------ */
     public WebAppProvider()
     {
         super();
@@ -132,7 +131,6 @@ public class WebAppProvider extends ScanningAppProvider
         setScanInterval(0);
     }
 
-    /* ------------------------------------------------------------ */
     /** Get the extractWars.
      * @return the extractWars
      */
@@ -142,7 +140,6 @@ public class WebAppProvider extends ScanningAppProvider
         return _extractWars;
     }
 
-    /* ------------------------------------------------------------ */
     /** Set the extractWars.
      * @param extractWars the extractWars to set
      */
@@ -151,7 +148,6 @@ public class WebAppProvider extends ScanningAppProvider
         _extractWars = extractWars;
     }
 
-    /* ------------------------------------------------------------ */
     /** Get the parentLoaderPriority.
      * @return the parentLoaderPriority
      */
@@ -161,7 +157,6 @@ public class WebAppProvider extends ScanningAppProvider
         return _parentLoaderPriority;
     }
 
-    /* ------------------------------------------------------------ */
     /** Set the parentLoaderPriority.
      * @param parentLoaderPriority the parentLoaderPriority to set
      */
@@ -169,8 +164,7 @@ public class WebAppProvider extends ScanningAppProvider
     {
         _parentLoaderPriority = parentLoaderPriority;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /** Get the defaultsDescriptor.
      * @return the defaultsDescriptor
      */
@@ -180,7 +174,6 @@ public class WebAppProvider extends ScanningAppProvider
         return _defaultsDescriptor;
     }
 
-    /* ------------------------------------------------------------ */
     /** Set the defaultsDescriptor.
      * @param defaultsDescriptor the defaultsDescriptor to set
      */
@@ -189,13 +182,11 @@ public class WebAppProvider extends ScanningAppProvider
         _defaultsDescriptor = defaultsDescriptor;
     }
 
-    /* ------------------------------------------------------------ */
     public ConfigurationManager getConfigurationManager()
     {
         return _configurationManager;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /** Set the configurationManager.
      * @param configurationManager the configurationManager to set
      */
@@ -203,8 +194,7 @@ public class WebAppProvider extends ScanningAppProvider
     {
         _configurationManager = configurationManager;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param configurations The configuration class names.
      */
@@ -212,8 +202,7 @@ public class WebAppProvider extends ScanningAppProvider
     {
         _configurationClasses = configurations==null?null:(String[])configurations.clone();
     }  
-    
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("configuration classes for webapps to be processed through")
     public String[] getConfigurationClasses()
     {
@@ -231,8 +220,7 @@ public class WebAppProvider extends ScanningAppProvider
     {
         _tempDirectory = directory;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the user supplied Work Directory.
      *
@@ -244,7 +232,6 @@ public class WebAppProvider extends ScanningAppProvider
         return _tempDirectory;
     }
 
-    /* ------------------------------------------------------------ */
     protected void initializeWebAppContextDefaults(WebAppContext webapp)
     {
         if (_defaultsDescriptor != null)
@@ -265,8 +252,7 @@ public class WebAppProvider extends ScanningAppProvider
             webapp.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public ContextHandler createContextHandler(final App app) throws Exception
     {
@@ -349,8 +335,7 @@ public class WebAppProvider extends ScanningAppProvider
 
         return webAppContext;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void fileChanged(String filename) throws Exception
     {        
@@ -410,7 +395,6 @@ public class WebAppProvider extends ScanningAppProvider
             super.fileChanged(filename);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void fileAdded(String filename) throws Exception
     {
@@ -433,7 +417,6 @@ public class WebAppProvider extends ScanningAppProvider
             return;
         }
 
-
         //is the file that was added a .war file?
         String lowname = file.getName().toLowerCase(Locale.ENGLISH);
         if (lowname.endsWith(".war"))
@@ -453,8 +436,6 @@ public class WebAppProvider extends ScanningAppProvider
             super.fileAdded(filename);
     }
 
-    
-    /* ------------------------------------------------------------ */
     @Override
     protected void fileRemoved(String filename) throws Exception
     { 

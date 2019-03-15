@@ -28,7 +28,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -400,18 +399,21 @@ public class Server extends HandlerWrapper implements Attributes
             // #start(LifeCycle) is overridden so that connectors are not started
             super.doStart();
 
-            // start connectors
+        // start connectors last
+        if (mex.size()==0)
+        {
             for (Connector connector : _connectors)
             {
                 try
                 {
                     connector.start();
                 }
-                catch(Throwable e)
+                catch (Throwable e)
                 {
                     mex.add(e);
                 }
             }
+        }
 
             mex.ifExceptionThrow();
             LOG.info(String.format("Started @%dms",Uptime.getUptime()));

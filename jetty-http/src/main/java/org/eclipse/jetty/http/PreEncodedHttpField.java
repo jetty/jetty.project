@@ -21,7 +21,6 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -73,7 +72,7 @@ public class PreEncodedHttpField extends HttpField
             else
                 LOG.warn("multiple PreEncoders for "+e.getHttpVersion());
         }
-        
+
         // Always support HTTP1
         if (__encoders[0]==null)
             __encoders[0] = new Http1FieldPreEncoder();              

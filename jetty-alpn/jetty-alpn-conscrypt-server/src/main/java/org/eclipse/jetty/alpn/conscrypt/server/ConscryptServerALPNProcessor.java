@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.alpn.conscrypt.server;
 
-import java.lang.reflect.Method;
 import java.security.Security;
 import java.util.List;
-import java.util.function.BiFunction;
-
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 
+import org.conscrypt.ApplicationProtocolSelector;
+import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnection;
 import org.eclipse.jetty.io.Connection;
@@ -41,7 +41,7 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
     @Override
     public void init()
     {
-        if (Security.getProvider("Conscrypt")==null)
+        if (Security.getProvider("Conscrypt") == null)
         {
             Security.addProvider(new OpenSSLProvider());
             if (LOG.isDebugEnabled())
@@ -56,13 +56,11 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
     }
 
     @Override
-    public void configure(SSLEngine sslEngine,Connection connection)
+    public void configure(SSLEngine sslEngine, Connection connection)
     {
         try
         {
-            Method method = sslEngine.getClass().getMethod("setHandshakeApplicationProtocolSelector", BiFunction.class);
-            method.setAccessible(true);
-            method.invoke(sslEngine,new ALPNCallback((ALPNServerConnection)connection));
+            Conscrypt.setApplicationProtocolSelector(sslEngine, new ALPNCallback((ALPNServerConnection)connection));
         }
         catch (RuntimeException x)
         {
@@ -74,23 +72,31 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
         }
     }
 
-    private final class ALPNCallback implements BiFunction<SSLEngine,List<String>,String>, SslHandshakeListener
+    private final class ALPNCallback extends ApplicationProtocolSelector implements SslHandshakeListener
     {
         private final ALPNServerConnection alpnConnection;
 
+
         private ALPNCallback(ALPNServerConnection connection)
         {
-            alpnConnection = connection;            
+            alpnConnection = connection;
             ((DecryptedEndPoint)alpnConnection.getEndPoint()).getSslConnection().addHandshakeListener(this);
         }
 
         @Override
-        public String apply(SSLEngine engine, List<String> protocols)
+        public String selectApplicationProtocol(SSLEngine engine, List<String> protocols)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("apply {} {}", alpnConnection, protocols);
             alpnConnection.select(protocols);
-            return alpnConnection.getProtocol();
+            String protocol = alpnConnection.getProtocol();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Selected {} among {} for {}", protocol, protocols, alpnConnection);
+            return protocol;
+        }
+
+        @Override
+        public String selectApplicationProtocol(SSLSocket socket, List<String> protocols)
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -99,7 +105,7 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
             String protocol = alpnConnection.getProtocol();
             if (LOG.isDebugEnabled())
                 LOG.debug("TLS handshake succeeded, protocol={} for {}", protocol, alpnConnection);
-            if (protocol ==null)
+            if (protocol == null)
                 alpnConnection.unsupported();
         }
 
