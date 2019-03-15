@@ -21,7 +21,6 @@ package org.eclipse.jetty.client;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -63,10 +62,10 @@ public class HttpRedirector
 {
     private static final Logger LOG = Log.getLogger(HttpRedirector.class);
     private static final String SCHEME_REGEXP = "(^https?)";
-    private static final String AUTHORITY_REGEXP = "([^/\\?#]+)";
+    private static final String AUTHORITY_REGEXP = "([^/?#]+)";
     // The location may be relative so the scheme://authority part may be missing
     private static final String DESTINATION_REGEXP = "(" + SCHEME_REGEXP + "://" + AUTHORITY_REGEXP + ")?";
-    private static final String PATH_REGEXP = "([^\\?#]*)";
+    private static final String PATH_REGEXP = "([^?#]*)";
     private static final String QUERY_REGEXP = "([^#]*)";
     private static final String FRAGMENT_REGEXP = "(.*)";
     private static final Pattern URI_PATTERN = Pattern.compile(DESTINATION_REGEXP + PATH_REGEXP + QUERY_REGEXP + FRAGMENT_REGEXP);
@@ -159,14 +158,6 @@ public class HttpRedirector
             URI newURI = extractRedirectURI(response);
             if (newURI != null)
             {
-                boolean absolute = newURI.isAbsolute();
-                URI uri = request.getURI();
-                if (absolute && newURI.equals(uri) ||
-                        !absolute && Objects.equals(newURI.getPath(), uri.getPath()))
-                {
-                    fail(request, response, new HttpResponseException("Redirect to same URI: " + location, response));
-                    return null;
-                }
                 if (LOG.isDebugEnabled())
                     LOG.debug("Redirecting to {} (Location: {})", newURI, location);
                 return redirect(request, response, listener, newURI);

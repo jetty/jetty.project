@@ -483,13 +483,9 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         });
 
         ExecutionException x = assertThrows(ExecutionException.class, () ->
-        {
-            client.setMaxRedirects(-1);
-            client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+                client.newRequest("localhost", connector.getLocalPort())
+                        .scheme(scenario.getScheme())
+                        .send());
         assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
     }
 
