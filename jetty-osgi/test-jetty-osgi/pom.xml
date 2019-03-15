@@ -548,7 +548,6 @@
            <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-
               <excludes>
                  <exclude>**/TestJettyOSGiBootHTTP2JDK9*</exclude>
               </excludes>
