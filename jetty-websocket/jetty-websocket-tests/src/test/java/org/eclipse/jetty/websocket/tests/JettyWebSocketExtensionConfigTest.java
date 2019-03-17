@@ -34,8 +34,8 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
@@ -108,7 +108,7 @@ public class JettyWebSocketExtensionConfigTest
         request.addExtensions(ExtensionConfig.parse("permessage-deflate"));
 
         CountDownLatch correctResponseExtensions = new CountDownLatch(1);
-        UpgradeListener listener = new UpgradeListener()
+        JettyUpgradeListener listener = new JettyUpgradeListener()
         {
             @Override
             public void onHandshakeResponse(HttpRequest request, HttpResponse response)
