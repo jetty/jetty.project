@@ -16,27 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.client;
+package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
 
-public interface UpgradeListener
+/**
+ * Abstract WebSocket creator interface.
+ * <p>
+ * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
+ * WebSocketCreator implementation.
+ * </p>
+ */
+public interface JettyWebSocketCreator
 {
     /**
-     * Event that triggers before the Handshake request is sent.
+     * Create a websocket from the incoming request.
      *
-     * @param request the request
+     * @param req  the request details
+     * @param resp the response details
+     * @return a websocket object to use, or null if no websocket should be created from this request.
      */
-    default void onHandshakeRequest(HttpRequest request)
-    {}
-
-    /**
-     * Event that triggers after the Handshake response has been received.
-     *
-     * @param request  the request that was used
-     * @param response the response that was received
-     */
-    default void onHandshakeResponse(HttpRequest request, HttpResponse response)
-    {}
+    Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp);
 }

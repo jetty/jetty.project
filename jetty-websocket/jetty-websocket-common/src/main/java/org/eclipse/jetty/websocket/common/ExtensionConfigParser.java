@@ -16,27 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.client;
+package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
-public interface UpgradeListener
+public class ExtensionConfigParser implements org.eclipse.jetty.websocket.api.extensions.ExtensionConfig.Parser
 {
     /**
-     * Event that triggers before the Handshake request is sent.
+     * Parse a single parameterized name.
      *
-     * @param request the request
+     * @param parameterizedName the parameterized name
+     * @return the ExtensionConfig
      */
-    default void onHandshakeRequest(HttpRequest request)
-    {}
-
-    /**
-     * Event that triggers after the Handshake response has been received.
-     *
-     * @param request  the request that was used
-     * @param response the response that was received
-     */
-    default void onHandshakeResponse(HttpRequest request, HttpResponse response)
-    {}
+    @Override
+    public JettyExtensionConfig parse(String parameterizedName)
+    {
+        return new JettyExtensionConfig(ExtensionConfig.parse(parameterizedName));
+    }
 }

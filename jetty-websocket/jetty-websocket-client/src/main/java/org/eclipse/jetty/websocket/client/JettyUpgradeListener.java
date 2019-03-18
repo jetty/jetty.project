@@ -16,12 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.client;
+package org.eclipse.jetty.websocket.client;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 
-public interface UpgradeListener
+public interface JettyUpgradeListener
 {
     /**
      * Event that triggers before the Handshake request is sent.
