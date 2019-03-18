@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
@@ -60,9 +61,8 @@ public final class RFC6455Handshaker implements Handshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeader.UPGRADE.asString());
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request,
-        HttpServletResponse response,
-        FrameHandler.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response,
+                                  FrameHandler.Customizer defaultCustomizer) throws IOException
     {
         Request baseRequest = Request.getBaseRequest(request);
         HttpChannel httpChannel = baseRequest.getHttpChannel();
@@ -153,22 +153,42 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        // Check if subprotocol negotiated
+        // validate negotiated subprotocol
         String subprotocol = negotiation.getSubprotocol();
-        if (negotiation.getOfferedSubprotocols().size() > 0)
+        if (subprotocol != null)
         {
-            if (subprotocol == null)
-            {
-                // TODO: this message needs to be returned to Http Client
-                LOG.warn("not upgraded: no subprotocol selected from offered subprotocols {}: {}", negotiation.getOfferedSubprotocols(), baseRequest);
-                return false;
-            }
-
             if (!negotiation.getOfferedSubprotocols().contains(subprotocol))
             {
                 // TODO: this message needs to be returned to Http Client
-                LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}", subprotocol, negotiation.getOfferedSubprotocols(),
-                    baseRequest);
+                LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}",
+                        subprotocol, negotiation.getOfferedSubprotocols(), baseRequest);
+                return false;
+            }
+        }
+        else
+        {
+            if (!negotiation.getOfferedSubprotocols().isEmpty())
+            {
+                // TODO: this message needs to be returned to Http Client
+                LOG.warn("not upgraded: no subprotocol selected from offered subprotocols {}: {}",
+                        negotiation.getOfferedSubprotocols(), baseRequest);
+                return false;
+            }
+        }
+
+        // validate negotiated extensions
+        negotiation.getOfferedExtensions();
+        for (ExtensionConfig config : negotiation.getNegotiatedExtensions())
+        {
+            long numMatch = negotiation.getOfferedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            if (numMatch < 1)
+            {
+                LOG.warn("Upgrade failed: negotiated extension not requested {}: {}", config.getName(), baseRequest);
+                return false;
+            }
+            if (numMatch > 1)
+            {
+                LOG.warn("Upgrade failed: multiple negotiated extensions of the same name {}: {}", config.getName(), baseRequest);
                 return false;
             }
         }
