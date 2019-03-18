@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.server.handler.jmx.AbstractHandlerMBean;
+import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("WebAppProvider mbean wrapper")
-public class WebAppProviderMBean extends AbstractHandlerMBean
+public class WebAppProviderMBean extends ObjectMBean
 {
     public WebAppProviderMBean(Object managedObject)
     {

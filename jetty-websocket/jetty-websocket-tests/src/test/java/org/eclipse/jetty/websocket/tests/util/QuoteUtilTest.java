@@ -16,12 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.util;
-
-import org.junit.jupiter.api.Test;
+package org.eclipse.jetty.websocket.tests.util;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

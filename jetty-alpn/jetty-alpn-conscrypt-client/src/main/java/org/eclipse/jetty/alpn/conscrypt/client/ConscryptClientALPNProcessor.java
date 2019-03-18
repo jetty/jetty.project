@@ -18,12 +18,10 @@
 
 package org.eclipse.jetty.alpn.conscrypt.client;
 
-import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.security.Security;
-
 import javax.net.ssl.SSLEngine;
 
+import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.io.Connection;
@@ -40,7 +38,7 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
     @Override
     public void init()
     {
-        if (Security.getProvider("Conscrypt")==null)
+        if (Security.getProvider("Conscrypt") == null)
         {
             Security.addProvider(new OpenSSLProvider());
             if (LOG.isDebugEnabled())
@@ -59,11 +57,9 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
     {
         try
         {
-            Method setAlpnProtocols = sslEngine.getClass().getDeclaredMethod("setApplicationProtocols", String[].class);
-            setAlpnProtocols.setAccessible(true);
             ALPNClientConnection alpn = (ALPNClientConnection)connection;
             String[] protocols = alpn.getProtocols().toArray(new String[0]);
-            setAlpnProtocols.invoke(sslEngine, (Object)protocols);
+            Conscrypt.setApplicationProtocols(sslEngine, protocols);
             ((SslConnection.DecryptedEndPoint)connection.getEndPoint()).getSslConnection()
                     .addHandshakeListener(new ALPNListener(alpn));
         }
@@ -92,9 +88,9 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
             try
             {
                 SSLEngine sslEngine = alpnConnection.getSSLEngine();
-                Method method = sslEngine.getClass().getDeclaredMethod("getApplicationProtocol");
-                method.setAccessible(true);
-                String protocol = (String)method.invoke(sslEngine);
+                String protocol = Conscrypt.getApplicationProtocol(sslEngine);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Selected {} for {}", protocol, alpnConnection);
                 alpnConnection.selected(protocol);
             }
             catch (Throwable e)

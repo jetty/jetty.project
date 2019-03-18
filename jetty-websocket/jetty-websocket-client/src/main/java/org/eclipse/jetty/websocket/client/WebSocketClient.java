@@ -32,6 +32,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -124,15 +126,29 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener upgradeListener) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, JettyUpgradeListener upgradeListener) throws IOException
     {
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
             coreClient.addBean(listener);
             
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
         if (upgradeListener != null)
-            upgradeRequest.addListener(upgradeListener);
+        {
+            upgradeRequest.addListener(new UpgradeListener()
+            {
+                @Override
+                public void onHandshakeRequest(HttpRequest request)
+                {
+                    upgradeListener.onHandshakeRequest(request);
+                }
 
+                @Override
+                public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+                {
+                    upgradeListener.onHandshakeResponse(request, response);
+                }
+            });
+        }
         coreClient.connect(upgradeRequest);
         return upgradeRequest.getFutureSession();
     }
@@ -281,11 +297,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public Executor getExecutor()
     {
         return getHttpClient().getExecutor();
-    }
-
-    public WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return extensionRegistry;
     }
 
     public HttpClient getHttpClient()

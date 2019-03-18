@@ -371,10 +371,7 @@ public class Server extends HandlerWrapper implements Attributes
 
             LOG.info("jetty-{}; built: {}; git: {}; jvm {}", getVersion(), timestamp, gitHash, System.getProperty("java.runtime.version",System.getProperty("java.version")));
             if (!Jetty.STABLE)
-            {
                 LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
-                LOG.warn("Download a stable release from http://download.eclipse.org/jetty/");
-            }
 
             HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
@@ -421,7 +418,18 @@ public class Server extends HandlerWrapper implements Attributes
         catch(Throwable th)
         {
             // Close any connectors that were opened
-            _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(NetworkConnector::close);
+            _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(nc->
+            {
+                try
+                {
+                    nc.close();
+                }
+                catch(Throwable t2)
+                {
+                    if (th!=t2)
+                        th.addSuppressed(t2);
+                }
+            });
             throw th;
         }
         finally
