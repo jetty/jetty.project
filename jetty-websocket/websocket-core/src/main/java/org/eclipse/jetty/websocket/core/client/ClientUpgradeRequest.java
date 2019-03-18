@@ -249,25 +249,16 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     public void upgrade(HttpResponse response, HttpConnectionOverHTTP httpConnection)
     {
         if (!this.getHeaders().get(HttpHeader.UPGRADE).equalsIgnoreCase("websocket"))
-        {
-            // Not my upgrade
             throw new HttpResponseException("Not a WebSocket Upgrade", response);
-        }
-
-        HttpClient httpClient = wsClient.getHttpClient();
 
         // Check the Accept hash
         String reqKey = this.getHeaders().get(HttpHeader.SEC_WEBSOCKET_KEY);
         String expectedHash = WebSocketCore.hashKey(reqKey);
         String respHash = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
-
         if (expectedHash.equalsIgnoreCase(respHash) == false)
-        {
             throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was:" + respHash + ", expected:" + expectedHash + ")", response);
-        }
 
-        // Verify the Negotiated Extensions
-        ExtensionStack extensionStack = new ExtensionStack(wsClient.getExtensionRegistry());
+        // Parse the Negotiated Extensions
         List<ExtensionConfig> extensions = new ArrayList<>();
         HttpField extField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
         if (extField != null)
@@ -286,9 +277,22 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
         }
 
+        // Verify the Negotiated Extensions
+        for (ExtensionConfig config : extensions)
+        {
+            long numMatch = this.extensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            if (numMatch < 1)
+                throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained extension not requested");
+            if (numMatch > 1)
+                throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained more than one extension of the same name");
+        }
+
+        // Negotiate the extension stack
+        HttpClient httpClient = wsClient.getHttpClient();
+        ExtensionStack extensionStack = new ExtensionStack(wsClient.getExtensionRegistry());
         extensionStack.negotiate(wsClient.getObjectFactory(), httpClient.getByteBufferPool(), extensions);
 
-        // Check the negotiated subprotocol
+        // Get the negotiated subprotocol
         String negotiatedSubProtocol = null;
         HttpField subProtocolField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         if (subProtocolField != null)
@@ -297,20 +301,17 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             if (values != null)
             {
                 if (values.length > 1)
-                {
-                    throw new WebSocketException("Too many WebSocket subprotocol's in response: " + values);
-                }
+                    throw new WebSocketException("Upgrade failed: Too many WebSocket subprotocol's in response: " + values);
                 else if (values.length == 1)
-                {
                     negotiatedSubProtocol = values[0];
-                }
             }
         }
 
-        if (!subProtocols.isEmpty() && !subProtocols.contains(negotiatedSubProtocol))
-        {
+        // Verify the negotiated subprotocol
+        if (negotiatedSubProtocol == null && !subProtocols.isEmpty())
+            throw new WebSocketException("Upgrade failed: no subprotocol selected from offered subprotocols ");
+        if (negotiatedSubProtocol != null && !subProtocols.contains(negotiatedSubProtocol))
             throw new WebSocketException("Upgrade failed: subprotocol [" + negotiatedSubProtocol + "] not found in offered subprotocols " + subProtocols);
-        }
 
         // We can upgrade
         EndPoint endp = httpConnection.getEndPoint();
