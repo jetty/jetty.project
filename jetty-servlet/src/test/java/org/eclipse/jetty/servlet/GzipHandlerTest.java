@@ -33,8 +33,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -42,10 +45,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipRequestCustomizer;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -82,6 +88,7 @@ public class GzipHandlerTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new GzipRequestCustomizer());
 
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setExcludedAgentPatterns();
@@ -97,7 +104,10 @@ public class GzipHandlerTest
         servlets.addServletWithMapping(TestServlet.class,"/content");
         servlets.addServletWithMapping(ForwardServlet.class,"/forward");
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
-        
+        servlets.addServletWithMapping(EchoServlet.class,"/echo/*");
+        servlets.addServletWithMapping(DumpServlet.class,"/dump/*");
+
+
         _server.start();
     }
 
@@ -144,6 +154,34 @@ public class GzipHandlerTest
             {
                 PrintWriter writer = response.getWriter();
                 writer.write(__content);
+            }
+        }
+    }
+
+    public static class EchoServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType(req.getContentType());
+            IO.copy(req.getInputStream(),response.getOutputStream());
+        }
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            doGet(req,response);
+        }
+    }
+    public static class DumpServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            for (Enumeration<String> e = req.getParameterNames(); e.hasMoreElements(); )
+            {
+                String n = e.nextElement();
+                response.getWriter().printf("%s: %s\n",n,req.getParameter(n));
             }
         }
     }
@@ -391,5 +429,130 @@ public class GzipHandlerTest
         String[] includedPaths = gzip.getIncludedPaths();
         assertThat("Included Paths.size", includedPaths.length, is(2));
         assertThat("Included Paths", Arrays.asList(includedPaths), contains("/foo","^/bar.*$"));
+    }
+
+
+
+    @Test
+    public void testGzipRequest() throws Exception
+    {
+        String data = "Hello Nice World! ";
+        for (int i = 0; i < 10; ++i)
+            data += data;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(data.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        byte[] bytes = baos.toByteArray();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/echo");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Content-Type","text/plain");
+        request.setHeader("Content-Encoding","gzip");
+        request.setContent(bytes);
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getContent(),is(data));
+
+    }
+
+
+    @Test
+    public void testGzipRequestChunked() throws Exception
+    {
+        String data = "Hello Nice World! ";
+        for (int i = 0; i < 10; ++i)
+            data += data;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(data.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        byte[] bytes = baos.toByteArray();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/echo");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host","tester");
+        request.setHeader("Content-Type","text/plain");
+        request.setHeader("Content-Encoding","gzip");
+        request.add("Transfer-Encoding", "chunked");
+        request.setContent(bytes);
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getContent(),is(data));
+
+    }
+
+
+    @Test
+    public void testGzipFormRequest() throws Exception
+    {
+        String data = "name=value";
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(data.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        byte[] bytes = baos.toByteArray();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/dump");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Content-Type","application/x-www-form-urlencoded; charset=utf-8");
+        request.setHeader("Content-Encoding","gzip");
+        request.setContent(bytes);
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getContent(),is("name: value\n"));
+    }
+
+    @Test
+    public void testGzipBomb() throws Exception
+    {
+        byte[] data = new byte[512*1024];
+        Arrays.fill(data,(byte)'X');
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(data);
+        output.close();
+        byte[] bytes = baos.toByteArray();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/echo");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Content-Type","text/plain");
+        request.setHeader("Content-Encoding","gzip");
+        request.setContent(bytes);
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        // TODO need to test back pressure works
+
+        MatcherAssert.assertThat(response.getStatus(),is(200));
+        MatcherAssert.assertThat(response.getContentBytes().length,is(512*1024));
     }
 }

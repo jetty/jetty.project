@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+  <Call name="addCustomizer">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.gzip.GzipRequestCustomizer">
+        <Arg name="compressedBufferSize" type="int"><Property name="jetty.gzip.inflate.compressedBufferSize" default="4096"/></Arg>
+        <Arg name="inflatedBufferSize" type="int"><Property name="jetty.gzip.inflate.inflatedBufferSize" default="16384"/></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
