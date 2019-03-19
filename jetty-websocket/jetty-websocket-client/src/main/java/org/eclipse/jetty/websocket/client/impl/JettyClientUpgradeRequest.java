@@ -22,6 +22,7 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -74,9 +76,9 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
             setSubProtocols(request.getSubProtocols());
 
             // Copy extensions
-            /* TODO or not?
-            setExtensions(request.getExtensions());
-            */
+            setExtensions(request.getExtensions().stream()
+                    .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
+                    .collect(Collectors.toList()));
 
             // Copy method from upgradeRequest object
             if (request.getMethod() != null)

@@ -369,14 +369,11 @@ public class Server extends HandlerWrapper implements Attributes
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
 
-        LOG.info("jetty-{}; built: {}; git: {}; jvm {}", getVersion(), timestamp, gitHash, System.getProperty("java.runtime.version",System.getProperty("java.version")));
-        if (!Jetty.STABLE)
-        {
-            LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
-            LOG.warn("Download a stable release from http://download.eclipse.org/jetty/");
-        }
-        
-        HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
+            LOG.info("jetty-{}; built: {}; git: {}; jvm {}", getVersion(), timestamp, gitHash, System.getProperty("java.runtime.version",System.getProperty("java.version")));
+            if (!Jetty.STABLE)
+                LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
+
+            HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
             MultiException mex=new MultiException();
 
@@ -392,7 +389,7 @@ public class Server extends HandlerWrapper implements Attributes
                     mex.add(th);
                 }
             });
-
+            
             // Throw now if verified start sequence and there was an open exception
             mex.ifExceptionThrow();
 
@@ -410,29 +407,30 @@ public class Server extends HandlerWrapper implements Attributes
                 catch(Throwable e)
                 {
                     mex.add(e);
+                    // stop any started connectors
+                    _connectors.stream().filter(LifeCycle::isRunning).map(Object.class::cast).forEach(LifeCycle::stop);
                 }
             }
 
             mex.ifExceptionThrow();
             LOG.info(String.format("Started @%dms",Uptime.getUptime()));
         }
-        catch(Throwable e1)
+        catch(Throwable th)
         {
-            try
+            // Close any connectors that were opened
+            _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(nc->
             {
-                // Stop any components already started!
-                super.doStop();
-            }
-            catch(Exception e2)
-            {
-                e1.addSuppressed(e2);
-            }
-            finally
-            {
-                // Close any connectors that were opened
-                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(NetworkConnector::close);
-            }
-            throw e1;
+                try
+                {
+                    nc.close();
+                }
+                catch(Throwable t2)
+                {
+                    if (th!=t2)
+                        th.addSuppressed(t2);
+                }
+            });
+            throw th;
         }
         finally
         {

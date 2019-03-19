@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -55,7 +54,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -105,6 +103,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public void setScheduler(Scheduler scheduler)
     {
+        updateBean(this.scheduler,scheduler);
         this.scheduler = scheduler;
     }
 
@@ -115,6 +114,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public void setByteBufferPool(ByteBufferPool bufferPool)
     {
+        updateBean(this.bufferPool, bufferPool);
         this.bufferPool = bufferPool;
     }
 
@@ -167,10 +167,18 @@ public class ConnectHandler extends HandlerWrapper
             executor = getServer().getThreadPool();
 
         if (scheduler == null)
-            addBean(scheduler = new ScheduledExecutorScheduler());
+        {
+            scheduler = getServer().getBean(Scheduler.class);
+            if (scheduler == null)
+                scheduler = new ScheduledExecutorScheduler(String.format("Proxy-Scheduler-%x", hashCode()), false);
+            addBean(scheduler);
+        }
 
         if (bufferPool == null)
-            addBean(bufferPool = new MappedByteBufferPool());
+        {
+            bufferPool = new MappedByteBufferPool();
+            addBean(bufferPool);
+        }
 
         addBean(selector = newSelectorManager());
         selector.setConnectTimeout(getConnectTimeout());

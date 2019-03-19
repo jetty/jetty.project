@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -54,17 +41,31 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 public class GracefulStopTest
 {
@@ -656,6 +657,60 @@ public class GracefulStopTest
         assertThat(response,containsString("200 OK"));
         assertThat(response,Matchers.not(Matchers.containsString("Connection: close")));
         assertTrue(latch.await(10,TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testFailedStart()
+    {
+        Server server= new Server();
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+        AtomicBoolean context0Started = new AtomicBoolean(false);
+        ContextHandler context0 = new ContextHandler("/zero")
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                context0Started.set(true);
+            }
+        };
+        ContextHandler context1 = new ContextHandler("/one")
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                throw new Exception("Test start failure");
+            }
+        };
+        AtomicBoolean context2Started = new AtomicBoolean(false);
+        ContextHandler context2 = new ContextHandler("/two")
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                context2Started.set(true);
+            }
+        };
+        contexts.setHandlers(new Handler[]{context0, context1, context2});
+
+        try
+        {
+            server.start();
+            fail();
+        }
+        catch(Exception e)
+        {
+            assertThat(e.getMessage(),is("Test start failure"));
+        }
+
+        assertTrue(server.getContainedBeans(LifeCycle.class).stream().noneMatch(LifeCycle::isRunning));
+        assertTrue(server.getContainedBeans(LifeCycle.class).stream().anyMatch(LifeCycle::isFailed));
+        assertTrue(context0Started.get());
+        assertFalse(context2Started.get());
     }
     
     static class NoopHandler extends AbstractHandler 

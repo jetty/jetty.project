@@ -16,38 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.deploy.bindings;
+package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.server.DebugListener;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
-/** A Deployment binding that installs a DebugListener in all deployed contexts
- */
-public class DebugListenerBinding extends DebugBinding
+public class ExtensionConfigParser implements org.eclipse.jetty.websocket.api.extensions.ExtensionConfig.Parser
 {
-    final DebugListener _debugListener;
-
-    public DebugListenerBinding()
-    {
-        this(new DebugListener());
-    }
-    
-    public DebugListenerBinding(DebugListener debugListener)
-    {
-        super(new String[]{"deploying"});
-        _debugListener=debugListener;
-    }
-    
-    public DebugListener getDebugListener()
-    {
-        return _debugListener;
-    }
-    
+    /**
+     * Parse a single parameterized name.
+     *
+     * @param parameterizedName the parameterized name
+     * @return the ExtensionConfig
+     */
     @Override
-    public void processBinding(Node node, App app) throws Exception
+    public JettyExtensionConfig parse(String parameterizedName)
     {
-        app.getContextHandler().addEventListener(_debugListener);
+        return new JettyExtensionConfig(ExtensionConfig.parse(parameterizedName));
     }
-
 }

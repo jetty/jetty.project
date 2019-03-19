@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.websocket.server.internal;
 
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
 public class UpgradeResponseAdapter implements UpgradeResponse
 {
@@ -53,7 +54,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public List<ExtensionConfig> getExtensions()
     {
         return this.servletResponse.getExtensions().stream()
-            .map((ext) -> new org.eclipse.jetty.websocket.api.extensions.ExtensionConfig(ext.getName(), ext.getParameters()))
+            .map((ext) -> new JettyExtensionConfig(ext.getName(), ext.getParameters()))
             .collect(Collectors.toList());
     }
 

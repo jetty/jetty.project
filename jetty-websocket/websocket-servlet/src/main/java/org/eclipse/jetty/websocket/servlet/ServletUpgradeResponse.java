@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +27,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
 /**
  * Servlet Specific UpgradeResponse implementation.
@@ -166,6 +167,23 @@ public class ServletUpgradeResponse
 
     public void setExtensions(List<ExtensionConfig> configs)
     {
+        // This validation is also done later in RFC6455Handshaker but it is better to fail earlier
+        for (ExtensionConfig config : configs)
+        {
+            int matches = (int)negotiation.getOfferedExtensions().stream()
+                    .filter(e -> e.getName().equals(config.getName())).count();
+
+            switch (matches)
+            {
+                case 0:
+                    throw new IllegalArgumentException("Extension not a requested extension");
+                case 1:
+                    continue;
+                default:
+                    throw new IllegalArgumentException("Multiple extensions of the same name");
+            }
+        }
+
         negotiation.setNegotiatedExtensions(configs);
     }
 

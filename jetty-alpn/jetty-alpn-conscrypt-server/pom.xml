@@ -38,23 +38,57 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-conscrypt-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-http-client-transport</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
   <build>
     <plugins>
-       <plugin>
-         <groupId>org.apache.felix</groupId>
-         <artifactId>maven-bundle-plugin</artifactId>
-         <extensions>true</extensions>
-             <configuration>
-               <instructions>
-                 <Bundle-Description>Conscrypt ALPN</Bundle-Description>
-                 <Import-Package>org.conscrypt;version="${conscrypt.version}",*</Import-Package>
-                 <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                 <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
-                 <_nouses>true</_nouses>
-               </instructions>
-             </configuration>
-       </plugin>
+      <plugin>
+       <groupId>org.apache.felix</groupId>
+       <artifactId>maven-bundle-plugin</artifactId>
+       <extensions>true</extensions>
+           <configuration>
+             <instructions>
+               <Bundle-Description>Conscrypt ALPN</Bundle-Description>
+               <Import-Package>org.conscrypt;version="${conscrypt.version}",*</Import-Package>
+               <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+               <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
+               <_nouses>true</_nouses>
+             </instructions>
+           </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-reads org.eclipse.jetty.alpn.conscrypt.server=org.eclipse.jetty.server
+          </argLine>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

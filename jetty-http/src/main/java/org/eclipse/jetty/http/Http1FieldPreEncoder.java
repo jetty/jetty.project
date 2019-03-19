@@ -19,9 +19,9 @@
 
 package org.eclipse.jetty.http;
 
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-
 import java.util.Arrays;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 
 /* ------------------------------------------------------------ */
@@ -60,7 +60,8 @@ public class Http1FieldPreEncoder implements HttpFieldPreEncoder
         byte[] v=value.getBytes(ISO_8859_1);
         byte[] bytes=Arrays.copyOf(n,n.length+2+v.length+2);
         bytes[n.length]=(byte)':';
-        bytes[n.length]=(byte)' ';
+        bytes[n.length+1]=(byte)' ';
+        System.arraycopy(v, 0, bytes, n.length+2, v.length);
         bytes[bytes.length-2]=(byte)'\r';
         bytes[bytes.length-1]=(byte)'\n';
 

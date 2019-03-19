@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -44,7 +43,6 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
 public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, LifeCycle.Listener
@@ -114,13 +112,15 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         addSessionListener(sessionTracker);
     }
 
-    public void addMapping(String pathSpec, WebSocketCreator creator)
+    public void addMapping(String pathSpec, JettyWebSocketCreator creator)
     {
         PathSpec ps = WebSocketMapping.parsePathSpec(pathSpec);
         if (webSocketMapping.getMapping(ps) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
-        webSocketMapping.addMapping(ps, creator, frameHandlerFactory, customizer);
+        webSocketMapping.addMapping(ps,
+                (req, resp)-> creator.createWebSocket(new JettyServerUpgradeRequest(req), new JettyServerUpgradeResponse(resp)),
+                frameHandlerFactory, customizer);
     }
 
     @Override

@@ -152,7 +152,6 @@ public class DeploymentManager extends ContainerLifeCycle
         }
     }
 
-    /* ------------------------------------------------------------ */
     /** Set the AppProviders.
      * The providers passed are added via {@link #addBean(Object)} so that 
      * their lifecycles may be managed as a {@link ContainerLifeCycle}.
@@ -170,7 +169,6 @@ public class DeploymentManager extends ContainerLifeCycle
                 addBean(provider);
     }
 
-    @ManagedAttribute("Application Providers")
     public Collection<AppProvider> getAppProviders()
     {
         return Collections.unmodifiableList(_providers);
@@ -181,7 +179,7 @@ public class DeploymentManager extends ContainerLifeCycle
         if (isRunning())
             throw new IllegalStateException();
         _providers.add(provider);
-        addBean(provider);        
+        addBean(provider);
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
@@ -292,7 +290,6 @@ public class DeploymentManager extends ContainerLifeCycle
         return Collections.unmodifiableCollection(_apps);
     }
 
-    @ManagedAttribute("Deployed Apps")
     public Collection<App> getApps()
     {
         List<App> ret = new ArrayList<  >();
