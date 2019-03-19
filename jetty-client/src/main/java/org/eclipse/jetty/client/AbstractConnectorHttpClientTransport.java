@@ -148,6 +148,11 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
         return new ClientSelectorManager(client, getSelectors());
     }
 
+    protected SelectorManager getSelectorManager()
+    {
+        return selectorManager;
+    }
+
     protected class ClientSelectorManager extends SelectorManager
     {
         private final HttpClient client;

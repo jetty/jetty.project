@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.FCGI;
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -68,6 +56,17 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 {
@@ -552,8 +551,6 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
     public void testAsyncWriteIdleTimeoutFires(Transport transport) throws Exception
     {
         init(transport);
-        // TODO work out why this test fails for UNIX_SOCKET
-        Assumptions.assumeFalse(scenario.transport == UNIX_SOCKET);
 
         CountDownLatch handlerLatch = new CountDownLatch(1);
         scenario.start(new AbstractHandler.ErrorDispatchHandler()
