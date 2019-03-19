@@ -2450,10 +2450,8 @@ public class Request implements HttpServletRequest
     @Override
     public void logout() throws ServletException
     {
-        if (_authentication instanceof Authentication.User)
-            _authentication = ((Authentication.User)_authentication).logout(this);
-        else if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).logout(this);
+       if (_authentication instanceof Authentication.LogoutAuthentication)
+            _authentication = ((Authentication.LogoutAuthentication)_authentication).logout(this);
     }
 
     /* ------------------------------------------------------------ */

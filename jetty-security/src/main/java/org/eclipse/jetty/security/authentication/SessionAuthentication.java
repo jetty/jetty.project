@@ -37,7 +37,16 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-public class SessionAuthentication extends AbstractUserAuthentication implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
+/**
+ * SessionAuthentication
+ * 
+ * When a user has been successfully authenticated with some types
+ * of Authenticator, the Authenticator stashes a SessionAuthentication
+ * into a HttpSession to remember that the user is authenticated.
+ *
+ */
+public class SessionAuthentication extends AbstractUserAuthentication 
+                                   implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
     private static final Logger LOG = Log.getLogger(SessionAuthentication.class);
 
@@ -92,12 +101,6 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
     @Override
     @Deprecated
     public void logout()
-    {
-    }
-
-
-    @Deprecated
-    private void doLogout()
     {
     }
 

@@ -552,7 +552,8 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    /** This Authentication represents a just completed Form authentication.
+    /** 
+     * This Authentication represents a just completed Form authentication.
      * Subsequent requests from the same user are authenticated by the presents
      * of a {@link SessionAuthentication} instance in their session.
      */

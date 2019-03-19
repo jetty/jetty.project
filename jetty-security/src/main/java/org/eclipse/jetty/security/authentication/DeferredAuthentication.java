@@ -34,7 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.NoAuthentication;
+import org.eclipse.jetty.security.LoggedOutAuthentication;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
@@ -145,7 +145,7 @@ public class DeferredAuthentication implements Authentication.Deferred
             if (_authenticator instanceof LoginAuthenticator)
             {
                 ((LoginAuthenticator)_authenticator).logout(request);
-                return new NoAuthentication((LoginAuthenticator)_authenticator);
+                return new LoggedOutAuthentication((LoginAuthenticator)_authenticator);
             }
         }
 

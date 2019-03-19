@@ -40,6 +40,7 @@ public class UserAuthentication extends AbstractUserAuthentication
     }
 
     @Override
+    @Deprecated
     public void logout()
     {
     }

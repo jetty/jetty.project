@@ -34,6 +34,8 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import javax.servlet.DispatcherType;
 import javax.servlet.HttpConstraintElement;
 import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletException;
@@ -1153,6 +1155,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("user=user0"));
         _server.stop();
+
         
         //Test constraint-based login with programmatic login/logout:
         // constraintlogin - perform constraint login, followed by programmatic login which should fail (already logged in)
@@ -1686,6 +1689,7 @@ public class ConstraintTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
+
             String action = request.getParameter("action");
             if (StringUtil.isBlank(action))
             {

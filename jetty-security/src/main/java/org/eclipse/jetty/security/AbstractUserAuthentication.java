@@ -112,7 +112,7 @@ public abstract class AbstractUserAuthentication implements User, Serializable
             if (authenticator instanceof LoginAuthenticator)
             {
                 ((LoginAuthenticator)authenticator).logout(request);
-                return new NoAuthentication((LoginAuthenticator)authenticator);
+                return new LoggedOutAuthentication((LoginAuthenticator)authenticator);
             }
         }
 

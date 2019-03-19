@@ -25,16 +25,16 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**
- * NoAuthentication
+ * LoggedOutAuthentication
  *
  * An Authentication indicating that a user has been previously, but is not currently logged in,
  * but may be capable of logging in after a call to Request.login(String,String)
  */
-public class NoAuthentication implements Authentication.NonAuthenticated
+public class LoggedOutAuthentication implements Authentication.NonAuthenticated
 {
     private LoginAuthenticator _authenticator;
 
-    public NoAuthentication (LoginAuthenticator authenticator)
+    public LoggedOutAuthentication (LoginAuthenticator authenticator)
     {
         _authenticator = authenticator;
     }
@@ -51,6 +51,8 @@ public class NoAuthentication implements Authentication.NonAuthenticated
         {
             IdentityService identity_service = _authenticator.getLoginService().getIdentityService();
             UserAuthentication authentication = new UserAuthentication("API",identity);
+            if (identity_service != null)
+                identity_service.associate(identity);
             return authentication;
         }
         return null;
