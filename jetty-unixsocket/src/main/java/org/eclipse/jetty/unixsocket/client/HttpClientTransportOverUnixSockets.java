@@ -19,6 +19,7 @@
 package org.eclipse.jetty.unixsocket.client;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -67,7 +68,7 @@ public class HttpClientTransportOverUnixSockets extends HttpClientTransportOverH
         {
             InetAddress inet = address.getAddress();
             if (!inet.isLoopbackAddress() && !inet.isLinkLocalAddress() && !inet.isSiteLocalAddress())
-                throw new IOException("UnixSocket cannot connect to " + address.getHostString());
+                throw new ConnectException("UnixSocket cannot connect to " + address.getHostString());
 
             UnixSocketAddress unixAddress = new UnixSocketAddress(_unixSocket);
             channel = UnixSocketChannel.open(unixAddress);

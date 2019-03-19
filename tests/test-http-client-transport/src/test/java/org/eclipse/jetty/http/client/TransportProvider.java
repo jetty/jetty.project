@@ -20,10 +20,10 @@ package org.eclipse.jetty.http.client;
 
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -37,7 +37,7 @@ public class TransportProvider implements ArgumentsProvider
         if (!StringUtil.isBlank(transports))
             return Arrays.stream(transports.split("\\s*,\\s*")).map(Transport::valueOf);
 
-         if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux"))
+         if (OS.LINUX.isCurrentOs())
              return Arrays.stream(Transport.values());
 
         return EnumSet.complementOf(EnumSet.of(Transport.UNIX_SOCKET)).stream();
