@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -40,8 +36,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientFailureTest
 {
@@ -155,98 +154,4 @@ public class HttpClientFailureTest
         assertEquals(0, connectionPool.getActiveConnections().size());
         assertEquals(0, connectionPool.getIdleConnections().size());
     }
-/*
-    @Test
-    public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse() throws Exception
-    {
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                // Echo back
-                IO.copy(request.getInputStream(), response.getOutputStream());
-            }
-        });
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                        // The second ByteBuffer set to null will throw an exception
-                .content(new ContentProvider()
-                {
-                    @Override
-                    public long getLength()
-                    {
-                        return -1;
-                    }
-
-                    @Override
-                    public Iterator<ByteBuffer> iterator()
-                    {
-                        return new Iterator<ByteBuffer>()
-                        {
-                            @Override
-                            public boolean hasNext()
-                            {
-                                return true;
-                            }
-
-                            @Override
-                            public ByteBuffer next()
-                            {
-                                throw new NoSuchElementException("explicitly_thrown_by_test");
-                            }
-
-                            @Override
-                            public void remove()
-                            {
-                                throw new UnsupportedOperationException();
-                            }
-                        };
-                    }
-                })
-                .send(new Response.Listener.Adapter()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        latch.countDown();
-                    }
-                });
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse() throws Exception
-    {
-        start(new EmptyServerHandler());
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        final String host = "localhost";
-        final int port = connector.getLocalPort();
-        client.newRequest(host, port)
-                .scheme(scheme)
-                .onRequestBegin(new Request.BeginListener()
-                {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-                        destination.getConnectionPool().getActiveConnections().peek().close();
-                    }
-                })
-                .send(new Response.Listener.Adapter()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        latch.countDown();
-                    }
-                });
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-*/
 }

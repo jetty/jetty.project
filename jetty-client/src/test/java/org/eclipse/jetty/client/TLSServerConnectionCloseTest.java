@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,7 +31,6 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -41,6 +38,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TLSServerConnectionCloseTest
 {
@@ -168,7 +167,7 @@ public class TLSServerConnectionCloseTest
                 Thread.sleep(1000);
 
                 // Connection should have been removed from pool.
-                HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
+                HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", port);
                 DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
                 assertEquals(0, connectionPool.getConnectionCount());
                 assertEquals(0, connectionPool.getIdleConnectionCount());

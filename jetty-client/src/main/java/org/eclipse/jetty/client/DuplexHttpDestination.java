@@ -16,25 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.MultiplexHttpDestination;
-import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.SendFailure;
-import org.eclipse.jetty.client.api.Connection;
-
-public class HttpDestinationOverHTTP2 extends MultiplexHttpDestination
+/**
+ * <p>A destination for those network transports that are duplex (e.g. HTTP/1.1 and FastCGI).</p>
+ *
+ * @see MultiplexHttpDestination
+ */
+public class DuplexHttpDestination extends HttpDestination
 {
-    public HttpDestinationOverHTTP2(HttpClient client, Origin origin)
+    public DuplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, origin);
+        this(client, new Key(origin, null));
     }
 
-    @Override
-    protected SendFailure send(Connection connection, HttpExchange exchange)
+    public DuplexHttpDestination(HttpClient client, Key key)
     {
-        return ((HttpConnectionOverHTTP2)connection).send(exchange);
+        super(client, key);
     }
 }

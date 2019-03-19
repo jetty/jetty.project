@@ -119,14 +119,14 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("newConnection {}/{} connections {}/{} pending", total+1, maxConnections, pending+1, maxPending);
 
-                destination.newConnection(new Promise<Connection>()
+                destination.newConnection(new Promise<>()
                 {
                     @Override
                     public void succeeded(Connection connection)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection {}/{} creation succeeded {}", total+1, maxConnections, connection);
-                        connections.add(-1,0);
+                            LOG.debug("Connection {}/{} creation succeeded {}", total + 1, maxConnections, connection);
+                        connections.add(-1, 0);
                         onCreated(connection);
                         proceed();
                     }
@@ -135,8 +135,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     public void failed(Throwable x)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection " + (total+1) + "/" + maxConnections + " creation failed", x);
-                        connections.add(-1,-1);
+                            LOG.debug("Connection " + (total + 1) + "/" + maxConnections + " creation failed", x);
+                        connections.add(-1, -1);
                         requester.failed(x);
                     }
                 });

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +35,13 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 /**
+ *
  */
 @RunWith(PaxExam.class)
 
@@ -57,17 +58,19 @@ public class TestJettyOSGiBootWithWebSocket
         ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-websocket.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
-     
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+
         options.addAll(TestOSGiUtil.coreJettyDependencies());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
         options.addAll(testJettyWebApp());
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
 
     public static List<Option> jspDependencies()
@@ -83,14 +86,11 @@ public class TestJettyOSGiBootWithWebSocket
         return res;
     }
 
-
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
     }
-    
-
 
     @Test
     public void testWebsocket() throws Exception
@@ -101,22 +101,17 @@ public class TestJettyOSGiBootWithWebSocket
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 
-        URI uri = new URI("ws://127.0.0.1:" + port+"/ws/foo");
-
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ws/foo");
         WebSocketClient client = new WebSocketClient();
-        
         try
         {
-
-            SimpleEchoSocket socket = new SimpleEchoSocket();
-
             client.start();
-
+            SimpleEchoSocket socket = new SimpleEchoSocket();
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.setSubProtocols("chat");
-            client.connect(socket,uri,request);
+            client.connect(socket, uri, request);
             // wait for closed socket connection.
-            assertTrue(socket.awaitClose(5,TimeUnit.SECONDS));
+            assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
         }
         finally
         {

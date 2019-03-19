@@ -65,7 +65,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
@@ -124,7 +123,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Response response = client.GET(scenario.getScheme() + "://" + host + ":" + port + path);
         assertEquals(200, response.getStatus());
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), host, port);
+        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), host, port);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
         long start = System.nanoTime();
@@ -681,7 +680,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .scheme(scenario.getScheme())
                 .onRequestBegin(request ->
                 {
-                    HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), host, port);
+                    HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), host, port);
                     DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
                     connectionPool.getActiveConnections().iterator().next().close();
                 })
