@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -139,14 +139,10 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public List<ExtensionConfig> getExtensions()
     {
-        List<ExtensionConfig> extensions = new ArrayList<>();
-
-        getHeaders().stream()
-                .filter(field -> field.getName().equalsIgnoreCase(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.toString()))
-                .forEach(field -> new QuotedCSV(field.getValue()).getValues().stream()
-                        .map(ExtensionConfig::parse)
-                        .forEach(extensions::add)
-                );
+        List<ExtensionConfig> extensions = getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true)
+                .stream()
+                .map(ExtensionConfig::parse)
+                .collect(Collectors.toList());
 
         return extensions;
     }
@@ -161,12 +157,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public List<String> getSubProtocols()
     {
-        List<String> subProtocols = new ArrayList<>();
-
-        getHeaders().stream()
-                .filter(field -> field.getName().equalsIgnoreCase(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.toString()))
-                .forEach(field -> subProtocols.addAll(new QuotedCSV(field.getValue()).getValues()));
-
+        List<String> subProtocols = getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, true);
         return subProtocols;
     }
 
