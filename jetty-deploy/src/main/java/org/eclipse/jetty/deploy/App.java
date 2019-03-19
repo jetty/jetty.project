@@ -69,7 +69,6 @@ public class App
         _context = context;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The deployment manager
      */
@@ -78,7 +77,6 @@ public class App
         return _manager;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The AppProvider
      */
@@ -87,7 +85,6 @@ public class App
         return _provider;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Get ContextHandler for the App.
      * 
@@ -148,7 +145,6 @@ public class App
         }
         return this._context.getContextPath();
     }
-
 
     /**
      * The origin of this {@link App} as specified by the {@link AppProvider}

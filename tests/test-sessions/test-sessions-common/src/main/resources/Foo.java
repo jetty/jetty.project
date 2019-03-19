@@ -16,20 +16,26 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
-
-import java.security.Principal;
-import java.security.acl.Group;
-
-public interface RoleCheckPolicy 
+public class Foo implements java.io.Serializable
 {
-    /* ------------------------------------------------ */
-    /** Check if a role is either a runAsRole or in a set of roles
-     * @param roleName the role to check
-     * @param runAsRole a pushed role (can be null)
-     * @param roles a Group whose Principals are role names
-     * @return <code>true</code> if <code>role</code> equals <code>runAsRole</code> or is a member of <code>roles</code>.
-     */
-    public boolean checkRole (String roleName, Principal runAsRole, Group roles);
-    
+    int myI = 0;
+
+    public Foo()
+    {
+    }
+
+    public void setI(int i)
+    {
+      myI = i;
+    }
+
+    public int getI()
+    {
+        return myI;
+    }
+
+    public boolean equals(Object o)
+    {
+        return ((Foo)o).getI() == myI;
+    }
 }

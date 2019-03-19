@@ -1527,7 +1527,7 @@ public class Request implements HttpServletRequest
             if (getRemoteUser() != null)
                 s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             if (s.isIdChanged() && _sessionHandler.isUsingCookies())
-                _channel.getResponse().addCookie(_sessionHandler.getSessionCookie(s, getContextPath(), isSecure()));
+                _channel.getResponse().replaceCookie(_sessionHandler.getSessionCookie(s, getContextPath(), isSecure()));
         }
 
         return session.getId();
@@ -1570,7 +1570,7 @@ public class Request implements HttpServletRequest
         _session = _sessionHandler.newHttpSession(this);
         HttpCookie cookie = _sessionHandler.getSessionCookie(_session,getContextPath(),isSecure());
         if (cookie != null)
-            _channel.getResponse().addCookie(cookie);
+            _channel.getResponse().replaceCookie(cookie);
 
         return _session;
     }

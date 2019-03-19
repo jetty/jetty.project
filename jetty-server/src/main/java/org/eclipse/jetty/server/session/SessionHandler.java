@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static java.lang.Math.round;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,6 +64,8 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static java.lang.Math.round;
 
 /* ------------------------------------------------------------ */
 /**
@@ -523,10 +523,9 @@ public class SessionHandler extends ScopedHandler
             _scheduler = server.getBean(Scheduler.class);
             if (_scheduler == null)
             {            
-                _scheduler = new ScheduledExecutorScheduler();
+                _scheduler = new ScheduledExecutorScheduler(String.format("Session-Scheduler-%x",hashCode()), false);
                 _ownScheduler = true;
                 _scheduler.start();
-
             }
         }
         
@@ -1658,7 +1657,7 @@ public class SessionHandler extends ScopedHandler
                 HttpCookie cookie = access(existingSession,request.isSecure());
                 // Handle changed ID or max-age refresh, but only if this is not a redispatched request
                 if ((cookie != null) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
-                    baseRequest.getResponse().addCookie(cookie);
+                    baseRequest.getResponse().replaceCookie(cookie);
             }
 
             if (LOG.isDebugEnabled())

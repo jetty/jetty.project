@@ -61,7 +61,6 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
 
 
 
-    
 
     @Test
     public void testClusteredScavenge() throws Exception

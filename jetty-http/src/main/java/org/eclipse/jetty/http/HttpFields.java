@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -438,13 +439,26 @@ public class HttpFields implements Iterable<HttpField>
      */
     public List<String> getQualityCSV(HttpHeader header)
     {
+        return getQualityCSV(header,null);
+    }
+
+    /**
+     * Get multiple field values of the same name, split and
+     * sorted as a {@link QuotedQualityCSV}
+     *
+     * @param header The header
+     * @param secondaryOrdering Function to apply an ordering other than specified by quality
+     * @return List the values in quality order with the q param and OWS stripped
+     */
+    public List<String> getQualityCSV(HttpHeader header, ToIntFunction<String> secondaryOrdering)
+    {
         QuotedQualityCSV values = null;
         for (HttpField f : this)
         {
             if (f.getHeader()==header)
             {
                 if (values==null)
-                    values = new QuotedQualityCSV();
+                    values = new QuotedQualityCSV(secondaryOrdering);
                 values.addValue(f.getValue());
             }
         }

@@ -22,10 +22,10 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * ClusteredSessionScavengingTest
- *
  *
  */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
@@ -48,7 +48,15 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     }
 
 
-    /** 
+    @Override
+    @Test
+    public void testClusteredScavenge()
+        throws Exception
+    {
+        super.testClusteredScavenge();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
