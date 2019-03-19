@@ -167,18 +167,21 @@ public class ServletUpgradeResponse
 
     public void setExtensions(List<ExtensionConfig> configs)
     {
+        // This validation is also done later in RFC6455Handshaker but it is better to fail earlier
         for (ExtensionConfig config : configs)
         {
-            List<ExtensionConfig> collect = negotiation.getOfferedExtensions().stream()
-                    .filter(e -> e.getName().equals(config.getName()))
-                    .collect(Collectors.toList());
+            int matches = (int)negotiation.getOfferedExtensions().stream()
+                    .filter(e -> e.getName().equals(config.getName())).count();
 
-            if (collect.size() == 1)
-                continue;
-            else if (collect.size() == 0)
-                throw new IllegalArgumentException("Extension not a requested extension");
-            else if (collect.size() > 1)
-                throw new IllegalArgumentException("Multiple extensions of the same name");
+            switch (matches)
+            {
+                case 0:
+                    throw new IllegalArgumentException("Extension not a requested extension");
+                case 1:
+                    continue;
+                default:
+                    throw new IllegalArgumentException("Multiple extensions of the same name");
+            }
         }
 
         negotiation.setNegotiatedExtensions(configs);

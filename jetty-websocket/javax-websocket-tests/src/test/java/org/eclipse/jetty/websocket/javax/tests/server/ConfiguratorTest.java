@@ -631,7 +631,7 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        upgradeRequest.header("sec-websocket-protocol", "echo, chat, status");
+        upgradeRequest.setSubProtocols("echo","chat","status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
@@ -650,8 +650,7 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        // header name is not to spec (case wise)
-        upgradeRequest.header("Sec-Websocket-Protocol", "echo, chat, status");
+        upgradeRequest.setSubProtocols("echo","chat","status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
