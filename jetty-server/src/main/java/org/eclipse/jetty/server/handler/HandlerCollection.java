@@ -86,28 +86,25 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void setHandlers(Handler[] handlers)
     {
-        synchronized (this)
+        if (!_mutableWhenRunning && isStarted())
+            throw new IllegalStateException(STARTED);
+
+        if (handlers!=null)
         {
-            if (!_mutableWhenRunning && isStarted())
-                throw new IllegalStateException(STARTED);
-
-            if (handlers!=null)
-            {
-                // check for loops
-                for (Handler handler:handlers)
-                    if (handler == this || (handler instanceof HandlerContainer &&
+            // check for loops
+            for (Handler handler:handlers)
+                if (handler == this || (handler instanceof HandlerContainer &&
                         Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
-                            throw new IllegalStateException("setHandler loop");
+                    throw new IllegalStateException("setHandler loop");
 
-                // Set server
-                for (Handler handler:handlers)
-                    if (handler.getServer()!=getServer())
-                        handler.setServer(getServer());
-            }
-            Handler[] old=_handlers;
-            _handlers = handlers;
-            updateBeans(old, handlers);
+            // Set server
+            for (Handler handler:handlers)
+                if (handler.getServer()!=getServer())
+                    handler.setServer(getServer());
         }
+
+        updateBeans(_handlers,handlers);
+        _handlers = handlers;
     }
 
     /* ------------------------------------------------------------ */
@@ -161,10 +158,7 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void addHandler(Handler handler)
     {
-        synchronized(this)
-        {
-            setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
-        }
+        setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
     }
 
     /* ------------------------------------------------------------ */
@@ -174,22 +168,16 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void prependHandler(Handler handler)
     {
-        synchronized (this)
-        {
-            setHandlers(ArrayUtil.prependToArray(handler, getHandlers(), Handler.class));
-        }
+        setHandlers(ArrayUtil.prependToArray(handler, getHandlers(), Handler.class));
     }
 
     /* ------------------------------------------------------------ */
     public void removeHandler(Handler handler)
     {
-        synchronized (this)
-        {
-            Handler[] handlers = getHandlers();
+        Handler[] handlers = getHandlers();
 
-            if (handlers!=null && handlers.length>0 )
-                setHandlers(ArrayUtil.removeFromArray(handlers, handler));
-        }
+        if (handlers!=null && handlers.length>0 )
+            setHandlers(ArrayUtil.removeFromArray(handlers, handler));
     }
 
     /* ------------------------------------------------------------ */
@@ -208,12 +196,8 @@ public class HandlerCollection extends AbstractHandlerContainer
     {
         if (!isStopped())
             throw new IllegalStateException("!STOPPED");
-        Handler[] children;
-        synchronized (this)
-        {
-            children = getChildHandlers();
-            setHandlers(null);
-        }
+        Handler[] children = getChildHandlers();
+        setHandlers(null);
         for (Handler child: children)
             child.destroy();
         super.destroy();

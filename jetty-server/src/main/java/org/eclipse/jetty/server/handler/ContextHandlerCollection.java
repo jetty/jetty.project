@@ -138,7 +138,6 @@ public class ContextHandlerCollection extends HandlerCollection
             }
             break loop;
         }
-            
         
         if (LOG.isDebugEnabled())
         {
@@ -155,12 +154,9 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     public void setHandlers(Handler[] handlers)
     {
-        synchronized (this)
-        {
-            super.setHandlers(handlers);
-            if (isStarted())
-                mapContexts();
-        }
+        super.setHandlers(handlers);
+        if (isStarted())
+            mapContexts();
     }
 
     /* ------------------------------------------------------------ */
