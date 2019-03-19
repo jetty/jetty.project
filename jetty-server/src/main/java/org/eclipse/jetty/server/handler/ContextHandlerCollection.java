@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -59,8 +57,7 @@ public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
 
-    private final ConcurrentMap<ContextHandler,Handler> _contextBranches = new ConcurrentHashMap<>();
-    private volatile Trie<Map.Entry<String,Branch[]>> _pathBranches;
+    private volatile Mapping _mapping;
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
 
     /* ------------------------------------------------------------ */
@@ -83,32 +80,32 @@ public class ContextHandlerCollection extends HandlerCollection
     @ManagedOperation("update the mapping of context path to context")
     public void mapContexts()
     {
-        _contextBranches.clear();
-        
-        Handler[] handlers = getHandlers();
+        mapContexts(getHandlers());
+    }
+
+    private void mapContexts(Handler[] handlers)
+    {
         if (handlers==null)
         {
-            _pathBranches=new ArrayTernaryTrie<>(false,16);
+            _mapping = new Mapping(1);
             return;
         }
         
         // Create map of contextPath to handler Branch
-        Map<String,Branch[]> map = new HashMap<>();
+        // A branch is a Handler that could contain 0 or more ContextHandlers
+        Map<String,Branch[]> path2Branches = new HashMap<>();
         for (Handler handler:handlers)
         {
             Branch branch=new Branch(handler);
             for (String contextPath : branch.getContextPaths())
             {
-                Branch[] branches=map.get(contextPath);
-                map.put(contextPath, ArrayUtil.addToArray(branches, branch, Branch.class));
+                Branch[] branches=path2Branches.get(contextPath);
+                path2Branches.put(contextPath, ArrayUtil.addToArray(branches, branch, Branch.class));
             }
-            
-            for (ContextHandler context : branch.getContextHandlers())
-                _contextBranches.putIfAbsent(context, branch.getHandler());
         }
         
-        // Sort the branches so those with virtual hosts are considered before those without
-        for (Map.Entry<String,Branch[]> entry: map.entrySet())
+        // Sort the branches for each contextPath so those with virtual hosts are considered before those without
+        for (Map.Entry<String,Branch[]> entry: path2Branches.entrySet())
         {
             Branch[] branches=entry.getValue();
             Branch[] sorted=new Branch[branches.length];
@@ -124,13 +121,13 @@ public class ContextHandlerCollection extends HandlerCollection
         
         // Loop until we have a big enough trie to hold all the context paths
         int capacity=512;
-        Trie<Map.Entry<String,Branch[]>> trie;
+        Mapping mapping;
         loop: while(true)
         {
-            trie=new ArrayTernaryTrie<>(false,capacity);
-            for (Map.Entry<String,Branch[]> entry: map.entrySet())
+            mapping = new Mapping(capacity);
+            for (Map.Entry<String,Branch[]> entry: path2Branches.entrySet())
             {
-                if (!trie.put(entry.getKey().substring(1),entry))
+                if (!mapping._pathBranches.put(entry.getKey().substring(1),entry))
                 {
                     capacity+=512;
                     continue loop;
@@ -141,10 +138,22 @@ public class ContextHandlerCollection extends HandlerCollection
         
         if (LOG.isDebugEnabled())
         {
-            for (String ctx : trie.keySet())
-                LOG.debug("{}->{}",ctx,Arrays.asList(trie.get(ctx).getValue()));
+            for (String ctx : mapping._pathBranches.keySet())
+                LOG.debug("{}->{}",ctx,Arrays.asList(mapping._pathBranches.get(ctx).getValue()));
         }
-        _pathBranches=trie;
+
+        // add new context branches to concurrent map
+        for (Branch[] branches: path2Branches.values())
+        {
+            for (Branch branch : branches)
+            {
+                for (ContextHandler context : branch.getContextHandlers())
+                    mapping._contextBranches.put(context, branch.getHandler());
+            }
+        }
+
+        // Update volatile mapping
+        _mapping = mapping;
     }
 
     /* ------------------------------------------------------------ */
@@ -156,7 +165,7 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         super.setHandlers(handlers);
         if (isStarted())
-            mapContexts();
+            mapContexts(handlers);
     }
 
     /* ------------------------------------------------------------ */
@@ -167,6 +176,13 @@ public class ContextHandlerCollection extends HandlerCollection
         super.doStart();
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        _mapping = null;
+    }
 
     /* ------------------------------------------------------------ */
     /*
@@ -175,13 +191,17 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        Mapping mapping = _mapping;
+        if (mapping==null)
+            return;
+
         HttpChannelState async = baseRequest.getHttpChannelState();
         if (async.isAsync())
         {
             ContextHandler context=async.getContextHandler();
             if (context!=null)
             {
-                Handler branch = _contextBranches.get(context);
+                Handler branch = mapping._contextBranches.get(context);
                 
                 if (branch==null)
                     context.handle(target,baseRequest,request, response);
@@ -193,7 +213,7 @@ public class ContextHandlerCollection extends HandlerCollection
         
         if (target.startsWith("/"))
         {
-            Trie<Map.Entry<String,Branch[]>> pathBranches = _pathBranches;
+            Trie<Map.Entry<String,Branch[]>> pathBranches = mapping._pathBranches;
             if (pathBranches==null)
                 return;
 
@@ -340,5 +360,17 @@ public class ContextHandlerCollection extends HandlerCollection
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static class Mapping
+    {
+        private final Map<ContextHandler,Handler> _contextBranches = new HashMap<>();
+        private final Trie<Map.Entry<String,Branch[]>> _pathBranches;
 
+        Mapping(int capacity)
+        {
+            _pathBranches = new ArrayTernaryTrie(false, capacity);
+        }
+    }
 }
