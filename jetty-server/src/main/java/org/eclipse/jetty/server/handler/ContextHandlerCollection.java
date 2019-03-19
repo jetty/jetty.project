@@ -57,7 +57,6 @@ public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
 
-    private volatile Mapping _mapping;
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
 
     /* ------------------------------------------------------------ */
@@ -69,26 +68,25 @@ public class ContextHandlerCollection extends HandlerCollection
     /* ------------------------------------------------------------ */
     public ContextHandlerCollection(ContextHandler... contexts)
     {
-        super(true,contexts);
+        super(true);
+        setHandlers(contexts);
     }
-
 
     /* ------------------------------------------------------------ */
-    /**
-     * Remap the context paths.
-     */
     @ManagedOperation("update the mapping of context path to context")
+    @Deprecated
     public void mapContexts()
     {
-        mapContexts(getHandlers());
+        LOG.warn("mapContexts is Deprecated");
     }
 
-    private void mapContexts(Handler[] handlers)
+    /* ------------------------------------------------------------ */
+    @Override
+    protected Handlers newHandlers(Handler[] handlers)
     {
-        if (handlers==null)
+        if (handlers==null || handlers.length==0)
         {
-            _mapping = new Mapping(1);
-            return;
+            return null;
         }
         
         // Create map of contextPath to handler Branch
@@ -124,7 +122,7 @@ public class ContextHandlerCollection extends HandlerCollection
         Mapping mapping;
         loop: while(true)
         {
-            mapping = new Mapping(capacity);
+            mapping = new Mapping(handlers, capacity);
             for (Map.Entry<String,Branch[]> entry: path2Branches.entrySet())
             {
                 if (!mapping._pathBranches.put(entry.getKey().substring(1),entry))
@@ -152,36 +150,7 @@ public class ContextHandlerCollection extends HandlerCollection
             }
         }
 
-        // Update volatile mapping
-        _mapping = mapping;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.handler.HandlerCollection#setHandlers(org.eclipse.jetty.server.server.Handler[])
-     */
-    @Override
-    public void setHandlers(Handler[] handlers)
-    {
-        super.setHandlers(handlers);
-        if (isStarted())
-            mapContexts(handlers);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStart() throws Exception
-    {
-        mapContexts();
-        super.doStart();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        _mapping = null;
+        return mapping;
     }
 
     /* ------------------------------------------------------------ */
@@ -191,7 +160,11 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Mapping mapping = _mapping;
+        Handlers handlers = _handlers.get();
+        if (handlers==null)
+            return;
+
+        Mapping mapping = (Mapping)handlers;
         if (mapping==null)
             return;
 
@@ -243,12 +216,11 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         else
         {
-            Handler[] handlers = getHandlers();
-            if (handlers==null)
+            if (mapping._handlers==null)
                 return;
-            for (int i=0;i<handlers.length;i++)
+            for (int i=0;i<mapping._handlers.length;i++)
             {
-                handlers[i].handle(target,baseRequest, request, response);
+                mapping._handlers[i].handle(target,baseRequest, request, response);
                 if ( baseRequest.isHandled())
                     return;
             }
@@ -363,13 +335,14 @@ public class ContextHandlerCollection extends HandlerCollection
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private static class Mapping
+    private static class Mapping extends Handlers
     {
         private final Map<ContextHandler,Handler> _contextBranches = new HashMap<>();
         private final Trie<Map.Entry<String,Branch[]>> _pathBranches;
 
-        Mapping(int capacity)
+        Mapping(Handler[] handlers, int capacity)
         {
+            super(handlers);
             _pathBranches = new ArrayTernaryTrie(false, capacity);
         }
     }
