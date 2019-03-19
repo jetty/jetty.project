@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -60,10 +61,13 @@ import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class TransportScenario
 {
@@ -83,8 +87,22 @@ public class TransportScenario
     public TransportScenario(final Transport transport) throws IOException
     {
         this.transport = transport;
-        Path target = MavenTestingUtils.getTargetPath();
-        sockFile = Files.createTempFile(target, "unix", ".sock");
+
+        Path unixSocketTmp;
+        String tmpProp = System.getProperty("unix.socket.tmp");
+        if (StringUtil.isBlank(tmpProp))
+            unixSocketTmp = MavenTestingUtils.getTargetPath();
+        else
+            unixSocketTmp = Paths.get(tmpProp);
+        sockFile = Files.createTempFile(unixSocketTmp, "unix", ".sock");
+        if (sockFile.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
+        {
+            Files.delete(sockFile);
+            Path tmp = Paths.get("/tmp");
+            assumeTrue(Files.exists(tmp) && Files.isDirectory(tmp));
+            sockFile = Files.createTempFile(tmp, "unix", ".sock");
+        }
+
         Files.delete(sockFile);
     }
 
