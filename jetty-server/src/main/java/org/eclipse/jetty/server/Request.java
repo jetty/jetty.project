@@ -2452,6 +2452,8 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.User)
             _authentication = ((Authentication.User)_authentication).logout(this);
+        else if (_authentication instanceof Authentication.Deferred)
+            _authentication = ((Authentication.Deferred)_authentication).logout(this);
     }
 
     /* ------------------------------------------------------------ */

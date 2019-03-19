@@ -61,6 +61,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
@@ -1053,6 +1054,173 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 403"));
         assertThat(response, containsString("!role"));
     }
+    
+    
+    /**
+     * Test Request.login() Request.logout() with FORM authenticator
+     * @throws Exception
+     */
+    @Test
+    public void testFormProgrammaticLoginLogout() throws Exception
+    {
+        //Test programmatic login/logout within same request:
+        // login  - perform programmatic login that should succeed, next request should be also logged in
+        // loginfail  - perform programmatic login that should fail, next request should not be logged in
+        // loginfaillogin - perform programmatic login that should fail then another that succeeds, next request should be logged in
+        // loginlogin - perform successful login then try another that should fail, next request should be logged in
+        // loginlogout - perform successful login then logout, next request should not be logged in
+        // loginlogoutlogin - perform successful login then logout then login successfully again, next request should be logged in
+        _security.setHandler(new ProgrammaticLoginRequestHandler());
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
+        _server.start();
+
+        String response;
+        
+        //login
+        response = _connector.getResponse("GET /ctx/prog?action=login HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("user=admin"));
+        _server.stop();
+
+        //loginfail
+        _server.start();
+        response = _connector.getResponse("GET /ctx/prog?action=loginfail HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
+        if (response.contains("JSESSIONID"))
+        {
+            session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+            response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
+                    "Cookie: JSESSIONID=" + session + "\r\n" +
+                    "\r\n");
+        }
+        else 
+            response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n\r\n");
+        
+        assertThat(response, not(containsString("user=admin")));
+        _server.stop();
+        
+        //loginfaillogin
+        _server.start();
+        response = _connector.getResponse("GET /ctx/prog?action=loginfail HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
+        response = _connector.getResponse("GET /ctx/prog?action=login HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("user=admin"));
+        _server.stop();
+        
+        //loginlogin
+        _server.start();
+        response = _connector.getResponse("GET /ctx/prog?action=loginlogin HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("user=admin"));
+        _server.stop();
+        
+        //loginlogout
+        _server.start();
+        response = _connector.getResponse("GET /ctx/prog?action=loginlogout HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("user=null"));
+        _server.stop();
+        
+        //loginlogoutlogin
+        _server.start();
+        response = _connector.getResponse("GET /ctx/prog?action=loginlogoutlogin HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("user=user0"));
+        _server.stop();
+        
+        //Test constraint-based login with programmatic login/logout:
+        // constraintlogin - perform constraint login, followed by programmatic login which should fail (already logged in)
+        _server.start();
+        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString(" 302 Found"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, containsString("JSESSIONID="));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+
+        response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n"+
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, containsString(" 200 OK"));
+        assertThat(response, not(containsString("JSESSIONID=" + session)));
+        response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 35\r\n" +
+                "\r\n" +
+                "j_username=user&j_password=password");
+        assertThat(response, startsWith("HTTP/1.1 302 "));
+        assertThat(response, containsString("Location"));
+        assertThat(response, containsString("/ctx/auth/info"));
+        assertThat(response, containsString("JSESSIONID="));
+        assertThat(response, not(containsString("JSESSIONID=" + session)));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        response = _connector.getResponse("GET /ctx/prog?action=constraintlogin HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
+        _server.stop();
+        
+        // logout - perform constraint login, followed by programmatic logout, which should succeed
+        _server.start();
+        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString(" 302 Found"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, containsString("JSESSIONID="));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+
+        response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n"+
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, containsString(" 200 OK"));
+        assertThat(response, not(containsString("JSESSIONID=" + session)));
+        response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 35\r\n" +
+                "\r\n" +
+                "j_username=user&j_password=password");
+        assertThat(response, startsWith("HTTP/1.1 302 "));
+        assertThat(response, containsString("Location"));
+        assertThat(response, containsString("/ctx/auth/info"));
+        assertThat(response, containsString("JSESSIONID="));
+        assertThat(response, not(containsString("JSESSIONID=" + session)));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        response = _connector.getResponse("GET /ctx/prog?action=logout HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, containsString(" 200 OK"));
+        response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertThat(response, containsString(" 200 OK"));
+        assertThat(response, containsString("user=null"));
+    }
 
     @Test
     public void testStrictBasic() throws Exception
@@ -1512,6 +1680,71 @@ public class ConstraintTest
         }
     }
 
+    private class ProgrammaticLoginRequestHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            String action = request.getParameter("action");
+            if (StringUtil.isBlank(action))
+            {
+                response.setStatus(200);
+                response.setContentType("text/plain; charset=UTF-8");
+                response.getWriter().println("user="+request.getRemoteUser());
+                return;
+            }
+            else if ("login".equals(action))
+            {
+                request.login("admin", "password");
+                return;
+            }
+            else if ("loginfail".equals(action))
+            {
+                request.login("admin", "fail");
+                return;
+            }
+            else if ("loginfaillogin".equals(action))
+            {
+                try
+                {
+                    request.login("admin", "fail");
+                }
+                catch (ServletException se)
+                {
+                    request.login("admin", "password");
+                }
+                return;
+            }
+            else if ("loginlogin".equals(action))
+            {
+                request.login("admin", "password");
+                request.login("foo", "bar");
+            }
+            else if ("loginlogout".equals(action))
+            {
+                request.login("admin", "password");
+                request.logout();
+            }
+            else if ("loginlogoutlogin".equals(action))
+            {
+                request.login("admin", "password");
+                request.logout();
+                request.login("user0", "password");
+            }
+            else if ("constraintlogin".equals(action))
+            {
+                String user = request.getRemoteUser();
+                request.login("admin", "password");
+            }
+            else if ("logout".equals(action))
+            {
+                request.logout();
+            }
+            else
+                response.sendError(500);
+        }
+    }
     private class RoleRefHandler extends HandlerWrapper
     {
         /* ------------------------------------------------------------ */

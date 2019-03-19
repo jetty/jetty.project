@@ -108,6 +108,16 @@ public interface Authentication
          * @return The new Authentication state.
          */
         Authentication authenticate(ServletRequest request,ServletResponse response);
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * Remove any user information that may be present in the request
+         * such that a call to getUserPrincipal/getRemoteUser will return null.
+         * 
+         * @param request the request
+         * @return NoAuthentication if we successfully logged out
+         */
+        Authentication logout (ServletRequest request);
     }
 
     
