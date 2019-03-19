@@ -27,19 +27,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
@@ -77,22 +73,8 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
             HttpFields fields = this.upgradeRequest.getHeaders();
             requestHeaders.forEach((name, value) ->
             {
-                if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.toString().equalsIgnoreCase(name))
-                {
-                    QuotedCSV subprotocols = new QuotedCSV(value);
-                    upgradeRequest.setSubProtocols(subprotocols.getValues().stream().collect(Collectors.toList()));
-                }
-                else if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.toString().equalsIgnoreCase(name))
-                {
-                    QuotedCSV extensions = new QuotedCSV(value);
-                    upgradeRequest.setExtensions(
-                            extensions.getValues().stream().map(ExtensionConfig::parse).collect(Collectors.toList()));
-                }
-                else
-                {
-                    fields.remove(name);
-                    fields.put(name, value);
-                }
+                fields.remove(name);
+                fields.put(name, value);
             });
         }
         this.client.start();

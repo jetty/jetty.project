@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.client;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -83,14 +83,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     protected final CompletableFuture<FrameHandler.CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
-    /**
-     * Offered Extensions
-     */
-    private List<ExtensionConfig> extensions = new ArrayList<>();
-    /**
-     * Offered SubProtocols
-     */
-    private List<String> subProtocols = new ArrayList<>();
 
     public ClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
@@ -133,47 +125,65 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public void addExtensions(ExtensionConfig... configs)
     {
+        HttpFields headers = getHeaders();
         for (ExtensionConfig config : configs)
-        {
-            this.extensions.add(config);
-        }
-        updateWebSocketExtensionHeader();
+            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
     }
 
     public void addExtensions(String... configs)
     {
-        this.extensions.addAll(ExtensionConfig.parseList(configs));
-        updateWebSocketExtensionHeader();
+        HttpFields headers = getHeaders();
+        for (String config : configs)
+            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.parse(config).getParameterizedName());
     }
 
     public List<ExtensionConfig> getExtensions()
     {
+        List<ExtensionConfig> extensions = new ArrayList<>();
+
+        getHeaders().stream()
+                .filter(field -> field.getName().equalsIgnoreCase(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.toString()))
+                .forEach(field -> new QuotedCSV(field.getValue()).getValues().stream()
+                        .map(ExtensionConfig::parse)
+                        .forEach(extensions::add)
+                );
+
         return extensions;
     }
 
     public void setExtensions(List<ExtensionConfig> configs)
     {
-        this.extensions = configs;
-        updateWebSocketExtensionHeader();
+        HttpFields headers = getHeaders();
+        headers.remove(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
+        for (ExtensionConfig config : configs)
+            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
     }
 
     public List<String> getSubProtocols()
     {
-        return this.subProtocols;
+        List<String> subProtocols = new ArrayList<>();
+
+        getHeaders().stream()
+                .filter(field -> field.getName().equalsIgnoreCase(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.toString()))
+                .forEach(field -> subProtocols.addAll(new QuotedCSV(field.getValue()).getValues()));
+
+        return subProtocols;
     }
 
     public void setSubProtocols(String... protocols)
     {
-        this.subProtocols.clear();
-        this.subProtocols.addAll(Arrays.asList(protocols));
-        updateWebSocketSubProtocolHeader();
+        HttpFields headers = getHeaders();
+        headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
+        for (String protocol : protocols)
+            headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
     }
 
     public void setSubProtocols(List<String> protocols)
     {
-        this.subProtocols.clear();
-        this.subProtocols.addAll(protocols);
-        updateWebSocketSubProtocolHeader();
+        HttpFields headers = getHeaders();
+        headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
+        for (String protocol : protocols)
+            headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
     }
 
     @Override
@@ -278,9 +288,10 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         }
 
         // Verify the Negotiated Extensions
+        List<ExtensionConfig> offeredExtensions = getExtensions();
         for (ExtensionConfig config : extensions)
         {
-            long numMatch = this.extensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            long numMatch = offeredExtensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
             if (numMatch < 1)
                 throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained extension not requested");
             if (numMatch > 1)
@@ -308,10 +319,11 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         }
 
         // Verify the negotiated subprotocol
-        if (negotiatedSubProtocol == null && !subProtocols.isEmpty())
+        List<String> offeredSubProtocols = getSubProtocols();
+        if (negotiatedSubProtocol == null && !offeredSubProtocols.isEmpty())
             throw new WebSocketException("Upgrade failed: no subprotocol selected from offered subprotocols ");
-        if (negotiatedSubProtocol != null && !subProtocols.contains(negotiatedSubProtocol))
-            throw new WebSocketException("Upgrade failed: subprotocol [" + negotiatedSubProtocol + "] not found in offered subprotocols " + subProtocols);
+        if (negotiatedSubProtocol != null && !offeredSubProtocols.contains(negotiatedSubProtocol))
+            throw new WebSocketException("Upgrade failed: subprotocol [" + negotiatedSubProtocol + "] not found in offered subprotocols " + offeredSubProtocols);
 
         // We can upgrade
         EndPoint endp = httpConnection.getEndPoint();
@@ -434,26 +446,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             {
                 LOG.warn("Unhandled error: " + t.getMessage(), t);
             }
-        }
-    }
-
-    private void updateWebSocketExtensionHeader()
-    {
-        HttpFields headers = getHeaders();
-        headers.remove(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
-        for (ExtensionConfig config : extensions)
-        {
-            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
-        }
-    }
-
-    private void updateWebSocketSubProtocolHeader()
-    {
-        HttpFields headers = getHeaders();
-        headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
-        for (String protocol : subProtocols)
-        {
-            headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
         }
     }
 }
