@@ -36,8 +36,7 @@ public interface AppProvider extends LifeCycle
      *             if the provider {@link #isRunning()}.
      */
     void setDeploymentManager(DeploymentManager deploymentManager);
-    
-    /* ------------------------------------------------------------ */
+
     /** Create a ContextHandler for an App
      * @param app The App
      * @return A ContextHandler

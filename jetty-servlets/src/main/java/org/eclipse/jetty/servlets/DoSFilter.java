@@ -281,7 +281,7 @@ public class DoSFilter implements Filter
     {
         try
         {
-            Scheduler result = new ScheduledExecutorScheduler();
+            Scheduler result = new ScheduledExecutorScheduler(String.format("DoS-Scheduler-%x",hashCode()),false);
             result.start();
             return result;
         }
