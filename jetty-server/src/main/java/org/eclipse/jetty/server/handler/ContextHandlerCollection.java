@@ -43,8 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.SerializedExecutor;
 
 /* ------------------------------------------------------------ */
-/** ContextHandlerCollection.
- *
+/**
  * This {@link org.eclipse.jetty.server.handler.HandlerCollection} is creates a
  * Map of contexts to it's contained handlers based
  * on the context path and virtual hosts of any contained {@link org.eclipse.jetty.server.handler.ContextHandler}s.
@@ -87,10 +86,8 @@ public class ContextHandlerCollection extends HandlerCollection
     protected Handlers newHandlers(Handler[] handlers)
     {
         if (handlers==null || handlers.length==0)
-        {
             return null;
-        }
-        
+
         // Create map of contextPath to handler Branch
         // A branch is a Handler that could contain 0 or more ContextHandlers
         Map<String,Branch[]> path2Branches = new HashMap<>();
@@ -133,7 +130,7 @@ public class ContextHandlerCollection extends HandlerCollection
                     continue loop;
                 }
             }
-            break loop;
+            break;
         }
         
         if (LOG.isDebugEnabled())
@@ -156,9 +153,6 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -167,9 +161,6 @@ public class ContextHandlerCollection extends HandlerCollection
             return;
 
         Mapping mapping = (Mapping)handlers;
-        if (mapping==null)
-            return;
-
         HttpChannelState async = baseRequest.getHttpChannelState();
         if (async.isAsync())
         {
@@ -230,7 +221,9 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     /* ------------------------------------------------------------ */
-    /** Add a context handler.
+    /**
+     * Adds a context handler.
+     *
      * @param contextPath  The context path to add
      * @param resourceBase the base (root) Resource
      * @return the ContextHandler just added
@@ -273,7 +266,6 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     /* ------------------------------------------------------------ */
-    public void undeployHandler(Handler handler)
     /**
      * Thread safe undeploy of a Handler.
      * <p>
@@ -285,6 +277,7 @@ public class ContextHandlerCollection extends HandlerCollection
      * </p>
      * @param handler The handler to undeploy
      */
+    public void undeployHandler(Handler handler)
     {
         _serializedExecutor.execute(()-> removeHandler(handler));
     }
@@ -297,7 +290,6 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         return _contextClass;
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -338,7 +330,7 @@ public class ContextHandlerCollection extends HandlerCollection
         
         Set<String> getContextPaths()
         {
-            Set<String> set = new HashSet<String>();
+            Set<String> set = new HashSet<>();
             for (ContextHandler context:_contexts)
                 set.add(context.getContextPath());
             return set;
@@ -380,7 +372,7 @@ public class ContextHandlerCollection extends HandlerCollection
         Mapping(Handler[] handlers, int capacity)
         {
             super(handlers);
-            _pathBranches = new ArrayTernaryTrie(false, capacity);
+            _pathBranches = new ArrayTernaryTrie<>(false, capacity);
         }
     }
 }
