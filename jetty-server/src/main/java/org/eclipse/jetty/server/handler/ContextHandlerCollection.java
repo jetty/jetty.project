@@ -260,12 +260,15 @@ public class ContextHandlerCollection extends HandlerCollection
      *     This method is the equivalent of {@link #addHandler(Handler)},
      *     but its execution is non-block and mutually excluded from all
      *     other calls to {@link #deployHandler(Handler)} and
-     *     {@link #undeployHandler(Handler)}
+     *     {@link #undeployHandler(Handler)}.
+     *     The handler may be added after this call returns.
      * </p>
      * @param handler the handler to deploy
      */
     public void deployHandler(Handler handler)
     {
+        if (handler.getServer()!=getServer())
+            handler.setServer(getServer());
         _serializedExecutor.execute(()-> addHandler(handler));
     }
 
@@ -277,7 +280,8 @@ public class ContextHandlerCollection extends HandlerCollection
      *     This method is the equivalent of {@link #removeHandler(Handler)},
      *     but its execution is non-block and mutually excluded from all
      *     other calls to {@link #deployHandler(Handler)} and
-     *     {@link #undeployHandler(Handler)}
+     *     {@link #undeployHandler(Handler)}.
+     *     The handler may be removed after this call returns.
      * </p>
      * @param handler The handler to undeploy
      */

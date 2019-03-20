@@ -37,13 +37,13 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SerializedExecutor implements Executor
 {
-    final AtomicReference<Link> _tail = new AtomicReference<>();
+    final AtomicReference<Link> _last = new AtomicReference<>();
 
     @Override
     public void execute(Runnable task)
     {
         Link link = new Link(task);
-        Link secondLast = _tail.getAndSet(link);
+        Link secondLast = _last.getAndSet(link);
         if (secondLast==null)
             run(link);
         else
@@ -69,8 +69,8 @@ public class SerializedExecutor implements Executor
             }
             finally
             {
-                // Are we the current the last Link?
-                if (_tail.compareAndSet(link, null))
+                // Are we the current last Link?
+                if (_last.compareAndSet(link, null))
                     return;
 
                 // not the last task, so its next link will eventually be set
