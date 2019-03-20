@@ -37,17 +37,17 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SerializedExecutor implements Executor
 {
-    private final AtomicReference<Link> _last = new AtomicReference<>();
+    final AtomicReference<Link> _tail = new AtomicReference<>();
 
     @Override
     public void execute(Runnable task)
     {
         Link link = new Link(task);
-        Link secondLast = _last.getAndSet(link);
-        if (secondLast==null)
+        Link lastButOne = _tail.getAndSet(link);
+        if (lastButOne==null)
             run(link);
         else
-            secondLast._next.lazySet(link);
+            lastButOne._next.lazySet(link);
     }
 
     protected void onError(Runnable task, Throwable t)
@@ -57,7 +57,7 @@ public class SerializedExecutor implements Executor
 
     private void run(Link link)
     {
-        while(true)
+        while(link!=null)
         {
             try
             {
@@ -69,10 +69,12 @@ public class SerializedExecutor implements Executor
             }
             finally
             {
-                // Are we are not the current last Link?
-                if (!_last.compareAndSet(link, null))
+                // Are we the current the last Link?
+                if (_tail.compareAndSet(link, null))
+                    link = null;
+                else
                 {
-                    // continue running the list, but may need to wait for the next link
+                    // not the last task, so its next link will eventually be set
                     Link next = link._next.get();
                     while (next == null)
                     {
@@ -87,8 +89,8 @@ public class SerializedExecutor implements Executor
 
     private class Link
     {
-        private final Runnable _task;
-        private final AtomicReference<Link> _next = new AtomicReference<>();
+        final Runnable _task;
+        final AtomicReference<Link> _next = new AtomicReference<>();
 
         public Link(Runnable task)
         {
