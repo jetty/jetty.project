@@ -22,14 +22,10 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.SharedBlockingCallback;
 
 public class StandardUndeployer implements AppLifeCycle.Binding
 {
-    private static final Logger LOG = Log.getLogger(StandardUndeployer.class);
-
     @Override
     public String[] getBindingTargets()
     {
@@ -41,7 +37,11 @@ public class StandardUndeployer implements AppLifeCycle.Binding
     public void processBinding(Node node, App app) throws Exception
     {
         ContextHandler handler = app.getContextHandler();
-        ContextHandlerCollection chcoll = app.getDeploymentManager().getContexts();
-        chcoll.undeployHandler(handler);
+
+        try(SharedBlockingCallback.Blocker blocker = new SharedBlockingCallback().acquire())
+        {
+            app.getDeploymentManager().getContexts().undeployHandler(handler, blocker);
+            blocker.block();
+        }
     }
 }

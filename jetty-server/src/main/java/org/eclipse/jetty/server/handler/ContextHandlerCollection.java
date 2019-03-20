@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -58,6 +59,7 @@ public class ContextHandlerCollection extends HandlerCollection
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
     private final SerializedExecutor _serializedExecutor = new SerializedExecutor();
 
+    @Deprecated
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
 
     /* ------------------------------------------------------------ */
@@ -74,7 +76,10 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedOperation("update the mapping of context path to context")
+    /**
+     * @deprecated Mapping is now always maintained on every set/add
+     */
+    @ManagedOperation("update the mapping of context path to context (no longer required_")
     @Deprecated
     public void mapContexts()
     {
@@ -227,6 +232,7 @@ public class ContextHandlerCollection extends HandlerCollection
      * @param contextPath  The context path to add
      * @param resourceBase the base (root) Resource
      * @return the ContextHandler just added
+     * @deprecated Unused convenience method no longer supported.
      */
     @Deprecated
     public ContextHandler addContext(String contextPath,String resourceBase)
@@ -252,17 +258,29 @@ public class ContextHandlerCollection extends HandlerCollection
      * <p>
      *     This method is the equivalent of {@link #addHandler(Handler)},
      *     but its execution is non-block and mutually excluded from all
-     *     other calls to {@link #deployHandler(Handler)} and
-     *     {@link #undeployHandler(Handler)}.
+     *     other calls to {@link #deployHandler(Handler, Callback)} and
+     *     {@link #undeployHandler(Handler, Callback)}.
      *     The handler may be added after this call returns.
      * </p>
      * @param handler the handler to deploy
+     * @param callback Called after handler has been added
      */
-    public void deployHandler(Handler handler)
+    public void deployHandler(Handler handler, Callback callback)
     {
         if (handler.getServer()!=getServer())
             handler.setServer(getServer());
-        _serializedExecutor.execute(()-> addHandler(handler));
+        _serializedExecutor.execute(()->
+        {
+            try
+            {
+                addHandler(handler);
+                callback.succeeded();
+            }
+            catch(Throwable th)
+            {
+                callback.failed(th);
+            }
+        });
     }
 
     /* ------------------------------------------------------------ */
@@ -271,21 +289,35 @@ public class ContextHandlerCollection extends HandlerCollection
      * <p>
      *     This method is the equivalent of {@link #removeHandler(Handler)},
      *     but its execution is non-block and mutually excluded from all
-     *     other calls to {@link #deployHandler(Handler)} and
-     *     {@link #undeployHandler(Handler)}.
+     *     other calls to {@link #deployHandler(Handler,Callback)} and
+     *     {@link #undeployHandler(Handler,Callback)}.
      *     The handler may be removed after this call returns.
      * </p>
      * @param handler The handler to undeploy
+     * @param callback Called after handler has been removed
      */
-    public void undeployHandler(Handler handler)
+    public void undeployHandler(Handler handler, Callback callback)
     {
-        _serializedExecutor.execute(()-> removeHandler(handler));
+        _serializedExecutor.execute(()->
+        {
+            try
+            {
+                removeHandler(handler);
+                callback.succeeded();
+            }
+            catch(Throwable th)
+            {
+                callback.failed(th);
+            }
+        });
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return The class to use to add new Contexts
+     * @deprecated Unused convenience mechanism not used.
      */
+    @Deprecated
     public Class<?> getContextClass()
     {
         return _contextClass;
@@ -294,7 +326,9 @@ public class ContextHandlerCollection extends HandlerCollection
     /* ------------------------------------------------------------ */
     /**
      * @param contextClass The class to use to add new Contexts
+     * @deprecated Unused convenience mechanism not used.
      */
+    @Deprecated
     public void setContextClass(Class<? extends ContextHandler> contextClass)
     {
         if (contextClass ==null || !(ContextHandler.class.isAssignableFrom(contextClass)))

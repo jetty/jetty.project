@@ -246,7 +246,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     /* ------------------------------------------------------------ */
     protected static class Handlers
     {
-        final Handler[] _handlers;
+        private final Handler[] _handlers;
 
         protected Handlers(Handler[] handlers)
         {

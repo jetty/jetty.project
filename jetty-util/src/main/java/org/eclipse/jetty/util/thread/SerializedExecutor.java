@@ -69,26 +69,26 @@ public class SerializedExecutor implements Executor
             }
             finally
             {
-                // Are we the current last Link?
-                if (_last.compareAndSet(link, null))
-                    return;
-
-                // not the last task, so its next link will eventually be set
-                Link next = link._next.get();
-                while (next == null)
+                // Are we are not the current last Link?
+                if (!_last.compareAndSet(link, null))
                 {
-                    Thread.yield(); // Thread.onSpinWait();
-                    next = link._next.get();
+                    // continue running the list, but may need to wait for the next link
+                    Link next = link._next.get();
+                    while (next == null)
+                    {
+                        Thread.yield(); // Thread.onSpinWait();
+                        next = link._next.get();
+                    }
+                    link = next;
                 }
-                link = next;
             }
         }
     }
 
     private class Link
     {
-        final Runnable _task;
-        final AtomicReference<Link> _next = new AtomicReference<>();
+        private final Runnable _task;
+        private final AtomicReference<Link> _next = new AtomicReference<>();
 
         public Link(Runnable task)
         {
