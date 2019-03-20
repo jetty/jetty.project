@@ -30,9 +30,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SerializedExecutorTest
+public class SerializedExecutorTest
 {
-
     @Test
     public void test() throws Exception
     {
@@ -43,19 +42,19 @@ class SerializedExecutorTest
         AtomicInteger ran = new AtomicInteger();
         AtomicBoolean running = new AtomicBoolean();
         SerializedExecutor executor = new SerializedExecutor();
-        final CountDownLatch start = new CountDownLatch(1);
-        final CountDownLatch stop = new CountDownLatch(threads);
-        final Random random = new Random();
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch stop = new CountDownLatch(threads);
+        Random random = new Random();
 
-        for (int t=threads; t-->0;)
+        for (int t = threads; t-- > 0; )
         {
-            new Thread(()->
+            new Thread(() ->
             {
                 try
                 {
                     start.await();
 
-                    for (int l=loops; l-->0;)
+                    for (int l = loops; l-- > 0; )
                     {
                         final AtomicInteger d = new AtomicInteger(depth);
                         executor.execute(new Runnable()
@@ -75,7 +74,7 @@ class SerializedExecutorTest
                         Thread.sleep(random.nextInt(5));
                     }
                 }
-                catch(Throwable th)
+                catch (Throwable th)
                 {
                     th.printStackTrace();
                 }
@@ -88,8 +87,6 @@ class SerializedExecutorTest
 
         start.countDown();
         assertTrue(stop.await(30, TimeUnit.SECONDS));
-        assertThat(ran.get(), Matchers.is(threads*loops*depth));
+        assertThat(ran.get(), Matchers.is(threads * loops * depth));
     }
-
-
 }

@@ -72,7 +72,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the handlers.
+     * @return the array of handlers.
      */
     @Override
     @ManagedAttribute(value="Wrapped handlers", readonly=true)
@@ -84,7 +84,7 @@ public class HandlerCollection extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     /**
-     * @param handlers The handlers to set.
+     * @param handlers the array of handlers to set.
      */
     public void setHandlers(Handler[] handlers)
     {
@@ -93,9 +93,9 @@ public class HandlerCollection extends AbstractHandlerContainer
 
         while(true)
         {
-            if(updateHandlers(_handlers.get(),newHandlers(handlers)))
+            if (updateHandlers(_handlers.get(), newHandlers(handlers)))
                 break;
-        };
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -123,10 +123,11 @@ public class HandlerCollection extends AbstractHandlerContainer
                     handler.setServer(getServer());
         }
 
-
-        if (_handlers.compareAndSet(old,handlers))
+        if (_handlers.compareAndSet(old, handlers))
         {
-            updateBeans(old==null?null:old._handlers,handlers==null?null:handlers._handlers);
+            Handler[] oldBeans = old == null ? null : old._handlers;
+            Handler[] newBeans = handlers == null ? null : handlers._handlers;
+            updateBeans(oldBeans, newBeans);
             return true;
         }
         return false;
@@ -143,28 +144,21 @@ public class HandlerCollection extends AbstractHandlerContainer
             if (handlers==null)
                 return;
 
-            Handler[] h = handlers._handlers;
-
             MultiException mex=null;
-
-            for (int i=0;i<h.length;i++)
+            for (Handler handler : handlers._handlers)
             {
                 try
                 {
-                    h[i].handle(target,baseRequest, request, response);
+                    handler.handle(target, baseRequest, request, response);
                 }
-                catch(IOException e)
+                catch (IOException | RuntimeException e)
                 {
                     throw e;
                 }
-                catch(RuntimeException e)
+                catch (Exception e)
                 {
-                    throw e;
-                }
-                catch(Exception e)
-                {
-                    if (mex==null)
-                        mex=new MultiException();
+                    if (mex == null)
+                        mex = new MultiException();
                     mex.add(e);
                 }
             }
@@ -179,9 +173,9 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /* Add a handler.
+    /**
+     * Adds a handler.
      * This implementation adds the passed handler to the end of the existing collection of handlers.
-     * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)
      */
     public void addHandler(Handler handler)
     {
@@ -195,9 +189,9 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /* Prepend a handler.
+    /**
+     * Prepends a handler.
      * This implementation adds the passed handler to the start of the existing collection of handlers.
-     * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)
      */
     public void prependHandler(Handler handler)
     {
@@ -216,7 +210,6 @@ public class HandlerCollection extends AbstractHandlerContainer
         while(true)
         {
             Handlers old = _handlers.get();
-
             if (old==null || old._handlers.length==0)
                 break;
             Handlers handlers = newHandlers(ArrayUtil.removeFromArray(old._handlers, handler));
