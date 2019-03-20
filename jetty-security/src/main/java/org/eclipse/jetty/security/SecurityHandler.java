@@ -581,8 +581,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     public void logout(Authentication.User user)
     {
         LOG.debug("logout {}",user);
+        if (user == null)
+            return;
+        
         LoginService login_service=getLoginService();
-        if (login_service!=null)
+        if (login_service != null)
         {
             login_service.logout(user.getUserIdentity());
         }
