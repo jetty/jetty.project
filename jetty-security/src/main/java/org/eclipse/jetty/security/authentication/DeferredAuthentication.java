@@ -34,6 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.LoggedOutAuthentication;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -66,7 +68,6 @@ public class DeferredAuthentication implements Authentication.Deferred
         try
         {
             Authentication authentication = _authenticator.validateRequest(request,__deferredResponse,true);
-
             if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
                 LoginService login_service= _authenticator.getLoginService();
@@ -130,6 +131,25 @@ public class DeferredAuthentication implements Authentication.Deferred
             return authentication;
         }
         return null;
+    }
+    
+    
+
+    @Override
+    public Authentication logout (ServletRequest request)
+    {
+        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
+        if (security!=null)
+        {
+            security.logout(null);
+            if (_authenticator instanceof LoginAuthenticator)
+            {
+                ((LoginAuthenticator)_authenticator).logout(request);
+                return new LoggedOutAuthentication((LoginAuthenticator)_authenticator);
+            }
+        }
+
+        return Authentication.UNAUTHENTICATED;
     }
 
     /* ------------------------------------------------------------ */

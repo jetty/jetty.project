@@ -192,6 +192,7 @@ public class FormAuthenticator extends LoginAuthenticator
         UserIdentity user = super.login(username,password,request);
         if (user!=null)
         {
+
             HttpSession session = ((HttpServletRequest)request).getSession(true);
             Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
             session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
@@ -199,7 +200,22 @@ public class FormAuthenticator extends LoginAuthenticator
         return user;
     }
     
-    
+  
+
+    @Override
+    public void logout(ServletRequest request)
+    {
+        super.logout(request);
+        HttpServletRequest httpRequest = (HttpServletRequest)request;
+        HttpSession session = httpRequest.getSession(false);
+        
+        if (session == null)
+            return;
+        
+        //clean up session
+        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public void prepareRequest(ServletRequest request)
@@ -536,7 +552,8 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    /** This Authentication represents a just completed Form authentication.
+    /** 
+     * This Authentication represents a just completed Form authentication.
      * Subsequent requests from the same user are authenticated by the presents
      * of a {@link SessionAuthentication} instance in their session.
      */

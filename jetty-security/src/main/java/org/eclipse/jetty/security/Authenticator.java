@@ -80,7 +80,7 @@ public interface Authenticator
      * @param mandatory True if authentication is mandatory.
      * @return An Authentication.  If Authentication is successful, this will be a {@link org.eclipse.jetty.server.Authentication.User}. If a response has
      * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
-     * implement {@link org.eclipse.jetty.server.Authentication.ResponseSent}.  If Authentication is not manditory, then a
+     * implement {@link org.eclipse.jetty.server.Authentication.ResponseSent}.  If Authentication is not mandatory, then a
      * {@link org.eclipse.jetty.server.Authentication.Deferred} may be returned.
      *
      * @throws ServerAuthException if unable to validate request
