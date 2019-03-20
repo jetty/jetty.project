@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.SerializedExecutor;
 
 /* ------------------------------------------------------------ */
 /** ContextHandlerCollection.
@@ -56,6 +57,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
+    private final SerializedExecutor _serializedExecutor = new SerializedExecutor();
 
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
 
@@ -233,6 +235,7 @@ public class ContextHandlerCollection extends HandlerCollection
      * @param resourceBase the base (root) Resource
      * @return the ContextHandler just added
      */
+    @Deprecated
     public ContextHandler addContext(String contextPath,String resourceBase)
     {
         try
@@ -250,7 +253,37 @@ public class ContextHandlerCollection extends HandlerCollection
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Thread safe deploy of a Handler.
+     * <p>
+     *     This method is the equivalent of {@link #addHandler(Handler)},
+     *     but its execution is non-block and mutually excluded from all
+     *     other calls to {@link #deployHandler(Handler)} and
+     *     {@link #undeployHandler(Handler)}
+     * </p>
+     * @param handler the handler to deploy
+     */
+    public void deployHandler(Handler handler)
+    {
+        _serializedExecutor.execute(()-> addHandler(handler));
+    }
 
+    /* ------------------------------------------------------------ */
+    public void undeployHandler(Handler handler)
+    /**
+     * Thread safe undeploy of a Handler.
+     * <p>
+     *     This method is the equivalent of {@link #removeHandler(Handler)},
+     *     but its execution is non-block and mutually excluded from all
+     *     other calls to {@link #deployHandler(Handler)} and
+     *     {@link #undeployHandler(Handler)}
+     * </p>
+     * @param handler The handler to undeploy
+     */
+    {
+        _serializedExecutor.execute(()-> removeHandler(handler));
+    }
 
     /* ------------------------------------------------------------ */
     /**

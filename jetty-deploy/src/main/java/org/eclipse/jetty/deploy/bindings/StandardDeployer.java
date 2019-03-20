@@ -40,6 +40,6 @@ public class StandardDeployer implements AppLifeCycle.Binding
         {
             throw new NullPointerException("No Handler created for App: " + app);
         }
-        app.getDeploymentManager().getContexts().addHandler(handler);
+        app.getDeploymentManager().getContexts().deployHandler(handler);
     }
 }

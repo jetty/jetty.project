@@ -91,7 +91,11 @@ public class HandlerCollection extends AbstractHandlerContainer
         if (!_mutableWhenRunning && isStarted())
             throw new IllegalStateException(STARTED);
 
-        while(!updateHandlers(_handlers.get(),newHandlers(handlers)));
+        while(true)
+        {
+            if(updateHandlers(_handlers.get(),newHandlers(handlers)))
+                break;
+        };
     }
 
     /* ------------------------------------------------------------ */
