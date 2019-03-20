@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SerializedExecutor implements Executor
 {
-    final AtomicReference<Link> _tail = new AtomicReference<>();
+    private final AtomicReference<Link> _tail = new AtomicReference<>();
 
     @Override
     public void execute(Runnable task)
@@ -89,8 +89,8 @@ public class SerializedExecutor implements Executor
 
     private class Link
     {
-        final Runnable _task;
-        final AtomicReference<Link> _next = new AtomicReference<>();
+        private final Runnable _task;
+        private final AtomicReference<Link> _next = new AtomicReference<>();
 
         public Link(Runnable task)
         {
