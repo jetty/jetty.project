@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -63,6 +64,7 @@ public class BadNetworkTest
     private Server server;
     private WebSocketClient client;
     private ServletContextHandler context;
+    private ServerConnector connector;
 
     @BeforeEach
     public void startClient() throws Exception
@@ -77,7 +79,7 @@ public class BadNetworkTest
     {
         server = new Server();
 
-        ServerConnector connector = new ServerConnector(server);
+        connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
 
@@ -121,6 +123,19 @@ public class BadNetworkTest
     {
         AtomicReference<WebSocketSession> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
+        connector.addBean(new Connection.Listener() {
+            @Override
+            public void onOpened(Connection connection)
+            {
+            }
+
+            @Override
+            public void onClosed(Connection connection)
+            {
+                serverCloseLatch.countDown();
+            }
+        });
+        CountDownLatch sessionCloseLatch = new CountDownLatch(1);
         WebSocketServerFactory wssf = (WebSocketServerFactory) context.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
         wssf.addSessionListener(new WebSocketSessionListener() {
             @Override
@@ -132,9 +147,10 @@ public class BadNetworkTest
             @Override
             public void onSessionClosed(WebSocketSession session)
             {
-                serverCloseLatch.countDown();
+                sessionCloseLatch.countDown();
             }
         });
+
 
         CloseTrackingEndpoint wsocket = new CloseTrackingEndpoint();
 
@@ -156,9 +172,8 @@ public class BadNetworkTest
         // in the situation of a bad network connection.
         wsocket.assertReceivedCloseEvent(5000, is(StatusCode.NO_CLOSE), containsString(""));
 
-        TimeUnit.SECONDS.sleep(1); // Let server side close connection
-
-        assertTrue(serverCloseLatch.await(1, TimeUnit.SECONDS), "Server Session Close should have happened");
+        assertTrue(serverCloseLatch.await(1, TimeUnit.SECONDS), "Server Connection Close should have happened");
+        assertTrue(sessionCloseLatch.await(1, TimeUnit.SECONDS), "Server Session Close should have happened");
 
         AbstractWebSocketConnection conn = (AbstractWebSocketConnection) serverSession.getConnection();
         assertThat("Connection.isOpen", conn.isOpen(), is(false));
