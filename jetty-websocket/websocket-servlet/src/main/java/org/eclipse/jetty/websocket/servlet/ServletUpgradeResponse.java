@@ -170,6 +170,9 @@ public class ServletUpgradeResponse
         // This validation is also done later in RFC6455Handshaker but it is better to fail earlier
         for (ExtensionConfig config : configs)
         {
+            if (config.getName().startsWith("@"))
+                continue;
+
             long matches = negotiation.getOfferedExtensions().stream().filter(e -> e.getName().equals(config.getName())).count();
             if (matches < 1)
                 throw new IllegalArgumentException("Extension not a requested extension");

@@ -18,17 +18,23 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.RawFrameBuilder;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.WebSocketServer;
 import org.eclipse.jetty.websocket.core.WebSocketTester;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +54,19 @@ public class ValidationExtensionTest extends WebSocketTester
     public void start() throws Exception
     {
         serverHandler = new TestFrameHandler();
-        WebSocketNegotiator negotiator = new TestWebSocketNegotiator(serverHandler);
+        WebSocketNegotiator negotiator = new TestWebSocketNegotiator(serverHandler)
+        {
+            @Override
+            public FrameHandler negotiate(Negotiation negotiation) throws IOException
+            {
+                List<ExtensionConfig> negotiatedExtensions = new ArrayList<>();
+                negotiatedExtensions.add(ExtensionConfig.parse(
+                        "@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8"));
+                negotiation.setNegotiatedExtensions(negotiatedExtensions);
+
+                return super.negotiate(negotiation);
+            }
+        };
         server = new WebSocketServer(negotiator);
         server.start();
     }

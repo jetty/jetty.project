@@ -130,7 +130,7 @@ public class Negotiation
             ?Collections.emptyList()
             :extensions.getValues().stream()
             .map(ExtensionConfig::parse)
-            .filter(ec -> available.contains(ec.getName().toLowerCase()))
+            .filter(ec -> available.contains(ec.getName().toLowerCase()) && !ec.getName().startsWith("@"))
             .collect(Collectors.toList());
 
         offeredSubprotocols = subprotocols == null

@@ -170,6 +170,9 @@ public final class RFC6455Handshaker implements Handshaker
         // validate negotiated extensions
         for (ExtensionConfig config : negotiation.getNegotiatedExtensions())
         {
+            if (config.getName().startsWith("@"))
+                continue;
+
             long matches = negotiation.getOfferedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
             if (matches < 1)
                 throw new WebSocketException("Upgrade failed: negotiated extension not requested");

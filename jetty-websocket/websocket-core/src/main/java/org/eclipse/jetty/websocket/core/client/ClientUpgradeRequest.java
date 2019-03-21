@@ -282,6 +282,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         List<ExtensionConfig> offeredExtensions = getExtensions();
         for (ExtensionConfig config : extensions)
         {
+            if (config.getName().startsWith("@"))
+                continue;
+
             long numMatch = offeredExtensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
             if (numMatch < 1)
                 throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained extension not requested");
