@@ -191,34 +191,29 @@ public class HazelcastSessionDataStore
         
         //Now find other sessions in hazelcast that have expired
         final AtomicReference<Set<String>> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        final AtomicReference<Exception> exception = new AtomicReference<>();
         
-        Runnable r = new Runnable()
+        _context.run(()->
         {
-            @Override
-            public void run ()
+            try
             {
-                try
+                Set<String> ids = new HashSet<>();
+                EntryObject eo = new PredicateBuilder().getEntryObject();
+                Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
+                Collection<SessionData> results = sessionDataMap.values(predicate);
+                if (results != null)
                 {
-                    Set<String> ids = new HashSet<>();
-                    EntryObject eo = new PredicateBuilder().getEntryObject();
-                    Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
-                    Collection<SessionData> results = sessionDataMap.values(predicate);
-                    if (results != null)
-                    {
-                        for (SessionData sd: results)
-                            ids.add(sd.getId());
-                    }
-                    reference.set(ids);
+                    for (SessionData sd: results)
+                        ids.add(sd.getId());
                 }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
+                reference.set(ids);
             }
-        };
-
-        _context.run(r);
+            catch (Exception e)
+            {
+                exception.set(e);
+            }
+        });
+        
         if (exception.get() != null)
         {
             LOG.warn("Error querying for expired sessions {}", exception.get());

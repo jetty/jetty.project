@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * HazelcastSessionDataStoreTest
@@ -83,6 +84,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
      * HazelcastSessionDataStore to provoke an exception in the load() method.
      */
     @Override
+    @Test
     public void testLoadSessionFails() throws Exception
     {
         // create the SessionDataStore

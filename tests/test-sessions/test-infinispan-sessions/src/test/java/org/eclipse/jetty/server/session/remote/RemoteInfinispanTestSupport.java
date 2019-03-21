@@ -88,13 +88,10 @@ public class RemoteInfinispanTestSupport
                 
                 baos = new ByteArrayOutputStream();
                 IO.copy(is, baos);
-                is.close();
             }
             
             String content = baos.toString("UTF-8");
-            _manager.getCache("___protobuf_metadata").put("session.proto", content);
-            
-            
+            _manager.getCache("___protobuf_metadata").put("session.proto", content);   
         }
         catch (Exception e)
         {
