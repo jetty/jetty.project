@@ -2,7 +2,7 @@
 
 def branch = params.get("JETTY_BRANCH" ,"jetty-9.4.x")
 def owner = params.get("REPO_OWNER", "eclipse")
-def jdk = params.get("JDK", "eclipse")
+def jdk = params.get("JDK", "jdk8")
 def jmhJarPath = params.get("jmhJarPath","jetty-jmh/target/benchmarks.jar")
 
 node("linux") {
