@@ -30,11 +30,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupId>org.eclipse.jetty.tests</includeGroupId>
               <includeScope>test</includeScope>
               <includeTypes>war</includeTypes>
-              <overwriteSnapshots>true</overwriteSnapshots>
-              <overwriteReleases>true</overwriteReleases>
               <stripVersion>true</stripVersion>
               <outputDirectory>${project.build.directory}/webapps</outputDirectory>
             </configuration>
@@ -124,8 +121,45 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlets</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-webapp-rfc2616</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>test-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>

@@ -19,7 +19,7 @@
 package org.eclipse.jetty.test.rfcs;
 
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.test.support.TestableJettyServer;
+import org.eclipse.jetty.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.test.support.rawhttp.HttpsSocketImpl;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,12 +35,12 @@ public class RFC2616NIOHttpsTest extends RFC2616BaseTest
     @BeforeAll
     public static void setupServer() throws Exception
     {
-        TestableJettyServer server = new TestableJettyServer();
+        XmlBasedJettyServer server = new XmlBasedJettyServer();
         server.setScheme(HttpScheme.HTTPS.asString());
-        server.addConfiguration("RFC2616Base.xml");
-        server.addConfiguration("RFC2616_Redirects.xml");
-        server.addConfiguration("RFC2616_Filters.xml");
-        server.addConfiguration("NIOHttps.xml");
+        server.addXmlConfiguration("RFC2616Base.xml");
+        server.addXmlConfiguration("RFC2616_Redirects.xml");
+        server.addXmlConfiguration("RFC2616_Filters.xml");
+        server.addXmlConfiguration("NIOHttps.xml");
         setUpServer(server, RFC2616NIOHttpsTest.class);
     }
 
