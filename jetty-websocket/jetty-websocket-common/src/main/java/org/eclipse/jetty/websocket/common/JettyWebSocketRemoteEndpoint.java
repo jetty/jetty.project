@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.concurrent.Future;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -29,12 +35,6 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.concurrent.Future;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket.api.RemoteEndpoint
@@ -44,9 +44,10 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     private final SharedBlockingCallback blocker = new SharedBlockingCallback();
     private BatchMode batchMode;
 
-    public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession coreSession)
+    public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession coreSession, BatchMode batchMode)
     {
         this.coreSession = Objects.requireNonNull(coreSession);
+        this.batchMode = batchMode;
     }
 
     /**

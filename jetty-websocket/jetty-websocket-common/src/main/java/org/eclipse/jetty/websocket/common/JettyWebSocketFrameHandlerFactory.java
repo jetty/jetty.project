@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
@@ -133,6 +134,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         MethodHandle frameHandle = metadata.getFrameHandle();
         MethodHandle pingHandle = metadata.getPingHandle();
         MethodHandle pongHandle = metadata.getPongHandle();
+        BatchMode batchMode = metadata.getBatchMode(); // TODO: what if we're not annotating, who else sets this
 
         openHandle = bindTo(openHandle, endpointInstance);
         closeHandle = bindTo(closeHandle, endpointInstance);
@@ -156,6 +158,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             textSinkClass, binarySinkClass,
             frameHandle, pingHandle, pongHandle,
             future,
+            batchMode,
             metadata);
 
         return frameHandler;
