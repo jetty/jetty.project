@@ -285,6 +285,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             long numMatch = offeredExtensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
             if (numMatch < 1)
                 throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained extension not requested");
+
+            numMatch = extensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
             if (numMatch > 1)
                 throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained more than one extension of the same name");
         }

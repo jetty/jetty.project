@@ -219,36 +219,35 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
     public boolean upgrade(HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer)
     {
+        // Since this may be a filter, we need to be smart about determining the target path.
+        // We should rely on the Container for stripping path parameters and its ilk before
+        // attempting to match a specific mapped websocket creator.
+        String target = request.getServletPath();
+        if (request.getPathInfo() != null)
+            target = target + request.getPathInfo();
+
+        WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
+        {
+            // Store PathSpec resource mapping as request attribute, for WebSocketCreator
+            // implementors to use later if they wish
+            request.setAttribute(PathSpec.class.getName(), pathSpec);
+        });
+
+        if (negotiator == null)
+            return false;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
+
+        // We have an upgrade request
         try
         {
-            // Since this may be a filter, we need to be smart about determining the target path.
-            // We should rely on the Container for stripping path parameters and its ilk before
-            // attempting to match a specific mapped websocket creator.
-            String target = request.getServletPath();
-            if (request.getPathInfo() != null)
-                target = target + request.getPathInfo();
-
-            WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
-            {
-                // Store PathSpec resource mapping as request attribute, for WebSocketCreator
-                // implementors to use later if they wish
-                request.setAttribute(PathSpec.class.getName(), pathSpec);
-            });
-
-            if (negotiator == null)
-                return false;
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
-
-            // We have an upgrade request
             return handshaker.upgradeRequest(negotiator, request, response, defaultCustomizer);
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            LOG.warn("Error during upgrade: ", e);
+            throw new WebSocketException(e);
         }
-        return false;
     }
 
     private class Negotiator extends WebSocketNegotiator.AbstractNegotiator

@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.core.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -137,6 +136,15 @@ public class Negotiation
         offeredSubprotocols = subprotocols == null
             ?Collections.emptyList()
             :subprotocols.getValues();
+
+        negotiatedExtensions = new ArrayList<>();
+        for (ExtensionConfig config : offeredExtensions)
+        {
+            long matches = negotiatedExtensions.stream()
+                    .filter(negotiatedConfig->negotiatedConfig.getName().equals(config.getName())).count();
+            if (matches == 0)
+                negotiatedExtensions.add(config);
+        }
     }
 
     public String getKey()
@@ -159,8 +167,6 @@ public class Negotiation
 
     public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        if (negotiatedExtensions == null)
-            return offeredExtensions;
         return negotiatedExtensions;
     }
 
@@ -209,51 +215,18 @@ public class Negotiation
     {
         if (extensionStack == null)
         {
+            // Extension stack can decide to drop any of these extensions or their parameters
             extensionStack = new ExtensionStack(registry);
-            boolean configsFromApplication = true;
-
-            if (negotiatedExtensions == null)
-            {
-                // Has the header been set directly?
-                List<String> extensions = baseRequest.getResponse().getHttpFields()
-                    .getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true);
-
-                if (extensions.isEmpty())
-                {
-                    // If the negotiatedExtensions has not been set, just use the offered extensions
-                    negotiatedExtensions = new ArrayList(offeredExtensions);
-                    configsFromApplication = false;
-                }
-                else
-                {
-                    negotiatedExtensions = extensions
-                        .stream()
-                        .map(ExtensionConfig::parse)
-                        .collect(Collectors.toList());
-                }
-            }
-
-            if (configsFromApplication)
-            {
-                // TODO is this really necessary?
-                // Replace any configuration in the negotiated extensions with the offered extensions config
-                for (ListIterator<ExtensionConfig> i = negotiatedExtensions.listIterator(); i.hasNext(); )
-                {
-                    ExtensionConfig config = i.next();
-                    offeredExtensions.stream().filter(c -> c.getName().equalsIgnoreCase(config.getName()))
-                        .findFirst()
-                        .ifPresent(i::set);
-                }
-            }
-
             extensionStack.negotiate(objectFactory, bufferPool, negotiatedExtensions);
             negotiatedExtensions = extensionStack.getNegotiatedExtensions();
+
             if (extensionStack.hasNegotiatedExtensions())
                 baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
                     ExtensionConfig.toHeaderValue(negotiatedExtensions));
             else
                 baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, null);
         }
+
         return extensionStack;
     }
 
