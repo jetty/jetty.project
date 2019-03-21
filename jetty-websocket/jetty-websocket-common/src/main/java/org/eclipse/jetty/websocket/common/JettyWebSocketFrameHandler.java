@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -48,6 +49,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final Logger log;
     private final WebSocketContainer container;
     private final Object endpointInstance;
+    private final BatchMode batchMode;
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
@@ -83,6 +85,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         MethodHandle frameHandle,
         MethodHandle pingHandle, MethodHandle pongHandle,
         CompletableFuture<Session> futureSession,
+        BatchMode batchMode,
         Customizer customizer)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
@@ -104,7 +107,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.pongHandle = pongHandle;
 
         this.futureSession = futureSession;
-
+        this.batchMode = batchMode;
         this.customizer = customizer;
     }
 
@@ -119,8 +122,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
-
-            session = new WebSocketSession(coreSession, this, upgradeRequest, upgradeResponse);
+            session = new WebSocketSession(coreSession, this, batchMode, upgradeRequest, upgradeResponse);
 
             frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
             openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);

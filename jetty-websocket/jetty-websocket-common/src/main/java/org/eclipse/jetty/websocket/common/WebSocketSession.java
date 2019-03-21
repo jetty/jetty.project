@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -47,14 +48,14 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Dump
     private final UpgradeResponse upgradeResponse;
 
     public WebSocketSession(
-        FrameHandler.CoreSession coreSession,
-        JettyWebSocketFrameHandler frameHandler,
-        UpgradeRequest upgradeRequest,
-        UpgradeResponse upgradeResponse)
+            FrameHandler.CoreSession coreSession,
+            JettyWebSocketFrameHandler frameHandler, BatchMode batchMode,
+            UpgradeRequest upgradeRequest,
+            UpgradeResponse upgradeResponse)
     {
         this.coreSession = Objects.requireNonNull(coreSession);
         this.frameHandler = Objects.requireNonNull(frameHandler);
-        this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession);
+        this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession, batchMode);
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
     }

@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.lang.invoke.MethodHandle;
+
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-
-import java.lang.invoke.MethodHandle;
-import java.time.Duration;
 
 public class JettyWebSocketFrameHandlerMetadata extends FrameHandler.ConfigurationCustomizer
 {
@@ -42,7 +41,6 @@ public class JettyWebSocketFrameHandlerMetadata extends FrameHandler.Configurati
     private MethodHandle pongHandle;
 
     // Batch Configuration
-    // TODO remove?
     private BatchMode batchMode = BatchMode.OFF;
 
     public void setBatchMode(BatchMode batchMode)
