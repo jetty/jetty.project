@@ -16,33 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.deploy.providers.jmx;
 
-import org.eclipse.jetty.server.UserIdentity;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.server.handler.jmx.AbstractHandlerMBean;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
-/**
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
- */
-public class UserAuthentication extends AbstractUserAuthentication
+@ManagedObject("WebAppProvider mbean wrapper")
+public class WebAppProviderMBean extends AbstractHandlerMBean
 {
-   
-    public UserAuthentication(String method, UserIdentity userIdentity)
+    public WebAppProviderMBean(Object managedObject)
     {
-        super(method, userIdentity);
+        super(managedObject);
     }
 
-    
-    @Override
-    public String toString()
+    @ManagedAttribute("List of monitored resources")
+    public List<String> getMonitoredResources()
     {
-        return "{User,"+getAuthMethod()+","+_userIdentity+"}";
+        return ((WebAppProvider) _managed).getMonitoredResources().stream()
+                .map((r) -> r.getURI().toASCIIString())
+                .collect(Collectors.toList());
     }
-
-    @Override
-    @Deprecated
-    public void logout()
-    {
-    }
-
 }

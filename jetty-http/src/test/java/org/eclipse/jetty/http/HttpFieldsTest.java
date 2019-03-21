@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -39,6 +30,15 @@ import java.util.NoSuchElementException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpFieldsTest
 {
@@ -297,6 +297,46 @@ public class HttpFieldsTest
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "valueB");
         assertEquals(false, e.hasMoreElements());
+    }
+
+    @Test
+    public void testPreEncodedField()
+    {
+        ByteBuffer buffer = BufferUtil.allocate(1024);
+
+        PreEncodedHttpField known = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        BufferUtil.clearToFill(buffer);
+        known.putTo(buffer,HttpVersion.HTTP_1_1);
+        BufferUtil.flipToFlush(buffer,0);
+        assertThat(BufferUtil.toString(buffer),is("Connection: close\r\n"));
+
+        PreEncodedHttpField unknown = new PreEncodedHttpField(null, "Header", "Value");
+        BufferUtil.clearToFill(buffer);
+        unknown.putTo(buffer,HttpVersion.HTTP_1_1);
+        BufferUtil.flipToFlush(buffer,0);
+        assertThat(BufferUtil.toString(buffer),is("Header: Value\r\n"));
+    }
+
+    @Test
+    public void testAddPreEncodedField()
+    {
+        final PreEncodedHttpField X_XSS_PROTECTION_FIELD = new PreEncodedHttpField("X-XSS-Protection", "1; mode=block");
+
+        HttpFields fields = new HttpFields();
+        fields.add(X_XSS_PROTECTION_FIELD);
+
+        assertThat("Fields output", fields.toString(), containsString("X-XSS-Protection: 1; mode=block"));
+    }
+
+    @Test
+    public void testAddFinalHttpField()
+    {
+        final HttpField X_XSS_PROTECTION_FIELD = new HttpField("X-XSS-Protection", "1; mode=block");
+
+        HttpFields fields = new HttpFields();
+        fields.add(X_XSS_PROTECTION_FIELD);
+
+        assertThat("Fields output", fields.toString(), containsString("X-XSS-Protection: 1; mode=block"));
     }
 
     @Test

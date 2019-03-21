@@ -40,6 +40,8 @@ public abstract class LoginAuthenticator implements Authenticator
     protected LoginService _loginService;
     protected IdentityService _identityService;
     private boolean _renewSession;
+    
+
 
     protected LoginAuthenticator()
     {
@@ -63,6 +65,19 @@ public abstract class LoginAuthenticator implements Authenticator
         return null;
     }
 
+    
+    public void logout (ServletRequest request)
+    {
+        HttpServletRequest httpRequest = (HttpServletRequest)request;
+        HttpSession session = httpRequest.getSession(false);
+        if (session == null)
+            return;
+        
+        session.removeAttribute(Session.SESSION_CREATED_SECURE);
+    }
+    
+    
+    
     @Override
     public void setConfiguration(AuthConfiguration configuration)
     {

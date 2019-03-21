@@ -45,11 +45,12 @@ public interface Authentication
     /* ------------------------------------------------------------ */
     /** A successful Authentication with User information.
      */
-    public interface User extends Authentication
+    public interface User extends LogoutAuthentication
     {
         String getAuthMethod();
         UserIdentity getUserIdentity(); 
         boolean isUserInRole(UserIdentity.Scope scope,String role);
+        @Deprecated
         void logout();
     }
     
@@ -63,31 +64,13 @@ public interface Authentication
         HttpServletResponse getHttpServletResponse();
     }
     
-    /* ------------------------------------------------------------ */
-    /** A deferred authentication with methods to progress 
-     * the authentication process.
+    /**
+     * An authentication that is capable of performing a programmatic login
+     * operation.
+     *
      */
-    public interface Deferred extends Authentication
+    public interface LoginAuthentication extends Authentication
     {
-        /* ------------------------------------------------------------ */
-        /** Authenticate if possible without sending a challenge.
-         * This is used to check credentials that have been sent for 
-         * non-manditory authentication.
-         * @param request the request
-         * @return The new Authentication state.
-         */
-        Authentication authenticate(ServletRequest request);
-
-        /* ------------------------------------------------------------ */
-        /** Authenticate and possibly send a challenge.
-         * This is used to initiate authentication for previously 
-         * non-manditory authentication.
-         * @param request the request
-         * @param response the response
-         * @return The new Authentication state.
-         */
-        Authentication authenticate(ServletRequest request,ServletResponse response);
-        
         
         /* ------------------------------------------------------------ */
         /** Login with the LOGIN authenticator
@@ -97,6 +80,53 @@ public interface Authentication
          * @return The new Authentication state
          */
         Authentication login(String username,Object password,ServletRequest request);
+    }
+    
+    
+    /**
+     * An authentication that is capable of performing a programmatic
+     * logout operation.
+     *
+     */
+    public interface LogoutAuthentication extends Authentication
+    {
+        /* ------------------------------------------------------------ */
+        /**
+         * Remove any user information that may be present in the request
+         * such that a call to getUserPrincipal/getRemoteUser will return null.
+         * 
+         * @param request the request
+         * @return NoAuthentication if we successfully logged out
+         */
+        Authentication logout (ServletRequest request);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** A deferred authentication with methods to progress 
+     * the authentication process.
+     */
+    public interface Deferred extends LoginAuthentication, LogoutAuthentication
+    {
+        /* ------------------------------------------------------------ */
+        /** Authenticate if possible without sending a challenge.
+         * This is used to check credentials that have been sent for 
+         * non-mandatory authentication.
+         * @param request the request
+         * @return The new Authentication state.
+         */
+        Authentication authenticate(ServletRequest request);
+
+        /* ------------------------------------------------------------ */
+        /** Authenticate and possibly send a challenge.
+         * This is used to initiate authentication for previously 
+         * non-mandatory authentication.
+         * @param request the request
+         * @param response the response
+         * @return The new Authentication state.
+         */
+        Authentication authenticate(ServletRequest request,ServletResponse response);
+
     }
 
     
@@ -125,6 +155,14 @@ public interface Authentication
     }
 
     public interface SendSuccess extends ResponseSent
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** After a logout, the authentication reverts to a state
+     * where it is possible to programmatically log in again.
+     */
+    public interface NonAuthenticated extends LoginAuthentication
     {
     }
 

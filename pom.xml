@@ -28,7 +28,7 @@
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
-    <conscrypt.version>1.4.1</conscrypt.version>
+    <conscrypt.version>2.0.0</conscrypt.version>
     <asm.version>7.0</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>

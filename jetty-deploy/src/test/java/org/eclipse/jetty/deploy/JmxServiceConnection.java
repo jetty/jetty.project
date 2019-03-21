@@ -20,7 +20,6 @@ package org.eclipse.jetty.deploy;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
 import javax.management.remote.JMXConnector;
@@ -74,7 +73,6 @@ public class JmxServiceConnection
         return serviceUrl;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve a connection to MBean server
      * 
