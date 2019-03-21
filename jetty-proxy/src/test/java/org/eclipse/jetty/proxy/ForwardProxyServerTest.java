@@ -62,7 +62,7 @@ public class ForwardProxyServerTest
         // no server SSL
         SslContextFactory scenario1 = null;
         // basic server SSL
-        SslContextFactory scenario2 = new SslContextFactory();
+        SslContextFactory scenario2 = new SslContextFactory.Server();
         scenario2.setKeyStorePath(keyStorePath);
         scenario2.setKeyStorePassword("storepwd");
         scenario2.setKeyManagerPassword("keypwd");
@@ -203,7 +203,7 @@ public class ForwardProxyServerTest
         startProxy();
 
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory clientSsl = new SslContextFactory();
+        SslContextFactory clientSsl = new SslContextFactory.Client();
         clientSsl.setKeyStorePath(keyStorePath);
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.setKeyManagerPassword("keypwd");

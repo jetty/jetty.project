@@ -82,7 +82,7 @@ public class ForwardProxyTLSServerTest
         // no server SSL
         SslContextFactory scenario1 = null;
         // basic server SSL
-        SslContextFactory scenario2 = new SslContextFactory();
+        SslContextFactory scenario2 = new SslContextFactory.Server();
         scenario2.setKeyStorePath(keyStorePath);
         scenario2.setKeyStorePassword("storepwd");
         scenario2.setKeyManagerPassword("keypwd");
@@ -139,20 +139,25 @@ public class ForwardProxyTLSServerTest
 
     private static SslContextFactory newServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        sslContextFactory.setKeyStorePath(keyStorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
         return sslContextFactory;
-
     }
 
     private static SslContextFactory newClientSslContextFactory()
     {
-        SslContextFactory sslContextFactory = newServerSslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
         return sslContextFactory;
+    }
+
+    private static void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        sslContextFactory.setKeyStorePath(keyStorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
     }
 
     @AfterEach
@@ -628,9 +633,6 @@ public class ForwardProxyTLSServerTest
         {
             assumeTrue(false, "Environment not able to connect to proxy service");
         }
-
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.start();
 
         HttpClient httpClient = new HttpClient(newClientSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +32,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 @Disabled
 public class ExternalSiteTest
 {
@@ -44,7 +44,7 @@ public class ExternalSiteTest
     @BeforeEach
     public void prepare() throws Exception
     {
-        client = new HttpClient(new SslContextFactory());
+        client = new HttpClient(new SslContextFactory.Client());
         client.start();
     }
 
@@ -94,7 +94,7 @@ public class ExternalSiteTest
     public void testExternalSSLSite() throws Exception
     {
         client.stop();
-        client = new HttpClient(new SslContextFactory());
+        client = new HttpClient(new SslContextFactory.Client());
         client.start();
 
         String host = "api-3t.paypal.com";

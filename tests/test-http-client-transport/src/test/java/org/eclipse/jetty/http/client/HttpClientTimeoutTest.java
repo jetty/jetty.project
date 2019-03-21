@@ -251,8 +251,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         scenario.startServer(new TimeoutHandler(2 * timeout));
 
         AtomicBoolean sslIdle = new AtomicBoolean();
-        SslContextFactory sslContextFactory = scenario.newSslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        SslContextFactory sslContextFactory = scenario.newClientSslContextFactory();
         scenario.client = new HttpClient(scenario.provideClientTransport(), sslContextFactory)
         {
             @Override
