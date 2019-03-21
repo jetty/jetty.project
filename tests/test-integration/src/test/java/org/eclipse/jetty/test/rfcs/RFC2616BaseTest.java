@@ -33,7 +33,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.test.support.StringUtil;
-import org.eclipse.jetty.test.support.TestableJettyServer;
+import org.eclipse.jetty.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -62,7 +62,7 @@ public abstract class RFC2616BaseTest
     private static final String ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
     /** STRICT RFC TESTS */
     private static final boolean STRICT = false;
-    private static TestableJettyServer server;
+    private static XmlBasedJettyServer server;
     private HttpTesting http;
 
     class TestFile
@@ -88,7 +88,7 @@ public abstract class RFC2616BaseTest
         }
     }
 
-    public static void setUpServer(TestableJettyServer testableserver, Class<?> testclazz) throws Exception
+    public static void setUpServer(XmlBasedJettyServer testableserver, Class<?> testclazz) throws Exception
     {
         File testWorkDir = MavenTestingUtils.getTargetTestingDir(testclazz.getName());
         FS.ensureDirExists(testWorkDir);
