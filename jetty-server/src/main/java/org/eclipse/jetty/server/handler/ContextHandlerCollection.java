@@ -214,11 +214,11 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         else
         {
-            if (mapping._handlers==null)
+            if (mapping.getHandlers()==null)
                 return;
-            for (int i=0;i<mapping._handlers.length;i++)
+            for (int i=0;i<mapping.getHandlers().length;i++)
             {
-                mapping._handlers[i].handle(target,baseRequest, request, response);
+                mapping.getHandlers()[i].handle(target,baseRequest, request, response);
                 if ( baseRequest.isHandled())
                     return;
             }
@@ -269,16 +269,20 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         if (handler.getServer()!=getServer())
             handler.setServer(getServer());
-        _serializedExecutor.execute(()->
+
+        _serializedExecutor.execute(new SerializedExecutor.ErrorHandlingTask()
         {
-            try
+            @Override
+            public void run()
             {
                 addHandler(handler);
                 callback.succeeded();
             }
-            catch(Throwable th)
+
+            @Override
+            public void accept(Throwable throwable)
             {
-                callback.failed(th);
+                callback.failed(throwable);
             }
         });
     }
@@ -298,16 +302,19 @@ public class ContextHandlerCollection extends HandlerCollection
      */
     public void undeployHandler(Handler handler, Callback callback)
     {
-        _serializedExecutor.execute(()->
+        _serializedExecutor.execute(new SerializedExecutor.ErrorHandlingTask()
         {
-            try
+            @Override
+            public void run()
             {
                 removeHandler(handler);
                 callback.succeeded();
             }
-            catch(Throwable th)
+
+            @Override
+            public void accept(Throwable throwable)
             {
-                callback.failed(th);
+                callback.failed(throwable);
             }
         });
     }
@@ -408,5 +415,16 @@ public class ContextHandlerCollection extends HandlerCollection
             super(handlers);
             _pathBranches = new ArrayTernaryTrie<>(false, capacity);
         }
+
+        public Map<ContextHandler, Handler> getContextBranches()
+        {
+            return _contextBranches;
+        }
+
+        public Trie<Map.Entry<String, Branch[]>> getPathBranches()
+        {
+            return _pathBranches;
+        }
+
     }
 }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -52,6 +53,8 @@ public class SerializedExecutor implements Executor
 
     protected void onError(Runnable task, Throwable t)
     {
+        if (task instanceof ErrorHandlingTask)
+            ((ErrorHandlingTask)task).accept(t);
         Log.getLogger(task.getClass()).warn(t);
     }
 
@@ -97,4 +100,12 @@ public class SerializedExecutor implements Executor
             _task = task;
         }
     }
+
+    /**
+     * Error handling task
+     * <p>If a submitted task implements this interface, it will be passed
+     * any exceptions thrown when running the task.</p>
+     */
+    public interface ErrorHandlingTask extends Runnable, Consumer<Throwable>
+    {}
 }

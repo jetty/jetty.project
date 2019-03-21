@@ -22,7 +22,7 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.Callback;
 
 public class StandardUndeployer implements AppLifeCycle.Binding
 {
@@ -38,10 +38,8 @@ public class StandardUndeployer implements AppLifeCycle.Binding
     {
         ContextHandler handler = app.getContextHandler();
 
-        try(SharedBlockingCallback.Blocker blocker = new SharedBlockingCallback().acquire())
-        {
-            app.getDeploymentManager().getContexts().undeployHandler(handler, blocker);
-            blocker.block();
-        }
+        Callback.Completable blocker = new Callback.Completable();
+        app.getDeploymentManager().getContexts().undeployHandler(handler, blocker);
+        blocker.get();
     }
 }

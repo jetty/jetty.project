@@ -252,5 +252,10 @@ public class HandlerCollection extends AbstractHandlerContainer
         {
             this._handlers = handlers;
         }
+
+        public Handler[] getHandlers()
+        {
+            return _handlers;
+        }
     }
 }
