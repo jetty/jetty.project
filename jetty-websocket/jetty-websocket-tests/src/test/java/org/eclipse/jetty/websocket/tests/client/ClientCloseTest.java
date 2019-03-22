@@ -60,6 +60,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -248,9 +249,8 @@ public class ClientCloseTest
 
             // client reads -1 (EOF)
             // client triggers close event on client ws-endpoint
-            clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-                    is(StatusCode.SHUTDOWN),
-                    containsString("timeout"));
+            // assert - close code==1006 (abnormal) or code==1001 (shutdown)
+            clientSocket.assertReceivedCloseEvent(clientTimeout * 2, anyOf(is(StatusCode.SHUTDOWN), is(StatusCode.ABNORMAL)));
         }
 
         clientSessionTracker.assertClosedProperly(client);
@@ -357,9 +357,6 @@ public class ClientCloseTest
         EndPoint endp = clientSocket.getEndPoint();
         endp.shutdownOutput();
 
-        // TODO: race condition.  Client CLOSE actions racing SERVER close actions.
-//        SECONDS.sleep(1); // let server detect EOF and respond
-
         // client enqueue close frame
         // should result in a client write failure
         final String origCloseReason = "Normal Close from Client";
@@ -369,8 +366,8 @@ public class ClientCloseTest
         assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
 
         // client triggers close event on client ws-endpoint
-        // assert - close code==1006 (abnormal)
-        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Eof"));
+        // assert - close code==1006 (abnormal) or code==1001 (shutdown)
+        clientSocket.assertReceivedCloseEvent(timeout, anyOf(is(StatusCode.SHUTDOWN), is(StatusCode.ABNORMAL)));
 
         clientSessionTracker.assertClosedProperly(client);
     }
