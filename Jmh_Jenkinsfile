@@ -3,7 +3,7 @@
 def branch = params.get("JETTY_BRANCH" ,"jetty-10.0.x")
 def owner = params.get("REPO_OWNER", "eclipse")
 def jdk = params.get("JDK", "jdk11")
-def jmhJarPath = params.get("jmhJarPath","jetty-jmh/target/benchmarks.jar")
+def jmhJarPath = params.get("jmhJarPath","tests/jetty-jmh/target/benchmarks.jar")
 
 node("linux") {
   // System Dependent Locations
