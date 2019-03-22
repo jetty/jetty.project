@@ -87,11 +87,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
     public CompletableFuture<FrameHandler.CoreSession> connect(ClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
-        {
             throw new IllegalStateException(WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
-        }
-
-        // TODO: add HttpClient delayed/on-demand start - See Issue #1516
 
         // Validate Requested Extensions
         for (ExtensionConfig reqExt : request.getExtensions())

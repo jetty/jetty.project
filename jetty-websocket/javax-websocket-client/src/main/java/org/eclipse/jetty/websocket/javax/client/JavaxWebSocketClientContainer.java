@@ -156,18 +156,10 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             upgradeRequest.addListener(jsrUpgradeListener);
 
             for (Extension ext : clientEndpointConfig.getExtensions())
-            {
-                if (!getExtensionRegistry().isAvailable(ext.getName()))
-                {
-                    throw new IllegalArgumentException("Requested extension [" + ext.getName() + "] is not installed");
-                }
                 upgradeRequest.addExtensions(new JavaxWebSocketExtensionConfig(ext));
-            }
 
             if (clientEndpointConfig.getPreferredSubprotocols().size() > 0)
-            {
                 upgradeRequest.setSubProtocols(clientEndpointConfig.getPreferredSubprotocols());
-            }
         }
 
         try

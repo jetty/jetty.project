@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 /**
@@ -107,20 +109,37 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      * <p>
      * For the list of negotiated extensions, use {@link #getNegotiatedExtensions()}
      *
-     * @param configs the configurations being requested
+     * @param offeredConfigs    the configurations being requested by the client
+     * @param negotiatedConfigs the configurations accepted by the server
      */
-    public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> configs)
+    public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> offeredConfigs, List<ExtensionConfig> negotiatedConfigs)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Extension Configs={}", configs);
+            LOG.debug("Extension Configs={}", negotiatedConfigs);
 
         this.extensions = new ArrayList<>();
 
         String rsvClaims[] = new String[3];
 
-        for (ExtensionConfig config : configs)
+        for (ExtensionConfig config : negotiatedConfigs)
         {
-            Extension ext = factory.newInstance(objectFactory, bufferPool, config);
+            Extension ext;
+
+            try
+            {
+                ext = factory.newInstance(objectFactory, bufferPool, config);
+            }
+            catch (Throwable t)
+            {
+                for (ExtensionConfig offered : offeredConfigs)
+                {
+                    if (offered.getParameterizedName().equals(config.getParameterizedName()))
+                        throw new BadMessageException("offered extension had bad parameters: ", t);
+                }
+
+                throw new WebSocketException("negotiated extension had bad parameters: ", t);
+            }
+
             if (ext == null)
             {
                 // Extension not present on this side

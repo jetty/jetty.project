@@ -75,7 +75,7 @@ public class ExtensionStackTest
         // 1 extension
         List<ExtensionConfig> configs = new ArrayList<>();
         configs.add(ExtensionConfig.parse("identity"));
-        stack.negotiate(objectFactory, bufferPool, configs);
+        stack.negotiate(objectFactory, bufferPool, configs, configs);
 
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
@@ -99,7 +99,7 @@ public class ExtensionStackTest
         List<ExtensionConfig> configs = new ArrayList<>();
         configs.add(ExtensionConfig.parse("identity; id=A"));
         configs.add(ExtensionConfig.parse("identity; id=B"));
-        stack.negotiate(objectFactory, bufferPool, configs);
+        stack.negotiate(objectFactory, bufferPool, configs, configs);
 
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
@@ -130,7 +130,7 @@ public class ExtensionStackTest
     {
         String chromeRequest = "permessage-deflate; client_max_window_bits, x-webkit-deflate-frame";
         List<ExtensionConfig> requestedConfigs = ExtensionConfig.parseList(chromeRequest);
-        stack.negotiate(objectFactory, bufferPool, requestedConfigs);
+        stack.negotiate(objectFactory, bufferPool, requestedConfigs, requestedConfigs);
 
         List<ExtensionConfig> negotiated = stack.getNegotiatedExtensions();
         String response = ExtensionConfig.toHeaderValue(negotiated);
