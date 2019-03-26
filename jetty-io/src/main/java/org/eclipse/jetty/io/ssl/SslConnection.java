@@ -1096,8 +1096,21 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     close = ishut;
                 }
 
-                if (flush)
-                    flush(BufferUtil.EMPTY_BUFFER); // Send the TLS close message.
+                if (flush && !flush(BufferUtil.EMPTY_BUFFER))
+                {
+                    // We failed to flush. Try a few times more after short delay just in case progress can be made
+                    // TODO configure these loops and delays or use writeInterest
+                    int retry = 15;
+                    for (;retry-->0;)
+                    {
+                        Thread.sleep(100);
+                        if (flush(BufferUtil.EMPTY_BUFFER))
+                            break;
+                    }
+                    // if we still can't flush, we will close
+                    close |= retry==0;
+                }
+
                 if (close)
                     getEndPoint().close();
                 else
