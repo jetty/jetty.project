@@ -674,4 +674,28 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         setInitialBuffer(prefilled);
     }
+
+    @Override
+    public long getMessagesIn()
+    {
+        return parser.getMessagesIn();
+    }
+
+    @Override
+    public long getMessagesOut()
+    {
+        return flusher.getMessagesOut();
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return parser.getBytesIn();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return flusher.getBytesOut();
+    }
 }
