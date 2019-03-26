@@ -53,14 +53,14 @@ public class InfoSocket
     @OnOpen
     public void onOpen(Session session)
     {
-        LOG.log(Level.INFO,"onOpen(): {0}",session);
+        LOG.log(Level.FINEST,"onOpen(): {0}",session);
         this.session = session;
     }
 
     @OnClose
     public void onClose(CloseReason close)
     {
-        LOG.log(Level.INFO,"onClose(): {}",close);
+        LOG.log(Level.FINEST,"onClose(): {}",close);
         this.session = null;
     }
 
