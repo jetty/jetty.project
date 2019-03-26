@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -46,6 +47,8 @@ import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
@@ -118,11 +121,7 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         if (negotiation.getKey() == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no key {}", baseRequest);
-            return false;
-        }
+            throw new BadMessageException("not upgraded no key");
 
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation);
@@ -149,7 +148,8 @@ public final class RFC6455Handshaker implements Handshaker
         // Check for handler
         if (handler == null)
         {
-            LOG.warn("not upgraded: no frame handler provided {}", baseRequest);
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded: no frame handler provided {}", baseRequest);
             return false;
         }
 
@@ -158,46 +158,37 @@ public final class RFC6455Handshaker implements Handshaker
         if (subprotocol != null)
         {
             if (!negotiation.getOfferedSubprotocols().contains(subprotocol))
-            {
-                // TODO: this message needs to be returned to Http Client
-                LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}",
-                        subprotocol, negotiation.getOfferedSubprotocols(), baseRequest);
-                return false;
-            }
+                throw new WebSocketException("not upgraded: selected a subprotocol not present in offered subprotocols");
         }
         else
         {
             if (!negotiation.getOfferedSubprotocols().isEmpty())
-            {
-                // TODO: this message needs to be returned to Http Client
-                LOG.warn("not upgraded: no subprotocol selected from offered subprotocols {}: {}",
-                        negotiation.getOfferedSubprotocols(), baseRequest);
-                return false;
-            }
+                throw new WebSocketException("not upgraded: no subprotocol selected from offered subprotocols");
         }
 
         // validate negotiated extensions
-        negotiation.getOfferedExtensions();
         for (ExtensionConfig config : negotiation.getNegotiatedExtensions())
         {
-            long numMatch = negotiation.getOfferedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
-            if (numMatch < 1)
-            {
-                LOG.warn("Upgrade failed: negotiated extension not requested {}: {}", config.getName(), baseRequest);
-                return false;
-            }
-            if (numMatch > 1)
-            {
-                LOG.warn("Upgrade failed: multiple negotiated extensions of the same name {}: {}", config.getName(), baseRequest);
-                return false;
-            }
+            if (config.getName().startsWith("@"))
+                continue;
+
+            long matches = negotiation.getOfferedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            if (matches < 1)
+                throw new WebSocketException("Upgrade failed: negotiated extension not requested");
+
+            matches = negotiation.getNegotiatedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            if (matches > 1)
+                throw new WebSocketException("Upgrade failed: multiple negotiated extensions of the same name");
         }
+
+        // Create and Negotiate the ExtensionStack
+        ExtensionStack extensionStack = negotiation.getExtensionStack();
 
         Negotiated negotiated = new Negotiated(
             baseRequest.getHttpURI().toURI(),
             subprotocol,
             baseRequest.isSecure(),
-            negotiation.getExtensionStack(),
+            extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Channel
@@ -214,10 +205,7 @@ public final class RFC6455Handshaker implements Handshaker
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)
-        {
-            LOG.warn("not upgraded: no connection {}", baseRequest);
-            return false;
-        }
+            throw new WebSocketException("not upgraded: no connection");
 
         for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
             connection.addListener(listener);

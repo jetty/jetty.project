@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.function.Consumer;
 
 import javax.servlet.ServletContext;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -217,38 +215,30 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         return mapping.getResource();
     }
 
-    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer)
+    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
     {
-        try
+        // Since this may be a filter, we need to be smart about determining the target path.
+        // We should rely on the Container for stripping path parameters and its ilk before
+        // attempting to match a specific mapped websocket creator.
+        String target = request.getServletPath();
+        if (request.getPathInfo() != null)
+            target = target + request.getPathInfo();
+
+        WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
         {
-            // Since this may be a filter, we need to be smart about determining the target path.
-            // We should rely on the Container for stripping path parameters and its ilk before
-            // attempting to match a specific mapped websocket creator.
-            String target = request.getServletPath();
-            if (request.getPathInfo() != null)
-                target = target + request.getPathInfo();
+            // Store PathSpec resource mapping as request attribute, for WebSocketCreator
+            // implementors to use later if they wish
+            request.setAttribute(PathSpec.class.getName(), pathSpec);
+        });
 
-            WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
-            {
-                // Store PathSpec resource mapping as request attribute, for WebSocketCreator
-                // implementors to use later if they wish
-                request.setAttribute(PathSpec.class.getName(), pathSpec);
-            });
+        if (negotiator == null)
+            return false;
 
-            if (negotiator == null)
-                return false;
+        if (LOG.isDebugEnabled())
+            LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
-
-            // We have an upgrade request
-            return handshaker.upgradeRequest(negotiator, request, response, defaultCustomizer);
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Error during upgrade: ", e);
-        }
-        return false;
+        // We have an upgrade request
+        return handshaker.upgradeRequest(negotiator, request, response, defaultCustomizer);
     }
 
     private class Negotiator extends WebSocketNegotiator.AbstractNegotiator
@@ -270,7 +260,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
 
         @Override
-        public FrameHandler negotiate(Negotiation negotiation)
+        public FrameHandler negotiate(Negotiation negotiation) throws IOException
         {
             ServletContext servletContext = negotiation.getRequest().getServletContext();
             if (servletContext == null)
@@ -304,14 +294,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
                     return frameHandler;
 
                 return null;
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeIOException(e);
-            }
-            catch (URISyntaxException e)
-            {
-                throw new RuntimeIOException("Unable to negotiate websocket due to mangled request URI", e);
             }
             finally
             {

@@ -21,19 +21,20 @@ package org.eclipse.jetty.websocket.core.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -56,13 +57,16 @@ public class Negotiation
     private String subprotocol;
     private ExtensionStack extensionStack;
 
+    /**
+     * @throws BadMessageException if there is any errors parsing the upgrade request
+     */
     public Negotiation(
         Request baseRequest,
         HttpServletRequest request,
         HttpServletResponse response,
         WebSocketExtensionRegistry registry,
         DecoratedObjectFactory objectFactory,
-        ByteBufferPool bufferPool)
+        ByteBufferPool bufferPool) throws BadMessageException
     {
         this.baseRequest = baseRequest;
         this.request = request;
@@ -78,65 +82,81 @@ public class Negotiation
         QuotedCSV extensions = null;
         QuotedCSV subprotocols = null;
 
-        for (HttpField field : baseRequest.getHttpFields())
+        try
         {
-            if (field.getHeader() != null)
+            for (HttpField field : baseRequest.getHttpFields())
             {
-                switch (field.getHeader())
+                if (field.getHeader() != null)
                 {
-                    case UPGRADE:
-                        if (upgrade == null && "websocket".equalsIgnoreCase(field.getValue()))
-                            upgrade = Boolean.TRUE;
-                        break;
+                    switch (field.getHeader())
+                    {
+                        case UPGRADE:
+                            if (upgrade == null && "websocket".equalsIgnoreCase(field.getValue()))
+                                upgrade = Boolean.TRUE;
+                            break;
 
-                    case CONNECTION:
-                        if (connectionCSVs == null)
-                            connectionCSVs = new QuotedCSV();
-                        connectionCSVs.addValue(field.getValue());
-                        break;
+                        case CONNECTION:
+                            if (connectionCSVs == null)
+                                connectionCSVs = new QuotedCSV();
+                            connectionCSVs.addValue(field.getValue());
+                            break;
 
-                    case SEC_WEBSOCKET_KEY:
-                        key = field.getValue();
-                        break;
+                        case SEC_WEBSOCKET_KEY:
+                            key = field.getValue();
+                            break;
 
-                    case SEC_WEBSOCKET_VERSION:
-                        version = field.getValue();
-                        break;
+                        case SEC_WEBSOCKET_VERSION:
+                            version = field.getValue();
+                            break;
 
-                    case SEC_WEBSOCKET_EXTENSIONS:
-                        if (extensions == null)
-                            extensions = new QuotedCSV(field.getValue());
-                        else
-                            extensions.addValue(field.getValue());
-                        break;
+                        case SEC_WEBSOCKET_EXTENSIONS:
+                            if (extensions == null)
+                                extensions = new QuotedCSV(field.getValue());
+                            else
+                                extensions.addValue(field.getValue());
+                            break;
 
-                    case SEC_WEBSOCKET_SUBPROTOCOL:
-                        if (subprotocols == null)
-                            subprotocols = new QuotedCSV(field.getValue());
-                        else
-                            subprotocols.addValue(field.getValue());
-                        break;
+                        case SEC_WEBSOCKET_SUBPROTOCOL:
+                            if (subprotocols == null)
+                                subprotocols = new QuotedCSV(field.getValue());
+                            else
+                                subprotocols.addValue(field.getValue());
+                            break;
 
-                    default:
+                        default:
+                    }
                 }
             }
+
+            this.version = version;
+            this.key = key;
+            this.upgrade = upgrade != null && connectionCSVs != null && connectionCSVs.getValues().stream().anyMatch(s -> s.equalsIgnoreCase("Upgrade"));
+
+            Set<String> available = registry.getAvailableExtensionNames();
+            offeredExtensions = extensions == null
+                    ? Collections.emptyList()
+                    : extensions.getValues().stream()
+                    .map(ExtensionConfig::parse)
+                    .filter(ec -> available.contains(ec.getName().toLowerCase()) && !ec.getName().startsWith("@"))
+                    .collect(Collectors.toList());
+
+            offeredSubprotocols = subprotocols == null
+                    ? Collections.emptyList()
+                    : subprotocols.getValues();
+
+            negotiatedExtensions = new ArrayList<>();
+            for (ExtensionConfig config : offeredExtensions)
+            {
+                long matches = negotiatedExtensions.stream()
+                        .filter(negotiatedConfig -> negotiatedConfig.getName().equals(config.getName())).count();
+                if (matches == 0)
+                    negotiatedExtensions.add(config);
+            }
         }
-
-        this.version = version;
-        this.key = key;
-        this.upgrade = upgrade != null && connectionCSVs != null && connectionCSVs.getValues().stream().anyMatch(s -> s.equalsIgnoreCase("Upgrade"));
-
-        Set<String> available = registry.getAvailableExtensionNames();
-        offeredExtensions = extensions == null
-            ?Collections.emptyList()
-            :extensions.getValues().stream()
-            .map(ExtensionConfig::parse)
-            .filter(ec -> available.contains(ec.getName().toLowerCase()))
-            .collect(Collectors.toList());
-
-        offeredSubprotocols = subprotocols == null
-            ?Collections.emptyList()
-            :subprotocols.getValues();
+        catch (Throwable t)
+        {
+            throw new BadMessageException("Invalid Handshake Request", t);
+        }
     }
 
     public String getKey()
@@ -159,8 +179,6 @@ public class Negotiation
 
     public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        if (negotiatedExtensions == null)
-            return offeredExtensions;
         return negotiatedExtensions;
     }
 
@@ -209,51 +227,18 @@ public class Negotiation
     {
         if (extensionStack == null)
         {
-            extensionStack = new ExtensionStack(registry);
-            boolean configsFromApplication = true;
-
-            if (negotiatedExtensions == null)
-            {
-                // Has the header been set directly?
-                List<String> extensions = baseRequest.getResponse().getHttpFields()
-                    .getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true);
-
-                if (extensions.isEmpty())
-                {
-                    // If the negotiatedExtensions has not been set, just use the offered extensions
-                    negotiatedExtensions = new ArrayList(offeredExtensions);
-                    configsFromApplication = false;
-                }
-                else
-                {
-                    negotiatedExtensions = extensions
-                        .stream()
-                        .map(ExtensionConfig::parse)
-                        .collect(Collectors.toList());
-                }
-            }
-
-            if (configsFromApplication)
-            {
-                // TODO is this really necessary?
-                // Replace any configuration in the negotiated extensions with the offered extensions config
-                for (ListIterator<ExtensionConfig> i = negotiatedExtensions.listIterator(); i.hasNext(); )
-                {
-                    ExtensionConfig config = i.next();
-                    offeredExtensions.stream().filter(c -> c.getName().equalsIgnoreCase(config.getName()))
-                        .findFirst()
-                        .ifPresent(i::set);
-                }
-            }
-
-            extensionStack.negotiate(objectFactory, bufferPool, negotiatedExtensions);
+            // Extension stack can decide to drop any of these extensions or their parameters
+            extensionStack = new ExtensionStack(registry, Behavior.SERVER);
+            extensionStack.negotiate(objectFactory, bufferPool, offeredExtensions, negotiatedExtensions);
             negotiatedExtensions = extensionStack.getNegotiatedExtensions();
+
             if (extensionStack.hasNegotiatedExtensions())
                 baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
                     ExtensionConfig.toHeaderValue(negotiatedExtensions));
             else
                 baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, null);
         }
+
         return extensionStack;
     }
 

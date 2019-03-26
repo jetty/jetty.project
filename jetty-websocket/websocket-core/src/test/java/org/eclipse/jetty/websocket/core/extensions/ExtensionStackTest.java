@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
@@ -55,7 +56,7 @@ public class ExtensionStackTest
     {
         objectFactory = new DecoratedObjectFactory();
         bufferPool = new MappedByteBufferPool();
-        stack = new ExtensionStack(new WebSocketExtensionRegistry());
+        stack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
     }
 
     @SuppressWarnings("unchecked")
@@ -75,7 +76,7 @@ public class ExtensionStackTest
         // 1 extension
         List<ExtensionConfig> configs = new ArrayList<>();
         configs.add(ExtensionConfig.parse("identity"));
-        stack.negotiate(objectFactory, bufferPool, configs);
+        stack.negotiate(objectFactory, bufferPool, configs, configs);
 
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
@@ -99,7 +100,7 @@ public class ExtensionStackTest
         List<ExtensionConfig> configs = new ArrayList<>();
         configs.add(ExtensionConfig.parse("identity; id=A"));
         configs.add(ExtensionConfig.parse("identity; id=B"));
-        stack.negotiate(objectFactory, bufferPool, configs);
+        stack.negotiate(objectFactory, bufferPool, configs, configs);
 
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
@@ -130,7 +131,7 @@ public class ExtensionStackTest
     {
         String chromeRequest = "permessage-deflate; client_max_window_bits, x-webkit-deflate-frame";
         List<ExtensionConfig> requestedConfigs = ExtensionConfig.parseList(chromeRequest);
-        stack.negotiate(objectFactory, bufferPool, requestedConfigs);
+        stack.negotiate(objectFactory, bufferPool, requestedConfigs, requestedConfigs);
 
         List<ExtensionConfig> negotiated = stack.getNegotiatedExtensions();
         String response = ExtensionConfig.toHeaderValue(negotiated);

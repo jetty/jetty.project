@@ -58,8 +58,8 @@ public class ParserCapture
         this.copy = copy;
 
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
         this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
     }
 
