@@ -19,6 +19,7 @@
 package com.acme.test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 
 import javax.servlet.ServletConfig;
@@ -30,7 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.util.IO;
 /**
  * MultiPartTest
  * 
@@ -42,7 +42,9 @@ import org.eclipse.jetty.util.IO;
 @MultipartConfig(location="foo/bar", maxFileSize=10240, maxRequestSize=-1, fileSizeThreshold=2048)
 public class MultiPartTest extends HttpServlet 
 {
+    private static int bufferSize = 4096;
     private ServletConfig config;
+    
     
     
     public void init(ServletConfig config) throws ServletException
@@ -76,7 +78,35 @@ public class MultiPartTest extends HttpServlet
                 if (p.getContentType() == null || p.getContentType().startsWith("text/plain"))
                 {
                     out.println("<p>");
-                    IO.copy(p.getInputStream(),out);
+                    InputStream in = p.getInputStream();
+                    long byteCount = -1;
+                    byte buffer[] = new byte[bufferSize];
+                    int len= bufferSize;
+
+                    if (byteCount>=0)
+                    {
+                        while (byteCount>0)
+                        {
+                            int max = byteCount< bufferSize?(int)byteCount: bufferSize;
+                            len=in.read(buffer,0,max);
+
+                            if (len==-1)
+                                break;
+
+                            byteCount -= len;
+                            out.write(buffer,0,len);
+                        }
+                    }
+                    else
+                    {
+                        while (true)
+                        {
+                            len=in.read(buffer,0, bufferSize);
+                            if (len<0 )
+                                break;
+                            out.write(buffer,0,len);
+                        }
+                    }
                     out.println("</p>");
                 }
             } 

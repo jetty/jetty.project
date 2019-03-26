@@ -231,7 +231,8 @@
      <dependency>
        <groupId>org.eclipse.jetty</groupId>
        <artifactId>jetty-util</artifactId>
-       <version>${project.version}</version>
+       <!-- deliberately old version to test classloading -->
+       <version>9.3.0.RC0</version>
      </dependency>
   </dependencies>
 </project>
