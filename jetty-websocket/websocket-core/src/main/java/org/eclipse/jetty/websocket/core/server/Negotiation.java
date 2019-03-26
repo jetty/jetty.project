@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -227,7 +228,7 @@ public class Negotiation
         if (extensionStack == null)
         {
             // Extension stack can decide to drop any of these extensions or their parameters
-            extensionStack = new ExtensionStack(registry);
+            extensionStack = new ExtensionStack(registry, Behavior.SERVER);
             extensionStack.negotiate(objectFactory, bufferPool, offeredExtensions, negotiatedExtensions);
             negotiatedExtensions = extensionStack.getNegotiatedExtensions();
 

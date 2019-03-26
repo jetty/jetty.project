@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -51,13 +52,15 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
     private final WebSocketExtensionRegistry factory;
+    private final Behavior behavior;
     private List<Extension> extensions;
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
 
-    public ExtensionStack(WebSocketExtensionRegistry factory)
+    public ExtensionStack(WebSocketExtensionRegistry factory, Behavior behavior)
     {
         this.factory = factory;
+        this.behavior = behavior;
     }
 
     @ManagedAttribute(name = "Extension List", readonly = true)
@@ -131,13 +134,36 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             catch (Throwable t)
             {
-                for (ExtensionConfig offered : offeredConfigs)
-                {
-                    if (offered.getParameterizedName().equals(config.getParameterizedName()))
-                        throw new BadMessageException("offered extension had bad parameters: ", t);
-                }
+                /* If there was an error creating the extension we need to differentiate between a
+                bad ExtensionConfig offered by the client and a bad ExtensionConfig negotiated by the server.
 
-                throw new WebSocketException("negotiated extension had bad parameters: ", t);
+                When deciding whether to throw a BadMessageException and send a 400 response or a WebSocketException
+                and send a 500 response it depends on whether this is running on the client or the server. */
+                switch (behavior)
+                {
+                    case SERVER:
+                    {
+                        String parameterizedName = config.getParameterizedName();
+                        for (ExtensionConfig offered : offeredConfigs)
+                        {
+                            if (offered.getParameterizedName().equals(parameterizedName))
+                                throw new BadMessageException("could not instantiate offered extension", t);
+                        }
+                        throw new WebSocketException("could not instantiate negotiated extension", t);
+                    }
+                    case CLIENT:
+                    {
+                        String parameterizedName = config.getParameterizedName();
+                        for (ExtensionConfig offered : offeredConfigs)
+                        {
+                            if (offered.getParameterizedName().equals(parameterizedName))
+                                throw new WebSocketException("could not instantiate offered extension", t);
+                        }
+                        throw new BadMessageException("could not instantiate negotiated extension", t);
+                    }
+                    default:
+                        throw new IllegalStateException();
+                }
             }
 
             if (ext == null)

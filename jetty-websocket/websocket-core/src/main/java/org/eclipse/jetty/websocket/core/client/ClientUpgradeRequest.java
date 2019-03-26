@@ -296,7 +296,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         // Negotiate the extension stack
         HttpClient httpClient = wsClient.getHttpClient();
-        ExtensionStack extensionStack = new ExtensionStack(wsClient.getExtensionRegistry());
+        ExtensionStack extensionStack = new ExtensionStack(wsClient.getExtensionRegistry(), Behavior.CLIENT);
         extensionStack.negotiate(wsClient.getObjectFactory(), httpClient.getByteBufferPool(), offeredExtensions, negotiatedExtensions);
 
         // Get the negotiated subprotocol
