@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Callback;
 
 public class StandardUndeployer implements AppLifeCycle.Binding
@@ -36,10 +38,11 @@ public class StandardUndeployer implements AppLifeCycle.Binding
     @Override
     public void processBinding(Node node, App app) throws Exception
     {
-        ContextHandler handler = app.getContextHandler();
-
+        ContextHandlerCollection contexts = app.getDeploymentManager().getContexts();
+        ContextHandler context = app.getContextHandler();
         Callback.Completable blocker = new Callback.Completable();
-        app.getDeploymentManager().getContexts().undeployHandler(handler, blocker);
+        contexts.undeployHandler(context, blocker);
         blocker.get();
+        context.destroy();
     }
 }

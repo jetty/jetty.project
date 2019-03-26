@@ -1605,9 +1605,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {
-            Handler[] contextCollections = getServer().getChildHandlersByClass(ContextHandlerCollection.class);
+            ContextHandlerCollection[] contextCollections =
+                    (ContextHandlerCollection[])getServer().getChildHandlersByClass(ContextHandlerCollection.class);
             for (int h = 0; contextCollections != null && h < contextCollections.length; h++)
-                ((ContextHandlerCollection)contextCollections[h]).mapContexts();
+                contextCollections[h].mapContexts();
         }
     }
 

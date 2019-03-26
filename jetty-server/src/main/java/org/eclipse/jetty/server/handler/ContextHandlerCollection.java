@@ -77,13 +77,27 @@ public class ContextHandlerCollection extends HandlerCollection
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated Mapping is now always maintained on every set/add
+     * Remap the contexts.  Normally this is not required as context
+     * mapping is maintained as a side effect of {@link #setHandlers(Handler[])}
+     * However, if configuration changes in the deep handler structure (eg contextpath is changed), then
+     * this call will trigger a remapping.
+     * This method is mutually excluded from {@link #deployHandler(Handler, Callback)} and
+     * {@link #undeployHandler(Handler, Callback)}
      */
-    @ManagedOperation("update the mapping of context path to context (no longer required_")
-    @Deprecated
+    @ManagedOperation("Update the mapping of context path to context")
     public void mapContexts()
     {
-        LOG.warn("mapContexts is Deprecated");
+        _serializedExecutor.execute(()->
+        {
+            while(true)
+            {
+                Handlers handlers = _handlers.get();
+                if (handlers==null)
+                    break;
+                if (updateHandlers(handlers, newHandlers(handlers.getHandlers())))
+                    break;
+            }
+        });
     }
 
     /* ------------------------------------------------------------ */

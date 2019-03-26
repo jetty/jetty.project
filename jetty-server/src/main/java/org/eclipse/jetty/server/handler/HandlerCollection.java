@@ -176,13 +176,14 @@ public class HandlerCollection extends AbstractHandlerContainer
     /**
      * Adds a handler.
      * This implementation adds the passed handler to the end of the existing collection of handlers.
+     * If the handler is already added, it is removed and readded
      */
     public void addHandler(Handler handler)
     {
         while(true)
         {
             Handlers old = _handlers.get();
-            Handlers handlers = newHandlers(ArrayUtil.addToArray(old==null?null:old._handlers, handler, Handler.class));
+            Handlers handlers = newHandlers(ArrayUtil.addToArray(old==null?null:ArrayUtil.removeFromArray(old._handlers, handler), handler, Handler.class));
             if (updateHandlers(old,handlers))
                 break;
         }
