@@ -33,6 +33,7 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 jetty.session.hazelcast.mapName=jetty-distributed-session-map
 jetty.session.hazelcast.hazelcastInstanceName=JETTY_DISTRIBUTED_SESSION_INSTANCE
 jetty.session.hazelcast.onlyClient=true
+jetty.session.hazelcast.scavengeZombies=false
 #jetty.session.hazelcast.configurationLocation=
 jetty.session.gracePeriod.seconds=3600
 jetty.session.savePeriod.seconds=0

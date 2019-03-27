@@ -54,7 +54,19 @@ public class HazelcastSessionDataStoreFactory
     private HazelcastInstance hazelcastInstance;
 
     private MapConfig mapConfig;
+    
+    private boolean scavengeZombies = false;
 
+
+    public boolean isScavengeZombies()
+    {
+        return scavengeZombies;
+    }
+
+    public void setScavengeZombies(boolean scavengeZombies)
+    {
+        this.scavengeZombies = scavengeZombies;
+    }
 
     @Override
     public SessionDataStore getSessionDataStore( SessionHandler handler )
@@ -122,9 +134,10 @@ public class HazelcastSessionDataStoreFactory
             }
         }
         // initialize the map
-        hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ) );
-        hazelcastSessionDataStore.setGracePeriodSec( getGracePeriodSec() );
-        hazelcastSessionDataStore.setSavePeriodSec( getSavePeriodSec() );
+        hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ));
+        hazelcastSessionDataStore.setGracePeriodSec(getGracePeriodSec());
+        hazelcastSessionDataStore.setSavePeriodSec(getSavePeriodSec());
+        hazelcastSessionDataStore.setScavengeZombieSessions(scavengeZombies);
         return hazelcastSessionDataStore;
     }
 

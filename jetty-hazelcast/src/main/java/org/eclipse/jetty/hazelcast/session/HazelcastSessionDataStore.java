@@ -51,12 +51,37 @@ public class HazelcastSessionDataStore
 
     private IMap<String, SessionData> sessionDataMap;
 
+    private boolean _scavengeZombies;
+
     public HazelcastSessionDataStore()
     {
-        // no op
     }
 
+    /** Control whether or not to execute queries to find
+     * "zombie" sessions - ie sessions that are no longer
+     * actively referenced by any jetty instance and should
+     * be expired.
+     * 
+     * If you use this feature, be aware that if your session
+     * stores any attributes that use classes from within your
+     * webapp, or from within jetty, you will need to make sure
+     * those classes are available to all of your hazelcast 
+     * instances, whether embedded or remote.
+     * 
+     * @param scavengeZombies true means unreferenced sessions
+     * will be actively sought and expired. False means that they
+     * will remain in hazelcast until some other mechanism removes them.
+     */
+    public void setScavengeZombieSessions (boolean scavengeZombies)
+    {
+        _scavengeZombies = scavengeZombies;
+    }
     
+    public boolean isScavengeZombies()
+    {
+        return _scavengeZombies;
+    }
+
     @Override
     public SessionData doLoad( String id )
             throws Exception
@@ -103,7 +128,8 @@ public class HazelcastSessionDataStore
         throws Exception
     {
         super.initialize(context);
-        sessionDataMap.addIndex("expiry", true);
+        if (isScavengeZombies())
+            sessionDataMap.addIndex("expiry", true);
     }
 
     @Override
@@ -187,42 +213,44 @@ public class HazelcastSessionDataStore
             }
             return false;
         } ).collect( Collectors.toSet() );
-        
-        
-        //Now find other sessions in hazelcast that have expired
-        final AtomicReference<Set<String>> reference = new AtomicReference<>();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-        
-        _context.run(()->
-        {
-            try
-            {
-                Set<String> ids = new HashSet<>();
-                EntryObject eo = new PredicateBuilder().getEntryObject();
-                Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
-                Collection<SessionData> results = sessionDataMap.values(predicate);
-                if (results != null)
-                {
-                    for (SessionData sd: results)
-                        ids.add(sd.getId());
-                }
-                reference.set(ids);
-            }
-            catch (Exception e)
-            {
-                exception.set(e);
-            }
-        });
-        
-        if (exception.get() != null)
-        {
-            LOG.warn("Error querying for expired sessions {}", exception.get());
-            return expiredSessionIds;
-        }
 
-        if (reference.get() != null)
+        if (isScavengeZombies())
         {
-           expiredSessionIds.addAll(reference.get());
+            //Now find other sessions in hazelcast that have expired
+            final AtomicReference<Set<String>> reference = new AtomicReference<>();
+            final AtomicReference<Exception> exception = new AtomicReference<>();
+
+            _context.run(()->
+            {
+                try
+                {
+                    Set<String> ids = new HashSet<>();
+                    EntryObject eo = new PredicateBuilder().getEntryObject();
+                    Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
+                    Collection<SessionData> results = sessionDataMap.values(predicate);
+                    if (results != null)
+                    {
+                        for (SessionData sd: results)
+                            ids.add(sd.getId());
+                    }
+                    reference.set(ids);
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            });
+
+            if (exception.get() != null)
+            {
+                LOG.warn("Error querying for expired sessions {}", exception.get());
+                return expiredSessionIds;
+            }
+
+            if (reference.get() != null)
+            {
+                expiredSessionIds.addAll(reference.get());
+            }
         }
         
         return expiredSessionIds;
