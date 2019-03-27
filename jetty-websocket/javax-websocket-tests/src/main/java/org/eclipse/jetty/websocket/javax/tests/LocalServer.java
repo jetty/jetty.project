@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.OnMessage;
@@ -48,7 +49,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -256,11 +260,19 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
+            JavaxWebSocketServerFrameHandlerFactory factory = new JavaxWebSocketServerFrameHandlerFactory(JavaxWebSocketServerContainer.ensureContainer(getServletContext()));
+
             @Override
             public void configure(WebSocketServletFactory factory)
             {
                 PathSpec pathSpec = factory.parsePathSpec("/");
                 factory.addMapping(pathSpec, creator);
+            }
+
+            @Override
+            public FrameHandlerFactory getFactory()
+            {
+                return factory;
             }
         });
         servletContextHandler.addServlet(holder, urlPattern);

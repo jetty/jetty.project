@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,16 +33,14 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 
 @SuppressWarnings("serial")
-public class WebSocketChatServlet extends WebSocketServlet implements WebSocketCreator
+public class WebSocketChatServlet extends JettyWebSocketServlet implements JettyWebSocketCreator
 {
     /** Holds active sockets to other members of the chat */
     private final List<ChatWebSocket> members = new CopyOnWriteArrayList<ChatWebSocket>();
@@ -53,7 +52,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     }
 
     @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+    public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
     {
         if (req.hasSubProtocol("chat"))
         {
@@ -64,7 +63,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     }
 
     @Override
-    public void configure(WebSocketServletFactory factory)
+    public void configure(JettyWebSocketServletFactory factory)
     {
         factory.addMapping(factory.parsePathSpec("/"), this);
     }

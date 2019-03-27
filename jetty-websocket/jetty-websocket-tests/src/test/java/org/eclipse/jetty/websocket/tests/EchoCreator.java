@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 
-public class EchoCreator implements WebSocketCreator
+public class EchoCreator implements JettyWebSocketCreator
 {
     @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+    public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
     {
         if (req.hasSubProtocol("echo"))
         {

@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.tests.examples;
 
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 
 @SuppressWarnings("serial")
-public class MyAuthedServlet extends WebSocketServlet
+public class MyAuthedServlet extends JettyWebSocketServlet
 {
     @Override
-    public void configure(WebSocketServletFactory factory)
+    public void configure(JettyWebSocketServletFactory factory)
     {
         factory.setCreator(new MyAuthedCreator());
     }

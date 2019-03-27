@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.tests.examples;
 
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 
-public class MyAdvancedEchoCreator implements WebSocketCreator
+public class MyAdvancedEchoCreator implements JettyWebSocketCreator
 {
     private MyBinaryEchoSocket binaryEcho;
     private MyEchoSocket textEcho;
@@ -35,7 +35,7 @@ public class MyAdvancedEchoCreator implements WebSocketCreator
     }
 
     @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+    public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
     {
         for (String subprotocol : req.getSubProtocols())
         {
