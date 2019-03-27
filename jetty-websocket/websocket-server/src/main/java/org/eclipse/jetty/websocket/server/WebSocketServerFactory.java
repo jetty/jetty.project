@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -628,7 +629,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         
         // Setup websocket connection
         AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
-        
+
+        for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
+            wsConnection.addListener(listener);
+
         extensionStack.setPolicy(driver.getPolicy());
         extensionStack.configure(wsConnection.getParser());
         extensionStack.configure(wsConnection.getGenerator());

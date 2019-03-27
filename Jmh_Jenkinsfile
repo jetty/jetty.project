@@ -2,11 +2,13 @@
 
 def branch = params.get("JETTY_BRANCH" ,"jetty-9.4.x")
 def owner = params.get("REPO_OWNER", "eclipse")
+def jdk = params.get("JDK", "jdk8")
+def jmhJarPath = params.get("jmhJarPath","jetty-jmh/target/benchmarks.jar")
 
 node("linux") {
   // System Dependent Locations
   def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
-  def jdktool = tool name: "jdk8", type: 'hudson.model.JDK'
+  def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
   def mvnName = 'maven3.5'
   def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
   def settingsName = 'oss-settings.xml'
@@ -19,24 +21,22 @@ node("linux") {
 
   stage("Checkout") {
     git url: "https://github.com/$owner/jetty.project.git", branch: "$branch"
+
   }
 
   stage("Compile") {
-    withEnv(mvnEnv) {
-      timeout(time: 15, unit: 'MINUTES') {
-        withMaven(
-                maven: mvnName,
-                jdk: "jdk8",
-                publisherStrategy: 'EXPLICIT',
-                globalMavenSettingsConfig: settingsName,
-                mavenOpts: mavenOpts,
-                mavenLocalRepo: localRepo) {
-          sh "mvn -V -B clean install -DskipTests -T6 -e"
-        }
-
+    timeout(time: 15, unit: 'MINUTES') {
+      withMaven(
+              maven: mvnName,
+              jdk: jdk,
+              publisherStrategy: 'EXPLICIT',
+              globalMavenSettingsConfig: settingsName,
+              mavenOpts: mavenOpts,
+              mavenLocalRepo: localRepo) {
+        sh "mvn -V -B clean install -DskipTests -T6 -e -pl :jetty-jmh -am"
       }
-      stash name: 'perf-tests', includes: 'jetty-jmh/target/benchmarks.jar'
     }
+    stash name: 'perf-tests', includes: jmhJarPath
   }
 }
 
@@ -44,11 +44,13 @@ node("linux") {
 
 stage("jmh-run") {
   node( 'jmh-build-node' ) {
-    timeout( time: 120, unit: 'MINUTES' ) {
-      withEnv( ["JAVA_HOME=${tool "jdk8"}"] ) {
+    timeout( time: 180, unit: 'MINUTES' ) {
+      withEnv( ["JAVA_HOME=${tool "$jdk"}"] ) {
         unstash name: 'perf-tests'
-        sh "${env.JAVA_HOME}/bin/java -jar jetty-jmh/target/benchmarks.jar -rff jetty-jmh/target/jmh_result.json -rf json"
-        jmhReport 'jetty-jmh/target/jmh_result.json'
+        sh "rm -rf jmh_results"
+        sh "mkdir jmh_results"
+        sh "${env.JAVA_HOME}/bin/java -jar $jmhJarPath -rff jmh_results/jmh_result.json -rf json"
+        jmhReport 'jmh_results/jmh_result.json'
       }
     }
   }
