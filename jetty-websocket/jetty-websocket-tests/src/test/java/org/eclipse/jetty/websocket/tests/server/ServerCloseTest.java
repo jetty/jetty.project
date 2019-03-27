@@ -37,9 +37,9 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,10 +73,10 @@ public class ServerCloseTest
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
 
-        ServletHolder closeEndpoint = new ServletHolder(new WebSocketServlet()
+        ServletHolder closeEndpoint = new ServletHolder(new JettyWebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(JettyWebSocketServletFactory factory)
             {
                 factory.setIdleTimeout(Duration.ofSeconds(2));
                 serverEndpointCreator = new ServerCloseCreator(factory);

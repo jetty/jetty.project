@@ -45,9 +45,9 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,10 +103,10 @@ public class WebSocketStatsTest
         }
     }
 
-    public static class MyWebSocketServlet extends WebSocketServlet
+    public static class MyWebSocketServlet extends JettyWebSocketServlet
     {
         @Override
-        public void configure(WebSocketServletFactory factory)
+        public void configure(JettyWebSocketServletFactory factory)
         {
             factory.setAutoFragment(false);
             factory.addMapping("/",(req, resp)->new EchoSocket());

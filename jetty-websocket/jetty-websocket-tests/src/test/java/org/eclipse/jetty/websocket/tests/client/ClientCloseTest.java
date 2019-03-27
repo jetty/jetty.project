@@ -38,7 +38,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.Session;
@@ -50,9 +49,9 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,10 +120,10 @@ public class ClientCloseTest
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        ServletHolder holder = new ServletHolder(new WebSocketServlet()
+        ServletHolder holder = new ServletHolder(new JettyWebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(JettyWebSocketServletFactory factory)
             {
                 factory.setIdleTimeout(Duration.ofSeconds(10));
                 factory.setMaxTextMessageSize(1024 * 1024 * 2);

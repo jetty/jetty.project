@@ -24,10 +24,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 
 /**
  * Example of setting up a Jetty WebSocket server
@@ -53,10 +51,10 @@ public class WebSocketServer
      * Servlet layer
      */
     @SuppressWarnings("serial")
-    public static class EchoServlet extends WebSocketServlet
+    public static class EchoServlet extends JettyWebSocketServlet
     {
         @Override
-        public void configure(WebSocketServletFactory factory)
+        public void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping(factory.parsePathSpec("/"), (req,res)->new EchoSocket());
         }

@@ -32,9 +32,9 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.junit.jupiter.api.AfterEach;
@@ -72,10 +72,10 @@ public class SlowClientTest
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        ServletHolder websocket = new ServletHolder(new WebSocketServlet()
+        ServletHolder websocket = new ServletHolder(new JettyWebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(JettyWebSocketServletFactory factory)
             {
                 factory.register(EchoSocket.class);
             }
