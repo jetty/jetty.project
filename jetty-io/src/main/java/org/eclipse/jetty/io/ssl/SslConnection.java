@@ -835,6 +835,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             LOG.debug("flush b[{}]={}", i++, BufferUtil.toDetailString(b));
                     }
 
+                    // finish of any previous flushes
+                    if (BufferUtil.hasContent(_encryptedOutput) && !getEndPoint().flush(_encryptedOutput))
+                        return false;
+
                     Boolean result = null;
                     try
                     {
@@ -866,7 +870,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         if (filled < 0)
                                             throw new IOException("Broken pipe");
                                     }
-                                    return result = false;
+                                    return result = appOuts.length==1 && BufferUtil.isEmpty(appOuts[0]);
 
                                 default:
                                     throw new IllegalStateException("Unexpected HandshakeStatus " + status);
@@ -1098,13 +1102,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                 if (flush && !flush(BufferUtil.EMPTY_BUFFER))
                 {
-                    // We failed to flush. Try a one more after short delay just in case progress can be made
+                    // We failed to flush. Retry after short delay just in case progress can be made
                     Thread.yield();
-                    if (!getEndPoint().flush(_encryptedOutput) && !close)
+                    if (!flush(BufferUtil.EMPTY_BUFFER) && !close)
                     {
-                        // if we still can't flush, and we are not closing,
+                        // if we still can't flush, but we are not closing the endpoint,
                         // let's just flush the encrypted output in the background.
-                        // and continue as if we are closed
+                        // and continue as if we are closed. The assumption here is that
+                        // the encrypted buffer will contain the entire close handshake
+                        // and that a call to flush(EMPTY_BUFFER) is not needed.
                         getEndPoint().write(Callback.NOOP, _encryptedOutput);
                     }
                 }
