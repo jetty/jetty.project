@@ -42,8 +42,8 @@ public class SecuredServlet extends HttpServlet
         PrintWriter writer = resp.getWriter();
         writer.println( "<html>");
         writer.println("<HEAD><link rel=\"stylesheet\" type=\"text/css\"  href=\"../stylesheet.css\"/></HEAD>");
-        writer.println("<h1>@ServletSecurity</h1>");
         writer.println("<body>");
+        writer.println("<h1>@ServletSecurity</h1>");
         writer.println("<pre>");
         writer.println("@ServletSecurity");
         writer.println("public class SecuredServlet");
