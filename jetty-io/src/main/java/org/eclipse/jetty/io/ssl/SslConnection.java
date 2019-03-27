@@ -1098,19 +1098,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                 if (flush && !flush(BufferUtil.EMPTY_BUFFER))
                 {
-                    // We failed to flush. Try a few times more after short delay just in case progress can be made
-                    // TODO configure this loops?
-                    int retry = 10;
-                    for (;retry-->0;)
+                    // We failed to flush. Try a one more after short delay just in case progress can be made
+                    Thread.yield();
+                    if (!getEndPoint().flush(_encryptedOutput) && !close)
                     {
-                        Thread.yield();
-                        if (flush(BufferUtil.EMPTY_BUFFER))
-                            break;
+                        // if we still can't flush, and we are not closing,
+                        // let's just flush the encrypted output in the background.
+                        // and continue as if we are closed
+                        getEndPoint().write(Callback.NOOP, _encryptedOutput);
                     }
-
-                    // if we still can't flush, and we are not closing, let's just flush the encrypted output in the background.
-                    if (retry==0 && !close)
-                        getEndPoint().write(Callback.NOOP,_encryptedOutput);
                 }
 
                 if (close)
