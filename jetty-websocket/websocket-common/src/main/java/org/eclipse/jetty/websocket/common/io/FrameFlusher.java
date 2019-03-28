@@ -53,8 +53,11 @@ public class FrameFlusher extends IteratingCallback
     private final Deque<FrameEntry> queue = new ArrayDeque<>();
     private final List<FrameEntry> entries;
     private final List<ByteBuffer> buffers;
+
+    // Stats (where a message is defined as a WebSocket frame)
     private final LongAdder messagesOut = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
+
     private boolean closed;
     private boolean canEnqueue = true;
     private Throwable terminated;

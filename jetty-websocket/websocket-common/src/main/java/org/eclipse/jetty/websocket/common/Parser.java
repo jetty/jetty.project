@@ -62,6 +62,8 @@ public class Parser
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
+
+    // Stats (where a message is defined as a WebSocket frame)
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
 
