@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-public class WebSocketSession extends AbstractLifeCycle implements Session, Dumpable
+public class WebSocketSession extends AbstractLifeCycle implements Session, SuspendToken, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final FrameHandler.CoreSession coreSession;
@@ -208,8 +208,14 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Dump
     @Override
     public SuspendToken suspend()
     {
-        // TODO:
-        return null;
+        frameHandler.suspend();
+        return this;
+    }
+
+    @Override
+    public void resume()
+    {
+        frameHandler.resume();
     }
 
     public FrameHandler.CoreSession getCoreSession()
