@@ -3,21 +3,19 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <!-- =========================================================== -->
-  <!-- Get the platform MBeanServer                                -->
-  <!-- =========================================================== -->
-  <Call id="MBeanServer" class="java.lang.management.ManagementFactory"
-    name="getPlatformMBeanServer" />
+  <Call id="MBeanServer" class="java.lang.management.ManagementFactory" name="getPlatformMBeanServer" />
 
-  <!-- =========================================================== -->
-  <!-- Initialize the Jetty MBeanContainer                         -->
-  <!-- =========================================================== -->
   <Call name="addBean">
     <Arg>
       <New id="MBeanContainer" class="org.eclipse.jetty.jmx.MBeanContainer">
         <Arg>
           <Ref refid="MBeanServer" />
         </Arg>
+        <Call name="addObjectMBeanListener">
+          <Arg>
+            <New class="org.eclipse.jetty.jmx.ObjectMBean$LoggingListener" />
+          </Arg>
+        </Call>
       </New>
     </Arg>
   </Call>

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -63,6 +64,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     private final ConcurrentMap<Class, MetaData> _metaData = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Container> _beans = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, ObjectName> _mbeans = new ConcurrentHashMap<>();
+    private final List<ObjectMBean.Listener> _listeners = new CopyOnWriteArrayList<>();
     private String _domain = null;
 
     /**
@@ -123,6 +125,21 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     public String getDomain()
     {
         return _domain;
+    }
+
+    public void addObjectMBeanListener(ObjectMBean.Listener listener)
+    {
+        _listeners.add(listener);
+    }
+
+    public void removeObjectMBeanListener(ObjectMBean.Listener listener)
+    {
+        _listeners.add(listener);
+    }
+
+    List<ObjectMBean.Listener> listeners()
+    {
+        return _listeners;
     }
 
     /**

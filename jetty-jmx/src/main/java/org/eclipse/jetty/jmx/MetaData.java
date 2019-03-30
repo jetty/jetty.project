@@ -368,6 +368,7 @@ class MetaData
                 if (_proxied || _getter.getDeclaringClass().isInstance(mbean))
                     target = mbean;
                 Object result = _getter.invoke(target);
+                mbean.notifyGetAttribute(_info, result);
                 if (result == null)
                     return null;
                 if (!_convert)
@@ -401,22 +402,23 @@ class MetaData
                 Object target = mbean.getManagedObject();
                 if (_proxied || _setter.getDeclaringClass().isInstance(mbean))
                     target = mbean;
-                if (!_convert || value == null)
+                Object[] params = {value};
+                if (_convert && value != null)
                 {
-                    _setter.invoke(target, value);
-                    return;
+                    if (_getter.getReturnType().isArray())
+                    {
+                        ObjectName[] names = (ObjectName[])value;
+                        params = new Object[names.length];
+                        for (int i = 0; i < names.length; ++i)
+                            Array.set(params, i, mbean.findBean(names[i]));
+                    }
+                    else
+                    {
+                        params = new Object[]{mbean.findBean((ObjectName)value)};
+                    }
                 }
-                if (!_getter.getReturnType().isArray())
-                {
-                    value = mbean.findBean((ObjectName)value);
-                    _setter.invoke(target, value);
-                    return;
-                }
-                ObjectName[] names = (ObjectName[])value;
-                Object result = new Object[names.length];
-                for (int i = 0; i < names.length; ++i)
-                    Array.set(result, i, mbean.findBean(names[i]));
-                _setter.invoke(target, result);
+                _setter.invoke(target, params);
+                mbean.notifySetAttribute(_info, value);
             }
             catch (InvocationTargetException x)
             {
@@ -511,6 +513,7 @@ class MetaData
                 if (_proxied || _method.getDeclaringClass().isInstance(mbean))
                     target = mbean;
                 Object result = _method.invoke(target, args);
+                mbean.notifyInvoke(_info, args, result);
                 if (result == null)
                     return null;
                 if (!_convert)

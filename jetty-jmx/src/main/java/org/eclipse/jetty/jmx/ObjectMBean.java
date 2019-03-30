@@ -18,12 +18,20 @@
 
 package org.eclipse.jetty.jmx;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
+import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
@@ -47,6 +55,7 @@ public class ObjectMBean implements DynamicMBean
     private static final Logger LOG = Log.getLogger(ObjectMBean.class);
 
     protected final Object _managed;
+    private final AtomicReference<List<Listener>> _listeners = new AtomicReference<>();
     private MetaData _metaData;
     private MBeanContainer _mbeanContainer;
 
@@ -119,6 +128,28 @@ public class ObjectMBean implements DynamicMBean
     public MBeanContainer getMBeanContainer()
     {
         return this._mbeanContainer;
+    }
+
+    public void addListener(Listener listener)
+    {
+        getOrMakeListeners().add(listener);
+    }
+
+    public void removeListener(Listener listener)
+    {
+        getOrMakeListeners().remove(listener);
+    }
+
+    private List<Listener> getOrMakeListeners()
+    {
+        List<Listener> result = _listeners.get();
+        if (result == null)
+        {
+            result = new CopyOnWriteArrayList<>();
+            if (!_listeners.compareAndSet(null, result))
+                result = _listeners.get();
+        }
+        return result;
     }
 
     /**
@@ -234,5 +265,109 @@ public class ObjectMBean implements DynamicMBean
         if (_metaData == null)
             _metaData = MBeanContainer.findMetaData(_mbeanContainer, _managed.getClass());
         return _metaData;
+    }
+
+    void notifyGetAttribute(MBeanAttributeInfo attributeInfo, Object value)
+    {
+        listeners().forEach(l ->
+        {
+            try
+            {
+                l.getAttribute(this, attributeInfo, value);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while invoking listener " + l, x);
+            }
+        });
+    }
+
+    void notifySetAttribute(MBeanAttributeInfo attributeInfo, Object value)
+    {
+        listeners().forEach(l ->
+        {
+            try
+            {
+                l.setAttribute(this, attributeInfo, value);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while invoking listener " + l, x);
+            }
+        });
+    }
+
+    void notifyInvoke(MBeanOperationInfo operationInfo, Object[] arguments, Object result)
+    {
+        listeners().forEach(l ->
+        {
+            try
+            {
+                l.invoke(this, operationInfo, arguments, result);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while invoking listener " + l, x);
+            }
+        });
+    }
+
+    private Stream<Listener> listeners()
+    {
+        List<Listener> listeners = _listeners.get();
+        return Stream.concat(_mbeanContainer.listeners().stream(), listeners == null ? Stream.empty() : listeners.stream());
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getManagedObject());
+    }
+
+    public interface Listener
+    {
+        public default void getAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
+        {
+        }
+
+        public default void setAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
+        {
+        }
+
+        public default void invoke(ObjectMBean objectMBean, MBeanOperationInfo operationInfo, Object[] arguments, Object result)
+        {
+        }
+    }
+
+    public static class LoggingListener implements Listener
+    {
+        public static final Logger LOG = Log.getLogger(LoggingListener.class);
+
+        @Override
+        public void getAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
+        {
+            // Don't clutter the logs when JMX consoles get attributes to populate their UI.
+            if (LOG.isDebugEnabled())
+                LOG.debug("JMX getAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
+        }
+
+        @Override
+        public void setAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
+        {
+            LOG.info("JMX setAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
+        }
+
+        @Override
+        public void invoke(ObjectMBean objectMBean, MBeanOperationInfo operationInfo, Object[] arguments, Object result)
+        {
+            LOG.info("JMX invoke operation '{}' on {}, arguments={}, result={}", operationInfo.getName(), objectMBean, Arrays.toString(arguments), formatMaybeArray(result));
+        }
+
+        private Object formatMaybeArray(Object result)
+        {
+            if (result != null && result.getClass().isArray())
+                result = Arrays.toString((Object[])result);
+            return result;
+        }
     }
 }
