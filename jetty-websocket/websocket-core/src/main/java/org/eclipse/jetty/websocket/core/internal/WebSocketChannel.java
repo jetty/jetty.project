@@ -32,6 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Utf8Appendable;
@@ -306,12 +307,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public void onEof()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onEof() {}", this);
+
         if (channelState.onEof())
             closeConnection(new ClosedChannelException(), channelState.getCloseStatus(), Callback.NOOP);
     }
 
     public void closeConnection(Throwable cause, CloseStatus closeStatus, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closeConnection() {} {} {}", closeStatus, this, cause);
+
         connection.cancelDemand();
         if (connection.getEndPoint().isOpen())
             connection.close();
@@ -371,6 +378,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             code = CloseStatus.BAD_PAYLOAD;
         else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
             code = CloseStatus.SHUTDOWN;
+        else if (cause instanceof EofException)
+            code = CloseStatus.NO_CLOSE;
         else if (behavior == Behavior.CLIENT)
             code = CloseStatus.POLICY_VIOLATION;
         else

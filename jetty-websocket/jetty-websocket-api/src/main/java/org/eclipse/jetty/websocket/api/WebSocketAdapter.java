@@ -59,8 +59,7 @@ public class WebSocketAdapter implements WebSocketListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        this.session = null;
-        this.remote = null;
+        /* do nothing */
     }
 
     @Override

@@ -21,15 +21,16 @@ package org.eclipse.jetty.websocket.tests.client;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -66,10 +67,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientCloseTest
 {
     private Server server;
+    private ServerEndpoint serverEndpoint = new ServerEndpoint();
     private WebSocketClient client;
 
     private Session confirmConnection(CloseTrackingEndpoint clientSocket, Future<Session> clientFuture) throws Exception
@@ -125,9 +128,9 @@ public class ClientCloseTest
             @Override
             public void configure(JettyWebSocketServletFactory factory)
             {
-                factory.setIdleTimeout(Duration.ofSeconds(10));
+                factory.setIdleTimeout(Duration.ofSeconds(0));
                 factory.setMaxTextMessageSize(1024 * 1024 * 2);
-                factory.register(ServerEndpoint.class);
+                factory.setCreator((req,resp)->serverEndpoint);
             }
         });
         context.addServlet(holder, "/ws");
@@ -339,8 +342,7 @@ public class ClientCloseTest
     public void testWriteException() throws Exception
     {
         // Set client timeout
-        final int timeout = 2000;
-        client.setIdleTimeout(Duration.ofMillis(timeout));
+        client.setIdleTimeout(Duration.ZERO);
 
         ClientOpenSessionTracker clientSessionTracker = new ClientOpenSessionTracker(1);
         clientSessionTracker.addTo(client);
@@ -353,29 +355,40 @@ public class ClientCloseTest
         // client confirms connection via echo
         confirmConnection(clientSocket, clientConnectFuture);
 
-        // setup client endpoint for write failure (test only)
-        EndPoint endp = clientSocket.getEndPoint();
-        endp.shutdownOutput();
+        try
+        {
+            // Block on the server so that the server does not detect a read failure
+            clientSocket.getSession().getRemote().sendString("block");
 
-        // client enqueue close frame
-        // should result in a client write failure
-        final String origCloseReason = "Normal Close from Client";
-        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+            // setup client endpoint for write failure (test only)
+            EndPoint endp = clientSocket.getEndPoint();
+            endp.shutdownOutput();
 
-        assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
-        assertThat("OnError", clientSocket.error.get(), instanceOf(ClosedChannelException.class));
+            // client enqueue close frame
+            // should result in a client write failure
+            final String origCloseReason = "Normal Close from Client";
+            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-        // client triggers close event on client ws-endpoint
-        // assert - close code==1006 (abnormal)
-        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
+            assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
+            assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
 
-        clientSessionTracker.assertClosedProperly(client);
+            // client triggers close event on client ws-endpoint
+            // assert - close code==1006 (abnormal)
+            clientSocket.assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), null);
+
+            clientSessionTracker.assertClosedProperly(client);
+        }
+        finally
+        {
+            serverEndpoint.block.countDown();
+        }
     }
 
     public static class ServerEndpoint implements WebSocketFrameListener, WebSocketListener
     {
         private static final Logger LOG = Log.getLogger(ServerEndpoint.class);
         private Session session;
+        CountDownLatch block = new CountDownLatch(1);
 
         @Override
         public void onWebSocketBinary(byte[] payload, int offset, int len)
@@ -395,11 +408,19 @@ public class ClientCloseTest
                     String bigmsg = new String(buf, UTF_8);
                     session.getRemote().sendString(bigmsg);
                 }
+                else if (message.equals("block"))
+                {
+                    assertTrue(block.await(5, TimeUnit.MINUTES));
+                }
                 else
                 {
                     // simple echo
                     session.getRemote().sendString(message);
                 }
+            }
+            catch (InterruptedException e)
+            {
+                throw new IllegalStateException(e);
             }
             catch (IOException ignore)
             {
@@ -422,9 +443,7 @@ public class ClientCloseTest
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-            {
-                LOG.debug(cause);
-            }
+                LOG.debug("onWebSocketError(): ", cause);
         }
 
         @Override
