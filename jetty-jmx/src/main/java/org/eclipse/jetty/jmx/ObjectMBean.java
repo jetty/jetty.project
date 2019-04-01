@@ -341,26 +341,36 @@ public class ObjectMBean implements DynamicMBean
 
     public static class LoggingListener implements Listener
     {
-        public static final Logger LOG = Log.getLogger(LoggingListener.class);
+        public final Logger logger;
+
+        public LoggingListener()
+        {
+            this(null);
+        }
+
+        public LoggingListener(String loggerName)
+        {
+            logger = Log.getLogger(loggerName == null ? LoggingListener.class.getName() : loggerName);
+        }
 
         @Override
         public void getAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
         {
             // Don't clutter the logs when JMX consoles get attributes to populate their UI.
-            if (LOG.isDebugEnabled())
-                LOG.debug("JMX getAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
+            if (logger.isDebugEnabled())
+                logger.debug("JMX getAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
         }
 
         @Override
         public void setAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
         {
-            LOG.info("JMX setAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
+            logger.info("JMX setAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
         }
 
         @Override
         public void invoke(ObjectMBean objectMBean, MBeanOperationInfo operationInfo, Object[] arguments, Object result)
         {
-            LOG.info("JMX invoke operation '{}' on {}, arguments={}, result={}", operationInfo.getName(), objectMBean, Arrays.toString(arguments), formatMaybeArray(result));
+            logger.info("JMX invoke operation '{}' on {}, arguments={}, result={}", operationInfo.getName(), objectMBean, Arrays.toString(arguments), formatMaybeArray(result));
         }
 
         private Object formatMaybeArray(Object result)

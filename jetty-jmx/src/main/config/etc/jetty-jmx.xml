@@ -11,20 +11,15 @@
         <Arg>
           <Ref refid="MBeanServer" />
         </Arg>
-        <Call name="addObjectMBeanListener">
-          <Arg>
-            <New class="org.eclipse.jetty.jmx.ObjectMBean$LoggingListener" />
-          </Arg>
-        </Call>
       </New>
     </Arg>
   </Call>
 
-  <!-- Add the static log -->
+  <!-- Add the static Log as MBean -->
   <Call name="addBean">
     <Arg>
       <Get class="org.eclipse.jetty.util.log.Log" name="Log" />
     </Arg>
   </Call>
-</Configure>
 
+</Configure>

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Ref id="MBeanContainer">
+    <Call name="addObjectMBeanListener">
+      <Arg>
+        <New class="org.eclipse.jetty.jmx.ObjectMBean$LoggingListener">
+          <Arg><Property name="jetty.jmx.logging.loggerName" /></Arg>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
