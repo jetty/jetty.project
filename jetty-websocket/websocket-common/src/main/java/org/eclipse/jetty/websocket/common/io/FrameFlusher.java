@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -52,6 +53,11 @@ public class FrameFlusher extends IteratingCallback
     private final Deque<FrameEntry> queue = new ArrayDeque<>();
     private final List<FrameEntry> entries;
     private final List<ByteBuffer> buffers;
+
+    // Stats (where a message is defined as a WebSocket frame)
+    private final LongAdder messagesOut = new LongAdder();
+    private final LongAdder bytesOut = new LongAdder();
+
     private boolean closed;
     private boolean canEnqueue = true;
     private Throwable terminated;
@@ -141,6 +147,7 @@ public class FrameFlusher extends IteratingCallback
             {
                 FrameEntry entry = queue.poll();
                 currentBatchMode = BatchMode.max(currentBatchMode, entry.batchMode);
+                messagesOut.increment();
 
                 // Force flush if we need to.
                 if (entry.frame == FLUSH_FRAME)
@@ -243,6 +250,16 @@ public class FrameFlusher extends IteratingCallback
             succeedEntries();
             return Action.IDLE;
         }
+
+        int i = 0;
+        int bytes = 0;
+        ByteBuffer bufferArray[] = new ByteBuffer[buffers.size()];
+        for (ByteBuffer bb : buffers)
+        {
+            bytes += bb.limit() - bb.position();
+            bufferArray[i++] = bb;
+        }
+        bytesOut.add(bytes);
 
         endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
         buffers.clear();
@@ -362,6 +379,16 @@ public class FrameFlusher extends IteratingCallback
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while notifying failure of callback " + callback, x);
         }
+    }
+
+    public long getMessagesOut()
+    {
+        return messagesOut.longValue();
+    }
+
+    public long getBytesOut()
+    {
+        return bytesOut.longValue();
     }
 
     @Override
