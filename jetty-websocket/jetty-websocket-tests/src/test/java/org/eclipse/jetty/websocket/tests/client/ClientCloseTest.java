@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Frame;
@@ -72,8 +73,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ClientCloseTest
 {
     private Server server;
-    private ServerEndpoint serverEndpoint = new ServerEndpoint();
     private WebSocketClient client;
+    private BlockingArrayQueue<ServerEndpoint> serverEndpoints = new BlockingArrayQueue<>();
 
     private Session confirmConnection(CloseTrackingEndpoint clientSocket, Future<Session> clientFuture) throws Exception
     {
@@ -128,9 +129,14 @@ public class ClientCloseTest
             @Override
             public void configure(JettyWebSocketServletFactory factory)
             {
-                factory.setIdleTimeout(Duration.ofSeconds(0));
+                factory.setIdleTimeout(Duration.ofSeconds(10));
                 factory.setMaxTextMessageSize(1024 * 1024 * 2);
-                factory.setCreator((req,resp)->serverEndpoint);
+                factory.setCreator((req,resp)->
+                {
+                    ServerEndpoint endpoint = new ServerEndpoint();
+                    serverEndpoints.offer(endpoint);
+                    return endpoint;
+                });
             }
         });
         context.addServlet(holder, "/ws");
@@ -300,7 +306,7 @@ public class ClientCloseTest
     public void testStopLifecycle() throws Exception
     {
         // Set client timeout
-        final int timeout = 1000;
+        final int timeout = 3000;
         client.setIdleTimeout(Duration.ofMillis(timeout));
 
         int sessionCount = 3;
@@ -322,6 +328,12 @@ public class ClientCloseTest
             confirmConnection(clientSocket, clientConnectFuture);
         }
 
+        assertThat(serverEndpoints.size(), is(sessionCount));
+
+        // block all the server threads
+        for (int i = 0; i < sessionCount; i++)
+            clientSockets.get(i).getSession().getRemote().sendString("block");
+
         assertTimeoutPreemptively(ofSeconds(5), () -> {
             // client lifecycle stop (the meat of this test)
             client.stop();
@@ -329,20 +341,22 @@ public class ClientCloseTest
 
         // clients disconnect
         for (int i = 0; i < sessionCount; i++)
-        {
-            clientSockets.get(i).assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
-        }
+            clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
 
         // ensure all Sessions are gone. connections are gone. etc. (client and server)
         // ensure ConnectionListener onClose is called 3 times
         clientSessionTracker.assertClosedProperly(client);
+
+        for (int i = 0; i < sessionCount; i++)
+            serverEndpoints.get(i).block.countDown();
     }
 
     @Test
     public void testWriteException() throws Exception
     {
         // Set client timeout
-        client.setIdleTimeout(Duration.ZERO);
+        final int timeout = 2000;
+        client.setIdleTimeout(Duration.ofMillis(timeout));
 
         ClientOpenSessionTracker clientSessionTracker = new ClientOpenSessionTracker(1);
         clientSessionTracker.addTo(client);
@@ -355,33 +369,28 @@ public class ClientCloseTest
         // client confirms connection via echo
         confirmConnection(clientSocket, clientConnectFuture);
 
-        try
-        {
-            // Block on the server so that the server does not detect a read failure
-            clientSocket.getSession().getRemote().sendString("block");
+        // Block on the server so that the server does not detect a read failure
+        clientSocket.getSession().getRemote().sendString("block");
 
-            // setup client endpoint for write failure (test only)
-            EndPoint endp = clientSocket.getEndPoint();
-            endp.shutdownOutput();
+        // setup client endpoint for write failure (test only)
+        EndPoint endp = clientSocket.getEndPoint();
+        endp.shutdownOutput();
 
-            // client enqueue close frame
-            // should result in a client write failure
-            final String origCloseReason = "Normal Close from Client";
-            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+        // client enqueue close frame
+        // should result in a client write failure
+        final String origCloseReason = "Normal Close from Client";
+        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-            assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
-            assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
+        assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
+        assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
 
-            // client triggers close event on client ws-endpoint
-            // assert - close code==1006 (abnormal)
-            clientSocket.assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), null);
+        // client triggers close event on client ws-endpoint
+        // assert - close code==1006 (abnormal)
+        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), null);
+        clientSessionTracker.assertClosedProperly(client);
 
-            clientSessionTracker.assertClosedProperly(client);
-        }
-        finally
-        {
-            serverEndpoint.block.countDown();
-        }
+        assertThat(serverEndpoints.size(), is(1));
+        serverEndpoints.get(0).block.countDown();
     }
 
     public static class ServerEndpoint implements WebSocketFrameListener, WebSocketListener
@@ -410,7 +419,9 @@ public class ClientCloseTest
                 }
                 else if (message.equals("block"))
                 {
+                    LOG.debug("blocking");
                     assertTrue(block.await(5, TimeUnit.MINUTES));
+                    LOG.debug("unblocked");
                 }
                 else
                 {
@@ -420,6 +431,7 @@ public class ClientCloseTest
             }
             catch (InterruptedException e)
             {
+                LOG.debug("unblocked");
                 throw new IllegalStateException(e);
             }
             catch (IOException ignore)
