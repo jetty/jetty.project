@@ -1077,14 +1077,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public void doShutdownOutput()
         {
+            final EndPoint endp = getEndPoint();
             try
             {
                 boolean close;
                 boolean flush = false;
                 synchronized (_decryptedEndPoint)
                 {
-                    boolean ishut = getEndPoint().isInputShutdown();
-                    boolean oshut = getEndPoint().isOutputShutdown();
+                    boolean ishut = endp.isInputShutdown();
+                    boolean oshut = endp.isOutputShutdown();
                     if (LOG.isDebugEnabled())
                         LOG.debug("shutdownOutput: {} oshut={}, ishut={} {}", SslConnection.this, oshut, ishut);
 
@@ -1100,30 +1101,31 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     close = ishut;
                 }
 
-                if (flush && !flush(BufferUtil.EMPTY_BUFFER))
+                if (flush)
                 {
-                    // We failed to flush. Retry after short delay just in case progress can be made
-                    Thread.yield();
-                    if (!flush(BufferUtil.EMPTY_BUFFER) && !close)
+                    if (flush(BufferUtil.EMPTY_BUFFER))
+                        endp.shutdownOutput();
+                    else if (!close)
                     {
+                        Thread.yield();
                         // if we still can't flush, but we are not closing the endpoint,
                         // let's just flush the encrypted output in the background.
                         // and continue as if we are closed. The assumption here is that
                         // the encrypted buffer will contain the entire close handshake
                         // and that a call to flush(EMPTY_BUFFER) is not needed.
-                        getEndPoint().write(Callback.NOOP, _encryptedOutput);
+                        endp.write(Callback.from(endp::shutdownOutput, t-> endp.close()), _encryptedOutput);
                     }
                 }
 
                 if (close)
-                    getEndPoint().close();
+                    endp.close();
                 else
                     ensureFillInterested();
             }
             catch (Throwable x)
             {
                 LOG.ignore(x);
-                getEndPoint().close();
+                endp.close();
             }
         }
 
