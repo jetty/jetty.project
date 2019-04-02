@@ -65,7 +65,7 @@ public class AbstractTest
 
     protected void prepareClient() throws Exception
     {
-        client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()), null);
+        client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()));
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);

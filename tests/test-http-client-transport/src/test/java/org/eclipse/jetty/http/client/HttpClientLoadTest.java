@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -381,7 +382,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
 
         @Override
-        public HttpClientTransport provideClientTransport(Transport transport)
+        public HttpClientTransport provideClientTransport(Transport transport, SslContextFactory.Client sslContextFactory)
         {
             switch (transport)
             {
@@ -430,7 +431,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 }
                 default:
                 {
-                    return super.provideClientTransport(transport);
+                    return super.provideClientTransport(transport, sslContextFactory);
                 }
             }
         }

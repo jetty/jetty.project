@@ -45,7 +45,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     public void init() throws Exception
     {
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
@@ -64,7 +64,5 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-
     }
-
 }

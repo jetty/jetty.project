@@ -122,7 +122,7 @@ public class UnixSocketConnector extends AbstractConnector
      * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
      *                          list of HTTP Connection Factory.
      */
-    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
         this(server, -1, sslContextFactory);
     }
@@ -136,7 +136,7 @@ public class UnixSocketConnector extends AbstractConnector
      *                          list of HTTP Connection Factory.
      * @param selectors         the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
-    public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors, @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
         this(server, null, null, null, selectors, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
     }
@@ -149,7 +149,7 @@ public class UnixSocketConnector extends AbstractConnector
      *                          list of ConnectionFactories, with the first factory being the default protocol for the SslConnectionFactory.
      * @param factories         Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
-    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory sslContextFactory, @Name("factories") ConnectionFactory... factories)
+    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory, @Name("factories") ConnectionFactory... factories)
     {
         this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, factories));
     }

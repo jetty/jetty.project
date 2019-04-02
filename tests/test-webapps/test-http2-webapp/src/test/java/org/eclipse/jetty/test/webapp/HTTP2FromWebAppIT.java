@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.test.webapp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -36,8 +36,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HTTP2FromWebAppIT
 {
@@ -46,7 +47,7 @@ public class HTTP2FromWebAppIT
     {
         Server server = new Server();
 
-        SslContextFactory serverTLS = new SslContextFactory();
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
         serverTLS.setKeyStorePath("src/test/resources/keystore.jks");
         serverTLS.setKeyStorePassword("storepwd");
         serverTLS.setCipherComparator(new HTTP2Cipher.CipherComparator());
@@ -71,8 +72,9 @@ public class HTTP2FromWebAppIT
 
         try
         {
-            SslContextFactory clientTLS = new SslContextFactory(true);
-            HttpClient client = new HttpClient(clientTLS);
+            ClientConnector clientConnector = new ClientConnector();
+            clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+            HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
             client.start();
 
             try

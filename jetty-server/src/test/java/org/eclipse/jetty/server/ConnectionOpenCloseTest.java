@@ -170,7 +170,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testSSLOpenRequestClose() throws Exception
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
         sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
         sslContextFactory.setKeyStorePassword("storepwd");

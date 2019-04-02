@@ -53,9 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 {
     @Override
-    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
+    public HttpClient newHttpClient(HttpClientTransport transport)
     {
-        HttpClient client = super.newHttpClient(scenario, transport);
+        HttpClient client = super.newHttpClient(transport);
         client.setStrictEventOrdering(false);
         return client;
     }

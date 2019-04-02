@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslConnectionFactory extends AbstractConnectionFactory
 {
-    private final SslContextFactory _sslContextFactory;
+    private final SslContextFactory.Server _sslContextFactory;
     private final String _nextProtocol;
     private boolean _directBuffersForEncryption = false;
     private boolean _directBuffersForDecryption = false;
@@ -50,15 +50,15 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         this(null,nextProtocol);
     }
 
-    public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory factory, @Name("next") String nextProtocol)
+    public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory.Server factory, @Name("next") String nextProtocol)
     {
         super("SSL");
-        _sslContextFactory=factory==null?new SslContextFactory():factory;
-        _nextProtocol=nextProtocol;
+        _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
+        _nextProtocol = nextProtocol;
         addBean(_sslContextFactory);
     }
 
-    public SslContextFactory getSslContextFactory()
+    public SslContextFactory.Server getSslContextFactory()
     {
         return _sslContextFactory;
     }

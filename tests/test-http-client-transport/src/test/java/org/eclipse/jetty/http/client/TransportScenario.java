@@ -41,6 +41,7 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -70,7 +71,7 @@ public class TransportScenario
 
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected final Transport transport;
-    protected SslContextFactory sslContextFactory;
+    protected SslContextFactory.Server sslContextFactory;
     protected Server server;
     protected Connector connector;
     protected ServletContextHandler context;
@@ -118,16 +119,17 @@ public class TransportScenario
         return transport.isTlsBased() ? "https" : "http";
     }
 
-    public HTTP2Client newHTTP2Client()
+    public HTTP2Client newHTTP2Client(SslContextFactory.Client sslContextFactory)
     {
-        HTTP2Client http2Client = new HTTP2Client();
-        http2Client.setSelectors(1);
-        return http2Client;
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(sslContextFactory);
+        return new HTTP2Client(clientConnector);
     }
 
-    public HttpClient newHttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
+    public HttpClient newHttpClient(HttpClientTransport transport)
     {
-        return new HttpClient(transport, sslContextFactory);
+        return new HttpClient(transport);
     }
 
     public Connector newServerConnector(Server server) throws Exception
@@ -154,24 +156,22 @@ public class TransportScenario
         return ret.toString();
     }
 
-    public HttpClientTransport provideClientTransport()
-    {
-        return provideClientTransport(this.transport);
-    }
-
-    public HttpClientTransport provideClientTransport(Transport transport)
+    public HttpClientTransport provideClientTransport(Transport transport, SslContextFactory.Client sslContextFactory)
     {
         switch (transport)
         {
             case HTTP:
             case HTTPS:
             {
-                return new HttpClientTransportOverHTTP(1);
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(sslContextFactory);
+                return new HttpClientTransportOverHTTP(clientConnector);
             }
             case H2C:
             case H2:
             {
-                HTTP2Client http2Client = newHTTP2Client();
+                HTTP2Client http2Client = newHTTP2Client(sslContextFactory);
                 return new HttpClientTransportOverHTTP2(http2Client);
             }
             case FCGI:
@@ -180,7 +180,7 @@ public class TransportScenario
             }
             case UNIX_SOCKET:
             {
-                return new HttpClientTransportOverUnixSockets( sockFile.toString() );
+                return new HttpClientTransportOverUnixSockets(sockFile.toString());
             }
             default:
             {
@@ -279,9 +279,8 @@ public class TransportScenario
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientThreads.setDetailedDump(true);
-        SslContextFactory sslContextFactory = newSslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
-        client = newHttpClient(provideClientTransport(transport), sslContextFactory);
+        SslContextFactory.Client sslContextFactory = newClientSslContextFactory();
+        client = newHttpClient(provideClientTransport(transport, sslContextFactory));
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
 
@@ -305,7 +304,7 @@ public class TransportScenario
 
     public void startServer(Handler handler) throws Exception
     {
-        sslContextFactory = newSslContextFactory();
+        sslContextFactory = newServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         serverThreads.setDetailedDump(true);
@@ -333,16 +332,29 @@ public class TransportScenario
         }
     }
 
-    protected SslContextFactory newSslContextFactory()
+    protected SslContextFactory.Server newServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    protected SslContextFactory.Client newClientSslContextFactory()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
-        return sslContextFactory;
     }
 
     public void stopClient() throws Exception

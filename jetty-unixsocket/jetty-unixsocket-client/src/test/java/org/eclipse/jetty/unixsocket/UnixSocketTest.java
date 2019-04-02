@@ -137,7 +137,7 @@ public class UnixSocketTest
 
         server.start();
 
-        httpClient = new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString()), null);
+        httpClient = new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString()));
         httpClient.start();
 
         ContentResponse contentResponse = httpClient
@@ -152,7 +152,7 @@ public class UnixSocketTest
     @Test
     public void testNotLocal() throws Exception
     {
-        httpClient = new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString()), null);
+        httpClient = new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString()));
         httpClient.start();
 
         ExecutionException e = assertThrows(ExecutionException.class, () -> httpClient.newRequest("http://google.com").send());

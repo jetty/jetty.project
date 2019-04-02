@@ -173,7 +173,7 @@ public class DistributionTests extends AbstractDistributionTest
                 assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
                 HTTP2Client h2Client = new HTTP2Client();
-                startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(h2Client), null));
+                startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(h2Client)));
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("Hello"));

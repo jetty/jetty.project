@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -58,7 +59,7 @@ public abstract class AbstractHttpClientServerTest
             serverThreads.setName("server");
             server = new Server(serverThreads);
         }
-        connector = new ServerConnector(server, scenario.newSslContextFactory());
+        connector = new ServerConnector(server, scenario.newServerSslContextFactory());
         connector.setPort(0);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -67,30 +68,29 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startClient(final Scenario scenario) throws Exception
     {
-        startClient(scenario, null,null);
+        startClient(scenario, null);
     }
 
-    protected void startClient(final Scenario scenario, HttpClientTransport transport, Consumer<HttpClient> config) throws Exception
+    protected void startClient(final Scenario scenario, Consumer<HttpClient> config) throws Exception
     {
-        if (transport==null)
-            transport = new HttpClientTransportOverHTTP(1);
-
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(clientConnector);
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName("client");
         Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
-        client = newHttpClient(scenario, transport);
-        client.setExecutor(executor);
+        client = newHttpClient(transport);
         client.setScheduler(scheduler);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
-        if (config!=null)
+        if (config != null)
             config.accept(client);
-
         client.start();
     }
 
-    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
+    public HttpClient newHttpClient(HttpClientTransport transport)
     {
-        return new HttpClient(transport, scenario.newSslContextFactory());
+        return new HttpClient(transport);
     }
 
     @AfterEach
@@ -113,9 +113,10 @@ public abstract class AbstractHttpClientServerTest
         }
     }
 
-    public static class ScenarioProvider implements ArgumentsProvider {
+    public static class ScenarioProvider implements ArgumentsProvider
+    {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
                     new NormalScenario(),
@@ -125,9 +126,10 @@ public abstract class AbstractHttpClientServerTest
         }
     }
 
-    public static class NonSslScenarioProvider implements ArgumentsProvider {
+    public static class NonSslScenarioProvider implements ArgumentsProvider
+    {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
                     new NormalScenario()
@@ -138,12 +140,27 @@ public abstract class AbstractHttpClientServerTest
 
     public interface Scenario
     {
-        default SslContextFactory newSslContextFactory() { return null; }
+        SslContextFactory.Client newClientSslContextFactory();
+
+        SslContextFactory.Server newServerSslContextFactory();
+
         String getScheme();
     }
 
     public static class NormalScenario implements Scenario
     {
+        @Override
+        public SslContextFactory.Client newClientSslContextFactory()
+        {
+            return null;
+        }
+
+        @Override
+        public SslContextFactory.Server newServerSslContextFactory()
+        {
+            return null;
+        }
+
         @Override
         public String getScheme()
         {
@@ -160,15 +177,27 @@ public abstract class AbstractHttpClientServerTest
     public static class SslScenario implements Scenario
     {
         @Override
-        public SslContextFactory newSslContextFactory()
+        public SslContextFactory.Client newClientSslContextFactory()
+        {
+            SslContextFactory.Client result = new SslContextFactory.Client();
+            result.setEndpointIdentificationAlgorithm(null);
+            configure(result);
+            return result;
+        }
+
+        @Override
+        public SslContextFactory.Server newServerSslContextFactory()
+        {
+            SslContextFactory.Server result = new SslContextFactory.Server();
+            configure(result);
+            return result;
+        }
+
+        private void configure(SslContextFactory ssl)
         {
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
-
-            SslContextFactory ssl = new SslContextFactory();
-            ssl.setEndpointIdentificationAlgorithm("");
             ssl.setKeyStorePath(keystorePath.toString());
             ssl.setKeyStorePassword("storepwd");
-            return ssl;
         }
 
         @Override

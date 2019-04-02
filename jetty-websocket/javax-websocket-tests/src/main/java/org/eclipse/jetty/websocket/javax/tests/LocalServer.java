@@ -59,7 +59,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
-
     @ServerEndpoint("/echo/text")
     public static class TextEchoSocket
     {
@@ -80,7 +79,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     private URI serverUri;
     private URI wsUri;
     private boolean ssl = false;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Server sslContextFactory;
 
     public void enableSsl(boolean ssl)
     {
@@ -195,7 +194,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             http_config.setSendServerVersion(true);
             http_config.setSendDateHeader(false);
 
-            sslContextFactory = new SslContextFactory();
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");

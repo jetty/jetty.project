@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -56,11 +50,15 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ThreadStarvationTest
 {
@@ -82,14 +80,14 @@ public class ThreadStarvationTest
         List<Scenario> params = new ArrayList<>();
         
         // HTTP
-        ConnectorProvider http = (server, acceptors, selectors) -> new ServerConnector(server, acceptors, selectors);
-        ClientSocketProvider httpClient = (host, port) -> new Socket(host, port);
+        ConnectorProvider http = ServerConnector::new;
+        ClientSocketProvider httpClient = Socket::new;
         params.add(new Scenario("http", http, httpClient));
         
         // HTTPS/SSL/TLS
         ConnectorProvider https = (server, acceptors, selectors) -> {
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore");
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
@@ -98,8 +96,7 @@ public class ThreadStarvationTest
             ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
     
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-            ServerConnector connector = new ServerConnector(server,(Executor)null,(Scheduler)null,
-                    pool, acceptors, selectors,
+            ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
                     AbstractConnectionFactory.getFactories(sslContextFactory,httpConnectionFactory));
             SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
             secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
@@ -312,8 +309,8 @@ public class ThreadStarvationTest
                     // Read Response
                     long bodyCount = 0;
                     long len;
-                    
-                    byte buf[] = new byte[1024];
+
+                    byte[] buf = new byte[1024];
                     
                     try
                     {
@@ -343,7 +340,7 @@ public class ThreadStarvationTest
             for (Future<Long> responseFut : responses)
             {
                 Long bodyCount = responseFut.get();
-                assertThat(bodyCount.longValue(), is(expected));
+                assertThat(bodyCount, is(expected));
             }
         } 
         finally

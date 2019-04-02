@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -31,14 +26,11 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
-import java.util.concurrent.Executor;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -53,21 +45,18 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
 public class DebugHandlerTest
 {
-    public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
-    {
-        @Override
-        public boolean verify(String hostname, SSLSession session)
-        {
-            return true;
-        }
-    };
+    public final static HostnameVerifier __hostnameverifier = (hostname, session) -> true;
     
     private SSLContext sslContext;
     private Server server;
@@ -77,7 +66,6 @@ public class DebugHandlerTest
     private DebugHandler debugHandler;
     private ByteArrayOutputStream capturedLog;
     
-    @SuppressWarnings("deprecation")
     @BeforeEach
     public void startServer() throws Exception
     {
@@ -88,16 +76,14 @@ public class DebugHandlerTest
         server.addConnector(httpConnector);
         
         File keystorePath = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
         sslContextFactory.setTrustStorePath(keystorePath.getAbsolutePath());
         sslContextFactory.setTrustStorePassword("storepwd");
         ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        ServerConnector sslConnector = new ServerConnector(server,
-                (Executor)null,
-                (Scheduler)null, pool, 1, 1, 
+        ServerConnector sslConnector = new ServerConnector(server, null, null, pool, 1, 1,
                 AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
         
         server.addConnector(sslConnector);
@@ -108,7 +94,7 @@ public class DebugHandlerTest
         debugHandler.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 {
                     baseRequest.setHandled(true);
                     response.setStatus(HttpStatus.OK_200);

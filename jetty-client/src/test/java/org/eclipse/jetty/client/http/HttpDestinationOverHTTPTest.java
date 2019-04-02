@@ -186,7 +186,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     {
         startServer(scenario, new EmptyServerHandler());
         long idleTimeout = 1000;
-        startClient(scenario, null, httpClient -> httpClient.setIdleTimeout(idleTimeout));
+        startClient(scenario, httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         try(HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {

@@ -64,14 +64,14 @@ public class SslContextFactoryReloadTest
     public static final String KEYSTORE_2 = "src/test/resources/reload_keystore_2.jks";
 
     private Server server;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Server sslContextFactory;
     private ServerConnector connector;
 
     private void start(Handler handler) throws Exception
     {
         server = new Server();
 
-        sslContextFactory = new SslContextFactory();
+        sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(KEYSTORE_1);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyStoreType("JKS");
