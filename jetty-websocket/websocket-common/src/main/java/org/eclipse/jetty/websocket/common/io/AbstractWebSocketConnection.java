@@ -446,6 +446,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (readMode == ReadMode.EOF)
         {
             readState.eof();
+
+            // Handle case where the remote connection was abruptly terminated without a close frame
+            CloseInfo close = new CloseInfo(StatusCode.SHUTDOWN);
+            close(close, new DisconnectCallback(this));
         }
         else if (!readState.suspend())
         {
@@ -669,5 +673,41 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
 
         setInitialBuffer(prefilled);
+    }
+
+    /**
+     * @return the number of WebSocket frames received over this connection
+     */
+    @Override
+    public long getMessagesIn()
+    {
+        return parser.getMessagesIn();
+    }
+
+    /**
+     * @return the number of WebSocket frames sent over this connection
+     */
+    @Override
+    public long getMessagesOut()
+    {
+        return flusher.getMessagesOut();
+    }
+
+    /**
+     * @return the number of bytes received over this connection
+     */
+    @Override
+    public long getBytesIn()
+    {
+        return parser.getBytesIn();
+    }
+
+    /**
+     * @return the number of bytes frames sent over this connection
+     */
+    @Override
+    public long getBytesOut()
+    {
+        return flusher.getBytesOut();
     }
 }

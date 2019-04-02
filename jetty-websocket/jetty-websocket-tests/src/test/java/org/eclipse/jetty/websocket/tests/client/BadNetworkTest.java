@@ -20,9 +20,12 @@ package org.eclipse.jetty.websocket.tests.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -36,6 +39,10 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
@@ -43,16 +50,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for conditions due to bad networking.
  */
 public class BadNetworkTest
 {
+    private static final Logger LOG = Log.getLogger(BadNetworkTest.class);
     private Server server;
     private WebSocketClient client;
+    private ServletContextHandler context;
+    private ServerConnector connector;
 
     @BeforeEach
     public void startClient() throws Exception
@@ -67,20 +79,21 @@ public class BadNetworkTest
     {
         server = new Server();
 
-        ServerConnector connector = new ServerConnector(server);
+        connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler();
+        context = new ServletContextHandler();
         context.setContextPath("/");
+
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
             @Override
             public void configure(WebSocketServletFactory factory)
             {
-                factory.getPolicy().setIdleTimeout(10000);
+                factory.getPolicy().setIdleTimeout(100000);
                 factory.getPolicy().setMaxTextMessageSize(1024 * 1024 * 2);
-                factory.register(ServerEndpoint.class);
+                factory.setCreator((req, resp) -> new ServerEndpoint());
             }
         });
         context.addServlet(holder, "/ws");
@@ -108,6 +121,37 @@ public class BadNetworkTest
     @Test
     public void testAbruptClientClose() throws Exception
     {
+        AtomicReference<WebSocketSession> serverSessionRef = new AtomicReference<>();
+        CountDownLatch serverCloseLatch = new CountDownLatch(1);
+        connector.addBean(new Connection.Listener() {
+            @Override
+            public void onOpened(Connection connection)
+            {
+            }
+
+            @Override
+            public void onClosed(Connection connection)
+            {
+                serverCloseLatch.countDown();
+            }
+        });
+        CountDownLatch sessionCloseLatch = new CountDownLatch(1);
+        WebSocketServerFactory wssf = (WebSocketServerFactory) context.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
+        wssf.addSessionListener(new WebSocketSessionListener() {
+            @Override
+            public void onSessionOpened(WebSocketSession session)
+            {
+                serverSessionRef.set(session);
+            }
+
+            @Override
+            public void onSessionClosed(WebSocketSession session)
+            {
+                sessionCloseLatch.countDown();
+            }
+        });
+
+
         CloseTrackingEndpoint wsocket = new CloseTrackingEndpoint();
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
@@ -116,14 +160,23 @@ public class BadNetworkTest
         // Validate that we are connected
         future.get(30,TimeUnit.SECONDS);
 
+        WebSocketSession serverSession = serverSessionRef.get();
+
         // Have client disconnect abruptly
         Session session = wsocket.getSession();
+        LOG.info("client.disconnect");
         session.disconnect();
 
         // Client Socket should see a close event, with status NO_CLOSE
         // This event is automatically supplied by the underlying WebSocketClientConnection
         // in the situation of a bad network connection.
         wsocket.assertReceivedCloseEvent(5000, is(StatusCode.NO_CLOSE), containsString(""));
+
+        assertTrue(serverCloseLatch.await(1, TimeUnit.SECONDS), "Server Connection Close should have happened");
+        assertTrue(sessionCloseLatch.await(1, TimeUnit.SECONDS), "Server Session Close should have happened");
+
+        AbstractWebSocketConnection conn = (AbstractWebSocketConnection) serverSession.getConnection();
+        assertThat("Connection.isOpen", conn.isOpen(), is(false));
     }
 
     @Test
