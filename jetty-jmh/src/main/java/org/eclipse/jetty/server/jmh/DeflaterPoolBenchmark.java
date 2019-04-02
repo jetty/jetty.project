@@ -21,7 +21,7 @@ package org.eclipse.jetty.server.jmh;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.server.DeflaterPool;
+import org.eclipse.jetty.util.DeflaterPool;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;

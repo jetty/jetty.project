@@ -29,6 +29,8 @@ import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.DeflaterPool;
+import org.eclipse.jetty.util.InflaterPool;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -71,6 +73,11 @@ public abstract class CompressExtension extends AbstractExtension
     private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
     
     private final static boolean NOWRAP = true;
+    private final static int POOL_CAPACITY = -1;
+
+    private static final DeflaterPool deflaterPool = new DeflaterPool(POOL_CAPACITY,
+            Deflater.DEFAULT_COMPRESSION, NOWRAP);
+    private static final InflaterPool inflaterPool = new InflaterPool(POOL_CAPACITY, NOWRAP);
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
@@ -90,7 +97,7 @@ public abstract class CompressExtension extends AbstractExtension
     {
         if (deflaterImpl == null)
         {
-            deflaterImpl = new Deflater(Deflater.DEFAULT_COMPRESSION,NOWRAP);
+            deflaterImpl = deflaterPool.acquire();
         }
         return deflaterImpl;
     }
@@ -99,7 +106,7 @@ public abstract class CompressExtension extends AbstractExtension
     {
         if (inflaterImpl == null)
         {
-            inflaterImpl = new Inflater(NOWRAP);
+            inflaterImpl = inflaterPool.acquire();
         }
         return inflaterImpl;
     }
@@ -370,14 +377,14 @@ public abstract class CompressExtension extends AbstractExtension
         }
         return true;
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
         if(deflaterImpl != null)
-            deflaterImpl.end();
+            deflaterPool.release(deflaterImpl);
         if(inflaterImpl != null)
-            inflaterImpl.end();
+            inflaterPool.release(inflaterImpl);
         super.doStop();
     }
 

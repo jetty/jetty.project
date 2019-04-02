@@ -34,7 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
-import org.eclipse.jetty.server.DeflaterPool;
+import org.eclipse.jetty.util.DeflaterPool;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
