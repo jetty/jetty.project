@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -53,6 +50,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class SSLSelectChannelConnectorLoadTest
 {
     private static Server server;
@@ -63,7 +63,7 @@ public class SSLSelectChannelConnectorLoadTest
     public static void startServer() throws Exception
     {
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");

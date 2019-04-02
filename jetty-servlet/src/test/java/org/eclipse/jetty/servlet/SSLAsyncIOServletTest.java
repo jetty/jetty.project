@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,6 +44,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SSLAsyncIOServletTest
 {
@@ -221,8 +221,7 @@ public class SSLAsyncIOServletTest
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
             Path truststorePath = MavenTestingUtils.getTestResourcePath("truststore.jks");
 
-            sslContextFactory = new SslContextFactory();
-            sslContextFactory.setEndpointIdentificationAlgorithm("");
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setTrustStorePath(truststorePath.toString());

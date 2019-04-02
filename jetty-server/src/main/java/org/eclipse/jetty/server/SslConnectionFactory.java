@@ -53,8 +53,8 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory factory, @Name("next") String nextProtocol)
     {
         super("SSL");
-        _sslContextFactory=factory==null?new SslContextFactory():factory;
-        _nextProtocol=nextProtocol;
+        _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
+        _nextProtocol = nextProtocol;
         addBean(_sslContextFactory);
     }
 

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -41,6 +38,9 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class TryFilesFilterTest
 {
     private Server server;
@@ -55,8 +55,7 @@ public class TryFilesFilterTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
