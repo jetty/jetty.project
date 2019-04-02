@@ -368,7 +368,6 @@ class MetaData
                 if (_proxied || _getter.getDeclaringClass().isInstance(mbean))
                     target = mbean;
                 Object result = _getter.invoke(target);
-                mbean.notifyGetAttribute(_info, result);
                 if (result == null)
                     return null;
                 if (!_convert)
@@ -417,8 +416,9 @@ class MetaData
                         params = new Object[]{mbean.findBean((ObjectName)value)};
                     }
                 }
+                Object oldValue = getAttribute(mbean);
                 _setter.invoke(target, params);
-                mbean.notifySetAttribute(_info, value);
+                mbean.notifySetAttribute(_info, oldValue, value);
             }
             catch (InvocationTargetException x)
             {

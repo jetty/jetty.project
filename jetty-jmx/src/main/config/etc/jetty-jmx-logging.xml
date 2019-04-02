@@ -3,12 +3,19 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Ref id="MBeanContainer">
-    <Call name="addObjectMBeanListener">
+    <Call name="addNotificationListener">
+      <Arg>
+        <New class="javax.management.ObjectName">
+          <Arg>org.eclipse.jetty.*:*</Arg>
+        </New>
+      </Arg>
       <Arg>
         <New class="org.eclipse.jetty.jmx.ObjectMBean$LoggingListener">
           <Arg><Property name="jetty.jmx.logging.loggerName" /></Arg>
         </New>
       </Arg>
+      <Arg />
+      <Arg />
     </Call>
   </Ref>
 </Configure>

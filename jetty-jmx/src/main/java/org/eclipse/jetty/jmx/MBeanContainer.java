@@ -30,12 +30,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
+import javax.management.Notification;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.modelmbean.ModelMBean;
 
@@ -64,7 +68,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     private final ConcurrentMap<Class, MetaData> _metaData = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Container> _beans = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, ObjectName> _mbeans = new ConcurrentHashMap<>();
-    private final List<ObjectMBean.Listener> _listeners = new CopyOnWriteArrayList<>();
+    private final NotificationSupport _notifier = new NotificationSupport();
     private String _domain = null;
 
     /**
@@ -127,19 +131,19 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         return _domain;
     }
 
-    public void addObjectMBeanListener(ObjectMBean.Listener listener)
+    public Object addNotificationListener(ObjectName pattern, NotificationListener listener, NotificationFilter filter, Object handback)
     {
-        _listeners.add(listener);
+        return _notifier.add(pattern, listener, filter, handback);
     }
 
-    public void removeObjectMBeanListener(ObjectMBean.Listener listener)
+    public boolean removeNotificationListener(Object registration)
     {
-        _listeners.add(listener);
+        return _notifier.remove(registration);
     }
 
-    List<ObjectMBean.Listener> listeners()
+    void emitNotification(ObjectName objectName, Notification notification)
     {
-        return _listeners;
+        _notifier.emit(objectName, notification);
     }
 
     /**
@@ -323,9 +327,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
             ObjectName objectName = null;
             if (mbean instanceof ObjectMBean)
-            {
                 objectName = ((ObjectMBean)mbean).getObjectName();
-            }
 
             // No override of the mbean's ObjectName, so make a generic one.
             if (objectName == null)
@@ -460,6 +462,78 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         catch (Throwable x)
         {
             LOG.warn(x);
+        }
+    }
+
+    private static class NotificationSupport
+    {
+        private static final AtomicLong KEYS = new AtomicLong();
+
+        private final List<Entry> _entries = new CopyOnWriteArrayList<>();
+
+        private Object add(ObjectName pattern, NotificationListener listener, NotificationFilter filter, Object handback)
+        {
+            Object key = KEYS.incrementAndGet();
+            _entries.add(new Entry(key, Objects.requireNonNull(pattern), Objects.requireNonNull(listener), filter, handback));
+            return key;
+        }
+
+        public boolean remove(Object key)
+        {
+            return _entries.removeIf(entry -> Objects.equals(key, entry._key));
+        }
+
+        public void emit(ObjectName objectName, Notification notification)
+        {
+            _entries.stream()
+                    .filter(entry -> entry._objectName.apply(objectName))
+                    .filter(entry -> filter(entry._filter, notification))
+                    .forEach(entry -> notify(entry._listener, notification, entry._handback));
+        }
+
+        private boolean filter(NotificationFilter filter, Notification notification)
+        {
+            if (filter == null)
+                return true;
+            try
+            {
+                return filter.isNotificationEnabled(notification);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure invoking filter " + filter, x);
+                return false;
+            }
+        }
+
+        private void notify(NotificationListener listener, Notification notification, Object handback)
+        {
+            try
+            {
+                listener.handleNotification(notification, handback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure invoking listener " + listener, x);
+            }
+        }
+
+        private static class Entry
+        {
+            private final Object _key;
+            private final ObjectName _objectName;
+            private final NotificationListener _listener;
+            private final NotificationFilter _filter;
+            private final Object _handback;
+
+            private Entry(Object key, ObjectName _objectName, NotificationListener _listener, NotificationFilter _filter, Object _handback)
+            {
+                this._key = key;
+                this._objectName = _objectName;
+                this._listener = _listener;
+                this._filter = _filter;
+                this._handback = _handback;
+            }
         }
     }
 }

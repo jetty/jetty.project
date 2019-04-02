@@ -19,19 +19,28 @@
 package org.eclipse.jetty.jmx;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.management.Attribute;
+import javax.management.AttributeChangeNotification;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
+import javax.management.ListenerNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
+import javax.management.MBeanNotificationInfo;
 import javax.management.MBeanOperationInfo;
+import javax.management.MBeanRegistration;
+import javax.management.MBeanServer;
+import javax.management.Notification;
+import javax.management.NotificationBroadcasterSupport;
+import javax.management.NotificationEmitter;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
@@ -50,14 +59,19 @@ import org.eclipse.jetty.util.log.Logger;
  * behavior of ObjectMBean and provide a custom ObjectName, or custom
  * ObjectName properties {@code name} and {@code context}, etc.</p>
  */
-public class ObjectMBean implements DynamicMBean
+public class ObjectMBean implements DynamicMBean, NotificationEmitter, MBeanRegistration
 {
+    public static final String OPERATION_INVOKE = "org.eclipse.jetty.jmx.operation.invoke";
+    public static final String OPERATION_ARGUMENTS = "org.eclipse.jetty.jmx.operation.arguments";
+    private static final String OPERATION_RESULT = "org.eclipse.jetty.jmx.operation.result";
     private static final Logger LOG = Log.getLogger(ObjectMBean.class);
 
+    private final AtomicLong _notificationSequence = new AtomicLong();
+    private final NotificationBroadcasterSupport _notificationSupport = new NotificationBroadcasterSupport();
     protected final Object _managed;
-    private final AtomicReference<List<Listener>> _listeners = new AtomicReference<>();
     private MetaData _metaData;
     private MBeanContainer _mbeanContainer;
+    private ObjectName _objectName;
 
     /**
      * Creates a new ObjectMBean wrapping the given {@code managedObject}.
@@ -77,6 +91,61 @@ public class ObjectMBean implements DynamicMBean
         return _managed;
     }
 
+    @Override
+    public void addNotificationListener(javax.management.NotificationListener listener, NotificationFilter filter, Object handback) throws IllegalArgumentException
+    {
+        _notificationSupport.addNotificationListener(listener, filter, handback);
+    }
+
+    @Override
+    public void removeNotificationListener(javax.management.NotificationListener listener) throws ListenerNotFoundException
+    {
+        _notificationSupport.removeNotificationListener(listener);
+    }
+
+    @Override
+    public void removeNotificationListener(javax.management.NotificationListener listener, NotificationFilter filter, Object handback) throws ListenerNotFoundException
+    {
+        _notificationSupport.removeNotificationListener(listener, filter, handback);
+    }
+
+    @Override
+    public MBeanNotificationInfo[] getNotificationInfo()
+    {
+        return metaData().getMBeanInfo().getNotifications();
+    }
+
+    public void emitNotification(Notification notification)
+    {
+        _mbeanContainer.emitNotification(getObjectName(), notification);
+        _notificationSupport.sendNotification(notification);
+    }
+
+    @Override
+    public ObjectName preRegister(MBeanServer server, ObjectName objectName)
+    {
+        _objectName = objectName;
+        return objectName;
+    }
+
+    @Override
+    public void postRegister(Boolean registrationDone)
+    {
+        if (registrationDone == Boolean.FALSE)
+            _objectName = null;
+    }
+
+    @Override
+    public void preDeregister()
+    {
+        _objectName = null;
+    }
+
+    @Override
+    public void postDeregister()
+    {
+    }
+
     /**
      * <p>Allows to customize the ObjectName of this MBean.</p>
      *
@@ -84,7 +153,7 @@ public class ObjectMBean implements DynamicMBean
      */
     public ObjectName getObjectName()
     {
-        return null;
+        return _objectName;
     }
 
     /**
@@ -128,28 +197,6 @@ public class ObjectMBean implements DynamicMBean
     public MBeanContainer getMBeanContainer()
     {
         return this._mbeanContainer;
-    }
-
-    public void addListener(Listener listener)
-    {
-        getOrMakeListeners().add(listener);
-    }
-
-    public void removeListener(Listener listener)
-    {
-        getOrMakeListeners().remove(listener);
-    }
-
-    private List<Listener> getOrMakeListeners()
-    {
-        List<Listener> result = _listeners.get();
-        if (result == null)
-        {
-            result = new CopyOnWriteArrayList<>();
-            if (!_listeners.compareAndSet(null, result))
-                result = _listeners.get();
-        }
-        return result;
     }
 
     /**
@@ -267,55 +314,35 @@ public class ObjectMBean implements DynamicMBean
         return _metaData;
     }
 
-    void notifyGetAttribute(MBeanAttributeInfo attributeInfo, Object value)
+    void notifySetAttribute(MBeanAttributeInfo attributeInfo, Object oldValue, Object newValue)
     {
-        listeners().forEach(l ->
-        {
-            try
-            {
-                l.getAttribute(this, attributeInfo, value);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while invoking listener " + l, x);
-            }
-        });
-    }
-
-    void notifySetAttribute(MBeanAttributeInfo attributeInfo, Object value)
-    {
-        listeners().forEach(l ->
-        {
-            try
-            {
-                l.setAttribute(this, attributeInfo, value);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while invoking listener " + l, x);
-            }
-        });
+        AttributeChangeNotification notification = new AttributeChangeNotification(
+                getObjectName(),
+                _notificationSequence.incrementAndGet(),
+                System.currentTimeMillis(),
+                null,
+                attributeInfo.getName(),
+                attributeInfo.getType(),
+                oldValue,
+                newValue
+        );
+        Map<String, Object> userData = new HashMap<>();
+        userData.put(ObjectMBean.class.getName(), this);
+        userData.put(MBeanAttributeInfo.class.getName(), attributeInfo);
+        notification.setUserData(userData);
+        emitNotification(notification);
     }
 
     void notifyInvoke(MBeanOperationInfo operationInfo, Object[] arguments, Object result)
     {
-        listeners().forEach(l ->
-        {
-            try
-            {
-                l.invoke(this, operationInfo, arguments, result);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while invoking listener " + l, x);
-            }
-        });
-    }
-
-    private Stream<Listener> listeners()
-    {
-        List<Listener> listeners = _listeners.get();
-        return Stream.concat(_mbeanContainer.listeners().stream(), listeners == null ? Stream.empty() : listeners.stream());
+        Notification notification = new Notification(OPERATION_INVOKE, getObjectName(), _notificationSequence.incrementAndGet());
+        Map<String, Object> userData = new HashMap<>();
+        userData.put(ObjectMBean.class.getName(), this);
+        userData.put(MBeanOperationInfo.class.getName(), operationInfo);
+        userData.put(OPERATION_ARGUMENTS, arguments);
+        userData.put(OPERATION_RESULT, result);
+        notification.setUserData(userData);
+        emitNotification(notification);
     }
 
     @Override
@@ -324,53 +351,50 @@ public class ObjectMBean implements DynamicMBean
         return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getManagedObject());
     }
 
-    public interface Listener
+    public static class LoggingListener implements NotificationListener
     {
-        public default void getAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
-        {
-        }
-
-        public default void setAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
-        {
-        }
-
-        public default void invoke(ObjectMBean objectMBean, MBeanOperationInfo operationInfo, Object[] arguments, Object result)
-        {
-        }
-    }
-
-    public static class LoggingListener implements Listener
-    {
-        public final Logger logger;
+        private final Logger logger;
 
         public LoggingListener()
         {
-            this(null);
+            this(LoggingListener.class.getName());
         }
 
         public LoggingListener(String loggerName)
         {
-            logger = Log.getLogger(loggerName == null ? LoggingListener.class.getName() : loggerName);
+            logger = Log.getLogger(loggerName);
         }
 
         @Override
-        public void getAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
+        public void handleNotification(Notification notification, Object handback)
         {
-            // Don't clutter the logs when JMX consoles get attributes to populate their UI.
-            if (logger.isDebugEnabled())
-                logger.debug("JMX getAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
-        }
-
-        @Override
-        public void setAttribute(ObjectMBean objectMBean, MBeanAttributeInfo attributeInfo, Object value)
-        {
-            logger.info("JMX setAttribute '{}' on {}, value={}", attributeInfo.getName(), objectMBean, formatMaybeArray(value));
-        }
-
-        @Override
-        public void invoke(ObjectMBean objectMBean, MBeanOperationInfo operationInfo, Object[] arguments, Object result)
-        {
-            logger.info("JMX invoke operation '{}' on {}, arguments={}, result={}", operationInfo.getName(), objectMBean, Arrays.toString(arguments), formatMaybeArray(result));
+            switch (notification.getType())
+            {
+                case AttributeChangeNotification.ATTRIBUTE_CHANGE:
+                {
+                    AttributeChangeNotification changeNotification = (AttributeChangeNotification)notification;
+                    logger.info("JMX setAttribute '{}' on {}, value: {} -> {}",
+                            changeNotification.getAttributeName(),
+                            notification.getSource(),
+                            formatMaybeArray(changeNotification.getOldValue()),
+                            formatMaybeArray(changeNotification.getNewValue()));
+                    break;
+                }
+                case OPERATION_INVOKE:
+                {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> userData = (Map<String, Object>)notification.getUserData();
+                    MBeanOperationInfo operationInfo = (MBeanOperationInfo)userData.get(MBeanOperationInfo.class.getName());
+                    Object[] arguments = (Object[])userData.get(OPERATION_ARGUMENTS);
+                    Object result = userData.get(OPERATION_RESULT);
+                    logger.info("JMX invoke operation '{}' on {}, arguments={}, result={}",
+                            operationInfo.getName(),
+                            notification.getSource(),
+                            Arrays.toString(arguments),
+                            formatMaybeArray(result));
+                    break;
+                }
+            }
         }
 
         private Object formatMaybeArray(Object result)
