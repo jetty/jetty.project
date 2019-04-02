@@ -43,7 +43,7 @@ public class Client
     public static void main(String[] args) throws Exception
     {
         HTTP2Client client = new HTTP2Client();
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
         client.addBean(sslContextFactory);
         client.start();
 

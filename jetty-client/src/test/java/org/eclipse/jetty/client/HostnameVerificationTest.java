@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
@@ -40,10 +36,13 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
@@ -52,7 +51,7 @@ import org.junit.jupiter.api.Test;
 @Disabled
 public class HostnameVerificationTest
 {
-    private SslContextFactory clientSslContextFactory = new SslContextFactory();
+    private SslContextFactory clientSslContextFactory = new SslContextFactory.Client();
     private Server server;
     private HttpClient client;
     private NetworkConnector connector;
@@ -64,7 +63,7 @@ public class HostnameVerificationTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        SslContextFactory serverSslContextFactory = new SslContextFactory();
+        SslContextFactory serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         serverSslContextFactory.setKeyStorePassword("storepwd");
         connector = new ServerConnector(server, serverSslContextFactory);

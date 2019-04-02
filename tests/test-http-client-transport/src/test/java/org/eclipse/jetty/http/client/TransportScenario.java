@@ -298,8 +298,7 @@ public class TransportScenario
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientThreads.setDetailedDump(true);
-        SslContextFactory sslContextFactory = newSslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
         client = newHttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
@@ -324,7 +323,7 @@ public class TransportScenario
 
     public void startServer(Handler handler) throws Exception
     {
-        sslContextFactory = newSslContextFactory();
+        sslContextFactory = newServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         serverThreads.setDetailedDump(true);
@@ -352,16 +351,29 @@ public class TransportScenario
         }
     }
 
-    protected SslContextFactory newSslContextFactory()
+    protected SslContextFactory.Server newServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    protected SslContextFactory.Client newClientSslContextFactory()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
-        return sslContextFactory;
     }
 
     public void stopClient() throws Exception

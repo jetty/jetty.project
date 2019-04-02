@@ -66,7 +66,7 @@ public class SslConnectionTest
     private static final int TIMEOUT = 1000000;
     private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
-    private final SslContextFactory _sslCtxFactory =new SslContextFactory();
+    private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill=true;
     private volatile boolean _onXWriteThenShutdown=false;
@@ -99,7 +99,6 @@ public class SslConnectionTest
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
             return sslConnection;
         }
-
 
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
@@ -144,7 +143,6 @@ public class SslConnectionTest
         }
     }
 
-
     @BeforeEach
     public void initSSL() throws Exception
     {
@@ -154,7 +152,6 @@ public class SslConnectionTest
         _sslCtxFactory.setKeyManagerPassword("keypwd");
         _sslCtxFactory.setRenegotiationAllowed(true);
         _sslCtxFactory.setRenegotiationLimit(-1);
-        _sslCtxFactory.setEndpointIdentificationAlgorithm(null);
         startManager();
     }
 

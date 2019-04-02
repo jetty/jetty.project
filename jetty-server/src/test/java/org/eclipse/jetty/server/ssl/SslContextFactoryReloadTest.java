@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -56,8 +52,11 @@ import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SslContextFactoryReloadTest
 {
@@ -72,7 +71,7 @@ public class SslContextFactoryReloadTest
     {
         server = new Server();
 
-        sslContextFactory = new SslContextFactory();
+        sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(KEYSTORE_1);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyStoreType("JKS");

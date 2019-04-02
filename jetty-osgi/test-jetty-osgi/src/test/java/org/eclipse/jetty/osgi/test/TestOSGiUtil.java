@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -273,10 +274,10 @@ public class TestOSGiUtil
        return bundleContext.getAllServiceReferences(service, null);
     }
 
-    protected static SslContextFactory newSslContextFactory()
+    protected static SslContextFactory newClientSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         return sslContextFactory;
     }
 
@@ -306,7 +307,7 @@ public class TestOSGiUtil
         }, null, null);
 
         // now test the servlet
-        HttpClient client = protocol.equals("https") ? new HttpClient(newSslContextFactory()) : new HttpClient();
+        HttpClient client = protocol.equals("https") ? new HttpClient(newClientSslContextFactory()) : new HttpClient();
         try
         {
             client.start();

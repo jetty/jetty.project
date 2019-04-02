@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 
@@ -32,11 +28,14 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SslEngineBehaviorTest
 {
@@ -45,12 +44,11 @@ public class SslEngineBehaviorTest
     @BeforeAll
     public static void startSsl() throws Exception
     {
-        sslCtxFactory = new SslContextFactory();
+        sslCtxFactory = new SslContextFactory.Server();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
         sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslCtxFactory.setKeyStorePassword("storepwd");
         sslCtxFactory.setKeyManagerPassword("keypwd");
-        sslCtxFactory.setEndpointIdentificationAlgorithm("");
         sslCtxFactory.start();
     }
 

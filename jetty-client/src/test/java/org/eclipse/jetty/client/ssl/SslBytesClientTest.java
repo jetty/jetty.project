@@ -70,7 +70,7 @@ public class SslBytesClientTest extends SslBytesTest
     {
         threadPool = Executors.newCachedThreadPool();
 
-        sslContextFactory = new SslContextFactory(true);
+        sslContextFactory = new SslContextFactory.Client(true);
         client = new HttpClient(sslContextFactory);
         client.setMaxConnectionsPerDestination(1);
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");

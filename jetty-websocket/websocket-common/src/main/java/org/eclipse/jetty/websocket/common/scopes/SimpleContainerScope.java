@@ -48,8 +48,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
     public SimpleContainerScope(WebSocketPolicy policy)
     {
-        this(policy, new MappedByteBufferPool(), new DecoratedObjectFactory());
-        this.sslContextFactory = new SslContextFactory();
+        this(policy, new MappedByteBufferPool());
     }
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -59,7 +58,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        this(policy, bufferPool, (Executor) null, objectFactory);
+        this(policy, bufferPool, null, objectFactory);
     }
     
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, DecoratedObjectFactory objectFactory)
@@ -83,9 +82,9 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
             this.objectFactory = objectFactory;
         }
 
-        if(ssl == null)
+        if (ssl == null)
         {
-            this.sslContextFactory = new SslContextFactory();
+            this.sslContextFactory = new SslContextFactory.Server();
         }
         else
         {

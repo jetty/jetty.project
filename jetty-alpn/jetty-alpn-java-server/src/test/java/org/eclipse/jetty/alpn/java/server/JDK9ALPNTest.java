@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.alpn.java.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,6 +44,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 public class JDK9ALPNTest
 {
     private Server server;
@@ -68,7 +68,7 @@ public class JDK9ALPNTest
 
     private SslContextFactory newSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
@@ -90,7 +90,7 @@ public class JDK9ALPNTest
             }
         });
 
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
@@ -132,7 +132,7 @@ public class JDK9ALPNTest
             }
         });
 
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
