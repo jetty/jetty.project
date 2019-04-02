@@ -651,11 +651,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             _tryExecutor);
     }
 
-    private Runnable idleJobPoll() throws InterruptedException
-    {
-        return _jobs.poll(_idleTimeout, TimeUnit.MILLISECONDS);
-    }
-
     private Runnable _runnable = new Runnable()
     {
         @Override
@@ -663,21 +658,60 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         {
             boolean shrink = false;
             boolean ignore = false;
+            boolean idle = false;
+
             try
             {
                 Runnable job = _jobs.poll();
-
                 if (job != null && _threadsIdle.get() == 0)
-                {
                     startThreads(1);
-                }
 
                 loop:
-                while (isRunning())
+                while (true)
                 {
-                    // Job loop
-                    while (job != null && isRunning())
+                    if (job == null)
                     {
+                        if (!idle)
+                        {
+                            idle = true;
+                            _threadsIdle.incrementAndGet();
+                        }
+
+                        if (_idleTimeout <= 0)
+                            job = _jobs.take();
+                        else
+                        {
+                            // maybe we should shrink?
+                            int size = _threadsStarted.get();
+                            if (size > _minThreads)
+                            {
+                                long last = _lastShrink.get();
+                                long now = System.nanoTime();
+                                if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
+                                {
+                                    if (_lastShrink.compareAndSet(last, now))
+                                    {
+                                        _threadsStarted.decrementAndGet();
+                                        shrink = true;
+                                        break loop;
+                                    }
+                                }
+                            }
+
+                            job = _jobs.poll(_idleTimeout, TimeUnit.MILLISECONDS);
+                        }
+                    }
+
+                    // run job
+                    if (job != null)
+                    {
+                        if (idle)
+                        {
+                            idle = false;
+                            if (_threadsIdle.decrementAndGet() == 0)
+                                startThreads(1);
+                        }
+
                         if (LOG.isDebugEnabled())
                             LOG.debug("run {}", job);
                         runJob(job);
@@ -688,46 +722,12 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                             ignore = true;
                             break loop;
                         }
-                        job = _jobs.poll();
                     }
 
-                    // Idle loop
-                    try
-                    {
-                        _threadsIdle.incrementAndGet();
+                    if (!isRunning())
+                        break loop;
 
-                        while (isRunning() && job == null)
-                        {
-                            if (_idleTimeout <= 0)
-                                job = _jobs.take();
-                            else
-                            {
-                                // maybe we should shrink?
-                                final int size = _threadsStarted.get();
-                                if (size > _minThreads)
-                                {
-                                    long last = _lastShrink.get();
-                                    long now = System.nanoTime();
-                                    if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
-                                    {
-                                        if (_lastShrink.compareAndSet(last, now) && _threadsStarted.compareAndSet(size, size - 1))
-                                        {
-                                            shrink = true;
-                                            break loop;
-                                        }
-                                    }
-                                }
-                                job = idleJobPoll();
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        if (_threadsIdle.decrementAndGet() == 0)
-                        {
-                            startThreads(1);
-                        }
-                    }
+                    job = _jobs.poll();
                 }
             }
             catch (InterruptedException e)
@@ -741,6 +741,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             finally
             {
+                if (idle)
+                    _threadsIdle.decrementAndGet();
+
                 if (!shrink && isRunning())
                 {
                     if (!ignore)
