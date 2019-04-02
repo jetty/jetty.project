@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -870,7 +871,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         if (filled < 0)
                                             throw new IOException("Broken pipe");
                                     }
-                                    return result = appOuts.length==1 && BufferUtil.isEmpty(appOuts[0]);
+                                    return result = BufferUtil.isEmpty(_encryptedOutput) &&
+                                            Arrays.stream(appOuts).mapToInt(ByteBuffer::remaining).sum()==0;
 
                                 default:
                                     throw new IllegalStateException("Unexpected HandshakeStatus " + status);
