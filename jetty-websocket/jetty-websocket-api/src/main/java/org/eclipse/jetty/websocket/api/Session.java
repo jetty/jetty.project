@@ -164,11 +164,7 @@ public interface Session extends WebSocketPolicy, Closeable
 
     /**
      * Suspend the incoming read events on the connection.
-     * <p>
-     * This should be called during the processing of a frame or message to successfully
-     * suspend read events before the next frame is received. Calling suspend outside of
-     * this will only suspend read events after the next frame has been received.
-     * </p>
+     *
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
     SuspendToken suspend();

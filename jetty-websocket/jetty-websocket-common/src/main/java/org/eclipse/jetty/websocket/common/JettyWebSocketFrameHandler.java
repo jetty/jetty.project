@@ -80,6 +80,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink activeMessageSink;
     private WebSocketSession session;
     private SuspendState state = SuspendState.DEMANDING;
+    private Callback suspendedCallback;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
         Object endpointInstance,
@@ -167,6 +168,24 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
+        synchronized (this)
+        {
+            switch(state)
+            {
+                case DEMANDING:
+                    break;
+
+                case SUSPENDING:
+                    suspendedCallback = Callback.from(()->onFrame(frame, callback));
+                    state = SuspendState.SUSPENDED;
+                    return;
+
+                case SUSPENDED:
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+
         // Send to raw frame handling on user side (eg: WebSocketFrameListener)
         if (frameHandle != null)
         {
@@ -378,18 +397,18 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public void resume()
     {
+        Callback onFrame;
         synchronized (this)
         {
+            onFrame = suspendedCallback;
+            suspendedCallback = null;
+
             switch(state)
             {
                 case DEMANDING:
                     throw new IllegalStateException("Already Resumed");
 
                 case SUSPENDED:
-                    state = SuspendState.DEMANDING;
-                    session.getCoreSession().demand(1);
-                    break;
-
                 case SUSPENDING:
                     state = SuspendState.DEMANDING;
                     break;
@@ -398,6 +417,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     throw new IllegalStateException();
             }
         }
+
+        if (onFrame != null)
+            onFrame.succeeded();
     }
 
     private void demand()

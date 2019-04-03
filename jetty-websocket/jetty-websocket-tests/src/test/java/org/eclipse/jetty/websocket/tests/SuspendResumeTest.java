@@ -154,17 +154,13 @@ public class SuspendResumeTest
         clientSocket.session.getRemote().sendStringByFuture("message-from-client");
         assertThat(serverSocket.messages.poll(5, TimeUnit.SECONDS), is("message-from-client"));
 
-        // the first message is received as we had already demanded before suspend
-        serverSocket.session.getRemote().sendStringByFuture("first-message");
-        assertThat(clientSocket.messages.poll(5, TimeUnit.SECONDS), is("first-message"));
-
-        // the second message is not received as it is suspended
-        serverSocket.session.getRemote().sendStringByFuture("second-message");
+        // the message is not received as it is suspended
+        serverSocket.session.getRemote().sendStringByFuture("message-from-server");
         assertNull(clientSocket.messages.poll(2, TimeUnit.SECONDS));
 
         // client should receive message after it resumes
         suspendToken.resume();
-        assertThat(clientSocket.messages.poll(5, TimeUnit.SECONDS), is("second-message"));
+        assertThat(clientSocket.messages.poll(5, TimeUnit.SECONDS), is("message-from-server"));
 
         // make sure both sides are closed
         clientSocket.session.close();
