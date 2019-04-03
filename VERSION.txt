@@ -1,3 +1,5 @@
+jetty-9.3.27-SNAPSHOT
+
 jetty-9.3.26.v20190403 - 03 April 2019
  + 3487 Test WebAppClassLoader does not definePackage
  + 3461 gzip request customizer
