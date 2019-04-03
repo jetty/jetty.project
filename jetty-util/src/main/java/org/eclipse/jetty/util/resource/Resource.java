@@ -30,7 +30,6 @@ import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -515,8 +514,8 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (base==null || !isDirectory())
             return null;
 
-        String[] ls = list();
-        if (ls == null)
+        String[] rawListing = list();
+        if (rawListing == null)
         {
             return null;
         }
@@ -555,9 +554,9 @@ public abstract class Resource implements ResourceFactory, Closeable
 
         // Gather up entries
         List<Resource> items = new ArrayList<>();
-        for (int i=0 ; i< ls.length ; i++)
+        for (String l : rawListing)
         {
-            Resource item = addPath(ls[i]);
+            Resource item = addPath(l);
             items.add(item);
         }
 
@@ -574,8 +573,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             Collections.sort(items, ResourceCollators.byName(sortOrderAscending));
         }
-
-        Arrays.sort(ls);
 
         String decodedBase = URIUtil.decodePath(base);
         String title = "Directory: " + deTag(decodedBase);

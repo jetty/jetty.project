@@ -18,18 +18,22 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.text.Collator;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Locale;
 
 public class ResourceCollators
 {
     private static Comparator<? super Resource> BY_NAME_ASCENDING =
             new Comparator<Resource>()
             {
+                private final Collator collator = Collator.getInstance(Locale.ENGLISH);
+
                 @Override
                 public int compare(Resource o1, Resource o2)
                 {
-                    return o1.getName().compareTo(o2.getName());
+                    return collator.compare(o1.getName(), o2.getName());
                 }
             };
 
@@ -42,7 +46,7 @@ public class ResourceCollators
                 @Override
                 public int compare(Resource o1, Resource o2)
                 {
-                    return (int) (o1.lastModified() - o2.lastModified());
+                    return Long.compare(o1.lastModified(), o2.lastModified());
                 }
             };
 
@@ -55,7 +59,7 @@ public class ResourceCollators
                 @Override
                 public int compare(Resource o1, Resource o2)
                 {
-                    return (int) (o1.length() - o2.length());
+                    return Long.compare(o1.length(), o2.length());
                 }
             };
 
