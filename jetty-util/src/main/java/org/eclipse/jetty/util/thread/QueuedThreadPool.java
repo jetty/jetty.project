@@ -689,8 +689,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         @Override
         public void run()
         {
-            boolean shrink = false;
-            boolean ignore = false;
             boolean idle = false;
 
             try
@@ -723,11 +721,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                                 if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
                                 {
                                     if (_lastShrink.compareAndSet(last, now))
-                                    {
-                                        _threadsStarted.decrementAndGet();
-                                        shrink = true;
                                         break loop;
-                                    }
                                 }
                             }
 
@@ -750,11 +744,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         runJob(job);
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {}", job);
-                        if (Thread.interrupted())
-                        {
-                            ignore = true;
-                            break loop;
-                        }
+
+                        // Clear interrupted status
+                        Thread.interrupted();
                     }
 
                     if (!isRunning())
@@ -765,11 +757,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             catch (InterruptedException e)
             {
-                ignore = true;
                 LOG.ignore(e);
             }
             catch (Throwable e)
             {
+                LOG.warn("Unexpected thread death: {} in {}", this, QueuedThreadPool.this);
                 LOG.warn(e);
             }
             finally
@@ -777,15 +769,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 if (idle)
                     _threadsIdle.decrementAndGet();
 
-                if (!shrink && isRunning())
-                {
-                    if (!ignore)
-                        LOG.warn("Unexpected thread death: {} in {}", this, QueuedThreadPool.this);
-                    // This is an unexpected thread death!
-                    if (_threadsStarted.decrementAndGet() < getMaxThreads())
-                        startThreads(1);
-                }
                 removeThread(Thread.currentThread());
+
+                if (_threadsStarted.decrementAndGet() < getMinThreads())
+                    startThreads(1);
             }
         }
     };
