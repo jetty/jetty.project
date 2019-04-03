@@ -46,8 +46,6 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 
 /* ------------------------------------------------------------ */
 /** 
@@ -587,8 +585,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (query != null)
         {
             MultiMap<String> params = new MultiMap<>();
-            byte[] rawQuery = query.getBytes(UTF_8);
-            UrlEncoded.decodeUtf8To(rawQuery, 0, query.length(), params);
+            UrlEncoded.decodeUtf8To(query, 0, query.length(), params);
 
             String paramO = params.getString("O");
             String paramC = params.getString("C");
@@ -759,7 +756,7 @@ public abstract class Resource implements ResourceFactory, Closeable
 
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
-            String path=URIUtil.addPaths(encodedBase,URIUtil.encodePath(name));
+            String path=URIUtil.addEncodedPaths(encodedBase,URIUtil.encodePath(name));
             buf.append(path);
             buf.append("\">");
             buf.append(deTag(name));
