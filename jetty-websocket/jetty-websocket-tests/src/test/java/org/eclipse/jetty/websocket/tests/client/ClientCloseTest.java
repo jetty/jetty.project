@@ -237,7 +237,7 @@ public class ClientCloseTest
     public void testRemoteDisconnect() throws Exception
     {
         // Set client timeout
-        final int clientTimeout = 1000;
+        final int clientTimeout = 3000;
         client.setIdleTimeout(Duration.ofMillis(clientTimeout));
 
         ClientOpenSessionTracker clientSessionTracker = new ClientOpenSessionTracker(1);
@@ -248,20 +248,18 @@ public class ClientCloseTest
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
-        try (Session ignored = confirmConnection(clientSocket, clientConnectFuture))
-        {
-            // client confirms connection via echo
+        // client confirms connection via echo
+        confirmConnection(clientSocket, clientConnectFuture);
 
-            // client sends close frame (triggering server connection abort)
-            final String origCloseReason = "abort";
-            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+        // client sends close frame (triggering server connection abort)
+        final String origCloseReason = "abort";
+        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-            // client reads -1 (EOF)
-            // client triggers close event on client ws-endpoint
-            clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-                    is(StatusCode.ABNORMAL),
-                    containsString("Channel Closed"));
-        }
+        // client reads -1 (EOF)
+        // client triggers close event on client ws-endpoint
+        clientSocket.assertReceivedCloseEvent(2000,
+                is(StatusCode.ABNORMAL),
+                containsString("Channel Closed"));
 
         clientSessionTracker.assertClosedProperly(client);
     }
@@ -286,7 +284,7 @@ public class ClientCloseTest
             // client confirms connection via echo
 
             // client sends close frame
-            final String origCloseReason = "sleep|5000";
+            final String origCloseReason = "sleep|2500";
             clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
             // client close should occur
