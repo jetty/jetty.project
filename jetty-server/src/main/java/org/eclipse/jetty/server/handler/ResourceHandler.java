@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -102,7 +101,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return null;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void doStart() throws Exception
@@ -156,7 +155,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     /* ------------------------------------------------------------ */
     /**
      * Get the minimum content length for async handling.
-     * 
+     *
      * @return The minimum size in bytes of the content before asynchronous handling is used, or -1 for no async handling or 0 (default) for using
      *         {@link HttpServletResponse#getBufferSize()} as the minimum length.
      */
@@ -169,7 +168,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     /* ------------------------------------------------------------ */
     /**
      * Get minimum memory mapped file content length.
-     * 
+     *
      * @return the minimum size in bytes of a file resource that will be served using a memory mapped buffer, or -1 (default) for no memory mapped buffers.
      */
     @Deprecated
@@ -303,7 +302,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     /* ------------------------------------------------------------ */
     /**
      * Get the directory option.
-     * 
+     *
      * @return true if directories are listed.
      */
     public boolean isDirectoriesListed()
@@ -319,7 +318,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     {
         return _resourceService.isEtags();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return If set to true, then static content will be served as gzip content encoded if a matching resource is found ending with ".gz"
@@ -403,7 +402,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     /* ------------------------------------------------------------ */
     /**
      * Set the directory.
-     * 
+     *
      * @param directory
      *            true if directories are listed.
      */
@@ -461,7 +460,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     /* ------------------------------------------------------------ */
     /**
      * Set the minimum content length for async handling.
-     * 
+     *
      * @param minAsyncContentLength
      *            The minimum size in bytes of the content before asynchronous handling is used, or -1 for no async handling or 0 for using
      *            {@link HttpServletResponse#getBufferSize()} as the minimum length.
@@ -474,7 +473,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     /* ------------------------------------------------------------ */
     /**
      * Set minimum memory mapped file content length.
-     * 
+     *
      * @param minMemoryMappedFileSize
      *            the minimum size in bytes of a file resource that will be served using a memory mapped buffer, or -1 for no memory mapped buffers.
      */
