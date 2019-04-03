@@ -692,22 +692,17 @@ public abstract class Resource implements ResourceFactory, Closeable
             {
                 name = name.substring(slashIdx + 1);
             }
+            if (item.isDirectory() && !name.endsWith("/"))
+            {
+                name += URIUtil.SLASH;
+            }
 
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
             String path=URIUtil.addPaths(encodedBase,URIUtil.encodePath(name));
             buf.append(path);
-            if (item.isDirectory() && !path.endsWith("/"))
-            {
-                buf.append(URIUtil.SLASH);
-            }
-            
             buf.append("\">");
             buf.append(deTag(name));
-            if (item.isDirectory() && !path.endsWith("/"))
-            {
-                buf.append(URIUtil.SLASH);
-            }
             buf.append("&nbsp;");
             buf.append("</a></td>");
 
