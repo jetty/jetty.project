@@ -1,11 +1,4 @@
-jetty-9.3.27-SNAPSHOT
-
-jetty-9.3.26.v20190403 - 03 April 2019
- + 3487 Test WebAppClassLoader does not definePackage
- + 3461 gzip request customizer
- + 3302 Supporting host:ip in X-Forwarded-For
- + Updated ALPN to JDK 8u202.
- + 2954 Report badmessage cause
+jetty-9.3.26-SNAPSHOT
 
 jetty-9.3.25.v20180904 - 04 September 2018
  + 2135 Android 8.1 needs direct buffers for SSL/TLS to work
