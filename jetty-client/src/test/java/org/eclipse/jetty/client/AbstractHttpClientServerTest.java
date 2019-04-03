@@ -79,9 +79,10 @@ public abstract class AbstractHttpClientServerTest
         HttpClientTransport transport = new HttpClientTransportOverHTTP(clientConnector);
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName("client");
+        clientConnector.setExecutor(executor);
         Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
+        clientConnector.setScheduler(scheduler);
         client = newHttpClient(transport);
-        client.setScheduler(scheduler);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         if (config != null)
             config.accept(client);

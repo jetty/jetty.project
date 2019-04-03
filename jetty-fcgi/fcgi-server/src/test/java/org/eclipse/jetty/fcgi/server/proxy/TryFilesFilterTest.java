@@ -71,6 +71,7 @@ public class TryFilesFilterTest
 
         ClientConnector clientConnector = new ClientConnector();
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
         clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         clientSslContextFactory.setKeyStorePassword("storepwd");
         clientSslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
