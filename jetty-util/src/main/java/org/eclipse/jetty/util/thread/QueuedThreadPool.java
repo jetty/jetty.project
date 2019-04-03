@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -146,6 +147,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStop() throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopping {}", this);
+
         removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
         
@@ -163,11 +167,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         for (int i = _threadsStarted.get(); i-- > 0; )
             jobs.offer(noop);
 
-        // try to jobs complete naturally for half our stop time
+        // try to let jobs complete naturally for half our stop time
         long stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
             long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waiting for {} for {}", thread, canwait);
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -177,13 +183,19 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         // interrupt remaining threads
         if (_threadsStarted.get() > 0)
             for (Thread thread : _threads)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Interrupting {}", thread);
                 thread.interrupt();
+            }
 
         // wait again for the other half of our stop time
         stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
             long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waiting for {} for {}", thread, canwait);
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -211,6 +223,25 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 for (Thread unstopped : _threads)
                     LOG.warn("{} Couldn't stop {}",this,unstopped);
             }
+        }
+
+        // Close any un-executed jobs
+        while (!_jobs.isEmpty())
+        {
+            Runnable job = _jobs.poll();
+            if (job instanceof Closeable)
+            {
+                try
+                {
+                    ((Closeable)job).close();
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn(t);
+                }
+            }
+            else if (job != noop)
+                LOG.warn("Stopped without executing or closing {}", job);
         }
 
         if (_budget!=null)
@@ -535,6 +566,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 thread.setDaemon(isDaemon());
                 thread.setPriority(getThreadsPriority());
                 thread.setName(_name + "-" + thread.getId());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Starting {}", thread);
                 _threads.add(thread);
                 _lastShrink.set(System.nanoTime());
                 thread.start();
