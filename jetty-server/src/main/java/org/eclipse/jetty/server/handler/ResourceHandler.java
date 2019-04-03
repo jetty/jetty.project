@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -182,7 +181,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext==null?null:scontext.getContextHandler());
         _mimeTypes = _context==null?new MimeTypes():_context.getMimeTypes();
-        
+
         super.doStart();
     }
 
@@ -308,7 +307,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
 
         if (path==null || !path.startsWith("/"))
             return null;
-        
+
         try
         {
             Resource base = _baseResource;
@@ -504,10 +503,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
             baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
         if (last_modified>0)
             response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
-        
+
         if(skipContentBody)
             return;
-        
+
         // Send the content
         OutputStream out =null;
         try {out = response.getOutputStream();}
@@ -546,7 +545,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
                 };
 
                 // Can we use a memory mapped file?
-                if (_minMemoryMappedContentLength>=0 && 
+                if (_minMemoryMappedContentLength>=0 &&
                     resource.length()>_minMemoryMappedContentLength &&
                     resource.length()<Integer.MAX_VALUE &&
                     resource instanceof PathResource)
@@ -592,7 +591,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
     {
         if (_directory)
         {
-            String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0);
+            String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0, request.getQueryString());
             response.setContentType("text/html;charset=utf-8");
             response.getWriter().println(listing);
         }

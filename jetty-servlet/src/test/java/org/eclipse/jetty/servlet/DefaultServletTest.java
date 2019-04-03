@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -34,7 +27,6 @@ import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -64,6 +56,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class DefaultServletTest
 {
@@ -144,9 +143,14 @@ public class DefaultServletTest
         /* create some content in the docroot */
         File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
-        assertTrue(new File(resBase, "one").mkdir());
+        File one = new File(resBase, "one");
+        assertTrue(one.mkdir());
         assertTrue(new File(resBase, "two").mkdir());
         assertTrue(new File(resBase, "three").mkdir());
+
+        File alert = new File(one, "onmouseclick='alert(oops)'");
+        FS.touch(alert);
+
         if (!OS.IS_WINDOWS)
         {
             assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
@@ -166,6 +170,15 @@ public class DefaultServletTest
         String response = connector.getResponses(req1.toString());
 
         assertResponseNotContains("<script>", response);
+
+
+        req1 = new StringBuffer();
+        req1.append("GET /context/one/;\"onmouseover='alert(document.location)' HTTP/1.0\n");
+        req1.append("\n");
+
+        response = connector.getResponses(req1.toString());
+
+        assertResponseNotContains("\"onmouseover", response);
     }
 
     @Test
@@ -413,7 +426,7 @@ public class DefaultServletTest
         assertTrue(index.delete());
         response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Location: http://0.0.0.0/context/dir/index.htm", response);
-        
+
         assertTrue(inde.delete());
         response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
@@ -523,7 +536,7 @@ public class DefaultServletTest
         if (!OS.IS_WINDOWS)
         {
             context.clearAliasChecks();
-            
+
             Files.createSymbolicLink(dirLink.toPath(),dir.toPath());
             Files.createSymbolicLink(dirRLink.toPath(),new File("dir").toPath());
             Files.createSymbolicLink(link.toPath(),foobar.toPath());
@@ -611,12 +624,12 @@ public class DefaultServletTest
     {
         if (!OS.IS_LINUX)
             return;
-        
+
         testdir.ensureEmpty();
         File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         context.setBaseResource(Resource.newResource(resBase));
-        
+
         File index = new File(resBase, "index.html");
         createFile(index, "<h1>Hello World</h1>");
 
@@ -632,19 +645,19 @@ public class DefaultServletTest
 
         response = connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello World</h1>", response);
-        
+
         ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
-        
+
         HttpContent content = factory.getContent("/index.html",200);
         ByteBuffer buffer = content.getDirectBuffer();
-        Assert.assertTrue(buffer.isDirect());        
+        Assert.assertTrue(buffer.isDirect());
         content = factory.getContent("/index.html",5);
         buffer = content.getDirectBuffer();
-        Assert.assertTrue(buffer==null);        
+        Assert.assertTrue(buffer==null);
     }
-    
-    
-    
+
+
+
     @Test
     public void testRangeRequests() throws Exception
     {
@@ -817,7 +830,7 @@ public class DefaultServletTest
         server.stop();
         context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         server.start();
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
@@ -828,7 +841,7 @@ public class DefaultServletTest
         context.getServletHandler().setFilters(new FilterHolder[]{});
         context.addFilter(WriterFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         server.start();
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
@@ -867,7 +880,7 @@ public class DefaultServletTest
         int e=response.indexOf("ETag: ");
         String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
         String etag_gzip = etag.substring(0,etag.length()-1)+"--gzip\"";
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
@@ -875,7 +888,7 @@ public class DefaultServletTest
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseContains("Content-Encoding: gzip",response);
         assertResponseContains("ETag: "+etag_gzip,response);
-        
+
         response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
@@ -883,8 +896,8 @@ public class DefaultServletTest
         assertResponseNotContains("Vary: Accept-Encoding",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
-        assertResponseContains("ETag: ",response);   
-        
+        assertResponseContains("ETag: ",response);
+
         response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
@@ -893,7 +906,7 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
@@ -901,7 +914,7 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
@@ -909,7 +922,7 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
-        
+
     }
 
     @Test
@@ -934,7 +947,7 @@ public class DefaultServletTest
         defholder.setInitParameter("resourceBase", resBasePath);
         defholder.setInitParameter("maxCachedFiles", "1024");
         defholder.setInitParameter("maxCachedFileSize", "200000000");
-        defholder.setInitParameter("maxCacheSize", "256000000"); 
+        defholder.setInitParameter("maxCacheSize", "256000000");
 
         String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
@@ -946,7 +959,7 @@ public class DefaultServletTest
         int e=response.indexOf("ETag: ");
         String etag = response.substring(e+6,response.indexOf('"',e+11)+1);
         String etag_gzip = etag.substring(0,etag.length()-1)+"--gzip\"";
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
@@ -954,7 +967,7 @@ public class DefaultServletTest
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseContains("Content-Encoding: gzip",response);
         assertResponseContains("ETag: "+etag_gzip,response);
-        
+
         response = connector.getResponses("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
@@ -963,7 +976,7 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);
@@ -971,7 +984,7 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
-        
+
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag_gzip,response);

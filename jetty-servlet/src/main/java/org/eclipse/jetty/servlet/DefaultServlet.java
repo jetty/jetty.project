@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.eclipse.jetty.http.GzipHttpContent.ETAG_GZIP_QUOTE;
-import static org.eclipse.jetty.http.GzipHttpContent.removeGzipFromETag;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -71,6 +67,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+
+import static org.eclipse.jetty.http.GzipHttpContent.ETAG_GZIP_QUOTE;
+import static org.eclipse.jetty.http.GzipHttpContent.removeGzipFromETag;
 
 
 /** 
@@ -869,7 +868,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         else if (_contextHandler.getBaseResource() instanceof ResourceCollection)
             resource=_contextHandler.getBaseResource().addPath(pathInContext);
 
-        String dir = resource.getListHTML(base,pathInContext.length()>1);
+        String dir = resource.getListHTML(base,pathInContext.length()>1, request.getQueryString());
         if (dir==null)
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
