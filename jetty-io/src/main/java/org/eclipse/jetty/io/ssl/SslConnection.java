@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -840,6 +839,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     if (BufferUtil.hasContent(_encryptedOutput) && !getEndPoint().flush(_encryptedOutput))
                         return false;
 
+                    boolean isEmpty = BufferUtil.isEmpty(appOuts);
+
                     Boolean result = null;
                     try
                     {
@@ -871,8 +872,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         if (filled < 0)
                                             throw new IOException("Broken pipe");
                                     }
-                                    return result = BufferUtil.isEmpty(_encryptedOutput) &&
-                                            Arrays.stream(appOuts).mapToInt(ByteBuffer::remaining).sum()==0;
+                                    return result = isEmpty;
 
                                 default:
                                     throw new IllegalStateException("Unexpected HandshakeStatus " + status);
@@ -901,10 +901,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         _sslEngine.isOutboundDone());
 
                             // Was all the data consumed?
-                            boolean allConsumed = true;
-                            for (ByteBuffer b : appOuts)
-                                if (BufferUtil.hasContent(b))
-                                    allConsumed = false;
+                            isEmpty = BufferUtil.isEmpty(appOuts);
 
                             // if we have net bytes, let's try to flush them
                             boolean flushed = true;
@@ -912,7 +909,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 flushed = getEndPoint().flush(_encryptedOutput);
 
                             if (LOG.isDebugEnabled())
-                                LOG.debug("net flushed={}, ac={}", flushed, allConsumed);
+                                LOG.debug("net flushed={}, ac={}", flushed, isEmpty);
 
                             // Now deal with the results returned from the wrap
                             Status wrap = wrapResult.getStatus();
@@ -925,7 +922,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     if (!flushed)
                                         return result = false;
                                     getEndPoint().shutdownOutput();
-                                    if (allConsumed)
+                                    if (isEmpty)
                                         return result = true;
                                     throw new IOException("Broken pipe");
                                 }
@@ -942,14 +939,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     if (isRenegotiating() && !allowRenegotiate())
                                     {
                                         getEndPoint().shutdownOutput();
-                                        if (allConsumed && BufferUtil.isEmpty(_encryptedOutput))
+                                        if (isEmpty && BufferUtil.isEmpty(_encryptedOutput))
                                             return result = true;
                                         throw new IOException("Broken pipe");
                                     }
 
                                     if (!flushed)
                                         return result = false;
-                                    if (allConsumed)
+                                    if (isEmpty)
                                         return result = true;
                                     break;
 
