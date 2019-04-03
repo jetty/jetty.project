@@ -1,4 +1,10 @@
-jetty-9.3.26-SNAPSHOT
+jetty-9.3.26.v20190403 - 03 April 2019
+ + 2954 Improve cause reporting for HttpClient failures
+ + 3274 OSGi versions of java.base classes in
+   org.apache.felix:org.osgi.foundation:jar conflicts with new rules on Java 9+
+ + 3302 Support host:port in X-Forwarded-For header in
+   ForwardedRequestCustomizer
+ + 3319 Allow reverse sort for directory listed files
 
 jetty-9.3.25.v20180904 - 04 September 2018
  + 2135 Android 8.1 needs direct buffers for SSL/TLS to work
