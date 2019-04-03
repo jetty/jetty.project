@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -845,7 +844,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         else if (_contextHandler.getBaseResource() instanceof ResourceCollection)
             resource=_contextHandler.getBaseResource().addPath(pathInContext);
 
-        String dir = resource.getListHTML(base,pathInContext.length()>1);
+        String dir = resource.getListHTML(base,pathInContext.length()>1, request.getQueryString());
         if (dir==null)
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,

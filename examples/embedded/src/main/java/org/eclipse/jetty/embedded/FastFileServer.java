@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.StandardOpenOption;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -115,7 +114,8 @@ public class FastFileServer
                 }
                 String listing = Resource.newResource(file).getListHTML(
                         request.getRequestURI(),
-                        request.getPathInfo().lastIndexOf("/") > 0);
+                        request.getPathInfo().lastIndexOf("/") > 0,
+                        request.getQueryString());
                 response.setContentType("text/html; charset=utf-8");
                 response.getWriter().println(listing);
                 return;

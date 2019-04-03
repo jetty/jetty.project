@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +26,6 @@ import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -53,6 +50,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 public class DefaultServletTest
 {
@@ -133,9 +132,14 @@ public class DefaultServletTest
         /* create some content in the docroot */
         File resBase = testdir.getFile("docroot");
         FS.ensureDirExists(resBase);
-        assertTrue(new File(resBase, "one").mkdir());
+        File one = new File(resBase, "one");
+        assertTrue(one.mkdir());
         assertTrue(new File(resBase, "two").mkdir());
         assertTrue(new File(resBase, "three").mkdir());
+
+        File alert = new File(one, "onmouseclick='alert(oops)'");
+        FS.touch(alert);
+
         if (!OS.IS_WINDOWS)
         {
             assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
@@ -163,6 +167,15 @@ public class DefaultServletTest
         }
 
         assertResponseNotContains("<script>", response);
+
+
+        req1 = new StringBuffer();
+        req1.append("GET /context/one/;\"onmouseover='alert(document.location)' HTTP/1.0\n");
+        req1.append("\n");
+
+        response = connector.getResponses(req1.toString());
+
+        assertResponseNotContains("\"onmouseover", response);
     }
 
     @Test

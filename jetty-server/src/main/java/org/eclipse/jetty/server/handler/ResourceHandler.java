@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -589,7 +588,7 @@ public class ResourceHandler extends HandlerWrapper
     {
         if (_directory)
         {
-            String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0);
+            String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0, request.getQueryString());
             response.setContentType("text/html; charset=UTF-8");
             response.getWriter().println(listing);
         }
