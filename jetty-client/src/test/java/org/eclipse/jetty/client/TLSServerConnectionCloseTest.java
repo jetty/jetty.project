@@ -48,7 +48,8 @@ public class TLSServerConnectionCloseTest
 
     private void startClient() throws Exception
     {
-        SslContextFactory sslContextFactory = new SslContextFactory.Server();
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
 
