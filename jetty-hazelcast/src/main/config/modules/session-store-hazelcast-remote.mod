@@ -13,8 +13,8 @@ session-store
 sessions
 
 [files]
-maven://com.hazelcast/hazelcast/3.8.2|lib/hazelcast/hazelcast-3.8.2.jar
-maven://com.hazelcast/hazelcast-client/3.8.2|lib/hazelcast/hazelcast-client-3.8.2.jar
+maven://com.hazelcast/hazelcast/3.9.3|lib/hazelcast/hazelcast-3.9.3.jar
+maven://com.hazelcast/hazelcast-client/3.9.3|lib/hazelcast/hazelcast-client-3.9.3.jar
 
 [xml]
 etc/sessions/hazelcast/remote.xml
