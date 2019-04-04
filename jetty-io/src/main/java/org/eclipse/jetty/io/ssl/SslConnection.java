@@ -946,8 +946,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                                     if (!flushed)
                                         return result = false;
+
                                     if (isEmpty)
-                                        return result = true;
+                                    {
+                                        if (wrapResult.getHandshakeStatus() != HandshakeStatus.NEED_WRAP ||
+                                                wrapResult.bytesProduced() == 0)
+                                            return result = true;
+                                    }
                                     break;
 
                                 default:
@@ -1110,7 +1115,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // and continue as if we are closed. The assumption here is that
                         // the encrypted buffer will contain the entire close handshake
                         // and that a call to flush(EMPTY_BUFFER) is not needed.
-                        endp.write(Callback.from(()->{}, t-> endp.close()), _encryptedOutput);
+                        endp.write(Callback.from(() -> {}, t -> endp.close()), _encryptedOutput);
                     }
                 }
 
