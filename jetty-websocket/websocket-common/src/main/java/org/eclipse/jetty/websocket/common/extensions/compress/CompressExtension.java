@@ -382,9 +382,17 @@ public abstract class CompressExtension extends AbstractExtension
     protected void doStop() throws Exception
     {
         if(deflaterImpl != null)
+        {
             deflaterPool.release(deflaterImpl);
+            deflaterImpl = null;
+        }
+        
         if(inflaterImpl != null)
+        {
             inflaterPool.release(inflaterImpl);
+            inflaterImpl = null;
+        }
+
         super.doStop();
     }
 

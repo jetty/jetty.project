@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import org.apache.commons.pool.ObjectPool;
+import org.apache.commons.pool.PoolUtils;
 import org.apache.commons.pool.PoolableObjectFactory;
 import org.apache.commons.pool.impl.GenericObjectPool;
 
@@ -39,7 +40,10 @@ public class CompressionPool
 
     public static ObjectPool<Inflater> growingInflaterPool(boolean nowrap)
     {
-        return new GenericObjectPool<>(new InflaterPoolFactory(nowrap), defaultPoolConfig());
+        GenericObjectPool<Inflater> objectPool = new GenericObjectPool<>(
+                new InflaterPoolFactory(nowrap), growingPoolConfig());
+
+        return PoolUtils.erodingPool(objectPool);
     }
 
     public static ObjectPool<Deflater> limitedDeflaterPool(int capacity, int compressionLevel, boolean nowrap)
@@ -50,8 +54,10 @@ public class CompressionPool
 
     public static ObjectPool<Deflater> growingDeflaterPool(int compressionLevel, boolean nowrap)
     {
-        return new GenericObjectPool<>(new DeflaterPoolFactory(compressionLevel, nowrap),
-                defaultPoolConfig());
+        GenericObjectPool<Deflater> objectPool = new GenericObjectPool<>(
+                new DeflaterPoolFactory(compressionLevel, nowrap), growingPoolConfig());
+
+        return PoolUtils.erodingPool(objectPool);
     }
 
     private static GenericObjectPool.Config blockingBorrowPoolConfig(int capacity)
@@ -62,23 +68,14 @@ public class CompressionPool
         config.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_BLOCK;
         config.minEvictableIdleTimeMillis = TimeUnit.SECONDS.toMillis(1);
         config.timeBetweenEvictionRunsMillis = TimeUnit.SECONDS.toMillis(5);
-        config.testOnBorrow = true;
-        config.testOnReturn = false;
-        config.testWhileIdle = false;
 
         return config;
     }
 
-    private static GenericObjectPool.Config defaultPoolConfig()
+    private static GenericObjectPool.Config growingPoolConfig()
     {
         GenericObjectPool.Config config = new GenericObjectPool.Config();
-
         config.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_GROW;
-        config.minEvictableIdleTimeMillis = TimeUnit.SECONDS.toMillis(5);
-        config.timeBetweenEvictionRunsMillis = TimeUnit.SECONDS.toMillis(30);
-        config.testOnBorrow = true;
-        config.testOnReturn = false;
-        config.testWhileIdle = false;
 
         return config;
     }
@@ -103,14 +100,14 @@ public class CompressionPool
         @Override
         public void destroyObject(Deflater obj) throws Exception
         {
-            obj.reset();
             obj.end();
         }
 
         @Override
         public boolean validateObject(Deflater obj)
         {
-            return !obj.finished();
+            // currently it's not possible to understand if deflater had been finalized.
+            return true;
         }
 
         @Override
@@ -144,14 +141,14 @@ public class CompressionPool
         @Override
         public void destroyObject(Inflater obj) throws Exception
         {
-            obj.reset();
             obj.end();
         }
 
         @Override
         public boolean validateObject(Inflater obj)
         {
-            return !obj.finished();
+            // currently it's not possible to understand if inflater had been finalized.
+            return true;
         }
 
         @Override
