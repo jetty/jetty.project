@@ -91,6 +91,8 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -741,6 +743,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Tag( "ipv6" )
     public void testSendToIPv6Address(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
@@ -1610,6 +1613,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Tag( "ipv6" )
     public void test_IPv6_Host(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
