@@ -18,22 +18,30 @@
 
 package org.eclipse.jetty.util.thread;
 
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
-import org.junit.jupiter.api.Test;
-
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 {
+    private static final Logger LOG = Log.getLogger(QueuedThreadPoolTest.class);
     private final AtomicInteger _jobs=new AtomicInteger();
 
     private class RunningJob implements Runnable
@@ -41,6 +49,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         private final CountDownLatch _run = new CountDownLatch(1);
         private final CountDownLatch _stopping = new CountDownLatch(1);
         private final CountDownLatch _stopped = new CountDownLatch(1);
+
         @Override
         public void run()
         {
@@ -51,7 +60,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
             catch(Exception e)
             {
-                e.printStackTrace();
+                LOG.debug(e);
             }
             finally
             {
@@ -66,6 +75,17 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
                 _stopping.countDown();
             if (!_stopped.await(10,TimeUnit.SECONDS))
                 throw new IllegalStateException();
+        }
+    }
+
+    private class CloseableJob extends RunningJob implements Closeable
+    {
+        private final CountDownLatch _closed = new CountDownLatch(1);
+
+        @Override
+        public void close() throws IOException
+        {
+            _closed.countDown();
         }
     }
 
@@ -145,6 +165,58 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForThreads(tp,2);
         waitForIdle(tp,2);
     }
+
+    @Test
+    public void testLifeCycleStop() throws Exception
+    {
+        QueuedThreadPool tp= new QueuedThreadPool();
+        tp.setName("TestPool");
+        tp.setMinThreads(1);
+        tp.setMaxThreads(2);
+        tp.setIdleTimeout(900);
+        tp.setStopTimeout(500);
+        tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
+        tp.start();
+
+        // min threads started
+        waitForThreads(tp,1);
+        waitForIdle(tp,1);
+
+        // Run job0 and job1
+        RunningJob job0=new RunningJob();
+        RunningJob job1=new RunningJob();
+        tp.execute(job0);
+        tp.execute(job1);
+
+        // Add a more jobs (which should not be run)
+        RunningJob job2=new RunningJob();
+        CloseableJob job3=new CloseableJob();
+        RunningJob job4=new RunningJob();
+        tp.execute(job2);
+        tp.execute(job3);
+        tp.execute(job4);
+
+        // Wait until the first 2 start running
+        waitForThreads(tp,2);
+        waitForIdle(tp,0);
+
+        // Queue should be empty after thread pool is stopped
+        tp.stop();
+        assertThat(tp.getQueue().size(), is(0));
+
+        // First 2 jobs closed by InterruptedException
+        assertThat(job0._stopped.await(200, TimeUnit.MILLISECONDS), is(true));
+        assertThat(job1._stopped.await(200, TimeUnit.MILLISECONDS), is(true));
+
+        // Verify RunningJobs in the queue have not been run
+        assertThat(job2._run.await(200, TimeUnit.MILLISECONDS), is(false));
+        assertThat(job4._run.await(200, TimeUnit.MILLISECONDS), is(false));
+
+        // Verify ClosableJobs have not been run but have been closed
+        assertThat(job4._run.await(200, TimeUnit.MILLISECONDS), is(false));
+        assertThat(job3._closed.await(200, TimeUnit.MILLISECONDS), is(true));
+    }
+
 
     @Test
     public void testShrink() throws Exception
