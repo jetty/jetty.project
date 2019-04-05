@@ -61,6 +61,9 @@ public abstract class IdleTimeout
         _scheduler = scheduler;
     }
 
+	/**
+	* Get the scheduler
+	*/
     public Scheduler getScheduler()
     {
         return _scheduler;
