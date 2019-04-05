@@ -163,11 +163,11 @@ public interface Session extends WebSocketPolicy, Closeable
     boolean isSecure();
 
     /**
-     * Suspend the incoming read events on the connection.
+     * Suspend the delivery of incoming WebSocket frames.
      * <p>
-     * This should be called during the processing of a frame or message to atomically
-     * suspend read events before the next frame is received. Calling suspend outside of
-     * this can result in a frame being received shortly after the suspend call.
+     * If this is called from inside the scope of the message handler the suspend takes effect immediately.
+     * If suspend is called outside the scope of the message handler then the call may take effect
+     * after 1 more frame is delivered.
      * </p>
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
