@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -86,6 +77,15 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTransportOverHTTP2Test extends AbstractTest
 {
@@ -601,7 +601,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     public void testExternalServer() throws Exception
     {
         HTTP2Client http2Client = new HTTP2Client();
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
         Executor executor = new QueuedThreadPool();
         httpClient.setExecutor(executor);

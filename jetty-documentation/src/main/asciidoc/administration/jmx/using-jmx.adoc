@@ -290,8 +290,8 @@ Similarly, in code:
 
 [source, java, subs="{sub-order}"]
 ----
-SslContextFactory sslContextFactory = new SslContextFactory();
-sslContextFactory.setKeyStorePath();
+SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+sslContextFactory.setKeyStorePath("/path/to/keystore");
 sslContextFactory.setKeyStorePassword("secret");
 
 JMXServiceURL jmxURL = new JMXServiceURL("rmi", null, 1099, "/jndi/rmi:///jmxrmi");

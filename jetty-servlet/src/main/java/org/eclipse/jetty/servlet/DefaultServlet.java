@@ -23,7 +23,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
@@ -48,8 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
-
-/** 
+/**
  * The default servlet.
  * <p>
  * This servlet, normally mapped to /, provides the handling for static
@@ -79,9 +77,9 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *  gzip              If set to true, then static content will be served as
  *                    gzip content encoded if a matching resource is
- *                    found ending with ".gz" (default false) 
+ *                    found ending with ".gz" (default false)
  *                    (deprecated: use precompressed)
- *                    
+ *
  *  precompressed     If set to a comma separated list of encoding types (that may be
  *                    listed in a requests Accept-Encoding header) to file
  *                    extension mappings to look for and serve. For example:
@@ -131,10 +129,10 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 public class DefaultServlet extends HttpServlet implements ResourceFactory, WelcomeFactory
 {
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
-    
+
     private static final Logger LOG = Log.getLogger(DefaultServlet.class);
 
-    private static final long serialVersionUID = 4930458713846881193L;    
+    private static final long serialVersionUID = 4930458713846881193L;
 
     private final ResourceService _resourceService;
     private ServletContext _servletContext;
@@ -165,7 +163,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     {
         this(new ResourceService());
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void init()
@@ -186,7 +184,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip", false)));
         _resourceService.setPathInfoOnly(getInitBoolean("pathInfoOnly",_resourceService.isPathInfoOnly()));
         _resourceService.setEtags(getInitBoolean("etags",_resourceService.isEtags()));
-        
+
         if ("exact".equals(getInitParameter("welcomeServlets")))
         {
             _welcomeExactServlets=true;
@@ -242,8 +240,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         String cc=getInitParameter("cacheControl");
         if (cc!=null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL,cc));
-        
-        
+
+
         String resourceCache = getInitParameter("resourceCache");
         int max_cache_size=getInitInt("maxCacheSize", -2);
         int max_cached_file_size=getInitInt("maxCachedFileSize", -2);
@@ -286,7 +284,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
-        
+
         List<String> gzip_equivalent_file_extensions = new ArrayList<String>();
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
         if (otherGzipExtensions != null)

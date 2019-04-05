@@ -58,7 +58,7 @@ public abstract class AbstractHttpClientServerTest
             serverThreads.setName("server");
             server = new Server(serverThreads);
         }
-        connector = new ServerConnector(server, scenario.newSslContextFactory());
+        connector = new ServerConnector(server, scenario.newServerSslContextFactory());
         connector.setPort(0);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -67,12 +67,12 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startClient(final Scenario scenario) throws Exception
     {
-        startClient(scenario, null,null);
+        startClient(scenario, null, null);
     }
 
     protected void startClient(final Scenario scenario, HttpClientTransport transport, Consumer<HttpClient> config) throws Exception
     {
-        if (transport==null)
+        if (transport == null)
             transport = new HttpClientTransportOverHTTP(1);
 
         QueuedThreadPool executor = new QueuedThreadPool();
@@ -82,7 +82,7 @@ public abstract class AbstractHttpClientServerTest
         client.setExecutor(executor);
         client.setScheduler(scheduler);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
-        if (config!=null)
+        if (config != null)
             config.accept(client);
 
         client.start();
@@ -90,7 +90,7 @@ public abstract class AbstractHttpClientServerTest
 
     public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
     {
-        return new HttpClient(transport, scenario.newSslContextFactory());
+        return new HttpClient(transport, scenario.newClientSslContextFactory());
     }
 
     @AfterEach
@@ -113,9 +113,10 @@ public abstract class AbstractHttpClientServerTest
         }
     }
 
-    public static class ScenarioProvider implements ArgumentsProvider {
+    public static class ScenarioProvider implements ArgumentsProvider
+    {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
                     new NormalScenario(),
@@ -125,9 +126,10 @@ public abstract class AbstractHttpClientServerTest
         }
     }
 
-    public static class NonSslScenarioProvider implements ArgumentsProvider {
+    public static class NonSslScenarioProvider implements ArgumentsProvider
+    {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
                     new NormalScenario()
@@ -138,12 +140,27 @@ public abstract class AbstractHttpClientServerTest
 
     public interface Scenario
     {
-        default SslContextFactory newSslContextFactory() { return null; }
+        SslContextFactory newClientSslContextFactory();
+
+        SslContextFactory newServerSslContextFactory();
+
         String getScheme();
     }
 
     public static class NormalScenario implements Scenario
     {
+        @Override
+        public SslContextFactory newClientSslContextFactory()
+        {
+            return null;
+        }
+
+        @Override
+        public SslContextFactory newServerSslContextFactory()
+        {
+            return null;
+        }
+
         @Override
         public String getScheme()
         {
@@ -160,15 +177,27 @@ public abstract class AbstractHttpClientServerTest
     public static class SslScenario implements Scenario
     {
         @Override
-        public SslContextFactory newSslContextFactory()
+        public SslContextFactory newClientSslContextFactory()
+        {
+            SslContextFactory.Client result = new SslContextFactory.Client();
+            result.setEndpointIdentificationAlgorithm(null);
+            configure(result);
+            return result;
+        }
+
+        @Override
+        public SslContextFactory newServerSslContextFactory()
+        {
+            SslContextFactory.Server result = new SslContextFactory.Server();
+            configure(result);
+            return result;
+        }
+
+        private void configure(SslContextFactory ssl)
         {
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
-
-            SslContextFactory ssl = new SslContextFactory();
-            ssl.setEndpointIdentificationAlgorithm("");
             ssl.setKeyStorePath(keystorePath.toString());
             ssl.setKeyStorePassword("storepwd");
-            return ssl;
         }
 
         @Override

@@ -389,9 +389,9 @@ abstract public class WriteFlusher
         boolean progress = true;
         while (progress && buffers != null)
         {
-            long before = remaining(buffers);
+            long before = BufferUtil.remaining(buffers);
             boolean flushed = _endPoint.flush(buffers);
-            long after = remaining(buffers);
+            long after = BufferUtil.remaining(buffers);
             long written = before - after;
 
             if (LOG.isDebugEnabled())
@@ -439,16 +439,6 @@ abstract public class WriteFlusher
         // This is probably SSL being unable to flush the encrypted buffer, so return EMPTY_BUFFERS
         // and that will keep this WriteFlusher pending.
         return buffers == null ? EMPTY_BUFFERS : buffers;
-    }
-
-    private long remaining(ByteBuffer[] buffers)
-    {
-        if (buffers == null)
-            return 0;
-        long result = 0;
-        for (ByteBuffer buffer : buffers)
-            result += buffer.remaining();
-        return result;
     }
 
     /**

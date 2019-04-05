@@ -44,7 +44,7 @@ public class ConscryptHTTP2Client
     public static void main(String[] args) throws Exception
     {
         Security.addProvider(new OpenSSLProvider());
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setProvider("Conscrypt");
         HTTP2Client client = new HTTP2Client();
         client.addBean(sslContextFactory);

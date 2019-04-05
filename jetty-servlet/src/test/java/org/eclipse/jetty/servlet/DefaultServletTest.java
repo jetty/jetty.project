@@ -18,19 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeader;
-import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,7 +33,6 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -82,6 +68,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeader;
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletTest
@@ -157,9 +156,13 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip", "false");
 
         /* create some content in the docroot */
-        FS.ensureDirExists(docRoot.resolve("one"));
+        Path one = docRoot.resolve("one");
+        FS.ensureDirExists(one);
         FS.ensureDirExists(docRoot.resolve("two"));
         FS.ensureDirExists(docRoot.resolve("three"));
+
+        Path alert = one.resolve("onmouseclick='alert(oops)'");
+        FS.touch(alert);
 
         /*
          * Intentionally bad request URI. Sending a non-encoded URI with typically
@@ -172,6 +175,16 @@ public class DefaultServletTest
 
         String body = response.getContent();
         assertThat(body, not(containsString("<script>")));
+
+        req1 = "GET /context/one/;\"onmouseover='alert(document.location)' HTTP/1.0\r\n" +
+                "\r\n";
+
+        rawResponse = connector.getResponse(req1);
+        response = HttpTester.parseResponse(rawResponse);
+
+        body = response.getContent();
+
+        assertThat(body, not(containsString(";\"onmouseover")));
     }
 
     @Test

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -62,6 +57,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class ThreadStarvationTest
 {
     final static int BUFFER_SIZE=1024*1024;
@@ -89,7 +89,7 @@ public class ThreadStarvationTest
         // HTTPS/SSL/TLS
         ConnectorProvider https = (server, acceptors, selectors) -> {
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore");
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");

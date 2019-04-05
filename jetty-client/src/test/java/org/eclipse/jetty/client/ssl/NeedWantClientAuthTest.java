@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -43,8 +38,12 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * In order to work, client authentication needs a certificate
@@ -81,10 +80,9 @@ public class NeedWantClientAuthTest
         client.start();
     }
 
-    private SslContextFactory createSslContextFactory()
+    private SslContextFactory.Server createServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         return sslContextFactory;
@@ -102,11 +100,11 @@ public class NeedWantClientAuthTest
     @Test
     public void testWantClientAuthWithoutAuth() throws Exception
     {
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setWantClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
@@ -119,7 +117,7 @@ public class NeedWantClientAuthTest
     @Test
     public void testWantClientAuthWithAuth() throws Exception
     {
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setWantClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
         CountDownLatch handshakeLatch = new CountDownLatch(1);
@@ -143,7 +141,7 @@ public class NeedWantClientAuthTest
             }
         });
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         clientSSL.setKeyStorePath("src/test/resources/client_keystore.jks");
         clientSSL.setKeyStorePassword("storepwd");
         startClient(clientSSL);
@@ -166,11 +164,11 @@ public class NeedWantClientAuthTest
         // The server still sends bad_certificate to the client, but the client handshake has already
         // completed successfully its TLS handshake.
 
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setNeedClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         startClient(clientSSL);
         CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.addBean(new SslHandshakeListener()
@@ -210,7 +208,7 @@ public class NeedWantClientAuthTest
     @Test
     public void testNeedClientAuthWithAuth() throws Exception
     {
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setNeedClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
         CountDownLatch handshakeLatch = new CountDownLatch(1);
@@ -234,7 +232,7 @@ public class NeedWantClientAuthTest
             }
         });
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         clientSSL.setKeyStorePath("src/test/resources/client_keystore.jks");
         clientSSL.setKeyStorePassword("storepwd");
         startClient(clientSSL);

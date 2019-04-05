@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -42,14 +40,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class TLSServerConnectionCloseTest
 {
     private HttpClient client;
 
     private void startClient() throws Exception
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
 

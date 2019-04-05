@@ -68,7 +68,7 @@ public class DirectHTTP2OverTLSTest
         HttpConfiguration httpsConfig = new HttpConfiguration();
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
         ConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
-        ConnectionFactory ssl = new SslConnectionFactory(newSslContextFactory(), h2.getProtocol());
+        ConnectionFactory ssl = new SslConnectionFactory(newServerSslContextFactory(), h2.getProtocol());
         connector = new ServerConnector(server, 1, 1, ssl, h2);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -81,8 +81,7 @@ public class DirectHTTP2OverTLSTest
         clientThreads.setName("client");
         HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(new HTTP2Client());
         transport.setUseALPN(false);
-        SslContextFactory sslContextFactory = newSslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
         client = new HttpClient(transport, sslContextFactory);
         client.setExecutor(clientThreads);
         client.start();
@@ -97,14 +96,27 @@ public class DirectHTTP2OverTLSTest
             server.stop();
     }
 
-    private SslContextFactory newSslContextFactory()
+    private SslContextFactory.Server newServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    private SslContextFactory.Client newClientSslContextFactory()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
-        return sslContextFactory;
     }
 
     @Test

@@ -44,7 +44,7 @@ class DefaultHttpClientProvider
         
         if (sslContextFactory == null)
         {
-            sslContextFactory = new SslContextFactory();
+            sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setTrustAll(false);
             sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         }
