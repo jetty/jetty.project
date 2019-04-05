@@ -65,15 +65,10 @@ public abstract class IdleTimeout
     {
         return _scheduler;
     }
-    
-    public long getIdleTimestamp()
-    {
-        return TimeUnit.NANOSECONDS.toMillis(_idleTimestamp);
-    }
 
     public long getIdleFor()
     {
-        return TimeUnit.MILLISECONDS.convert(System.nanoTime() - _idleTimeout, TimeUnit.NANOSECONDS);
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - _idleTimeout);
     }
 
     public long getIdleTimeout()
