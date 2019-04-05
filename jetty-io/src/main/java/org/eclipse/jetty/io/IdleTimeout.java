@@ -69,6 +69,9 @@ public abstract class IdleTimeout
         return _scheduler;
     }
 
+	/**
+	* Get the idle for time
+	*/
     public long getIdleFor()
     {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - _idleTimeout);
