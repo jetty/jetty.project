@@ -40,7 +40,7 @@ public abstract class IdleTimeout
     private final Scheduler _scheduler;
     private final AtomicReference<Scheduler.Task> _timeout = new AtomicReference<>();
     private volatile long _idleTimeout;
-    private volatile long _idleTimestamp = System.currentTimeMillis();
+    private volatile long _idleTimestamp = System.nanoTime();
 
     private final Runnable _idleTask = new Runnable()
     {
@@ -49,7 +49,7 @@ public abstract class IdleTimeout
         {
             long idleLeft = checkIdleTimeout();
             if (idleLeft >= 0)
-                scheduleIdleTimeout(idleLeft > 0 ? idleLeft : getIdleTimeout());
+                scheduleIdleTimeout(idleLeft > 0 ? idleLeft : _idleTimeout);
         }
     };
 
@@ -68,23 +68,23 @@ public abstract class IdleTimeout
     
     public long getIdleTimestamp()
     {
-        return _idleTimestamp;
+        return TimeUnit.MILLISECONDS.convert(_idleTimestamp, TimeUnit.NANOSECONDS);
     }
 
     public long getIdleFor()
     {
-        return System.currentTimeMillis() - getIdleTimestamp();
+        return TimeUnit.MILLISECONDS.convert(System.nanoTime() - _idleTimeout, TimeUnit.NANOSECONDS);
     }
 
     public long getIdleTimeout()
     {
-        return _idleTimeout;
+        return TimeUnit.MILLISECONDS.convert(_idleTimeout, TimeUnit.NANOSECONDS);
     }
 
     public void setIdleTimeout(long idleTimeout)
     {
         long old = _idleTimeout;
-        _idleTimeout = idleTimeout;
+        _idleTimeout = TimeUnit.NANOSECONDS.convert(idleTimeout, TimeUnit.MILLISECONDS);
 
         // Do we have an old timeout
         if (old > 0)
@@ -107,14 +107,14 @@ public abstract class IdleTimeout
      */
     public void notIdle()
     {
-        _idleTimestamp = System.currentTimeMillis();
+        _idleTimestamp = System.nanoTime();
     }
 
     private void scheduleIdleTimeout(long delay)
     {
         Scheduler.Task newTimeout = null;
         if (isOpen() && delay > 0 && _scheduler != null)
-            newTimeout = _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS);
+            newTimeout = _scheduler.schedule(_idleTask, delay, TimeUnit.NANOSECONDS);
         Scheduler.Task oldTimeout = _timeout.getAndSet(newTimeout);
         if (oldTimeout != null)
             oldTimeout.cancel();
@@ -147,13 +147,15 @@ public abstract class IdleTimeout
     {
         if (isOpen())
         {
-            long idleTimestamp = getIdleTimestamp();
-            long idleTimeout = getIdleTimeout();
-            long idleElapsed = System.currentTimeMillis() - idleTimestamp;
+            long idleTimestamp = _idleTimestamp;
+            long idleTimeout = _idleTimeout;
+            long idleElapsed = System.nanoTime() - idleTimestamp;
             long idleLeft = idleTimeout - idleElapsed;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
+                LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this,
+                        TimeUnit.MILLISECONDS.convert(idleElapsed, TimeUnit.NANOSECONDS),
+                        TimeUnit.MILLISECONDS.convert(idleLeft, TimeUnit.NANOSECONDS));
 
             if (idleTimestamp != 0 && idleTimeout > 0)
             {
@@ -163,7 +165,10 @@ public abstract class IdleTimeout
                         LOG.debug("{} idle timeout expired", this);
                     try
                     {
-                        onIdleExpired(new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms"));
+                        onIdleExpired(new TimeoutException("Idle timeout expired: "
+                                + TimeUnit.MILLISECONDS.convert(idleElapsed, TimeUnit.NANOSECONDS)
+                                + "/" + TimeUnit.MILLISECONDS.convert(idleTimeout, TimeUnit.NANOSECONDS)
+                                + " ms"));
                     }
                     finally
                     {
