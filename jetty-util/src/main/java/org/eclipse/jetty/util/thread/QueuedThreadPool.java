@@ -697,7 +697,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 if (job != null && _threadsIdle.get() == 0)
                     startThreads(1);
 
-                loop:
                 while (true)
                 {
                     if (job == null)
@@ -721,7 +720,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                                 if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
                                 {
                                     if (_lastShrink.compareAndSet(last, now))
-                                        break loop;
+                                        break;
                                 }
                             }
 
@@ -750,7 +749,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     }
 
                     if (!isRunning())
-                        break loop;
+                        break;
 
                     job = _jobs.poll();
                 }
@@ -761,8 +760,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             catch (Throwable e)
             {
-                LOG.warn("Unexpected thread death: {} in {}", this, QueuedThreadPool.this);
-                LOG.warn(e);
+                LOG.warn(String.format("Unexpected thread death: %s in %s", this, QueuedThreadPool.this), e);
             }
             finally
             {
