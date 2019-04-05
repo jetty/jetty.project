@@ -70,7 +70,7 @@ public abstract class IdleTimeout
     }
 
 	/**
-	* Get the idle for time
+	* Get the idle-for time
 	*/
     public long getIdleFor()
     {
