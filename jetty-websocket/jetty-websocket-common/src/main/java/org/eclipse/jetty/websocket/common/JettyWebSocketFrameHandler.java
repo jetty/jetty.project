@@ -80,7 +80,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink activeMessageSink;
     private WebSocketSession session;
     private SuspendState state = SuspendState.DEMANDING;
-    private Callback suspendedCallback;
+    private Runnable delayedOnFrame;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
         Object endpointInstance,
@@ -176,7 +176,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     break;
 
                 case SUSPENDING:
-                    suspendedCallback = Callback.from(()->onFrame(frame, callback));
+                    delayedOnFrame = ()->onFrame(frame, callback);
                     state = SuspendState.SUSPENDED;
                     return;
 
@@ -397,19 +397,23 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public void resume()
     {
-        Callback onFrame;
+        Runnable delayedFrame = null;
         synchronized (this)
         {
-            onFrame = suspendedCallback;
-            suspendedCallback = null;
-
             switch(state)
             {
                 case DEMANDING:
                     throw new IllegalStateException("Already Resumed");
 
                 case SUSPENDED:
+                    delayedFrame = delayedOnFrame;
+                    delayedOnFrame = null;
+                    state = SuspendState.DEMANDING;
+                    break;
+
                 case SUSPENDING:
+                    if (delayedOnFrame != null)
+                        throw new IllegalStateException();
                     state = SuspendState.DEMANDING;
                     break;
 
@@ -418,8 +422,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
         }
 
-        if (onFrame != null)
-            onFrame.succeeded();
+        if (delayedFrame != null)
+            delayedFrame.run();
     }
 
     private void demand()
