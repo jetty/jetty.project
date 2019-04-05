@@ -123,6 +123,12 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
             attributes.put(name, httpRequest.getAttribute(name));
         }
 
+        Enumeration<Locale> localeElements = httpRequest.getLocales();
+        while (localeElements.hasMoreElements())
+        {
+            locales.add(localeElements.nextElement());
+        }
+
         localAddress = InetSocketAddress.createUnresolved(httpRequest.getLocalAddr(), httpRequest.getLocalPort());
         localName = httpRequest.getLocalName();
         remoteAddress = InetSocketAddress.createUnresolved(httpRequest.getRemoteAddr(), httpRequest.getRemotePort());
