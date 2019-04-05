@@ -68,7 +68,7 @@ public abstract class IdleTimeout
     
     public long getIdleTimestamp()
     {
-        return TimeUnit.MILLISECONDS.convert(_idleTimestamp, TimeUnit.NANOSECONDS);
+        return TimeUnit.NANOSECONDS.toMillis(_idleTimestamp);
     }
 
     public long getIdleFor()
@@ -78,7 +78,7 @@ public abstract class IdleTimeout
 
     public long getIdleTimeout()
     {
-        return TimeUnit.MILLISECONDS.convert(_idleTimeout, TimeUnit.NANOSECONDS);
+        return TimeUnit.NANOSECONDS.toMillis(_idleTimeout);
     }
 
     public void setIdleTimeout(long idleTimeout)
@@ -154,8 +154,8 @@ public abstract class IdleTimeout
 
             if (LOG.isDebugEnabled())
                 LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this,
-                        TimeUnit.MILLISECONDS.convert(idleElapsed, TimeUnit.NANOSECONDS),
-                        TimeUnit.MILLISECONDS.convert(idleLeft, TimeUnit.NANOSECONDS));
+                        TimeUnit.NANOSECONDS.toMillis(idleElapsed),
+                        TimeUnit.NANOSECONDS.toMillis(idleLeft));
 
             if (idleTimestamp != 0 && idleTimeout > 0)
             {
@@ -166,8 +166,8 @@ public abstract class IdleTimeout
                     try
                     {
                         onIdleExpired(new TimeoutException("Idle timeout expired: "
-                                + TimeUnit.MILLISECONDS.convert(idleElapsed, TimeUnit.NANOSECONDS)
-                                + "/" + TimeUnit.MILLISECONDS.convert(idleTimeout, TimeUnit.NANOSECONDS)
+                                + TimeUnit.NANOSECONDS.toMillis(idleElapsed)
+                                + "/" +TimeUnit.NANOSECONDS.toMillis(idleTimeout)
                                 + " ms"));
                     }
                     finally
