@@ -328,25 +328,33 @@ public class ClientCloseTest
 
         assertThat(serverEndpoints.size(), is(sessionCount));
 
-        // block all the server threads
-        for (int i = 0; i < sessionCount; i++)
-            clientSockets.get(i).getSession().getRemote().sendString("block");
+        try
+        {
+            // block all the server threads
+            for (int i = 0; i < sessionCount; i++)
+                clientSockets.get(i).getSession().getRemote().sendString("block");
 
-        assertTimeoutPreemptively(ofSeconds(5), () -> {
-            // client lifecycle stop (the meat of this test)
-            client.stop();
-        });
+            assertTimeoutPreemptively(ofSeconds(5), () ->
+            {
+                // client lifecycle stop (the meat of this test)
+                client.stop();
+            });
 
-        // clients disconnect
-        for (int i = 0; i < sessionCount; i++)
-            clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
+            // clients disconnect
+            for (int i = 0; i < sessionCount; i++)
+                clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
 
-        // ensure all Sessions are gone. connections are gone. etc. (client and server)
-        // ensure ConnectionListener onClose is called 3 times
-        clientSessionTracker.assertClosedProperly(client);
+            // ensure all Sessions are gone. connections are gone. etc. (client and server)
+            // ensure ConnectionListener onClose is called 3 times
+            clientSessionTracker.assertClosedProperly(client);
 
-        for (int i = 0; i < sessionCount; i++)
-            serverEndpoints.get(i).block.countDown();
+            assertThat(serverEndpoints.size(), is(sessionCount));
+        }
+        finally
+        {
+            for (int i = 0; i < sessionCount; i++)
+                serverEndpoints.get(i).block.countDown();
+        }
     }
 
     @Test
@@ -367,28 +375,35 @@ public class ClientCloseTest
         // client confirms connection via echo
         confirmConnection(clientSocket, clientConnectFuture);
 
-        // Block on the server so that the server does not detect a read failure
-        clientSocket.getSession().getRemote().sendString("block");
+        try
+        {
+            // Block on the server so that the server does not detect a read failure
+            clientSocket.getSession().getRemote().sendString("block");
 
-        // setup client endpoint for write failure (test only)
-        EndPoint endp = clientSocket.getEndPoint();
-        endp.shutdownOutput();
+            // setup client endpoint for write failure (test only)
+            EndPoint endp = clientSocket.getEndPoint();
+            endp.shutdownOutput();
 
-        // client enqueue close frame
-        // should result in a client write failure
-        final String origCloseReason = "Normal Close from Client";
-        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+            // client enqueue close frame
+            // should result in a client write failure
+            final String origCloseReason = "Normal Close from Client";
+            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-        assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
-        assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
+            assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
+            assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
 
-        // client triggers close event on client ws-endpoint
-        // assert - close code==1006 (abnormal)
-        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), null);
-        clientSessionTracker.assertClosedProperly(client);
+            // client triggers close event on client ws-endpoint
+            // assert - close code==1006 (abnormal)
+            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), null);
+            clientSessionTracker.assertClosedProperly(client);
 
-        assertThat(serverEndpoints.size(), is(1));
-        serverEndpoints.get(0).block.countDown();
+            assertThat(serverEndpoints.size(), is(1));
+        }
+        finally
+        {
+            for (ServerEndpoint endpoint : serverEndpoints)
+                endpoint.block.countDown();
+        }
     }
 
     public static class ServerEndpoint implements WebSocketFrameListener, WebSocketListener
