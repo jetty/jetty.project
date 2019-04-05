@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -37,15 +35,16 @@ import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.SerializedExecutor;
 
 /* ------------------------------------------------------------ */
-/** ContextHandlerCollection.
- *
+/**
  * This {@link org.eclipse.jetty.server.handler.HandlerCollection} is creates a
  * Map of contexts to it's contained handlers based
  * on the context path and virtual hosts of any contained {@link org.eclipse.jetty.server.handler.ContextHandler}s.
@@ -58,9 +57,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
+    private final SerializedExecutor _serializedExecutor = new SerializedExecutor();
 
-    private final ConcurrentMap<ContextHandler,Handler> _contextBranches = new ConcurrentHashMap<>();
-    private volatile Trie<Map.Entry<String,Branch[]>> _pathBranches;
+    @Deprecated
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
 
     /* ------------------------------------------------------------ */
@@ -72,43 +71,57 @@ public class ContextHandlerCollection extends HandlerCollection
     /* ------------------------------------------------------------ */
     public ContextHandlerCollection(ContextHandler... contexts)
     {
-        super(true,contexts);
+        super(true);
+        setHandlers(contexts);
     }
-
 
     /* ------------------------------------------------------------ */
     /**
-     * Remap the context paths.
+     * Remap the contexts.  Normally this is not required as context
+     * mapping is maintained as a side effect of {@link #setHandlers(Handler[])}
+     * However, if configuration changes in the deep handler structure (eg contextpath is changed), then
+     * this call will trigger a remapping.
+     * This method is mutually excluded from {@link #deployHandler(Handler, Callback)} and
+     * {@link #undeployHandler(Handler, Callback)}
      */
-    @ManagedOperation("update the mapping of context path to context")
+    @ManagedOperation("Update the mapping of context path to context")
     public void mapContexts()
     {
-        _contextBranches.clear();
-        
-        Handler[] handlers = getHandlers();
-        if (handlers==null)
+        _serializedExecutor.execute(()->
         {
-            _pathBranches=new ArrayTernaryTrie<>(false,16);
-            return;
-        }
-        
+            while(true)
+            {
+                Handlers handlers = _handlers.get();
+                if (handlers==null)
+                    break;
+                if (updateHandlers(handlers, newHandlers(handlers.getHandlers())))
+                    break;
+            }
+        });
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected Handlers newHandlers(Handler[] handlers)
+    {
+        if (handlers==null || handlers.length==0)
+            return null;
+
         // Create map of contextPath to handler Branch
-        Map<String,Branch[]> map = new HashMap<>();
+        // A branch is a Handler that could contain 0 or more ContextHandlers
+        Map<String,Branch[]> path2Branches = new HashMap<>();
         for (Handler handler:handlers)
         {
             Branch branch=new Branch(handler);
             for (String contextPath : branch.getContextPaths())
             {
-                Branch[] branches=map.get(contextPath);
-                map.put(contextPath, ArrayUtil.addToArray(branches, branch, Branch.class));
+                Branch[] branches=path2Branches.get(contextPath);
+                path2Branches.put(contextPath, ArrayUtil.addToArray(branches, branch, Branch.class));
             }
-            
-            for (ContextHandler context : branch.getContextHandlers())
-                _contextBranches.putIfAbsent(context, branch.getHandler());
         }
         
-        // Sort the branches so those with virtual hosts are considered before those without
-        for (Map.Entry<String,Branch[]> entry: map.entrySet())
+        // Sort the branches for each contextPath so those with virtual hosts are considered before those without
+        for (Map.Entry<String,Branch[]> entry: path2Branches.entrySet())
         {
             Branch[] branches=entry.getValue();
             Branch[] sorted=new Branch[branches.length];
@@ -124,69 +137,56 @@ public class ContextHandlerCollection extends HandlerCollection
         
         // Loop until we have a big enough trie to hold all the context paths
         int capacity=512;
-        Trie<Map.Entry<String,Branch[]>> trie;
+        Mapping mapping;
         loop: while(true)
         {
-            trie=new ArrayTernaryTrie<>(false,capacity);
-            for (Map.Entry<String,Branch[]> entry: map.entrySet())
+            mapping = new Mapping(handlers, capacity);
+            for (Map.Entry<String,Branch[]> entry: path2Branches.entrySet())
             {
-                if (!trie.put(entry.getKey().substring(1),entry))
+                if (!mapping._pathBranches.put(entry.getKey().substring(1),entry))
                 {
                     capacity+=512;
                     continue loop;
                 }
             }
-            break loop;
+            break;
         }
-            
         
         if (LOG.isDebugEnabled())
         {
-            for (String ctx : trie.keySet())
-                LOG.debug("{}->{}",ctx,Arrays.asList(trie.get(ctx).getValue()));
+            for (String ctx : mapping._pathBranches.keySet())
+                LOG.debug("{}->{}",ctx,Arrays.asList(mapping._pathBranches.get(ctx).getValue()));
         }
-        _pathBranches=trie;
+
+        // add new context branches to concurrent map
+        for (Branch[] branches: path2Branches.values())
+        {
+            for (Branch branch : branches)
+            {
+                for (ContextHandler context : branch.getContextHandlers())
+                    mapping._contextBranches.put(context, branch.getHandler());
+            }
+        }
+
+        return mapping;
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.handler.HandlerCollection#setHandlers(org.eclipse.jetty.server.server.Handler[])
-     */
-    @Override
-    public void setHandlers(Handler[] handlers)
-    {
-        super.setHandlers(handlers);
-        if (isStarted())
-            mapContexts();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStart() throws Exception
-    {
-        mapContexts();
-        super.doStart();
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Handler[] handlers = getHandlers();
-        if (handlers==null || handlers.length==0)
+        Handlers handlers = _handlers.get();
+        if (handlers==null)
             return;
 
+        Mapping mapping = (Mapping)handlers;
         HttpChannelState async = baseRequest.getHttpChannelState();
         if (async.isAsync())
         {
             ContextHandler context=async.getContextHandler();
             if (context!=null)
             {
-                Handler branch = _contextBranches.get(context);
+                Handler branch = mapping._contextBranches.get(context);
                 
                 if (branch==null)
                     context.handle(target,baseRequest,request, response);
@@ -196,19 +196,19 @@ public class ContextHandlerCollection extends HandlerCollection
             }
         }
         
-        // data structure which maps a request to a context; first-best match wins
-        // { context path => [ context ] }
-        // }
         if (target.startsWith("/"))
         {
+            Trie<Map.Entry<String,Branch[]>> pathBranches = mapping._pathBranches;
+            if (pathBranches==null)
+                return;
+
             int limit = target.length()-1;
 
             while (limit>=0)
             {
                 // Get best match
-                Map.Entry<String,Branch[]> branches = _pathBranches.getBest(target,1,limit);
-                
-                
+                Map.Entry<String,Branch[]> branches = pathBranches.getBest(target,1,limit);
+
                 if (branches==null)
                     break;
                 
@@ -228,10 +228,11 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         else
         {
-            // This may not work in all circumstances... but then I think it should never be called
-            for (int i=0;i<handlers.length;i++)
+            if (mapping.getHandlers()==null)
+                return;
+            for (int i=0;i<mapping.getHandlers().length;i++)
             {
-                handlers[i].handle(target,baseRequest, request, response);
+                mapping.getHandlers()[i].handle(target,baseRequest, request, response);
                 if ( baseRequest.isHandled())
                     return;
             }
@@ -239,11 +240,15 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     /* ------------------------------------------------------------ */
-    /** Add a context handler.
+    /**
+     * Adds a context handler.
+     *
      * @param contextPath  The context path to add
      * @param resourceBase the base (root) Resource
      * @return the ContextHandler just added
+     * @deprecated Unused convenience method no longer supported.
      */
+    @Deprecated
     public ContextHandler addContext(String contextPath,String resourceBase)
     {
         try
@@ -261,22 +266,90 @@ public class ContextHandlerCollection extends HandlerCollection
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Thread safe deploy of a Handler.
+     * <p>
+     *     This method is the equivalent of {@link #addHandler(Handler)},
+     *     but its execution is non-block and mutually excluded from all
+     *     other calls to {@link #deployHandler(Handler, Callback)} and
+     *     {@link #undeployHandler(Handler, Callback)}.
+     *     The handler may be added after this call returns.
+     * </p>
+     * @param handler the handler to deploy
+     * @param callback Called after handler has been added
+     */
+    public void deployHandler(Handler handler, Callback callback)
+    {
+        if (handler.getServer()!=getServer())
+            handler.setServer(getServer());
 
+        _serializedExecutor.execute(new SerializedExecutor.ErrorHandlingTask()
+        {
+            @Override
+            public void run()
+            {
+                addHandler(handler);
+                callback.succeeded();
+            }
+
+            @Override
+            public void accept(Throwable throwable)
+            {
+                callback.failed(throwable);
+            }
+        });
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Thread safe undeploy of a Handler.
+     * <p>
+     *     This method is the equivalent of {@link #removeHandler(Handler)},
+     *     but its execution is non-block and mutually excluded from all
+     *     other calls to {@link #deployHandler(Handler,Callback)} and
+     *     {@link #undeployHandler(Handler,Callback)}.
+     *     The handler may be removed after this call returns.
+     * </p>
+     * @param handler The handler to undeploy
+     * @param callback Called after handler has been removed
+     */
+    public void undeployHandler(Handler handler, Callback callback)
+    {
+        _serializedExecutor.execute(new SerializedExecutor.ErrorHandlingTask()
+        {
+            @Override
+            public void run()
+            {
+                removeHandler(handler);
+                callback.succeeded();
+            }
+
+            @Override
+            public void accept(Throwable throwable)
+            {
+                callback.failed(throwable);
+            }
+        });
+    }
 
     /* ------------------------------------------------------------ */
     /**
      * @return The class to use to add new Contexts
+     * @deprecated Unused convenience mechanism not used.
      */
+    @Deprecated
     public Class<?> getContextClass()
     {
         return _contextClass;
     }
 
-
     /* ------------------------------------------------------------ */
     /**
      * @param contextClass The class to use to add new Contexts
+     * @deprecated Unused convenience mechanism not used.
      */
+    @Deprecated
     public void setContextClass(Class<? extends ContextHandler> contextClass)
     {
         if (contextClass ==null || !(ContextHandler.class.isAssignableFrom(contextClass)))
@@ -312,7 +385,7 @@ public class ContextHandlerCollection extends HandlerCollection
         
         Set<String> getContextPaths()
         {
-            Set<String> set = new HashSet<String>();
+            Set<String> set = new HashSet<>();
             for (ContextHandler context:_contexts)
                 set.add(context.getContextPath());
             return set;
@@ -343,5 +416,18 @@ public class ContextHandlerCollection extends HandlerCollection
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static class Mapping extends Handlers
+    {
+        private final Map<ContextHandler,Handler> _contextBranches = new HashMap<>();
+        private final Trie<Map.Entry<String,Branch[]>> _pathBranches;
 
+        private Mapping(Handler[] handlers, int capacity)
+        {
+            super(handlers);
+            _pathBranches = new ArrayTernaryTrie<>(false, capacity);
+        }
+    }
 }
