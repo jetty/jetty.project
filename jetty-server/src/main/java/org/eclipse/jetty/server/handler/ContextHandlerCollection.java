@@ -424,21 +424,10 @@ public class ContextHandlerCollection extends HandlerCollection
         private final Map<ContextHandler,Handler> _contextBranches = new HashMap<>();
         private final Trie<Map.Entry<String,Branch[]>> _pathBranches;
 
-        Mapping(Handler[] handlers, int capacity)
+        private Mapping(Handler[] handlers, int capacity)
         {
             super(handlers);
             _pathBranches = new ArrayTernaryTrie<>(false, capacity);
         }
-
-        public Map<ContextHandler, Handler> getContextBranches()
-        {
-            return _contextBranches;
-        }
-
-        public Trie<Map.Entry<String, Branch[]>> getPathBranches()
-        {
-            return _pathBranches;
-        }
-
     }
 }
