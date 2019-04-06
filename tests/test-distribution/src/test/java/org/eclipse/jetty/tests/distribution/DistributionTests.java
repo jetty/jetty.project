@@ -29,8 +29,8 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
-import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
@@ -252,7 +252,7 @@ public class DistributionTests extends AbstractDistributionTest
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
-                startHttpClient(() -> new HttpClient( new HttpClientTransportOverUnixSockets(sockFile.toString()), null));
+                startHttpClient(() -> new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString())));
                 ContentResponse response = client.GET("http://localhost/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("Hello"));

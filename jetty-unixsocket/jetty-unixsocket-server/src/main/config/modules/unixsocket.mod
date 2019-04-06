@@ -34,7 +34,8 @@ maven://com.github.jnr/jnr-enxio/0.20|lib/jnr/jnr-enxio-0.20.jar
 maven://com.github.jnr/jnr-posix/3.0.47|lib/jnr/jnr-posix-3.0.47.jar
 
 [lib]
-lib/jetty-unixsocket-${jetty.version}.jar
+lib/jetty-unixsocket-common-${jetty.version}.jar
+lib/jetty-unixsocket-server-${jetty.version}.jar
 lib/jnr/*.jar
 
 [license]
