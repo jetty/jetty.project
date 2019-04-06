@@ -46,13 +46,13 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 [ini-template]
 ### Unix SocketHTTP Connector Configuration
 
-## Connector host/address to bind to
-# jetty.unixsocket=/tmp/jetty.sock
+## Unix socket path to bind to
+# jetty.unixsocket.path=/tmp/jetty.sock
 
 ## Connector idle timeout in milliseconds
 # jetty.unixsocket.idleTimeout=30000
 
-## Number of selectors (-1 picks default 1)
+## Number of selectors (-1 picks default)
 # jetty.unixsocket.selectors=-1
 
 ## ServerSocketChannel backlog (0 picks platform default)

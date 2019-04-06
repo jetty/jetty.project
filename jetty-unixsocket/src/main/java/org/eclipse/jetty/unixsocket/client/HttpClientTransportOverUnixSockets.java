@@ -19,77 +19,67 @@
 package org.eclipse.jetty.unixsocket.client;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 
+import jnr.enxio.channels.NativeSelectorProvider;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.unixsocket.UnixSocketEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import jnr.enxio.channels.NativeSelectorProvider;
-import jnr.unixsocket.UnixSocketAddress;
-import jnr.unixsocket.UnixSocketChannel;
-
-public class HttpClientTransportOverUnixSockets
-    extends HttpClientTransportOverHTTP
+public class HttpClientTransportOverUnixSockets extends HttpClientTransportOverHTTP
 {
-    private static final Logger LOG = Log.getLogger( HttpClientTransportOverUnixSockets.class );
-    
+    private static final Logger LOG = Log.getLogger(HttpClientTransportOverUnixSockets.class);
+
     private String _unixSocket;
-    private SelectorManager selectorManager;
 
-    private UnixSocketChannel channel;
-
-    public HttpClientTransportOverUnixSockets( String unixSocket )
+    public HttpClientTransportOverUnixSockets(String unixSocket)
     {
-        if ( unixSocket == null )
-        {
-            throw new IllegalArgumentException( "Unix socket file cannot be null" );
-        }
+        if (unixSocket == null)
+            throw new IllegalArgumentException("Unix socket file cannot be null");
         this._unixSocket = unixSocket;
     }
 
     @Override
     protected SelectorManager newSelectorManager(HttpClient client)
     {
-        return selectorManager = new UnixSocketSelectorManager(client,getSelectors());
+        return new UnixSocketSelectorManager(client, getSelectors());
     }
 
     @Override
-    public void connect( InetSocketAddress address, Map<String, Object> context )
+    public void connect(InetSocketAddress address, Map<String, Object> context)
     {
-
+        UnixSocketChannel channel = null;
         try
         {
             InetAddress inet = address.getAddress();
             if (!inet.isLoopbackAddress() && !inet.isLinkLocalAddress() && !inet.isSiteLocalAddress())
-                throw new IOException("UnixSocket cannot connect to "+address.getHostString());
-            
-            // Open a unix socket
-            UnixSocketAddress unixAddress = new UnixSocketAddress( this._unixSocket );
-            channel = UnixSocketChannel.open( unixAddress );
-            
+                throw new ConnectException("UnixSocket cannot connect to " + address.getHostString());
+
+            UnixSocketAddress unixAddress = new UnixSocketAddress(_unixSocket);
+            channel = UnixSocketChannel.open(unixAddress);
+
             HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
             HttpClient client = destination.getHttpClient();
 
             configure(client, channel);
 
             channel.configureBlocking(false);
-            selectorManager.accept(channel, context);            
+            getSelectorManager().accept(channel, context);
         }
         // Must catch all exceptions, since some like
         // UnresolvedAddressException are not IOExceptions.
@@ -120,7 +110,7 @@ public class HttpClientTransportOverUnixSockets
     {
         protected UnixSocketSelectorManager(HttpClient client, int selectors)
         {
-            super(client,selectors);
+            super(client, selectors);
         }
 
         @Override
@@ -135,22 +125,6 @@ public class HttpClientTransportOverUnixSockets
             UnixSocketEndPoint endp = new UnixSocketEndPoint((UnixSocketChannel)channel, selector, key, getScheduler());
             endp.setIdleTimeout(getHttpClient().getIdleTimeout());
             return endp;
-        }
-    }
-
-    @Override
-    protected void doStop()
-        throws Exception
-    {
-        super.doStop();
-        try
-        {
-            if (channel != null)
-                channel.close();
-        }
-        catch (IOException xx)
-        {
-            LOG.ignore(xx);
         }
     }
 }

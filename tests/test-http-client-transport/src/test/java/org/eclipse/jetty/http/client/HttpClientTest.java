@@ -338,7 +338,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         // Only run this test for transports over TLS.
-        Assumptions.assumeTrue(scenario.isTransportSecure());
+        Assumptions.assumeTrue(scenario.transport.isTlsBased());
 
         scenario.startServer(new EmptyServerHandler());
 

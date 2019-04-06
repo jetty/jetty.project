@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +38,10 @@ import org.eclipse.jetty.server.Request;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario>
 {
@@ -98,7 +98,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
             assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
-            if (i > 0)
+            if (transport != Transport.UNIX_SOCKET && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
@@ -109,7 +109,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
     {
         init(transport);
         int multiplex = 1;
-        if (scenario.isHttp2Based())
+        if (scenario.transport.isHttp2Based())
             multiplex = 4;
         int maxMultiplex = multiplex;
 
@@ -188,7 +188,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
             assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
-            if (i > 0)
+            if (transport != Transport.UNIX_SOCKET && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -60,10 +61,13 @@ import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class TransportScenario
 {
@@ -78,25 +82,35 @@ public class TransportScenario
     protected String servletPath = "/servlet";
     protected HttpClient client;
     protected Path sockFile;
-    protected final BlockingQueue<String> requestLog= new BlockingArrayQueue<>();
+    protected final BlockingQueue<String> requestLog = new BlockingArrayQueue<>();
 
     public TransportScenario(final Transport transport) throws IOException
     {
         this.transport = transport;
 
-        if(sockFile == null || !Files.exists( sockFile ))
+        Path unixSocketTmp;
+        String tmpProp = System.getProperty("unix.socket.tmp");
+        if (StringUtil.isBlank(tmpProp))
+            unixSocketTmp = MavenTestingUtils.getTargetPath();
+        else
+            unixSocketTmp = Paths.get(tmpProp);
+        sockFile = Files.createTempFile(unixSocketTmp, "unix", ".sock");
+        if (sockFile.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
         {
-            Path target = MavenTestingUtils.getTargetPath();
-            sockFile = Files.createTempFile(target,"unix", ".sock" );
-            Files.delete( sockFile );
+            Files.delete(sockFile);
+            Path tmp = Paths.get("/tmp");
+            assumeTrue(Files.exists(tmp) && Files.isDirectory(tmp));
+            sockFile = Files.createTempFile(tmp, "unix", ".sock");
         }
+
+        Files.delete(sockFile);
     }
 
     public Optional<String> getNetworkConnectorLocalPort()
     {
         if (connector instanceof ServerConnector)
         {
-            ServerConnector serverConnector = (ServerConnector) connector;
+            ServerConnector serverConnector = (ServerConnector)connector;
             return Optional.of(Integer.toString(serverConnector.getLocalPort()));
         }
 
@@ -107,7 +121,7 @@ public class TransportScenario
     {
         if (connector instanceof ServerConnector)
         {
-            ServerConnector serverConnector = (ServerConnector) connector;
+            ServerConnector serverConnector = (ServerConnector)connector;
             return Optional.of(serverConnector.getLocalPort());
         }
 
@@ -116,7 +130,7 @@ public class TransportScenario
 
     public String getScheme()
     {
-        return isTransportSecure() ? "https" : "http";
+        return transport.isTlsBased() ? "https" : "http";
     }
 
     @Deprecated
@@ -149,12 +163,12 @@ public class TransportScenario
         return new HttpClient(transport, sslContextFactory);
     }
 
-    public Connector newServerConnector(Server server) throws Exception
+    public Connector newServerConnector(Server server)
     {
         if (transport == Transport.UNIX_SOCKET)
         {
-            UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory( transport ));
-            unixSocketConnector.setUnixSocket( sockFile.toString() );
+            UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory(transport));
+            unixSocketConnector.setUnixSocket(sockFile.toString());
             return unixSocketConnector;
         }
         return new ServerConnector(server, provideServerConnectionFactory(transport));
@@ -166,10 +180,7 @@ public class TransportScenario
         ret.append(getScheme());
         ret.append("://localhost");
         Optional<String> localPort = getNetworkConnectorLocalPort();
-        if (localPort.isPresent())
-        {
-            ret.append(':').append(localPort.get());
-        }
+        localPort.ifPresent(s -> ret.append(':').append(s));
         return ret.toString();
     }
 
@@ -199,7 +210,7 @@ public class TransportScenario
             }
             case UNIX_SOCKET:
             {
-                return new HttpClientTransportOverUnixSockets( sockFile.toString() );
+                return new HttpClientTransportOverUnixSockets(sockFile.toString());
             }
             default:
             {
@@ -254,13 +265,13 @@ public class TransportScenario
                 throw new IllegalArgumentException();
             }
         }
-        return result.toArray(new ConnectionFactory[result.size()]);
+        return result.toArray(new ConnectionFactory[0]);
     }
 
     public void setConnectionIdleTimeout(long idleTimeout)
     {
         if (connector instanceof AbstractConnector)
-            AbstractConnector.class.cast(connector).setIdleTimeout(idleTimeout);
+            ((AbstractConnector)connector).setIdleTimeout(idleTimeout);
     }
 
     public void setServerIdleTimeout(long idleTimeout)
@@ -271,9 +282,10 @@ public class TransportScenario
         else
             setConnectionIdleTimeout(idleTimeout);
     }
+
     public void start(Handler handler) throws Exception
     {
-        start(handler,null);
+        start(handler, null);
     }
 
     public void start(Handler handler, Consumer<HttpClient> config) throws Exception
@@ -303,7 +315,7 @@ public class TransportScenario
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
 
-        if (config!=null)
+        if (config != null)
             config.accept(client);
 
         client.start();
@@ -336,7 +348,7 @@ public class TransportScenario
         server.setRequestLog((request, response) ->
         {
             int status = response.getCommittedMetaData().getStatus();
-            requestLog.offer(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
+            requestLog.offer(String.format("%s %s %s %03d", request.getMethod(), request.getRequestURI(), request.getProtocol(), status));
         });
 
         server.setHandler(handler);
@@ -345,7 +357,7 @@ public class TransportScenario
         {
             server.start();
         }
-        catch ( Exception e )
+        catch (Exception e)
         {
             e.printStackTrace();
         }
@@ -394,25 +406,25 @@ public class TransportScenario
         {
             stopClient();
         }
-        catch (Exception ignore)
+        catch (Exception x)
         {
-            LOG.ignore(ignore);
+            LOG.ignore(x);
         }
 
         try
         {
             stopServer();
         }
-        catch (Exception ignore)
+        catch (Exception x)
         {
-            LOG.ignore(ignore);
+            LOG.ignore(x);
         }
 
-        if (sockFile!=null)
+        if (sockFile != null)
         {
             try
             {
-                Files.deleteIfExists( sockFile );
+                Files.deleteIfExists(sockFile);
             }
             catch (IOException e)
             {
@@ -420,6 +432,4 @@ public class TransportScenario
             }
         }
     }
-
-
 }
