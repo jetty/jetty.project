@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
-import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
-import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
-import static org.eclipse.jetty.http.HttpHeader.LOCATION;
-import static org.eclipse.jetty.http.HttpHeader.SERVER;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -54,11 +42,22 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
+import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
+import static org.eclipse.jetty.http.HttpHeader.LOCATION;
+import static org.eclipse.jetty.http.HttpHeader.SERVER;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Resource Handler test
@@ -168,7 +167,7 @@ public class ResourceHandlerTest
             _local.getResponse("GET /resource/ HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(),equalTo(200));
         assertThat(response.getContent(),containsString("jetty-dir.css"));
-        assertThat(response.getContent(),containsString("<H1>Directory: /resource/"));
+        assertThat(response.getContent(),containsString("Directory: /resource/"));
         assertThat(response.getContent(),containsString("big.txt"));
         assertThat(response.getContent(),containsString("bigger.txt"));
         assertThat(response.getContent(),containsString("directory"));
