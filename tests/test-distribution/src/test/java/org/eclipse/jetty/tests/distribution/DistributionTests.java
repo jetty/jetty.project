@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class DistributionTests extends AbstractDistributionTest
 {
@@ -210,18 +212,22 @@ public class DistributionTests extends AbstractDistributionTest
     }
 
     @Test
-    public void unixSocket() throws Exception
+    public void testUnixSocket() throws Exception
     {
-        Path sockFile;
+        Path tmpSockFile;
         String unixSocketTmp = System.getProperty("unix.socket.tmp");
-        if( StringUtil.isNotBlank(unixSocketTmp))
+        if (StringUtil.isNotBlank(unixSocketTmp))
+            tmpSockFile = Files.createTempFile(Paths.get(unixSocketTmp), "unix", ".sock");
+        else
+            tmpSockFile = Files.createTempFile("unix", ".sock");
+        if (tmpSockFile.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
         {
-            sockFile = Files.createTempFile(Paths.get(unixSocketTmp), "unix", ".sock");
-        } else {
-            sockFile = Files.createTempFile("unix", ".sock");
+            Path tmp = Paths.get("/tmp");
+            assumeTrue(Files.exists(tmp) && Files.isDirectory(tmp));
+            tmpSockFile = Files.createTempFile(tmp, "unix", ".sock");
         }
+        Path sockFile = tmpSockFile;
         assertTrue(Files.deleteIfExists(sockFile), "temp sock file cannot be deleted");
-
 
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
@@ -242,19 +248,20 @@ public class DistributionTests extends AbstractDistributionTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            try (DistributionTester.Run run2 = distribution.start("jetty.unixsocket="+sockFile.toString()))
+            try (DistributionTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
-                startHttpClient(() -> new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString())));
+                startHttpClient(() -> new HttpClient( new HttpClientTransportOverUnixSockets(sockFile.toString()), null));
                 ContentResponse response = client.GET("http://localhost/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("Hello"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
-        } finally {
+        }
+        finally
+        {
             Files.deleteIfExists(sockFile);
         }
     }
-
 }
