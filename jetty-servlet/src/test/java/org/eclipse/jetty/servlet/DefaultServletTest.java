@@ -157,9 +157,13 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip", "false");
 
         /* create some content in the docroot */
-        FS.ensureDirExists(docRoot.resolve("one"));
+        Path one = docRoot.resolve("one");
+        FS.ensureDirExists(one);
         FS.ensureDirExists(docRoot.resolve("two"));
         FS.ensureDirExists(docRoot.resolve("three"));
+
+        Path alert = one.resolve("onmouseclick='alert(oops)'");
+        FS.touch(alert);
 
         /*
          * Intentionally bad request URI. Sending a non-encoded URI with typically
@@ -172,6 +176,16 @@ public class DefaultServletTest
 
         String body = response.getContent();
         assertThat(body, not(containsString("<script>")));
+
+        req1 = "GET /context/one/;\"onmouseover='alert(document.location)' HTTP/1.0\r\n" +
+                "\r\n";
+
+        rawResponse = connector.getResponse(req1);
+        response = HttpTester.parseResponse(rawResponse);
+
+        body = response.getContent();
+
+        assertThat(body, not(containsString(";\"onmouseover")));
     }
 
     @Test

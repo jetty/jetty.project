@@ -36,12 +36,12 @@ import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 
 public class UnixSocketServer
 {
-    public static void main (String... args) throws Exception
+    public static void main(String... args) throws Exception
     {
         Server server = new Server();
         
         HttpConnectionFactory http = new HttpConnectionFactory();
-        UnixSocketConnector connector = new UnixSocketConnector(server,http);
+        UnixSocketConnector connector = new UnixSocketConnector(server, http);
         server.addConnector(connector);
         
         Path socket = Paths.get(connector.getUnixSocket());
@@ -51,16 +51,15 @@ public class UnixSocketServer
         server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 int l = 0;
-                if (request.getContentLength()!=0)
+                if (request.getContentLength() != 0)
                 {
                     InputStream in = request.getInputStream();
                     byte[] buffer = new byte[4096];
                     int r = 0;
-                    while (r>=0)
+                    while (r >= 0)
                     {
                         l += r;
                         r = in.read(buffer);
@@ -68,10 +67,10 @@ public class UnixSocketServer
                 }
                 baseRequest.setHandled(true);
                 response.setStatus(200);
-                response.getWriter().write("Hello World "+new Date() + "\r\n");
-                response.getWriter().write("remote="+request.getRemoteAddr()+":"+request.getRemotePort()+"\r\n");
-                response.getWriter().write("local ="+request.getLocalAddr()+":"+request.getLocalPort()+"\r\n");
-                response.getWriter().write("read ="+l+"\r\n");
+                response.getWriter().write("Hello World " + new Date() + "\r\n");
+                response.getWriter().write("remote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "\r\n");
+                response.getWriter().write("local =" + request.getLocalAddr() + ":" + request.getLocalPort() + "\r\n");
+                response.getWriter().write("read =" + l + "\r\n");
             }
         });
         

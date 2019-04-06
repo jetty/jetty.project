@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -473,10 +474,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         ExecutionException x = assertThrows(ExecutionException.class, () ->
                 client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
+                        .scheme(scheme)
+                        .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
+                        .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+                        .send());
         assertThat(x.getCause(), instanceOf(EOFException.class));
 
         connector.setIdleTimeout(5 * idleTimeout);
@@ -493,6 +494,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
+    @Tag("ipv6")
     public void testSendToIPv6Address() throws Exception
     {
         start(new EmptyServerHandler());
@@ -595,9 +597,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             assertThrows(ExecutionException.class, () ->
                     client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scheme)
-                    .timeout(60, TimeUnit.SECONDS)
-                    .send());
+                            .scheme(scheme)
+                            .timeout(60, TimeUnit.SECONDS)
+                            .send());
         }
     }
 

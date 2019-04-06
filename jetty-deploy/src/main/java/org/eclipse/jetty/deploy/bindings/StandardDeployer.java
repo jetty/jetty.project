@@ -22,6 +22,7 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 
 public class StandardDeployer implements AppLifeCycle.Binding
 {
@@ -37,9 +38,10 @@ public class StandardDeployer implements AppLifeCycle.Binding
     {
         ContextHandler handler = app.getContextHandler();
         if (handler == null)
-        {
             throw new NullPointerException("No Handler created for App: " + app);
-        }
-        app.getDeploymentManager().getContexts().addHandler(handler);
+
+        Callback.Completable blocker = new Callback.Completable();
+        app.getDeploymentManager().getContexts().deployHandler(handler, blocker);
+        blocker.get();
     }
 }

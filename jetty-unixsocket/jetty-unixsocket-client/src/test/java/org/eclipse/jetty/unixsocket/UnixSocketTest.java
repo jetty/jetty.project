@@ -71,18 +71,16 @@ public class UnixSocketTest
         server = null;
         httpClient = null;
         String unixSocketTmp = System.getProperty("unix.socket.tmp");
-        Path unixSocket;
         if (StringUtil.isNotBlank(unixSocketTmp))
-            unixSocket = Files.createTempFile(Paths.get(unixSocketTmp), "unix", ".sock");
+            sockFile = Files.createTempFile(Paths.get(unixSocketTmp), "unix", ".sock");
         else
-            unixSocket = Files.createTempFile("unix", ".sock");
-        if (unixSocket.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
+            sockFile = Files.createTempFile("unix", ".sock");
+        if (sockFile.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
         {
             Path tmp = Paths.get("/tmp");
             assumeTrue(Files.exists(tmp) && Files.isDirectory(tmp));
-            unixSocket = Files.createTempFile(tmp, "unix", ".sock");
+            sockFile = Files.createTempFile(tmp, "unix", ".sock");
         }
-        sockFile = unixSocket;
         assertTrue(Files.deleteIfExists(sockFile), "temp sock file cannot be deleted");
     }
 

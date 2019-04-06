@@ -180,7 +180,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         for (String failure : failures)
             logger.info("FAILED: {}", failure);
 
-        assertTrue(failures.isEmpty(),failures.toString());
+        assertTrue(failures.isEmpty(), failures.toString());
     }
 
     private void test(final CountDownLatch latch, final List<String> failures)
@@ -366,19 +366,18 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
 
         @Override
-        public Connector newServerConnector( Server server)
+        public Connector newServerConnector(Server server)
         {
+            int selectors = Math.min(1, ProcessorUtils.availableProcessors() / 2);
+            ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+            byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
             if (transport == Transport.UNIX_SOCKET)
             {
-                UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory(transport));
+                UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, null, null, byteBufferPool, selectors, provideServerConnectionFactory(transport));
                 unixSocketConnector.setUnixSocket(sockFile.toString());
                 return unixSocketConnector;
             }
-            int cores = ProcessorUtils.availableProcessors();
-            ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-            byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
-            return new ServerConnector(server, null, null, byteBufferPool,
-                    1, Math.min(1, cores / 2), provideServerConnectionFactory(transport));
+            return new ServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
         }
 
         @Override

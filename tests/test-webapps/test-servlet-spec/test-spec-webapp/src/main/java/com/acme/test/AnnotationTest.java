@@ -208,10 +208,10 @@ public class AnnotationTest extends HttpServlet
             boolean fragInitParamResult = "123".equals(config.getInitParameter("extra1")) && "345".equals(config.getInitParameter("extra2"));
             out.println("<p><b>Result: "+(fragInitParamResult? "<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span></p>");
 
-
              __HandlesTypes = Arrays.asList( "javax.servlet.GenericServlet", 
                                              "javax.servlet.http.HttpServlet", 
                                              "com.acme.test.AsyncListenerServlet",
+                                             "com.acme.test.ClassLoaderServlet",
                                              "com.acme.test.AnnotationTest", 
                                              "com.acme.test.RoleAnnotationTest", 
                                              "com.acme.test.MultiPartTest", 
