@@ -254,7 +254,7 @@ public class DistributionTests extends AbstractDistributionTest
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         } finally {
-            FS.delete(sockFile);
+            Files.deleteIfExists(sockFile);
         }
     }
 
