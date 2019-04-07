@@ -66,7 +66,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.jupiter.api.Assumptions;
 
+import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class TransportScenario
@@ -103,6 +105,9 @@ public class TransportScenario
             sockFile = Files.createTempFile(tmp, "unix", ".sock");
         }
         Files.delete(sockFile);
+
+        // Disable UNIX_SOCKET due to jnr/jnr-unixsocket#69.
+        Assumptions.assumeTrue(transport != UNIX_SOCKET);
     }
 
     public Optional<String> getNetworkConnectorLocalPort()

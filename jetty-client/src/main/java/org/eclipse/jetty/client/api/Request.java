@@ -261,12 +261,14 @@ public interface Request
     Request idleTimeout(long timeout, TimeUnit unit);
 
     /**
-     * @return the total timeout for this request, in milliseconds
+     * @return the total timeout for this request, in milliseconds;
+     * zero or negative if the timeout is disabled
      */
     long getTimeout();
 
     /**
-     * @param timeout the total timeout for the request/response conversation
+     * @param timeout the total timeout for the request/response conversation;
+     *                use zero or a negative value to disable the timeout
      * @param unit the timeout unit
      * @return this request object
      */
