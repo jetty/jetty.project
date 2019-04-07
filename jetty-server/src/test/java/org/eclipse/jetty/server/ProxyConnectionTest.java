@@ -83,7 +83,7 @@ public class ProxyConnectionTest
     }
     
     @Test
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testIPv6() throws Exception
     {
         String response=_connector.getResponse("PROXY UNKNOWN eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\n"+

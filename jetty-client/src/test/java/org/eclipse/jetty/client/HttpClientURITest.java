@@ -60,7 +60,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testIPv6Host(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());

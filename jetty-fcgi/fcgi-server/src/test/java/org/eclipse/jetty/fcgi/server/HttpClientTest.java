@@ -506,7 +506,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testSendToIPv6Address() throws Exception
     {
         start(new EmptyServerHandler());

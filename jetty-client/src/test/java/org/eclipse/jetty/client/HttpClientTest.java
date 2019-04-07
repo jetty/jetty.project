@@ -743,7 +743,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testSendToIPv6Address(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
@@ -1613,7 +1613,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void test_IPv6_Host(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()

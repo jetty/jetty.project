@@ -90,7 +90,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     }
 
     @Test
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testCONNECTwithIPv6() throws Exception
     {
         String hostPort = "[::1]:" + serverConnector.getLocalPort();

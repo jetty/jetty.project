@@ -2047,7 +2047,7 @@ public class HttpParserTest
     }
 
     @Test
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testIPv6Host() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
@@ -2129,7 +2129,7 @@ public class HttpParserTest
     }
 
     @Test
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testIPv6HostPort() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(

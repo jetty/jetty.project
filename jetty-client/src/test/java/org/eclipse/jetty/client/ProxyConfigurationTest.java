@@ -69,7 +69,7 @@ public class ProxyConfigurationTest
     }
 
     @Test
-    @Tag( "ipv6" )
+    @Tag("ipv6")
     public void testProxyMatchesWithIncludesAndExcludesIPv6() throws Exception
     {
         HttpProxy proxy = new HttpProxy("host", 0);
