@@ -10,6 +10,9 @@ jetty-9.3.26.v20190403 - 03 April 2019
  + 3461 gzip request customizer
  + 3487 Test WebAppClassLoader does not definePackage
 
+jetty-9.2.27.v20190403 - 03 April 2019
+  + 3319 Refactored Directory Listing to modernize and avoid XSS
+
 jetty-9.3.25.v20180904 - 04 September 2018
  + 2135 Android 8.1 needs direct buffers for SSL/TLS to work
  + 2777 Workaround for Conscrypt's ssl == null
