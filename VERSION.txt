@@ -7,8 +7,6 @@ jetty-9.3.26.v20190403 - 03 April 2019
  + 3302 Support host:port in X-Forwarded-For header in
    ForwardedRequestCustomizer
  + 3319 Allow reverse sort for directory listed files
- + 3461 gzip request customizer
- + 3487 Test WebAppClassLoader does not definePackage
 
 jetty-9.2.27.v20190403 - 03 April 2019
   + 3319 Refactored Directory Listing to modernize and avoid XSS
