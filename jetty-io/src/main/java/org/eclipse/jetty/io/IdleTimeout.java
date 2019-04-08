@@ -40,18 +40,7 @@ public abstract class IdleTimeout
     private final Scheduler _scheduler;
     private final AtomicReference<Scheduler.Task> _timeout = new AtomicReference<>();
     private volatile long _idleTimeout;
-    private volatile long _idleTimestamp = System.currentTimeMillis();
-
-    private final Runnable _idleTask = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            long idleLeft = checkIdleTimeout();
-            if (idleLeft >= 0)
-                scheduleIdleTimeout(idleLeft > 0 ? idleLeft : getIdleTimeout());
-        }
-    };
+    private volatile long _idleTimestamp = System.nanoTime();
 
     /**
      * @param scheduler A scheduler used to schedule checks for the idle timeout.
@@ -65,22 +54,31 @@ public abstract class IdleTimeout
     {
         return _scheduler;
     }
-    
-    public long getIdleTimestamp()
-    {
-        return _idleTimestamp;
-    }
 
+    /**
+     * @return the period of time, in milliseconds, that this object was idle
+     */
     public long getIdleFor()
     {
-        return System.currentTimeMillis() - getIdleTimestamp();
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - _idleTimestamp);
     }
 
+    /**
+     * @return the idle timeout in milliseconds
+     * @see #setIdleTimeout(long)
+     */
     public long getIdleTimeout()
     {
         return _idleTimeout;
     }
 
+    /**
+     * <p>Sets the idle timeout in milliseconds.</p>
+     * <p>A value that is less than or zero disables the idle timeout checks.</p>
+     *
+     * @param idleTimeout the idle timeout in milliseconds
+     * @see #getIdleTimeout()
+     */
     public void setIdleTimeout(long idleTimeout)
     {
         long old = _idleTimeout;
@@ -107,14 +105,21 @@ public abstract class IdleTimeout
      */
     public void notIdle()
     {
-        _idleTimestamp = System.currentTimeMillis();
+        _idleTimestamp = System.nanoTime();
+    }
+
+    private void idleCheck()
+    {
+        long idleLeft = checkIdleTimeout();
+        if (idleLeft >= 0)
+            scheduleIdleTimeout(idleLeft > 0 ? idleLeft : getIdleTimeout());
     }
 
     private void scheduleIdleTimeout(long delay)
     {
         Scheduler.Task newTimeout = null;
         if (isOpen() && delay > 0 && _scheduler != null)
-            newTimeout = _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS);
+            newTimeout = _scheduler.schedule(this::idleCheck, delay, TimeUnit.MILLISECONDS);
         Scheduler.Task oldTimeout = _timeout.getAndSet(newTimeout);
         if (oldTimeout != null)
             oldTimeout.cancel();
@@ -128,7 +133,7 @@ public abstract class IdleTimeout
     private void activate()
     {
         if (_idleTimeout > 0)
-            _idleTask.run();
+            idleCheck();
     }
 
     public void onClose()
@@ -147,15 +152,15 @@ public abstract class IdleTimeout
     {
         if (isOpen())
         {
-            long idleTimestamp = getIdleTimestamp();
+            long idleTimestamp = _idleTimestamp;
+            long idleElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTimestamp);
             long idleTimeout = getIdleTimeout();
-            long idleElapsed = System.currentTimeMillis() - idleTimestamp;
             long idleLeft = idleTimeout - idleElapsed;
 
             if (LOG.isDebugEnabled())
                 LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
 
-            if (idleTimestamp != 0 && idleTimeout > 0)
+            if (idleTimeout > 0)
             {
                 if (idleLeft <= 0)
                 {
