@@ -206,7 +206,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                     }
                 }, promise, context);
             }
-        }, null);
+        });
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);

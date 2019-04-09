@@ -86,13 +86,13 @@ import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
 
 /**
- * SslContextFactory is used to configure SSL connectors
- * as well as HttpClient. It holds all SSL parameters and
- * creates SSL context based on these parameters to be
- * used by the SSL connectors.
+ * <p>SslContextFactory is used to configure SSL parameters
+ * to be used by server and client connectors.</p>
+ * <p>Use {@link Server} to configure server-side connectors,
+ * and {@link Client} to configure HTTP or WebSocket clients.</p>
  */
 @ManagedObject
-public class SslContextFactory extends AbstractLifeCycle implements Dumpable
+public abstract class SslContextFactory extends AbstractLifeCycle implements Dumpable
 {
     public final static TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509TrustManager()
     {
@@ -166,8 +166,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private Resource _trustStoreResource;
     private String _trustStoreProvider;
     private String _trustStoreType;
-    private boolean _needClientAuth = false;
-    private boolean _wantClientAuth = false;
     private Password _keyStorePassword;
     private Password _keyManagerPassword;
     private Password _trustStorePassword;
@@ -198,44 +196,24 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private HostnameVerifier _hostnameVerifier;
 
     /**
-     * Construct an instance of SslContextFactory
-     * Default constructor for use in XmlConfiguration files
+     * Construct an instance of SslContextFactory with the default configuration.
      */
-    public SslContextFactory()
+    protected SslContextFactory()
     {
         this(false);
     }
 
     /**
-     * Construct an instance of SslContextFactory
-     * Default constructor for use in XmlConfiguration files
+     * Construct an instance of SslContextFactory that trusts all certificates
      *
      * @param trustAll whether to blindly trust all certificates
      * @see #setTrustAll(boolean)
      */
     public SslContextFactory(boolean trustAll)
     {
-        this(trustAll, null);
-    }
-
-    /**
-     * Construct an instance of SslContextFactory
-     *
-     * @param keyStorePath default keystore location
-     */
-    public SslContextFactory(String keyStorePath)
-    {
-        this(false, keyStorePath);
-    }
-
-    private SslContextFactory(boolean trustAll, String keyStorePath)
-    {
         setTrustAll(trustAll);
         setExcludeProtocols(DEFAULT_EXCLUDED_PROTOCOLS);
         setExcludeCipherSuites(DEFAULT_EXCLUDED_CIPHER_SUITES);
-
-        if (keyStorePath != null)
-            setKeyStorePath(keyStorePath);
     }
 
     /**
@@ -249,21 +227,33 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             load();
         }
-
-        secureConfigurationCheck();
+        checkConfiguration();
     }
 
-    protected void secureConfigurationCheck()
+    protected void checkConfiguration()
     {
-        if (isTrustAll())
-            LOG_CONFIG.warn("Trusting all certificates configured for {}",this);
-        if (getEndpointIdentificationAlgorithm()==null)
-            LOG_CONFIG.warn("No Client EndPointIdentificationAlgorithm configured for {}",this);
-
         SSLEngine engine = _factory._context.createSSLEngine();
         customize(engine);
         SSLParameters supported = engine.getSSLParameters();
 
+        checkProtocols(supported);
+        checkCiphers(supported);
+    }
+
+    protected void checkTrustAll()
+    {
+        if (isTrustAll())
+            LOG_CONFIG.warn("Trusting all certificates configured for {}", this);
+    }
+
+    protected void checkEndPointIdentificationAlgorithm()
+    {
+        if (getEndpointIdentificationAlgorithm() == null)
+            LOG_CONFIG.warn("No Client EndPointIdentificationAlgorithm configured for {}", this);
+    }
+
+    protected void checkProtocols(SSLParameters supported)
+    {
         for (String protocol : supported.getProtocols())
         {
             for (String excluded : DEFAULT_EXCLUDED_PROTOCOLS)
@@ -272,7 +262,10 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     LOG_CONFIG.warn("Protocol {} not excluded for {}", protocol, this);
             }
         }
+    }
 
+    protected void checkCiphers(SSLParameters supported)
+    {
         for (String suite : supported.getCipherSuites())
         {
             for (String excludedSuiteRegex : DEFAULT_EXCLUDED_CIPHER_SUITES)
@@ -417,9 +410,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     getExcludeCipherSuites(),
                     getIncludeCipherSuites()));
         }
-        catch (NoSuchAlgorithmException ignore)
+        catch (NoSuchAlgorithmException x)
         {
-            LOG.ignore(ignore);
+            LOG.ignore(x);
         }
     }
 
@@ -752,44 +745,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     /**
-     * @return True if SSL needs client authentication.
-     * @see SSLEngine#getNeedClientAuth()
-     */
-    @ManagedAttribute("Whether client authentication is needed")
-    public boolean getNeedClientAuth()
-    {
-        return _needClientAuth;
-    }
-
-    /**
-     * @param needClientAuth True if SSL needs client authentication.
-     * @see SSLEngine#getNeedClientAuth()
-     */
-    public void setNeedClientAuth(boolean needClientAuth)
-    {
-        _needClientAuth = needClientAuth;
-    }
-
-    /**
-     * @return True if SSL wants client authentication.
-     * @see SSLEngine#getWantClientAuth()
-     */
-    @ManagedAttribute("Whether client authentication is wanted")
-    public boolean getWantClientAuth()
-    {
-        return _wantClientAuth;
-    }
-
-    /**
-     * @param wantClientAuth True if SSL wants client authentication.
-     * @see SSLEngine#getWantClientAuth()
-     */
-    public void setWantClientAuth(boolean wantClientAuth)
-    {
-        _wantClientAuth = wantClientAuth;
-    }
-
-    /**
      * @return true if SSL certificate has to be validated
      */
     @ManagedAttribute("Whether certificates are validated")
@@ -1079,6 +1034,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIndentificationAlgorithm
      * is not set.
      * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm
+     * @see #setHostnameVerifier(HostnameVerifier)
      */
     public void setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm)
     {
@@ -1167,7 +1123,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                 }
 
                 // Is SNI needed to select a certificate?
-                if (!_certWilds.isEmpty() || _certHosts.size()>1 || _certHosts.size()==1 && _aliasX509.size()>1)
+                if (!_certWilds.isEmpty() || _certHosts.size()>1 || (_certHosts.size()==1 && _aliasX509.size()>1))
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
@@ -1731,10 +1687,14 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             sslParams.setCipherSuites(_selectedCipherSuites);
         if (_selectedProtocols != null)
             sslParams.setProtocols(_selectedProtocols);
-        if (getWantClientAuth())
-            sslParams.setWantClientAuth(true);
-        if (getNeedClientAuth())
-            sslParams.setNeedClientAuth(true);
+        if (this instanceof Server)
+        {
+            Server server = (Server)this;
+            if (server.getWantClientAuth())
+                sslParams.setWantClientAuth(true);
+            if (server.getNeedClientAuth())
+                sslParams.setNeedClientAuth(true);
+        }
         return sslParams;
     }
 
@@ -1762,7 +1722,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
             for (int i = 0; i < length; i++)
             {
-                byte bytes[] = javaxCerts[i].getEncoded();
+                byte[] bytes = javaxCerts[i].getEncoded();
                 ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
                 javaCerts[i] = (X509Certificate)cf.generateCertificate(stream);
             }
@@ -1921,6 +1881,76 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         public X509 getX509()
         {
             return _x509;
+        }
+    }
+
+    public static class Client extends SslContextFactory
+    {
+        public Client()
+        {
+            this(false);
+        }
+
+        public Client(boolean trustAll)
+        {
+            super(trustAll);
+        }
+
+        @Override
+        protected void checkConfiguration()
+        {
+            checkTrustAll();
+            checkEndPointIdentificationAlgorithm();
+            super.checkConfiguration();
+        }
+    }
+
+    public static class Server extends SslContextFactory
+    {
+        private boolean _needClientAuth;
+        private boolean _wantClientAuth;
+
+        public Server()
+        {
+            setEndpointIdentificationAlgorithm(null);
+        }
+
+        /**
+         * @return True if SSL needs client authentication.
+         * @see SSLEngine#getNeedClientAuth()
+         */
+        @ManagedAttribute("Whether client authentication is needed")
+        public boolean getNeedClientAuth()
+        {
+            return _needClientAuth;
+        }
+
+        /**
+         * @param needClientAuth True if SSL needs client authentication.
+         * @see SSLEngine#getNeedClientAuth()
+         */
+        public void setNeedClientAuth(boolean needClientAuth)
+        {
+            _needClientAuth = needClientAuth;
+        }
+
+        /**
+         * @return True if SSL wants client authentication.
+         * @see SSLEngine#getWantClientAuth()
+         */
+        @ManagedAttribute("Whether client authentication is wanted")
+        public boolean getWantClientAuth()
+        {
+            return _wantClientAuth;
+        }
+
+        /**
+         * @param wantClientAuth True if SSL wants client authentication.
+         * @see SSLEngine#getWantClientAuth()
+         */
+        public void setWantClientAuth(boolean wantClientAuth)
+        {
+            _wantClientAuth = wantClientAuth;
         }
     }
 }

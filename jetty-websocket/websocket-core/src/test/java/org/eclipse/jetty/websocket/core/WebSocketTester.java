@@ -45,14 +45,14 @@ import static org.hamcrest.Matchers.startsWith;
 public class WebSocketTester
 {
     private static String NON_RANDOM_KEY = new String(B64Code.encode("0123456701234567".getBytes()));
-    private static SslContextFactory sslContextFactory;
+    private static SslContextFactory.Client sslContextFactory;
     protected ByteBufferPool bufferPool;
     protected Parser parser;
 
     @BeforeAll
     public static void startSslContextFactory() throws Exception
     {
-        sslContextFactory = new SslContextFactory(true);
+        sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.setEndpointIdentificationAlgorithm("");
         sslContextFactory.start();
     }

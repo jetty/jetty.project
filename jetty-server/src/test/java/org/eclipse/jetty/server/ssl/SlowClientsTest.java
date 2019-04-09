@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static java.time.Duration.ofSeconds;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,6 +49,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static java.time.Duration.ofSeconds;
+
 @Tag("Unstable")
 @Disabled
 public class SlowClientsTest
@@ -61,7 +61,7 @@ public class SlowClientsTest
     public void testSlowClientsWithSmallThreadPool() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");

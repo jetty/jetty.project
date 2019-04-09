@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 
@@ -36,8 +34,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SslConnectionTest
 {
@@ -45,7 +44,7 @@ public class SslConnectionTest
     public void testSslConnectionClosedBeforeFill() throws Exception
     {
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.start();

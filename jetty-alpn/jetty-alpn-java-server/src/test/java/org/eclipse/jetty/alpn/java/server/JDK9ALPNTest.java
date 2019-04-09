@@ -59,7 +59,7 @@ public class JDK9ALPNTest
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
-        connector = new ServerConnector(server, newSslContextFactory(), alpn, h1, h2);
+        connector = new ServerConnector(server, newServerSslContextFactory(), alpn, h1, h2);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -72,9 +72,9 @@ public class JDK9ALPNTest
             server.stop();
     }
 
-    private SslContextFactory newSslContextFactory()
+    private SslContextFactory.Server newServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
@@ -95,7 +95,7 @@ public class JDK9ALPNTest
             }
         });
 
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
@@ -137,7 +137,7 @@ public class JDK9ALPNTest
             }
         });
 
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))

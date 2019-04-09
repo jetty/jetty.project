@@ -44,7 +44,7 @@ public class ServerConnectionCloseTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+        client = new HttpClient(new HttpClientTransportOverHTTP(1));
         client.setExecutor(clientThreads);
         client.start();
     }

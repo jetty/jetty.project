@@ -60,10 +60,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-
-/* ------------------------------------------------------------ */
-/**
- */
 public class Http2Server
 {
     public static void main(String... args) throws Exception
@@ -102,7 +98,7 @@ public class Http2Server
         String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
         if (!new File(jetty_distro).exists())
             jetty_distro = "jetty-distribution/target/distribution";
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

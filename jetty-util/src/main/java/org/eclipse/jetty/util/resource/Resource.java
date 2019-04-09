@@ -31,15 +31,17 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -102,7 +104,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Construct a resource from a url.
      * @param url the url for which to make the resource
      * @param useCaches true enables URLConnection caching if applicable to the type of resource
-     * @return
+     * @return a new resource from the given URL
      */
     static Resource newResource(URL url, boolean useCaches)
     {
@@ -143,8 +145,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @throws MalformedURLException Problem accessing URI
      * @return A Resource object.
      */
-    public static Resource newResource(String resource)
-        throws MalformedURLException, IOException
+    public static Resource newResource(String resource) throws IOException
     {
         return newResource(resource, __defaultUseCaches);
     }
@@ -156,10 +157,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return A Resource object.
      * @throws MalformedURLException Problem accessing URI
      */
-    public static Resource newResource(String resource, boolean useCaches)       
-        throws MalformedURLException, IOException
+    public static Resource newResource(String resource, boolean useCaches) throws IOException
     {
-        URL url=null;
+        URL url;
         try
         {
             // Try to format as a URL?
@@ -222,8 +222,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return The new Resource
      * @throws IOException Problem accessing resource.
      */
-    public static Resource newSystemResource(String resource)
-        throws IOException
+    public static Resource newSystemResource(String resource) throws IOException
     {
         URL url=null;
         // Try to format as a URL?
@@ -444,7 +443,6 @@ public abstract class Resource implements ResourceFactory, Closeable
      * <p>
      * This method is essentially an alias for {@link #addPath(String)}, but without checked exceptions.
      * This method satisfied the {@link ResourceFactory} interface.
-     * @see org.eclipse.jetty.util.resource.ResourceFactory#getResource(java.lang.String)
      */
     @Override
     public Resource getResource(String path)
@@ -501,65 +499,228 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return String of HTML
      * @throws IOException if unable to get the list of resources as HTML
      */
-    public String getListHTML(String base,boolean parent)
-        throws IOException
+    public String getListHTML(String base, boolean parent) throws IOException
+    {
+        return getListHTML(base, parent, null);
+    }
+
+    /** Get the resource list as a HTML directory listing.
+     * @param base The base URL
+     * @param parent True if the parent directory should be included
+     * @param query query params
+     * @return String of HTML
+     */
+    public String getListHTML(String base, boolean parent, String query) throws IOException
     {
         base=URIUtil.canonicalPath(base);
         if (base==null || !isDirectory())
             return null;
-        
-        String[] ls = list();
-        if (ls==null)
-            return null;
-        Arrays.sort(ls);
-        
-        String decodedBase = URIUtil.decodePath(base);
-        String title = "Directory: "+deTag(decodedBase);
 
-        StringBuilder buf=new StringBuilder(4096);
-        buf.append("<HTML><HEAD>");
-        buf.append("<LINK HREF=\"").append("jetty-dir.css").append("\" REL=\"stylesheet\" TYPE=\"text/css\"/><TITLE>");
+        String[] rawListing = list();
+        if (rawListing == null)
+        {
+            return null;
+        }
+
+        boolean sortOrderAscending = true;
+        String sortColumn = "N"; // name (or "M" for Last Modified, or "S" for Size)
+
+        // check for query
+        if (query != null)
+        {
+            MultiMap<String> params = new MultiMap<>();
+            UrlEncoded.decodeUtf8To(query, 0, query.length(), params);
+
+            String paramO = params.getString("O");
+            String paramC = params.getString("C");
+            if (StringUtil.isNotBlank(paramO))
+            {
+                if (paramO.equals("A"))
+                {
+                    sortOrderAscending = true;
+                }
+                else if (paramO.equals("D"))
+                {
+                    sortOrderAscending = false;
+                }
+            }
+            if (StringUtil.isNotBlank(paramC))
+            {
+                if (paramC.equals("N") || paramC.equals("M") || paramC.equals("S"))
+                {
+                    sortColumn = paramC;
+                }
+            }
+        }
+
+        // Gather up entries
+        List<Resource> items = new ArrayList<>();
+        for (String l : rawListing)
+        {
+            Resource item = addPath(l);
+            items.add(item);
+        }
+
+        // Perform sort
+        if (sortColumn.equals("M"))
+        {
+            items.sort(ResourceCollators.byLastModified(sortOrderAscending));
+        }
+        else if (sortColumn.equals("S"))
+        {
+            items.sort(ResourceCollators.bySize(sortOrderAscending));
+        }
+        else
+        {
+            items.sort(ResourceCollators.byName(sortOrderAscending));
+        }
+
+        String decodedBase = URIUtil.decodePath(base);
+        String title = "Directory: " + deTag(decodedBase);
+
+        StringBuilder buf = new StringBuilder(4096);
+
+        // Doctype Declaration (HTML5)
+        buf.append("<!DOCTYPE html>\n");
+        buf.append("<html lang=\"en\">\n");
+
+        // HTML Header
+        buf.append("<head>\n");
+        buf.append("<meta charset=\"utf-8\">\n");
+        buf.append("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />\n");
+        buf.append("<title>");
         buf.append(title);
-        buf.append("</TITLE></HEAD><BODY>\n<H1>");
-        buf.append(title);
-        buf.append("</H1>\n<TABLE BORDER=0>\n");
+        buf.append("</title>\n");
+        buf.append("</head>\n");
+
+        // HTML Body
+        buf.append("<body>\n");
+        buf.append("<h1 class=\"title\">").append(title).append("</h1>\n");
+
+        // HTML Table
+        final String ARROW_DOWN = "&nbsp; &#8681;";
+        final String ARROW_UP = "&nbsp; &#8679;";
+        String arrow;
+        String order;
+
+        buf.append("<table class=\"listing\">\n");
+        buf.append("<thead>\n");
+
+        arrow = "";
+        order = "A";
+        if (sortColumn.equals("N"))
+        {
+            if(sortOrderAscending)
+            {
+                order = "D";
+                arrow = ARROW_UP;
+            }
+            else
+            {
+                order = "A";
+                arrow = ARROW_DOWN;
+            }
+        }
+
+        buf.append("<tr><th class=\"name\"><a href=\"?C=N&O=").append(order).append("\">");
+        buf.append("Name").append(arrow);
+        buf.append("</a></th>");
+
+        arrow = "";
+        order = "A";
+        if (sortColumn.equals("M"))
+        {
+            if(sortOrderAscending)
+            {
+                order = "D";
+                arrow = ARROW_UP;
+            }
+            else
+            {
+                order = "A";
+                arrow = ARROW_DOWN;
+            }
+        }
+
+        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&O=").append(order).append("\">");
+        buf.append("Last Modified").append(arrow);
+        buf.append("</a></th>");
+
+        arrow = "";
+        order = "A";
+        if (sortColumn.equals("S"))
+        {
+            if(sortOrderAscending)
+            {
+                order = "D";
+                arrow = ARROW_UP;
+            }
+            else
+            {
+                order = "A";
+                arrow = ARROW_DOWN;
+            }
+        }
+        buf.append("<th class=\"size\"><a href=\"?C=S&O=").append(order).append("\">");
+        buf.append("Size").append(arrow);
+        buf.append("</a></th></tr>\n");
+        buf.append("</thead>\n");
+
+        buf.append("<tbody>\n");
+
+        String encodedBase = hrefEncodeURI(base);
         
         if (parent)
         {
-            buf.append("<TR><TD><A HREF=\"");
-            buf.append(URIUtil.addEncodedPaths(base,"../"));
-            buf.append("\">Parent Directory</A></TD><TD></TD><TD></TD></TR>\n");
+            // Name
+            buf.append("<tr><td class=\"name\"><a href=\"");
+            buf.append(URIUtil.addPaths(encodedBase,"../"));
+            buf.append("\">Parent Directory</a></td>");
+            // Last Modified
+            buf.append("<td class=\"lastmodified\">-</td>");
+            // Size
+            buf.append("<td>-</td>");
+            buf.append("</tr>\n");
         }
-        
-        String encodedBase = hrefEncodeURI(base);
-        
+
         DateFormat dfmt=DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
                                                        DateFormat.MEDIUM);
-        for (int i=0 ; i< ls.length ; i++)
+        for (Resource item: items)
         {
-            Resource item = addPath(ls[i]);
-            
-            buf.append("\n<TR><TD><A HREF=\"");
-            String path=URIUtil.addEncodedPaths(encodedBase,URIUtil.encodePath(ls[i]));
-            
+            String name = item.getName();
+            int slashIdx = name.lastIndexOf('/');
+            if (slashIdx != -1)
+            {
+                name = name.substring(slashIdx + 1);
+            }
+            if (item.isDirectory() && !name.endsWith("/"))
+            {
+                name += URIUtil.SLASH;
+            }
+
+            // Name
+            buf.append("<tr><td class=\"name\"><a href=\"");
+            String path=URIUtil.addEncodedPaths(encodedBase,URIUtil.encodePath(name));
             buf.append(path);
-            
-            if (item.isDirectory() && !path.endsWith("/"))
-                buf.append(URIUtil.SLASH);
-            
-            // URIUtil.encodePath(buf,path);
             buf.append("\">");
-            buf.append(deTag(ls[i]));
+            buf.append(deTag(name));
             buf.append("&nbsp;");
-            buf.append("</A></TD><TD ALIGN=right>");
-            buf.append(item.length());
-            buf.append(" bytes&nbsp;</TD><TD>");
+            buf.append("</a></td>");
+
+            // Last Modified
+            buf.append("<td class=\"lastmodified\">");
             buf.append(dfmt.format(new Date(item.lastModified())));
-            buf.append("</TD></TR>");
+            buf.append("</td>");
+
+            // Size
+            buf.append("<td class=\"size\">");
+            buf.append(String.format("%,d", item.length()));
+            buf.append(" bytes&nbsp;</td></tr>\n");
         }
-        buf.append("</TABLE>\n");
-        buf.append("</BODY></HTML>\n");
-        
+        buf.append("</tbody>\n");
+        buf.append("</table>\n");
+        buf.append("</body></html>\n");
+
         return buf.toString();
     }
     
@@ -599,21 +760,21 @@ public abstract class Resource implements ResourceFactory, Closeable
             char c=raw.charAt(i);       
             switch(c)
             {
-              case '"':
-                  buf.append("%22");
-                  continue;
-              case '\'':
-                  buf.append("%27");
-                  continue;
-              case '<':
-                  buf.append("%3C");
-                  continue;
-              case '>':
-                  buf.append("%3E");
-                  continue;
-              default:
-                  buf.append(c);
-                  continue;
+                case '"':
+                    buf.append("%22");
+                    break;
+                case '\'':
+                    buf.append("%27");
+                    break;
+                case '<':
+                    buf.append("%3C");
+                    break;
+                case '>':
+                    buf.append("%3E");
+                    break;
+                default:
+                    buf.append(c);
+                    break;
             }
         }
 

@@ -97,7 +97,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
             assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
-            if (i > 0)
+            if (transport != Transport.UNIX_SOCKET && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
@@ -187,7 +187,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
             assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
-            if (i > 0)
+            if (transport != Transport.UNIX_SOCKET && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }

@@ -76,7 +76,7 @@ public abstract class AbstractHttpClientServerTest
                 connectionLeaks.incrementAndGet();
             }
         });
-        client = new HttpClient(transport, null);
+        client = new HttpClient(transport);
         client.setExecutor(executor);
         if (clientBufferPool == null)
             clientBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());

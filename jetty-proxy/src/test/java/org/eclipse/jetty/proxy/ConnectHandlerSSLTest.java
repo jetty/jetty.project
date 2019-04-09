@@ -48,12 +48,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Server sslContextFactory;
 
     @BeforeEach
     public void prepare() throws Exception
     {
-        sslContextFactory = new SslContextFactory();
+        sslContextFactory = new SslContextFactory.Server();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");

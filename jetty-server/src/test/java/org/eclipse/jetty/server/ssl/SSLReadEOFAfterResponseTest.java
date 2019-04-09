@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +27,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.SSLContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -46,6 +42,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 // Only in JDK 11 is possible to use SSLSocket.shutdownOutput().
 @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
 public class SSLReadEOFAfterResponseTest
@@ -54,7 +53,7 @@ public class SSLReadEOFAfterResponseTest
     public void testReadEOFAfterResponse() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
@@ -70,7 +69,7 @@ public class SSLReadEOFAfterResponseTest
         server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // First: read the whole content.
                 InputStream input = request.getInputStream();

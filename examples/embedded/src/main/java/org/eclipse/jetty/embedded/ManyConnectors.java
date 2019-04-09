@@ -20,9 +20,7 @@ package org.eclipse.jetty.embedded;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.security.Security;
 
-import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -89,7 +87,7 @@ public class ManyConnectors
         // including things like choosing the particular certificate out of a
         // keystore to be used.
         
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

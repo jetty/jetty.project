@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 
 import javax.servlet.AsyncContext;
@@ -41,8 +31,17 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContextHandlerCollectionTest
 {
@@ -214,7 +213,7 @@ public class ContextHandlerCollectionTest
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();
 
         context.setVirtualHosts(contextHosts);
-        // trigger this manually; it's supposed to be called when adding the handler
+        // trigger this manually
         handlerCollection.mapContexts();
 
         for(String host : requestHosts)

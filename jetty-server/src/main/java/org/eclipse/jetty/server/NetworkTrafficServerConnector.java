@@ -47,7 +47,7 @@ public class NetworkTrafficServerConnector extends ServerConnector
         this(server, null, null, null, 0, 0, new HttpConnectionFactory());
     }
 
-    public NetworkTrafficServerConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
+    public NetworkTrafficServerConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
     {
         super(server, sslContextFactory, connectionFactory);
     }
@@ -62,7 +62,7 @@ public class NetworkTrafficServerConnector extends ServerConnector
         super(server, executor, scheduler, pool, acceptors, selectors, factories);
     }
 
-    public NetworkTrafficServerConnector(Server server, SslContextFactory sslContextFactory)
+    public NetworkTrafficServerConnector(Server server, SslContextFactory.Server sslContextFactory)
     {
         super(server, sslContextFactory);
     }

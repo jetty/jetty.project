@@ -113,7 +113,7 @@ public class HttpClientTransportDynamicTest
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
-        SslContextFactory sslContextFactory = newSslContextFactory(false);
+        SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
         ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h1));
         server.addConnector(connector);
         return connector;
@@ -124,7 +124,7 @@ public class HttpClientTransportDynamicTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-        SslContextFactory sslContextFactory = newSslContextFactory(false);
+        SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
         // No ALPN.
         ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, h1, h2c));
         server.addConnector(connector);
@@ -138,7 +138,7 @@ public class HttpClientTransportDynamicTest
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        SslContextFactory sslContextFactory = newSslContextFactory(false);
+        SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
         // Make explicitly h1 the default protocol (normally it would be h2).
         ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h1, h2));
         server.addConnector(connector);
@@ -152,7 +152,7 @@ public class HttpClientTransportDynamicTest
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        SslContextFactory sslContextFactory = newSslContextFactory(false);
+        SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
         ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h2, h1));
         server.addConnector(connector);
         return connector;
@@ -177,16 +177,27 @@ public class HttpClientTransportDynamicTest
             client.stop();
     }
 
-    private SslContextFactory newSslContextFactory(boolean client)
+    private SslContextFactory.Client newClientSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private SslContextFactory.Server newServerSslContextFactory()
+    {
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         // The mandatory HTTP/2 cipher.
         sslContextFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
-        if (client)
-            sslContextFactory.setEndpointIdentificationAlgorithm(null);
-        return sslContextFactory;
     }
 
     @Test
@@ -238,7 +249,7 @@ public class HttpClientTransportDynamicTest
     private void testProtocolSelection(HttpScheme scheme) throws Exception
     {
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newSslContextFactory(true));
+        clientConnector.setSslContextFactory(newClientSslContextFactory());
         HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
@@ -287,7 +298,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::ssl_alpn_h1_h2, new EmptyServerHandler());
 
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newSslContextFactory(true));
+        clientConnector.setSslContextFactory(newClientSslContextFactory());
         HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
@@ -325,7 +336,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::ssl_alpn_h1, new EmptyServerHandler());
 
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newSslContextFactory(true));
+        clientConnector.setSslContextFactory(newClientSslContextFactory());
         HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
@@ -389,7 +400,7 @@ public class HttpClientTransportDynamicTest
         });
 
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newSslContextFactory(true));
+        clientConnector.setSslContextFactory(newClientSslContextFactory());
         ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
 
         Map<HttpRequest, String> mapping = new ConcurrentHashMap<>();
@@ -450,7 +461,7 @@ public class HttpClientTransportDynamicTest
         server.start();
 
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newSslContextFactory(true));
+        clientConnector.setSslContextFactory(newClientSslContextFactory());
         HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);

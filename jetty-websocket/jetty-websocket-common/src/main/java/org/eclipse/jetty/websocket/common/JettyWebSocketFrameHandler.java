@@ -45,6 +45,13 @@ import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
+    private enum SuspendState
+    {
+        DEMANDING,
+        SUSPENDING,
+        SUSPENDED
+    }
+
     private final Logger log;
     private final WebSocketContainer container;
     private final Object endpointInstance;
@@ -72,6 +79,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSession session;
+    private SuspendState state = SuspendState.DEMANDING;
+    private Runnable delayedOnFrame;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
         Object endpointInstance,
@@ -147,6 +156,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
             callback.succeeded();
             futureSession.complete(session);
+            demand();
         }
         catch (Throwable cause)
         {
@@ -155,14 +165,27 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    /**
-     * @see #onFrame(Frame,Callback)
-     */
-    public final void onFrame(Frame frame) {}
-
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
+        synchronized (this)
+        {
+            switch(state)
+            {
+                case DEMANDING:
+                    break;
+
+                case SUSPENDING:
+                    delayedOnFrame = ()->onFrame(frame, callback);
+                    state = SuspendState.SUSPENDED;
+                    return;
+
+                case SUSPENDED:
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+
         // Send to raw frame handling on user side (eg: WebSocketFrameListener)
         if (frameHandle != null)
         {
@@ -176,25 +199,34 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
         }
 
+        // Demand after succeeding any received frame
+        Callback demandingCallback = Callback.from(()->
+                {
+                    callback.succeeded();
+                    demand();
+                },
+                callback::failed
+        );
+
         switch (frame.getOpCode())
         {
             case OpCode.CLOSE:
                 onCloseFrame(frame, callback);
                 break;
             case OpCode.PING:
-                onPingFrame(frame, callback);
+                onPingFrame(frame, demandingCallback);
                 break;
             case OpCode.PONG:
-                onPongFrame(frame, callback);
+                onPongFrame(frame, demandingCallback);
                 break;
             case OpCode.TEXT:
-                onTextFrame(frame, callback);
+                onTextFrame(frame, demandingCallback);
                 break;
             case OpCode.BINARY:
-                onBinaryFrame(frame, callback);
+                onBinaryFrame(frame, demandingCallback);
                 break;
             case OpCode.CONTINUATION:
-                onContinuationFrame(frame, callback);
+                onContinuationFrame(frame, demandingCallback);
                 break;
         }
     }
@@ -337,6 +369,86 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         acceptMessage(frame, callback);
     }
 
+    @Override
+    public boolean isDemanding()
+    {
+        return true;
+    }
+
+    public void suspend()
+    {
+        synchronized (this)
+        {
+            switch(state)
+            {
+                case DEMANDING:
+                    state = SuspendState.SUSPENDING;
+                    break;
+
+                case SUSPENDED:
+                case SUSPENDING:
+                    throw new IllegalStateException("Already Suspended");
+
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+    }
+
+    public void resume()
+    {
+        Runnable delayedFrame = null;
+        synchronized (this)
+        {
+            switch(state)
+            {
+                case DEMANDING:
+                    throw new IllegalStateException("Already Resumed");
+
+                case SUSPENDED:
+                    delayedFrame = delayedOnFrame;
+                    delayedOnFrame = null;
+                    state = SuspendState.DEMANDING;
+                    break;
+
+                case SUSPENDING:
+                    if (delayedOnFrame != null)
+                        throw new IllegalStateException();
+                    state = SuspendState.DEMANDING;
+                    break;
+
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+
+        if (delayedFrame != null)
+            delayedFrame.run();
+    }
+
+    private void demand()
+    {
+        synchronized (this)
+        {
+            switch(state)
+            {
+                case DEMANDING:
+                    session.getCoreSession().demand(1);
+                    break;
+
+                case SUSPENDED:
+                    throw new IllegalStateException("Suspended");
+
+                case SUSPENDING:
+                    state = SuspendState.SUSPENDED;
+                    break;
+
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+    }
+
     static Throwable convertCause(Throwable cause)
     {
         if (cause instanceof MessageTooLargeException)
@@ -362,5 +474,4 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         return cause;
     }
-
 }

@@ -3,7 +3,7 @@
 
 <Configure class="org.eclipse.jetty.client.HttpClient">
   <Arg>
-    <New class="org.eclipse.jetty.util.ssl.SslContextFactory">
+    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Client">
       <Set name="trustAll" type="java.lang.Boolean">false</Set>
       <Call name="addExcludeProtocols">
         <Arg>

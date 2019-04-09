@@ -159,47 +159,11 @@ public class HttpClient extends ContainerLifeCycle
         this(new HttpClientTransportOverHTTP());
     }
 
-    /**
-     * Creates a HttpClient instance that can perform HTTP requests to non-TLS and TLS destinations
-     * (that is, both requests with the "http" scheme and with the "https" scheme).
-     *
-     * @param sslContextFactory the {@link SslContextFactory} that manages TLS encryption
-     * @see #getSslContextFactory()
-     * @deprecated configure the SslContextFactory on the transport's {@link ClientConnector}
-     */
-    @Deprecated
-    public HttpClient(SslContextFactory sslContextFactory)
-    {
-        this(new HttpClientTransportOverHTTP(), sslContextFactory);
-    }
-
     public HttpClient(HttpClientTransport transport)
-    {
-        this(null, transport);
-    }
-
-    /**
-     * Creates a HttpClient instance that can perform HTTP requests with the given transport
-     * to non-TLS and TLS destinations (that is, both requests with the "http" scheme and with
-     * the "https" scheme).
-     *
-     * @param transport the transport that sends and receives HTTP requests and responses
-     * @param sslContextFactory the {@link SslContextFactory} that manages TLS encryption
-     * @deprecated configure the SslContextFactory on the transport's {@link ClientConnector}
-     */
-    @Deprecated
-    public HttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
-    {
-        this(sslContextFactory, transport);
-    }
-
-    private HttpClient(SslContextFactory sslContextFactory, HttpClientTransport transport)
     {
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
         this.connector = ((AbstractHttpClientTransport)transport).getBean(ClientConnector.class);
-        if (sslContextFactory != null)
-            connector.setSslContextFactory(sslContextFactory);
         addBean(handlers);
         addBean(decoderFactories);
     }
@@ -217,9 +181,8 @@ public class HttpClient extends ContainerLifeCycle
 
     /**
      * @return the {@link SslContextFactory} that manages TLS encryption
-     * @see #HttpClient(SslContextFactory)
      */
-    public SslContextFactory getSslContextFactory()
+    public SslContextFactory.Client getSslContextFactory()
     {
         return connector.getSslContextFactory();
     }
@@ -955,7 +918,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max number of HTTP redirects that are followed
+     * @return the max number of HTTP redirects that are followed in a conversation
      * @see #setMaxRedirects(int)
      */
     public int getMaxRedirects()
@@ -964,7 +927,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param maxRedirects the max number of HTTP redirects that are followed
+     * @param maxRedirects the max number of HTTP redirects that are followed in a conversation, or -1 for unlimited redirects
      * @see #setFollowRedirects(boolean)
      */
     public void setMaxRedirects(int maxRedirects)

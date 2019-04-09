@@ -18,19 +18,16 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 
 import javax.net.ssl.SSLHandshakeException;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -40,10 +37,13 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
@@ -52,7 +52,7 @@ import org.junit.jupiter.api.Test;
 @Disabled
 public class HostnameVerificationTest
 {
-    private SslContextFactory clientSslContextFactory = new SslContextFactory();
+    private SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
     private Server server;
     private HttpClient client;
     private NetworkConnector connector;
@@ -64,7 +64,7 @@ public class HostnameVerificationTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        SslContextFactory serverSslContextFactory = new SslContextFactory();
+        SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         serverSslContextFactory.setKeyStorePassword("storepwd");
         connector = new ServerConnector(server, serverSslContextFactory);
@@ -72,7 +72,7 @@ public class HostnameVerificationTest
         server.setHandler(new DefaultHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.getWriter().write("foobar");
@@ -80,14 +80,19 @@ public class HostnameVerificationTest
         });
         server.start();
 
-        // keystore contains a hostname which doesn't match localhost
+        // The keystore contains a hostname which doesn't match localhost
         clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         clientSslContextFactory.setKeyStorePassword("storepwd");
 
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(clientSslContextFactory);
+
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(clientSslContextFactory);
-        client.setExecutor(clientThreads);
+        clientConnector.setExecutor(clientThreads);
+
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.start();
     }
 
@@ -112,9 +117,7 @@ public class HostnameVerificationTest
         clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
-            client.GET(uri);
-        });
+        ExecutionException x = assertThrows(ExecutionException.class, ()-> client.GET(uri));
         Throwable cause = x.getCause();
         assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
         Throwable root = cause.getCause().getCause();

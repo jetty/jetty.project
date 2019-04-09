@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -31,6 +32,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLEngine;
@@ -50,6 +52,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,9 +64,11 @@ public class SslConnectionTest
     private static final int TIMEOUT = 1000000;
     private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
-    private final SslContextFactory _sslCtxFactory =new SslContextFactory();
+    private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill=true;
+    private volatile boolean _onXWriteThenShutdown=false;
+
     private volatile FutureCallback _writeCallback;
     protected ServerSocketChannel _connector;
     final AtomicInteger _dispatches = new AtomicInteger();
@@ -92,7 +98,6 @@ public class SslConnectionTest
             return sslConnection;
         }
 
-
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
@@ -105,6 +110,7 @@ public class SslConnectionTest
 
     static final AtomicInteger __startBlocking = new AtomicInteger();
     static final AtomicInteger __blockFor = new AtomicInteger();
+    static final AtomicBoolean __onIncompleteFlush = new AtomicBoolean();
     private static class TestEP extends SocketChannelEndPoint
     {
         public TestEP(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
@@ -115,13 +121,14 @@ public class SslConnectionTest
         @Override
         protected void onIncompleteFlush()
         {
-            super.onIncompleteFlush();
+            __onIncompleteFlush.set(true);
         }
         
 
         @Override
         public boolean flush(ByteBuffer... buffers) throws IOException
         {
+            __onIncompleteFlush.set(false);
             if (__startBlocking.get()==0 || __startBlocking.decrementAndGet()==0)
             {
                 if (__blockFor.get()>0 && __blockFor.getAndDecrement()>0)
@@ -133,7 +140,6 @@ public class SslConnectionTest
         }
     }
 
-
     @BeforeEach
     public void initSSL() throws Exception
     {
@@ -143,7 +149,6 @@ public class SslConnectionTest
         _sslCtxFactory.setKeyManagerPassword("keypwd");
         _sslCtxFactory.setRenegotiationAllowed(true);
         _sslCtxFactory.setRenegotiationLimit(-1);
-        _sslCtxFactory.setEndpointIdentificationAlgorithm(null);
         startManager();
     }
 
@@ -227,20 +232,23 @@ public class SslConnectionTest
                         filled=endp.fill(_in);
                     }
 
+                    boolean shutdown = _onXWriteThenShutdown && BufferUtil.toString(_in).contains("X");
+
                     // Write everything
                     int l=_in.remaining();
                     if (l>0)
                     {
                         FutureCallback blockingWrite= new FutureCallback();
+
                         endp.write(blockingWrite,_in);
                         blockingWrite.get();
+                        if (shutdown)
+                            endp.shutdownOutput();
                     }
 
                     // are we done?
-                    if (endp.isInputShutdown())
-                    {
+                    if (endp.isInputShutdown() || shutdown)
                         endp.shutdownOutput();
-                    }
                 }
             }
             catch(InterruptedException|EofException e)
@@ -426,7 +434,7 @@ public class SslConnectionTest
     public void testBlockedWrite() throws Exception
     {
         startSSL();
-        try (Socket client = newClient())
+        try (SSLSocket client = newClient())
         {
             client.setSoTimeout(5000);
             try (SocketChannel server = _connector.accept())
@@ -434,21 +442,78 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                __startBlocking.set(5);
-                __blockFor.set(3);
-
                 client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
-                assertEquals(5, len);
                 assertEquals("Hello", new String(buffer, 0, len, StandardCharsets.UTF_8));
 
+                __startBlocking.set(0);
+                __blockFor.set(2);
                 _dispatches.set(0);
                 client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
-                len = 5;
-                while (len > 0)
-                    len -= client.getInputStream().read(buffer);
-                assertEquals(0, len);
+
+                try
+                {
+                    client.setSoTimeout(500);
+                    client.getInputStream().read(buffer);
+                    throw new IllegalStateException();
+                }
+                catch(SocketTimeoutException e)
+                {
+                }
+
+
+                assertTrue(__onIncompleteFlush.get());
+                ((TestEP)_lastEndp).getWriteFlusher().completeWrite();
+
+                len = client.getInputStream().read(buffer);
+                assertEquals("World", new String(buffer, 0, len, StandardCharsets.UTF_8));
+            }
+        }
+    }
+
+    @Test
+    public void testBlockedClose() throws Exception
+    {
+        startSSL();
+        try (SSLSocket client = newClient())
+        {
+            client.setSoTimeout(5000);
+            try (SocketChannel server = _connector.accept())
+            {
+                server.configureBlocking(false);
+                _manager.accept(server);
+
+                //__startBlocking.set(5);
+                //__blockFor.set(3);
+
+                client.getOutputStream().write("Short".getBytes(StandardCharsets.UTF_8));
+                byte[] buffer = new byte[1024];
+                int len = client.getInputStream().read(buffer);
+                assertEquals("Short", new String(buffer, 0, len, StandardCharsets.UTF_8));
+
+                _onXWriteThenShutdown=true;
+                __startBlocking.set(2); // block on the close handshake flush
+                __blockFor.set(Integer.MAX_VALUE); // > retry loops in SslConnection + 1
+                client.getOutputStream().write("This is a much longer example with X".getBytes(StandardCharsets.UTF_8));
+                len = client.getInputStream().read(buffer);
+                assertEquals("This is a much longer example with X", new String(buffer, 0, len, StandardCharsets.UTF_8));
+
+                try
+                {
+                    client.setSoTimeout(500);
+                    client.getInputStream().read(buffer);
+                    throw new IllegalStateException();
+                }
+                catch(SocketTimeoutException e)
+                {
+                }
+
+                __blockFor.set(0);
+                assertTrue(__onIncompleteFlush.get());
+                ((TestEP)_lastEndp).getWriteFlusher().completeWrite();
+                len = client.getInputStream().read(buffer);
+                assertThat(len, is(len));
             }
         }
     }
@@ -478,7 +543,6 @@ public class SslConnectionTest
                             String line = in.readLine();
                             if (line == null)
                                 break;
-                            // System.err.println(line);
                             count.countDown();
                         }
                     }
@@ -491,7 +555,6 @@ public class SslConnectionTest
                 for (int i = 0; i < LINES; i++)
                 {
                     client.getOutputStream().write(("HelloWorld " + i + "\n").getBytes(StandardCharsets.UTF_8));
-                    // System.err.println("wrote");
                     if (i % 1000 == 0)
                     {
                         client.getOutputStream().flush();

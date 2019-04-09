@@ -509,9 +509,9 @@ public class WebSocketCloseTest extends WebSocketTester
             return server.getBean(NetworkConnector.class).getLocalPort();
         }
 
-        private SslContextFactory createSslContextFactory()
+        private SslContextFactory.Server createServerSslContextFactory()
         {
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
             sslContextFactory.setKeyStorePassword("storepwd");
             return sslContextFactory;
@@ -525,7 +525,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
             ServerConnector connector;
             if (tls)
-                connector = new ServerConnector(server, createSslContextFactory());
+                connector = new ServerConnector(server, createServerSslContextFactory());
             else
                 connector = new ServerConnector(server);
 

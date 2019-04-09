@@ -40,10 +40,10 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -65,7 +65,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.startServer(new EmptyServerHandler());
 
-        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false), scenario.sslContextFactory);
+        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);
@@ -90,15 +90,13 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         scenario.startServer(new EmptyServerHandler());
 
         long idleTimeout = 1000;
-        SslContextFactory sslContextFactory = scenario.newSslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange ->
         {
             // We idle timeout just before the association,
             // we must be able to send the request successfully.
             sleep(2 * idleTimeout);
             return true;
-        }), sslContextFactory);
+        }));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);
@@ -123,7 +121,10 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             case HTTP:
             case HTTPS:
             {
-                return new HttpClientTransportOverHTTP(1)
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
+                return new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
                     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
@@ -149,8 +150,10 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             case H2C:
             case H2:
             {
-                HTTP2Client http2Client = new HTTP2Client();
-                http2Client.setSelectors(1);
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
+                HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 return new HttpClientTransportOverHTTP2(http2Client)
                 {
                     @Override
@@ -176,7 +179,10 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             }
             case FCGI:
             {
-                return new HttpClientTransportOverFCGI(1, "")
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
+                return new HttpClientTransportOverFCGI(clientConnector, "")
                 {
                     @Override
                     protected HttpConnectionOverFCGI newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
@@ -201,7 +207,8 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             }
             case UNIX_SOCKET:
             {
-                return new HttpClientTransportOverUnixSockets( scenario.sockFile.toString() ){
+                return new HttpClientTransportOverUnixSockets(scenario.sockFile.toString())
+                {
                     @Override
                     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
                     {

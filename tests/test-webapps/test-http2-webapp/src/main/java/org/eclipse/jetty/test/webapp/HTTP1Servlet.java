@@ -54,7 +54,7 @@ public class HTTP1Servlet extends HttpServlet
     {
         try
         {
-            sslContextFactory = new SslContextFactory(true);
+            sslContextFactory = new SslContextFactory.Client(true);
             http2Client = new HTTP2Client();
             http2Client.addBean(sslContextFactory);
             http2Client.start();

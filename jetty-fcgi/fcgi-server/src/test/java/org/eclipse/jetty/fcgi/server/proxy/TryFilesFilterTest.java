@@ -18,20 +18,17 @@
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -40,6 +37,9 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TryFilesFilterTest
 {
@@ -55,13 +55,10 @@ public class TryFilesFilterTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-        sslContextFactory.setTrustStorePassword("storepwd");
-        sslConnector = new ServerConnector(server, sslContextFactory);
+        SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
+        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        serverSslContextFactory.setKeyStorePassword("storepwd");
+        sslConnector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(sslConnector);
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
@@ -72,7 +69,15 @@ public class TryFilesFilterTest
 
         context.addServlet(new ServletHolder(servlet), "/*");
 
-        client = new HttpClient(sslContextFactory);
+        ClientConnector clientConnector = new ClientConnector();
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
+        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        clientSslContextFactory.setKeyStorePassword("storepwd");
+        clientSslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+        clientSslContextFactory.setTrustStorePassword("storepwd");
+        clientConnector.setSslContextFactory(clientSslContextFactory);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         server.addBean(client);
 
         server.start();
@@ -91,7 +96,7 @@ public class TryFilesFilterTest
         prepare(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             {
                 assertTrue("https".equalsIgnoreCase(req.getScheme()));
                 assertTrue(req.isSecure());
