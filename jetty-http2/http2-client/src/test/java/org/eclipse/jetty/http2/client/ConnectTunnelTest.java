@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -79,6 +80,59 @@ public class ConnectTunnelTest extends AbstractTest
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
         MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), null, new HostPortHttpField(authority), null, HttpVersion.HTTP_2, new HttpFields());
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.wrap(bytes);
+        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testCONNECTWithProtocol() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                // Verifies that the CONNECT request is well formed.
+                MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                assertEquals(HttpMethod.CONNECT.asString(), request.getMethod());
+                HttpURI uri = request.getURI();
+                assertNotNull(uri.getScheme());
+                assertNotNull(uri.getPath());
+                assertNotNull(uri.getAuthority());
+                assertNotNull(request.getProtocol());
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        stream.data(frame, callback);
+                    }
+                };
+            }
+        });
+
+        Session client = newClient(new Session.Listener.Adapter());
+
+        CountDownLatch latch = new CountDownLatch(1);
+        byte[] bytes = "HELLO".getBytes(StandardCharsets.UTF_8);
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        String authority = host + ":" + port;
+        MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), HttpScheme.HTTP, new HostPortHttpField(authority), "/", HttpVersion.HTTP_2, new HttpFields());
+        request.setProtocol("websocket");
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
         {

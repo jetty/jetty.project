@@ -39,6 +39,7 @@ public class MetaDataBuilder
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;
+    private String _protocol;
     private long _contentLength=Long.MIN_VALUE;
     private HttpFields _fields = new HttpFields(10);
     private HpackException.StreamException _streamException;
@@ -139,6 +140,23 @@ public class MetaDataBuilder
                     _request = true;
                     break;
 
+                case C_PATH:
+                    if(checkPseudoHeader(header, _path))
+                    {
+                        if (value!=null && value.length()>0)
+                            _path = value;
+                        else
+                            streamException("No Path");
+                    }
+                    _request = true;
+                    break;
+
+                case C_PROTOCOL:
+                    if (checkPseudoHeader(header, _protocol))
+                        _protocol = value;
+                    _request = true;
+                    break;
+
                 case HOST:
                     // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
                     if (_authority==null)
@@ -149,17 +167,6 @@ public class MetaDataBuilder
                             _authority = new AuthorityHttpField(value);
                     }
                     _fields.add(field);
-                    break;
-
-                case C_PATH:
-                    if(checkPseudoHeader(header, _path))
-                    {
-                        if (value!=null && value.length()>0)
-                            _path = value;
-                        else
-                            streamException("No Path");
-                    }
-                    _request = true;
                     break;
 
                 case CONTENT_LENGTH:
@@ -239,14 +246,17 @@ public class MetaDataBuilder
             {
                 if (_method==null)
                     throw new HpackException.StreamException("No Method");
-                if (!HttpMethod.CONNECT.is(_method))
+                boolean isConnect = HttpMethod.CONNECT.is(_method);
+                if (!isConnect || _protocol != null)
                 {
                     if (_scheme==null)
                         throw new HpackException.StreamException("No Scheme");
                     if (_path==null)
                         throw new HpackException.StreamException("No Path");
                 }
-                return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
+                MetaData.Request request = new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
+                request.setProtocol(_protocol);
+                return request;
             }
             if (_response)
             {
@@ -267,6 +277,7 @@ public class MetaDataBuilder
             _scheme = null;
             _authority = null;
             _path = null;
+            _protocol = null;
             _size = 0;
             _contentLength = Long.MIN_VALUE;
         }
