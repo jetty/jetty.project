@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -238,10 +239,13 @@ public class MetaDataBuilder
             {
                 if (_method==null)
                     throw new HpackException.StreamException("No Method");
-                if (_scheme==null)
-                    throw new HpackException.StreamException("No Scheme");
-                if (_path==null)
-                    throw new HpackException.StreamException("No Path");
+                if (!HttpMethod.CONNECT.is(_method))
+                {
+                    if (_scheme==null)
+                        throw new HpackException.StreamException("No Scheme");
+                    if (_path==null)
+                        throw new HpackException.StreamException("No Path");
+                }
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
             }
             if (_response)

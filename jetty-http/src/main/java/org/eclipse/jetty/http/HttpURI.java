@@ -164,8 +164,8 @@ public class HttpURI
         _host=host;
         _port=port;
 
-        parse(State.PATH,pathQuery);
-        
+        if (pathQuery != null)
+            parse(State.PATH,pathQuery);
     }
 
     /* ------------------------------------------------------------ */

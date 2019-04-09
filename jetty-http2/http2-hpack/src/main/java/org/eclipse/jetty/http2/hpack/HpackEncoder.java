@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -164,10 +165,13 @@ public class HpackEncoder
 
             // TODO optimise these to avoid HttpField creation
             String scheme=request.getURI().getScheme();
-            encode(buffer,new HttpField(HttpHeader.C_SCHEME,scheme==null?HttpScheme.HTTP.asString():scheme));
             encode(buffer,new HttpField(HttpHeader.C_METHOD,request.getMethod()));
             encode(buffer,new HttpField(HttpHeader.C_AUTHORITY,request.getURI().getAuthority()));
-            encode(buffer,new HttpField(HttpHeader.C_PATH,request.getURI().getPathQuery()));
+            if (!HttpMethod.CONNECT.is(request.getMethod()))
+            {
+                encode(buffer,new HttpField(HttpHeader.C_SCHEME,scheme==null?HttpScheme.HTTP.asString():scheme));
+                encode(buffer,new HttpField(HttpHeader.C_PATH,request.getURI().getPathQuery()));
+            }
         }
         else if (metadata.isResponse())
         {
