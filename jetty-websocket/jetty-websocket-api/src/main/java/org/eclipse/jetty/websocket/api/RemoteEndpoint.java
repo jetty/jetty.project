@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
@@ -144,9 +145,17 @@ public interface RemoteEndpoint
     /**
      * Get the InetSocketAddress for the established connection.
      *
-     * @return the InetSocketAddress for the established connection. (or null, if the connection is no longer established)
+     * @return the InetSocketAddress for the established connection. (or null, if there is none)
      */
+    @Deprecated
     InetSocketAddress getInetSocketAddress();
+
+    /**
+     * Get the SocketAddress for the established connection.
+     *
+     * @return the SocketAddress for the established connection.
+     */
+    SocketAddress getRemoteAddress();
 
     /**
      * Flushes messages that may have been batched by the implementation.
