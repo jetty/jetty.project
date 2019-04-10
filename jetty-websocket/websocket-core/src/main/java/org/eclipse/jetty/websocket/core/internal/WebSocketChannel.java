@@ -306,12 +306,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public void onEof()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onEof() {}", this);
+
         if (channelState.onEof())
             closeConnection(new ClosedChannelException(), channelState.getCloseStatus(), Callback.NOOP);
     }
 
     public void closeConnection(Throwable cause, CloseStatus closeStatus, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closeConnection() {} {} {}", closeStatus, this, cause);
+
         connection.cancelDemand();
         if (connection.getEndPoint().isOpen())
             connection.close();
@@ -356,27 +362,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 callback.failed(e);
             }
         }
-
-
-    }
-
-    AbnormalCloseStatus abnormalCloseStatusFor(Throwable cause)
-    {
-        int code;
-        if (cause instanceof ProtocolException)
-            code = CloseStatus.PROTOCOL;
-        else if (cause instanceof CloseException)
-            code = ((CloseException)cause).getStatusCode();
-        else if (cause instanceof Utf8Appendable.NotUtf8Exception)
-            code = CloseStatus.BAD_PAYLOAD;
-        else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
-            code = CloseStatus.SHUTDOWN;
-        else if (behavior == Behavior.CLIENT)
-            code = CloseStatus.POLICY_VIOLATION;
-        else
-            code = CloseStatus.SERVER_ERROR;
-
-        return new AbnormalCloseStatus(code, cause);
     }
 
     /**
@@ -392,14 +377,24 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (LOG.isDebugEnabled())
             LOG.debug("processConnectionError {} {}", this, cause);
 
-        CloseStatus closeStatus = abnormalCloseStatusFor(cause);
-
-        if (closeStatus.getCode() == CloseStatus.PROTOCOL)
-            close(closeStatus, callback);
-        else if (channelState.onClosed(closeStatus))
-            closeConnection(cause, closeStatus, callback);
+        int code;
+        if (cause instanceof CloseException)
+            code = ((CloseException)cause).getStatusCode();
+        else if (cause instanceof Utf8Appendable.NotUtf8Exception)
+            code = CloseStatus.BAD_PAYLOAD;
+        else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
+            code = CloseStatus.SHUTDOWN;
         else
-            callback.failed(cause);
+            code = CloseStatus.NO_CLOSE;
+
+        AbnormalCloseStatus closeStatus = new AbnormalCloseStatus(code, cause);
+        if (CloseStatus.isTransmittableStatusCode(code))
+            close(closeStatus, callback);
+        else
+        {
+            if (channelState.onClosed(closeStatus))
+                closeConnection(cause, closeStatus, callback);
+        }
     }
 
     /**
@@ -414,7 +409,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (LOG.isDebugEnabled())
             LOG.debug("processHandlerError {} {}", this, cause);
 
-        close(abnormalCloseStatusFor(cause), callback);
+        int code;
+        if (cause instanceof CloseException)
+            code = ((CloseException)cause).getStatusCode();
+        else if (cause instanceof Utf8Appendable.NotUtf8Exception)
+            code = CloseStatus.BAD_PAYLOAD;
+        else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
+            code = CloseStatus.SHUTDOWN;
+        else if (behavior == Behavior.CLIENT)
+            code = CloseStatus.POLICY_VIOLATION;
+        else
+            code = CloseStatus.SERVER_ERROR;
+
+        close(new AbnormalCloseStatus(code, cause), callback);
     }
 
     /**
@@ -506,6 +513,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
         catch (Throwable t)
         {
+            if (LOG.isDebugEnabled())
+                LOG.warn("Invalid outgoing frame: {}", frame);
+
             callback.failed(t);
             return;
         }
@@ -514,10 +524,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             synchronized(flusher)
             {
-                boolean closeConnection = channelState.onOutgoingFrame(frame);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("sendFrame({}, {}, {}) {}", frame, callback, batch, closeConnection);
+                    LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
+                boolean closeConnection = channelState.onOutgoingFrame(frame);
                 if (closeConnection)
                 {
                     Throwable cause = AbnormalCloseStatus.getCause(CloseStatus.getCloseStatus(frame));
@@ -537,6 +547,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
         catch (Throwable t)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failed sendFrame()", t);
+
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);

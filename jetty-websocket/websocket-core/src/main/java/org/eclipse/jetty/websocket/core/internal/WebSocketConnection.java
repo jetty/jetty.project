@@ -599,8 +599,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         @Override
         public void onCompleteFailure(Throwable x)
         {
-            super.onCompleteFailure(x);
             channel.processConnectionError(x, NOOP);
+            super.onCompleteFailure(x);
         }
     }
 }

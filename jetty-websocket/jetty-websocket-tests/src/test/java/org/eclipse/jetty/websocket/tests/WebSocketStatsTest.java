@@ -179,7 +179,7 @@ public class WebSocketStatsTest
         ClientSocket socket = new ClientSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
 
-        final long numMessages = 10000;
+        final long numMessages = 1000;
         final String msgText = "hello world";
 
         long upgradeSentBytes;

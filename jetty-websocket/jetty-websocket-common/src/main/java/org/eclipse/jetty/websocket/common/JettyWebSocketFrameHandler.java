@@ -211,7 +211,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         switch (frame.getOpCode())
         {
             case OpCode.CLOSE:
-                onCloseFrame(frame, demandingCallback);
+                onCloseFrame(frame, callback);
                 break;
             case OpCode.PING:
                 onPingFrame(frame, demandingCallback);
