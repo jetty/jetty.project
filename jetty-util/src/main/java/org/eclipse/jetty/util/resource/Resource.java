@@ -554,7 +554,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param parent True if the parent directory should be included
      * @return String of HTML
      * @throws IOException if unable to get the list of resources as HTML
+     * @deprecated use {@link #getListHTML(String, boolean, String)} instead and supply raw query string.
      */
+    @Deprecated
     public String getListHTML(String base, boolean parent) throws IOException
     {
         return getListHTML(base, parent, null);
