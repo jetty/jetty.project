@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Future;
@@ -255,12 +256,26 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public InetSocketAddress getInetSocketAddress()
     {
+        SocketAddress remoteAddress = coreSession.getRemoteAddress();
+        if (remoteAddress instanceof InetSocketAddress)
+            return (InetSocketAddress)remoteAddress;
+
         return null;
+    }
+
+    @Override
+    public SocketAddress getRemoteAddress()
+    {
+        return coreSession.getRemoteAddress();
     }
 
     @Override
     public void flush() throws IOException
     {
-
+        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        {
+            coreSession.flush(b);
+            b.block();
+        }
     }
 }
