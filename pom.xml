@@ -1844,7 +1844,7 @@
             <enabled>true</enabled>
           </snapshots>
         </repository>
-        <repository>
+        <!--repository>
           <id>apache.snapshots</id>
           <url>https://repository.apache.org/content/repositories/snapshots</url>
           <releases>
@@ -1853,22 +1853,11 @@
           <snapshots>
             <enabled>true</enabled>
           </snapshots>
-        </repository>
+        </repository-->
         <repository>
           <id>oss.snapshots</id>
           <name>OSS Snapshots</name>
           <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository>
-        <repository>
-          <id>jetty.snapshots</id>
-          <name>Jetty Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
           <releases>
             <enabled>false</enabled>
           </releases>
@@ -2007,7 +1996,8 @@
     </site>
   </distributionManagement>
 
-  <pluginRepositories>
+  <!-- comment this until we need some maven plugins SNAPSHOT versions -->
+  <!--pluginRepositories>
     <pluginRepository>
       <id>apache.snapshots</id>
       <url>https://repository.apache.org/content/repositories/snapshots</url>
@@ -2028,6 +2018,6 @@
         <enabled>true</enabled>
       </snapshots>
     </pluginRepository>
-  </pluginRepositories>
+  </pluginRepositories-->
 
 </project>
