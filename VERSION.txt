@@ -43,10 +43,21 @@ jetty-9.4.15.v20190215 - 15 February 2019
  + 3350 Do not expect to be able to connect to https URLs with the HttpClient
    created from a parameterless constructor
 
+jetty-9.3.26.v20190403 - 03 April 2019
+ + 2954 Improve cause reporting for HttpClient failures
+ + 3274 OSGi versions of java.base classes in
+   org.apache.felix:org.osgi.foundation:jar conflicts with new rules on Java 9+
+ + 3302 Support host:port in X-Forwarded-For header in
+   ForwardedRequestCustomizer
+ + 3319 Allow reverse sort for directory listed files
+
+jetty-9.2.27.v20190403 - 03 April 2019
+  + 3319 Refactored Directory Listing to modernize and avoid XSS
+
 jetty-9.4.14.v20181114 - 14 November 2018
- + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
- + 3103 HttpClientLoadTest reports a leak in byte buffer
- + 3104 Align jetty-schemas version within apache-jsp module as well
+  + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
+  + 3103 HttpClientLoadTest reports a leak in byte buffer
+  + 3104 Align jetty-schemas version within apache-jsp module as well
 
 jetty-9.4.13.v20181111 - 11 November 2018
  + 2191 JPMS Support
@@ -89,6 +100,13 @@ jetty-9.4.13.v20181111 - 11 November 2018
  + 3054 Update OSGi to ASM 7
  + 3090 MBeanContainer throws NPE for arrays
  + 3092 Wrong classloader used to load *MBean classes
+
+jetty-9.3.25.v20180904 - 04 September 2018
+ + 2135 Android 8.1 needs direct buffers for SSL/TLS to work
+ + 2777 Workaround for Conscrypt's ssl == null
+ + 2787 BadMessageException wrapped as ServletException not handled
+ + 2860 Leakage of HttpDestinations in HttpClient
+ + 2871 Server reads -1 after client resets HTTP/2 stream
 
 jetty-9.4.12.v20180830 - 30 August 2018
  + 300 Implement Deflater / Inflater Object Pool
@@ -179,13 +197,6 @@ jetty-9.4.12.v20180830 - 30 August 2018
  + 2844 Clean up webdefault.xml and DefaultServlet doc
  + 2846 add unit test for ldap module
  + 2847 Wrap Connection.Listener invocations in try/catch
- + 2860 Leakage of HttpDestinations in HttpClient
- + 2871 Server reads -1 after client resets HTTP/2 stream
-
-jetty-9.3.25.v20180904 - 04 September 2018
- + 2135 Android 8.1 needs direct buffers for SSL/TLS to work
- + 2777 Workaround for Conscrypt's ssl == null
- + 2787 BadMessageException wrapped as ServletException not handled
  + 2860 Leakage of HttpDestinations in HttpClient
  + 2871 Server reads -1 after client resets HTTP/2 stream
 
