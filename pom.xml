@@ -1996,8 +1996,8 @@
     </site>
   </distributionManagement>
 
-  <!-- comment this until we need some maven plugins SNAPSHOT versions -->
-  <!--pluginRepositories>
+  <!-- comment this until if we do not need some Apache maven plugins SNAPSHOT versions -->
+  <pluginRepositories>
     <pluginRepository>
       <id>apache.snapshots</id>
       <url>https://repository.apache.org/content/repositories/snapshots</url>
@@ -2018,6 +2018,6 @@
         <enabled>true</enabled>
       </snapshots>
     </pluginRepository>
-  </pluginRepositories-->
+  </pluginRepositories>
 
 </project>
