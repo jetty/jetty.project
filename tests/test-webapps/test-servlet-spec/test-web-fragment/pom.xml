@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.4.16.v20190411</version>
+    <version>9.4.17-SNAPSHOT</version>
   </parent>
 
   <name>Jetty Tests :: WebApp :: Servlet Spec :: Fragment Jar</name>

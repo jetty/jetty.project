@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jmx-parent</artifactId>
-    <version>9.4.16.v20190411</version>
+    <version>9.4.17-SNAPSHOT</version>
   </parent>
   <artifactId>jmx-webapp</artifactId>
   <packaging>war</packaging>
