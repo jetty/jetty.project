@@ -55,9 +55,8 @@ You can re-enable these by re-declaring the ciphers you want excluded in code:
 
 [source, java, subs="{sub-order}"]
 ----
-SslContextFactory sslContextFactory = new SslContextFactory();
-sslContextFactory.setExcludeCipherSuites(
-            "^.*_(MD5|SHA|SHA1)$");
+SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+sslContextFactory.setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
 ----
 
 If, after making these changes, you still have issues using these ciphers they are likely being blocked at the JVM level.
@@ -664,7 +663,7 @@ the other is `$JETTY/etc/truststore` which contains intermediary CA and root CA.
 [[configuring-sslcontextfactory]]
 ==== Configuring the Jetty SslContextFactory
 
-The generated SSL certificates from above are held in the key store are configured in an instance of link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory] object.
+The generated SSL certificates from above are held in the key store are configured in an instance of link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[SslContextFactory.Server] object.
 
 The `SslContextFactory` is responsible for:
 
@@ -679,9 +678,9 @@ The `SslContextFactory` is responsible for:
 * https://en.wikipedia.org/wiki/Online_Certificate_Status_Protocol[OCSP] Support
 * Client Authentication Support
 
-For Jetty Connectors, the configured `SslContextFactory` is injected into a specific ServerConnector `SslConnectionFactory`.
+For Jetty Connectors, the configured `SslContextFactory.Server` is injected into a specific ServerConnector `SslConnectionFactory`.
 
-For Jetty Clients, the various constructors support using a configured `SslContextFactory`.
+For Jetty Clients, the various constructors support using a configured `SslContextFactory.Client`.
 
 While the `SslContextFactory` can operate without a keystore (this mode is most suitable for the various Jetty Clients) it is best practice to at least configure the keystore being used.
 
@@ -729,7 +728,7 @@ Implementing Conscrypt for the link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscry
 ...
 Security.addProvider(new OpenSSLProvider());
 ...
-SslContextFactory sslContextFactory = new SslContextFactory();
+SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 sslContextFactory.setKeyStorePath("path/to/keystore");
 sslContextFactory.setKeyStorePassword("CleverKeyStorePassword");
 sslContextFactory.setKeyManagerPassword("OBF:VerySecretManagerPassword");
@@ -790,7 +789,7 @@ To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can 
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN"
           "http://www.eclipse.org/jetty/configure_9_3.dtd">
 <!-- Tweak SsslContextFactory Includes / Excludes -->
-<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <!-- Mitigate SLOTH Attack -->
   <Call name="addExcludeCipherSuites">
     <Arg>

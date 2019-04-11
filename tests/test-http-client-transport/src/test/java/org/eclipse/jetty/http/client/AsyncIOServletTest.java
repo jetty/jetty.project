@@ -76,7 +76,6 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -394,12 +393,8 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
     @Tag("Unstable")
-    @Disabled // TODO fix this test! #2243
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
-        // TODO work out why this test fails for UNIX_SOCKET
-        Assumptions.assumeFalse(transport==Transport.UNIX_SOCKET);
-
         init(transport);
         
         String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
@@ -465,8 +460,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     @ArgumentsSource(TransportProvider.class)
     public void testAsyncWriteLessThanContentLengthFlushed(Transport transport) throws Exception
     {
-        // TODO work out why this test fails for UNIX_SOCKET
-        Assumptions.assumeFalse(transport==Transport.UNIX_SOCKET);
         init(transport);
         
         CountDownLatch complete = new CountDownLatch(1);

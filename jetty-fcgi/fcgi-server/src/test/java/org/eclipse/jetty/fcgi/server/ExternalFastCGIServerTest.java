@@ -40,7 +40,7 @@ public class ExternalFastCGIServerTest
     {
         // Assume a FastCGI server is listening on localhost:9000
 
-        HttpClient client = new HttpClient(new HttpClientTransportOverFCGI("/var/www/php-fcgi"), null);
+        HttpClient client = new HttpClient(new HttpClientTransportOverFCGI("/var/www/php-fcgi"));
         client.start();
 
         ContentResponse response = client.newRequest("localhost", 9000)

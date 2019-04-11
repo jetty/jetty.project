@@ -50,7 +50,7 @@ public class ClientConnector extends ContainerLifeCycle
     private Executor executor;
     private Scheduler scheduler;
     private ByteBufferPool byteBufferPool;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Client sslContextFactory;
     private SelectorManager selectorManager;
     private int selectors = 1;
     private boolean connectBlocking;
@@ -97,12 +97,12 @@ public class ClientConnector extends ContainerLifeCycle
         this.byteBufferPool = byteBufferPool;
     }
 
-    public SslContextFactory getSslContextFactory()
+    public SslContextFactory.Client getSslContextFactory()
     {
         return sslContextFactory;
     }
 
-    public void setSslContextFactory(SslContextFactory sslContextFactory)
+    public void setSslContextFactory(SslContextFactory.Client sslContextFactory)
     {
         if (isStarted())
             throw new IllegalStateException();
@@ -192,9 +192,9 @@ public class ClientConnector extends ContainerLifeCycle
         removeBean(selectorManager);
     }
 
-    protected SslContextFactory newSslContextFactory()
+    protected SslContextFactory.Client newSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory(false);
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(false);
         sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         return sslContextFactory;
     }

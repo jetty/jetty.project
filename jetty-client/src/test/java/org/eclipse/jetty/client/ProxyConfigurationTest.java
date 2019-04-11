@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.client;
 
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
 
 public class ProxyConfigurationTest
 {
@@ -68,6 +68,7 @@ public class ProxyConfigurationTest
     }
 
     @Test
+    @Tag("ipv6")
     public void testProxyMatchesWithIncludesAndExcludesIPv6() throws Exception
     {
         HttpProxy proxy = new HttpProxy("host", 0);

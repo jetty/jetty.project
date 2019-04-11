@@ -169,7 +169,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
                 case "server_no_context_takeover":
                 {
-                    params_negotiated.put("client_no_context_takeover", null);
+                    params_negotiated.put("server_no_context_takeover", null);
                     outgoingContextTakeover = false;
                     break;
                 }

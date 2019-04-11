@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.StringUtil;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.StringUtil;
 
 public class WebSocketExtensionRegistry implements Iterable<Class<? extends Extension>>
 {
@@ -100,7 +101,7 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         }
         catch (Throwable t)
         {
-            throw new WebSocketException("Cannot instantiate extension: " + extClass, t);
+            throw new BadMessageException("Cannot instantiate extension: " + extClass, t);
         }
     }
 

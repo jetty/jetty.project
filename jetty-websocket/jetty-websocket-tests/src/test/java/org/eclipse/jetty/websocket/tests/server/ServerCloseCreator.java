@@ -19,29 +19,30 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.util.concurrent.LinkedBlockingQueue;
+
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class ServerCloseCreator implements WebSocketCreator
+public class ServerCloseCreator implements JettyWebSocketCreator
 {
-    private final WebSocketServletFactory serverFactory;
+    private final JettyWebSocketServletFactory serverFactory;
     private LinkedBlockingQueue<AbstractCloseEndpoint> createdSocketQueue = new LinkedBlockingQueue<>();
 
-    public ServerCloseCreator(WebSocketServletFactory serverFactory)
+    public ServerCloseCreator(JettyWebSocketServletFactory serverFactory)
     {
         this.serverFactory = serverFactory;
     }
 
     @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+    public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
     {
         AbstractCloseEndpoint closeSocket = null;
 

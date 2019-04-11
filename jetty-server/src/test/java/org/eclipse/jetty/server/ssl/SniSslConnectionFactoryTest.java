@@ -118,7 +118,7 @@ public class SniSslConnectionFactoryTest
         if (!keystoreFile.exists())
             throw new FileNotFoundException(keystoreFile.getAbsolutePath());
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
@@ -224,7 +224,7 @@ public class SniSslConnectionFactoryTest
     {
         start("src/test/resources/keystore_sni.p12");
 
-        SslContextFactory clientContextFactory = new SslContextFactory(true);
+        SslContextFactory clientContextFactory = new SslContextFactory.Client(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
         try (SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port))
@@ -283,7 +283,7 @@ public class SniSslConnectionFactoryTest
     {
         start("src/test/resources/keystore_sni.p12");
 
-        SslContextFactory clientContextFactory = new SslContextFactory(true);
+        SslContextFactory clientContextFactory = new SslContextFactory.Client(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
         try (SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port))
@@ -362,7 +362,7 @@ public class SniSslConnectionFactoryTest
 
     private String getResponse(String sniHost, String reqHost, String cn) throws Exception
     {
-        SslContextFactory clientContextFactory = new SslContextFactory(true);
+        SslContextFactory clientContextFactory = new SslContextFactory.Client(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
         try (SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port))

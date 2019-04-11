@@ -625,24 +625,23 @@ public class SocketChannelEndPointTest
     public static class SslScenario implements Scenario
     {
         private final NormalScenario _normalScenario;
-        private final SslContextFactory __sslCtxFactory = new SslContextFactory();
-        private final ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
+        private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
+        private final ByteBufferPool _byteBufferPool = new MappedByteBufferPool();
 
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
             _normalScenario = normalScenario;
             File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-            __sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
-            __sslCtxFactory.setKeyStorePassword("storepwd");
-            __sslCtxFactory.setKeyManagerPassword("keypwd");
-            __sslCtxFactory.setEndpointIdentificationAlgorithm("");
-            __sslCtxFactory.start();
+            _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
+            _sslCtxFactory.setKeyStorePassword("storepwd");
+            _sslCtxFactory.setKeyManagerPassword("keypwd");
+            _sslCtxFactory.start();
         }
 
         @Override
         public Socket newClient(ServerSocketChannel connector) throws IOException
         {
-            SSLSocket socket = __sslCtxFactory.newSslSocket();
+            SSLSocket socket = _sslCtxFactory.newSslSocket();
             socket.connect(connector.socket().getLocalSocketAddress());
             return socket;
         }
@@ -650,11 +649,11 @@ public class SocketChannelEndPointTest
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
-            SSLEngine engine = __sslCtxFactory.newSSLEngine();
+            SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(__byteBufferPool, executor, endpoint, engine);
-            sslConnection.setRenegotiationAllowed(__sslCtxFactory.isRenegotiationAllowed());
-            sslConnection.setRenegotiationLimit(__sslCtxFactory.getRenegotiationLimit());
+            SslConnection sslConnection = new SslConnection(_byteBufferPool, executor, endpoint, engine);
+            sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
+            sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             Connection appConnection = _normalScenario.newConnection(channel, sslConnection.getDecryptedEndPoint(), executor, blockAt, writeCount);
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
             return sslConnection;

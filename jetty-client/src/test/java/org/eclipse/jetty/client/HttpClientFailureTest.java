@@ -74,7 +74,7 @@ public class HttpClientFailureTest
         startServer(new EmptyServerHandler());
 
         final AtomicReference<HttpConnectionOverHTTP> connectionRef = new AtomicReference<>();
-        client = new HttpClient(new HttpClientTransportOverHTTP()
+        client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
             protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
@@ -83,15 +83,14 @@ public class HttpClientFailureTest
                 connectionRef.set(connection);
                 return connection;
             }
-        }, null);
+        });
         client.start();
 
-        assertThrows(ExecutionException.class, ()->{
-            client.newRequest("localhost", connector.getLocalPort())
-                    .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+        assertThrows(ExecutionException.class, () ->
+                client.newRequest("localhost", connector.getLocalPort())
+                .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
@@ -105,7 +104,7 @@ public class HttpClientFailureTest
         startServer(new EmptyServerHandler());
 
         final AtomicReference<HttpConnectionOverHTTP> connectionRef = new AtomicReference<>();
-        client = new HttpClient(new HttpClientTransportOverHTTP()
+        client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
             protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
@@ -114,7 +113,7 @@ public class HttpClientFailureTest
                 connectionRef.set(connection);
                 return connection;
             }
-        }, null);
+        });
         client.start();
 
         final CountDownLatch commitLatch = new CountDownLatch(1);

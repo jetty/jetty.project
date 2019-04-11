@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.util.ServiceLoader;
+
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -28,8 +30,6 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppConfiguration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
-
-import java.util.ServiceLoader;
 
 /**
  * <p>Websocket Configuration</p>
@@ -58,9 +58,7 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
 
         protectAndExpose(
             "org.eclipse.jetty.websocket.api.",
-            "org.eclipse.jetty.websocket.common.",
-            "org.eclipse.jetty.websocket.client.",
-            "org.eclipse.jetty.websocket.server.");
+                "org.eclipse.jetty.websocket.server.");
     }
 
     @Override

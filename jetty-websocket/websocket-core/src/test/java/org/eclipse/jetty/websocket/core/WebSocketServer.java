@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 import org.eclipse.jetty.server.NetworkConnector;
@@ -35,10 +36,12 @@ public class WebSocketServer
 {
     private static Logger LOG = Log.getLogger(WebSocketServer.class);
     private final Server server;
+    private URI serverUri;
 
     public void start() throws Exception
     {
         server.start();
+        serverUri = new URI("ws://localhost:" + getLocalPort());
     }
 
     public void stop() throws Exception
@@ -56,12 +59,12 @@ public class WebSocketServer
         return server;
     }
 
-    public WebSocketServer(FrameHandler frameHandler)
+    public WebSocketServer(FrameHandler frameHandler) throws Exception
     {
         this(new DefaultNegotiator(frameHandler));
     }
 
-    public WebSocketServer(WebSocketNegotiator negotiator)
+    public WebSocketServer(WebSocketNegotiator negotiator) throws Exception
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -73,6 +76,11 @@ public class WebSocketServer
 
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
         context.setHandler(upgradeHandler);
+    }
+
+    public URI getUri()
+    {
+        return serverUri;
     }
 
     private static class DefaultNegotiator extends WebSocketNegotiator.AbstractNegotiator

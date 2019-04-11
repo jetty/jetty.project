@@ -44,9 +44,11 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.AbstractAuthentication;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -57,7 +59,6 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
@@ -67,6 +68,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.eclipse.jetty.client.api.Authentication.ANY_REALM;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,7 +139,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         startBasic(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        test_Authentication(scenario, new BasicAuthentication(uri, Authentication.ANY_REALM, "basic", "basic"));
+        test_Authentication(scenario, new BasicAuthentication(uri, ANY_REALM, "basic", "basic"));
     }
 
     @ParameterizedTest
@@ -155,7 +157,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         startDigest(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        test_Authentication(scenario, new DigestAuthentication(uri, Authentication.ANY_REALM, "digest", "digest"));
+        test_Authentication(scenario, new DigestAuthentication(uri, ANY_REALM, "digest", "digest"));
     }
 
     private void test_Authentication(final Scenario scenario, Authentication authentication) throws Exception
@@ -227,16 +229,19 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test_BasicAuthentication_ThenRedirect(Scenario scenario) throws Exception
     {
-        startBasic(scenario, new AbstractHandler()
+        startBasic(scenario, new EmptyServerHandler()
         {
             private final AtomicInteger requests = new AtomicInteger();
 
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
-                if (requests.incrementAndGet() == 1)
-                    response.sendRedirect(URIUtil.newURI(scenario.getScheme(), request.getServerName(), request.getServerPort(), request.getRequestURI(), null));
+                int r = requests.incrementAndGet();
+                if (r == 1)
+                {
+                    String path = request.getRequestURI() + "/" + r;
+                    response.sendRedirect(URIUtil.newURI(scenario.getScheme(), request.getServerName(), request.getServerPort(), path, null));
+                }
             }
         });
 
@@ -269,12 +274,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test_Redirect_ThenBasicAuthentication(Scenario scenario) throws Exception
     {
-        startBasic(scenario, new AbstractHandler()
+        startBasic(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/redirect"))
                     response.sendRedirect(URIUtil.newURI(scenario.getScheme(), request.getServerName(), request.getServerPort(), "/secure", null));
             }
@@ -571,61 +575,57 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static class GeneratingContentProvider implements ContentProvider
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void test_InfiniteAuthentication(Scenario scenario) throws Exception
     {
-        private static final ByteBuffer DONE = ByteBuffer.allocate(0);
-
-        private final IntFunction<ByteBuffer> generator;
-
-        private GeneratingContentProvider(IntFunction<ByteBuffer> generator)
+        String authType = "Authenticate";
+        start(scenario, new EmptyServerHandler()
         {
-            this.generator = generator;
-        }
-
-        @Override
-        public long getLength()
-        {
-            return -1;
-        }
-
-        @Override
-        public boolean isReproducible()
-        {
-            return true;
-        }
-
-        @Override
-        public Iterator<ByteBuffer> iterator()
-        {
-            return new Iterator<ByteBuffer>()
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                private int index;
-                public ByteBuffer current;
+                // Always reply with a 401 to see if the client
+                // can handle an infinite authentication loop.
+                response.setStatus(HttpStatus.UNAUTHORIZED_401);
+                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), authType);
+            }
+        });
 
-                @Override
-                @SuppressWarnings("ReferenceEquality")
-                public boolean hasNext()
+        AuthenticationStore authenticationStore = client.getAuthenticationStore();
+        URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
+        authenticationStore.addAuthentication(new AbstractAuthentication(uri, Authentication.ANY_REALM)
+        {
+            @Override
+            public String getType()
+            {
+                return authType;
+            }
+
+            @Override
+            public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
+            {
+                return new Result()
                 {
-                    if (current == null)
+                    @Override
+                    public URI getURI()
                     {
-                        current = generator.apply(index++);
-                        if (current == null)
-                            current = DONE;
+                        return uri;
                     }
-                    return current != DONE;
-                }
 
-                @Override
-                public ByteBuffer next()
-                {
-                    ByteBuffer result = current;
-                    current = null;
-                    if (result == null)
-                        throw new NoSuchElementException();
-                    return result;
-                }
-            };
-        }
+                    @Override
+                    public void apply(Request request)
+                    {
+                    }
+                };
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .send();
+
+        assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
     }
 
     @Test
@@ -800,5 +800,62 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals(",Digest realm=hello", headerInfo.getParameter("qop"));
         assertEquals("thermostat", headerInfo.getParameter("realm"));
         assertEquals(headerInfo.getParameter("nonce"), "1523430383=");
+    }
+
+    private static class GeneratingContentProvider implements ContentProvider
+    {
+        private static final ByteBuffer DONE = ByteBuffer.allocate(0);
+
+        private final IntFunction<ByteBuffer> generator;
+
+        private GeneratingContentProvider(IntFunction<ByteBuffer> generator)
+        {
+            this.generator = generator;
+        }
+
+        @Override
+        public long getLength()
+        {
+            return -1;
+        }
+
+        @Override
+        public boolean isReproducible()
+        {
+            return true;
+        }
+
+        @Override
+        public Iterator<ByteBuffer> iterator()
+        {
+            return new Iterator<ByteBuffer>()
+            {
+                private int index;
+                public ByteBuffer current;
+
+                @Override
+                @SuppressWarnings("ReferenceEquality")
+                public boolean hasNext()
+                {
+                    if (current == null)
+                    {
+                        current = generator.apply(index++);
+                        if (current == null)
+                            current = DONE;
+                    }
+                    return current != DONE;
+                }
+
+                @Override
+                public ByteBuffer next()
+                {
+                    ByteBuffer result = current;
+                    current = null;
+                    if (result == null)
+                        throw new NoSuchElementException();
+                    return result;
+                }
+            };
+        }
     }
 }

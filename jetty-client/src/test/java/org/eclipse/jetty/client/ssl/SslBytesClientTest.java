@@ -38,9 +38,11 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +63,7 @@ public class SslBytesClientTest extends SslBytesTest
 {
     private ExecutorService threadPool;
     private HttpClient client;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Client sslContextFactory;
     private SSLServerSocket acceptor;
     private SimpleProxy proxy;
 
@@ -70,8 +72,11 @@ public class SslBytesClientTest extends SslBytesTest
     {
         threadPool = Executors.newCachedThreadPool();
 
-        sslContextFactory = new SslContextFactory(true);
-        client = new HttpClient(sslContextFactory);
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        sslContextFactory = new SslContextFactory.Client(true);
+        clientConnector.setSslContextFactory(sslContextFactory);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.setMaxConnectionsPerDestination(1);
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
@@ -243,7 +248,7 @@ public class SslBytesClientTest extends SslBytesTest
 
             // Trigger a read to have the server write the final renegotiation steps
             server.setSoTimeout(100);
-            assertThrows(SocketTimeoutException.class, ()->serverInput.read());
+            assertThrows(SocketTimeoutException.class, () -> serverInput.read());
 
             // Renegotiation Handshake
             record = proxy.readFromServer();

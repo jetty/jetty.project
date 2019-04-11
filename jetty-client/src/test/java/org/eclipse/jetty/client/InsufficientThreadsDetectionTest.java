@@ -30,7 +30,7 @@ public class InsufficientThreadsDetectionTest
     public void testInsufficientThreads()
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool(1);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(1));
         httpClient.setExecutor(clientThreads);
         assertThrows(IllegalStateException.class, httpClient::start);
     }
@@ -39,14 +39,14 @@ public class InsufficientThreadsDetectionTest
     public void testInsufficientThreadsForMultipleHttpClients() throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool(3);
-        HttpClient httpClient1 = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+        HttpClient httpClient1 = new HttpClient(new HttpClientTransportOverHTTP(1));
         httpClient1.setExecutor(clientThreads);
         httpClient1.start();
 
         assertThrows(IllegalStateException.class, () ->
         {
             // Share the same thread pool with another instance.
-            HttpClient httpClient2 = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+            HttpClient httpClient2 = new HttpClient(new HttpClientTransportOverHTTP(1));
             httpClient2.setExecutor(clientThreads);
             httpClient2.start();
         });

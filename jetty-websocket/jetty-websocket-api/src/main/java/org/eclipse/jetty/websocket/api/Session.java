@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-
 import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.
@@ -163,8 +163,12 @@ public interface Session extends WebSocketPolicy, Closeable
     boolean isSecure();
 
     /**
-     * Suspend the incoming read events on the connection.
-     *
+     * Suspend the delivery of incoming WebSocket frames.
+     * <p>
+     * If this is called from inside the scope of the message handler the suspend takes effect immediately.
+     * If suspend is called outside the scope of the message handler then the call may take effect
+     * after 1 more frame is delivered.
+     * </p>
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
     SuspendToken suspend();

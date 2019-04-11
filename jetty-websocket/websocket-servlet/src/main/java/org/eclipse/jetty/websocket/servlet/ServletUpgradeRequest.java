@@ -22,7 +22,6 @@ import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -38,6 +37,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -57,21 +57,28 @@ public class ServletUpgradeRequest
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
 
-    public ServletUpgradeRequest(Negotiation negotiation) throws URISyntaxException
+    public ServletUpgradeRequest(Negotiation negotiation) throws BadMessageException
     {
         this.negotiation = negotiation;
         HttpServletRequest httpRequest = negotiation.getRequest();
         this.queryString = httpRequest.getQueryString();
         this.secure = httpRequest.isSecure();
 
-        // TODO why is this URL and not URI?
-        StringBuffer uri = httpRequest.getRequestURL();
-        // WHY?
-        if (this.queryString != null)
-            uri.append("?").append(this.queryString);
-        uri.replace(0, uri.indexOf(":"), secure?"wss":"ws");
-        this.requestURI = new URI(uri.toString());
-        this.request = new UpgradeHttpServletRequest(httpRequest);
+        try
+        {
+            // TODO why is this URL and not URI?
+            StringBuffer uri = httpRequest.getRequestURL();
+            // WHY?
+            if (this.queryString != null)
+                uri.append("?").append(this.queryString);
+            uri.replace(0, uri.indexOf(":"), secure ? "wss" : "ws");
+            this.requestURI = new URI(uri.toString());
+            this.request = new UpgradeHttpServletRequest(httpRequest);
+        }
+        catch (Throwable t)
+        {
+            throw new BadMessageException("Bad WebSocket UpgradeRequest", t);
+        }
     }
 
     /**

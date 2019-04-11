@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.net.Socket;
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +53,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -315,21 +317,22 @@ public class WebSocketCloseTest extends WebSocketTester
         client.close();
         assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
 
-        while(true)
-        {
-            if (!server.isOpen())
-                break;
-
-            server.sendFrame(new Frame(OpCode.TEXT, BufferUtil.toBuffer("frame after close")), Callback.NOOP);
-        }
+        assertTimeoutPreemptively(Duration.ofSeconds(1), ()->{
+            while(true)
+            {
+                if (!server.isOpen())
+                    break;
+                server.sendFrame(new Frame(OpCode.TEXT, BufferUtil.toBuffer("frame after close")), Callback.NOOP);
+                Thread.sleep(100);
+            }
+        });
 
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertNotNull(server.handler.error);
-        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NO_CLOSE));
 
         Callback callback = server.handler.receivedCallback.poll(5, TimeUnit.SECONDS);
         callback.succeeded();
-        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
     }
 
     @ParameterizedTest
@@ -433,7 +436,7 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onOpen(CoreSession coreSession)
         {
-            LOG.info("onOpen {}", coreSession);
+            LOG.debug("onOpen {}", coreSession);
             session = coreSession;
             state = session.toString();
             opened.countDown();
@@ -442,7 +445,7 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
-            LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+            LOG.debug("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
             state = session.toString();
             receivedCallback.offer(callback);
             receivedFrames.offer(Frame.copy(frame));
@@ -454,7 +457,7 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onClosed(CloseStatus closeStatus)
         {
-            LOG.info("onClosed {}", closeStatus);
+            LOG.debug("onClosed {}", closeStatus);
             state = session.toString();
             this.closeStatus = closeStatus;
             closed.countDown();
@@ -463,7 +466,7 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onError(Throwable cause)
         {
-            LOG.info("onError {} ", cause == null?null:cause.toString());
+            LOG.debug("onError {} ", cause);
             error = cause;
             state = session.toString();
         }
@@ -506,9 +509,9 @@ public class WebSocketCloseTest extends WebSocketTester
             return server.getBean(NetworkConnector.class).getLocalPort();
         }
 
-        private SslContextFactory createSslContextFactory()
+        private SslContextFactory.Server createServerSslContextFactory()
         {
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
             sslContextFactory.setKeyStorePassword("storepwd");
             return sslContextFactory;
@@ -522,7 +525,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
             ServerConnector connector;
             if (tls)
-                connector = new ServerConnector(server, createSslContextFactory());
+                connector = new ServerConnector(server, createServerSslContextFactory());
             else
                 connector = new ServerConnector(server);
 

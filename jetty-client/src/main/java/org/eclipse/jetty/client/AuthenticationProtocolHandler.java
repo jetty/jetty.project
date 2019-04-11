@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -217,6 +218,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     path = request.getPath();
                 }
                 Request newRequest = client.copyRequest(request, requestURI);
+                // Disable the timeout so that only the one from the initial request applies.
+                newRequest.timeout(0, TimeUnit.MILLISECONDS);
                 if (path != null)
                     newRequest.path(path);
 

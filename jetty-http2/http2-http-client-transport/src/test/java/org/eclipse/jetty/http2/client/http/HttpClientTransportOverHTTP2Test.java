@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -48,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -76,6 +65,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -87,13 +77,22 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class HttpClientTransportOverHTTP2Test extends AbstractTest
 {
     @Test
     public void testPropertiesAreForwarded() throws Exception
     {
         HTTP2Client http2Client = new HTTP2Client();
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), null);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
         Executor executor = new QueuedThreadPool();
         httpClient.setExecutor(executor);
         httpClient.setConnectTimeout(13);
@@ -133,11 +132,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
-            client.newRequest("localhost", connector.getLocalPort())
-                    .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
-                    .send();
-        });
+        assertThrows(ExecutionException.class, () ->
+                client.newRequest("localhost", connector.getLocalPort())
+                .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -172,11 +170,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
-            client.newRequest("localhost", connector.getLocalPort())
-                    .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
-                    .send();
-        });
+        assertThrows(ExecutionException.class, () ->
+                client.newRequest("localhost", connector.getLocalPort())
+                .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -186,7 +183,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 HttpVersion version = HttpVersion.fromString(request.getProtocol());
@@ -274,7 +271,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 lastStream.set(frame.getLastStreamId());
                 latch.countDown();
             }
-        }, null);
+        });
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);
@@ -312,7 +309,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
@@ -336,7 +333,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
@@ -381,12 +378,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         client.setIdleTimeout(idleTimeout);
         client.start();
 
-        assertThrows(TimeoutException.class, ()->{
-            client.newRequest("localhost", connector.getLocalPort())
-                    // Make sure the connection idle times out, not the stream.
-                    .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
-                    .send();
-        });
+        assertThrows(TimeoutException.class, () ->
+                client.newRequest("localhost", connector.getLocalPort())
+                // Make sure the connection idle times out, not the stream.
+                .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+                .send());
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
@@ -436,7 +432,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     sessions.add(session);
                     return super.newHttpConnection(destination, session);
                 }
-            }, null);
+            });
             QueuedThreadPool clientExecutor = new QueuedThreadPool();
             clientExecutor.setName("client");
             client.setExecutor(clientExecutor);
@@ -600,12 +596,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void testExternalServer() throws Exception
     {
-        HTTP2Client http2Client = new HTTP2Client();
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        clientConnector.setSslContextFactory(sslContextFactory);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
         Executor executor = new QueuedThreadPool();
-        httpClient.setExecutor(executor);
-
+        clientConnector.setExecutor(executor);
         httpClient.start();
 
 //        ContentResponse response = httpClient.GET("https://http2.akamai.com/");

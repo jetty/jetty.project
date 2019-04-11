@@ -28,7 +28,6 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
@@ -85,7 +84,7 @@ public class SSLAsyncIOServletTest
         prepare(scenario, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 final AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
@@ -206,7 +205,7 @@ public class SSLAsyncIOServletTest
     {
         private Server server;
         private ServerConnector connector;
-        private SslContextFactory sslContextFactory;
+        private SslContextFactory.Server sslContextFactory;
         private String contextPath;
         private String servletPath;
 
@@ -221,8 +220,7 @@ public class SSLAsyncIOServletTest
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
             Path truststorePath = MavenTestingUtils.getTestResourcePath("truststore.jks");
 
-            sslContextFactory = new SslContextFactory();
-            sslContextFactory.setEndpointIdentificationAlgorithm("");
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setTrustStorePath(truststorePath.toString());

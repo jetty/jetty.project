@@ -100,7 +100,7 @@ public class SslBytesServerTest extends SslBytesTest
     private final int idleTimeout = 2000;
     private ExecutorService threadPool;
     private Server server;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Server sslContextFactory;
     private int serverPort;
     private SSLContext sslContext;
     private SimpleProxy proxy;
@@ -119,7 +119,7 @@ public class SslBytesServerTest extends SslBytesTest
         serverEndPoint.set(null);
         
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
-        sslContextFactory = new SslContextFactory();
+        sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
 

@@ -153,8 +153,8 @@ public class ExtensionTool
     private WebSocketChannel newWebsocketChannel()
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
         WebSocketChannel channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
         return channel;
     }

@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
@@ -131,15 +132,16 @@ public class TestJettyOSGiBootHTTP2JDK9
             Path path = Paths.get("src", "test", "config");
             File keys = path.resolve("etc").resolve("keystore").toFile();
             
-            //set up client to do http2
-            http2Client = new HTTP2Client();
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            ClientConnector clientConnector = new ClientConnector();
+            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setEndpointIdentificationAlgorithm(null);
-            httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
+            clientConnector.setSslContextFactory(sslContextFactory);
+            http2Client = new HTTP2Client(clientConnector);
+            httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
             httpClient.start();

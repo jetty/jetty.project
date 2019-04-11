@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Connector;
@@ -60,6 +61,7 @@ import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -178,7 +180,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         for (String failure : failures)
             logger.info("FAILED: {}", failure);
 
-        assertTrue(failures.isEmpty(),failures.toString());
+        assertTrue(failures.isEmpty(), failures.toString());
     }
 
     private void test(final CountDownLatch latch, final List<String> failures)
@@ -364,31 +366,32 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
 
         @Override
-        public Connector newServerConnector( Server server)
+        public Connector newServerConnector(Server server)
         {
-            if (transport == Transport.UNIX_SOCKET)
-            {
-                UnixSocketConnector
-                        unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));
-                unixSocketConnector.setUnixSocket( sockFile.toString() );
-                return unixSocketConnector;
-            }
-            int cores = ProcessorUtils.availableProcessors();
+            int selectors = Math.min(1, ProcessorUtils.availableProcessors() / 2);
             ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
             byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
-            return new ServerConnector(server, null, null, byteBufferPool,
-                    1, Math.min(1, cores / 2), provideServerConnectionFactory(transport));
+            if (transport == Transport.UNIX_SOCKET)
+            {
+                UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, null, null, byteBufferPool, selectors, provideServerConnectionFactory(transport));
+                unixSocketConnector.setUnixSocket(sockFile.toString());
+                return unixSocketConnector;
+            }
+            return new ServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
         }
 
         @Override
-        public HttpClientTransport provideClientTransport(Transport transport)
+        public HttpClientTransport provideClientTransport(Transport transport, SslContextFactory.Client sslContextFactory)
         {
             switch (transport)
             {
                 case HTTP:
                 case HTTPS:
                 {
-                    HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(1);
+                    ClientConnector clientConnector = new ClientConnector();
+                    clientConnector.setSelectors(1);
+                    clientConnector.setSslContextFactory(sslContextFactory);
+                    HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(clientConnector);
                     clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                     {
                         @Override
@@ -416,7 +419,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 }
                 case UNIX_SOCKET:
                 {
-                    HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets( sockFile.toString() );
+                    HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets(sockFile.toString());
                     clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                     {
                         @Override
@@ -430,7 +433,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 }
                 default:
                 {
-                    return super.provideClientTransport(transport);
+                    return super.provideClientTransport(transport, sslContextFactory);
                 }
             }
         }

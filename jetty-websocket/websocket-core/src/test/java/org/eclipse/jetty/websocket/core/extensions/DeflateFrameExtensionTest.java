@@ -419,8 +419,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     private WebSocketChannel channelWithMaxMessageSize(int maxMessageSize)
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
 
         WebSocketChannel channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
         channel.setMaxFrameSize(maxMessageSize);

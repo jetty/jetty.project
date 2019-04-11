@@ -21,7 +21,6 @@ package org.eclipse.jetty.proxy;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -84,21 +83,17 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public abstract class AbstractProxyServlet extends HttpServlet
 {
     protected static final String CLIENT_REQUEST_ATTRIBUTE = "org.eclipse.jetty.proxy.clientRequest";
-    protected static final Set<String> HOP_HEADERS;
-    static
-    {
-        Set<String> hopHeaders = new HashSet<>();
-        hopHeaders.add("connection");
-        hopHeaders.add("keep-alive");
-        hopHeaders.add("proxy-authorization");
-        hopHeaders.add("proxy-authenticate");
-        hopHeaders.add("proxy-connection");
-        hopHeaders.add("transfer-encoding");
-        hopHeaders.add("te");
-        hopHeaders.add("trailer");
-        hopHeaders.add("upgrade");
-        HOP_HEADERS = Collections.unmodifiableSet(hopHeaders);
-    }
+    protected static final Set<String> HOP_HEADERS = Set.of(
+            "connection",
+            "keep-alive",
+            "proxy-authorization",
+            "proxy-authenticate",
+            "proxy-connection",
+            "transfer-encoding",
+            "te",
+            "trailer",
+            "upgrade"
+    );
 
     private final Set<String> _whiteList = new HashSet<>();
     private final Set<String> _blackList = new HashSet<>();
@@ -353,11 +348,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected HttpClient newHttpClient()
     {
-        int selectors = Math.max(1,ProcessorUtils.availableProcessors()/2);
+        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return new HttpClient(new HttpClientTransportOverHTTP(selectors),null);
+        return new HttpClient(new HttpClientTransportOverHTTP(selectors));
     }
 
     protected HttpClient getHttpClient()

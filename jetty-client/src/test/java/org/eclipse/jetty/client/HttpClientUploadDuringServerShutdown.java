@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -65,7 +64,7 @@ public class HttpClientUploadDuringServerShutdown
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
                     baseRequest.setHandled(true);
                     byte[] buffer = new byte[1024];
@@ -103,7 +102,7 @@ public class HttpClientUploadDuringServerShutdown
         {
             QueuedThreadPool clientThreads = new QueuedThreadPool();
             clientThreads.setName("client");
-            HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(2), null);
+            HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(2));
             client.setMaxConnectionsPerDestination(2);
             client.setIdleTimeout(10000);
             client.setExecutor(clientThreads);
@@ -142,7 +141,7 @@ public class HttpClientUploadDuringServerShutdown
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 endPointRef.set(baseRequest.getHttpChannel().getEndPoint());
@@ -210,7 +209,7 @@ public class HttpClientUploadDuringServerShutdown
                     }
                 };
             }
-        }, null);
+        });
         client.setIdleTimeout(10000);
         client.setExecutor(clientThreads);
         client.start();
