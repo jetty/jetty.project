@@ -134,7 +134,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         MethodHandle frameHandle = metadata.getFrameHandle();
         MethodHandle pingHandle = metadata.getPingHandle();
         MethodHandle pongHandle = metadata.getPongHandle();
-        BatchMode batchMode = metadata.getBatchMode(); // TODO: what if we're not annotating, who else sets this
+        BatchMode batchMode = metadata.getBatchMode();
 
         openHandle = bindTo(openHandle, endpointInstance);
         closeHandle = bindTo(closeHandle, endpointInstance);
