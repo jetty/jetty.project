@@ -87,24 +87,28 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         }
     }
 
-    protected FrameHandler.CoreSession getCoreSession()
-    {
-        return coreSession;
-    }
-
-    private void sendBlocking(Frame frame) throws IOException
-    {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            coreSession.sendFrame(frame, b, false);
-            b.block();
-        }
-    }
-
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
         sendBlocking(new Frame(OpCode.BINARY).setPayload(data));
+    }
+
+    @Override
+    public void sendBytes(ByteBuffer data, WriteCallback callback)
+    {
+        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
+                Callback.from(callback::writeSuccess, callback::writeFailed),
+                isBatch());
+    }
+
+    @Override
+    public Future<Void> sendBytesByFuture(ByteBuffer data)
+    {
+        FutureCallback callback = new FutureCallback();
+        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
+                callback,
+                isBatch());
+        return callback;
     }
 
     @Override
@@ -118,6 +122,43 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
+    public void sendPartialBytes(ByteBuffer fragment, boolean isLast, WriteCallback callback)
+    {
+        sendPartialBytes(fragment, isLast, Callback.from(callback::writeSuccess, callback::writeFailed));
+    }
+
+    @Override
+    public Future<Void> sendPartialBytesByFuture(ByteBuffer fragment, boolean isLast)
+    {
+        FutureCallback callback = new FutureCallback();
+        sendPartialBytes(fragment, isLast, callback);
+        return callback;
+    }
+
+    @Override
+    public void sendString(String text) throws IOException
+    {
+        sendBlocking(new Frame(OpCode.TEXT).setPayload(text));
+    }
+
+    @Override
+    public void sendString(String text, WriteCallback callback)
+    {
+        Callback cb = callback == null?Callback.NOOP:Callback.from(callback::writeSuccess, callback::writeFailed);
+        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, isBatch());
+    }
+
+    @Override
+    public Future<Void> sendStringByFuture(String text)
+    {
+        FutureCallback callback = new FutureCallback();
+        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text),
+                callback,
+                isBatch());
+        return callback;
+    }
+
+    @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
@@ -128,38 +169,58 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
+    public void sendPartialString(String fragment, boolean isLast, WriteCallback callback) throws IOException
+    {
+        sendPartialText(fragment, isLast, Callback.from(callback::writeSuccess, callback::writeFailed));
+    }
+
+    @Override
+    public Future<Void> sendPartialStringByFuture(String fragment, boolean isLast) throws IOException
+    {
+        FutureCallback callback = new FutureCallback();
+        sendPartialText(fragment, isLast, callback);
+        return callback;
+    }
+
+    @Override
     public void sendPing(ByteBuffer applicationData) throws IOException
     {
-        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData), Callback.NOOP, false);
+        sendBlocking(new Frame(OpCode.PING).setPayload(applicationData));
+    }
+
+    @Override
+    public void sendPing(ByteBuffer applicationData, WriteCallback callback)
+    {
+        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData),
+                Callback.from(callback::writeSuccess, callback::writeFailed), false);
+    }
+
+    @Override
+    public Future<Void> sendPingByFuture(ByteBuffer applicationData)
+    {
+        FutureCallback callback = new FutureCallback();
+        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData), callback, false);
+        return callback;
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData), Callback.NOOP, false);
+        sendBlocking(new Frame(OpCode.PONG).setPayload(applicationData));
     }
 
     @Override
-    public void sendString(String text) throws IOException
+    public void sendPong(ByteBuffer applicationData, WriteCallback callback)
     {
-        sendBlocking(new Frame(OpCode.TEXT).setPayload(text));
+        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
+                Callback.from(callback::writeSuccess, callback::writeFailed), false);
     }
 
     @Override
-    public void sendBytes(ByteBuffer data, WriteCallback callback)
-    {
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
-            Callback.from(callback::writeSuccess, callback::writeFailed),
-            isBatch());
-    }
-
-    @Override
-    public Future<Void> sendBytesByFuture(ByteBuffer data)
+    public Future<Void> sendPongByFuture(ByteBuffer applicationData)
     {
         FutureCallback callback = new FutureCallback();
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
-            callback,
-            isBatch());
+        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData), callback, false);
         return callback;
     }
 
@@ -219,21 +280,18 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         }
     }
 
-    @Override
-    public void sendString(String text, WriteCallback callback)
+    private void sendBlocking(Frame frame) throws IOException
     {
-        Callback cb = callback == null?Callback.NOOP:Callback.from(callback::writeSuccess, callback::writeFailed);
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, isBatch());
+        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        {
+            coreSession.sendFrame(frame, b, false);
+            b.block();
+        }
     }
 
-    @Override
-    public Future<Void> sendStringByFuture(String text)
+    protected FrameHandler.CoreSession getCoreSession()
     {
-        FutureCallback callback = new FutureCallback();
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text),
-            callback,
-            isBatch());
-        return callback;
+        return coreSession;
     }
 
     @Override
