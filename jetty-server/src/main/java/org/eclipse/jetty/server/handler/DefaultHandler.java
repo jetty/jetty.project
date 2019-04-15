@@ -149,7 +149,6 @@ public class DefaultHandler extends AbstractHandler
                     if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
                         writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
                     writer.write("&nbsp;");
-                    writer.write(context.toString());
                     if (context.isFailed())
                         writer.write(" [failed]");
                     if (context.isStopped())
