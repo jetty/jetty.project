@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -1954,12 +1955,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             sslParams.setCipherSuites(_selectedCipherSuites);
         if (_selectedProtocols != null)
             sslParams.setProtocols(_selectedProtocols);
-        if (this instanceof Server)
+        if (!(this instanceof Client))
         {
-            Server server = (Server)this;
-            if (server.getWantClientAuth())
+            if (getWantClientAuth())
                 sslParams.setWantClientAuth(true);
-            if (server.getNeedClientAuth())
+            if (getNeedClientAuth())
                 sslParams.setNeedClientAuth(true);
         }
         return sslParams;
