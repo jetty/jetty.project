@@ -730,7 +730,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     else
                         continue;
             }
-            else if (crlf.hasRemaining())
+            else if (crlf != null && crlf.hasRemaining())
             {
                 result = encoder.encode(crlf, out, true);
                 if (result.isUnderflow())

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.contains;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -48,7 +47,6 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -76,6 +74,7 @@ import org.junit.jupiter.api.Test;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -580,23 +579,29 @@ public class ResponseTest
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
     }
 
+    @Test
+    public void testPrint_Empty() throws Exception
+    {
+        Response response = getResponse();
+        response.setCharacterEncoding(UTF_8.name());
+
+        try(ServletOutputStream outputStream = response.getOutputStream())
+        {
+            outputStream.print("ABC");
+            outputStream.print("");
+            outputStream.println();
+            outputStream.flush();
+        }
+
+        String expected = "ABC\r\n";
+        assertEquals(expected,BufferUtil.toString(_content, UTF_8));
+    }
 
     @Test
     public void testPrintln() throws Exception
     {
         Response response = getResponse();
-        Request request = response.getHttpChannel().getRequest();
-
-        SessionHandler session_handler = new SessionHandler();
-        session_handler.setServer(_server);
-        session_handler.setUsingCookies(true);
-        session_handler.start();
-        request.setSessionHandler(session_handler);
-        HttpSession session = request.getSession(true);
         response.setCharacterEncoding(UTF_8.name());
-
-        assertThat(session,not(nullValue()));
-        assertTrue(session.isNew());
 
         String expected = "";
         response.getOutputStream().print("ABC");
@@ -678,9 +683,7 @@ public class ResponseTest
 
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
-        assertEquals("Server Error", response.getReason());
-        assertThat(BufferUtil.toString(_content), containsString("Database Error"));
-
+        assertEquals("Database Error", response.getReason());
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
 
         response = getResponse();
@@ -693,8 +696,7 @@ public class ResponseTest
 
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
-        assertEquals(HttpStatus.Code.NOT_ACCEPTABLE.getMessage(), response.getReason());
-        assertThat(BufferUtil.toString(_content), containsString("Super Nanny"));
+        assertEquals("Super Nanny", response.getReason());
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
     }
     
@@ -712,8 +714,7 @@ public class ResponseTest
 
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
-        assertEquals("Server Error", response.getReason());
-        assertThat(BufferUtil.toString(_content), is(""));
+        assertEquals("Database Error", response.getReason());
         assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
 
         response = getResponse();
@@ -726,8 +727,7 @@ public class ResponseTest
 
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
-        assertEquals(HttpStatus.Code.NOT_ACCEPTABLE.getMessage(), response.getReason());
-        assertThat(BufferUtil.toString(_content), is(""));
+        assertEquals("Super Nanny", response.getReason());
         assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
     }
 
@@ -1423,7 +1423,6 @@ public class ResponseTest
     {
         _channel.recycle();
         _channel.getRequest().setMetaData(new MetaData.Request("GET",new HttpURI("/path/info"),HttpVersion.HTTP_1_0,new HttpFields()));
-        BufferUtil.clear(_content);
         return _channel.getResponse();
     }
 
