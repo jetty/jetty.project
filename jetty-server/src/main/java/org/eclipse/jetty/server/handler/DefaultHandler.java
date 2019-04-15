@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -142,9 +141,7 @@ public class DefaultHandler extends AbstractHandler
                     writer.write(context.getContextPath());
                     if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
                         writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.write("&nbsp;--->&nbsp;");
-                    writer.write(context.toString());
-                    writer.write("</a></li>\n");
+                    writer.write("&nbsp;</a></li>\n");
                 }
                 else
                 {
@@ -152,7 +149,7 @@ public class DefaultHandler extends AbstractHandler
                     writer.write(context.getContextPath());
                     if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
                         writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.write("&nbsp;--->&nbsp;");
+                    writer.write("&nbsp;");
                     writer.write(context.toString());
                     if (context.isFailed())
                         writer.write(" [failed]");
