@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +55,7 @@ public class ExternalSiteTest
         client.stop();
     }
 
+    @Tag("external")
     @Test
     public void testExternalSite() throws Exception
     {
@@ -90,6 +92,7 @@ public class ExternalSiteTest
         assertTrue(latch2.await(10, TimeUnit.SECONDS));
     }
 
+    @Tag("external")
     @Test
     public void testExternalSSLSite() throws Exception
     {
@@ -116,6 +119,7 @@ public class ExternalSiteTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
+    @Tag("external")
     @Test
     public void testExternalSiteWrongProtocol() throws Exception
     {
@@ -156,6 +160,7 @@ public class ExternalSiteTest
         }
     }
 
+    @Tag("external")
     @Test
     public void testExternalSiteRedirect() throws Exception
     {
