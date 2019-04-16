@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -514,7 +513,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         
         if (!"HTTP/1.1".equals(request.getProtocol()))
         {
-            LOG.debug("Not a 'HTTP/1.1' request (was [" + request.getProtocol() + "])");
+            if ("HTTP/2".equals(request.getProtocol()))
+            {
+                LOG.warn("WebSocket Bootstrap from HTTP/2 (RFC8441) not supported in Jetty 9.x");
+            }
+            else
+            {
+                LOG.warn("Not a 'HTTP/1.1' request (was [" + request.getProtocol() + "])");
+            }
             return false;
         }
         
@@ -562,6 +568,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             throw new IllegalStateException("Not a 'WebSocket: Upgrade' request");
         }
+
         if (!"HTTP/1.1".equals(request.getHttpVersion()))
         {
             throw new IllegalStateException("Not a 'HTTP/1.1' request");

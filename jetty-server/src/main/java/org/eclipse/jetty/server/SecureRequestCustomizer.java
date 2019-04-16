@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -30,8 +29,8 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.util.TypeUtil;
@@ -72,7 +71,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         this(sniHostCheck,-1,false);
     }
-    
+
     /**
      * @param sniHostCheck True if the SNI Host name must match.
      * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
@@ -98,7 +97,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @param sniHostCheck  True if the SNI Host name must match. 
+     * @param sniHostCheck  True if the SNI Host name must match.
      */
     public void setSniHostCheck(boolean sniHostCheck)
     {
@@ -177,7 +176,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             ProxyConnectionFactory.ProxyEndPoint proxy = (ProxyConnectionFactory.ProxyEndPoint)endp;
             if (request.getHttpURI().getScheme()==null && proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION)!=null)
-                request.setScheme(HttpScheme.HTTPS.asString());       
+                request.setScheme(HttpScheme.HTTPS.asString());
         }
 
         if (HttpScheme.HTTPS.is(request.getScheme()))
@@ -187,14 +186,14 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     /**
      * Customizes the request attributes for general secure settings.
      * The default impl calls {@link Request#setSecure(boolean)} with true
-     * and sets a response header if the Strict-Transport-Security options 
+     * and sets a response header if the Strict-Transport-Security options
      * are set.
      * @param request the request being customized
      */
     protected void customizeSecure(Request request)
     {
         request.setSecure(true);
-        
+
         if (_stsField!=null)
             request.getResponse().getHttpFields().add(_stsField);
     }
@@ -215,7 +214,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * trust. The first certificate in the chain is the one set by the client, the next is the one used to authenticate
      * the first, and so on.</li>
      * </ul>
-     * 
+     *
      * @param sslEngine
      *            the sslEngine to be customized.
      * @param request
@@ -257,7 +256,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             else
             {
                 keySize=SslContextFactory.deduceKeyLength(cipherSuite);
-                certs=SslContextFactory.getCertChain(sslSession);
+                certs = getCertChain(request, sslSession);
                 byte[] bytes = sslSession.getId();
                 idStr = TypeUtil.toHexString(bytes);
                 cachedInfo=new CachedInfo(keySize,certs,idStr);
@@ -279,7 +278,25 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             LOG.warn(Log.EXCEPTION,e);
         }
     }
-    
+
+    private X509Certificate[] getCertChain(Request request, SSLSession sslSession)
+    {
+        // The in-use SslContextFactory should be present in the Connector's SslConnectionFactory
+        Connector connector = request.getHttpChannel().getConnector();
+        SslConnectionFactory sslConnectionFactory = connector.getConnectionFactory(SslConnectionFactory.class);
+        if (sslConnectionFactory != null)
+        {
+            SslContextFactory sslContextFactory = sslConnectionFactory.getSslContextFactory();
+            if (sslConnectionFactory != null)
+            {
+                return sslContextFactory.getX509CertChain(sslSession);
+            }
+        }
+
+        // Fallback, either no SslConnectionFactory or no SslContextFactory instance found
+        return SslContextFactory.getCertChain(sslSession);
+    }
+
     public void setSslSessionAttribute(String attribute)
     {
         this.sslSessionAttribute = attribute;

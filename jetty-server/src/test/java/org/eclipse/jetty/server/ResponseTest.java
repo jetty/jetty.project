@@ -18,22 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -50,7 +34,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -86,6 +69,22 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseTest
 {
@@ -579,23 +578,29 @@ public class ResponseTest
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
     }
 
+    @Test
+    public void testPrint_Empty() throws Exception
+    {
+        Response response = getResponse();
+        response.setCharacterEncoding(UTF_8.name());
+
+        try(ServletOutputStream outputStream = response.getOutputStream())
+        {
+            outputStream.print("ABC");
+            outputStream.print("");
+            outputStream.println();
+            outputStream.flush();
+        }
+
+        String expected = "ABC\r\n";
+        assertEquals(expected,BufferUtil.toString(_content, UTF_8));
+    }
 
     @Test
     public void testPrintln() throws Exception
     {
         Response response = getResponse();
-        Request request = response.getHttpChannel().getRequest();
-
-        SessionHandler session_handler = new SessionHandler();
-        session_handler.setServer(_server);
-        session_handler.setUsingCookies(true);
-        session_handler.start();
-        request.setSessionHandler(session_handler);
-        HttpSession session = request.getSession(true);
         response.setCharacterEncoding(UTF_8.name());
-
-        assertThat(session,not(nullValue()));
-        assertTrue(session.isNew());
 
         String expected = "";
         response.getOutputStream().print("ABC");

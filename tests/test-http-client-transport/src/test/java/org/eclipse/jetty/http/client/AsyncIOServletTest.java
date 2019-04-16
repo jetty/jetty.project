@@ -18,20 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static java.nio.ByteBuffer.wrap;
-import static org.eclipse.jetty.http.client.Transport.FCGI;
-import static org.eclipse.jetty.util.BufferUtil.toArray;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -91,10 +77,23 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static java.nio.ByteBuffer.wrap;
+import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.eclipse.jetty.util.BufferUtil.toArray;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTransportScenario>
 {
@@ -395,12 +394,8 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
     @Tag("Unstable")
-    @Disabled // TODO fix this test! #2243
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
-        // TODO work out why this test fails for UNIX_SOCKET
-        Assumptions.assumeFalse(transport==Transport.UNIX_SOCKET);
-
         init(transport);
         
         String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
@@ -466,8 +461,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     @ArgumentsSource(TransportProvider.class)
     public void testAsyncWriteLessThanContentLengthFlushed(Transport transport) throws Exception
     {
-        // TODO work out why this test fails for UNIX_SOCKET
-        Assumptions.assumeFalse(transport==Transport.UNIX_SOCKET);
         init(transport);
         
         CountDownLatch complete = new CountDownLatch(1);
@@ -1076,7 +1069,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         // the server passes the response to encrypt and write, SSLEngine
         // only generates the close alert back, without encrypting the
         // response, so we need to skip the transports over TLS.
-        Assumptions.assumeFalse(scenario.isTransportSecure());
+        Assumptions.assumeFalse(scenario.transport.isTlsBased());
 
         String content = "jetty";
         int responseCode = HttpStatus.NO_CONTENT_204;

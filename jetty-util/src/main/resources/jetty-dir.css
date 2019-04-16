@@ -1,19 +1,38 @@
-body 
-{
+body {
 	background-color: #FFFFFF;
 	margin: 10px;
 	padding: 5px;
+	font-family: sans-serif;
 }
 
-h1
-{
+h1.title {
 	text-shadow: #000000 -1px -1px 1px;
 	color: #FC390E;
 	font-weight: bold;
 }
 
-a
-{
+table.listing {
+	border: 0px;
+}
+
+thead a {
+	color: blue;
+}
+
+thead th {
+	border-bottom: black 1px solid;
+}
+
+.name, .lastmodified {
+	text-align: left;
+	padding-right: 15px;
+}
+
+.size {
+	text-align: right;
+}
+
+a {
 	color: #7036be;
 	font-weight: bold;
 	font-style: normal;
@@ -21,10 +40,9 @@ a
 	font-size:inherit;
 }
 
-td
-{
+td {
 	font-style: italic;
-	padding: 2px 15px 2px 0px;
+	padding: 2px;
 }
 
 

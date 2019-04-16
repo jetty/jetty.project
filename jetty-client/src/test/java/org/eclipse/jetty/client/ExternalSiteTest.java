@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +30,12 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Disabled
 public class ExternalSiteTest
@@ -44,7 +45,7 @@ public class ExternalSiteTest
     @BeforeEach
     public void prepare() throws Exception
     {
-        client = new HttpClient(new SslContextFactory());
+        client = new HttpClient(new SslContextFactory.Client());
         client.start();
     }
 
@@ -54,6 +55,7 @@ public class ExternalSiteTest
         client.stop();
     }
 
+    @Tag("external")
     @Test
     public void testExternalSite() throws Exception
     {
@@ -90,11 +92,12 @@ public class ExternalSiteTest
         assertTrue(latch2.await(10, TimeUnit.SECONDS));
     }
 
+    @Tag("external")
     @Test
     public void testExternalSSLSite() throws Exception
     {
         client.stop();
-        client = new HttpClient(new SslContextFactory());
+        client = new HttpClient(new SslContextFactory.Client());
         client.start();
 
         String host = "api-3t.paypal.com";
@@ -116,6 +119,7 @@ public class ExternalSiteTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
+    @Tag("external")
     @Test
     public void testExternalSiteWrongProtocol() throws Exception
     {
@@ -156,6 +160,7 @@ public class ExternalSiteTest
         }
     }
 
+    @Tag("external")
     @Test
     public void testExternalSiteRedirect() throws Exception
     {

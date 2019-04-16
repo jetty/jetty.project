@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class ConnectHandlerTest extends AbstractConnectHandlerTest
@@ -89,6 +90,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     }
 
     @Test
+    @Tag("ipv6")
     public void testCONNECTwithIPv6() throws Exception
     {
         String hostPort = "[::1]:" + serverConnector.getLocalPort();

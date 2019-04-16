@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -146,6 +147,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStop() throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopping {}", this);
+
         removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
         
@@ -163,11 +167,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         for (int i = _threadsStarted.get(); i-- > 0; )
             jobs.offer(noop);
 
-        // try to jobs complete naturally for half our stop time
+        // try to let jobs complete naturally for half our stop time
         long stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
             long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waiting for {} for {}", thread, canwait);
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -177,13 +183,19 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         // interrupt remaining threads
         if (_threadsStarted.get() > 0)
             for (Thread thread : _threads)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Interrupting {}", thread);
                 thread.interrupt();
+            }
 
         // wait again for the other half of our stop time
         stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
             long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waiting for {} for {}", thread, canwait);
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -211,6 +223,25 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 for (Thread unstopped : _threads)
                     LOG.warn("{} Couldn't stop {}",this,unstopped);
             }
+        }
+
+        // Close any un-executed jobs
+        while (!_jobs.isEmpty())
+        {
+            Runnable job = _jobs.poll();
+            if (job instanceof Closeable)
+            {
+                try
+                {
+                    ((Closeable)job).close();
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn(t);
+                }
+            }
+            else if (job != noop)
+                LOG.warn("Stopped without executing or closing {}", job);
         }
 
         if (_budget!=null)
@@ -535,6 +566,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 thread.setDaemon(isDaemon());
                 thread.setPriority(getThreadsPriority());
                 thread.setName(_name + "-" + thread.getId());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Starting {}", thread);
                 _threads.add(thread);
                 _lastShrink.set(System.nanoTime());
                 thread.start();
@@ -651,105 +684,93 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             _tryExecutor);
     }
 
-    private Runnable idleJobPoll() throws InterruptedException
-    {
-        return _jobs.poll(_idleTimeout, TimeUnit.MILLISECONDS);
-    }
-
     private Runnable _runnable = new Runnable()
     {
         @Override
         public void run()
         {
-            boolean shrink = false;
-            boolean ignore = false;
+            boolean idle = false;
+
             try
             {
                 Runnable job = _jobs.poll();
-
                 if (job != null && _threadsIdle.get() == 0)
-                {
                     startThreads(1);
-                }
 
-                loop:
-                while (isRunning())
+                while (true)
                 {
-                    // Job loop
-                    while (job != null && isRunning())
+                    if (job == null)
                     {
+                        if (!idle)
+                        {
+                            idle = true;
+                            _threadsIdle.incrementAndGet();
+                        }
+
+                        if (_idleTimeout <= 0)
+                            job = _jobs.take();
+                        else
+                        {
+                            // maybe we should shrink?
+                            int size = _threadsStarted.get();
+                            if (size > _minThreads)
+                            {
+                                long last = _lastShrink.get();
+                                long now = System.nanoTime();
+                                if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
+                                {
+                                    if (_lastShrink.compareAndSet(last, now))
+                                        break;
+                                }
+                            }
+
+                            job = _jobs.poll(_idleTimeout, TimeUnit.MILLISECONDS);
+                        }
+                    }
+
+                    // run job
+                    if (job != null)
+                    {
+                        if (idle)
+                        {
+                            idle = false;
+                            if (_threadsIdle.decrementAndGet() == 0)
+                                startThreads(1);
+                        }
+
                         if (LOG.isDebugEnabled())
                             LOG.debug("run {}", job);
                         runJob(job);
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {}", job);
-                        if (Thread.interrupted())
-                        {
-                            ignore = true;
-                            break loop;
-                        }
-                        job = _jobs.poll();
+
+                        // Clear interrupted status
+                        Thread.interrupted();
                     }
 
-                    // Idle loop
-                    try
-                    {
-                        _threadsIdle.incrementAndGet();
+                    if (!isRunning())
+                        break;
 
-                        while (isRunning() && job == null)
-                        {
-                            if (_idleTimeout <= 0)
-                                job = _jobs.take();
-                            else
-                            {
-                                // maybe we should shrink?
-                                final int size = _threadsStarted.get();
-                                if (size > _minThreads)
-                                {
-                                    long last = _lastShrink.get();
-                                    long now = System.nanoTime();
-                                    if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
-                                    {
-                                        if (_lastShrink.compareAndSet(last, now) && _threadsStarted.compareAndSet(size, size - 1))
-                                        {
-                                            shrink = true;
-                                            break loop;
-                                        }
-                                    }
-                                }
-                                job = idleJobPoll();
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        if (_threadsIdle.decrementAndGet() == 0)
-                        {
-                            startThreads(1);
-                        }
-                    }
+                    job = _jobs.poll();
                 }
             }
             catch (InterruptedException e)
             {
-                ignore = true;
                 LOG.ignore(e);
             }
             catch (Throwable e)
             {
-                LOG.warn(e);
+                LOG.warn(String.format("Unexpected thread death: %s in %s", this, QueuedThreadPool.this), e);
             }
             finally
             {
-                if (!shrink && isRunning())
-                {
-                    if (!ignore)
-                        LOG.warn("Unexpected thread death: {} in {}", this, QueuedThreadPool.this);
-                    // This is an unexpected thread death!
-                    if (_threadsStarted.decrementAndGet() < getMaxThreads())
-                        startThreads(1);
-                }
+                if (idle)
+                    _threadsIdle.decrementAndGet();
+
                 removeThread(Thread.currentThread());
+
+                if (_threadsStarted.decrementAndGet() < getMinThreads())
+                    startThreads(1);
             }
         }
     };

@@ -1,10 +1,9 @@
-<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <Set name="KeyStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.keyStorePath" default="keystore"/></Set>
   <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
   <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword" default="OBF:1u2u1wml1z7s1z7a1wnl1u2g"/></Set>
   <Set name="TrustStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.trustStorePath" default="keystore"/></Set>
   <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-  <Set name="EndpointIdentificationAlgorithm"></Set>
   <Set name="ExcludeCipherSuites">
     <Array type="String">
       <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>

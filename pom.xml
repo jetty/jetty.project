@@ -28,7 +28,7 @@
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
-    <conscrypt.version>2.0.0</conscrypt.version>
+    <conscrypt.version>2.1.0</conscrypt.version>
     <asm.version>7.0</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
@@ -46,7 +46,7 @@
     <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>3.0.0-M2</maven.surefire.version>
+    <maven.surefire.version>3.0.0-M3</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
@@ -1051,7 +1051,7 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.20</version>
+        <version>0.22</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -1242,9 +1242,20 @@
     </profile>
     <profile>
       <id>ci</id>
-      <modules>
-        <module>aggregates/jetty-all</module>
-      </modules>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <version>${maven.surefire.version}</version>
+              <configuration>
+                <excludedGroups>ipv6</excludedGroups>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
     </profile>
     <profile>
       <id>update-version</id>
@@ -1833,7 +1844,7 @@
             <enabled>true</enabled>
           </snapshots>
         </repository>
-        <repository>
+        <!--repository>
           <id>apache.snapshots</id>
           <url>https://repository.apache.org/content/repositories/snapshots</url>
           <releases>
@@ -1842,22 +1853,11 @@
           <snapshots>
             <enabled>true</enabled>
           </snapshots>
-        </repository>
+        </repository-->
         <repository>
           <id>oss.snapshots</id>
           <name>OSS Snapshots</name>
           <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository>
-        <repository>
-          <id>jetty.snapshots</id>
-          <name>Jetty Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
           <releases>
             <enabled>false</enabled>
           </releases>
@@ -1996,6 +1996,7 @@
     </site>
   </distributionManagement>
 
+  <!-- comment this until if we do not need some Apache maven plugins SNAPSHOT versions -->
   <pluginRepositories>
     <pluginRepository>
       <id>apache.snapshots</id>

@@ -279,20 +279,29 @@ public class WebAppClassLoader extends URLClassLoader
         while (tokenizer.hasMoreTokens())
         {
             String token = tokenizer.nextToken().trim();
-            Resource resource= _context.newResource(token);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Path resource=" + resource);
 
             if(token.endsWith("*"))
             {
                 if(token.length() > 1)
                 {
                     token = token.substring(0, token.length() - 1);
+                    Resource resource= _context.newResource(token);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Glob Path resource=" + resource);
                     resource= _context.newResource(token);
                     addJars(resource);
                 }
-            } else if (resource.isDirectory() && resource instanceof ResourceCollection)
+                return;
+            }
+
+            Resource resource= _context.newResource(token);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Path resource=" + resource);
+
+            if (resource.isDirectory() && resource instanceof ResourceCollection)
+            {
                 addClassPath(resource);
+            }
             else
             {
                 // Resolve file path if possible

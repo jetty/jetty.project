@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.http2.alpn.tests;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -43,13 +38,18 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class ALPNNegotiationTest extends AbstractALPNTest
 {
     @Test
     public void testGentleCloseDuringHandshake() throws Exception
     {
         InetSocketAddress address = prepare();
-        SslContextFactory sslContextFactory = newSslContextFactory();
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
         sslContextFactory.start();
         SSLEngine sslEngine = sslContextFactory.newSSLEngine(address);
         sslEngine.setUseClientMode(true);
@@ -113,7 +113,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
     public void testAbruptCloseDuringHandshake() throws Exception
     {
         InetSocketAddress address = prepare();
-        SslContextFactory sslContextFactory = newSslContextFactory();
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
         sslContextFactory.start();
         SSLEngine sslEngine = sslContextFactory.newSSLEngine(address);
         sslEngine.setUseClientMode(true);
@@ -175,7 +175,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
     {
         InetSocketAddress address = prepare();
 
-        SslContextFactory sslContextFactory = newSslContextFactory();
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
 
@@ -228,7 +228,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
     {
         InetSocketAddress address = prepare();
 
-        SslContextFactory sslContextFactory = newSslContextFactory();
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket(address.getAddress(), address.getPort()))
@@ -280,7 +280,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
     {
         InetSocketAddress address = prepare();
 
-        SslContextFactory sslContextFactory = newSslContextFactory();
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket(address.getAddress(), address.getPort()))

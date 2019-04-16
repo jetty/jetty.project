@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -62,6 +53,15 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpClientTest extends AbstractTest<TransportScenario>
 {
@@ -338,12 +338,14 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         // Only run this test for transports over TLS.
-        Assumptions.assumeTrue(scenario.isTransportSecure());
+        Assumptions.assumeTrue(scenario.transport.isTlsBased());
 
         scenario.startServer(new EmptyServerHandler());
 
         // Use a default SslContextFactory, requests should fail because the server certificate is unknown.
-        scenario.client = scenario.newHttpClient(scenario.provideClientTransport(), new SslContextFactory());
+        SslContextFactory.Client clientTLS = scenario.newClientSslContextFactory();
+        clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
+        scenario.client = scenario.newHttpClient(scenario.provideClientTransport(), clientTLS);
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);

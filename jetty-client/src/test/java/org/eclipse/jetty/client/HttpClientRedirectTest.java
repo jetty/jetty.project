@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
@@ -34,7 +26,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,12 +42,19 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
@@ -128,14 +129,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     {
         start(scenario, new RedirectHandler());
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
-            client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .method(HttpMethod.DELETE)
-                    .path("/301/localhost/done")
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+                client.newRequest("localhost", connector.getLocalPort())
+                        .scheme(scenario.getScheme())
+                        .method(HttpMethod.DELETE)
+                        .path("/301/localhost/done")
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send());
         HttpResponseException xx = (HttpResponseException)x.getCause();
         Response response = xx.getResponse();
         assertNotNull(response);
@@ -170,13 +170,12 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
         client.setMaxRedirects(1);
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
-            client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path("/303/localhost/302/localhost/done")
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+                client.newRequest("localhost", connector.getLocalPort())
+                        .scheme(scenario.getScheme())
+                        .path("/303/localhost/302/localhost/done")
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send());
         HttpResponseException xx = (HttpResponseException)x.getCause();
         Response response = xx.getResponse();
         assertNotNull(response);
@@ -269,12 +268,11 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testRedirectWithWrongScheme(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 response.setStatus(303);
                 response.setHeader("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
             }
@@ -439,12 +437,11 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void testRedirectWithCorruptedBody(Scenario scenario) throws Exception
     {
         byte[] bytes = "ok".getBytes(StandardCharsets.UTF_8);
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (target.startsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
@@ -469,6 +466,60 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRedirectToSameURL(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setStatus(HttpStatus.SEE_OTHER_303);
+                response.setHeader(HttpHeader.LOCATION.asString(), request.getRequestURI());
+            }
+        });
+
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+                client.newRequest("localhost", connector.getLocalPort())
+                        .scheme(scenario.getScheme())
+                        .send());
+        assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testInfiniteRedirectLoopMustTimeout(Scenario scenario) throws Exception
+    {
+        AtomicLong counter = new AtomicLong();
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                try
+                {
+                    Thread.sleep(200);
+                    response.setStatus(HttpStatus.SEE_OTHER_303);
+                    response.setHeader(HttpHeader.LOCATION.asString(), "/" + counter.getAndIncrement());
+                }
+                catch (InterruptedException x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }
+        });
+
+        assertThrows(TimeoutException.class, () ->
+        {
+            client.setMaxRedirects(-1);
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .timeout(1, TimeUnit.SECONDS)
+                    .send();
+        });
     }
 
     private void testSameMethodRedirect(final Scenario scenario, final HttpMethod method, int redirectCode) throws Exception
@@ -519,10 +570,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         assertEquals(200, response.getStatus());
     }
 
-    private class RedirectHandler extends AbstractHandler
+    private class RedirectHandler extends EmptyServerHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try
             {
@@ -550,10 +601,6 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 response.setStatus(200);
                 // Echo content back
                 IO.copy(request.getInputStream(), response.getOutputStream());
-            }
-            finally
-            {
-                baseRequest.setHandled(true);
             }
         }
     }

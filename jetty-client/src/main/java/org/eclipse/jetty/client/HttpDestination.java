@@ -490,8 +490,12 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 exchanges.size(),
                 connectionPool);
     }
-    
-    // The TimeoutTask that expires when the next check of expiry is needed
+
+    /**
+     * This class enforces the total timeout for exchanges that are still in the queue.
+     * The total timeout for exchanges that are not in the destination queue is enforced
+     * by {@link HttpChannel}.
+     */
     private class TimeoutTask extends CyclicTimeout
     {
         private final AtomicLong nextTimeout = new AtomicLong(Long.MAX_VALUE);
@@ -504,6 +508,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         @Override
         public void onTimeoutExpired()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} timeout expired", this);
+
             nextTimeout.set(Long.MAX_VALUE);
             long now = System.nanoTime();
             long nextExpiresAt = Long.MAX_VALUE;
@@ -536,12 +543,16 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (timeoutAt != expiresAt)
             {
                 long delay = expiresAt - System.nanoTime();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Scheduled timeout in {} ms", TimeUnit.NANOSECONDS.toMillis(delay));
                 if (delay <= 0)
+                {
                     onTimeoutExpired();
+                }
                 else
+                {
                     schedule(delay, TimeUnit.NANOSECONDS);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} scheduled timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
+                }
             }
         }
     }

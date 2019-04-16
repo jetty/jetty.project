@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -101,16 +91,27 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
     public WorkDir testdir;
-
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
@@ -742,6 +743,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Tag("ipv6")
     public void testSendToIPv6Address(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
@@ -1529,7 +1531,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 };
             }
-        }, scenario.newSslContextFactory());
+        }, scenario.newClientSslContextFactory());
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(2);
@@ -1611,6 +1613,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Tag("ipv6")
     public void test_IPv6_Host(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()

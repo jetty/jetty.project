@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.CyclicTimeout;
-import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -47,7 +46,7 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
     {
         Request request = this.request.getAndSet(null);
         if (LOG.isDebugEnabled())
-            LOG.debug("Total timeout {} ms elapsed for {}", request.getTimeout(), request);
+            LOG.debug("Total timeout {} ms elapsed for {} on {}", request.getTimeout(), request, this);
         if (request != null)
             request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
     }
@@ -60,7 +59,7 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
         {
             boolean cancelled = cancel();
             if (LOG.isDebugEnabled())
-                LOG.debug("Cancelled ({}) timeout for {}", cancelled, request);
+                LOG.debug("Cancelled ({}) timeout for {} on {}", cancelled, request, this);
         }
     }
 
@@ -69,12 +68,16 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
         if (this.request.compareAndSet(null, request))
         {
             long delay = timeoutAt - System.nanoTime();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Scheduled timeout in {} ms for {}", TimeUnit.NANOSECONDS.toMillis(delay), request);
             if (delay <= 0)
+            {
                 onTimeoutExpired();
+            }
             else
+            {
                 schedule(delay, TimeUnit.NANOSECONDS);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Scheduled timeout in {} ms for {} on {}", TimeUnit.NANOSECONDS.toMillis(delay), request, this);
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -61,6 +62,10 @@ public class Parser
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
+
+    // Stats (where a message is defined as a WebSocket frame)
+    private final LongAdder messagesIn = new LongAdder();
+    private final LongAdder bytesIn = new LongAdder();
 
     // State specific
     private State state = State.START;
@@ -238,11 +243,15 @@ public class Parser
         }
         try
         {
+            bytesIn.add(buffer.remaining());
+
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
+
+                messagesIn.increment();
                 notifyFrame(frame);
                 if (frame.isDataFrame())
                 {
@@ -637,6 +646,16 @@ public class Parser
     public void setIncomingFramesHandler(IncomingFrames incoming)
     {
         this.incomingFramesHandler = incoming;
+    }
+
+    public long getMessagesIn()
+    {
+        return messagesIn.longValue();
+    }
+
+    public long getBytesIn()
+    {
+        return bytesIn.longValue();
     }
 
     @Override
