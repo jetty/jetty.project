@@ -105,15 +105,24 @@ public abstract class AbstractHttpClientServerTest
     {
         System.gc();
 
-        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
-        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), is(0L));
-        
-        assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
-        assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), is(0L));
-        
-        assertThat("Connection Leaks", connectionLeaks.get(), is(0L));
+        if (serverBufferPool != null)
+        {
+            assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
+            assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
+            assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), is(0L));
+        }
+
+        if (clientBufferPool != null)
+        {
+            assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
+            assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
+            assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), is(0L));
+        }
+
+        if (connectionLeaks != null)
+        {
+            assertThat("Connection Leaks", connectionLeaks.get(), is(0L));
+        }
 
         if (client != null)
             client.stop();

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,10 +30,12 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class HttpClientURITest extends AbstractHttpClientServerTest
@@ -47,6 +48,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     @Test
     public void testIPv6Host() throws Exception
     {
+        Assume.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(new EmptyServerHandler());
 
         String host = "::1";
