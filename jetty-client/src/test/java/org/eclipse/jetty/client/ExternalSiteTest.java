@@ -169,7 +169,7 @@ public class ExternalSiteTest
         }
         catch (Throwable x)
         {
-            assumeTrue(x == null, "Unable to connect");
+            assumeTrue(false, "Unable to connect");
         }
     }
 }
