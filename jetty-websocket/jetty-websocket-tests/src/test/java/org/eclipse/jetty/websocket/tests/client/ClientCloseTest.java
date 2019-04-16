@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -442,14 +441,10 @@ public class ClientCloseTest
                     session.getRemote().sendString(message);
                 }
             }
-            catch (InterruptedException e)
+            catch (Throwable t)
             {
-                LOG.debug("unblocked");
-                throw new IllegalStateException(e);
-            }
-            catch (IOException ignore)
-            {
-                LOG.debug(ignore);
+                LOG.debug(t);
+                throw new RuntimeException(t);
             }
         }
 

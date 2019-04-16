@@ -204,8 +204,17 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         // Demand after succeeding any received frame
         Callback demandingCallback = Callback.from(()->
                 {
+                    try
+                    {
+                        demand();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                        return;
+                    }
+
                     callback.succeeded();
-                    demand();
                 },
                 callback::failed
         );
