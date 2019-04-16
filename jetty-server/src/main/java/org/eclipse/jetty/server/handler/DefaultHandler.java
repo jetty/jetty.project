@@ -118,14 +118,14 @@ public class DefaultHandler extends AbstractHandler
         }
 
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
+        response.setContentType(MimeTypes.Type.TEXT_HTML_UTF_8.toString());
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
              OutputStreamWriter writer = new OutputStreamWriter(outputStream, UTF_8))
         {
             writer.append("<!DOCTYPE html>\n");
             writer.append("<html lang=\"en\">\n<head>\n");
-            writer.append("<title>Error 404 - Not Found</title>");
+            writer.append("<title>Error 404 - Not Found</title>\n");
             writer.append("<meta charset=\"utf-8\">\n");
             writer.append("<style>body { font-family: sans-serif; } table, td { border: 1px solid #333; } td, th { padding: 5px; } thead, tfoot { background-color: #333; color: #fff; } </style>\n");
             writer.append("</head>\n<body>\n");
@@ -141,7 +141,7 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<th>Display Name</th>");
             writer.append("<th>State</th>");
             writer.append("<th>LifeCycle</th>");
-            writer.append("</tr></thead><tbody>");
+            writer.append("</tr></thead><tbody>\n");
 
             for (int i=0;handlers!=null && i<handlers.length;i++)
             {
@@ -194,7 +194,7 @@ public class DefaultHandler extends AbstractHandler
             writer.append("</tbody></table><hr/>\n");
             writer.append("<a href=\"http://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
             writer.append("<a href=\"http://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
-            writer.append("\n</body>\n</html>\n");
+            writer.append("</body>\n</html>\n");
             writer.flush();
             byte content[] = outputStream.toByteArray();
             response.setContentLength(content.length);
