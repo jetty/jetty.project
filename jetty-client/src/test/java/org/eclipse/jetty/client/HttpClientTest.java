@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -77,6 +76,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
@@ -537,7 +537,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         // Prepare a big file to upload
-        Path targetTestsDir = testdir.getEmptyDir().toPath();
+        Path targetTestsDir = testdir.getEmptyPathDir();
         Files.createDirectories(targetTestsDir);
         Path file = Paths.get(targetTestsDir.toString(), "http_client_conversation.big");
         try (OutputStream output = Files.newOutputStream(file, CREATE))
@@ -736,6 +736,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testSendToIPv6Address() throws Exception
     {
+        Assume.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         start(new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())
@@ -1486,6 +1488,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_IPv6_Host() throws Exception
     {
+        Assume.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         start(new AbstractHandler()
         {
             @Override

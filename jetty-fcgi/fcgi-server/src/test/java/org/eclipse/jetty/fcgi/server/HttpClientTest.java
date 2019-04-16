@@ -47,9 +47,11 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
@@ -473,6 +475,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testSendToIPv6Address() throws Exception
     {
+        Assume.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         start(new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())

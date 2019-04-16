@@ -32,7 +32,6 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -43,11 +42,13 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -89,6 +90,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTwithIPv6() throws Exception
     {
+        Assume.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         String hostPort = "[::1]:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
