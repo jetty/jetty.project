@@ -93,8 +93,8 @@ public class DefaultHandlerTest
         assertThat(rawResponse, containsString("404 Not Found"));
         assertThat(rawResponse, containsString("No context on this server matched or handled this request"));
         assertThat(rawResponse, containsString("Contexts known to this server are"));
-        assertThat(rawResponse, containsString("<a href=\"/a\">"));
-        assertThat(rawResponse, containsString("<a href=\"/foo\">"));
+        assertThat(rawResponse, containsString("<a href=\"/a/\">"));
+        assertThat(rawResponse, containsString("<a href=\"/foo/\">"));
         assertThat(rawResponse, not(containsString(baseA.toString())));
         assertThat(rawResponse, not(containsString(baseFoo.toString())));
     }
