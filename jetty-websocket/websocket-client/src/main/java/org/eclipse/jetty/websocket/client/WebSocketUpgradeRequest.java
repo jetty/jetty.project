@@ -582,7 +582,11 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         if (connectionListeners != null)
         {
-            connectionListeners.forEach((listener) -> connection.addListener(listener));
+            connectionListeners.forEach((listener) ->
+            {
+                if (!(listener instanceof WebSocketSession))
+                    connection.addListener(listener);
+            });
         }
 
         URI requestURI = this.getURI();
