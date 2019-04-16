@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.URL;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,11 +33,12 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 /* ------------------------------------------------------------ */
@@ -116,12 +119,18 @@ public class DefaultHandler extends AbstractHandler
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
 
-        try (ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);)
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+             OutputStreamWriter writer = new OutputStreamWriter(outputStream, UTF_8))
         {
-            writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
-            writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");
-            writer.write("No context on this server matched or handled this request.<BR>");
-            writer.write("Contexts known to this server are: <ul>");
+            writer.append("<!DOCTYPE html>\n");
+            writer.append("<html lang=\"en\">\n<head>\n");
+            writer.append("<title>Error 404 - Not Found</title>");
+            writer.append("<meta charset=\"utf-8\">\n");
+            writer.append("<style>body { font-family: sans-serif; }</style>\n");
+            writer.append("</head>\n<body>\n");
+            writer.append("<h2>Error 404 - Not Found.</h2>\n");
+            writer.append("<p>No context on this server matched or handled this request.</p>\n");
+            writer.append("<p>Contexts known to this server are:</p>\n<ul>");
 
             Server server = getServer();
             Handler[] handlers = server==null?null:server.getChildHandlersByClass(ContextHandler.class);
@@ -131,43 +140,43 @@ public class DefaultHandler extends AbstractHandler
                 ContextHandler context = (ContextHandler)handlers[i];
                 if (context.isRunning())
                 {
-                    writer.write("<li><a href=\"");
+                    writer.append("<li><a href=\"");
                     if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                        writer.write("http://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.write(context.getContextPath());
+                        writer.append("http://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.append(context.getContextPath());
                     if (context.getContextPath().length()>1 && context.getContextPath().endsWith("/"))
-                        writer.write("/");
-                    writer.write("\">");
-                    writer.write(context.getContextPath());
+                        writer.append("/");
+                    writer.append("\">");
+                    writer.append(context.getContextPath());
                     if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                        writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.write("&nbsp;</a></li>\n");
+                        writer.append("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.append("&nbsp;</a></li>\n");
                 }
                 else
                 {
-                    writer.write("<li>");
-                    writer.write(context.getContextPath());
+                    writer.append("<li>");
+                    writer.append(context.getContextPath());
                     if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                        writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.write("&nbsp;");
+                        writer.append("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.append("&nbsp;");
                     if (context.isFailed())
-                        writer.write(" [failed]");
+                        writer.append(" [failed]");
                     if (context.isStopped())
-                        writer.write(" [stopped]");
-                    writer.write("</li>\n");
+                        writer.append(" [stopped]");
+                    writer.append("</li>\n");
                 }
             }
 
-            writer.write("</ul><hr>");
-            writer.write("<a href=\"http://eclipse.org/jetty\"><img border=0 src=\"/favicon.ico\"/></a>&nbsp;");
-            writer.write("<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// Java Web Server</a><hr/>\n");
-
-            writer.write("\n</BODY>\n</HTML>\n");
+            writer.append("</ul><hr/>\n");
+            writer.append("<a href=\"http://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
+            writer.append("<a href=\"http://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
+            writer.append("\n</body>\n</html>\n");
             writer.flush();
-            response.setContentLength(writer.size());
-            try (OutputStream out=response.getOutputStream())
+            byte content[] = outputStream.toByteArray();
+            response.setContentLength(content.length);
+            try (OutputStream out = response.getOutputStream())
             {
-                writer.writeTo(out);
+                out.write(content);
             }
         } 
     }
