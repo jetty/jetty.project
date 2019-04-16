@@ -35,7 +35,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -84,6 +84,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -197,7 +198,7 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
 
         response.setHeader("Content-Type", "text/something");
         assertEquals("text/something", response.getContentType());
@@ -303,7 +304,7 @@ public class ResponseTest
         // Inferred from encoding.properties
         Response response = getResponse();
 
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
 
         response.setHeader("Content-Type", "application/xhtml+xml");
         assertEquals("application/xhtml+xml", response.getContentType());
@@ -318,7 +319,7 @@ public class ResponseTest
         Response response = getResponse();
 
         // Assumed from known types
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
         response.setHeader("Content-Type", "text/json");
         assertEquals("text/json", response.getContentType());
         response.getWriter();
@@ -328,7 +329,7 @@ public class ResponseTest
         response.recycle();
 
         // Assumed from encoding.properties
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
         response.setHeader("Content-Type", "application/vnd.api+json");
         assertEquals("application/vnd.api+json", response.getContentType());
         response.getWriter();
@@ -341,7 +342,7 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
 
         response.recycle();
         response.setContentType("text/html;charset=utf-8;charset=UTF-8");
@@ -351,7 +352,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testLocale() throws Exception
+    public void testLocale()
     {
         Response response = getResponse();
 
@@ -361,7 +362,7 @@ public class ResponseTest
         response.getHttpChannel().getRequest().setContext(context.getServletContext());
 
         response.setLocale(java.util.Locale.ITALIAN);
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
         response.setContentType("text/plain");
         assertEquals("text/plain;charset=ISO-8859-2", response.getContentType());
 
@@ -683,20 +684,23 @@ public class ResponseTest
 
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
-        assertEquals("Database Error", response.getReason());
+        assertEquals("Server Error", response.getReason());
+        assertThat(BufferUtil.toString(_content), containsString("Database Error"));
+
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
 
         response = getResponse();
 
         response.setStatus(200);
         assertEquals(200, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertNull(response.getReason());
 
         response = getResponse();
 
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
-        assertEquals("Super Nanny", response.getReason());
+        assertEquals(HttpStatus.Code.NOT_ACCEPTABLE.getMessage(), response.getReason());
+        assertThat(BufferUtil.toString(_content), containsString("Super Nanny"));
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
     }
     
@@ -714,20 +718,22 @@ public class ResponseTest
 
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
-        assertEquals("Database Error", response.getReason());
+        assertEquals("Server Error", response.getReason());
+        assertThat(BufferUtil.toString(_content), is(""));
         assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
 
         response = getResponse();
 
         response.setStatus(200);
         assertEquals(200, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertNull(response.getReason());
 
         response = getResponse();
 
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
-        assertEquals("Super Nanny", response.getReason());
+        assertEquals(HttpStatus.Code.NOT_ACCEPTABLE.getMessage(), response.getReason());
+        assertThat(BufferUtil.toString(_content), is(""));
         assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
     }
 
@@ -752,7 +758,6 @@ public class ResponseTest
 
     @Test
     public void testEncodeRedirect()
-            throws Exception
     {
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
@@ -875,7 +880,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testInvalidSendRedirect() throws Exception
+    public void testInvalidSendRedirect()
     {
         // Request is /path/info, so we need 3 ".." for an invalid redirect.
         Response response = getResponse();
@@ -898,10 +903,10 @@ public class ResponseTest
         Response response = getResponse();
         PrintWriter writer = response.getWriter();
         response.setContentLength(0);
-        assertTrue(!response.isCommitted());
-        assertTrue(!writer.checkError());
+        assertFalse(response.isCommitted());
+        assertFalse(writer.checkError());
         writer.print("");
-        assertTrue(!writer.checkError());
+        assertFalse(writer.checkError());
         assertTrue(response.isCommitted());
     }
 
@@ -914,7 +919,7 @@ public class ResponseTest
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
                     response.setStatus(200);
                     response.setContentType("text/plain");
@@ -964,7 +969,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testAddCookie() throws Exception
+    public void testAddCookie()
     {
         Response response = getResponse();
 
@@ -982,7 +987,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testAddCookieComplianceRFC2965() throws Exception
+    public void testAddCookieComplianceRFC2965()
     {
         Response response = getResponse();
         response.getHttpChannel().getHttpConfiguration().setResponseCookieCompliance(CookieCompliance.RFC2965);
@@ -1033,7 +1038,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testCookiesWithReset() throws Exception
+    public void testCookiesWithReset()
     {
         Response response = getResponse();
 
@@ -1114,7 +1119,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testSetRFC2965Cookie() throws Exception
+    public void testSetRFC2965Cookie()
     {
         Response response = _channel.getResponse();
         HttpFields fields = response.getHttpFields();
@@ -1206,7 +1211,6 @@ public class ResponseTest
         assertEquals(-1,setCookie.indexOf("Version="));
         fields.clear();
         response.addSetRFC2965Cookie("name","v a l u e",null,null,-1,null,false,false,0);
-        setCookie=fields.get("Set-Cookie");
 
         fields.clear();
         response.addSetRFC2965Cookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
@@ -1234,7 +1238,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testSetRFC6265Cookie() throws Exception
+    public void testSetRFC6265Cookie()
     {
         Response response = _channel.getResponse();
         HttpFields fields = response.getHttpFields();
@@ -1314,7 +1318,7 @@ public class ResponseTest
         assertEquals("everything=value;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
-        String badNameExamples[] = {
+        String[] badNameExamples = {
                 "\"name\"",
                 "name\t",
                 "na me",
@@ -1340,8 +1344,8 @@ public class ResponseTest
                         allOf(containsString("RFC6265"), containsString("RFC2616")));
             }
         }
-    
-        String badValueExamples[] = {
+
+        String[] badValueExamples = {
                 "va\tlue",
                 "\t",
                 "value\u0000",
@@ -1368,8 +1372,8 @@ public class ResponseTest
                 assertThat("Testing bad value [" + badValueExample + "]", ex.getMessage(), Matchers.containsString("RFC6265"));
             }
         }
-        
-        String goodNameExamples[] = {
+
+        String[] goodNameExamples = {
                 "name",
                 "n.a.m.e",
                 "na-me",
@@ -1385,8 +1389,8 @@ public class ResponseTest
             response.addSetRFC6265Cookie(goodNameExample, "value", null, "/", 1, true, true);
             // should not throw an exception
         }
-    
-        String goodValueExamples[] = {
+
+        String[] goodValueExamples = {
                 "value",
                 "",
                 null,
@@ -1423,6 +1427,7 @@ public class ResponseTest
     {
         _channel.recycle();
         _channel.getRequest().setMetaData(new MetaData.Request("GET",new HttpURI("/path/info"),HttpVersion.HTTP_1_0,new HttpFields()));
+        BufferUtil.clear(_content);
         return _channel.getResponse();
     }
 
