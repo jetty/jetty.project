@@ -52,7 +52,7 @@ public class OptionalSslConnectionTest
         server = new Server(serverThreads);
 
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
@@ -113,7 +113,7 @@ public class OptionalSslConnectionTest
         }
 
         // Then try a SSL connection.
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         try (Socket ssl = sslContextFactory.newSslSocket())
         {

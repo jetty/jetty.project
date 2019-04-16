@@ -31,7 +31,6 @@ import java.nio.charset.CodingErrorAction;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -731,7 +730,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     else
                         continue;
             }
-            else if (crlf.hasRemaining())
+            else if (crlf != null && crlf.hasRemaining())
             {
                 result = encoder.encode(crlf, out, true);
                 if (result.isUnderflow())

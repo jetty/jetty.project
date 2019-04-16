@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class HttpParserTest
@@ -2046,6 +2047,7 @@ public class HttpParserTest
     }
 
     @Test
+    @Tag("ipv6")
     public void testIPv6Host() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
@@ -2127,6 +2129,7 @@ public class HttpParserTest
     }
 
     @Test
+    @Tag("ipv6")
     public void testIPv6HostPort() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(

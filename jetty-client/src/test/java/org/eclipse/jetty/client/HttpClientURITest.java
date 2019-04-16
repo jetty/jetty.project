@@ -52,6 +52,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -59,6 +60,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Tag("ipv6")
     public void testIPv6Host(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());

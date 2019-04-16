@@ -25,9 +25,13 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpConversation extends AttributesMap
 {
+    private static final Logger LOG = Log.getLogger(HttpConversation.class);
+
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private volatile List<Response.ResponseListener> listeners;
 
@@ -118,6 +122,7 @@ public class HttpConversation extends AttributesMap
         HttpExchange lastExchange = exchanges.peekLast();
         if (firstExchange == lastExchange)
         {
+            // We don't have a conversation, just a single request.
             if (overrideListener != null)
                 listeners.add(overrideListener);
             else
@@ -125,13 +130,16 @@ public class HttpConversation extends AttributesMap
         }
         else
         {
-            // Order is important, we want to notify the last exchange first
+            // We have a conversation (e.g. redirect, authentication).
+            // Order is important, we want to notify the last exchange first.
             listeners.addAll(lastExchange.getResponseListeners());
             if (overrideListener != null)
                 listeners.add(overrideListener);
             else
                 listeners.addAll(firstExchange.getResponseListeners());
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Exchanges in conversation {}, override={}, listeners={}", exchanges.size(), overrideListener, listeners);
         this.listeners = listeners;
     }
 

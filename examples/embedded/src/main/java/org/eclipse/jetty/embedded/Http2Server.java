@@ -22,7 +22,6 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
 import java.util.Date;
 import java.util.EnumSet;
 
@@ -101,7 +100,7 @@ public class Http2Server
         String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
         if (!new File(jetty_distro).exists())
             jetty_distro = "jetty-distribution/target/distribution";
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

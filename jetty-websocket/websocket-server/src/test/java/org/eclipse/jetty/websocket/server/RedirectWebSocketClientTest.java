@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 
@@ -47,6 +43,10 @@ import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class RedirectWebSocketClientTest
 {
@@ -114,7 +114,7 @@ public class RedirectWebSocketClientTest
 
     private static SslContextFactory newSslContextFactory()
     {
-        SslContextFactory ssl = new SslContextFactory();
+        SslContextFactory ssl = new SslContextFactory.Server();
         ssl.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
         ssl.setKeyStorePassword("storepwd");
         ssl.setKeyManagerPassword("keypwd");
@@ -124,7 +124,10 @@ public class RedirectWebSocketClientTest
     @Test
     public void testRedirect() throws Exception
     {
-        SslContextFactory ssl = newSslContextFactory();
+        SslContextFactory ssl = new SslContextFactory.Client();
+        ssl.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
+        ssl.setKeyStorePassword("storepwd");
+        ssl.setKeyManagerPassword("keypwd");
         ssl.setTrustAll(false);
         ssl.setEndpointIdentificationAlgorithm(null);
         HttpClient httpClient = new HttpClient(ssl);
@@ -149,7 +152,7 @@ public class RedirectWebSocketClientTest
     }
 
     @WebSocket
-    public static class EmptyWebSocket {
-
+    public static class EmptyWebSocket
+    {
     }
 }

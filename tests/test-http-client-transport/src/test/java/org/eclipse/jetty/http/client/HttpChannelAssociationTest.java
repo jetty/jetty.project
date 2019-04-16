@@ -65,7 +65,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.startServer(new EmptyServerHandler());
 
-        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false), scenario.sslContextFactory);
+        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false), scenario.newClientSslContextFactory());
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);
@@ -90,8 +90,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         scenario.startServer(new EmptyServerHandler());
 
         long idleTimeout = 1000;
-        SslContextFactory sslContextFactory = scenario.newSslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        SslContextFactory sslContextFactory = scenario.newClientSslContextFactory();
         scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange ->
         {
             // We idle timeout just before the association,

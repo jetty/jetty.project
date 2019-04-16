@@ -60,6 +60,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.StacklessLogging;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -505,6 +506,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
+    @Tag("ipv6")
     public void testSendToIPv6Address() throws Exception
     {
         start(new EmptyServerHandler());
