@@ -19,6 +19,7 @@
 package org.eclipse.jetty.alpn.java.client;
 
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.Security;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -50,6 +52,11 @@ public class ConscryptHTTP2ClientTest
     @Test
     public void testConscryptHTTP2Client() throws Exception
     {
+        String host = "webtide.com";
+        int port = 443;
+
+        Assumptions.assumeTrue(canConnectTo(host, port));
+
         Security.insertProviderAt(new OpenSSLProvider(), 1);
         SslContextFactory sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setProvider("Conscrypt");
@@ -60,9 +67,6 @@ public class ConscryptHTTP2ClientTest
         {
             client.addBean(sslContextFactory);
             client.start();
-
-            String host = "webtide.com";
-            int port = 443;
 
             FuturePromise<Session> sessionPromise = new FuturePromise<>();
             client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener.Adapter(), sessionPromise);
@@ -93,11 +97,24 @@ public class ConscryptHTTP2ClientTest
                 }
             });
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(15, TimeUnit.SECONDS));
         }
         finally
         {
             client.stop();
+        }
+    }
+
+    private boolean canConnectTo(String host, int port)
+    {
+        try
+        {
+            new Socket(host, port).close();
+            return true;
+        }
+        catch (Throwable x)
+        {
+            return false;
         }
     }
 }
