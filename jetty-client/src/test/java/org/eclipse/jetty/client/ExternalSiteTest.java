@@ -67,10 +67,11 @@ public class ExternalSiteTest
         final CountDownLatch latch1 = new CountDownLatch(1);
         client.newRequest(host, port).send(result ->
         {
-            if (!result.isFailed() && result.getResponse().getStatus() == 200)
-                latch1.countDown();
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch1.countDown();
         });
-        assertTrue(latch1.await(10, TimeUnit.SECONDS));
+        assertTrue(latch1.await(15, TimeUnit.SECONDS));
 
         // Try again the same URI, but without specifying the port
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -80,17 +81,13 @@ public class ExternalSiteTest
             assertEquals(200, result.getResponse().getStatus());
             latch2.countDown();
         });
-        assertTrue(latch2.await(10, TimeUnit.SECONDS));
+        assertTrue(latch2.await(15, TimeUnit.SECONDS));
     }
 
     @Tag("external")
     @Test
     public void testExternalSSLSite() throws Exception
     {
-        client.stop();
-        client = new HttpClient();
-        client.start();
-
         String host = "api-3t.paypal.com";
         int port = 443;
 
@@ -100,10 +97,11 @@ public class ExternalSiteTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port).scheme("https").path("/nvp").send(result ->
         {
-            if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                latch.countDown();
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch.countDown();
         });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
     }
 
     @Tag("external")
@@ -136,7 +134,7 @@ public class ExternalSiteTest
                             latch.countDown();
                         }
                     });
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(15, TimeUnit.SECONDS));
         }
     }
 
@@ -153,6 +151,7 @@ public class ExternalSiteTest
         ContentResponse response = client.newRequest(host, port)
                 .scheme(HttpScheme.HTTPS.asString())
                 .path("/twitter")
+                .timeout(15, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, response.getStatus());
     }
