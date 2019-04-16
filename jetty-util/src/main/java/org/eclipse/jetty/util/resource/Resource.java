@@ -45,9 +45,11 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 
 /* ------------------------------------------------------------ */
-/** 
+/**
  * Abstract resource class.
  * <p>
  * This class provides a resource abstraction, where a resource may be
@@ -76,7 +78,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return __defaultUseCaches;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a uri.
      * @param uri A URI.
@@ -88,7 +90,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return newResource(uri.toURL());
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a url.
      * @param url A URL.
@@ -98,8 +100,8 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return newResource(url, __defaultUseCaches);
     }
-    
-    /* ------------------------------------------------------------ */   
+
+    /* ------------------------------------------------------------ */
     /**
      * Construct a resource from a url.
      * @param url the url for which to make the resource
@@ -137,8 +139,8 @@ public abstract class Resource implements ResourceFactory, Closeable
         return new URLResource(url,null,useCaches);
     }
 
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a string.
      * @param resource A URL or filename.
@@ -150,7 +152,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return newResource(resource, __defaultUseCaches);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a string.
      * @param resource A URL or filename.
@@ -158,7 +160,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return A Resource object.
      * @throws MalformedURLException Problem accessing URI
      */
-    public static Resource newResource(String resource, boolean useCaches)       
+    public static Resource newResource(String resource, boolean useCaches)
         throws MalformedURLException
     {
         URL url=null;
@@ -208,7 +210,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /** Construct a system resource from a string.
      * The resource is tried as classloader resource before being
      * treated as a normal resource.
-     * @param resource Resource as string representation 
+     * @param resource Resource as string representation
      * @return The new Resource
      * @throws IOException Problem accessing resource.
      */
@@ -245,17 +247,17 @@ public abstract class Resource implements ResourceFactory, Closeable
                     url=loader.getResource(resource.substring(1));
             }
         }
-        
+
         if (url==null)
         {
             url=ClassLoader.getSystemResource(resource);
             if (url==null && resource.startsWith("/"))
                 url=ClassLoader.getSystemResource(resource.substring(1));
         }
-        
+
         if (url==null)
             return null;
-        
+
         return newResource(url);
     }
 
@@ -277,21 +279,21 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
      * @param name The relative name of the resource
      * @param useCaches True if URL caches are to be used.
-     * @param checkParents True if forced searching of parent Classloaders is performed to work around 
+     * @param checkParents True if forced searching of parent Classloaders is performed to work around
      * loaders with inverted priorities
      * @return Resource or null
      */
     public static Resource newClassPathResource(String name,boolean useCaches,boolean checkParents)
     {
         URL url=Resource.class.getResource(name);
-        
+
         if (url==null)
             url=Loader.getResource(Resource.class,name);
         if (url==null)
             return null;
         return newResource(url,useCaches);
     }
-    
+
     /* ------------------------------------------------------------ */
     public static boolean isContainedIn (Resource r, Resource containingResource) throws MalformedURLException
     {
@@ -304,11 +306,11 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         close();
     }
-    
+
     /* ------------------------------------------------------------ */
     public abstract boolean isContainedIn (Resource r) throws MalformedURLException;
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Release any temporary resources held by the resource.
      * @deprecated use {@link #close()}
@@ -329,7 +331,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return true if the represented resource exists.
      */
     public abstract boolean exists();
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -355,7 +357,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return the length of the resource
      */
     public abstract long length();
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -384,7 +386,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             throw new RuntimeException(e);
         }
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -396,7 +398,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract File getFile()
         throws IOException;
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -405,7 +407,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return the name of the resource
      */
     public abstract String getName();
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -416,7 +418,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract InputStream getInputStream()
         throws IOException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Readable ByteChannel for the resource.
@@ -436,7 +438,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract boolean delete()
         throws SecurityException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Rename the given resource
@@ -446,7 +448,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract boolean renameTo(Resource dest)
         throws SecurityException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * list of resource names contained in the given resource.
@@ -490,7 +492,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @param uri the uri to encode
      * @return null (this is deprecated)
      * @deprecated use {@link URIUtil} or {@link UrlEncoded} instead
@@ -500,7 +502,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return null;
     }
-        
+
     /* ------------------------------------------------------------ */
     // FIXME: this appears to not be used
     @SuppressWarnings("javadoc")
@@ -534,14 +536,16 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the resource list as a HTML directory listing.
      * @param base The base URL
      * @param parent True if the parent directory should be included
      * @return String of HTML
      * @throws IOException if unable to get the list of resources as HTML
+     * @deprecated use {@link #getListHTML(String, boolean, String)} instead
      */
+    @Deprecated
     public String getListHTML(String base, boolean parent) throws IOException
     {
         return getListHTML(base, parent, null);
@@ -712,7 +716,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         buf.append("<tbody>\n");
 
         String encodedBase = hrefEncodeURI(base);
-        
+
         if (parent)
         {
             // Name
@@ -730,12 +734,12 @@ public abstract class Resource implements ResourceFactory, Closeable
                                                        DateFormat.MEDIUM);
         for (Resource item: items)
         {
-            String name = item.getName();
-            int slashIdx = name.lastIndexOf('/');
-            if (slashIdx != -1)
+            String name = item.getFileName();
+            if (StringUtil.isBlank(name))
             {
-                name = name.substring(slashIdx + 1);
+                continue; // skip
             }
+
             if (item.isDirectory() && !name.endsWith("/"))
             {
                 name += URIUtil.SLASH;
@@ -752,13 +756,21 @@ public abstract class Resource implements ResourceFactory, Closeable
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
-            buf.append(dfmt.format(new Date(item.lastModified())));
-            buf.append("</td>");
+            long lastModified = item.lastModified();
+            if (lastModified > 0)
+            {
+                buf.append(dfmt.format(new Date(item.lastModified())));
+            }
+            buf.append("&nbsp;</td>");
 
             // Size
             buf.append("<td class=\"size\">");
-            buf.append(String.format("%,d", item.length()));
-            buf.append(" bytes&nbsp;</td></tr>\n");
+            long length = item.length();
+            if (length >= 0)
+            {
+                buf.append(String.format("%,d bytes", item.length()));
+            }
+            buf.append("&nbsp;</td></tr>\n");
         }
         buf.append("</tbody>\n");
         buf.append("</table>\n");
@@ -766,7 +778,56 @@ public abstract class Resource implements ResourceFactory, Closeable
 
         return buf.toString();
     }
-    
+
+    /**
+     * Get the raw (decoded if possible) Filename for this Resource.
+     * This is the last segment of the path.
+     * @return the raw / decoded filename for this resource
+     */
+    private String getFileName()
+    {
+        try
+        {
+            // if a Resource supports File
+            File file = getFile();
+            if (file != null)
+            {
+                return file.getName();
+            }
+        }
+        catch (Throwable ignore)
+        {
+        }
+
+        // All others use raw getName
+        try
+        {
+            String rawName = getName(); // gets long name "/foo/bar/xxx"
+            int idx = rawName.lastIndexOf('/');
+            if (idx == rawName.length()-1)
+            {
+                // hit a tail slash, aka a name for a directory "/foo/bar/"
+                idx = rawName.lastIndexOf('/', idx-1);
+            }
+
+            String encodedFileName;
+            if (idx >= 0)
+            {
+                encodedFileName = rawName.substring(idx + 1);
+            }
+            else
+            {
+                encodedFileName = rawName; // entire name
+            }
+            return UrlEncoded.decodeString(encodedFileName, 0, encodedFileName.length(), UTF_8);
+        }
+        catch (Throwable ignore)
+        {
+        }
+
+        return null;
+    }
+
     /**
      * Encode any characters that could break the URI string in an HREF.
      * Such as <a href="/path/to;<script>Window.alert("XSS"+'%20'+"here");</script>">Link</a>

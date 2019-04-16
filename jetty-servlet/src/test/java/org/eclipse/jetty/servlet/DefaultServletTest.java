@@ -21,6 +21,8 @@ package org.eclipse.jetty.servlet;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -61,6 +63,7 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -68,6 +71,9 @@ public class DefaultServletTest
 {
     @Rule
     public TestingDir testdir = new TestingDir();
+
+    // The name of the odd-jar used for testing "jar:file://" based resource access.
+    private static final String ODD_JAR = "jar-resource-odd.jar";
 
     private Server server;
     private LocalConnector connector;
@@ -81,9 +87,16 @@ public class DefaultServletTest
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
+        File extraJarResources = MavenTestingUtils.getTestResourceFile(ODD_JAR);
+        URL urls[] = new URL[] { extraJarResources.toURI().toURL() };
+
+        ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
+        URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
+
         context = new ServletContextHandler();
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
+        context.setClassLoader(extraClassLoader);
 
         server.setHandler(context);
         server.addConnector(connector);
@@ -179,6 +192,122 @@ public class DefaultServletTest
         response = connector.getResponses(req1.toString());
 
         assertResponseNotContains("\"onmouseover", response);
+    }
+
+    /**
+     * A regression on windows allowed the directory listing show
+     * the fully qualified paths within the directory listing.
+     * This test ensures that this behavior will not arise again.
+     */
+    @Test
+    public void testListingFilenamesOnly() throws Exception
+    {
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        testdir.ensureEmpty();
+
+        /* create some content in the docroot */
+        File resBase = testdir.getPathFile("docroot").toFile();
+        FS.ensureDirExists(resBase);
+        File one = new File(resBase, "one");
+        assertTrue(one.mkdir());
+        File deep = new File(one, "deep");
+        assertTrue(deep.mkdir());
+        FS.touch(new File(deep, "foo"));
+        assertTrue(new File(resBase, "two").mkdir());
+        assertTrue(new File(resBase, "three").mkdir());
+
+        String resBasePath = resBase.getAbsolutePath();
+        defholder.setInitParameter("resourceBase", resBasePath);
+
+        StringBuffer req1 = new StringBuffer();
+        req1.append("GET /context/one/deep/ HTTP/1.0\n");
+        req1.append("\n");
+
+        String response = connector.getResponses(req1.toString());
+
+        assertResponseContains("/foo", response);
+        assertResponseNotContains(resBase.getAbsolutePath(), response);
+    }
+
+    /**
+     * A regression on windows allowed the directory listing show
+     * the fully qualified paths within the directory listing.
+     * This test ensures that this behavior will not arise again.
+     */
+    @Test
+    public void testListingFilenamesOnly_UrlResource() throws Exception
+    {
+        URL extraResource = context.getClassLoader().getResource("rez/one");
+        assertNotNull("Must have extra jar resource in classloader", extraResource);
+
+        String extraResourceBaseString = extraResource.toURI().toASCIIString();
+        extraResourceBaseString = extraResourceBaseString.substring(0, extraResourceBaseString.length() - "/one".length());
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/extra/*");
+        defholder.setInitParameter("resourceBase", extraResourceBaseString);
+        defholder.setInitParameter("pathInfoOnly", "true");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        StringBuffer req1;
+        String response;
+
+        // Test that GET works first.
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/one HTTP/1.0\n");
+        req1.append("\n");
+
+        response = connector.getResponses(req1.toString());
+        assertResponseContains("200 OK", response);
+        assertResponseContains("is this the one?", response);
+
+        // Typical directory listing of location in jar:file:// URL
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/deep/ HTTP/1.0\r\n");
+        req1.append("\r\n");
+
+        response = connector.getResponses(req1.toString());
+        assertResponseContains("200 OK", response);
+        assertResponseContains("/xxx", response);
+        assertResponseContains("/yyy", response);
+        assertResponseContains("/zzz", response);
+
+        assertResponseNotContains(extraResourceBaseString, response);
+        assertResponseNotContains(ODD_JAR, response);
+
+        // Get deep resource
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/deep/yyy HTTP/1.0\r\n");
+        req1.append("\r\n");
+
+        response = connector.getResponses(req1.toString());
+        assertResponseContains("200 OK", response);
+        assertResponseContains("a file named yyy", response);
+
+        // Convoluted directory listing of location in jar:file:// URL
+        // This exists to test proper encoding output
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/oddities/ HTTP/1.0\r\n");
+        req1.append("\r\n");
+
+        response = connector.getResponses(req1.toString());
+        assertResponseContains("200 OK", response);
+        assertResponseContains(">#hashcode&nbsp;<", response); // text on page
+        assertResponseContains("/oddities/%23hashcode", response); // generated link
+
+        assertResponseContains(">other%2fkind%2Fof%2fslash&nbsp;<", response); // text on page
+        assertResponseContains("/oddities/other%252fkind%252Fof%252fslash", response); // generated link
+
+        assertResponseContains(">a file with a space&nbsp;<", response); // text on page
+        assertResponseContains("/oddities/a%20file%20with%20a%20space", response); // generated link
+
+        assertResponseNotContains(extraResourceBaseString, response);
+        assertResponseNotContains(ODD_JAR, response);
     }
 
     @Test
