@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -125,48 +126,71 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<html lang=\"en\">\n<head>\n");
             writer.append("<title>Error 404 - Not Found</title>");
             writer.append("<meta charset=\"utf-8\">\n");
-            writer.append("<style>body { font-family: sans-serif; }</style>\n");
+            writer.append("<style>body { font-family: sans-serif; } table, td { border: 1px solid #333; } td, th { padding: 5px; } thead, tfoot { background-color: #333; color: #fff; } </style>\n");
             writer.append("</head>\n<body>\n");
             writer.append("<h2>Error 404 - Not Found.</h2>\n");
             writer.append("<p>No context on this server matched or handled this request.</p>\n");
-            writer.append("<p>Contexts known to this server are:</p>\n<ul>");
+            writer.append("<p>Contexts known to this server are:</p>\n");
 
             Server server = getServer();
             Handler[] handlers = server==null?null:server.getChildHandlersByClass(ContextHandler.class);
 
+            writer.append("<table class=\"contexts\"><thead><tr>");
+            writer.append("<th>Context Path</th>");
+            writer.append("<th>Display Name</th>");
+            writer.append("<th>State</th>");
+            writer.append("<th>LifeCycle</th>");
+            writer.append("</tr></thead><tbody>");
+
             for (int i=0;handlers!=null && i<handlers.length;i++)
             {
+                writer.append("<tr><td>");
+                // Context Path
                 ContextHandler context = (ContextHandler)handlers[i];
+
+                StringBuilder href = new StringBuilder();
+
+                String contextPath = context.getContextPath();
+                href.append(contextPath);
+                if (contextPath.length() > 1 && !contextPath.endsWith("/"))
+                {
+                    href.append("/");
+                }
+
                 if (context.isRunning())
                 {
-                    writer.append("<li><a href=\"");
-                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                        writer.append("http://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.append(context.getContextPath());
-                    if (context.getContextPath().length()>1 && context.getContextPath().endsWith("/"))
-                        writer.append("/");
-                    writer.append("\">");
-                    writer.append(context.getContextPath());
-                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                        writer.append("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.append("&nbsp;</a></li>\n");
+                    writer.append("<a href=\"").append(href).append("\">");
+                }
+                writer.append(context.getContextPath());
+                if (context.isRunning())
+                {
+                    writer.append("</a>");
+                }
+                writer.append("</td><td>");
+                // Display Name
+
+                if (StringUtil.isNotBlank(context.getDisplayName()))
+                {
+                    writer.append(context.getDisplayName());
+                }
+                writer.append("&nbsp;</td><td>");
+                // Available
+
+                if (context.isAvailable())
+                {
+                    writer.append("Available");
                 }
                 else
                 {
-                    writer.append("<li>");
-                    writer.append(context.getContextPath());
-                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                        writer.append("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                    writer.append("&nbsp;");
-                    if (context.isFailed())
-                        writer.append(" [failed]");
-                    if (context.isStopped())
-                        writer.append(" [stopped]");
-                    writer.append("</li>\n");
+                    writer.append("<em>Not</em> Available");
                 }
+                writer.append("</td><td>");
+                // State
+                writer.append(context.getState());
+                writer.append("</td></tr>\n");
             }
 
-            writer.append("</ul><hr/>\n");
+            writer.append("</tbody></table><hr/>\n");
             writer.append("<a href=\"http://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
             writer.append("<a href=\"http://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
             writer.append("\n</body>\n</html>\n");
@@ -177,7 +201,7 @@ public class DefaultHandler extends AbstractHandler
             {
                 out.write(content);
             }
-        } 
+        }
     }
 
     /* ------------------------------------------------------------ */
