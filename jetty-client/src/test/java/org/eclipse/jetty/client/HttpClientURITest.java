@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -45,13 +42,17 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class HttpClientURITest extends AbstractHttpClientServerTest
 {
@@ -66,6 +67,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     @Test
     public void testIPv6Host() throws Exception
     {
+        Assume.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(new EmptyServerHandler());
 
         String host = "::1";
