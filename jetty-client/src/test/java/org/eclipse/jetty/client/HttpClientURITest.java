@@ -58,7 +58,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
-    
+
     public HttpClientURITest(SslContextFactory sslContextFactory)
     {
         super(sslContextFactory);

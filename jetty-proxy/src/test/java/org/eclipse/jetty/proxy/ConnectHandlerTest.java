@@ -89,6 +89,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTwithIPv6() throws Exception
     {
         Assume.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         String hostPort = "[::1]:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
