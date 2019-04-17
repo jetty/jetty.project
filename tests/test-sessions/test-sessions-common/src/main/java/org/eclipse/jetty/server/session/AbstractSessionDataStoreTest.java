@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -61,7 +62,7 @@ public abstract class AbstractSessionDataStoreTest
     public static final long ANCIENT_TIMESTAMP = 100L;
     public static final long RECENT_TIMESTAMP = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(3*GRACE_PERIOD_SEC);
     
-    protected URLClassLoader _contextClassLoader;
+    protected URLClassLoader _contextClassLoader = new URLClassLoader(new URL[] {}, Thread.currentThread().getContextClassLoader());
 
     
     
@@ -205,37 +206,109 @@ public abstract class AbstractSessionDataStoreTest
     }
     
     
+    
+    
     /**
      * Test that the store can persist a session that contains 
-     * serializable objects in the attributes.
+     * serializable Proxy objects in the attributes.
      * 
      * @throws Exception
      */
-    /*
-     * @Test public void testStoreObjectAttributes() throws Exception { //create
-     * the SessionDataStore ServletContextHandler context = new
-     * ServletContextHandler(ServletContextHandler.SESSIONS);
-     * context.setContextPath("/test"); SessionDataStoreFactory factory =
-     * createSessionDataStoreFactory();
-     * ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(
-     * GRACE_PERIOD_SEC); SessionDataStore store =
-     * factory.getSessionDataStore(context.getSessionHandler()); SessionContext
-     * sessionContext = new SessionContext("foo", context.getServletContext());
-     * store.initialize(sessionContext);
-     * 
-     * store.start();
-     * 
-     * //create a session SessionData data = store.newSessionData("1234", 100,
-     * 200, 199, -1);//never expires TestFoo testFoo = new TestFoo();
-     * testFoo.setInt(33); FooInvocationHandler handler = new
-     * FooInvocationHandler(testFoo); Foo foo =
-     * (Foo)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(
-     * ), new Class[] {Foo.class}, handler); data.setAttribute("foo", foo);
-     * data.setLastNode(sessionContext.getWorkerName());
-     * 
-     * //test that it can be persisted store.store("1234", data);
-     * checkSessionPersisted(data); }
-     */
+    @Test 
+    public void testStoreObjectAttributes() throws Exception 
+    {
+        
+        //Use classes that would only be known to the webapp classloader
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("Proxyable.clazz");
+        File proxyabledir = new File (MavenTestingUtils.getTargetDir(), "proxyable");
+        proxyabledir.mkdirs();
+        File proxyableClass = new File (proxyabledir, "Proxyable.class");
+        IO.copy(is, new FileOutputStream(proxyableClass));
+        is.close();
+        
+        assertTrue(proxyableClass.exists());
+        assertTrue(proxyableClass.length() != 0);
+        
+        is =  Thread.currentThread().getContextClassLoader().getResourceAsStream("ProxyableInvocationHandler.clazz");
+        File pihClass = new File (proxyabledir, "ProxyableInvocationHandler.class");
+        IO.copy(is, new FileOutputStream(pihClass));
+        is.close();
+
+        is =  Thread.currentThread().getContextClassLoader().getResourceAsStream("ProxyableFactory.clazz");
+        File factoryClass = new File (proxyabledir, "ProxyableFactory.class");
+        IO.copy(is, new FileOutputStream(factoryClass));
+        is.close();
+
+        URL[] proxyabledirUrls = new URL[]{proxyabledir.toURI().toURL()};
+        _contextClassLoader = new URLClassLoader(proxyabledirUrls, Thread.currentThread().getContextClassLoader());
+        
+        //create the SessionDataStore 
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");
+        //use the classloader with the special class in it
+        context.setClassLoader(_contextClassLoader);
+        
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+
+        store.start();
+        
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        SessionData data = null;
+        try
+        {
+            //Set the classloader and make a session containing a proxy as an attribute
+            Thread.currentThread().setContextClassLoader(_contextClassLoader);
+            Class factoryclazz = Class.forName("ProxyableFactory", true, _contextClassLoader);
+            //create a session
+            long now = System.currentTimeMillis();
+            data = store.newSessionData("1234", 100, now, now-1, -1);//never expires
+            data.setLastNode(sessionContext.getWorkerName());
+            Method m = factoryclazz.getMethod("newProxyable", ClassLoader.class);
+            Object proxy = m.invoke(null, _contextClassLoader);
+
+            //Make an attribute that uses the proxy only known to the webapp classloader
+            data.setAttribute("a", proxy);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+        
+        
+        //store the session, using a different thread to ensure
+        //that the thread is adorned with the webapp classloader
+        //before serialization
+        final SessionData finalData = data;
+        
+        Runnable r = new Runnable()
+        {
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    store.store("1234", finalData);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        };
+       
+        Thread t = new Thread(r, "saver");
+        t.start();
+        t.join(TimeUnit.SECONDS.toMillis(10));
+        
+        //check that the store contains all of the session data
+        assertTrue(checkSessionPersisted(data));
+    }
+
 
     /**
      * Test that we can load a persisted session.
