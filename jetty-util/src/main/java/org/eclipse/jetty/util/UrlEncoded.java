@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +30,10 @@ import java.util.Map;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
 
 /* ------------------------------------------------------------ */
 /** Handles coding of MIME  "x-www-form-urlencoded".
@@ -64,12 +66,12 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         try
         {
             String charset = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset");
-            encoding = charset == null ? StandardCharsets.UTF_8 : Charset.forName(charset);
+            encoding = charset == null ? UTF_8 : Charset.forName(charset);
         }
         catch(Exception e)
         {
             LOG.warn(e);
-            encoding=StandardCharsets.UTF_8;
+            encoding= UTF_8;
         }
         ENCODING=encoding;
     }
@@ -632,7 +634,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     {
         if (charset==null)
         {
-            if (ENCODING.equals(StandardCharsets.UTF_8))
+            if (ENCODING.equals(UTF_8))
                 decodeUtf8To(in,map,maxLength,maxKeys);
             else
                 decodeTo(in,map,ENCODING,maxLength,maxKeys);
@@ -658,7 +660,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         if (charset==null) 
            charset=ENCODING;
             
-        if (StandardCharsets.UTF_8.equals(charset))
+        if (UTF_8.equals(charset))
         {
             decodeUtf8To(in,map,maxLength,maxKeys);
             return;
@@ -777,7 +779,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
      */
     public static String decodeString(String encoded,int offset,int length,Charset charset)
     {
-        if (charset==null || StandardCharsets.UTF_8.equals(charset))
+        if (charset==null || UTF_8.equals(charset))
         {
             Utf8StringBuffer buffer=null;
 
@@ -1052,6 +1054,59 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             return string;
         
         return new String(encoded,0,n,charset);
+    }
+
+    public static String encodeUriPath(String string)
+    {
+        byte[] bytes = string.getBytes(UTF_8);
+
+        int len = bytes.length;
+        byte[] encoded = new byte[bytes.length * 3];
+        int n = 0;
+        boolean noEncode = true;
+
+        for (int i = 0; i < len; i++)
+        {
+            byte b = bytes[i];
+
+            if ( (b >= 'a' && b <= 'z') ||
+                    (b >= 'A' && b <= 'Z') ||
+                    (b >= '0' && b <= '9') ||
+                   b == '/')
+            {
+                encoded[n++] = b;
+            }
+            else
+            {
+                noEncode = false;
+                encoded[n++] = (byte) '%';
+                byte nibble = (byte) ((b & 0xf0) >> 4);
+                if (nibble >= 10)
+                {
+                    encoded[n++] = (byte) ('A' + nibble - 10);
+                }
+                else
+                {
+                    encoded[n++] = (byte) ('0' + nibble);
+                }
+                nibble = (byte) (b & 0xf);
+                if (nibble >= 10)
+                {
+                    encoded[n++] = (byte) ('A' + nibble - 10);
+                }
+                else
+                {
+                    encoded[n++] = (byte) ('0' + nibble);
+                }
+            }
+        }
+
+        if (noEncode)
+        {
+            return string;
+        }
+
+        return new String(encoded, 0, n, US_ASCII);
     }
 
 
