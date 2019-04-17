@@ -52,6 +52,7 @@ public interface RemoteEndpoint
      * @param data the data being sent
      * @return the Future object representing the send operation.
      */
+    @Deprecated
     Future<Void> sendBytesByFuture(ByteBuffer data);
 
     /**
@@ -89,6 +90,7 @@ public interface RemoteEndpoint
      * @param isLast   true if this is the last piece of the partial bytes
      * @return the Future object representing the send operation.
      */
+    @Deprecated
     Future<Void> sendPartialBytesByFuture(ByteBuffer fragment, boolean isLast);
 
     /**
@@ -119,6 +121,7 @@ public interface RemoteEndpoint
      * @param text the text being sent
      * @return the Future object representing the send operation.
      */
+    @Deprecated
     Future<Void> sendStringByFuture(String text);
 
     /**
@@ -156,6 +159,7 @@ public interface RemoteEndpoint
      * @param isLast   true if this is the last piece of the partial bytes
      * @return the Future object representing the send operation.
      */
+    @Deprecated
     Future<Void> sendPartialStringByFuture(String fragment, boolean isLast) throws IOException;
 
     /**
@@ -184,6 +188,7 @@ public interface RemoteEndpoint
      * @param applicationData the data to be carried in the ping request
      * @return the Future object representing the send operation.
      */
+    @Deprecated
     Future<Void> sendPingByFuture(ByteBuffer applicationData);
 
     /**
@@ -212,6 +217,7 @@ public interface RemoteEndpoint
      * @param applicationData the application data to be carried in the pong response.
      * @return the Future object representing the send operation.
      */
+    @Deprecated
     Future<Void> sendPongByFuture(ByteBuffer applicationData);
 
     /**
