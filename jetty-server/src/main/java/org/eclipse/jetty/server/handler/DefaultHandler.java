@@ -110,7 +110,6 @@ public class DefaultHandler extends AbstractHandler
             return;
         }
 
-
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getRequestURI().equals("/"))
         {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -139,7 +138,7 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<table class=\"contexts\"><thead><tr>");
             writer.append("<th>Context Path</th>");
             writer.append("<th>Display Name</th>");
-            writer.append("<th>State</th>");
+            writer.append("<th>Status</th>");
             writer.append("<th>LifeCycle</th>");
             writer.append("</tr></thead><tbody>\n");
 
@@ -162,7 +161,7 @@ public class DefaultHandler extends AbstractHandler
                 {
                     writer.append("<a href=\"").append(href).append("\">");
                 }
-                writer.append(context.getContextPath());
+                writer.append(contextPath.replaceAll("%", "&#37;"));
                 if (context.isRunning())
                 {
                     writer.append("</a>");
@@ -172,7 +171,7 @@ public class DefaultHandler extends AbstractHandler
 
                 if (StringUtil.isNotBlank(context.getDisplayName()))
                 {
-                    writer.append(context.getDisplayName());
+                    writer.append(StringUtil.sanitizeXmlString(context.getDisplayName()));
                 }
                 writer.append("&nbsp;</td><td>");
                 // Available
