@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -148,13 +149,11 @@ public class DefaultHandler extends AbstractHandler
                 // Context Path
                 ContextHandler context = (ContextHandler)handlers[i];
 
-                StringBuilder href = new StringBuilder();
-
                 String contextPath = context.getContextPath();
-                href.append(contextPath);
+                String href = UrlEncoded.encodeString(contextPath.substring(1), UTF_8);
                 if (contextPath.length() > 1 && !contextPath.endsWith("/"))
                 {
-                    href.append("/");
+                    href += '/';
                 }
 
                 if (context.isRunning())
