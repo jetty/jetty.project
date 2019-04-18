@@ -42,6 +42,7 @@
         <Get name="SelectorManager">
           <Set name="connectTimeout"><Property name="jetty.http.connectTimeout" default="15000"/></Set>
         </Get>
+        <Set name="name">http</Set>
       </New>
     </Arg>
   </Call>

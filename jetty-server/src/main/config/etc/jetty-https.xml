@@ -25,5 +25,7 @@
       </New>
     </Arg>
   </Call>
-  
+
+  <Call name="setName"><Arg>https</Arg></Call>
+
 </Configure>
