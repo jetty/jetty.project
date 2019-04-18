@@ -1,5 +1,35 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.16.v20190411 - 11 April 2019
+ + 1861 Limit total bytes pooled by ByteBufferPools
+ + 3133 Logging of `key.readyOps()` can throw unchecked `CancelledKeyException`
+ + 3159 WebSocket permessage-deflate RSV1 validity check
+ + 3274 OSGi versions of java.base classes in
+   org.apache.felix:org.osgi.foundation:jar conflicts with new rules on Java 9+
+ + 3319 Modernize Directory Listing: HTML5 and Sorting
+ + 3361 HandlerCollection.addHandler is lacking synchronization
+ + 3373 OutOfMemoryError: Java heap space in GZIPContentDecoder
+ + 3389 Websockets jsr356 willDecode not invoked during decoding
+ + 3394 java.security.acl.Group is deprecated and marked for removal
+ + 3404 Cleanup QuotedQualityCSV internal use of Double
+ + 3411 HttpClient does not timeout during multiple redirection
+ + 3421 Duplicate JSESSIONID sent when invalidating new session
+ + 3422 CLOSE_WAIT socket status forever after terminating websocket client
+   side
+ + 3425 Upgrade conscrypt version to 2.0.0 and remove usage of reflection
+ + 3429 JMX Operation to trigger manual deployment scan in WebAppProvider
+ + 3440 Stop server if Unavailable thrown
+ + 3444 org.eclipse.jetty.http.Http1FieldPreEncoder generates an invalid header
+   byte-array if header is null
+ + 3456 Allow multiple programmatic login/logout in same request
+ + 3464 Split SslContextFactory into Client and Server
+ + 3481 TLS close_notify() is not guaranteed
+ + 3489 Using setExtraClasspath("lib/extra/*") does not work on Microsoft
+   Windows
+ + 3526 HTTP Request Locale not retained in WebsocketUpgrade Request
+ + 3540 Use configured Provider in SslContextFactory consistently
+ + 3545 NullPointerException on ServletOutputStream.print("");
+
 jetty-9.4.15.v20190215 - 15 February 2019
  + 113 Add support for NCSA Extended Log File Format
  + 150 extraClasspath() method on WebAppContext dont support dir path
