@@ -54,7 +54,7 @@ public class InetAccessHandler extends HandlerWrapper
     private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
 
     private final IncludeExcludeSet<String, InetAddress> _set = new IncludeExcludeSet<>(InetAddressSet.class);
-    private final IncludeExclude<String> _names = new IncludeExclude<>();
+    private final IncludeExclude<String> _connectorNames = new IncludeExclude<>();
 
     /**
      * Includes an InetAddress pattern
@@ -105,8 +105,8 @@ public class InetAccessHandler extends HandlerWrapper
      *
      * @param name Connector name to include in this handler
      */
-     public void includeName(String name) {
-         _names.include(name);
+     public void includeConnectorName(String name) {
+         _connectorNames.include(name);
      }
 
      /**
@@ -114,8 +114,8 @@ public class InetAccessHandler extends HandlerWrapper
      *
      * @param name Connector name to exclude in this handler.
      */
-     public void excludeName(String name) {
-         _names.exclude(name);
+     public void excludeConnectorName(String name) {
+         _connectorNames.exclude(name);
      }
 
     /**
@@ -155,7 +155,9 @@ public class InetAccessHandler extends HandlerWrapper
     protected boolean isAllowed(InetAddress address, Request baseRequest, HttpServletRequest request)
     {
         String connectorName = baseRequest.getHttpChannel().getConnector().getName();
-        boolean allowed = _set.test(address) && _names.test(connectorName);
+
+        boolean allowed = _set.test(address) && (connectorName == null || _connectorNames.test(connectorName));
+        LOG.info("Connector name {} is included? {}", connectorName, _connectorNames.test(connectorName));
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} for {}", this, allowed ? "allowed" : "denied", address, request);
         return allowed;
@@ -164,6 +166,6 @@ public class InetAccessHandler extends HandlerWrapper
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent, _set.getIncluded(), _set.getExcluded(), _names.getIncluded(), _names.getExcluded());
+        dumpBeans(out, indent, _set.getIncluded(), _set.getExcluded(), _connectorNames.getIncluded(), _connectorNames.getExcluded());
     }
 }
