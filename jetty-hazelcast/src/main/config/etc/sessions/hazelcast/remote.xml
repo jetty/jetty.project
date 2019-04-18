@@ -12,6 +12,7 @@
       <New id="sessionDataStoreFactory" class="org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory">
         <Set name="mapName"><Property name="jetty.session.hazelcast.mapName" default="jetty-distributed-session-map" /></Set>
         <Set name="hazelcastInstanceName"><Property name="jetty.session.hazelcast.hazelcastInstanceName" default="JETTY_DISTRIBUTED_SESSION_INSTANCE" /></Set>
+        <Set name="scavengeZombies"><Property name="jetty.session.hazelcast.scavengeZombies" default="false"/></Set>
         <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
         <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
         <Set name="onlyClient"><Property name="jetty.session.hazelcast.onlyClient" default="true" /></Set>

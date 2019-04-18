@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
+import java.io.IOException;
+
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
@@ -32,8 +34,6 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
-
-import java.io.IOException;
 
 /**
  * Factory to construct {@link HazelcastSessionDataStore}
@@ -54,7 +54,19 @@ public class HazelcastSessionDataStoreFactory
     private HazelcastInstance hazelcastInstance;
 
     private MapConfig mapConfig;
+    
+    private boolean scavengeZombies = false;
 
+
+    public boolean isScavengeZombies()
+    {
+        return scavengeZombies;
+    }
+
+    public void setScavengeZombies(boolean scavengeZombies)
+    {
+        this.scavengeZombies = scavengeZombies;
+    }
 
     @Override
     public SessionDataStore getSessionDataStore( SessionHandler handler )
@@ -122,9 +134,10 @@ public class HazelcastSessionDataStoreFactory
             }
         }
         // initialize the map
-        hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ) );
-        hazelcastSessionDataStore.setGracePeriodSec( getGracePeriodSec() );
-        hazelcastSessionDataStore.setSavePeriodSec( getSavePeriodSec() );
+        hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ));
+        hazelcastSessionDataStore.setGracePeriodSec(getGracePeriodSec());
+        hazelcastSessionDataStore.setSavePeriodSec(getSavePeriodSec());
+        hazelcastSessionDataStore.setScavengeZombieSessions(scavengeZombies);
         return hazelcastSessionDataStore;
     }
 

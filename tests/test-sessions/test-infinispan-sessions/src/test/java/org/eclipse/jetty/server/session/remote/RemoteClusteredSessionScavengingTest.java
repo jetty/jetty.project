@@ -25,6 +25,7 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+
 /**
  * ClusteredSessionScavengingTest
  *
