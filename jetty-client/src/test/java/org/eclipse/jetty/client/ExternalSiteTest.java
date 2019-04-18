@@ -66,30 +66,23 @@ public class ExternalSiteTest
         assumeCanConnectTo(host, port);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
-        client.newRequest(host, port).send(new Response.CompleteListener()
+        client.newRequest(host, port).send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                if (!result.isFailed() && result.getResponse().getStatus() == 200)
-                    latch1.countDown();
-            }
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch1.countDown();
         });
-        assertTrue(latch1.await(10, TimeUnit.SECONDS));
+        assertTrue(latch1.await(15, TimeUnit.SECONDS));
 
         // Try again the same URI, but without specifying the port
         final CountDownLatch latch2 = new CountDownLatch(1);
-        client.newRequest("http://" + host).send(new Response.CompleteListener()
+        client.newRequest("http://" + host).send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                assertTrue(result.isSucceeded());
-                assertEquals(200, result.getResponse().getStatus());
-                latch2.countDown();
-            }
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch2.countDown();
         });
-        assertTrue(latch2.await(10, TimeUnit.SECONDS));
+        assertTrue(latch2.await(15, TimeUnit.SECONDS));
     }
 
     @Tag("external")
@@ -107,16 +100,13 @@ public class ExternalSiteTest
         assumeCanConnectTo(host, port);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(host, port).scheme("https").path("/nvp").send(new Response.CompleteListener()
+        client.newRequest(host, port).scheme("https").path("/nvp").send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                    latch.countDown();
-            }
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch.countDown();
         });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
     }
 
     @Tag("external")
@@ -133,14 +123,7 @@ public class ExternalSiteTest
         {
             final CountDownLatch latch = new CountDownLatch(3);
             client.newRequest(host, port)
-                    .onResponseFailure(new Response.FailureListener()
-                    {
-                        @Override
-                        public void onFailure(Response response, Throwable failure)
-                        {
-                            latch.countDown();
-                        }
-                    })
+                    .onResponseFailure((response, failure) -> latch.countDown())
                     .send(new Response.Listener.Adapter()
                     {
                         @Override
@@ -156,7 +139,7 @@ public class ExternalSiteTest
                             latch.countDown();
                         }
                     });
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(15, TimeUnit.SECONDS));
         }
     }
 
@@ -173,6 +156,7 @@ public class ExternalSiteTest
         ContentResponse response = client.newRequest(host, port)
                 .scheme(HttpScheme.HTTPS.asString())
                 .path("/twitter")
+                .timeout(15, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, response.getStatus());
     }
@@ -185,7 +169,7 @@ public class ExternalSiteTest
         }
         catch (Throwable x)
         {
-            assumeTrue(x == null, "Unable to connect");
+            assumeTrue(false, "Unable to connect");
         }
     }
 }

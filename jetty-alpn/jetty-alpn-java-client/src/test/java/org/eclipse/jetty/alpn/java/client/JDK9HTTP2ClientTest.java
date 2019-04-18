@@ -19,6 +19,7 @@
 package org.eclipse.jetty.alpn.java.client;
 
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -45,20 +47,21 @@ public class JDK9HTTP2ClientTest
     @Test
     public void testJDK9HTTP2Client() throws Exception
     {
-        SslContextFactory sslContextFactory = new SslContextFactory.Client();
+        String host = "webtide.com";
+        int port = 443;
+
+        Assumptions.assumeTrue(canConnectTo(host, port));
 
         HTTP2Client client = new HTTP2Client();
         try
         {
+            SslContextFactory sslContextFactory = new SslContextFactory.Client();
             client.addBean(sslContextFactory);
             client.start();
 
-            String host = "webtide.com";
-            int port = 443;
-
             FuturePromise<Session> sessionPromise = new FuturePromise<>();
             client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener.Adapter(), sessionPromise);
-            Session session = sessionPromise.get(5, TimeUnit.SECONDS);
+            Session session = sessionPromise.get(15, TimeUnit.SECONDS);
 
             HttpFields requestFields = new HttpFields();
             requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
@@ -85,11 +88,24 @@ public class JDK9HTTP2ClientTest
                 }
             });
 
-            latch.await(5, TimeUnit.SECONDS);
+            latch.await(15, TimeUnit.SECONDS);
         }
         finally
         {
             client.stop();
+        }
+    }
+
+    private boolean canConnectTo(String host, int port)
+    {
+        try
+        {
+            new Socket(host, port).close();
+            return true;
+        }
+        catch (Throwable x)
+        {
+            return false;
         }
     }
 }
