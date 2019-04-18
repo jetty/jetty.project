@@ -219,6 +219,13 @@ public class IPAccessHandler extends HandlerWrapper
         this._whiteListByPath = whiteListByPath;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * If not empty, this will make the IP access filter only apply if the server
+     * port matches one of these ports.
+     *
+     * @param onlyAppliesToPorts matching mode
+     */
     public void setOnlyAppliesToPorts(int[] onlyAppliesToPorts) {
         _onlyAppliesToPorts = new HashSet<Integer>();
         for (Integer port : onlyAppliesToPorts) {
