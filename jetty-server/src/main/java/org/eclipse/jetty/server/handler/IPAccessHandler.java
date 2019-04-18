@@ -102,6 +102,11 @@ import java.util.Set;
  * to define a range of the internet addresses (e.g. 127., 10.10., 172.16.1.).
  * They also used the first "/" character of the URI pattern to separate it from the
  * internet address. Both of these features have been deprecated in the current version.
+ * <p>
+ * Additionally, there may be times when you want to only apply this handler to a subset
+ * of your connectors. For example maybe you want to have HTTPS wide open but have HTTP
+ * restricted. In this situation you can use <b>connectorNames</b> to specify the connector
+ * names that you want this IP access filter to apply to.
  * @deprecated
  * @see InetAccessHandler
  */

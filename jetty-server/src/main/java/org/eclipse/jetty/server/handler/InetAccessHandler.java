@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.log.Log;
@@ -42,12 +43,18 @@ import org.eclipse.jetty.util.log.Logger;
  * by and {@link IncludeExcludeSet} over a {@link InetAddressSet}. This handler
  * uses the real internet address of the connection, not one reported in the forwarded
  * for headers, as this cannot be as easily forged.
+ * <p>
+ * Additionally, there may be times when you want to only apply this handler to a subset
+ * of your connectors. For example maybe you want to have HTTPS wide open but have HTTP
+ * restricted. In this situation you can use <b>connectorNames</b> to specify the connector
+ * names that you want this IP access filter to apply to.
  */
 public class InetAccessHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
 
     private final IncludeExcludeSet<String, InetAddress> _set = new IncludeExcludeSet<>(InetAddressSet.class);
+    private final IncludeExclude<String> _names = new IncludeExclude<>();
 
     /**
      * Includes an InetAddress pattern
@@ -94,6 +101,24 @@ public class InetAccessHandler extends HandlerWrapper
     }
 
     /**
+     * Includes a connector name
+     *
+     * @param name Connector name to include in this handler
+     */
+     public void includeName(String name) {
+         _names.include(name);
+     }
+
+     /**
+     * Excludes a connector name.
+     *
+     * @param name Connector name to exclude in this handler.
+     */
+     public void excludeName(String name) {
+         _names.exclude(name);
+     }
+
+    /**
      * Checks the incoming request against the whitelist and blacklist
      */
     @Override
@@ -107,7 +132,7 @@ public class InetAccessHandler extends HandlerWrapper
             if (endp != null)
             {
                 InetSocketAddress address = endp.getRemoteAddress();
-                if (address != null && !isAllowed(address.getAddress(), request))
+                if (address != null && !isAllowed(address.getAddress(), baseRequest, request))
                 {
                     response.sendError(HttpStatus.FORBIDDEN_403);
                     baseRequest.setHandled(true);
@@ -123,12 +148,14 @@ public class InetAccessHandler extends HandlerWrapper
      * Checks if specified address and request are allowed by current InetAddress rules.
      *
      * @param address the inetAddress to check
-     * @param request the request to check
+     * @param baseRequest the base request to check
+     * @param request the HttpServletRequest request to check
      * @return true if inetAddress and request are allowed
      */
-    protected boolean isAllowed(InetAddress address, HttpServletRequest request)
+    protected boolean isAllowed(InetAddress address, Request baseRequest, HttpServletRequest request)
     {
-        boolean allowed = _set.test(address);
+        String connectorName = baseRequest.getHttpChannel().getConnector().getName();
+        boolean allowed = _set.test(address) && _names.test(connectorName);
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} for {}", this, allowed ? "allowed" : "denied", address, request);
         return allowed;
@@ -137,6 +164,6 @@ public class InetAccessHandler extends HandlerWrapper
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpBeans(out, indent, _set.getIncluded(), _set.getExcluded());
+        dumpBeans(out, indent, _set.getIncluded(), _set.getExcluded(), _names.getIncluded(), _names.getExcluded());
     }
 }
