@@ -18,20 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EndPoint;
@@ -40,6 +26,16 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IPAddressMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -115,7 +111,7 @@ public class IPAccessHandler extends HandlerWrapper
     // true means nodefault match
     PathMap<IPAddressMap<Boolean>> _white = new PathMap<IPAddressMap<Boolean>>(true);
     PathMap<IPAddressMap<Boolean>> _black = new PathMap<IPAddressMap<Boolean>>(true);
-    Set<Integer> _onlyAppliesToPorts = Collections.emptySet();
+    Set<String> _connectorNames = Collections.emptySet();
     boolean _whiteListByPath = false;
 
     /* ------------------------------------------------------------ */
@@ -150,9 +146,9 @@ public class IPAccessHandler extends HandlerWrapper
      *
      * @param white array of whitelist entries
      * @param black array of blacklist entries
-     * @param onlyAppliesToPorts Only applies to ports
+     * @param connectorNames filter will only applies to these connector names
      */
-    public IPAccessHandler(String[] white, String []black, int[] onlyAppliesToPorts)
+    public IPAccessHandler(String[] white, String[] black, String[] connectorNames)
     {
         super();
 
@@ -160,7 +156,7 @@ public class IPAccessHandler extends HandlerWrapper
             setWhite(white);
         if (black != null && black.length > 0)
             setBlack(black);
-        setOnlyAppliesToPorts(onlyAppliesToPorts);
+        setConnectorNames(connectorNames);
 
     }
 
@@ -224,12 +220,12 @@ public class IPAccessHandler extends HandlerWrapper
      * If not empty, this will make the IP access filter only apply if the server
      * port matches one of these ports.
      *
-     * @param onlyAppliesToPorts matching mode
+     * @param connectorNames Only run this access filter on these connector names.
      */
-    public void setOnlyAppliesToPorts(int[] onlyAppliesToPorts) {
-        _onlyAppliesToPorts = new HashSet<Integer>();
-        for (Integer port : onlyAppliesToPorts) {
-            _onlyAppliesToPorts.add(port);
+    public void setConnectorNames(String[] connectorNames) {
+        _connectorNames = new HashSet<String>();
+        for (String port : connectorNames) {
+            _connectorNames.add(port);
         }
     }
 
@@ -242,9 +238,11 @@ public class IPAccessHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (_onlyAppliesToPorts.isEmpty() || _onlyAppliesToPorts.contains(baseRequest.getServerPort())) {
+        HttpChannel channel = baseRequest.getHttpChannel();
+        // If there are connectorNames specified, only apply this handler if this request is coming through one of
+        // those connectors.
+        if (_connectorNames.isEmpty() || _connectorNames.contains(channel.getConnector().getName())) {
             // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-            HttpChannel channel = baseRequest.getHttpChannel();
             if (channel!=null)
             {
                 EndPoint endp=channel.getEndPoint();
@@ -401,7 +399,10 @@ public class IPAccessHandler extends HandlerWrapper
         buf.append(toString());
         buf.append(" BLACKLIST:\n");
         dump(buf, _black);
-
+        buf.append(" CONNECTOR NAMES:\n");
+        for (String connectorName : _connectorNames) {
+            buf.append(connectorName).append("\n");
+        }
         return buf.toString();
     }
 
