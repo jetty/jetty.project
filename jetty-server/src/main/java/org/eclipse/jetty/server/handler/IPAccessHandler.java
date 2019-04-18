@@ -20,7 +20,13 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -109,6 +115,7 @@ public class IPAccessHandler extends HandlerWrapper
     // true means nodefault match
     PathMap<IPAddressMap<Boolean>> _white = new PathMap<IPAddressMap<Boolean>>(true);
     PathMap<IPAddressMap<Boolean>> _black = new PathMap<IPAddressMap<Boolean>>(true);
+    Set<Integer> _onlyAppliesToPorts = Collections.emptySet();
     boolean _whiteListByPath = false;
 
     /* ------------------------------------------------------------ */
@@ -135,6 +142,26 @@ public class IPAccessHandler extends HandlerWrapper
             setWhite(white);
         if (black != null && black.length > 0)
             setBlack(black);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Creates new handler object and initializes white- and black-list
+     *
+     * @param white array of whitelist entries
+     * @param black array of blacklist entries
+     * @param onlyAppliesToPorts Only applies to ports
+     */
+    public IPAccessHandler(String[] white, String []black, int[] onlyAppliesToPorts)
+    {
+        super();
+
+        if (white != null && white.length > 0)
+            setWhite(white);
+        if (black != null && black.length > 0)
+            setBlack(black);
+        setOnlyAppliesToPorts(onlyAppliesToPorts);
+
     }
 
     /* ------------------------------------------------------------ */
@@ -192,6 +219,13 @@ public class IPAccessHandler extends HandlerWrapper
         this._whiteListByPath = whiteListByPath;
     }
 
+    public void setOnlyAppliesToPorts(int[] onlyAppliesToPorts) {
+        _onlyAppliesToPorts = new HashSet<Integer>();
+        for (Integer port : onlyAppliesToPorts) {
+            _onlyAppliesToPorts.add(port);
+        }
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * Checks the incoming request against the whitelist and blacklist
@@ -201,19 +235,21 @@ public class IPAccessHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-        HttpChannel channel = baseRequest.getHttpChannel();
-        if (channel!=null)
-        {
-            EndPoint endp=channel.getEndPoint();
-            if (endp!=null)
+        if (_onlyAppliesToPorts.isEmpty() || _onlyAppliesToPorts.contains(baseRequest.getServerPort())) {
+            // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
+            HttpChannel channel = baseRequest.getHttpChannel();
+            if (channel!=null)
             {
-                InetSocketAddress address = endp.getRemoteAddress();
-                if (address!=null && !isAddrUriAllowed(address.getHostString(),baseRequest.getPathInfo()))
+                EndPoint endp=channel.getEndPoint();
+                if (endp!=null)
                 {
-                    response.sendError(HttpStatus.FORBIDDEN_403);
-                    baseRequest.setHandled(true);
-                    return;
+                    InetSocketAddress address = endp.getRemoteAddress();
+                    if (address!=null && !isAddrUriAllowed(address.getHostString(),baseRequest.getPathInfo()))
+                    {
+                        response.sendError(HttpStatus.FORBIDDEN_403);
+                        baseRequest.setHandled(true);
+                        return;
+                    }
                 }
             }
         }
