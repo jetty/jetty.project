@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.2.28.v20190418</version>
+    <version>9.2.29-SNAPSHOT</version>
   </parent>
   <artifactId>test-loginservice</artifactId>
   <name>Jetty Tests :: Login Service</name>
