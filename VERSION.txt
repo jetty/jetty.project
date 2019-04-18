@@ -1,4 +1,6 @@
-jetty-9.2.28-SNAPSHOT
+jetty-9.2.28.v20190418 - 18 April 2019
+ + 3549 Directory Listing on Windows reveals Resource Base path
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context
 
 jetty-9.2.27.v20190403 - 03 April 2019
  + 3319 Refactored Directory Listing to modernize and avoid XSS
