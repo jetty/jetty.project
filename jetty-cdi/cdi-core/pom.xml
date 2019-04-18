@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.cdi</groupId>
     <artifactId>jetty-cdi-parent</artifactId>
-    <version>9.4.17.v20190418</version>
+    <version>9.4.18-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cdi-core</artifactId>
