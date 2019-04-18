@@ -4,7 +4,7 @@
  <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.27.v20190418</version>
+    <version>9.3.28-SNAPSHOT</version>
  </parent>
   <artifactId>jetty-documentation</artifactId>
   <name>Jetty :: Documentation</name>
