@@ -156,8 +156,9 @@ public class InetAccessHandler extends HandlerWrapper
     {
         String connectorName = baseRequest.getHttpChannel().getConnector().getName();
 
-        boolean allowed = _set.test(address) && (connectorName == null || _connectorNames.test(connectorName));
-        LOG.info("Connector name {} is included? {}", connectorName, _connectorNames.test(connectorName));
+        boolean allowed = (connectorName != null &&
+          (!_connectorNames.getIncluded().isEmpty() || !_connectorNames.getExcluded().isEmpty()) &&
+          !_connectorNames.test(connectorName)) || _set.test(address);
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} for {}", this, allowed ? "allowed" : "denied", address, request);
         return allowed;
