@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -54,7 +56,7 @@ public class InetAccessHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
 
-    private final IncludeExcludeSet<String, InetAddress> _set = new IncludeExcludeSet<>(InetAddressSet.class);
+    private final IncludeExcludeSet<String, InetAddress> _addrs = new IncludeExcludeSet<>(InetAddressSet.class);
     private final IncludeExclude<String> _connectorNames = new IncludeExclude<>();
 
     /**
@@ -63,7 +65,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void clear()
     {
-        _set.clear();
+        _addrs.clear();
         _connectorNames.clear();
     }
 
@@ -75,7 +77,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void include(String pattern)
     {
-        _set.include(pattern);
+        _addrs.include(pattern);
     }
 
     /**
@@ -86,7 +88,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void include(String... patterns)
     {
-        _set.include(patterns);
+        _addrs.include(patterns);
     }
 
     /**
@@ -97,7 +99,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void exclude(String pattern)
     {
-        _set.exclude(pattern);
+        _addrs.exclude(pattern);
     }
 
     /**
@@ -108,7 +110,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void exclude(String... patterns)
     {
-        _set.exclude(patterns);
+        _addrs.exclude(patterns);
     }
 
     /**
@@ -189,7 +191,7 @@ public class InetAccessHandler extends HandlerWrapper
     protected boolean isAllowed(InetAddress address, Request baseRequest, HttpServletRequest request)
     {
         String connectorName = baseRequest.getHttpChannel().getConnector().getName();
-        boolean allowed = !isMatchingConnectorName(connectorName) || _set.test(address);
+        boolean allowed = !isMatchingConnectorName(connectorName) || _addrs.test(address);
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} for {}", this, allowed ? "allowed" : "denied", address, request);
         return allowed;
@@ -217,10 +219,10 @@ public class InetAccessHandler extends HandlerWrapper
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, 
-                DumpableCollection.from("included", _set.getIncluded()),
-                DumpableCollection.from("excluded", _set.getExcluded()),
-                DumpableCollection.from("includedConnectorNames", _connectorNames.getIncluded()),
-                DumpableCollection.from("excludedConnectorNames", _connectorNames.getExcluded()));
+        dumpObjects(out, indent,
+                Dumpable.labelled("included", _addrs.getIncluded()),
+                Dumpable.labelled("excluded", _addrs.getExcluded()),
+                Dumpable.labelled("includedConnectorNames", _connectorNames.getIncluded()),
+                Dumpable.labelled("excludedConnectorNames", _connectorNames.getExcluded()));
     }
 }

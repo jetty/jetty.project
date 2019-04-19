@@ -6,17 +6,34 @@
         <Arg>
             <New id="InetAccessHandler" class="org.eclipse.jetty.server.handler.InetAccessHandler">
 
-                <!-- include - Inclusive list of Inet address range to allow through. -->
-                <!--<Call name="include"><Arg>127.0.0.1-127.0.0.255</Arg></Call>-->
-
-                <!-- exclude - Exclusive list of Inet address ranges to block. -->
-                <!--<Call name="exclude"><Arg>127.0.0.128-127.0.0.129</Arg></Call>-->
-
-                <!-- includeConnectorName - This access handler will only apply to these connector names. -->
-                <!--<Call name="includeConnectorName"><Arg>http</Arg></Call>-->
-
-                <!-- excludeConnectorName - This access handler will not apply to these connector names. -->
-                <!--<Call name="excludeConnectorName"><Arg>tls</Arg></Call>-->
+                <Call name="include">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.includedAddrs" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
+                <Call name="exclude">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.excludedAddrs" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
+                <Call name="includeConnectorNames">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.includedConnectors" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
+                <Call name="excludeConnectorNames">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.excludedConnectors" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
             </New>
         </Arg>
     </Call>

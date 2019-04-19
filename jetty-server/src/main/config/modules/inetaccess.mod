@@ -12,3 +12,18 @@ server
 
 [xml]
 etc/jetty-inetaccess.xml
+
+[ini-template]
+
+## List of InetAddress patterns to include
+#jetty.inetaccess.includedAddrs=127.0.0.1,127.0.0.2
+
+## List of InetAddress patterns to exclude
+#jetty.inetaccess.excludedAddrs=127.0.0.1,127.0.0.2
+
+## List of Connector names to include
+#jetty.inetaccess.includedConnectors=http
+
+## List of Connector names to exclude
+#jetty.inetaccess.excludedConnectors=tls
+
