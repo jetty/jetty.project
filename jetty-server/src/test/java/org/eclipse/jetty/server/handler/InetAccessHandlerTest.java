@@ -51,7 +51,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class InetHandlerTest
+public class InetAccessHandlerTest
 {
     private static Server _server;
     private static ServerConnector _connector;
@@ -123,6 +123,7 @@ public class InetHandlerTest
                 _handler.excludeConnectorName(exc);
             }
         }
+
         String request = "GET " + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
