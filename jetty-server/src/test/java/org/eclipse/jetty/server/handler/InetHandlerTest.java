@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,14 +63,15 @@ public class InetHandlerTest
         _server = new Server();
         _connector = new ServerConnector(_server);
         _connector.setName("http");
-        _server.setConnectors(new Connector[] { _connector });
+        _server.setConnectors(new Connector[]
+        { _connector });
 
         _handler = new InetAccessHandler();
         _handler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request,
-                    HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
@@ -72,34 +91,43 @@ public class InetHandlerTest
     /* ------------------------------------------------------------ */
     @ParameterizedTest
     @MethodSource("data")
-    public void testHandler(String include, String exclude, String includeConnectors, String excludeConnectors,
-            String host, String uri, String code) throws Exception
+    public void testHandler(String include, String exclude, String includeConnectors, String excludeConnectors, String host, String uri, String code)
+            throws Exception
     {
         _handler.clear();
-        for (String inc : include.split(";", -1)) {
-            if (inc.length() > 0) {
+        for (String inc : include.split(";", -1))
+        {
+            if (inc.length() > 0)
+            {
                 _handler.include(inc);
             }
         }
-        for (String exc : exclude.split(";", -1)) {
-            if (exc.length() > 0) {
+        for (String exc : exclude.split(";", -1))
+        {
+            if (exc.length() > 0)
+            {
                 _handler.exclude(exc);
             }
         }
-        for (String inc : includeConnectors.split(";", -1)) {
-            if (inc.length() > 0) {
+        for (String inc : includeConnectors.split(";", -1))
+        {
+            if (inc.length() > 0)
+            {
                 _handler.includeConnectorName(inc);
             }
         }
-        for (String exc : excludeConnectors.split(";", -1)) {
-            if (exc.length() > 0) {
+        for (String exc : excludeConnectors.split(";", -1))
+        {
+            if (exc.length() > 0)
+            {
                 _handler.excludeConnectorName(exc);
             }
         }
         String request = "GET " + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
-        try {
+        try
+        {
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
@@ -107,10 +135,11 @@ public class InetHandlerTest
             output.flush();
 
             Response response = readResponse(input);
-            Object[] params = new Object[] { "Request WBHUC", include, exclude, includeConnectors, excludeConnectors,
-                    host, uri, code, "Response", response.getCode() };
+            Object[] params = new Object[]
+            { "Request WBHUC", include, exclude, includeConnectors, excludeConnectors, host, uri, code, "Response", response.getCode() };
             assertEquals(code, response.getCode(), Arrays.deepToString(params));
-        } finally {
+        } finally
+        {
             socket.close();
         }
     }
@@ -127,7 +156,8 @@ public class InetHandlerTest
         String code = responseLine.group(1);
 
         Map<String, String> headers = new LinkedHashMap<>();
-        while ((line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null)
+        {
             if (line.trim().length() == 0)
                 break;
 
@@ -139,22 +169,28 @@ public class InetHandlerTest
         }
 
         StringBuilder body = new StringBuilder();
-        if (headers.containsKey("content-length")) {
+        if (headers.containsKey("content-length"))
+        {
             int length = Integer.parseInt(headers.get("content-length"));
-            for (int i = 0; i < length; ++i) {
+            for (int i = 0; i < length; ++i)
+            {
                 char c = (char) reader.read();
                 body.append(c);
             }
-        } else if ("chunked".equals(headers.get("transfer-encoding"))) {
-            while ((line = reader.readLine()) != null) {
-                if ("0".equals(line)) {
+        } else if ("chunked".equals(headers.get("transfer-encoding")))
+        {
+            while ((line = reader.readLine()) != null)
+            {
+                if ("0".equals(line))
+                {
                     line = reader.readLine();
                     assertEquals("", line);
                     break;
                 }
 
                 int length = Integer.parseInt(line, 16);
-                for (int i = 0; i < length; ++i) {
+                for (int i = 0; i < length; ++i)
+                {
                     char c = (char) reader.read();
                     body.append(c);
                 }
@@ -216,9 +252,11 @@ public class InetHandlerTest
     /* ------------------------------------------------------------ */
     public static Stream<Arguments> data()
     {
-        Object[][] data = new Object[][] {
+        Object[][] data = new Object[][]
+        {
                 // Empty lists
-                { "", "", "", "", "127.0.0.1", "/", "200" }, { "", "", "", "", "127.0.0.1", "/dump/info", "200" },
+                { "", "", "", "", "127.0.0.1", "/", "200" },
+                { "", "", "", "", "127.0.0.1", "/dump/info", "200" },
 
                 // test simple filters
                 { "127.0.0.1", "", "", "", "127.0.0.1", "/", "200" },
