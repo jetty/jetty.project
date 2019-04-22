@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,9 +16,47 @@
 //  ========================================================================
 //
 
-[[jetty-admin-guide]]
-
-= Jetty Administration Guide
+// :doctitle: Eclipse Jetty: Administration Guide
+// :author: Jetty Developers
+// :email: jetty-dev@eclipse.org
+// :revnumber: 1.0
+// :revdate: {TIMESTAMP}
+// :toc: left
+// :toc-title: Administration Guide
+// :toc-image: jetty-logo.svg
+// :toc-image-url: /jetty/index.html
+// 
+// :imagesdir: ../common/images
+// 
+// // docinfo lets you pull in shared content and/or influence via render type
+// //:docinfodir: {DOCINFODIR}/documentation
+// //:docinfo1:
+// 
+// // html specific directives
+// ifdef::backend-html5[]
+// :safe-mode-unsafe:
+// :stylesdir: ../common/css
+// :stylesheet: jetty.css
+// :linkcss:
+// :scriptsdir: ../common/js
+// endif::[]
+// 
+// // options for special blocks, code snippets, screen, etc
+// :sub-order: attributes+
+// 
+// // suppress document footer generation
+// //:nofooter:
+// :no-eclipse-footer:
+// 
+// 
+// // uncomment to allow include::https:// style content inclusion
+// //:allow-uri-read: true
+// 
+// // use fonts for admonitions
+// :icons: font
+// 
+// // suppress automatic id generation
+// :sectids!:
 
 include::startup/chapter.adoc[]
 include::sessions/chapter.adoc[]

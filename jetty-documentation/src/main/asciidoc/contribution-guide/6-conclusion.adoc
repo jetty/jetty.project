@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,12 +16,15 @@
 //  ========================================================================
 //
 
-[[jetty-config-guide]]
+[[cg-conclusion]]
+== Thank you!
 
-= Jetty Configuration Guide
+Your interest in contributing to Eclipse Jetty is welcome and if there is anything you feel this guide is lacking please let us know.
+Feel free to open an Issue as described in this document and perhaps even contribute your suggestion to {GITDOCURL}/contribution-guide[this document] itself!
 
-include::deploying/chapter.adoc[]
-include::contexts/chapter.adoc[]
-include::connectors/chapter.adoc[]
-include::security/chapter.adoc[]
-include::jsp/chapter.adoc[]
+[[cg-contributing-guides]]
+
+Our current guides are:
+
+* {GUIDEBASEURL}/quickstart/[Distribution Quickstart Guide]
+* {GUIDEBASEURL}/contribution/[Contribution Guide]

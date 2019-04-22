@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,6 @@ Jetty : The Definitive Reference
 
 :toc:
 
-include::quick-start/part.adoc[]
-include::configuring/part.adoc[]
-include::administration/part.adoc[]
-include::development/part.adoc[]
-include::reference/part.adoc[]
+include::quick-start-guide/index.adoc[]
+include::jetty-guide/index.adoc[]
+include::contribution-guide/index.adoc[]

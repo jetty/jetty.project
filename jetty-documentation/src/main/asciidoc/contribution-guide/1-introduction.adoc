@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,10 +16,9 @@
 //  ========================================================================
 //
 
-[[quick-start]]
+[[cg-introduction]]
+== Welcome!
 
-= Getting Started With Jetty
-
-include::introduction/chapter.adoc[]
-include::getting-started/chapter.adoc[]
-include::configuring/chapter.adoc[]
+Eclipse Jetty is an open source project with a long pedigree of contribution.
+Starting over 20 years ago, Jetty has had many committers over the years and owes much of its success to the people that make up the community.
+There are many ways that you may contribute to Jetty and the goal of this guide is help you get there!

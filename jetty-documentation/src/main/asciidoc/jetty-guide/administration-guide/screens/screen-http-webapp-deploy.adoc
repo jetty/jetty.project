@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,14 +16,15 @@
 //  ========================================================================
 //
 
-[[jetty-ref-guide]]
-
-= Jetty Reference Guide
-
-include::architecture/chapter.adoc[]
-include::platforms/chapter.adoc[]
-include::jetty-xml/chapter.adoc[]
-include::troubleshooting/chapter.adoc[]
-include::debugging/chapter.adoc[]
-include::contributing/chapter.adoc[]
-include::upgrading/chapter.adoc[]
+[source, screen, subs="{sub-order}"]
+....
+[mybase]$ java -jar $JETTY_HOME/start.jar --add-to-start=http,webapp,deploy
+INFO  : webapp          initialized in ${jetty.base}/start.ini
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : security        transitively enabled
+INFO  : servlet         transitively enabled
+INFO  : http            initialized in ${jetty.base}/start.ini
+INFO  : deploy          initialized in ${jetty.base}/start.ini
+MKDIR : ${jetty.base}/webapps
+INFO  : Base directory was modified
+....

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,17 +16,18 @@
 //  ========================================================================
 //
 
-[[jetty-dev-guide]]
+[source, screen, subs="{sub-order}"]
+....
+[jetty]$ mkdir mybase
+[jetty]$ cd mybase
+[mybase]$ ls -la
+total 0
+drwxr-xr-x   2 staff  staff   68 Jul 12 17:29 .
+drwxr-xr-x  20 staff  staff  680 Jul 12 17:29 ..
 
-= Jetty Development Guide
+[mybase]$ java -jar $JETTY_HOME/start.jar
+WARNING: Nothing to start, exiting ...
 
-include::embedding/chapter.adoc[]
-include::clients/http/chapter.adoc[]
-include::maven/chapter.adoc[]
-include::ant/chapter.adoc[]
-include::handlers/chapter.adoc[]
-include::websockets/intro/chapter.adoc[]
-include::websockets/jetty/chapter.adoc[]
-//include::websockets/java/chapter.adoc[]
-include::continuations/chapter.adoc[]
-include::frameworks/chapter.adoc[]
+Usage: java -jar start.jar [options] [properties] [configs]
+       java -jar start.jar --help  # for more information
+....
