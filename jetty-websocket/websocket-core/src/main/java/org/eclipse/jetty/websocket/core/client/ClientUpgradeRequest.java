@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -349,7 +350,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, negotiated);
         wsClient.customize(wsChannel);
 
-        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
+        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), wsChannel);
 
         for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
             wsConnection.addListener(listener);
@@ -379,9 +380,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
     {
-        return new WebSocketConnection(endp, executor, byteBufferPool, wsChannel);
+        return new WebSocketConnection(endp, executor, scheduler, byteBufferPool, wsChannel);
     }
 
     protected WebSocketChannel newWebSocketChannel(FrameHandler handler, Negotiated negotiated)

@@ -23,20 +23,20 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -54,9 +54,12 @@ public class FrameFlusher extends IteratingCallback
     private final Generator generator;
     private final int maxGather;
     private final Deque<Entry> queue = new ArrayDeque<>();
-    private final List<Entry> entries;
     private final List<ByteBuffer> buffers;
-    private final Timeout timeout;
+    private final Scheduler timeoutScheduler;
+    private final List<Entry> entries;
+    private final List<Entry> previousEntries;
+    private final List<Entry> failedEntries;
+
     private ByteBuffer batchBuffer = null;
     private boolean canEnqueue = true;
     private Throwable closedCause;
@@ -64,7 +67,7 @@ public class FrameFlusher extends IteratingCallback
     private LongAdder bytesOut = new LongAdder();
     private long idleTimeout = 0;
 
-    public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
+    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
         this.bufferPool = bufferPool;
         this.endPoint = endPoint;
@@ -72,18 +75,10 @@ public class FrameFlusher extends IteratingCallback
         this.generator = Objects.requireNonNull(generator);
         this.maxGather = maxGather;
         this.entries = new ArrayList<>(maxGather);
+        this.previousEntries = new ArrayList<>(maxGather);
+        this.failedEntries = new ArrayList<>(maxGather);
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
-
-        ScheduledExecutorScheduler executor = new ScheduledExecutorScheduler();
-        try
-        {
-            executor.start();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        this.timeout = new Timeout(executor);
+        this.timeoutScheduler = scheduler;
     }
 
     /**
@@ -113,8 +108,8 @@ public class FrameFlusher extends IteratingCallback
                     else
                         queue.offerLast(entry);
 
-                    if (idleTimeout > 0)
-                        timeout.schedule(entry);
+                    if ((idleTimeout > 0) && (queue.size()==1) && entries.isEmpty())
+                        timeoutScheduler.schedule(this::timeoutExpired, idleTimeout, TimeUnit.MILLISECONDS);
 
                     if (opCode == OpCode.CLOSE)
                         this.canEnqueue = false;
@@ -160,10 +155,9 @@ public class FrameFlusher extends IteratingCallback
             if (closedCause != null)
                 throw closedCause;
 
-            // Succeed entries from previous call to process
-            // and clear batchBuffer if we wrote it.
-            if (succeedEntries() && batchBuffer != null)
-                BufferUtil.clear(batchBuffer);
+            // Remember entries to succeed from previous process
+            previousEntries.addAll(entries);
+            entries.clear();
 
             while (!queue.isEmpty() && entries.size() <= maxGather)
             {
@@ -233,10 +227,20 @@ public class FrameFlusher extends IteratingCallback
                 BufferUtil.toDetailString(batchBuffer),
                 entries);
 
+        // succeed previous entries
+        for (Entry entry : previousEntries)
+        {
+            if (entry.frame.getOpCode() == OpCode.CLOSE)
+                endPoint.shutdownOutput();
+            notifyCallbackSuccess(entry.callback);
+            entry.release();
+        }
+        previousEntries.clear();
+
+        // If we did not get any new entries go to IDLE state
         if (entries.isEmpty())
         {
             releaseAggregate();
-            succeedEntries();
             return Action.IDLE;
         }
 
@@ -272,27 +276,47 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
-    @Override
-    public void succeeded()
+    public void timeoutExpired()
     {
-        succeedEntries();
-        super.succeeded();
-    }
-
-    private boolean succeedEntries()
-    {
-        // todo: synchronize?
-        boolean hadEntries = false;
-        for (Entry entry : entries)
+        boolean failed = false;
+        synchronized (FrameFlusher.this)
         {
-            hadEntries = true;
-            if (entry.frame.getOpCode() == OpCode.CLOSE)
-                endPoint.shutdownOutput();
-            notifyCallbackSuccess(entry.callback);
-            entry.release();
+            if (closedCause != null)
+                return;
+
+            long time = System.currentTimeMillis();
+            long nextTimeout = -1;
+
+            Iterator<Entry> iterator = TypeUtil.concat(entries.iterator(), queue.iterator());
+
+            while (iterator.hasNext())
+            {
+                Entry entry = iterator.next();
+                long timeSinceCreation = time - entry.getTimeOfCreation();
+
+                if (timeSinceCreation >= idleTimeout)
+                {
+                    LOG.warn("FrameFlusher write timeout on entry: {}", entry);
+                    failed = true;
+                    canEnqueue = false;
+                    closedCause = new WebSocketWriteTimeoutException("FrameFlusher Write Timeout");
+                    failedEntries.addAll(entries);
+                    failedEntries.addAll(queue);
+                    entries.clear();
+                    queue.clear();
+                    break;
+                }
+
+                if (timeSinceCreation > nextTimeout)
+                    nextTimeout = timeSinceCreation;
+            }
+
+            if (!failed && idleTimeout>0 && !entries.isEmpty())
+                timeoutScheduler.schedule(this::timeoutExpired, nextTimeout, TimeUnit.MILLISECONDS);
         }
-        entries.clear();
-        return hadEntries;
+
+        if (failed)
+            this.iterate();
     }
 
     @Override
@@ -302,8 +326,11 @@ public class FrameFlusher extends IteratingCallback
         releaseAggregate();
         synchronized (this)
         {
-            entries.addAll(queue);
+            failedEntries.addAll(queue);
             queue.clear();
+
+            failedEntries.addAll(entries);
+            entries.clear();
 
             if (closedCause == null)
                 closedCause = failure;
@@ -311,13 +338,14 @@ public class FrameFlusher extends IteratingCallback
                 closedCause.addSuppressed(failure);
         }
 
-        for (Entry entry : entries)
+        for (Entry entry : failedEntries)
         {
             notifyCallbackFailure(entry.callback, failure);
             entry.release();
         }
-        entries.clear();
-        endPoint.close(failure);
+
+        failedEntries.clear();
+        endPoint.close(closedCause);
     }
 
     private void releaseAggregate()
@@ -430,58 +458,6 @@ public class FrameFlusher extends IteratingCallback
         public String toString()
         {
             return String.format("%s{%s,%s,%b}", getClass().getSimpleName(), frame, callback, batch);
-        }
-    }
-
-    public class Timeout extends CyclicTimeout
-    {
-        /**
-         * @param scheduler A scheduler used to schedule wakeups
-         */
-        public Timeout(Scheduler scheduler)
-        {
-            super(scheduler);
-        }
-
-        @Override
-        public void onTimeoutExpired()
-        {
-            LOG.warn("idle timeout expired");
-
-            synchronized (FrameFlusher.this)
-            {
-                long time = System.currentTimeMillis();
-                long nextTimeout = -1;
-
-                for (Entry e : entries)
-                {
-                    long timeSinceCreation = time - e.getTimeOfCreation();
-
-                    if (timeSinceCreation > idleTimeout)
-                    {
-                        LOG.warn("FrameFlusher write timeout on entry: {}", e);
-                        // TODO: can we fail more gracefully, this exception must be tested in processConnectionError to avoid trying to write again
-                        // TODO: is failed() good enough, what happens if the iterating callback goes into state
-                        failed(new WebSocketWriteTimeoutException("FrameFlusher Write Timeout"));
-                        return;
-                    }
-
-                    if (timeSinceCreation > nextTimeout)
-                        nextTimeout = timeSinceCreation;
-                }
-
-                if (!entries.isEmpty())
-                    schedule(nextTimeout, TimeUnit.MILLISECONDS);
-            }
-        }
-
-        public void schedule(Entry entry)
-        {
-            synchronized (FrameFlusher.this)
-            {
-                if (entries.isEmpty())
-                    schedule(idleTimeout, TimeUnit.MILLISECONDS);
-            }
         }
     }
 }

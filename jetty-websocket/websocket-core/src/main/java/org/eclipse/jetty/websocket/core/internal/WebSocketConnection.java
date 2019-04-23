@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
@@ -79,10 +80,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     public WebSocketConnection(EndPoint endp,
         Executor executor,
+        Scheduler scheduler,
         ByteBufferPool bufferPool,
         WebSocketChannel channel)
     {
-        this(endp, executor, bufferPool, channel, true);
+        this(endp, executor, scheduler, bufferPool, channel, true);
     }
 
     /**
@@ -94,6 +96,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     public WebSocketConnection(EndPoint endp,
         Executor executor,
+        Scheduler scheduler,
         ByteBufferPool bufferPool,
         WebSocketChannel channel,
         boolean validating)
@@ -122,7 +125,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         };
 
-        this.flusher = new Flusher(channel.getOutputBufferSize(), generator, endp);
+        this.flusher = new Flusher(scheduler, channel.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(channel.getInputBufferSize());
 
         this.random = this.channel.getBehavior() == Behavior.CLIENT?new Random(endp.hashCode()):null;
@@ -596,9 +599,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private class Flusher extends FrameFlusher
     {
-        private Flusher(int bufferSize, Generator generator, EndPoint endpoint)
+        private Flusher(Scheduler scheduler, int bufferSize, Generator generator, EndPoint endpoint)
         {
-            super(bufferPool, generator, endpoint, bufferSize, 8);
+            super(bufferPool, scheduler, generator, endpoint, bufferSize, 8);
         }
 
         @Override
