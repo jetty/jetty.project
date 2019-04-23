@@ -546,6 +546,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         setInitialBuffer(prefilled);
     }
 
+    public FrameFlusher getFrameFlusher()
+    {
+        return flusher;
+    }
+
     @Override
     public long getMessagesIn()
     {

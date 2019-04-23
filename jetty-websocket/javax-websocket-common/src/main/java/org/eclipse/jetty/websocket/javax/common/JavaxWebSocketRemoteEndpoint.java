@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.SendHandler;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -30,13 +38,6 @@ import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
-
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.SendHandler;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
 
 public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint, OutgoingFrames
 {
@@ -94,6 +95,16 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     public void setIdleTimeout(long ms)
     {
         channel.setIdleTimeout(Duration.ofMillis(ms));
+    }
+
+    public long getWriteIdleTimeout()
+    {
+        return channel.getWriteIdleTimeout().toMillis();
+    }
+
+    public void setWriteIdleTimeout(long ms)
+    {
+        channel.setWriteIdleTimeout(Duration.ofMillis(ms));
     }
 
     @Override

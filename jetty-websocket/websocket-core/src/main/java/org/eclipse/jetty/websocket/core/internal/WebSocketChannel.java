@@ -51,6 +51,7 @@ import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
@@ -78,6 +79,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout;
+    private Duration idleWriteTimeout;
 
     public WebSocketChannel(FrameHandler handler,
         Behavior behavior,
@@ -238,6 +240,24 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             getConnection().getEndPoint().setIdleTimeout(timeout.toMillis());
     }
 
+    @Override
+    public Duration getWriteIdleTimeout()
+    {
+        if (getConnection() == null)
+            return idleWriteTimeout;
+        else
+            return Duration.ofMillis(getConnection().getFrameFlusher().getIdleTimeout());
+    }
+
+    @Override
+    public void setWriteIdleTimeout(Duration timeout)
+    {
+        if (getConnection() == null)
+            idleWriteTimeout = timeout;
+        else
+            getConnection().getFrameFlusher().setIdleTimeout(timeout.toMillis());
+    }
+
     public SocketAddress getLocalAddress()
     {
         return getConnection().getEndPoint().getLocalAddress();
@@ -262,10 +282,17 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         this.connection = connection;
+
         if (idleTimeout != null)
         {
             getConnection().getEndPoint().setIdleTimeout(idleTimeout.toMillis());
             idleTimeout = null;
+        }
+
+        if (idleWriteTimeout != null)
+        {
+            getConnection().getFrameFlusher().setIdleTimeout(idleWriteTimeout.toMillis());
+            idleWriteTimeout = null;
         }
     }
 
@@ -382,6 +409,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             code = ((CloseException)cause).getStatusCode();
         else if (cause instanceof Utf8Appendable.NotUtf8Exception)
             code = CloseStatus.BAD_PAYLOAD;
+        else if (cause instanceof WebSocketWriteTimeoutException)
+            code = CloseStatus.NO_CLOSE;
         else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
             code = CloseStatus.SHUTDOWN;
         else
