@@ -141,12 +141,16 @@ public interface FrameHandler extends IncomingFrames
          */
         Duration getIdleTimeout();
 
+        Duration getWriteIdleTimeout();
+
         /**
          * Set the Idle Timeout.
          *
          * @param timeout the timeout duration
          */
         void setIdleTimeout(Duration timeout);
+
+        void setWriteIdleTimeout(Duration timeout);
 
         boolean isAutoFragment();
 
@@ -392,8 +396,20 @@ public interface FrameHandler extends IncomingFrames
             }
 
             @Override
+            public Duration getWriteIdleTimeout()
+            {
+                return Duration.ZERO;
+            }
+
+            @Override
             public void setIdleTimeout(Duration timeout)
             {
+            }
+
+            @Override
+            public void setWriteIdleTimeout(Duration timeout)
+            {
+
             }
 
             @Override
@@ -497,6 +513,7 @@ public interface FrameHandler extends IncomingFrames
     class ConfigurationCustomizer implements Customizer, Configuration
     {
         private Duration timeout;
+        private Duration writeTimeout;
         private Boolean autoFragment;
         private Long maxFrameSize;
         private Integer outputBufferSize;
@@ -511,9 +528,21 @@ public interface FrameHandler extends IncomingFrames
         }
 
         @Override
+        public Duration getWriteIdleTimeout()
+        {
+            return timeout==null ? Duration.ZERO : timeout;
+        }
+
+        @Override
         public void setIdleTimeout(Duration timeout)
         {
             this.timeout = timeout;
+        }
+
+        @Override
+        public void setWriteIdleTimeout(Duration timeout)
+        {
+            this.writeTimeout = timeout;
         }
 
         @Override
@@ -593,6 +622,8 @@ public interface FrameHandler extends IncomingFrames
         {
             if (timeout!=null)
                 session.setIdleTimeout(timeout);
+            if (writeTimeout!=null)
+                session.setWriteIdleTimeout(timeout);
             if (autoFragment!=null)
                 session.setAutoFragment(autoFragment);
             if (maxFrameSize!=null)

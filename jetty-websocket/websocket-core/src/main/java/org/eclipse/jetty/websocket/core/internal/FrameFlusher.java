@@ -25,17 +25,22 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
 
 public class FrameFlusher extends IteratingCallback
 {
@@ -51,11 +56,13 @@ public class FrameFlusher extends IteratingCallback
     private final Deque<Entry> queue = new ArrayDeque<>();
     private final List<Entry> entries;
     private final List<ByteBuffer> buffers;
+    private final Timeout timeout;
     private ByteBuffer batchBuffer = null;
     private boolean canEnqueue = true;
     private Throwable closedCause;
     private LongAdder messagesOut = new LongAdder();
     private LongAdder bytesOut = new LongAdder();
+    private long idleTimeout = 0;
 
     public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
@@ -66,8 +73,18 @@ public class FrameFlusher extends IteratingCallback
         this.maxGather = maxGather;
         this.entries = new ArrayList<>(maxGather);
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
-    }
 
+        ScheduledExecutorScheduler executor = new ScheduledExecutorScheduler();
+        try
+        {
+            executor.start();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        this.timeout = new Timeout(executor);
+    }
 
     /**
      * Enqueue a Frame to be written to the endpoint.
@@ -92,18 +109,15 @@ public class FrameFlusher extends IteratingCallback
                 if (dead == null)
                 {
                     if (opCode == OpCode.PING || opCode == OpCode.PONG)
-                    {
                         queue.offerFirst(entry);
-                    }
                     else
-                    {
                         queue.offerLast(entry);
-                    }
+
+                    if (idleTimeout > 0)
+                        timeout.schedule(entry);
 
                     if (opCode == OpCode.CLOSE)
-                    {
                         this.canEnqueue = false;
-                    }
                 }
             }
             else
@@ -115,9 +129,8 @@ public class FrameFlusher extends IteratingCallback
         if (dead == null)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("Enqueued {} to {}", entry, this);
-            }
+
             return true;
         }
 
@@ -268,6 +281,7 @@ public class FrameFlusher extends IteratingCallback
 
     private boolean succeedEntries()
     {
+        // todo: synchronize?
         boolean hadEntries = false;
         for (Entry entry : entries)
         {
@@ -347,6 +361,16 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
     public long getMessagesOut()
     {
         return messagesOut.longValue();
@@ -369,6 +393,7 @@ public class FrameFlusher extends IteratingCallback
     private class Entry extends FrameEntry
     {
         private ByteBuffer headerBuffer;
+        private long timeOfCreation = System.currentTimeMillis();
 
         private Entry(Frame frame, Callback callback, boolean batch)
         {
@@ -396,10 +421,67 @@ public class FrameFlusher extends IteratingCallback
             }
         }
 
+        private long getTimeOfCreation()
+        {
+            return timeOfCreation;
+        }
+
         @Override
         public String toString()
         {
             return String.format("%s{%s,%s,%b}", getClass().getSimpleName(), frame, callback, batch);
+        }
+    }
+
+    public class Timeout extends CyclicTimeout
+    {
+        /**
+         * @param scheduler A scheduler used to schedule wakeups
+         */
+        public Timeout(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        public void onTimeoutExpired()
+        {
+            LOG.warn("idle timeout expired");
+
+            synchronized (FrameFlusher.this)
+            {
+                long time = System.currentTimeMillis();
+                long nextTimeout = -1;
+
+                for (Entry e : entries)
+                {
+                    long timeSinceCreation = time - e.getTimeOfCreation();
+
+                    if (timeSinceCreation > idleTimeout)
+                    {
+                        LOG.warn("FrameFlusher write timeout on entry: {}", e);
+                        // TODO: can we fail more gracefully, this exception must be tested in processConnectionError to avoid trying to write again
+                        // TODO: is failed() good enough, what happens if the iterating callback goes into state
+                        failed(new WebSocketWriteTimeoutException("FrameFlusher Write Timeout"));
+                        return;
+                    }
+
+                    if (timeSinceCreation > nextTimeout)
+                        nextTimeout = timeSinceCreation;
+                }
+
+                if (!entries.isEmpty())
+                    schedule(nextTimeout, TimeUnit.MILLISECONDS);
+            }
+        }
+
+        public void schedule(Entry entry)
+        {
+            synchronized (FrameFlusher.this)
+            {
+                if (entries.isEmpty())
+                    schedule(idleTimeout, TimeUnit.MILLISECONDS);
+            }
         }
     }
 }
