@@ -116,6 +116,8 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         //to find zombie sessions.
     }
 
+    @Test
+    @Override
     public void testStoreObjectAttributes() throws Exception
     {
         //This test will not work for hazelcast because we can't enable
