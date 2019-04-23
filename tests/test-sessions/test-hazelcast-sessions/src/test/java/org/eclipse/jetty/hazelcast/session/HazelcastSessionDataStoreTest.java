@@ -115,8 +115,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         //the serialization/deserialization that hazelcast performs when querying
         //to find zombie sessions.
     }
-
-    @Test
+    
     @Override
     public void testStoreObjectAttributes() throws Exception
     {
