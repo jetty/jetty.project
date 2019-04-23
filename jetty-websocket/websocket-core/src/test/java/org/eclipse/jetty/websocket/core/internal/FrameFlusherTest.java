@@ -37,11 +37,15 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -53,7 +57,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FrameFlusherTest
 {
-    public ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private Scheduler scheduler;
+
+    @BeforeEach
+    public void start() throws Exception
+    {
+        scheduler = new ScheduledExecutorScheduler();
+        scheduler.start();
+    }
+
+    @AfterEach
+    public void stop() throws Exception
+    {
+        scheduler.stop();
+    }
 
     /**
      * Ensure post-close frames have their associated callbacks properly notified.
@@ -65,7 +83,7 @@ public class FrameFlusherTest
         CapturingEndPoint endPoint = new CapturingEndPoint(bufferPool);
         int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
         int maxGather = 1;
-        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, generator, endPoint, bufferSize, maxGather);
+        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather);
 
         Frame closeFrame = new Frame(OpCode.CLOSE).setPayload(CloseStatus.asPayloadBuffer(CloseStatus.MESSAGE_TOO_LARGE, "Message be to big"));
         Frame textFrame = new Frame(OpCode.TEXT).setPayload("Hello").setFin(true);
@@ -96,7 +114,7 @@ public class FrameFlusherTest
         CapturingEndPoint endPoint = new CapturingEndPoint(bufferPool);
         int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
         int maxGather = 8;
-        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, generator, endPoint, bufferSize, maxGather);
+        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather);
 
         int largeMessageSize = 60000;
         byte[] buf = new byte[largeMessageSize];
@@ -147,10 +165,9 @@ public class FrameFlusherTest
         int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
         int maxGather = 8;
 
-
         CountDownLatch flusherFailure = new CountDownLatch(1);
         AtomicReference<Throwable> error = new AtomicReference<>();
-        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, generator, endPoint, bufferSize, maxGather)
+        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather)
         {
             @Override
             public void onCompleteFailure(Throwable failure)
@@ -161,7 +178,7 @@ public class FrameFlusherTest
             }
         };
 
-        frameFlusher.setIdleTimeout(150);
+        frameFlusher.setIdleTimeout(100);
         endPoint.setBlockTime(200);
 
         Frame frame = new Frame(OpCode.TEXT).setPayload("message").setFin(true);

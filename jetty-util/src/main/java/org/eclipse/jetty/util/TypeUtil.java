@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -33,6 +32,7 @@ import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -731,5 +731,23 @@ public class TypeUtil
             LOG.debug(e);
         }
         return null;
+    }
+
+    public static <T> Iterator<T> concat(Iterator<T> i1, Iterator<T> i2)
+    {
+        return new Iterator<>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return i1.hasNext() || i2.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                return i1.hasNext() ? i1.next() : i2.next();
+            }
+        };
     }
 }

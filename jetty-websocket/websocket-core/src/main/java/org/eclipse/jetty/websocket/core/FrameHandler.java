@@ -409,7 +409,6 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void setWriteIdleTimeout(Duration timeout)
             {
-
             }
 
             @Override

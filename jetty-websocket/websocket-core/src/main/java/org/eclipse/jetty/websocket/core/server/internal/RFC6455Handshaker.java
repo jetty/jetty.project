@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -201,7 +202,7 @@ public final class RFC6455Handshaker implements Handshaker
             LOG.debug("channel {}", channel);
 
         // Create a connection
-        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getByteBufferPool(), channel);
+        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), channel);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)
@@ -241,9 +242,9 @@ public final class RFC6455Handshaker implements Handshaker
         return new WebSocketChannel(handler, Behavior.SERVER, negotiated);
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
     {
-        return new WebSocketConnection(endPoint, executor, byteBufferPool, wsChannel);
+        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, wsChannel);
     }
 
     private boolean getSendServerVersion(Connector connector)
