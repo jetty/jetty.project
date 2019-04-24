@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -368,10 +369,99 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         });
     }
 
+    @Test
+    public void testDump() throws Exception
+    {
+        QueuedThreadPool pool = new QueuedThreadPool(4, 3);
+
+        String dump = pool.dump();
+        // TODO use hamcrest 2.0 regex matcher
+        assertThat(dump,containsString("STOPPED"));
+        assertThat(dump,containsString(",3<=0<=4,i=0,r=-1,q=0"));
+        assertThat(dump,containsString("[NO_TRY]"));
+
+        pool.setReservedThreads(2);
+        dump = pool.dump();
+        assertThat(dump,containsString("STOPPED"));
+        assertThat(dump,containsString(",3<=0<=4,i=0,r=2,q=0"));
+        assertThat(dump,containsString("[NO_TRY]"));
+
+        pool.start();
+        dump = pool.dump();
+        assertThat(count(dump," - STARTED"),is(2));
+        assertThat(dump,containsString(",3<=3<=4,i=3,r=2,q=0"));
+        assertThat(dump,containsString("[ReservedThreadExecutor@"));
+        assertThat(count(dump," IDLE "),is(3));
+        assertThat(count(dump," RESERVED "),is(0));
+
+
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch waiting = new CountDownLatch(1);
+        pool.execute(()->
+        {
+            try
+            {
+                started.countDown();
+                waiting.await();
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        });
+        started.await();
+
+        dump = pool.dump();
+        assertThat(count(dump," - STARTED"),is(2));
+        assertThat(dump,containsString(",3<=3<=4,i=2,r=2,q=0"));
+        assertThat(dump,containsString("[ReservedThreadExecutor@"));
+        assertThat(count(dump," IDLE "),is(2));
+        assertThat(count(dump," WAITING "),is(1));
+        assertThat(count(dump," RESERVED "),is(0));
+        assertThat(count(dump,"QueuedThreadPoolTest.lambda$testDump$"),is(0));
+
+        pool.setDetailedDump(true);
+        dump = pool.dump();
+        assertThat(count(dump," - STARTED"),is(2));
+        assertThat(dump,containsString(",3<=3<=4,i=2,r=2,q=0"));
+        assertThat(dump,containsString("s=0/2"));
+        assertThat(dump,containsString("[ReservedThreadExecutor@"));
+        assertThat(count(dump," IDLE "),is(2));
+        assertThat(count(dump," WAITING "),is(1));
+        assertThat(count(dump," RESERVED "),is(0));
+        assertThat(count(dump,"QueuedThreadPoolTest.lambda$testDump$"),is(1));
+
+        assertFalse(pool.tryExecute(()->{}));
+        while(pool.getIdleThreads()==2)
+            Thread.sleep(10);
+
+        dump = pool.dump();
+        assertThat(count(dump," - STARTED"),is(2));
+        assertThat(dump,containsString(",3<=3<=4,i=1,r=2,q=0"));
+        assertThat(dump,containsString("s=1/2"));
+        assertThat(dump,containsString("[ReservedThreadExecutor@"));
+        assertThat(count(dump," IDLE "),is(1));
+        assertThat(count(dump," WAITING "),is(1));
+        assertThat(count(dump," RESERVED "),is(1));
+        assertThat(count(dump,"QueuedThreadPoolTest.lambda$testDump$"),is(1));
+    }
+
+    private int count(String s, String p)
+    {
+        int c = 0;
+        int i = s.indexOf(p);
+        while (i>=0)
+        {
+            c++;
+            i = s.indexOf(p, i+1);
+        }
+        return c;
+    }
+
     @Override
     protected SizedThreadPool newPool(int max)
     {
         return new QueuedThreadPool(max);
     }
-    
+
 }
