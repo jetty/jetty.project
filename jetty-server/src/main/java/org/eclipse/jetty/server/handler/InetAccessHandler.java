@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -57,7 +55,7 @@ public class InetAccessHandler extends HandlerWrapper
     private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
 
     private final IncludeExcludeSet<String, InetAddress> _addrs = new IncludeExcludeSet<>(InetAddressSet.class);
-    private final IncludeExclude<String> _connectorNames = new IncludeExclude<>();
+    private final IncludeExclude<String> _names = new IncludeExclude<>();
 
     /**
      * Clears all the includes, excludes, included connector names and excluded
@@ -66,7 +64,7 @@ public class InetAccessHandler extends HandlerWrapper
     public void clear()
     {
         _addrs.clear();
-        _connectorNames.clear();
+        _names.clear();
     }
 
     /**
@@ -120,7 +118,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void includeConnectorName(String name)
     {
-        _connectorNames.include(name);
+        _names.include(name);
     }
 
     /**
@@ -130,7 +128,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void excludeConnectorName(String name)
     {
-        _connectorNames.exclude(name);
+        _names.exclude(name);
     }
 
     /**
@@ -140,7 +138,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void includeConnectorNames(String... names)
     {
-        _connectorNames.include(names);
+        _names.include(names);
     }
 
     /**
@@ -150,7 +148,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void excludeConnectorNames(String... names)
     {
-        _connectorNames.exclude(names);
+        _names.exclude(names);
     }
 
     /**
@@ -183,37 +181,21 @@ public class InetAccessHandler extends HandlerWrapper
     /**
      * Checks if specified address and request are allowed by current InetAddress rules.
      *
-     * @param address     the inetAddress to check
+     * @param addr     the inetAddress to check
      * @param baseRequest the base request to check
      * @param request     the HttpServletRequest request to check
      * @return true if inetAddress and request are allowed
      */
-    protected boolean isAllowed(InetAddress address, Request baseRequest, HttpServletRequest request)
+    protected boolean isAllowed(InetAddress addr, Request baseRequest, HttpServletRequest request)
     {
-        String connectorName = baseRequest.getHttpChannel().getConnector().getName();
-        boolean allowed = !isMatchingConnectorName(connectorName) || _addrs.test(address);
+        String name = baseRequest.getHttpChannel().getConnector().getName();
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} {} for {}", this, allowed ? "allowed" : "denied", address, request);
-        return allowed;
-    }
-
-    /**
-     * Checks if this is a connector name that applies to this access handler.
-     *
-     * @return true if connector name is applicable given connectorNames property
-     */
-    protected boolean isMatchingConnectorName(String connectorName)
-    {
-        boolean hasConnectorNames = !_connectorNames.getIncluded().isEmpty();
-        if (connectorName == null)
         {
-            return !hasConnectorNames;
+            Boolean allowedByName = _names.isIncludedAndNotExcluded(name);
+            Boolean allowedByAddr = _addrs.isIncludedAndNotExcluded(addr);
+            LOG.debug("{} allowedByName={} allowedByAddr={} for {}/{}", this, allowedByName, allowedByAddr, addr, request);
         }
-        if (hasConnectorNames && !_connectorNames.getIncluded().contains(connectorName))
-        {
-            return false;
-        }
-        return !_connectorNames.getExcluded().contains(connectorName);
+        return IncludeExclude.and(_addrs, addr, _names, baseRequest.getHttpChannel().getConnector()::getName);
     }
 
     @Override
@@ -222,7 +204,7 @@ public class InetAccessHandler extends HandlerWrapper
         dumpObjects(out, indent,
                 Dumpable.labelled("included", _addrs.getIncluded()),
                 Dumpable.labelled("excluded", _addrs.getExcluded()),
-                Dumpable.labelled("includedConnectorNames", _connectorNames.getIncluded()),
-                Dumpable.labelled("excludedConnectorNames", _connectorNames.getExcluded()));
+                Dumpable.labelled("includedConnectorNames", _names.getIncluded()),
+                Dumpable.labelled("excludedConnectorNames", _names.getExcluded()));
     }
 }
