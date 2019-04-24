@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.16-SNAPSHOT</version>
+  <version>9.4.17-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -1808,6 +1808,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_202</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u211</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_211</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u212</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_212</value>
         </property>
       </activation>
       <properties>

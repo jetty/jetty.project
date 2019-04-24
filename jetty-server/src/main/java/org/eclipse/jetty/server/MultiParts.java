@@ -133,7 +133,10 @@ public interface MultiParts extends Closeable
 
                 for(NonCompliance nc : nonComplianceWarnings)
                     violations.add(nc.name()+": "+nc.getURL());
+                
+                System.out.println(violations);
             }
+            
         }
 
         @Override

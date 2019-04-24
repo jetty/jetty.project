@@ -1,0 +1,5 @@
+<infinispan>
+   <cache-container default-cache="jetty-sessions">
+      <local-cache name="jetty-sessions"/>
+   </cache-container>
+</infinispan>

@@ -21,6 +21,8 @@ package org.eclipse.jetty.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -51,12 +53,14 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
+import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
@@ -80,6 +84,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -88,6 +93,9 @@ public class DefaultServletTest
     public WorkDir workDir;
 
     public Path docRoot;
+
+    // The name of the odd-jar used for testing "jar:file://" based resource access.
+    private static final String ODD_JAR = "jar-resource-odd.jar";
 
     private Server server;
     private LocalConnector connector;
@@ -104,10 +112,17 @@ public class DefaultServletTest
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
+        File extraJarResources = MavenTestingUtils.getTestResourceFile(ODD_JAR);
+        URL urls[] = new URL[] { extraJarResources.toURI().toURL() };
+
+        ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
+        URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
+
         context = new ServletContextHandler();
         context.setBaseResource(new PathResource(docRoot));
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
+        context.setClassLoader(extraClassLoader);
 
         server.setHandler(context);
         server.addConnector(connector);
@@ -208,6 +223,136 @@ public class DefaultServletTest
 
         String body = response.getContent();
         assertThat(body, containsString("f??r"));
+    }
+
+    /**
+     * A regression on windows allowed the directory listing show
+     * the fully qualified paths within the directory listing.
+     * This test ensures that this behavior will not arise again.
+     */
+    @Test
+    public void testListingFilenamesOnly() throws Exception
+    {
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        /* create some content in the docroot */
+        FS.ensureDirExists(docRoot);
+        Path one = docRoot.resolve("one");
+        FS.ensureDirExists(one);
+        Path deep = one.resolve("deep");
+        FS.ensureDirExists(deep);
+        FS.touch(deep.resolve("foo"));
+        FS.ensureDirExists(docRoot.resolve("two"));
+        FS.ensureDirExists(docRoot.resolve("three"));
+
+        String resBasePath = docRoot.toAbsolutePath().toString();
+        defholder.setInitParameter("resourceBase", resBasePath);
+
+        StringBuffer req1 = new StringBuffer();
+        req1.append("GET /context/one/deep/ HTTP/1.0\n");
+        req1.append("\n");
+
+        String rawResponse = connector.getResponse(req1.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String body = response.getContent();
+        assertThat(body, containsString("/foo"));
+        assertThat(body, not(containsString(resBasePath)));
+    }
+
+    /**
+     * A regression on windows allowed the directory listing show
+     * the fully qualified paths within the directory listing.
+     * This test ensures that this behavior will not arise again.
+     */
+    @Test
+    public void testListingFilenamesOnly_UrlResource() throws Exception
+    {
+        URL extraResource = context.getClassLoader().getResource("rez/one");
+        assertNotNull(extraResource, "Must have extra jar resource in classloader");
+
+        String extraResourceBaseString = extraResource.toURI().toASCIIString();
+        extraResourceBaseString = extraResourceBaseString.substring(0, extraResourceBaseString.length() - "/one".length());
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/extra/*");
+        defholder.setInitParameter("resourceBase", extraResourceBaseString);
+        defholder.setInitParameter("pathInfoOnly", "true");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        StringBuffer req1;
+        String rawResponse;
+        HttpTester.Response response;
+        String body;
+
+        // Test that GET works first.
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/one HTTP/1.0\n");
+        req1.append("\n");
+
+        rawResponse = connector.getResponse(req1.toString());
+        response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        body = response.getContent();
+        assertThat(body, containsString("is this the one?"));
+
+        // Typical directory listing of location in jar:file:// URL
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/deep/ HTTP/1.0\r\n");
+        req1.append("\r\n");
+
+        rawResponse = connector.getResponse(req1.toString());
+        response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        body = response.getContent();
+        assertThat(body, containsString("/xxx"));
+        assertThat(body, containsString("/yyy"));
+        assertThat(body, containsString("/zzz"));
+
+        assertThat(body, not(containsString(extraResourceBaseString)));
+        assertThat(body, not(containsString(ODD_JAR)));
+
+        // Get deep resource
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/deep/yyy HTTP/1.0\r\n");
+        req1.append("\r\n");
+
+        rawResponse = connector.getResponse(req1.toString());
+        response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        body = response.getContent();
+        assertThat(body, containsString("a file named yyy"));
+
+        // Convoluted directory listing of location in jar:file:// URL
+        // This exists to test proper encoding output
+        req1 = new StringBuffer();
+        req1.append("GET /context/extra/oddities/ HTTP/1.0\r\n");
+        req1.append("\r\n");
+
+        rawResponse = connector.getResponse(req1.toString());
+        response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        body = response.getContent();
+        assertThat(body, containsString(">#hashcode&nbsp;<")); // text on page
+        assertThat(body, containsString("/oddities/%23hashcode")); // generated link
+
+        assertThat(body, containsString(">other%2fkind%2Fof%2fslash&nbsp;<")); // text on page
+        assertThat(body, containsString("/oddities/other%252fkind%252Fof%252fslash")); // generated link
+
+        assertThat(body, containsString(">a file with a space&nbsp;<")); // text on page
+        assertThat(body, containsString("/oddities/a%20file%20with%20a%20space")); // generated link
+
+        assertThat(body, not(containsString(extraResourceBaseString)));
+        assertThat(body, not(containsString(ODD_JAR)));
     }
 
     @Test
@@ -1743,11 +1888,13 @@ public class DefaultServletTest
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
 
-        String rawResponse = connector.getResponse("GET /context/%0a HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n");
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        System.out.println(response + "\n" + response.getContent());
-        assertThat("Response.status", response.getStatus(), anyOf(is(HttpServletResponse.SC_NOT_FOUND), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)));
-        assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
+        try (StacklessLogging ignore = new StacklessLogging(ResourceService.class))
+        {
+            String rawResponse = connector.getResponse("GET /context/%0a HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n");
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat("Response.status", response.getStatus(), anyOf(is(HttpServletResponse.SC_NOT_FOUND), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)));
+            assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
+        }
     }
 
     @ParameterizedTest

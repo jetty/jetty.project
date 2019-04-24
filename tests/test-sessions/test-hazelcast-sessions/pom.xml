@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.16-SNAPSHOT</version>
+    <version>9.4.17-SNAPSHOT</version>
   </parent>
   <artifactId>test-hazelcast-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Hazelcast</name>
@@ -53,6 +53,8 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <forkedProcessExitTimeoutInSeconds>45</forkedProcessExitTimeoutInSeconds>
+          <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
           <systemPropertyVariables>
             <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
           </systemPropertyVariables>
