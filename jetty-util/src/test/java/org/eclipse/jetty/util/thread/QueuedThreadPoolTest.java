@@ -168,6 +168,39 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     }
 
     @Test
+    public void testExecuteNoIdleThreads() throws Exception
+    {
+        QueuedThreadPool tp= new QueuedThreadPool();
+        tp.setDetailedDump(true);
+        tp.setMinThreads(3);
+        tp.setMaxThreads(10);
+        tp.setIdleTimeout(500);
+
+        tp.start();
+
+        RunningJob job1 = new RunningJob();
+        tp.execute(job1);
+
+        RunningJob job2 = new RunningJob();
+        tp.execute(job2);
+
+        RunningJob job3 = new RunningJob();
+        tp.execute(job3);
+
+        // make sure these jobs have started running
+        assertTrue(job1._run.await(5, TimeUnit.SECONDS));
+        assertTrue(job2._run.await(5, TimeUnit.SECONDS));
+        assertTrue(job3._run.await(5, TimeUnit.SECONDS));
+
+        waitForThreads(tp, 4);
+        waitForThreads(tp, 3);
+
+        RunningJob job4 = new RunningJob();
+        tp.execute(job4);
+        assertTrue(job4._run.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testLifeCycleStop() throws Exception
     {
         QueuedThreadPool tp= new QueuedThreadPool();

@@ -474,7 +474,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         else
         {
             // Make sure there is at least one thread executing the job.
-            if (getThreads() == 0)
+            if (getQueueSize() > 0 && getIdleThreads() == 0)
                 startThreads(1);
         }
     }
@@ -781,8 +781,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         }
 
                         job = idleJobPoll();
-                        if (job==SHRINK)
+                        if (job == SHRINK)
+                        {
+                            LOG.warn("shrinking {}", this);
                             break;
+                        }
                     }
 
                     // run job
