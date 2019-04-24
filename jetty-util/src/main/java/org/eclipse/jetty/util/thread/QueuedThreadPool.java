@@ -783,7 +783,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         job = idleJobPoll();
                         if (job == SHRINK)
                         {
-                            LOG.warn("shrinking {}", this);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("shrinking {}", this);
                             break;
                         }
                     }
@@ -829,7 +830,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
                 removeThread(Thread.currentThread());
 
-                if (_threadsStarted.decrementAndGet() < getMinThreads())
+                int threads = _threadsStarted.decrementAndGet();
+                // We should start a new thread if threads are now less than min threads or we have queued jobs
+                if (threads < getMinThreads() || getQueueSize()>0)
                     startThreads(1);
             }
         }
