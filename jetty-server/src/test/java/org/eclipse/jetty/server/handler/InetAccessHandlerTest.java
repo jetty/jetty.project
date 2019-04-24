@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -50,6 +47,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InetAccessHandlerTest
 {
@@ -91,7 +91,7 @@ public class InetAccessHandlerTest
     /* ------------------------------------------------------------ */
     @ParameterizedTest
     @MethodSource("data")
-    public void testHandler(String include, String exclude, String includeConnectors, String excludeConnectors, String host, String uri, String code)
+    public void testHandler(String include, String exclude, String includeConnectors, String excludeConnectors, String code)
             throws Exception
     {
         _handler.clear();
@@ -124,7 +124,7 @@ public class InetAccessHandlerTest
             }
         }
 
-        String request = "GET " + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
+        String request = "GET /path HTTP/1.1\n" + "Host: 127.0.0.1\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
         try
@@ -137,7 +137,7 @@ public class InetAccessHandlerTest
 
             Response response = readResponse(input);
             Object[] params = new Object[]
-            { "Request WBHUC", include, exclude, includeConnectors, excludeConnectors, host, uri, code, "Response", response.getCode() };
+            { "Request WBHUC", include, exclude, includeConnectors, excludeConnectors, code, "Response", response.getCode() };
             assertEquals(code, response.getCode(), Arrays.deepToString(params));
         } finally
         {
@@ -256,55 +256,34 @@ public class InetAccessHandlerTest
         Object[][] data = new Object[][]
         {
                 // Empty lists
-                { "", "", "", "", "127.0.0.1", "/", "200" },
-                { "", "", "", "", "127.0.0.1", "/dump/info", "200" },
+                { "", "", "", "", "200" },
 
                 // test simple filters
-                { "127.0.0.1", "", "", "", "127.0.0.1", "/", "200" },
-                { "127.0.0.1", "", "", "", "127.0.0.1", "/dump/info", "200" },
-                { "127.0.0.1-127.0.0.254", "", "", "", "127.0.0.1", "/", "200" },
-                { "127.0.0.1-127.0.0.254", "", "", "", "127.0.0.1", "/dump/info", "200" },
-                { "192.0.0.1", "", "", "", "127.0.0.1", "/", "403" },
-                { "192.0.0.1", "", "", "", "127.0.0.1", "/dump/info", "403" },
-                { "192.0.0.1-192.0.0.254", "", "", "", "127.0.0.1", "/", "403" },
-                { "192.0.0.1-192.0.0.254", "", "", "", "127.0.0.1", "/dump/info", "403" },
+                { "127.0.0.1", "", "", "", "200" },
+                { "127.0.0.1-127.0.0.254", "", "", "", "200" },
+                { "192.0.0.1", "", "", "", "403" },
+                { "192.0.0.1-192.0.0.254", "", "", "", "403" },
 
                 // test connector name filters
-                { "127.0.0.1", "", "http", "", "127.0.0.1", "/", "200" },
-                { "127.0.0.1", "", "http", "", "127.0.0.1", "/dump/info", "200" },
-                { "127.0.0.1-127.0.0.254", "", "http", "", "127.0.0.1", "/", "200" },
-                { "127.0.0.1-127.0.0.254", "", "http", "", "127.0.0.1", "/dump/info", "200" },
-                { "192.0.0.1", "", "http", "", "127.0.0.1", "/", "403" },
-                { "192.0.0.1", "", "http", "", "127.0.0.1", "/dump/info", "403" },
-                { "192.0.0.1-192.0.0.254", "", "http", "", "127.0.0.1", "/", "403" },
-                { "192.0.0.1-192.0.0.254", "", "http", "", "127.0.0.1", "/dump/info", "403" },
+                { "127.0.0.1", "", "http", "", "200" },
+                { "127.0.0.1-127.0.0.254", "", "http", "", "200" },
+                { "192.0.0.1", "", "http", "", "403" },
+                { "192.0.0.1-192.0.0.254", "", "http", "", "403" },
 
-                { "127.0.0.1", "", "nothttp", "", "127.0.0.1", "/", "200" },
-                { "127.0.0.1", "", "nothttp", "", "127.0.0.1", "/dump/info", "200" },
-                { "127.0.0.1-127.0.0.254", "", "nothttp", "", "127.0.0.1", "/", "200" },
-                { "127.0.0.1-127.0.0.254", "", "nothttp", "", "127.0.0.1", "/dump/info", "200" },
-                { "192.0.0.1", "", "nothttp", "", "127.0.0.1", "/", "200" },
-                { "192.0.0.1", "", "nothttp", "", "127.0.0.1", "/dump/info", "200" },
-                { "192.0.0.1-192.0.0.254", "", "nothttp", "", "127.0.0.1", "/", "200" },
-                { "192.0.0.1-192.0.0.254", "", "nothttp", "", "127.0.0.1", "/dump/info", "200" },
+                { "127.0.0.1", "", "nothttp", "", "403" },
+                { "127.0.0.1-127.0.0.254", "", "nothttp", "", "403" },
+                { "192.0.0.1", "", "nothttp", "", "403" },
+                { "192.0.0.1-192.0.0.254", "", "nothttp", "", "403" },
 
-                { "127.0.0.1", "", "", "http", "127.0.0.1", "/", "200" },
-                { "127.0.0.1", "", "", "http", "127.0.0.1", "/dump/info", "200" },
-                { "127.0.0.1-127.0.0.254", "", "", "http", "127.0.0.1", "/", "200" },
-                { "127.0.0.1-127.0.0.254", "", "", "http", "127.0.0.1", "/dump/info", "200" },
-                { "192.0.0.1", "", "", "http", "127.0.0.1", "/", "200" },
-                { "192.0.0.1", "", "", "http", "127.0.0.1", "/dump/info", "200" },
-                { "192.0.0.1-192.0.0.254", "", "", "http", "127.0.0.1", "/", "200" },
-                { "192.0.0.1-192.0.0.254", "", "", "http", "127.0.0.1", "/dump/info", "200" },
+                { "127.0.0.1", "", "", "http", "403" },
+                { "127.0.0.1-127.0.0.254", "", "", "http", "403" },
+                { "192.0.0.1", "", "", "http", "403" },
+                { "192.0.0.1-192.0.0.254", "", "", "http", "403" },
 
-                { "127.0.0.1", "", "", "nothttp", "127.0.0.1", "/", "200" },
-                { "127.0.0.1", "", "", "nothttp", "127.0.0.1", "/dump/info", "200" },
-                { "127.0.0.1-127.0.0.254", "", "", "nothttp", "127.0.0.1", "/", "200" },
-                { "127.0.0.1-127.0.0.254", "", "", "nothttp", "127.0.0.1", "/dump/info", "200" },
-                { "192.0.0.1", "", "", "nothttp", "127.0.0.1", "/", "403" },
-                { "192.0.0.1", "", "", "nothttp", "127.0.0.1", "/dump/info", "403" },
-                { "192.0.0.1-192.0.0.254", "", "", "nothttp", "127.0.0.1", "/", "403" },
-                { "192.0.0.1-192.0.0.254", "", "", "nothttp", "127.0.0.1", "/dump/info", "403" },
+                { "127.0.0.1", "", "", "nothttp", "200" },
+                { "127.0.0.1-127.0.0.254", "", "", "nothttp", "200" },
+                { "192.0.0.1", "", "", "nothttp", "403" },
+                { "192.0.0.1-192.0.0.254", "", "", "nothttp", "403" },
 
         };
         return Arrays.asList(data).stream().map(Arguments::of);

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 
 /** Utility class to maintain a set of inclusions and exclusions.
@@ -168,14 +169,14 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     
     /**
      * Test Included and not Excluded
-     * @param t The item to test
-     * @return Boolean.TRUE if t is included, Boolean.FALSE if t is excluded and null if neither
+     * @param item The item to test
+     * @return Boolean.TRUE if item is included, Boolean.FALSE if item is excluded and null if neither
      */
-    public Boolean isIncludedAndNotExcluded(P t)
+    public Boolean isIncludedAndNotExcluded(P item)
     {
-        if (_excludePredicate.test(t))
+        if (_excludePredicate.test(item))
             return Boolean.FALSE;
-        if (_includePredicate.test(t))
+        if (_includePredicate.test(item))
             return Boolean.TRUE;
         
         return null;
@@ -210,11 +211,72 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     @Override
     public String toString()
     {
-        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),_includes,_includePredicate,_excludes,_excludePredicate);
+        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),
+            _includes,
+            _includePredicate==_includes?"SELF":_includePredicate,
+            _excludes,
+            _excludePredicate==_excludes?"SELF":_excludePredicate);
     }
 
     public boolean isEmpty()
     {
         return _includes.isEmpty() && _excludes.isEmpty();
+    }
+
+
+    /**
+     * Combine the results of two {@link IncludeExcludeSet}s with an "and" operation.  The items must be
+     * included by xSet AND ySet, and excluded from neither.   If a sets inclusions are empty, then all items
+     * are considered to be included.
+     * @param xSet The set that param x is tested against
+     * @param x An item to test against xSet
+     * @param ySet The set that param y is tested against
+     * @param y A supplier of an item to test against ySet, that is executed only of x is not excluded from xSet
+     * @param <XS> The type of xSet items
+     * @param <XP> The type of xSet predicates
+     * @param <YS> The type of ySet items
+     * @param <YP> The type of ySet predicates
+     * @return True only if the items are included and not excluded from their respected sets
+     */
+    public static <XS, XP, YS, YP> boolean and(IncludeExcludeSet<XS, XP> xSet, XP x, IncludeExcludeSet<YS,YP> ySet, Supplier<YP> y)
+    {
+        Boolean xb = xSet.isIncludedAndNotExcluded(x);
+        if (Boolean.FALSE==xb || (xb==null && xSet.hasIncludes()))
+            return false;
+        Boolean yb = ySet.isIncludedAndNotExcluded(y.get());
+        if (Boolean.FALSE==yb || (yb==null && ySet.hasIncludes()))
+            return false;
+
+        return true;
+    }
+
+
+    /**
+     * Combine the results of two {@link IncludeExcludeSet}s with an "or" operation.  The items must be
+     * included by xSet OR ySet, and excluded from neither.   If a sets inclusions are empty, then all items
+     * are considered to be included.
+     * @param xSet The set that param x is tested against
+     * @param x An item to test against xSet
+     * @param ySet The set that param y is tested against
+     * @param ySupplier A supplier of an item to test against ySet, that is executed only of x is not excluded from xSet
+     * @param <XS> The type of xSet items
+     * @param <XP> The type of xSet predicates
+     * @param <YS> The type of ySet items
+     * @param <YP> The type of ySet predicates
+     * @return True only if the items are included and not excluded from their respected sets
+     */
+    public static <XS, XP, YS, YP> boolean or(IncludeExcludeSet<XS, XP> xSet, XP x, IncludeExcludeSet<YS,YP> ySet, Supplier<YP> ySupplier)
+    {
+        Boolean xb = xSet.isIncludedAndNotExcluded(x);
+        if (Boolean.FALSE==xb)
+            return false;
+        YP y = ySupplier.get();
+        Boolean yb = ySet.isIncludedAndNotExcluded(y);
+        if (Boolean.FALSE==yb)
+            return false;
+
+       return Boolean.TRUE.equals(xb)
+           || Boolean.TRUE.equals(yb)
+           || !xSet.hasIncludes() && !ySet.hasIncludes();
     }
 }
