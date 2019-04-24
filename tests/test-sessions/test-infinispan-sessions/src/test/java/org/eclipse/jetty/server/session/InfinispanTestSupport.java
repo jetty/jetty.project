@@ -19,18 +19,24 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
+import java.lang.annotation.ElementType;
+import java.util.Properties;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.hibernate.search.cfg.Environment;
+import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
+import org.infinispan.configuration.cache.Index;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * InfinispanTestSupport
@@ -89,19 +95,44 @@ public class InfinispanTestSupport
     
     public void setup () throws Exception
     {
-       if (_useFileStore)
-       {      
-        _tmpdir = File.createTempFile("infini", "span");
-        _tmpdir.delete();
-        _tmpdir.mkdir();
-        Configuration config = _builder.persistence().addSingleFileStore().location(_tmpdir.getAbsolutePath()).storeAsBinary().build();
-        _manager.defineConfiguration(_name, config);
-       }
-       else
-       {
-           _manager.defineConfiguration(_name, _builder.build());
-       }
-       _cache = _manager.getCache(_name);
+        File testdir = MavenTestingUtils.getTargetTestingDir();
+        File tmp = new File (testdir, "indexes");
+        IO.delete(tmp);
+        tmp.mkdirs();
+        
+        SearchMapping mapping = new SearchMapping();
+        mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
+        Properties properties = new Properties();
+        properties.put(Environment.MODEL_MAPPING, mapping);
+        properties.put("hibernate.search.default.indexBase", tmp.getAbsolutePath());
+        
+        if (_useFileStore)
+        {      
+            _tmpdir = File.createTempFile("infini", "span");
+            _tmpdir.delete();
+            _tmpdir.mkdir();
+            
+            Configuration config = _builder.indexing()
+                                           .index(Index.ALL)
+                                           .addIndexedEntity(SessionData.class)
+                                           .withProperties(properties)
+                                           .persistence()
+                                           .addSingleFileStore()
+                                           .location(_tmpdir.getAbsolutePath())
+                                           .storeAsBinary()
+                                           .build();
+            
+            _manager.defineConfiguration(_name, config);
+        }
+        else
+        {
+            _manager.defineConfiguration(_name, _builder.indexing()
+                                                        .withProperties(properties)
+                                                        .index(Index.ALL)
+                                                        .addIndexedEntity(SessionData.class)
+                                                        .build());
+        }
+        _cache = _manager.getCache(_name);
     }
 
 

@@ -432,8 +432,37 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
+              <excludeArtifactIds>infinispan-embedded,infinispan-remote</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**</excludes>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-infinispan-config</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>infinispan-embedded</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>infinispan-remote</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <failOnMissingClassifierArtifact>true</failOnMissingClassifierArtifact>
               <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
@@ -681,7 +710,24 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-infinispan</artifactId>
+      <artifactId>infinispan-embedded</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-embedded-query</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote-query</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
