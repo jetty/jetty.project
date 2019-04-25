@@ -604,7 +604,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             String knownMethod = "";
             for (StackTraceElement t : trace)
             {
-                if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().endsWith("QueuedThreadPool$Runner"))
+                if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().equals(Runner.class.getName()))
                 {
                     knownMethod = "IDLE ";
                     break;
