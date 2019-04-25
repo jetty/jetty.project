@@ -29,7 +29,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.util.AtomicWords;
+import org.eclipse.jetty.util.AtomicTriInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -49,7 +49,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
 
-    private final AtomicWords _counts = new AtomicWords();
+    private final AtomicTriInteger _counts = new AtomicTriInteger();
     private final AtomicLong _lastShrink = new AtomicLong();
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final Object _joinLock = new Object();
@@ -139,7 +139,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         addBean(_tryExecutor);
         
         super.doStart();
-        _counts.set(0,0,0,0);
+        _counts.set(0,0,0);
         ensureThreads();
     }
 
@@ -509,7 +509,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @ManagedAttribute("number of idle threads in the pool")
     public int getIdleThreads()
     {
-        return _counts.getWord3();
+        return _counts.getWord2();
     }
 
     /**
@@ -544,16 +544,16 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         while (isRunning())
         {
             long count = _counts.get();
-            int threads = AtomicWords.getWord0(count);
-            int starting = AtomicWords.getWord1(count);
-            int idle = AtomicWords.getWord3(count);
+            int threads = AtomicTriInteger.getWord0(count);
+            int starting = AtomicTriInteger.getWord1(count);
+            int idle = AtomicTriInteger.getWord2(count);
             int queue = getQueueSize();
 
             if (threads >= _maxThreads)
                 break;
             if (threads >= _minThreads && (starting + idle) >= queue)
                 break;
-            if (!_counts.compareAndSet(count, threads + 1, starting + 1, 0, idle))
+            if (!_counts.compareAndSet(count, threads + 1, starting + 1, idle))
                 continue;
 
             boolean started = false;
@@ -576,7 +576,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             finally
             {
                 if (!started)
-                    _counts.add(-1,-1,0,0);
+                    _counts.add(-1,-1,0);
             }
         }
     }
@@ -669,9 +669,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public String toString()
     {
         long count = _counts.get();
-        int threads = AtomicWords.getWord0(count);
-        int starting = AtomicWords.getWord1(count);
-        int idle = AtomicWords.getWord3(count);
+        int threads = AtomicTriInteger.getWord0(count);
+        int starting = AtomicTriInteger.getWord1(count);
+        int idle = AtomicTriInteger.getWord2(count);
         int queue = getQueueSize();
 
         return String.format("%s[%s]@%x{%s,%d<=%d<=%d,s=%d,i=%d,r=%d,q=%d}[%s]",
@@ -773,7 +773,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             {
                 job = _jobs.poll();
                 idle = job==null;
-                _counts.add(0,-1,0,idle?1:0);
+                _counts.add(0,-1,idle?1:0);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Runner started with {} for {}", job, QueuedThreadPool.this);
@@ -785,7 +785,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         if (!idle)
                         {
                             idle = true;
-                            _counts.add(0,0,0,1);
+                            _counts.add(0,0,1);
                         }
 
                         job = idleJobPoll();
@@ -813,7 +813,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         if (idle)
                         {
                             idle = false;
-                            _counts.add(0,0,0,-1);
+                            _counts.add(0,0,-1);
                         }
 
                         if (LOG.isDebugEnabled())
@@ -844,7 +844,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             finally
             {
-                _counts.add(-1,0,0,idle?-1:0);
+                _counts.add(-1,0,idle?-1:0);
                 removeThread(Thread.currentThread());
                 ensureThreads();
 
