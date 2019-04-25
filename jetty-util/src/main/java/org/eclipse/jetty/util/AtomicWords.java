@@ -21,7 +21,7 @@ package org.eclipse.jetty.util;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * An AtomicLong with additional methods to treat it as two hi/lo integers.
+ * An AtomicLong with additional methods to treat it as four 16 bit words.
  */
 public class AtomicWords extends AtomicLong
 {
@@ -67,7 +67,8 @@ public class AtomicWords extends AtomicLong
         while(true)
         {
             long encoded = get();
-            long update = encode(getWord0(encoded)+delta0,
+            long update = encode(
+                getWord0(encoded)+delta0,
                 getWord1(encoded)+delta1,
                 getWord2(encoded)+delta2,
                 getWord3(encoded)+delta3);

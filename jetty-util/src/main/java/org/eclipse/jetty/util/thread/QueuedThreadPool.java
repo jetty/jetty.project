@@ -280,6 +280,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public void setMaxThreads(int maxThreads)
     {
+        if (maxThreads<0 || maxThreads>0x7FFF)
+            throw new IllegalArgumentException("maxThreads="+maxThreads);
         if (_budget!=null)
             _budget.check(maxThreads);
         _maxThreads = maxThreads;
@@ -456,14 +458,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public void execute(Runnable job)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("queue {}",job);
         if (!isRunning() || !_jobs.offer(job))
         {
             LOG.warn("{} rejected {}", this, job);
             throw new RejectedExecutionException(job.toString());
         }
-
+        if (LOG.isDebugEnabled())
+            LOG.debug("queue {}",job);
         // Make sure there is at least one thread executing the job.
         ensureThreads();
     }
@@ -764,6 +765,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         @Override
         public void run()
         {
+
             boolean idle = false;
             Runnable job = null;
 
@@ -772,6 +774,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 job = _jobs.poll();
                 idle = job==null;
                 _counts.add(0,-1,0,idle?1:0);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Runner started with {} for {}", job, QueuedThreadPool.this);
 
                 while (true)
                 {
@@ -785,22 +790,18 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
                         job = idleJobPoll();
 
-                        if (job == null)
+                        // maybe we should shrink?
+                        if (job == null && getThreads() > _minThreads)
                         {
-                            // maybe we should shrink?
-                            int size = getThreads();
-                            if (size > _minThreads)
+                            long last = _lastShrink.get();
+                            long now = System.nanoTime();
+                            if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
                             {
-                                long last = _lastShrink.get();
-                                long now = System.nanoTime();
-                                if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
+                                if (_lastShrink.compareAndSet(last, now))
                                 {
-                                    if (_lastShrink.compareAndSet(last, now))
-                                    {
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                        break;
-                                    }
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("shrinking {}", QueuedThreadPool.this);
+                                    break;
                                 }
                             }
                         }
@@ -833,6 +834,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             catch (InterruptedException e)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("interrupted {} in {}", job, QueuedThreadPool.this);
                 LOG.ignore(e);
             }
             catch (Throwable e)
@@ -844,6 +847,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 _counts.add(-1,0,0,idle?-1:0);
                 removeThread(Thread.currentThread());
                 ensureThreads();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Runner exited for {}", QueuedThreadPool.this);
             }
         }
 
