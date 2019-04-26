@@ -173,7 +173,7 @@ public class FileTestHelper
 
             if (attributes != null)
             {
-                SessionData tmp = new SessionData(id,contextPath, vhost, created, accessed, lastAccessed, maxIdle);
+                SessionData tmp = new SessionData(id,contextPath, vhost, created, accessed, lastAccessed, maxIdle, attributes);
                 ObjectOutputStream oos = new ObjectOutputStream(out);
                 SessionData.serializeAttributes(tmp, oos);
             }
