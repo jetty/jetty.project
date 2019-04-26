@@ -78,14 +78,45 @@ public class SessionData implements Serializable
         out.writeObject(entries);
         for (Entry<String,Object> entry: data._attributes.entrySet())
         {
-            out.writeUTF(entry.getKey());     
-            ClassLoader loader = entry.getValue().getClass().getClassLoader();
+            out.writeUTF(entry.getKey());
+            final Class<?> valueClass = entry.getValue().getClass();
+            ClassLoader loader = valueClass.getClassLoader();
             boolean isServerLoader = false;
 
             if (loader == Thread.currentThread().getContextClassLoader()) //is it the webapp classloader?
                 isServerLoader = false;
             else if (loader == Thread.currentThread().getContextClassLoader().getParent() || loader == SessionData.class.getClassLoader() || loader == null) // is it the container loader?
-                isServerLoader = true;
+            {
+                // The class list is copied from WebAppContext's default server and system class lists
+                // probably need a different list or a plugable strategy, but this fixes the regression introduced
+                // in 9.4.13 while keeping the intent that jetty internal classes added to the server classpath
+                // and hidden from the webapp shouldn't be deserialized by the webapp classloader.
+                String className = valueClass.getName();
+                isServerLoader = (
+                        !className.equals("org.eclipse.jetty.server.session.SessionData") //don't hide SessionData for de/serialization purposes
+                                && !className.startsWith("java.") // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+                                && !className.startsWith("javax.") // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+                                && !className.startsWith("org.xml.") // needed by javax.xml
+                                && !className.startsWith("org.w3c.") // needed by javax.xml
+                                && !className.startsWith("org.eclipse.jetty.jmx.") // don't hide jmx classes
+                                && !className.startsWith("org.eclipse.jetty.util.annotation.") // don't hide jmx annotation
+                                && !className.startsWith("org.eclipse.jetty.continuation.") // don't hide continuation classes
+                                && !className.startsWith("org.eclipse.jetty.jndi.") // don't hide naming classes
+                                && !className.startsWith("org.eclipse.jetty.jaas.") // don't hide jaas classes
+                                && !className.startsWith("org.eclipse.jetty.servlets.") // don't hide jetty servlets
+                                && !className.startsWith("org.eclipse.jetty.servlet.DefaultServlet") // don't hide default servlet
+                                && !className.startsWith("org.eclipse.jetty.servlet.NoJspServlet") // don't hide noJspServlet servlet
+                                && !className.startsWith("org.eclipse.jetty.jsp.")  //don't hide jsp servlet
+                                && !className.startsWith("org.eclipse.jetty.servlet.listener.") // don't hide useful listeners
+                                && !className.startsWith("org.eclipse.jetty.websocket.") // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
+                                && !className.startsWith("org.eclipse.jetty.apache.") // don't hide jetty apache impls
+                                && !className.startsWith("org.eclipse.jetty.util.log.") // don't hide server log
+                                && !className.startsWith("org.eclipse.jetty.alpn.")) // don't hide ALPN
+                        && (className.startsWith("org.objectweb.asm.") // hide asm used by jetty
+                        || className.startsWith("org.eclipse.jdt.") // hide jdt used by jetty
+                        || className.startsWith("org.eclipse.jetty.") // hide other jetty classes
+                );
+            }
             else
                 throw new IOException ("Unknown loader"); // we don't know what loader to use
             
