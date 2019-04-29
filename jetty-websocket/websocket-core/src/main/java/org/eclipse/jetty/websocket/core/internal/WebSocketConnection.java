@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
  */
 public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, Runnable
 {
-    private final Logger LOG = Log.getLogger(this.getClass());
+    private static final Logger LOG = Log.getLogger(WebSocketConnection.class);
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
