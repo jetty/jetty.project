@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-project</artifactId>
-  <version>9.3.27-SNAPSHOT</version>
+  <version>9.3.28-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -386,8 +386,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.1.0</version>
           <configuration>
+            <source>8</source>
+            <target>8</target>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
@@ -398,9 +400,6 @@
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
-              <link>http://docs.oracle.com/javaee/7/api/</link>
-              <link>http://junit.org/junit4/javadoc/latest/</link>
-              <link>http://download.eclipse.org/jetty/stable-9/apidocs/</link>
             </links>
             <tags>
               <tag>
@@ -558,9 +557,6 @@
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
-              <link>http://docs.oracle.com/javaee/7/api/</link>
-              <link>http://junit.org/junit4/javadoc/latest/</link>
-              <link>http://download.eclipse.org/jetty/stable-9/apidocs/</link>
             </links>
             <tags>
               <tag>
