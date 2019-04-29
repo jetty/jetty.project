@@ -518,6 +518,8 @@
             </dependency>
           </dependencies>
           <configuration>
+            <source>11</source>
+            <target>11</target>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>

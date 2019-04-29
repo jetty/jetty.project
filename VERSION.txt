@@ -1,5 +1,10 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.17.v20190418 - 18 April 2019
+ + 3464 Split SslContextFactory into Client and Server
+ + 3549 Directory Listing on Windows reveals Resource Base path
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context
+
 jetty-9.4.16.v20190411 - 11 April 2019
  + 1861 Limit total bytes pooled by ByteBufferPools
  + 3133 Logging of `key.readyOps()` can throw unchecked `CancelledKeyException`
