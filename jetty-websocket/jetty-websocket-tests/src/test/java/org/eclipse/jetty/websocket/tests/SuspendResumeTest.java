@@ -19,25 +19,15 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
@@ -53,48 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SuspendResumeTest
 {
-    @WebSocket
-    public static class EventSocket
-    {
-        private static final Logger LOG = Log.getLogger(EventSocket.class);
-
-
-        BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
-        CountDownLatch openLatch = new CountDownLatch(1);
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        AtomicReference<Throwable> error = new AtomicReference<>();
-        Session session;
-
-        @OnWebSocketConnect
-        public void onConnect(Session session)
-        {
-            LOG.info("onConnect(): " + session);
-            this.session = session;
-            openLatch.countDown();
-        }
-
-        @OnWebSocketMessage
-        public void onMessage(String message)
-        {
-            LOG.info("onMessage(): " + message);
-            messages.offer(message);
-        }
-
-        @OnWebSocketError
-        public void onError(Throwable t)
-        {
-            LOG.info("onError(): " + t);
-            error.compareAndSet(null, t);
-        }
-
-        @OnWebSocketClose
-        public void onClose(int statusCode, String reason)
-        {
-            LOG.info("onClose(): " + statusCode + ":" + reason);
-            closeLatch.countDown();
-        }
-    }
-
     public class UpgradeServlet extends JettyWebSocketServlet
     {
         @Override
@@ -145,22 +93,22 @@ public class SuspendResumeTest
         // verify connection by sending a message from server to client
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
         serverSocket.session.getRemote().sendStringByFuture("verification");
-        assertThat(clientSocket.messages.poll(5, TimeUnit.SECONDS), is("verification"));
+        assertThat(clientSocket.messageQueue.poll(5, TimeUnit.SECONDS), is("verification"));
 
         // suspend the client so that no read events occur
         SuspendToken suspendToken = clientSocket.session.suspend();
 
         // verify client can still send messages
         clientSocket.session.getRemote().sendStringByFuture("message-from-client");
-        assertThat(serverSocket.messages.poll(5, TimeUnit.SECONDS), is("message-from-client"));
+        assertThat(serverSocket.messageQueue.poll(5, TimeUnit.SECONDS), is("message-from-client"));
 
         // the message is not received as it is suspended
         serverSocket.session.getRemote().sendStringByFuture("message-from-server");
-        assertNull(clientSocket.messages.poll(2, TimeUnit.SECONDS));
+        assertNull(clientSocket.messageQueue.poll(2, TimeUnit.SECONDS));
 
         // client should receive message after it resumes
         suspendToken.resume();
-        assertThat(clientSocket.messages.poll(5, TimeUnit.SECONDS), is("message-from-server"));
+        assertThat(clientSocket.messageQueue.poll(5, TimeUnit.SECONDS), is("message-from-server"));
 
         // make sure both sides are closed
         clientSocket.session.close();
@@ -168,7 +116,7 @@ public class SuspendResumeTest
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
 
         // check no errors occurred
-        assertNull(clientSocket.error.get());
-        assertNull(serverSocket.error.get());
+        assertNull(clientSocket.error);
+        assertNull(serverSocket.error);
     }
 }

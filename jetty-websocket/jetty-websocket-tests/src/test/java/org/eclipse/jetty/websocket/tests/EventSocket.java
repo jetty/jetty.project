@@ -35,17 +35,17 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket
 public class EventSocket
 {
-    private static Logger LOG = Log.getLogger(EventSocket.class);
+    private final static Logger LOG = Log.getLogger(EventSocket.class);
 
     protected Session session;
     private String behavior;
-    public volatile Throwable failure = null;
 
-    public BlockingQueue<String> receivedMessages = new BlockingArrayQueue<>();
+    public BlockingQueue<String> messageQueue = new BlockingArrayQueue<>();
+    public volatile Throwable error = null;
 
-    public CountDownLatch open = new CountDownLatch(1);
-    public CountDownLatch error = new CountDownLatch(1);
-    public CountDownLatch closed = new CountDownLatch(1);
+    public CountDownLatch openLatch = new CountDownLatch(1);
+    public CountDownLatch errorLatch = new CountDownLatch(1);
+    public CountDownLatch closeLatch = new CountDownLatch(1);
 
     @OnWebSocketConnect
     public void onOpen(Session session)
@@ -53,45 +53,34 @@ public class EventSocket
         this.session = session;
         behavior = session.getPolicy().getBehavior().name();
         LOG.info("{}  onOpen(): {}", toString(), session);
-        open.countDown();
+        openLatch.countDown();
     }
 
     @OnWebSocketMessage
     public void onMessage(String message) throws IOException
     {
         LOG.info("{}  onMessage(): {}", toString(), message);
-        receivedMessages.offer(message);
+        messageQueue.offer(message);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
         LOG.info("{}  onClose(): {}:{}", toString(), statusCode, reason);
-        closed.countDown();
+        closeLatch.countDown();
     }
 
     @OnWebSocketError
     public void onError(Throwable cause)
     {
         LOG.info("{}  onError(): {}", toString(), cause);
-        failure = cause;
-        error.countDown();
+        error = cause;
+        errorLatch.countDown();
     }
 
     @Override
     public String toString()
     {
         return String.format("[%s@%s]", behavior, Integer.toHexString(hashCode()));
-    }
-
-    @WebSocket
-    public static class EchoSocket extends EventSocket
-    {
-        @Override
-        public void onMessage(String message) throws IOException
-        {
-            super.onMessage(message);
-            session.getRemote().sendStringByFuture(message);
-        }
     }
 }

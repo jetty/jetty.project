@@ -44,9 +44,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JettyWebSocketNegotiationTest
 {
-    Server server;
-    WebSocketClient client;
-    ServletContextHandler contextHandler;
+    private Server server;
+    private WebSocketClient client;
+    private ServletContextHandler contextHandler;
 
     @BeforeEach
     public void start() throws Exception
@@ -76,7 +76,7 @@ public class JettyWebSocketNegotiationTest
     public void testBadRequest() throws Exception
     {
         JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->new EventSocket.EchoSocket());
+        container.addMapping("/", (req, resp)->new EchoSocket());
 
         URI uri = URI.create("ws://localhost:8080/filterPath");
         EventSocket socket = new EventSocket();
@@ -90,7 +90,6 @@ public class JettyWebSocketNegotiationTest
         assertThat(t.getMessage(), containsString("400 Bad Request"));
     }
 
-
     @Test
     public void testServerError() throws Exception
     {
@@ -98,7 +97,7 @@ public class JettyWebSocketNegotiationTest
         container.addMapping("/", (req, resp)->
         {
             resp.setAcceptedSubProtocol("errorSubProtocol");
-            return new EventSocket.EchoSocket();
+            return new EchoSocket();
         });
 
         URI uri = URI.create("ws://localhost:8080/filterPath");
