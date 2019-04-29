@@ -108,13 +108,14 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         try 
         {
             _passivating = false;
-            Class<?> remoteClass = Thread.currentThread().getContextClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
+            Class<?> remoteClass = InfinispanSessionDataStore.class.getClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
             if (remoteClass.isAssignableFrom(_cache.getClass()))
                 _passivating = true;
         }
         catch (ClassNotFoundException e)
         {
             //expected if not running with remote cache
+            LOG.info("Hotrod classes not found, assuming infinispan in embedded mode");
         }
     }
 

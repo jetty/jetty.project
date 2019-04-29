@@ -47,6 +47,7 @@
          <artifactId>protostream</artifactId>
          <version>4.2.2.Final</version>
          <optional>true</optional>
+         <scope>provided</scope>
     </dependency>
     <dependency>
        <groupId>org.eclipse.jetty</groupId>
