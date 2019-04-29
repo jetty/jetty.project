@@ -60,7 +60,7 @@ import static org.eclipse.jetty.util.Callback.NOOP;
  */
 public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSession, Dumpable
 {
-    private Logger LOG = Log.getLogger(this.getClass());
+    private static final Logger LOG = Log.getLogger(WebSocketChannel.class);
     private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
     private final Behavior behavior;
