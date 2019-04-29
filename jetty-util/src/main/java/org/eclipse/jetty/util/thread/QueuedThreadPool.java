@@ -49,6 +49,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
 
+    /**
+     * Encodes thread counts: <dl>
+     *     <dt>Word0</dt><dd>Total thread count (including starting and idle)</dd>
+     *     <dt>Word1</dt><dd>Starting threads</dd>
+     *     <dt>Word2</dt><dd>Idle threads</dd>
+     * </dl>
+     */
     private final AtomicTriInteger _counts = new AtomicTriInteger();
     private final AtomicLong _lastShrink = new AtomicLong();
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
@@ -280,7 +287,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public void setMaxThreads(int maxThreads)
     {
-        if (maxThreads<0 || maxThreads>0x7FFF)
+        if (maxThreads<AtomicTriInteger.MIN_VALUE || maxThreads>AtomicTriInteger.MAX_VALUE)
             throw new IllegalArgumentException("maxThreads="+maxThreads);
         if (_budget!=null)
             _budget.check(maxThreads);
