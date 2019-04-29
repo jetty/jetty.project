@@ -223,11 +223,10 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
         return _includes.isEmpty() && _excludes.isEmpty();
     }
 
-
     /**
-     * Combine the results of two {@link IncludeExcludeSet}s with an "and" operation.  The items must be
-     * included by xSet AND ySet, and excluded from neither.   If a sets inclusions are empty, then all items
-     * are considered to be included.
+     * Combine the results of two {@link IncludeExcludeSet}s with an "and"-like operation.
+     * Item x must be included and not excluded by xSet AND item y must be included and not excluded by ySet.
+     * If a sets inclusions are empty, then all items are considered to be included.
      * @param xSet The set that param x is tested against
      * @param x An item to test against xSet
      * @param ySet The set that param y is tested against
@@ -250,11 +249,12 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
         return true;
     }
 
-
     /**
-     * Combine the results of two {@link IncludeExcludeSet}s with an "or" operation.  The items must be
-     * included by xSet OR ySet, and excluded from neither.   If a sets inclusions are empty, then all items
-     * are considered to be included.
+     * Combine the results of two {@link IncludeExcludeSet}s with an "or"-like operation.
+     * Item x must be included by xSet OR item y must be included ySet.
+     * Neither x nor y may be excluded for either respective set.
+     * If a sets inclusions are empty, then all items are considered to be included.
+     *
      * @param xSet The set that param x is tested against
      * @param x An item to test against xSet
      * @param ySet The set that param y is tested against
