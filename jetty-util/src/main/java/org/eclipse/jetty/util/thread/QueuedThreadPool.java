@@ -142,7 +142,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStart() throws Exception
     {
-        _tryExecutor = _reservedThreads==0 ? NO_TRY : new ReservedThreadExecutor(this,_reservedThreads);
+        if (_reservedThreads<=0)
+            _tryExecutor = NO_TRY;
+        else
+        {
+            ReservedThreadExecutor reserved = new ReservedThreadExecutor(this,_reservedThreads);
+            reserved.setIdleTimeout(_idleTimeout,TimeUnit.MILLISECONDS);
+            _tryExecutor = reserved;
+        }
         addBean(_tryExecutor);
         
         super.doStart();
