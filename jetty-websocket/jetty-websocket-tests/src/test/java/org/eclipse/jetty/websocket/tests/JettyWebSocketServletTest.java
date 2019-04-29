@@ -45,12 +45,12 @@ public class JettyWebSocketServletTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/",(req, resp)->new EventSocket.EchoSocket());
+            factory.addMapping("/",(req, resp)->new EchoSocket());
         }
     }
 
-    Server server;
-    WebSocketClient client;
+    private Server server;
+    private WebSocketClient client;
 
     @BeforeEach
     public void start() throws Exception
@@ -73,7 +73,6 @@ public class JettyWebSocketServletTest
         client.start();
     }
 
-
     @AfterEach
     public void stop() throws Exception
     {
@@ -91,9 +90,9 @@ public class JettyWebSocketServletTest
         {
             session.getRemote().sendString("hello world");
         }
-        assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
+        assertTrue(socket.closeLatch.await(10, TimeUnit.SECONDS));
 
-        String msg = socket.receivedMessages.poll();
+        String msg = socket.messageQueue.poll();
         assertThat(msg, is("hello world"));
     }
 }

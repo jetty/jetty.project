@@ -51,8 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketExtensionConfigTest
 {
-    Server server;
-    WebSocketClient client;
+    private Server server;
+    private WebSocketClient client;
 
     @BeforeEach
     public void start() throws Exception
@@ -127,10 +127,10 @@ public class JettyWebSocketExtensionConfigTest
         {
             session.getRemote().sendString("hello world");
         }
-        assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(correctResponseExtensions.await(5, TimeUnit.SECONDS));
 
-        String msg = socket.receivedMessages.poll();
+        String msg = socket.messageQueue.poll();
         assertThat(msg, is("hello world"));
     }
 }

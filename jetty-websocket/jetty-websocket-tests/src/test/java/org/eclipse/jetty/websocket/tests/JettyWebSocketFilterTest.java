@@ -39,8 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketFilterTest
 {
-    Server server;
-    WebSocketClient client;
+    private Server server;
+    private WebSocketClient client;
 
     @BeforeEach
     public void start() throws Exception
@@ -55,7 +55,7 @@ public class JettyWebSocketFilterTest
         server.setHandler(contextHandler);
 
         JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->new EventSocket.EchoSocket());
+        container.addMapping("/", (req, resp)->new EchoSocket());
         server.start();
 
         client = new WebSocketClient();
@@ -79,9 +79,9 @@ public class JettyWebSocketFilterTest
         {
             session.getRemote().sendString("hello world");
         }
-        assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
+        assertTrue(socket.closeLatch.await(10, TimeUnit.SECONDS));
 
-        String msg = socket.receivedMessages.poll();
+        String msg = socket.messageQueue.poll();
         assertThat(msg, is("hello world"));
     }
 }
