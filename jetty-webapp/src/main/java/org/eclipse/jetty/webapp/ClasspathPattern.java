@@ -489,7 +489,7 @@ public class ClasspathPattern extends AbstractSet<String>
     }
 
     Map<String,Entry> _entries = new HashMap<>();
-    IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
+    IncludeExcludeSet<Entry,String> _packageOrNamePatterns = new IncludeExcludeSet<>(ByPackageOrName.class);
     IncludeExcludeSet<Entry,URI> _locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
     
     public ClasspathPattern()
@@ -591,9 +591,9 @@ public class ClasspathPattern extends AbstractSet<String>
         else
         {
             if (entry.isInclusive())
-                _patterns.include(entry);
+                _packageOrNamePatterns.include(entry);
             else
-                _patterns.exclude(entry);
+                _packageOrNamePatterns.exclude(entry);
         }
         return true;
     }
@@ -620,7 +620,7 @@ public class ClasspathPattern extends AbstractSet<String>
     public void clear()
     {
         _entries.clear();
-        _patterns.clear();
+        _packageOrNamePatterns.clear();
         _locations.clear();
     }
 
@@ -673,7 +673,7 @@ public class ClasspathPattern extends AbstractSet<String>
      */
     public boolean match(String name)
     {       
-        return _patterns.test(name);
+        return _packageOrNamePatterns.test(name);
     }
     
     /**
@@ -686,7 +686,7 @@ public class ClasspathPattern extends AbstractSet<String>
     {       
         try
         {
-            return IncludeExcludeSet.or(_patterns, clazz.getName(), _locations, ()->TypeUtil.getLocationOfClass(clazz));
+            return IncludeExcludeSet.or(_packageOrNamePatterns, clazz.getName(), _locations, ()->TypeUtil.getLocationOfClass(clazz));
         }
         catch (Exception e)
         {
@@ -704,7 +704,7 @@ public class ClasspathPattern extends AbstractSet<String>
         // Treat path elements as packages for name matching
         name=name.replace("/",".");
 
-        return  IncludeExcludeSet.or(_patterns, name, _locations, ()->
+        return  IncludeExcludeSet.or(_packageOrNamePatterns, name, _locations, ()->
         {
             try
             {
