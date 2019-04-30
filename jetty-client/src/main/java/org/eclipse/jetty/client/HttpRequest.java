@@ -76,6 +76,7 @@ public class HttpRequest implements Request
     private String query;
     private String method = HttpMethod.GET.asString();
     private HttpVersion version = HttpVersion.HTTP_1_1;
+    private boolean versionExplicit;
     private long idleTimeout = -1;
     private long timeout;
     private long timeoutAt;
@@ -215,10 +216,16 @@ public class HttpRequest implements Request
         return version;
     }
 
+    public boolean isVersionExplicit()
+    {
+        return versionExplicit;
+    }
+
     @Override
     public Request version(HttpVersion version)
     {
         this.version = Objects.requireNonNull(version);
+        this.versionExplicit = true;
         return this;
     }
 

@@ -473,8 +473,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgrade_connection);
-        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, upgrade_connection);
-        getResponse().setStatus(101);
+        getRequest().setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, upgrade_connection);
+        getResponse().setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
         getHttpTransport().onCompleted();
         return true;
     }
@@ -536,5 +536,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             if (LOG.isDebugEnabled())
                 LOG.debug(record);
         }
+    }
+
+    @Override
+    public boolean isTunnellingSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public EndPoint getTunnellingEndPoint()
+    {
+        return getEndPoint();
     }
 }

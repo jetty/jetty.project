@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -33,6 +34,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
@@ -50,7 +53,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     private final Connector connector;
     private final HTTP2ServerConnection connection;
     private IStream stream;
-    private MetaData metaData;
+    private MetaData.Response metaData;
 
     public HttpTransportOverHTTP2(Connector connector, HTTP2ServerConnection connection)
     {
@@ -85,13 +88,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
-    public void send(MetaData.Response info, boolean isHeadRequest, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
+        boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (info != null)
+        if (response != null)
         {
-            metaData = info;
-            int status = info.getStatus();
+            metaData = response;
+            int status = response.getStatus();
             boolean interimResponse = status == HttpStatus.CONTINUE_100 || status == HttpStatus.PROCESSING_102;
             if (interimResponse)
             {
@@ -103,7 +107,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 else
                 {
                     if (transportCallback.start(callback, false))
-                        sendHeadersFrame(info, false, transportCallback);
+                        sendHeadersFrame(response, false, transportCallback);
                 }
             }
             else
@@ -119,7 +123,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             {
                                 if (lastContent)
                                 {
-                                    Supplier<HttpFields> trailers = info.getTrailerSupplier();
+                                    Supplier<HttpFields> trailers = response.getTrailerSupplier();
                                     if (transportCallback.start(new SendTrailers(getCallback(), trailers), false))
                                         sendDataFrame(content, true, trailers == null, transportCallback);
                                 }
@@ -131,20 +135,20 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             }
                         };
                         if (transportCallback.start(commitCallback, true))
-                            sendHeadersFrame(info, false, transportCallback);
+                            sendHeadersFrame(response, false, transportCallback);
                     }
                     else
                     {
                         if (lastContent)
                         {
-                            Supplier<HttpFields> trailers = info.getTrailerSupplier();
+                            Supplier<HttpFields> trailers = response.getTrailerSupplier();
                             if (transportCallback.start(new SendTrailers(callback, trailers), true))
-                                sendHeadersFrame(info, trailers == null, transportCallback);
+                                sendHeadersFrame(response, trailers == null, transportCallback);
                         }
                         else
                         {
                             if (transportCallback.start(callback, true))
-                                sendHeadersFrame(info, false, transportCallback);
+                                sendHeadersFrame(response, false, transportCallback);
                         }
                     }
                 }
@@ -156,7 +160,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
         else
         {
-            if (hasContent || lastContent)
+            if (hasContent || (lastContent && !HttpMethod.CONNECT.is(request.getMethod())))
             {
                 if (lastContent)
                 {
@@ -272,6 +276,19 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void onCompleted()
     {
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
+        if (channel != null && channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+        {
+            Connection connection = (Connection)channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+            EndPoint endPoint = connection.getEndPoint();
+            // TODO: check that endPoint implements HTTP2Channel.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Tunnelling DATA frames through {}", endPoint);
+            endPoint.upgrade(connection);
+            stream.setAttachment(endPoint);
+            return;
+        }
+
         // If the stream is not closed, it is still reading the request content.
         // Send a reset to the other end so that it stops sending data.
         if (!stream.isClosed())
@@ -283,7 +300,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
         // Consume the existing queued data frames to
         // avoid stalling the session flow control.
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         if (channel != null)
             channel.consumeInput();
     }

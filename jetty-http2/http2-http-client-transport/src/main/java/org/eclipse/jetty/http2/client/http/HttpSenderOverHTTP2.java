@@ -25,11 +25,12 @@ import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -53,20 +54,28 @@ public class HttpSenderOverHTTP2 extends HttpSender
     protected void sendHeaders(HttpExchange exchange, final HttpContent content, final Callback callback)
     {
         HttpRequest request = exchange.getRequest();
-        String path = relativize(request.getPath());
-        HttpURI uri = HttpURI.createHttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
-        MetaData.Request metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
+        boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
+        MetaData.Request metaData;
+        if (isTunnel)
+        {
+            metaData = new MetaData.Request(request.getMethod(), null, new HostPortHttpField(request.getPath()), null, HttpVersion.HTTP_2, request.getHeaders());
+        }
+        else
+        {
+            String path = relativize(request.getPath());
+            HttpURI uri = HttpURI.createHttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
+            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
+        }
         Supplier<HttpFields> trailers = request.getTrailers();
         metaData.setTrailerSupplier(trailers);
-        HeadersFrame headersFrame = new HeadersFrame(metaData, null, trailers == null && !content.hasContent());
+        HeadersFrame headersFrame = new HeadersFrame(metaData, null, !isTunnel && trailers == null && !content.hasContent());
         HttpChannelOverHTTP2 channel = getHttpChannel();
-        Promise<Stream> promise = new Promise<Stream>()
+        Promise<Stream> promise = new Promise<>()
         {
             @Override
             public void succeeded(Stream stream)
             {
                 channel.setStream(stream);
-                ((IStream)stream).setAttachment(channel);
                 long idleTimeout = request.getIdleTimeout();
                 if (idleTimeout >= 0)
                     stream.setIdleTimeout(idleTimeout);

@@ -43,11 +43,13 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
@@ -352,7 +354,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return new HttpClient(new HttpClientTransportOverHTTP(selectors));
+        return newHttpClient(selectors);
+    }
+
+    protected HttpClient newHttpClient(int selectors)
+    {
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(selectors);
+        return new HttpClient(new HttpClientTransportDynamic(clientConnector));
     }
 
     protected HttpClient getHttpClient()
@@ -409,8 +418,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         if (!validateDestination(clientRequest.getServerName(), clientRequest.getServerPort()))
             return null;
-
+        // If the proxy is secure, we will likely get a proxied URI
+        // with the "https" scheme, but the upstream server needs
+        // to be called with the "http" scheme (the ConnectHandler
+        // is used to call upstream servers with the "https" scheme).
         StringBuffer target = clientRequest.getRequestURL();
+        // Change "https" to "http".
+        if (HttpScheme.HTTPS.is(target.substring(0, 5)))
+            target.replace(4, 5, "");
         String query = clientRequest.getQueryString();
         if (query != null)
             target.append("?").append(query);

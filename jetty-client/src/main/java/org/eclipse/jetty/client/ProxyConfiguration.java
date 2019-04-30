@@ -64,11 +64,13 @@ public class ProxyConfiguration
         private final Set<String> excluded = new HashSet<>();
         private final Origin.Address address;
         private final boolean secure;
+        private final HttpDestination.Protocol protocol;
 
-        protected Proxy(Origin.Address address, boolean secure)
+        protected Proxy(Origin.Address address, boolean secure, HttpDestination.Protocol protocol)
         {
             this.address = address;
             this.secure = secure;
+            this.protocol = protocol;
         }
 
         /**
@@ -85,6 +87,11 @@ public class ProxyConfiguration
         public boolean isSecure()
         {
             return secure;
+        }
+
+        public HttpDestination.Protocol getProtocol()
+        {
+            return protocol;
         }
 
         /**

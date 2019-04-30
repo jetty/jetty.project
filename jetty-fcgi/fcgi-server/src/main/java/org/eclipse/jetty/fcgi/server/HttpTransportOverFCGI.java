@@ -25,6 +25,7 @@ import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpTransport;
@@ -56,10 +57,13 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        if (info!=null)
-            commit(info,head,content,lastContent,callback);
+        boolean head = HttpMethod.HEAD.is(request.getMethod());
+        if (response != null)
+        {
+            commit(response, head, content, lastContent, callback);
+        }
         else
         {
             if (head)

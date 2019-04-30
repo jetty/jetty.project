@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.dynamic;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -102,11 +103,12 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         super(connector);
         addBean(connector);
         if (factoryInfos.length == 0)
-            throw new IllegalArgumentException("Missing ClientConnectionFactory");
+            factoryInfos = new Info[]{HttpClientConnectionFactory.HTTP11};
         this.factoryInfos = Arrays.asList(factoryInfos);
         this.protocols = Arrays.stream(factoryInfos)
                 .flatMap(info -> info.getProtocols().stream())
                 .distinct()
+                .map(p -> p.toLowerCase(Locale.ENGLISH))
                 .collect(Collectors.toList());
         for (ClientConnectionFactory.Info factoryInfo : factoryInfos)
             addBean(factoryInfo);
@@ -120,14 +122,21 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         boolean ssl = HttpScheme.HTTPS.is(request.getScheme());
         String http2 = ssl ? "h2" : "h2c";
         List<String> protocols = List.of();
-        if (request.getVersion() == HttpVersion.HTTP_2)
+        if (request.isVersionExplicit())
         {
-            // The application is explicitly asking for HTTP/2, so exclude HTTP/1.1.
-            if (this.protocols.contains(http2))
-                protocols = List.of(http2);
+            HttpVersion version = request.getVersion();
+            String desired = version == HttpVersion.HTTP_2 ? http2 : "http/1.1";
+            if (this.protocols.contains(desired))
+                protocols = List.of(desired);
         }
         else
         {
+            // TODO: I don't think this is right.
+            //  The case [http/1.1, h2c] is troublesome because we cannot
+            //  make a single Destination for both - we would have problems
+            //  with the ConnectionPool. We really need to pick one here,
+            //  say the first that we can speak - this is what we do below
+            //  in newConnection() anyway.
             // Preserve the order of protocols chosen by the application.
             protocols = this.protocols.stream()
                     .filter(p -> p.equals("http/1.1") || p.equals(http2))
@@ -135,7 +144,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         if (protocols.isEmpty())
             return new HttpDestination.Key(origin, null);
-        return new HttpDestination.Key(origin, new HttpDestination.Protocol(protocols, ssl));
+        return new HttpDestination.Key(origin, new HttpDestination.Protocol(protocols, ssl && protocols.contains(http2)));
     }
 
     @Override

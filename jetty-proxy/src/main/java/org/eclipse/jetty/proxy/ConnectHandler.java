@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -38,6 +39,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -46,7 +49,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -192,19 +195,26 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
-            String serverAddress = request.getRequestURI();
+            String serverAddress = target;
+            if (HttpVersion.HTTP_2.is(request.getProtocol()))
+            {
+                // TODO: add check below
+                //  if (jettyRequest.getMetaData().getProtocol() != null)
+                //    not for us, forward along the handler chain.
+                HttpURI httpURI = jettyRequest.getHttpURI();
+                serverAddress = httpURI.getHost() + ":" + httpURI.getPort();
+            }
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT request for {}", serverAddress);
-
-            handleConnect(baseRequest, request, response, serverAddress);
+            handleConnect(jettyRequest, request, response, serverAddress);
         }
         else
         {
-            super.handle(target, baseRequest, request, response);
+            super.handle(target, jettyRequest, request, response);
         }
     }
 
@@ -244,12 +254,11 @@ public class ConnectHandler extends HandlerWrapper
                 return;
             }
 
-            HttpTransport transport = baseRequest.getHttpChannel().getHttpTransport();
-            // TODO Handle CONNECT over HTTP2!
-            if (!(transport instanceof HttpConnection))
+            HttpChannel httpChannel = baseRequest.getHttpChannel();
+            if (!httpChannel.isTunnellingSupported())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("CONNECT not supported for {}", transport);
+                    LOG.debug("CONNECT not supported for {}", httpChannel);
                 sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
@@ -260,12 +269,12 @@ public class ConnectHandler extends HandlerWrapper
             if (LOG.isDebugEnabled())
                 LOG.debug("Connecting to {}:{}", host, port);
 
-            connectToServer(request, host, port, new Promise<SocketChannel>()
+            connectToServer(request, host, port, new Promise<>()
             {
                 @Override
                 public void succeeded(SocketChannel channel)
                 {
-                    ConnectContext connectContext = new ConnectContext(request, response, asyncContext, (HttpConnection)transport);
+                    ConnectContext connectContext = new ConnectContext(request, response, asyncContext, httpChannel.getTunnellingEndPoint());
                     if (channel.isConnected())
                         selector.accept(channel, connectContext);
                     else
@@ -335,8 +344,7 @@ public class ConnectHandler extends HandlerWrapper
         HttpServletRequest request = connectContext.getRequest();
         prepareContext(request, context);
 
-        HttpConnection httpConnection = connectContext.getHttpConnection();
-        EndPoint downstreamEndPoint = httpConnection.getEndPoint();
+        EndPoint downstreamEndPoint = connectContext.getEndPoint();
         DownstreamConnection downstreamConnection = newDownstreamConnection(downstreamEndPoint, context);
         downstreamConnection.setInputBufferSize(getBufferSize());
 
@@ -370,11 +378,11 @@ public class ConnectHandler extends HandlerWrapper
             response.setContentLength(0);
             if (statusCode != HttpServletResponse.SC_OK)
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-            response.getOutputStream().close();
+            response.flushBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not send CONNECT response", x);
@@ -413,7 +421,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         // Set the new connection as request attribute and change the status to 101
         // so that Jetty understands that it has to upgrade the connection
-        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+        request.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         if (LOG.isDebugEnabled())
             LOG.debug("Upgraded connection to {}", connection);
@@ -501,7 +509,7 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
             SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
             endp.setIdleTimeout(getIdleTimeout());
@@ -534,14 +542,14 @@ public class ConnectHandler extends HandlerWrapper
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         private final AsyncContext asyncContext;
-        private final HttpConnection httpConnection;
+        private final EndPoint endPoint;
 
-        public ConnectContext(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, HttpConnection httpConnection)
+        public ConnectContext(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, EndPoint endPoint)
         {
             this.request = request;
             this.response = response;
             this.asyncContext = asyncContext;
-            this.httpConnection = httpConnection;
+            this.endPoint = endPoint;
         }
 
         public ConcurrentMap<String, Object> getContext()
@@ -564,9 +572,9 @@ public class ConnectHandler extends HandlerWrapper
             return asyncContext;
         }
 
-        public HttpConnection getHttpConnection()
+        public EndPoint getEndPoint()
         {
-            return httpConnection;
+            return endPoint;
         }
     }
 
@@ -603,7 +611,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public class DownstreamConnection extends ProxyConnection implements Connection.UpgradeTo
     {
-        private ByteBuffer buffer;
+        private ByteBuffer buffer = BufferUtil.EMPTY_BUFFER;
 
         public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
@@ -613,7 +621,8 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         public void onUpgradeTo(ByteBuffer buffer)
         {
-            this.buffer = buffer == null ? BufferUtil.EMPTY_BUFFER : buffer;
+            if (buffer != null)
+                this.buffer = buffer;
         }
 
         @Override

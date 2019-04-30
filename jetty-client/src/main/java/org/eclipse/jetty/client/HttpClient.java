@@ -523,7 +523,7 @@ public class HttpClient extends ContainerLifeCycle
         return new Origin(scheme, host, port);
     }
 
-    private HttpDestination resolveDestination(HttpDestination.Key key)
+    HttpDestination resolveDestination(HttpDestination.Key key)
     {
         HttpDestination destination = destinations.get(key);
         if (destination == null)

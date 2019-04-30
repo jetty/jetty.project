@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.client.http;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -25,14 +27,19 @@ import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
 
 public class HttpChannelOverHTTP2 extends HttpChannel
 {
+    private final Stream.Listener listener = new Listener();
     private final HttpConnectionOverHTTP2 connection;
     private final Session session;
     private final HttpSenderOverHTTP2 sender;
@@ -60,7 +67,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public Stream.Listener getStreamListener()
     {
-        return receiver;
+        return listener;
     }
 
     @Override
@@ -83,6 +90,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void setStream(Stream stream)
     {
         this.stream = stream;
+        if (stream != null)
+            ((IStream)stream).setAttachment(receiver);
     }
 
     public boolean isFailed()
@@ -154,6 +163,56 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
+        }
+    }
+
+    private class Listener implements Stream.Listener
+    {
+        @Override
+        public void onHeaders(Stream stream, HeadersFrame frame)
+        {
+            receiver.onHeaders(stream, frame);
+        }
+
+        @Override
+        public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+        {
+            return receiver.onPush(stream, frame);
+        }
+
+        @Override
+        public void onData(Stream stream, DataFrame frame, Callback callback)
+        {
+            HTTP2Channel channel = (HTTP2Channel)((IStream)stream).getAttachment();
+            channel.onData(frame, callback);
+        }
+
+        @Override
+        public void onReset(Stream stream, ResetFrame frame)
+        {
+            // TODO: needs to call HTTP2Channel?
+            receiver.onReset(stream, frame);
+        }
+
+        @Override
+        public boolean onIdleTimeout(Stream stream, Throwable x)
+        {
+            HTTP2Channel channel = (HTTP2Channel)((IStream)stream).getAttachment();
+            return channel.onTimeout(x, Runnable::run);
+        }
+
+        @Override
+        public void onFailure(Stream stream, int error, String reason, Callback callback)
+        {
+            HTTP2Channel channel = (HTTP2Channel)((IStream)stream).getAttachment();
+            channel.onFailure(new IOException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
+        }
+
+        @Override
+        public void onClosed(Stream stream)
+        {
+            // TODO: needs to call HTTP2Channel?
+            receiver.onClosed(stream);
         }
     }
 }
