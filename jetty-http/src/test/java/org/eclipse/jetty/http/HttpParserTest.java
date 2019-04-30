@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
@@ -2131,9 +2130,9 @@ public class HttpParserTest
     }
 
     @Test
-    @Tag("ipv6")
     public void testIPv6HostPort() throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.1\r\n"
                         + "Host: [::1]:8888\r\n"
