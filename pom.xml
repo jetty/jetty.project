@@ -1235,9 +1235,6 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <version>${maven.surefire.version}</version>
-              <configuration>
-                <excludedGroups>ipv6</excludedGroups>
-              </configuration>
             </plugin>
           </plugins>
         </pluginManagement>
