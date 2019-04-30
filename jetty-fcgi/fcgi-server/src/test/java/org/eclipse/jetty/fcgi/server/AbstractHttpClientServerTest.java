@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -39,6 +37,8 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractHttpClientServerTest
 {
@@ -89,11 +89,14 @@ public abstract class AbstractHttpClientServerTest
     {
         System.gc();
 
-        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
-        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
+        if (serverBufferPool != null)
+        {
+            assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
+            assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
+            assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
+        }
 
-        if (clientBufferPool instanceof LeakTrackingByteBufferPool)
+        if ((clientBufferPool != null) && (clientBufferPool instanceof LeakTrackingByteBufferPool))
         {
             LeakTrackingByteBufferPool pool = (LeakTrackingByteBufferPool)clientBufferPool;
             assertThat("Client BufferPool - leaked acquires", pool.getLeakedAcquires(), Matchers.is(0L));
