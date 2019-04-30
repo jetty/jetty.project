@@ -29,7 +29,6 @@ import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -61,8 +60,8 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
@@ -270,19 +269,19 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
             Matcher matcher=Pattern.compile("cipher_suite='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString()))),not(is("null")));
            
             matcher=Pattern.compile("key_size='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())),not(is("null"))));
             
             matcher=Pattern.compile("ssl_session_id='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())),not(is("null"))));
             
             matcher=Pattern.compile("ssl_session='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(isEmptyOrNullString()),not(is("null"))));
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())),not(is("null"))));
         }
     }
 
