@@ -19,9 +19,9 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -38,11 +38,8 @@ public class HandshakeRFC6455 implements WebSocketHandshake
     public void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException
     {
         String key = request.getHeader("Sec-WebSocket-Key");
-
         if (key == null)
-        {
-            throw new IllegalStateException("Missing request header 'Sec-WebSocket-Key'");
-        }
+            throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
 
         // build response
         response.setHeader("Upgrade","WebSocket");
