@@ -32,13 +32,16 @@
   </New>
 
   <!-- ===================================================================== -->
-  <!-- Get a reference to the remote cache.                                  -->
+  <!-- Get a reference to the remote cachemanager.                           -->
   <!-- ===================================================================== -->
   <New id="hotrodMgr" class="org.infinispan.client.hotrod.RemoteCacheManager">
     <Arg><Ref refid="config"/></Arg>
   </New>
 
 
+  <!-- ===================================================================== -->
+  <!-- Set up custom session serialization.                                  -->
+  <!-- ===================================================================== -->
   <Call id="serial_context" class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" name="getSerializationContext">
     <Arg>
       <Ref refid="hotrodMgr"/>
@@ -64,13 +67,18 @@
   </Call>
 
 
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the remote cache.                                  -->
+  <!-- ===================================================================== -->
   <Ref refid="hotrodMgr">
     <Call id="cache" name="getCache">
       <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg>
     </Call>
   </Ref>
   
-  <!-- set queryMgrFactory reference to NullQueryManagerFactory -->
+  <!-- ===================================================================== -->
+  <!-- Set queryMgrFactory reference to NullQueryManagerFactory              -->
+  <!-- ===================================================================== -->
   <New id="queryMgrFactory" class="org.eclipse.jetty.session.infinispan.NullQueryManagerFactory"/>
   
 </Configure> 

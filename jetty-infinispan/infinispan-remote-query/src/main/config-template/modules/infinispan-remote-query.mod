@@ -7,9 +7,11 @@ session
 [provides]
 infinispan-remote
 
+[depends]
+sessions/infinispan/remote/infinispan-remote-query-libs
+
 [files]
-basehome:modules/infinispan-remote-query/hotrod-client.properties|resources/hotrod-client.properties
-basehome:modules/infinispan-remote-query/other_proto_marshallers.xml|etc/other_proto_marshallers.xml
+basehome:modules/sessions/infinispan/remote/other_proto_marshallers.xml|etc/other_proto_marshallers.xml
 
 [lib]
 lib/infinispan-remote-query-${jetty.version}.jar

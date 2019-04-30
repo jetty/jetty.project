@@ -5,7 +5,5 @@ The Infinispan query libraries
 3rdparty
 infinispan
 
-[depends]
-infinispan-query
 
 
