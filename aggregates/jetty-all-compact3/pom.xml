@@ -37,8 +37,8 @@
             </goals>
             <configuration>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
-              <excludeArtifactIds>javax</excludeArtifactIds>
-              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm</excludeGroupIds>
+              <excludeArtifactIds>javax,jetty-test-helper</excludeArtifactIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm,org.junit</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -66,8 +66,8 @@
                 **/ResourcesAnnotationHandler*.java
               </excludes>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
-              <excludeArtifactIds>javax</excludeArtifactIds>
-              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm</excludeGroupIds>
+              <excludeArtifactIds>javax,jetty-test-helper</excludeArtifactIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm,org.junit</excludeGroupIds>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
