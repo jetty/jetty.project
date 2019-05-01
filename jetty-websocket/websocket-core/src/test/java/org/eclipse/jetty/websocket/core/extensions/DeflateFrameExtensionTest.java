@@ -57,10 +57,10 @@ import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest

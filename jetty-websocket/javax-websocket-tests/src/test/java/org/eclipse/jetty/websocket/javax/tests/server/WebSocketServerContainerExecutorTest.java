@@ -26,7 +26,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -51,10 +50,10 @@ import org.eclipse.jetty.websocket.javax.tests.WSURI;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 
 public class WebSocketServerContainerExecutorTest
 {

@@ -19,11 +19,12 @@
 package org.eclipse.jetty.server;
 
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -82,9 +83,9 @@ public class ProxyConnectionTest
     }
     
     @Test
-    @Tag("ipv6")
     public void testIPv6() throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         String response=_connector.getResponse("PROXY UNKNOWN eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\n"+
                 "GET /path HTTP/1.1\n"+
                 "Host: server:80\n"+

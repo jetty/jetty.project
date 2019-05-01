@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 
@@ -33,8 +32,8 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends AbstractJavaxWebSocketFrameHandlerTest
 {

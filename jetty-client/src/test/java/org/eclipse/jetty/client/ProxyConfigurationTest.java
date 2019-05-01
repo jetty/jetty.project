@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.client;
 
-import org.junit.jupiter.api.Tag;
+import org.eclipse.jetty.toolchain.test.Net;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -68,9 +69,9 @@ public class ProxyConfigurationTest
     }
 
     @Test
-    @Tag("ipv6")
     public void testProxyMatchesWithIncludesAndExcludesIPv6() throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         HttpProxy proxy = new HttpProxy("host", 0);
         proxy.getIncludedAddresses().add("[1::2:3:4]");
         proxy.getExcludedAddresses().add("[1::2:3:4]:5");

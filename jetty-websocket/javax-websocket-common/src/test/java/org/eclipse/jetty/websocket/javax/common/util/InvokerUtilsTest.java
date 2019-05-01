@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.common.util;
 
-import org.eclipse.jetty.util.annotation.Name;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
-import static org.hamcrest.CoreMatchers.is;
+import org.eclipse.jetty.util.annotation.Name;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @SuppressWarnings("Duplicates")
 public class InvokerUtilsTest

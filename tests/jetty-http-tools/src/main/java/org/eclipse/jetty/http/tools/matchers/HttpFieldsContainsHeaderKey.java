@@ -21,7 +21,6 @@ package org.eclipse.jetty.http.tools.matchers;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Description;
-import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
@@ -51,7 +50,6 @@ public class HttpFieldsContainsHeaderKey extends TypeSafeMatcher<HttpFields>
         return fields.containsKey(this.keyName);
     }
 
-    @Factory
     public static Matcher<HttpFields> containsKey(String keyName) {
         return new HttpFieldsContainsHeaderKey(keyName);
     }

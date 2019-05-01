@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
-import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,9 +29,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
+import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
+import org.junit.jupiter.api.Test;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 {

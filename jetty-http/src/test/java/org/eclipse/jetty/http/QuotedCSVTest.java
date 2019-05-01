@@ -18,17 +18,15 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.isEmptyString;
-import static org.hamcrest.Matchers.nullValue;
+import java.util.Collections;
 
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class QuotedCSVTest
 {
@@ -161,7 +159,7 @@ public class QuotedCSVTest
     public void testJoin()
     {
         assertThat(QuotedCSV.join((String)null),nullValue());
-        assertThat(QuotedCSV.join(Collections.emptyList()),isEmptyString());
+        assertThat(QuotedCSV.join(Collections.emptyList()),is(emptyString()));
         assertThat(QuotedCSV.join(Collections.singletonList("hi")),is("hi"));
         assertThat(QuotedCSV.join("hi","ho"),is("hi, ho"));
         assertThat(QuotedCSV.join("h i","h,o"),is("\"h i\", \"h,o\""));

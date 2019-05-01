@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
@@ -34,8 +28,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import static org.hamcrest.CoreMatchers.is;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class ReaderMessageSinkTest extends AbstractMessageSinkTest
 {

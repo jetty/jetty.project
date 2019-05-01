@@ -89,11 +89,14 @@ public abstract class AbstractHttpClientServerTest
     {
         System.gc();
 
-        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
-        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
+        if (serverBufferPool != null)
+        {
+            assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
+            assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
+            assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
+        }
 
-        if (clientBufferPool instanceof LeakTrackingByteBufferPool)
+        if ((clientBufferPool != null) && (clientBufferPool instanceof LeakTrackingByteBufferPool))
         {
             LeakTrackingByteBufferPool pool = (LeakTrackingByteBufferPool)clientBufferPool;
             assertThat("Client BufferPool - leaked acquires", pool.getLeakedAcquires(), Matchers.is(0L));

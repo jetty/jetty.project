@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.websocket.javax.tests.matchers;
 
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.javax.tests.MessageType;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
-import org.hamcrest.Description;
-import org.hamcrest.Factory;
-import org.hamcrest.TypeSafeMatcher;
-
 import javax.websocket.Decoder;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
+
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.javax.tests.MessageType;
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 
 public class IsMessageHandlerType extends TypeSafeMatcher<MessageHandler>
 {
@@ -98,7 +97,6 @@ public class IsMessageHandlerType extends TypeSafeMatcher<MessageHandler>
         return false;
     }
 
-    @Factory
     public static IsMessageHandlerType isMessageHandlerType(JavaxWebSocketSession session, MessageType messageType)
     {
         return new IsMessageHandlerType(session, messageType);

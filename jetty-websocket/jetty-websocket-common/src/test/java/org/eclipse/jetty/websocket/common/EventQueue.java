@@ -22,8 +22,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class EventQueue extends LinkedBlockingDeque<String>
@@ -41,7 +41,7 @@ public class EventQueue extends LinkedBlockingDeque<String>
             Iterator<String> capturedIterator = iterator();
             for (i = 0; i < regexEvents.length; i++)
             {
-                assertThat("Event [" + i + "]", capturedIterator.next(), matchesPattern(regexEvents[i]));
+                assertThat("Event [" + i + "]", capturedIterator.next(), matchesRegex(regexEvents[i]));
             }
         }
         catch (NoSuchElementException e)

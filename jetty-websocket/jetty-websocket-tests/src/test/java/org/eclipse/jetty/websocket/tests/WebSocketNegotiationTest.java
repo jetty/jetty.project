@@ -32,8 +32,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,10 +44,10 @@ import static org.hamcrest.Matchers.startsWith;
 
 public class WebSocketNegotiationTest
 {
-    public static class EchoServlet extends WebSocketServlet
+    public static class EchoServlet extends JettyWebSocketServlet
     {
         @Override
-        public void configure(WebSocketServletFactory factory)
+        public void configure(JettyWebSocketServletFactory factory)
         {
             factory.register(EchoSocket.class);
         }
