@@ -24,8 +24,6 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -54,6 +52,7 @@ import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
@@ -65,7 +64,7 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
  */
-public class WebSocketClient extends ContainerLifeCycle implements WebSocketContainerScope, WebSocketSessionListener
+public class WebSocketClient extends ContainerLifeCycle implements WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 
@@ -80,6 +79,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private final WebSocketExtensionFactory extensionRegistry;
     private final EventDriverFactory eventDriverFactory;
     private final SessionFactory sessionFactory;
+    private final SessionTracker sessionTracker;
     private final List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
 
     // defaults to true for backwards compatibility
@@ -273,7 +273,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             this.httpClient = httpClient;
         }
 
-        this.addSessionListener(this);
+        this.sessionTracker = new SessionTracker();
+        this.addBean(sessionTracker);
+
+        this.addSessionListener(this.sessionTracker);
 
         // Ensure we get a Client version of the policy.
         this.policy = scope.getPolicy().delegateAs(WebSocketBehavior.CLIENT);
@@ -538,7 +541,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     public Set<WebSocketSession> getOpenSessions()
     {
-        return Collections.unmodifiableSet(new HashSet<>(getBeans(WebSocketSession.class)));
+        return sessionTracker.getSessions();
     }
 
     @Override
@@ -603,22 +606,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     protected ConnectionManager newConnectionManager()
     {
         throw new UnsupportedOperationException("ConnectionManager is no longer supported");
-    }
-
-    @Override
-    public void onSessionClosed(WebSocketSession session)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Session Closed: {}",session);
-        removeBean(session);
-    }
-
-    @Override
-    public void onSessionOpened(WebSocketSession session)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Session Opened: {}",session);
-        addManaged(session);
     }
 
     public void setAsyncWriteTimeout(long ms)

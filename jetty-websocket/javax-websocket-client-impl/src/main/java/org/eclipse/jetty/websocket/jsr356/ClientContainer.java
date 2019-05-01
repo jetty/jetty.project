@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -76,7 +75,7 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
 @ManagedObject("JSR356 Client Container")
-public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope, WebSocketSessionListener
+public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
 
@@ -91,6 +90,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     private final boolean internalClient;
     /** Tracking for all declared Client endpoints */
     private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
+
+    private final JsrSessionTracker sessionTracker = new JsrSessionTracker();
     
     /**
      * This is the entry point for {@link javax.websocket.ContainerProvider#getWebSocketContainer()}
@@ -140,7 +141,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                 new JsrEventDriverFactory(scopeDelegate),
                 new JsrSessionFactory(this),
                 httpClient);
-        this.client.addSessionListener(this);
+        this.client.addSessionListener(new JsrSessionListenerBridge(sessionTracker));
 
         if(jsr356TrustAll != null)
         {
@@ -153,6 +154,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
         this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
+
+        addBean(sessionTracker);
     }
     
     /**
@@ -164,12 +167,14 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         this.scopeDelegate = client;
         this.client = client;
-        this.client.addSessionListener(this);
         this.internalClient = false;
         
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
         this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
+
+        this.client.addSessionListener(new JsrSessionListenerBridge(sessionTracker));
+        addBean(sessionTracker);
     }
 
     private Session connect(EndpointInstance instance, URI path) throws IOException
@@ -404,7 +409,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public Set<Session> getOpenSessions()
     {
-        return new HashSet<>(getBeans(Session.class));
+        return this.sessionTracker.getSessions();
     }
 
     @Override
@@ -468,34 +473,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
 
     @Override
-    public void onSessionClosed(WebSocketSession session)
-    {
-        if (session instanceof Session)
-        {
-            removeBean(session);
-        }
-        else
-        {
-            LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}",session.getClass().getName(),
-                    Session.class.getName());
-        }
-    }
-
-    @Override
-    public void onSessionOpened(WebSocketSession session)
-    {
-        if (session instanceof Session)
-        {
-            addManaged(session);
-        }
-        else
-        {
-            LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}",session.getClass().getName(),
-                    Session.class.getName());
-        }
-    }
-
-    @Override
     public void setAsyncSendTimeout(long ms)
     {
         client.setAsyncWriteTimeout(ms);
@@ -525,5 +502,33 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
         // bump overall message limit (used in non-streaming)
         client.getPolicy().setMaxTextMessageSize(max);
+    }
+
+    private static class JsrSessionListenerBridge implements WebSocketSessionListener
+    {
+        private final JsrSessionListener listener;
+
+        public JsrSessionListenerBridge(JsrSessionListener listener)
+        {
+            this.listener = listener;
+        }
+
+        @Override
+        public void onSessionOpened(WebSocketSession session)
+        {
+            if (session instanceof JsrSession)
+            {
+                this.listener.onSessionOpened((JsrSession) session);
+            }
+        }
+
+        @Override
+        public void onSessionClosed(WebSocketSession session)
+        {
+            if (session instanceof JsrSession)
+            {
+                this.listener.onSessionClosed((JsrSession) session);
+            }
+        }
     }
 }
