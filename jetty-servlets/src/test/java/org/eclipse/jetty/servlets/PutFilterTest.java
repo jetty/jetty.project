@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -33,7 +28,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletResponse;
 
@@ -46,6 +40,12 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PutFilterTest
 {
@@ -270,15 +270,9 @@ public class PutFilterTest
         Set<String> options = new HashSet<String>();
         String allow=response.get("Allow");
         options.addAll(StringUtil.csvSplit(null,allow,0,allow.length()));
-        assertThat("GET", isIn(options));
-        assertThat("POST", isIn(options));
-        assertThat("PUT", isIn(options));
-        assertThat("MOVE", isIn(options));
-    }
-
-    @Test
-    public void testPassConditionalHeaders()
-    {
-        // TODO implement
+        assertThat("GET", is(in(options)));
+        assertThat("POST", is(in(options)));
+        assertThat("PUT", is(in(options)));
+        assertThat("MOVE", is(in(options)));
     }
 }
