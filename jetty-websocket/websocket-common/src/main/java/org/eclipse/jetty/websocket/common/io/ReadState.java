@@ -51,6 +51,8 @@ class ReadState
                     if (state.compareAndSet(current, State.SUSPENDING))
                         return true;
                     break;
+                case SUSPENDING:
+                    return false;
                 case EOF:
                     return false;
                 default:

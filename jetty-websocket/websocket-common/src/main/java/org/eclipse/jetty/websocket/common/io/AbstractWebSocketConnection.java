@@ -628,8 +628,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public SuspendToken suspend()
     {
-        readState.suspending();
-        return this;
+        if (readState.suspending())
+        {
+            return this;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
