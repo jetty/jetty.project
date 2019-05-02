@@ -10,10 +10,10 @@ session-store
 [depend]
 infinispan-common
 infinispan-embedded
+infinispan-query-libs
 
 [files]
 basehome:modules/session-store-infinispan-embedded/infinispan.xml|etc/infinispan.xml
-maven://org.infinispan/infinispan-embedded-it/${infinispan.version}|lib/infinispan/infinispan-embedded-it-${infinispan.version}.jar
 
 [ini]
 infinispan.version?=9.4.8.Final

@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -135,7 +136,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStart() throws Exception
     {
-        _tryExecutor = new ReservedThreadExecutor(this,_reservedThreads);
+        _tryExecutor = _reservedThreads==0 ? NO_TRY : new ReservedThreadExecutor(this,_reservedThreads);
         addBean(_tryExecutor);
         
         super.doStart();
@@ -473,7 +474,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         else
         {
             // Make sure there is at least one thread executing the job.
-            if (getThreads() == 0)
+            if (getQueueSize() > 0 && getIdleThreads() == 0)
                 startThreads(1);
         }
     }
@@ -603,7 +604,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             String knownMethod = "";
             for (StackTraceElement t : trace)
             {
-                if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().endsWith("QueuedThreadPool"))
+                if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().equals(Runner.class.getName()))
                 {
                     knownMethod = "IDLE ";
                     break;
@@ -636,11 +637,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     @Override
                     public void dump(Appendable out, String indent) throws IOException
                     {
-                        String s = thread.getId()+" "+thread.getName()+" "+thread.getState()+" "+thread.getPriority();
-                        if (known.length()==0)
-                            Dumpable.dumpObjects(out, indent, s, (Object[])trace);
+                        if (StringUtil.isBlank(known))
+                            Dumpable.dumpObjects(out, indent, String.format("%s %s %s %d", thread.getId(), thread.getName(), thread.getState(), thread.getPriority()), (Object[])trace);
                         else
-                            Dumpable.dumpObjects(out, indent, s);
+                            Dumpable.dumpObjects(out, indent, String.format("%s %s %s %s %d", thread.getId(), thread.getName(), known, thread.getState(), thread.getPriority()));
                     }
 
                     @Override
@@ -671,7 +671,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d}[%s]",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d}[%s]",
             getClass().getSimpleName(),
             _name,
             hashCode(),
@@ -680,100 +680,12 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             getThreads(),
             getMaxThreads(),
             getIdleThreads(),
+            getReservedThreads(),
             _jobs.size(),
             _tryExecutor);
     }
 
-    private Runnable _runnable = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            boolean idle = false;
-
-            try
-            {
-                Runnable job = _jobs.poll();
-                if (job != null && _threadsIdle.get() == 0)
-                    startThreads(1);
-
-                while (true)
-                {
-                    if (job == null)
-                    {
-                        if (!idle)
-                        {
-                            idle = true;
-                            _threadsIdle.incrementAndGet();
-                        }
-
-                        if (_idleTimeout <= 0)
-                            job = _jobs.take();
-                        else
-                        {
-                            // maybe we should shrink?
-                            int size = _threadsStarted.get();
-                            if (size > _minThreads)
-                            {
-                                long last = _lastShrink.get();
-                                long now = System.nanoTime();
-                                if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
-                                {
-                                    if (_lastShrink.compareAndSet(last, now))
-                                        break;
-                                }
-                            }
-
-                            job = _jobs.poll(_idleTimeout, TimeUnit.MILLISECONDS);
-                        }
-                    }
-
-                    // run job
-                    if (job != null)
-                    {
-                        if (idle)
-                        {
-                            idle = false;
-                            if (_threadsIdle.decrementAndGet() == 0)
-                                startThreads(1);
-                        }
-
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("run {}", job);
-                        runJob(job);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("ran {}", job);
-
-                        // Clear interrupted status
-                        Thread.interrupted();
-                    }
-
-                    if (!isRunning())
-                        break;
-
-                    job = _jobs.poll();
-                }
-            }
-            catch (InterruptedException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (Throwable e)
-            {
-                LOG.warn(String.format("Unexpected thread death: %s in %s", this, QueuedThreadPool.this), e);
-            }
-            finally
-            {
-                if (idle)
-                    _threadsIdle.decrementAndGet();
-
-                removeThread(Thread.currentThread());
-
-                if (_threadsStarted.decrementAndGet() < getMinThreads())
-                    startThreads(1);
-            }
-        }
-    };
+    private final Runnable _runnable = new Runner();
 
     /**
      * <p>Runs the given job in the {@link Thread#currentThread() current thread}.</p>
@@ -842,5 +754,108 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
         }
         return null;
+    }
+
+    private static Runnable SHRINK = ()->{};
+    private class Runner implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            boolean idle = false;
+
+            try
+            {
+                Runnable job = _jobs.poll();
+                if (job != null && _threadsIdle.get() == 0)
+                    startThreads(1);
+
+                while (true)
+                {
+                    if (job == null)
+                    {
+                        if (!idle)
+                        {
+                            idle = true;
+                            _threadsIdle.incrementAndGet();
+                        }
+
+                        job = idleJobPoll();
+                        if (job == SHRINK)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("shrinking {}", this);
+                            break;
+                        }
+                    }
+
+                    // run job
+                    if (job != null)
+                    {
+                        if (idle)
+                        {
+                            idle = false;
+                            if (_threadsIdle.decrementAndGet() == 0)
+                                startThreads(1);
+                        }
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("run {}", job);
+                        runJob(job);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("ran {}", job);
+
+                        // Clear interrupted status
+                        Thread.interrupted();
+                    }
+
+                    if (!isRunning())
+                        break;
+
+                    job = _jobs.poll();
+                }
+            }
+            catch (InterruptedException e)
+            {
+                LOG.ignore(e);
+            }
+            catch (Throwable e)
+            {
+                LOG.warn(String.format("Unexpected thread death: %s in %s", this, QueuedThreadPool.this), e);
+            }
+            finally
+            {
+                if (idle)
+                    _threadsIdle.decrementAndGet();
+
+                removeThread(Thread.currentThread());
+
+                int threads = _threadsStarted.decrementAndGet();
+                // We should start a new thread if threads are now less than min threads or we have queued jobs
+                if (threads < getMinThreads() || getQueueSize()>0)
+                    startThreads(1);
+            }
+        }
+
+        private Runnable idleJobPoll() throws InterruptedException
+        {
+            if (_idleTimeout <= 0)
+                return _jobs.take();
+
+            // maybe we should shrink?
+            int size = _threadsStarted.get();
+            if (size > _minThreads)
+            {
+                long last = _lastShrink.get();
+                long now = System.nanoTime();
+                if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
+                {
+                    if (_lastShrink.compareAndSet(last, now))
+                        return SHRINK;
+                }
+            }
+
+            return _jobs.poll(_idleTimeout, TimeUnit.MILLISECONDS);
+        }
     }
 }

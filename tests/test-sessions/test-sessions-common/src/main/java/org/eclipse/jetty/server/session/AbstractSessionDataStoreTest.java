@@ -31,10 +31,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -238,6 +240,11 @@ public abstract class AbstractSessionDataStoreTest
         File factoryClass = new File (proxyabledir, "ProxyableFactory.class");
         IO.copy(is, new FileOutputStream(factoryClass));
         is.close();
+        
+        is = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
+        File fooClass = new File (proxyabledir, "Foo.class");
+        IO.copy(is, new FileOutputStream(fooClass));
+        is.close();
 
         URL[] proxyabledirUrls = new URL[]{proxyabledir.toURI().toURL()};
         _contextClassLoader = new URLClassLoader(proxyabledirUrls, Thread.currentThread().getContextClassLoader());
@@ -272,6 +279,15 @@ public abstract class AbstractSessionDataStoreTest
 
             //Make an attribute that uses the proxy only known to the webapp classloader
             data.setAttribute("a", proxy);
+            
+            //Now make an attribute that uses a system class to store a webapp classes
+            //see issue #3597
+            Class fooclazz = Class.forName("Foo", true, _contextClassLoader);
+            Constructor constructor = fooclazz.getConstructor(null);
+            Object foo = constructor.newInstance(null);
+            ArrayList list = new ArrayList();
+            list.add(foo);
+            data.setAttribute("foo", list);
         }
         finally
         {

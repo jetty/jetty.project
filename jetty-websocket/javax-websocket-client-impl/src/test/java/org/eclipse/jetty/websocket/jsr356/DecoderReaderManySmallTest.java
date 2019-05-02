@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -31,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -59,6 +54,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Disabled("Not working atm")
 public class DecoderReaderManySmallTest
@@ -200,7 +200,7 @@ public class DecoderReaderManySmallTest
             // validate that all expected ids have been seen (order is irrelevant here)
             for (int expected = from; expected < to; expected++)
             {
-                assertThat("Has expected id:" + expected, expected, isIn(seen));
+                assertThat("Has expected id:" + expected, expected, is(in(seen)));
             }
         }
     }

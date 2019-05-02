@@ -7,9 +7,6 @@ session
 [provides]
 infinispan-embedded
 
-[depends]
-infinispan-query-libs
-
 [lib]
 lib/infinispan/*.jar
 lib/infinispan-embedded-query-${jetty.version}.jar

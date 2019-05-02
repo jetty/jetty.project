@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.tests</groupId>
         <artifactId>tests-parent</artifactId>
-        <version>9.4.17-SNAPSHOT</version>
+        <version>9.4.19-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -156,11 +156,6 @@
             <groupId>org.eclipse.jetty.fcgi</groupId>
             <artifactId>fcgi-server</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
