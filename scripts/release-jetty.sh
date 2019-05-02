@@ -158,9 +158,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
         git checkout $TAG_NAME
-        # javadoc:aggregate-jar need already build modules
-        mvn clean install -T4 -DskipTests
-        mvn javadoc:aggregate-jar package source:jar javadoc:jar gpg:sign deploy \
+        mvn clean package source:jar javadoc:jar gpg:sign javadoc:aggregate-jar deploy \
             -Peclipse-release $DEPLOY_OPTS
         reportMavenTestFailures
         git checkout $GIT_BRANCH_ID
