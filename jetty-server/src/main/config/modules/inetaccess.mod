@@ -10,6 +10,9 @@ handler
 [depend]
 server
 
+[files]
+basehome:modules/inetaccess/jetty-inetaccess.xml|etc/jetty-inetaccess.xml
+
 [xml]
 etc/jetty-inetaccess.xml
 
@@ -22,8 +25,8 @@ etc/jetty-inetaccess.xml
 #jetty.inetaccess.exclude=127.0.0.1,127.0.0.2
 
 ## List of Connector names to include
-#jetty.inetaccess.includeConnectorNames=http
+#jetty.inetaccess.includeConnectors=http
 
 ## List of Connector names to exclude
-#jetty.inetaccess.excludeConnectorNames=tls
+#jetty.inetaccess.excludeConnectors=tls
 
