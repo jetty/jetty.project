@@ -68,6 +68,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class DeploymentManager extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(DeploymentManager.class);
+    private List<Throwable> onStartupErrors;
 
     /**
      * Represents a single tracked app within the deployment manager.
@@ -237,6 +238,14 @@ public class DeploymentManager extends ContainerLifeCycle
         {
             startAppProvider(provider);
         }
+
+        if (onStartupErrors != null)
+        {
+            RuntimeException mex = new RuntimeException("Failed to successfully start App Providers (See log for details)");
+            onStartupErrors.forEach((cause) -> mex.addSuppressed(cause));
+            throw mex;
+        }
+
         super.doStart();
     }
 
@@ -507,6 +516,7 @@ public class DeploymentManager extends ContainerLifeCycle
         catch (Throwable t)
         {
             LOG.warn("Unable to reach node goal: " + nodeName,t);
+            LOG.info("state() = {}", getState());
             // migrate to FAILED node
             Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);
             appentry.setLifeCycleNode(failed);
@@ -519,7 +529,21 @@ public class DeploymentManager extends ContainerLifeCycle
                 // The runBindings failed for 'failed' node
                 LOG.ignore(ignore);
             }
+
+            if (isStarting())
+            {
+                addOnStartupError(t);
+            }
         }
+    }
+
+    private synchronized void addOnStartupError(Throwable cause)
+    {
+        if(onStartupErrors == null)
+        {
+            onStartupErrors = new ArrayList();
+        }
+        onStartupErrors.add(cause);
     }
 
     /**
