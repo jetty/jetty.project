@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -202,9 +203,9 @@ public class InetAccessHandler extends HandlerWrapper
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,
-                Dumpable.labelled("included", _addrs.getIncluded()),
-                Dumpable.labelled("excluded", _addrs.getExcluded()),
-                Dumpable.labelled("includedConnectorNames", _names.getIncluded()),
-                Dumpable.labelled("excludedConnectorNames", _names.getExcluded()));
+            new DumpableCollection("included", _addrs.getIncluded()),
+            new DumpableCollection("excluded", _addrs.getExcluded()),
+            new DumpableCollection("includedConnectorNames", _names.getIncluded()),
+            new DumpableCollection("excludedConnectorNames", _names.getExcluded()));
     }
 }
