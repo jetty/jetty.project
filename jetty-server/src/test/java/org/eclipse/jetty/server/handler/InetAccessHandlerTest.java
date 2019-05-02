@@ -18,19 +18,11 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
@@ -38,6 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -49,7 +43,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InetAccessHandlerTest
 {
@@ -81,14 +74,12 @@ public class InetAccessHandlerTest
         _server.start();
     }
 
-    /* ------------------------------------------------------------ */
     @AfterAll
     public static void tearDown() throws Exception
     {
         _server.stop();
     }
 
-    /* ------------------------------------------------------------ */
     @ParameterizedTest
     @MethodSource("data")
     public void testHandler(String include, String exclude, String includeConnectors, String excludeConnectors, String code)
@@ -113,104 +104,43 @@ public class InetAccessHandlerTest
         {
             if (inc.length() > 0)
             {
-                _handler.includeConnectorName(inc);
+                _handler.includeConnector(inc);
             }
         }
         for (String exc : excludeConnectors.split(";", -1))
         {
             if (exc.length() > 0)
             {
-                _handler.excludeConnectorName(exc);
+                _handler.excludeConnector(exc);
             }
         }
 
-        String request = "GET /path HTTP/1.1\n" + "Host: 127.0.0.1\n\n";
-        Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
-        socket.setSoTimeout(5000);
-        try
+        try (Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());)
         {
-            OutputStream output = socket.getOutputStream();
-            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            socket.setSoTimeout(5000);
 
-            output.write(request.getBytes(StandardCharsets.UTF_8));
-            output.flush();
+            HttpTester.Request request = HttpTester.newRequest();
+            request.setMethod("GET");
+            request.setURI("/path");
+            request.setHeader("Host","127.0.0.1");
+            request.setVersion(HttpVersion.HTTP_1_0);
 
-            Response response = readResponse(input);
+            ByteBuffer output = request.generate();
+            socket.getOutputStream().write(output.array(),output.arrayOffset()+output.position(),output.remaining());
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
             Object[] params = new Object[]
-            { "Request WBHUC", include, exclude, includeConnectors, excludeConnectors, code, "Response", response.getCode() };
-            assertEquals(code, response.getCode(), Arrays.deepToString(params));
-        } finally
-        {
-            socket.close();
+            { "Request WBHUC", include, exclude, includeConnectors, excludeConnectors, code, "Response", response.getStatus() };
+            assertEquals(Integer.parseInt(code), response.getStatus(), Arrays.deepToString(params));
         }
     }
 
-    /* ------------------------------------------------------------ */
-    protected Response readResponse(BufferedReader reader) throws IOException
-    {
-        // Simplified parser for HTTP responses
-        String line = reader.readLine();
-        if (line == null)
-            throw new EOFException();
-        Matcher responseLine = Pattern.compile("HTTP/1\\.1\\s+(\\d+)").matcher(line);
-        assertTrue(responseLine.lookingAt());
-        String code = responseLine.group(1);
-
-        Map<String, String> headers = new LinkedHashMap<>();
-        while ((line = reader.readLine()) != null)
-        {
-            if (line.trim().length() == 0)
-                break;
-
-            Matcher header = Pattern.compile("([^:]+):\\s*(.*)").matcher(line);
-            assertTrue(header.lookingAt());
-            String headerName = header.group(1);
-            String headerValue = header.group(2);
-            headers.put(headerName.toLowerCase(Locale.ENGLISH), headerValue.toLowerCase(Locale.ENGLISH));
-        }
-
-        StringBuilder body = new StringBuilder();
-        if (headers.containsKey("content-length"))
-        {
-            int length = Integer.parseInt(headers.get("content-length"));
-            for (int i = 0; i < length; ++i)
-            {
-                char c = (char) reader.read();
-                body.append(c);
-            }
-        } else if ("chunked".equals(headers.get("transfer-encoding")))
-        {
-            while ((line = reader.readLine()) != null)
-            {
-                if ("0".equals(line))
-                {
-                    line = reader.readLine();
-                    assertEquals("", line);
-                    break;
-                }
-
-                int length = Integer.parseInt(line, 16);
-                for (int i = 0; i < length; ++i)
-                {
-                    char c = (char) reader.read();
-                    body.append(c);
-                }
-                line = reader.readLine();
-                assertEquals("", line);
-            }
-        }
-
-        return new Response(code, headers, body.toString().trim());
-    }
-
-    /* ------------------------------------------------------------ */
     protected class Response
     {
         private final String code;
         private final Map<String, String> headers;
         private final String body;
 
-        /* ------------------------------------------------------------ */
         private Response(String code, Map<String, String> headers, String body)
         {
             this.code = code;
@@ -218,25 +148,21 @@ public class InetAccessHandlerTest
             this.body = body;
         }
 
-        /* ------------------------------------------------------------ */
         public String getCode()
         {
             return code;
         }
 
-        /* ------------------------------------------------------------ */
         public Map<String, String> getHeaders()
         {
             return headers;
         }
 
-        /* ------------------------------------------------------------ */
         public String getBody()
         {
             return body;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
@@ -250,7 +176,6 @@ public class InetAccessHandlerTest
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static Stream<Arguments> data()
     {
         Object[][] data = new Object[][]

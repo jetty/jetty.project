@@ -116,7 +116,7 @@ public class InetAccessHandler extends HandlerWrapper
      *
      * @param name Connector name to include in this handler.
      */
-    public void includeConnectorName(String name)
+    public void includeConnector(String name)
     {
         _names.include(name);
     }
@@ -126,7 +126,7 @@ public class InetAccessHandler extends HandlerWrapper
      *
      * @param name Connector name to exclude in this handler.
      */
-    public void excludeConnectorName(String name)
+    public void excludeConnector(String name)
     {
         _names.exclude(name);
     }
@@ -136,7 +136,7 @@ public class InetAccessHandler extends HandlerWrapper
      *
      * @param names Connector names to include in this handler.
      */
-    public void includeConnectorNames(String... names)
+    public void includeConnectors(String... names)
     {
         _names.include(names);
     }
@@ -146,7 +146,7 @@ public class InetAccessHandler extends HandlerWrapper
      *
      * @param names Connector names to exclude in this handler.
      */
-    public void excludeConnectorNames(String... names)
+    public void excludeConnectors(String... names)
     {
         _names.exclude(names);
     }
@@ -195,7 +195,7 @@ public class InetAccessHandler extends HandlerWrapper
             Boolean allowedByAddr = _addrs.isIncludedAndNotExcluded(addr);
             LOG.debug("{} allowedByName={} allowedByAddr={} for {}/{}", this, allowedByName, allowedByAddr, addr, request);
         }
-        return IncludeExclude.and(_addrs, addr, _names, baseRequest.getHttpChannel().getConnector()::getName);
+        return _names.test(name) && _addrs.test(addr);
     }
 
     @Override

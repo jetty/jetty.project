@@ -5,7 +5,6 @@
     <Call name="insertHandler">
         <Arg>
             <New id="InetAccessHandler" class="org.eclipse.jetty.server.handler.InetAccessHandler">
-
                 <Call name="include">
                     <Arg>
                         <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
@@ -20,17 +19,17 @@
                         </Call>
                     </Arg>
                 </Call>
-                <Call name="includeConnectorNames">
+                <Call name="includeConnectors">
                     <Arg>
                         <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-                            <Arg><Property name="jetty.inetaccess.includeConnectorNames" default=""/></Arg>
+                            <Arg><Property name="jetty.inetaccess.includeConnectors" default=""/></Arg>
                         </Call>
                     </Arg>
                 </Call>
-                <Call name="excludeConnectorNames">
+                <Call name="excludeConnectors">
                     <Arg>
                         <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-                            <Arg><Property name="jetty.inetaccess.excludeConnectorNames" default=""/></Arg>
+                            <Arg><Property name="jetty.inetaccess.excludeConnectors" default=""/></Arg>
                         </Call>
                     </Arg>
                 </Call>

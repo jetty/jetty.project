@@ -223,31 +223,6 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
         return _includes.isEmpty() && _excludes.isEmpty();
     }
 
-    /**
-     * Combine the results of two {@link IncludeExcludeSet}s with an "and"-like operation.
-     * Item x must be included and not excluded by xSet AND item y must be included and not excluded by ySet.
-     * If a sets inclusions are empty, then all items are considered to be included.
-     * @param xSet The set that param x is tested against
-     * @param x An item to test against xSet
-     * @param ySet The set that param y is tested against
-     * @param y A supplier of an item to test against ySet, that is executed only of x is not excluded from xSet
-     * @param <XS> The type of xSet items
-     * @param <XP> The type of xSet predicates
-     * @param <YS> The type of ySet items
-     * @param <YP> The type of ySet predicates
-     * @return True only if the items are included and not excluded from their respected sets
-     */
-    public static <XS, XP, YS, YP> boolean and(IncludeExcludeSet<XS, XP> xSet, XP x, IncludeExcludeSet<YS,YP> ySet, Supplier<YP> y)
-    {
-        Boolean xb = xSet.isIncludedAndNotExcluded(x);
-        if (Boolean.FALSE==xb || (xb==null && xSet.hasIncludes()))
-            return false;
-        Boolean yb = ySet.isIncludedAndNotExcluded(y.get());
-        if (Boolean.FALSE==yb || (yb==null && ySet.hasIncludes()))
-            return false;
-
-        return true;
-    }
 
     /**
      * Combine the results of two {@link IncludeExcludeSet}s with an "or"-like operation.
