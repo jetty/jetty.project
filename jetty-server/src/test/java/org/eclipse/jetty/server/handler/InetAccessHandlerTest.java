@@ -135,47 +135,6 @@ public class InetAccessHandlerTest
         }
     }
 
-    protected class Response
-    {
-        private final String code;
-        private final Map<String, String> headers;
-        private final String body;
-
-        private Response(String code, Map<String, String> headers, String body)
-        {
-            this.code = code;
-            this.headers = headers;
-            this.body = body;
-        }
-
-        public String getCode()
-        {
-            return code;
-        }
-
-        public Map<String, String> getHeaders()
-        {
-            return headers;
-        }
-
-        public String getBody()
-        {
-            return body;
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.append(code).append("\r\n");
-            for (Map.Entry<String, String> entry : headers.entrySet())
-                builder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
-            builder.append("\r\n");
-            builder.append(body);
-            return builder.toString();
-        }
-    }
-
     public static Stream<Arguments> data()
     {
         Object[][] data = new Object[][]
