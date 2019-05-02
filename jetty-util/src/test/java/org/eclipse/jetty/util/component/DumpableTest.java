@@ -26,9 +26,8 @@ import java.util.Collection;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-public class DumpableCollectionTest
+public class DumpableTest
 {
-
     @Test
     public void testNullDumpableCollection () throws Exception
     {
@@ -51,4 +50,13 @@ public class DumpableCollectionTest
         assertThat(dump, Matchers.containsString("two"));
         assertThat(dump, Matchers.containsString("three"));
     }
+
+    @Test
+    public void testDumpableLabelled() throws Exception
+    {
+        String dump = Dumpable.labelled("label", "Item").dump();
+        assertThat(dump, Matchers.containsString("label:"));
+        assertThat(dump, Matchers.containsString("Item"));
+    }
+
 }
