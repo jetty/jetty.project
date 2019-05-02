@@ -19,6 +19,9 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.util.Callback;
@@ -44,11 +48,12 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class WebSocketNegotiationTest
+public class WebSocketNegotiationTest extends WebSocketTester
 {
     public static class EchoFrameHandler extends TestFrameHandler
     {
@@ -78,7 +83,6 @@ public class WebSocketNegotiationTest
                     return new EchoFrameHandler();
                 }
 
-
                 String subprotocol = negotiation.getOfferedSubprotocols().get(0);
                 negotiation.setSubprotocol(subprotocol);
                 switch (subprotocol)
@@ -91,19 +95,18 @@ public class WebSocketNegotiationTest
                         negotiation.setNegotiatedExtensions(List.of(ExtensionConfig.parse("permessage-deflate;server_no_context_takeover")));
                         break;
 
-                    case "testInvalidExtensionParameter":
-                        break;
-
-                    case "testAcceptTwoExtensionsOfSameName":
-                        // We should automatically be selecting just one extension out of these two
-                        break;
-
                     case "testNotAcceptingExtensions":
                         negotiation.setNegotiatedExtensions(Collections.EMPTY_LIST);
                         break;
 
                     case "testNoSubProtocolSelected":
                         negotiation.setSubprotocol(null);
+                        break;
+
+                    case "test":
+                    case "testInvalidExtensionParameter":
+                    case "testAcceptTwoExtensionsOfSameName":
+                    case "testInvalidUpgradeRequest":
                         break;
 
                     default:
@@ -188,7 +191,6 @@ public class WebSocketNegotiationTest
 
         assertThat(extensionHeader.get(5, TimeUnit.SECONDS), is("permessage-deflate;server_no_context_takeover"));
     }
-
 
     @Test
     public void testInvalidExtensionParameter() throws Exception
@@ -301,5 +303,37 @@ public class WebSocketNegotiationTest
             assertThat(t.getMessage(), containsString("Failed to upgrade to websocket:"));
             assertThat(t.getMessage(), containsString("500 Server Error"));
         }
+    }
+
+    @Test
+    public void testValidUpgradeRequest() throws Exception
+    {
+        Socket client = new Socket();
+        client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
+
+        HttpFields httpFields = newUpgradeRequest(null);
+        String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
+        client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
+        String response = getUpgradeResponse(client.getInputStream());
+
+        assertThat(response, startsWith("HTTP/1.1 101 Switching Protocols"));
+        assertThat(response, containsString("Sec-WebSocket-Protocol: test"));
+        assertThat(response, containsString("Sec-WebSocket-Accept: +WahVcVmeMLKQUMm0fvPrjSjwzI="));
+    }
+
+    @Test
+    public void testInvalidUpgradeRequestNoKey() throws Exception
+    {
+        Socket client = new Socket();
+        client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
+
+        HttpFields httpFields = newUpgradeRequest(null);
+        httpFields.remove(HttpHeader.SEC_WEBSOCKET_KEY);
+
+        String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
+        client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
+        String response = getUpgradeResponse(client.getInputStream());
+
+        assertThat(response, containsString("400 Bad Request"));
     }
 }

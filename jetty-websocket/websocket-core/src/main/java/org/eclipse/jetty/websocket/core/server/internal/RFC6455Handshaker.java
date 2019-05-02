@@ -121,7 +121,7 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         if (negotiation.getKey() == null)
-            throw new BadMessageException("not upgraded no key");
+            throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
 
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation);
