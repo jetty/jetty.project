@@ -378,7 +378,6 @@ public class ConnectHandler extends HandlerWrapper
             response.setContentLength(0);
             if (statusCode != HttpServletResponse.SC_OK)
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-            response.flushBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
         }
@@ -419,10 +418,9 @@ public class ConnectHandler extends HandlerWrapper
 
     private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection)
     {
-        // Set the new connection as request attribute and change the status to 101
-        // so that Jetty understands that it has to upgrade the connection
+        // Set the new connection as request attribute so that
+        // Jetty understands that it has to upgrade the connection.
         request.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
-        response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         if (LOG.isDebugEnabled())
             LOG.debug("Upgraded connection to {}", connection);
     }

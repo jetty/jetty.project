@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
@@ -187,13 +186,10 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             String target = destination.getOrigin().getAddress().asString();
             Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
-            long connectTimeout = httpClient.getConnectTimeout();
             Request connect = httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
                     .method(HttpMethod.CONNECT)
                     .path(target)
-                    .header(HttpHeader.HOST, target)
-                    .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS)
-                    .timeout(connectTimeout, TimeUnit.MILLISECONDS);
+                    .header(HttpHeader.HOST, target);
             ProxyConfiguration.Proxy proxy = destination.getProxy();
             if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());

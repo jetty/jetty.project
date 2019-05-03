@@ -33,7 +33,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -375,34 +374,39 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return handle;
     }
 
+    private boolean upgrade()
+    {
+        Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+        if (connection == null)
+            return false;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgrade from {} to {}", this, connection);
+        _channel.getState().upgrade();
+        getEndPoint().upgrade(connection);
+        _channel.recycle();
+        _parser.reset();
+        _generator.reset();
+        if (_contentBufferReferences.get() == 0)
+        {
+            releaseRequestBuffer();
+        }
+        else
+        {
+            LOG.warn("{} lingering content references?!?!", this);
+            _requestBuffer = null; // Not returned to pool!
+            _contentBufferReferences.set(0);
+        }
+        return true;
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public void onCompleted()
     {
-        // Handle connection upgrades
-        if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-        {
-            Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
-            if (connection != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Upgrade from {} to {}", this, connection);
-                _channel.getState().upgrade();
-                getEndPoint().upgrade(connection);
-                _channel.recycle();
-                _parser.reset();
-                _generator.reset();
-                if (_contentBufferReferences.get()==0)
-                    releaseRequestBuffer();
-                else
-                {
-                    LOG.warn("{} lingering content references?!?!",this);
-                    _requestBuffer=null; // Not returned to pool!
-                    _contentBufferReferences.set(0);
-                }
-                return;
-            }
-        }
+        // Handle connection upgrades.
+        if (upgrade())
+            return;
 
         // Finish consuming the request
         // If we are still expecting

@@ -503,13 +503,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                     status == HttpStatus.NO_CONTENT_204 ||
                                     status == HttpStatus.NOT_MODIFIED_304);
                                 if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                                {
-                                    if (isCommitted())
-                                        abort(new IOException("insufficient content written"));
-                                    else
-                                        _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "insufficient content written");
-                                }
+                                    sendErrorOrAbort("Insufficient content written");
                             }
+                            prepareUpgrade();
                             _response.closeOutput();
                         }
                         finally
@@ -544,6 +540,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         boolean suspended=action==Action.WAIT;
         return !suspended;
+    }
+
+    public void sendErrorOrAbort(String message)
+    {
+        try
+        {
+            if (isCommitted())
+                abort(new IOException(message));
+            else
+                _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
+        }
+        catch (Throwable x)
+        {
+            LOG.ignore(x);
+            abort(x);
+        }
     }
 
     protected void sendError(int code, String reason)
@@ -737,6 +749,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         boolean result = _request.getHttpInput().eof();
         notifyRequestEnd(_request);
         return result;
+    }
+
+    protected void prepareUpgrade()
+    {
     }
 
     public void onCompleted()

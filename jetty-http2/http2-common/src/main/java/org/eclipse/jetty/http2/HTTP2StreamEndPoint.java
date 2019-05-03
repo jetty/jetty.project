@@ -20,12 +20,11 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.Buffer;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -34,20 +33,22 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
 
 public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
 {
     private static final Logger LOG = Log.getLogger(HTTP2StreamEndPoint.class);
 
     private final Deque<Entry> dataQueue = new ArrayDeque<>();
+    private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
     private final AtomicReference<Callback> readCallback = new AtomicReference<>();
     private final IStream stream;
     private Connection connection;
-    private boolean oshut;
 
     public HTTP2StreamEndPoint(IStream stream)
     {
@@ -81,20 +82,75 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     @Override
     public void shutdownOutput()
     {
-        oshut = true;
-        // TODO: I think I will need an IteratingCallback to avoid WritePendingExceptions
-        stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current.state)
+            {
+                case IDLE:
+                case OSHUTTING:
+                    if (!writeState.compareAndSet(current, WriteState.OSHUT))
+                        break;
+                    stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.from(this::oshutSuccess, this::oshutFailure));
+                    return;
+                case PENDING:
+                    if (!writeState.compareAndSet(current, WriteState.OSHUTTING))
+                        break;
+                    return;
+                case OSHUT:
+                case FAILED:
+                    return;
+            }
+        }
+    }
+
+    private void oshutSuccess()
+    {
+        WriteState current = writeState.get();
+        switch (current.state)
+        {
+            case IDLE:
+            case PENDING:
+            case OSHUTTING:
+                throw new IllegalStateException();
+            case OSHUT:
+            case FAILED:
+                break;
+        }
+    }
+
+    private void oshutFailure(Throwable failure)
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current.state)
+            {
+                case IDLE:
+                case PENDING:
+                case OSHUTTING:
+                    throw new IllegalStateException();
+                case OSHUT:
+                    if (!writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, failure)))
+                        break;
+                    return;
+                case FAILED:
+                    return;
+            }
+        }
     }
 
     @Override
     public boolean isOutputShutdown()
     {
-        return oshut;
+        WriteState.State state = writeState.get().state;
+        return state == WriteState.State.OSHUTTING || state == WriteState.State.OSHUT;
     }
 
     @Override
     public boolean isInputShutdown()
     {
+        // TODO: EOF was offered in onData().
         return false;
     }
 
@@ -105,7 +161,7 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     }
 
     @Override
-    public int fill(ByteBuffer buffer) throws IOException
+    public int fill(ByteBuffer buffer)
     {
         Entry entry;
         synchronized (this)
@@ -148,11 +204,83 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
         }
         else
         {
-            // TODO: once more we need a queue to avoid WritePendingException.
-            //  See shutdownOutput().
-            ByteBuffer buffer = coalesce(buffers, true);
-            stream.data(new DataFrame(stream.getId(), buffer, false), Callback.NOOP);
-            return true;
+            while (true)
+            {
+                WriteState current = writeState.get();
+                switch (current.state)
+                {
+                    case IDLE:
+                        if (!writeState.compareAndSet(current, WriteState.PENDING))
+                            break;
+                        ByteBuffer buffer = coalesce(buffers, true);
+                        Callback.Completable callback = new Callback.Completable(Invocable.InvocationType.NON_BLOCKING);
+                        stream.data(new DataFrame(stream.getId(), buffer, false), callback);
+                        callback.whenComplete((nothing, failure) ->
+                        {
+                            if (failure == null)
+                                flushSuccess();
+                            else
+                                flushFailure(failure);
+                        });
+                        return callback.isDone();
+                    case PENDING:
+                        return false;
+                    case OSHUTTING:
+                    case OSHUT:
+                        throw new EofException("Output shutdown");
+                    case FAILED:
+                        Throwable failure = current.failure;
+                        if (failure instanceof IOException)
+                            throw (IOException)failure;
+                        throw new IOException(failure);
+                }
+            }
+        }
+    }
+
+    private void flushSuccess()
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current.state)
+            {
+                case IDLE:
+                case OSHUT:
+                    throw new IllegalStateException();
+                case PENDING:
+                    if (!writeState.compareAndSet(current, WriteState.IDLE))
+                        break;
+                    return;
+                case OSHUTTING:
+                    shutdownOutput();
+                    return;
+                case FAILED:
+                    return;
+            }
+        }
+    }
+
+    private void flushFailure(Throwable failure)
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current.state)
+            {
+                case IDLE:
+                case OSHUT:
+                    throw new IllegalStateException();
+                case PENDING:
+                    if (!writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, failure)))
+                        break;
+                    return;
+                case OSHUTTING:
+                    shutdownOutput();
+                    return;
+                case FAILED:
+                    return;
+            }
         }
     }
 
@@ -201,24 +329,105 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     {
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0)
+        if (buffers == null || buffers.length == 0 || remaining(buffers) == 0)
         {
             callback.succeeded();
         }
         else
         {
-            // TODO: we really need a Stream primitive to write multiple frames.
-            ByteBuffer result = coalesce(buffers, false);
-            stream.data(new DataFrame(stream.getId(), result, false), callback);
+            while (true)
+            {
+                WriteState current = writeState.get();
+                switch (current.state)
+                {
+                    case IDLE:
+                        if (!writeState.compareAndSet(current, WriteState.PENDING))
+                            break;
+                        // TODO: we really need a Stream primitive to write multiple frames.
+                        ByteBuffer result = coalesce(buffers, false);
+                        stream.data(new DataFrame(stream.getId(), result, false), Callback.from(() -> writeSuccess(callback), x -> writeFailure(x, callback)));
+                        return;
+                    case PENDING:
+                        callback.failed(new WritePendingException());
+                        return;
+                    case OSHUTTING:
+                    case OSHUT:
+                        callback.failed(new EofException("Output shutdown"));
+                        return;
+                    case FAILED:
+                        callback.failed(current.failure);
+                        return;
+                }
+            }
         }
+    }
+
+    private void writeSuccess(Callback callback)
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current.state)
+            {
+                case IDLE:
+                case OSHUT:
+                    callback.failed(new IllegalStateException());
+                    return;
+                case PENDING:
+                    if (!writeState.compareAndSet(current, WriteState.IDLE))
+                        break;
+                    callback.succeeded();
+                    return;
+                case OSHUTTING:
+                    callback.succeeded();
+                    shutdownOutput();
+                    return;
+                case FAILED:
+                    callback.failed(current.failure);
+                    return;
+            }
+        }
+    }
+
+    private void writeFailure(Throwable failure, Callback callback)
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current.state)
+            {
+                case IDLE:
+                case OSHUT:
+                    callback.failed(new IllegalStateException(failure));
+                    return;
+                case PENDING:
+                case OSHUTTING:
+                    if (!writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, failure)))
+                        break;
+                    callback.failed(failure);
+                    return;
+                case FAILED:
+                    return;
+            }
+        }
+    }
+
+    private long remaining(ByteBuffer... buffers)
+    {
+        long total = 0;
+        for (ByteBuffer buffer : buffers)
+            total += buffer.remaining();
+        return total;
     }
 
     private ByteBuffer coalesce(ByteBuffer[] buffers, boolean forceCopy)
     {
         if (buffers.length == 1 && !forceCopy)
             return buffers[0];
-        int capacity = Arrays.stream(buffers).mapToInt(Buffer::remaining).sum();
-        ByteBuffer result = BufferUtil.allocateDirect(capacity);
+        long capacity = remaining(buffers);
+        if (capacity > Integer.MAX_VALUE)
+            throw new BufferOverflowException();
+        ByteBuffer result = BufferUtil.allocateDirect((int)capacity);
         for (ByteBuffer buffer : buffers)
             BufferUtil.append(result, buffer);
         return result;
@@ -335,8 +544,9 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     {
         // Do not call Stream.toString() because it stringifies the attachment,
         // which could be this instance, therefore causing a StackOverflowError.
-        return String.format("%s@%x[%s@%x#%d]", getClass().getSimpleName(), hashCode(),
-                stream.getClass().getSimpleName(), stream.hashCode(), stream.getId());
+        return String.format("%s@%x[%s@%x#%d][w=%s]", getClass().getSimpleName(), hashCode(),
+                stream.getClass().getSimpleName(), stream.hashCode(), stream.getId(),
+                writeState);
     }
 
     private static class Entry
@@ -348,6 +558,39 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
         {
             this.buffer = buffer;
             this.callback = callback;
+        }
+    }
+
+    private static class WriteState
+    {
+        public static final WriteState IDLE = new WriteState(State.IDLE);
+        public static final WriteState PENDING = new WriteState(State.PENDING);
+        public static final WriteState OSHUTTING = new WriteState(State.OSHUTTING);
+        public static final WriteState OSHUT = new WriteState(State.OSHUT);
+
+        private final State state;
+        private final Throwable failure;
+
+        private WriteState(State state)
+        {
+            this(state, null);
+        }
+
+        private WriteState(State state, Throwable failure)
+        {
+            this.state = state;
+            this.failure = failure;
+        }
+
+        @Override
+        public String toString()
+        {
+            return state.toString();
+        }
+
+        private enum State
+        {
+            IDLE, PENDING, OSHUTTING, OSHUT, FAILED
         }
     }
 }

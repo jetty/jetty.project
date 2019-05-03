@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -371,13 +372,24 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
+        protected void prepareUpgrade()
+        {
+            if (isTunnel())
+                getHttpTransport().prepareUpgrade();
+        }
+
+        @Override
         public void onCompleted()
         {
             super.onCompleted();
             totalResponses.incrementAndGet();
-            boolean isTunnel = HttpMethod.CONNECT.is(getRequest().getMethod());
-            if (!getStream().isReset() && !isTunnel)
+            if (!getStream().isReset() && !isTunnel())
                 recycle();
+        }
+
+        private boolean isTunnel()
+        {
+            return HttpMethod.CONNECT.is(getRequest().getMethod()) && getResponse().getStatus() == HttpStatus.OK_200;
         }
 
         @Override

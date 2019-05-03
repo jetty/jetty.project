@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpTransport;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -141,9 +142,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     {
                         if (lastContent)
                         {
-                            Supplier<HttpFields> trailers = response.getTrailerSupplier();
-                            if (transportCallback.start(new SendTrailers(callback, trailers), true))
-                                sendHeadersFrame(response, trailers == null, transportCallback);
+                            if (isTunnel(request, response))
+                            {
+                                if (transportCallback.start(callback, true))
+                                    sendHeadersFrame(response, false, transportCallback);
+                            }
+                            else
+                            {
+                                Supplier<HttpFields> trailers = response.getTrailerSupplier();
+                                if (transportCallback.start(new SendTrailers(callback, trailers), true))
+                                    sendHeadersFrame(response, trailers == null, transportCallback);
+                            }
                         }
                         else
                         {
@@ -160,7 +169,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
         else
         {
-            if (hasContent || (lastContent && !HttpMethod.CONNECT.is(request.getMethod())))
+            if (hasContent || (lastContent && !isTunnel(request, response)))
             {
                 if (lastContent)
                 {
@@ -187,6 +196,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 callback.succeeded();
             }
         }
+    }
+
+    private boolean isTunnel(MetaData.Request request, MetaData.Response response)
+    {
+        return HttpMethod.CONNECT.is(request.getMethod()) && response.getStatus() == HttpStatus.OK_200;
     }
 
     @Override
@@ -273,35 +287,50 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         return transportCallback.onIdleTimeout(failure);
     }
 
+    void prepareUpgrade()
+    {
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
+        Request request = channel.getRequest();
+        Connection connection = (Connection)request.getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+        EndPoint endPoint = connection.getEndPoint();
+        endPoint.upgrade(connection);
+        stream.setAttachment(endPoint);
+        if (request.getHttpInput().hasContent())
+            channel.sendErrorOrAbort("Unexpected content in CONNECT request");
+    }
+
     @Override
     public void onCompleted()
     {
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
-        if (channel != null && channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+        Object attachment = stream.getAttachment();
+        if (attachment instanceof HttpChannelOverHTTP2)
         {
-            Connection connection = (Connection)channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
-            EndPoint endPoint = connection.getEndPoint();
-            // TODO: check that endPoint implements HTTP2Channel.
-            if (LOG.isDebugEnabled())
-                LOG.debug("Tunnelling DATA frames through {}", endPoint);
-            endPoint.upgrade(connection);
-            stream.setAttachment(endPoint);
-            return;
-        }
+            HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)attachment;
+            if (channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+            {
+                Connection connection = (Connection)channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+                EndPoint endPoint = connection.getEndPoint();
+                // TODO: check that endPoint implements HTTP2Channel.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Tunnelling DATA frames through {}", endPoint);
+                endPoint.upgrade(connection);
+                stream.setAttachment(endPoint);
+                return;
+            }
 
-        // If the stream is not closed, it is still reading the request content.
-        // Send a reset to the other end so that it stops sending data.
-        if (!stream.isClosed())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("HTTP2 Response #{}: unconsumed request content, resetting stream", stream.getId());
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        }
+            // If the stream is not closed, it is still reading the request content.
+            // Send a reset to the other end so that it stops sending data.
+            if (!stream.isClosed())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("HTTP2 Response #{}: unconsumed request content, resetting stream", stream.getId());
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            }
 
-        // Consume the existing queued data frames to
-        // avoid stalling the session flow control.
-        if (channel != null)
+            // Consume the existing queued data frames to
+            // avoid stalling the session flow control.
             channel.consumeInput();
+        }
     }
 
     @Override

@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -558,7 +559,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                             priority.getWeight(), priority.isExclusive());
                     frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
                 }
-                IStream stream = createLocalStream(streamId);
+                IStream stream = createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
                 stream.setListener(listener);
 
                 ControlEntry entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
@@ -602,7 +603,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 int streamId = localStreamIds.getAndAdd(2);
                 frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
 
-                IStream pushStream = createLocalStream(streamId);
+                IStream pushStream = createLocalStream(streamId, frame.getMetaData());
                 pushStream.setListener(listener);
 
                 ControlEntry entry = new ControlEntry(frame, pushStream, new StreamPromiseCallback(promise, pushStream));
@@ -756,7 +757,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream createLocalStream(int streamId)
+    protected IStream createLocalStream(int streamId, MetaData.Request request)
     {
         while (true)
         {
@@ -769,7 +770,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 break;
         }
 
-        IStream stream = newStream(streamId, true);
+        IStream stream = newStream(streamId, request, true);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(getStreamIdleTimeout());
@@ -785,7 +786,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream createRemoteStream(int streamId)
+    protected IStream createRemoteStream(int streamId, MetaData.Request request)
     {
         // SPEC: exceeding max concurrent streams is treated as stream error.
         while (true)
@@ -803,7 +804,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 break;
         }
 
-        IStream stream = newStream(streamId, false);
+        IStream stream = newStream(streamId, request, false);
 
         // SPEC: duplicate stream is treated as connection error.
         if (streams.putIfAbsent(streamId, stream) == null)
@@ -831,9 +832,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             remoteStreamCount.add(deltaStreams, deltaClosing);
     }
 
-    protected IStream newStream(int streamId, boolean local)
+    protected IStream newStream(int streamId, MetaData.Request request, boolean local)
     {
-        return new HTTP2Stream(scheduler, this, streamId, local);
+        return new HTTP2Stream(scheduler, this, streamId, request, local);
     }
 
     @Override

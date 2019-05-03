@@ -145,7 +145,7 @@ public class HTTP2ClientSession extends HTTP2Session
         }
         else
         {
-            IStream pushStream = createRemoteStream(pushStreamId);
+            IStream pushStream = createRemoteStream(pushStreamId, frame.getMetaData());
             if (pushStream != null)
             {
                 pushStream.process(frame, Callback.NOOP);

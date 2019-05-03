@@ -120,26 +120,24 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
     {
         boolean ssl = HttpScheme.HTTPS.is(request.getScheme());
+        String http1 = "http/1.1";
         String http2 = ssl ? "h2" : "h2c";
         List<String> protocols = List.of();
         if (request.isVersionExplicit())
         {
             HttpVersion version = request.getVersion();
-            String desired = version == HttpVersion.HTTP_2 ? http2 : "http/1.1";
+            String desired = version == HttpVersion.HTTP_2 ? http2 : http1;
             if (this.protocols.contains(desired))
                 protocols = List.of(desired);
         }
         else
         {
-            // TODO: I don't think this is right.
-            //  The case [http/1.1, h2c] is troublesome because we cannot
-            //  make a single Destination for both - we would have problems
-            //  with the ConnectionPool. We really need to pick one here,
-            //  say the first that we can speak - this is what we do below
-            //  in newConnection() anyway.
             // Preserve the order of protocols chosen by the application.
+            // We need to keep multiple protocols in case the protocol
+            // is negotiated: e.g. [http/1.1, h2] negotiates [h2], but
+            // here we don't know yet what will be negotiated.
             protocols = this.protocols.stream()
-                    .filter(p -> p.equals("http/1.1") || p.equals(http2))
+                    .filter(p -> p.equals(http1) || p.equals(http2))
                     .collect(Collectors.toList());
         }
         if (protocols.isEmpty())
