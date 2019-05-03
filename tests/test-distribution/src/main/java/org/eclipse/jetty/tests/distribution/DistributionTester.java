@@ -140,6 +140,9 @@ public class DistributionTester
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
+        // we get artifacts from local repo first
+        args = new ArrayList<>(args);
+        args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
         commands.addAll(args);
 
         LOGGER.info("Executing: {}", commands);
