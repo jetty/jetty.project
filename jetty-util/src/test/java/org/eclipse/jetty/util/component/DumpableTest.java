@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.util.component;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DumpableTest
 {
@@ -50,13 +50,4 @@ public class DumpableTest
         assertThat(dump, Matchers.containsString("two"));
         assertThat(dump, Matchers.containsString("three"));
     }
-
-    @Test
-    public void testDumpableLabelled() throws Exception
-    {
-        String dump = Dumpable.labelled("label", "Item").dump();
-        assertThat(dump, Matchers.containsString("label:"));
-        assertThat(dump, Matchers.containsString("Item"));
-    }
-
 }
