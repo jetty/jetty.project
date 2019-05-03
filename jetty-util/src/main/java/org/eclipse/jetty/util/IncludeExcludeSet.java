@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 
 /** Utility class to maintain a set of inclusions and exclusions.
@@ -41,7 +40,7 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     private final Predicate<P> _includePredicate;
     private final Set<T> _excludes;
     private final Predicate<P> _excludePredicate;
-    
+
     private static class SetContainsPredicate<T> implements Predicate<T>
     {
         private final Set<T> set;
@@ -221,37 +220,5 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     public boolean isEmpty()
     {
         return _includes.isEmpty() && _excludes.isEmpty();
-    }
-
-
-    /**
-     * Combine the results of two {@link IncludeExcludeSet}s with an "or"-like operation.
-     * Item x must be included by xSet OR item y must be included ySet.
-     * Neither x nor y may be excluded for either respective set.
-     * If a sets inclusions are empty, then all items are considered to be included.
-     *
-     * @param xSet The set that param x is tested against
-     * @param x An item to test against xSet
-     * @param ySet The set that param y is tested against
-     * @param ySupplier A supplier of an item to test against ySet, that is executed only of x is not excluded from xSet
-     * @param <XS> The type of xSet items
-     * @param <XP> The type of xSet predicates
-     * @param <YS> The type of ySet items
-     * @param <YP> The type of ySet predicates
-     * @return True only if the items are included and not excluded from their respected sets
-     */
-    public static <XS, XP, YS, YP> boolean or(IncludeExcludeSet<XS, XP> xSet, XP x, IncludeExcludeSet<YS,YP> ySet, Supplier<YP> ySupplier)
-    {
-        Boolean xb = xSet.isIncludedAndNotExcluded(x);
-        if (Boolean.FALSE==xb)
-            return false;
-        YP y = ySupplier.get();
-        Boolean yb = ySet.isIncludedAndNotExcluded(y);
-        if (Boolean.FALSE==yb)
-            return false;
-
-       return Boolean.TRUE.equals(xb)
-           || Boolean.TRUE.equals(yb)
-           || !xSet.hasIncludes() && !ySet.hasIncludes();
     }
 }

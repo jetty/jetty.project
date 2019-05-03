@@ -33,7 +33,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -205,7 +204,7 @@ public class InetAccessHandler extends HandlerWrapper
         dumpObjects(out, indent,
             new DumpableCollection("included", _addrs.getIncluded()),
             new DumpableCollection("excluded", _addrs.getExcluded()),
-            new DumpableCollection("includedConnectorNames", _names.getIncluded()),
-            new DumpableCollection("excludedConnectorNames", _names.getExcluded()));
+            new DumpableCollection("includedConnector", _names.getIncluded()),
+            new DumpableCollection("excludedConnector", _names.getExcluded()));
     }
 }

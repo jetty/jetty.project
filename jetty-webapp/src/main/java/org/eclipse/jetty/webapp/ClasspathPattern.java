@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
@@ -686,7 +687,7 @@ public class ClasspathPattern extends AbstractSet<String>
     {       
         try
         {
-            return IncludeExcludeSet.or(_packageOrNamePatterns, clazz.getName(), _locations, ()->TypeUtil.getLocationOfClass(clazz));
+            return combine(_packageOrNamePatterns, clazz.getName(), _locations, ()->TypeUtil.getLocationOfClass(clazz));
         }
         catch (Exception e)
         {
@@ -704,7 +705,7 @@ public class ClasspathPattern extends AbstractSet<String>
         // Treat path elements as packages for name matching
         name=name.replace("/",".");
 
-        return  IncludeExcludeSet.or(_packageOrNamePatterns, name, _locations, ()->
+        return combine(_packageOrNamePatterns, name, _locations, ()->
         {
             try
             {
@@ -716,6 +717,21 @@ public class ClasspathPattern extends AbstractSet<String>
                 return null;
             }
         });
+    }
+
+    private static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
+    {
+        Boolean byName = names.isIncludedAndNotExcluded(name);
+        if (Boolean.FALSE==byName)
+            return false;
+
+        Boolean byLocation = locations.isIncludedAndNotExcluded(location.get());
+        if (Boolean.FALSE==byLocation)
+            return false;
+
+        return Boolean.TRUE.equals(byName)
+            || Boolean.TRUE.equals(byLocation)
+            || !(names.hasIncludes() || locations.hasIncludes());
     }
     
 }

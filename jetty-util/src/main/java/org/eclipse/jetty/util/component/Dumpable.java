@@ -227,13 +227,4 @@ public interface Dumpable
                 dumpObjects(out, nextIndent, item);
         }
     }
-
-    static Dumpable labelled(String label, Object o)
-    {
-        return (out, indent) ->
-        {
-            out.append(label).append(':');
-            Dumpable.dumpObjects(out,indent,o);
-        };
-    }
 }
