@@ -63,7 +63,7 @@ public class BadAppDeployTest
     }
 
     @Test
-    public void testBadApp_XmlOrder() throws Exception
+    public void testBadApp_ThrowOnUnavailableTrue_XmlOrder() throws Exception
     {
         /* Non-working Bean Order as reported in Issue #3620
            It is important that this Order be maintained for an accurate test case.
@@ -71,13 +71,6 @@ public class BadAppDeployTest
            ### BEAN: ServerConnector@16f65612{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
            ### BEAN: HandlerCollection@5f150435{STOPPED}
            ### BEAN: DeploymentManager@1c53fd30{STOPPED}
-         */
-
-        /* Working Bean Order
-           ### BEAN: QueuedThreadPool[qtp1530388690]@5b37e0d2{STOPPED,8<=0<=200,i=0,r=-1,q=0}[NO_TRY]
-           ### BEAN: ServerConnector@5e265ba4{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
-           ### BEAN: DeploymentManager@3419866c{STOPPED}
-           ### BEAN: HandlerCollection@63e31ee{STOPPED}
          */
 
         server = new Server();
@@ -114,15 +107,15 @@ public class BadAppDeployTest
                     Log.getLogger(DeploymentManager.class),
                     Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
             {
-                RuntimeException cause = assertThrows(RuntimeException.class, () -> server.start());
-                assertThat(cause.getMessage(), containsString("Failed to successfully start App Providers"));
+                ServletException cause = assertThrows(ServletException.class, () -> server.start());
+                assertThat(cause.getMessage(), containsString("intentionally"));
                 assertTrue(server.isFailed(), "Server should be in failed state");
             }
         });
     }
 
     @Test
-    public void testBadApp_EmbeddedOrder() throws Exception
+    public void testBadApp_ThrowOnUnavailableTrue_EmbeddedOrder() throws Exception
     {
         /* Working Bean Order
            ### BEAN: QueuedThreadPool[qtp1530388690]@5b37e0d2{STOPPED,8<=0<=200,i=0,r=-1,q=0}[NO_TRY]

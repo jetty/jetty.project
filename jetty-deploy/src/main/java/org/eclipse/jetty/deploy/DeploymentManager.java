@@ -40,6 +40,7 @@ import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -68,7 +69,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class DeploymentManager extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(DeploymentManager.class);
-    private List<Throwable> onStartupErrors;
+    private MultiException onStartupErrors;
 
     /**
      * Represents a single tracked app within the deployment manager.
@@ -241,9 +242,7 @@ public class DeploymentManager extends ContainerLifeCycle
 
         if (onStartupErrors != null)
         {
-            RuntimeException mex = new RuntimeException("Failed to successfully start App Providers (See log for details)");
-            onStartupErrors.forEach((cause) -> mex.addSuppressed(cause));
-            throw mex;
+            onStartupErrors.ifExceptionThrow();
         }
 
         super.doStart();
@@ -516,7 +515,6 @@ public class DeploymentManager extends ContainerLifeCycle
         catch (Throwable t)
         {
             LOG.warn("Unable to reach node goal: " + nodeName,t);
-            LOG.info("state() = {}", getState());
             // migrate to FAILED node
             Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);
             appentry.setLifeCycleNode(failed);
@@ -541,7 +539,7 @@ public class DeploymentManager extends ContainerLifeCycle
     {
         if(onStartupErrors == null)
         {
-            onStartupErrors = new ArrayList();
+            onStartupErrors = new MultiException();
         }
         onStartupErrors.add(cause);
     }
