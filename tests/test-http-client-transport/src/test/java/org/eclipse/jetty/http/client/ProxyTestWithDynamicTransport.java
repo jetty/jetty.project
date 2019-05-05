@@ -20,28 +20,33 @@ package org.eclipse.jetty.http.client;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
 import org.eclipse.jetty.proxy.ConnectHandler;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -60,11 +65,13 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyTestWithDynamicTransport
 {
@@ -241,15 +248,70 @@ public class ProxyTestWithDynamicTransport
         HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
         client.getProxyConfiguration().getProxies().add(proxy);
 
+        String scheme = serverSecure ? "https" : "http";
         int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
-        ContentResponse response = client.newRequest("localhost", serverPort)
-                .scheme(serverSecure ? "https" : "http")
+        ContentResponse response1 = client.newRequest("localhost", serverPort)
+                .scheme(scheme)
                 .version(serverProtocol)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
+        assertEquals(status, response1.getStatus());
 
-        assertEquals(status, response.getStatus());
+        // Make a second request to be sure it went through the same connection.
+        ContentResponse response2 = client.newRequest("localhost", serverPort)
+                .scheme(scheme)
+                .version(serverProtocol)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        assertEquals(status, response2.getStatus());
 
-        // TODO: should test that a second request goes through the same connection.
+        List<Destination> destinations = client.getDestinations().stream()
+                .filter(d -> d.getPort() == serverPort)
+                .collect(Collectors.toList());
+        assertEquals(1, destinations.size());
+        HttpDestination destination = (HttpDestination)destinations.get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertEquals(1, connectionPool.getConnectionCount());
+    }
+
+    @Test
+    public void testHTTP2TunnelClosedByClient() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        int proxyPort = proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy proxy = new HttpProxy(proxyAddress, false, new HttpDestination.Protocol(List.of("h2c"), false));
+        client.getProxyConfiguration().getProxies().add(proxy);
+
+        long idleTimeout = 1000;
+        client.setIdleTimeout(idleTimeout);
+
+        String serverScheme = "http";
+        int serverPort = serverConnector.getLocalPort();
+        ContentResponse response = client.newRequest("localhost", serverPort)
+                .scheme(serverScheme)
+                .version(HttpVersion.HTTP_1_1)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Client will close the HTTP2StreamEndPoint.
+        Thread.sleep(2 * idleTimeout);
+
+        List<Destination> destinations = client.getDestinations().stream()
+                .filter(d -> d.getPort() == serverPort)
+                .collect(Collectors.toList());
+        assertEquals(1, destinations.size());
+        HttpDestination destination = (HttpDestination)destinations.get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertEquals(0, connectionPool.getConnectionCount());
+
+        List<HTTP2Connection> serverConnections = proxyConnector.getConnectedEndPoints().stream()
+                .map(EndPoint::getConnection)
+                .map(HTTP2Connection.class::cast)
+                .collect(Collectors.toList());
+        assertEquals(1, serverConnections.size());
+        assertTrue(serverConnections.get(0).getSession().getStreams().isEmpty());
     }
 }

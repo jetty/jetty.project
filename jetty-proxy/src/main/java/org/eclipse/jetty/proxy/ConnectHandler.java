@@ -197,14 +197,12 @@ public class ConnectHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (HttpMethod.CONNECT.is(request.getMethod()))
+        String tunnelProtocol = jettyRequest.getMetaData().getProtocol();
+        if (HttpMethod.CONNECT.is(request.getMethod()) && tunnelProtocol == null)
         {
             String serverAddress = target;
             if (HttpVersion.HTTP_2.is(request.getProtocol()))
             {
-                // TODO: add check below
-                //  if (jettyRequest.getMetaData().getProtocol() != null)
-                //    not for us, forward along the handler chain.
                 HttpURI httpURI = jettyRequest.getHttpURI();
                 serverAddress = httpURI.getHost() + ":" + httpURI.getPort();
             }

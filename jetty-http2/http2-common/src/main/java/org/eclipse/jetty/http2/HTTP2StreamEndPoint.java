@@ -26,6 +26,7 @@ import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -47,6 +48,8 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     private final Deque<Entry> dataQueue = new ArrayDeque<>();
     private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
     private final AtomicReference<Callback> readCallback = new AtomicReference<>();
+    private final long created = System.currentTimeMillis();
+    private final AtomicBoolean eof = new AtomicBoolean();
     private final IStream stream;
     private Connection connection;
 
@@ -58,12 +61,14 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     @Override
     public InetSocketAddress getLocalAddress()
     {
+        // TODO
         return null;
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
+        // TODO
         return null;
     }
 
@@ -76,7 +81,7 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     @Override
     public long getCreatedTimeStamp()
     {
-        return 0;
+        return created;
     }
 
     @Override
@@ -150,19 +155,26 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     @Override
     public boolean isInputShutdown()
     {
-        // TODO: EOF was offered in onData().
-        return false;
+        return eof.get();
     }
 
     @Override
     public void close(Throwable cause)
     {
-        LOG.info("close");
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing {}, cause: {}", this, cause);
+        shutdownOutput();
+        // TODO: do we need this code after the shutdownOutput() callback?
+        stream.close();
+        onClose(cause);
     }
 
     @Override
-    public int fill(ByteBuffer buffer)
+    public int fill(ByteBuffer sink)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("filling {} on {}", BufferUtil.toDetailString(sink), this);
+
         Entry entry;
         synchronized (this)
         {
@@ -170,16 +182,20 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
         }
         if (entry == null)
             return 0;
-        int position = BufferUtil.flipToFill(buffer);
-        int length = Math.min(entry.buffer.remaining(), buffer.remaining());
-        int limit = entry.buffer.limit();
-        entry.buffer.limit(entry.buffer.position() + length);
-        buffer.put(entry.buffer);
-        entry.buffer.limit(limit);
-        BufferUtil.flipToFlush(buffer, position);
-        if (LOG.isDebugEnabled())
-            LOG.debug("reading {} on {}", BufferUtil.toDetailString(buffer), this);
-        if (entry.buffer.hasRemaining())
+        if (entry.eof)
+            return shutdownInput();
+
+        int sinkPosition = BufferUtil.flipToFill(sink);
+        ByteBuffer source = entry.buffer;
+        int sourceLength = source.remaining();
+        int length = Math.min(sourceLength, sink.remaining());
+        int sourceLimit = source.limit();
+        source.limit(source.position() + length);
+        sink.put(source);
+        source.limit(sourceLimit);
+        BufferUtil.flipToFlush(sink, sinkPosition);
+
+        if (source.hasRemaining())
         {
             synchronized (this)
             {
@@ -191,6 +207,12 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
             entry.callback.succeeded();
         }
         return length;
+    }
+
+    private int shutdownInput()
+    {
+        eof.set(true);
+        return -1;
     }
 
     @Override
@@ -212,6 +234,9 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
                     case IDLE:
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             break;
+                        // We must copy the buffers because, differently from
+                        // write(), the semantic of flush() is that it does not
+                        // own them, but stream.data() needs to own them.
                         ByteBuffer buffer = coalesce(buffers, true);
                         Callback.Completable callback = new Callback.Completable(Invocable.InvocationType.NON_BLOCKING);
                         stream.data(new DataFrame(stream.getId(), buffer, false), callback);
@@ -448,19 +473,21 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     @Override
     public void onOpen()
     {
-        LOG.info("onOpen");
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen {}", this);
     }
 
     @Override
     public void onClose(Throwable cause)
     {
-        LOG.info("onClose");
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClose {}", this);
     }
 
     @Override
     public boolean isOptimizedForDirectBuffers()
     {
-        return false;
+        return true;
     }
 
     @Override
@@ -490,37 +517,60 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     {
         ByteBuffer buffer = frame.getData();
         if (LOG.isDebugEnabled())
-            LOG.debug("offering {} on {}", BufferUtil.toDetailString(buffer), this);
-        Entry entry = new Entry(buffer, callback);
-        synchronized (this)
+            LOG.debug("offering {} on {}", frame, this);
+        if (frame.isEndStream())
         {
-            dataQueue.offer(entry);
+            if (buffer.hasRemaining())
+                offer(new Entry(buffer, Callback.from(() -> {}, callback::failed), false));
+            offer(new Entry(BufferUtil.EMPTY_BUFFER, callback, true));
+        }
+        else
+        {
+            if (buffer.hasRemaining())
+                offer(new Entry(buffer, callback, false));
         }
         process();
         return null;
     }
 
+    private void offer(Entry entry)
+    {
+        synchronized (this)
+        {
+            dataQueue.offer(entry);
+        }
+    }
+
     @Override
     public Runnable onTrailer(HeadersFrame frame)
     {
+        // TODO
         return null;
     }
 
     @Override
     public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        return false;
+        // TODO: Runnable not used.
+        if (LOG.isDebugEnabled())
+            LOG.debug("idle timeout on {}: {}", this, failure);
+        Connection connection = getConnection();
+        if (connection != null)
+            return connection.onIdleExpired();
+        return true;
     }
 
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
+        // TODO
         return null;
     }
 
     @Override
     public boolean isIdle()
     {
+        // TODO
         return false;
     }
 
@@ -553,11 +603,13 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
     {
         private final ByteBuffer buffer;
         private final Callback callback;
+        private final boolean eof;
 
-        private Entry(ByteBuffer buffer, Callback callback)
+        private Entry(ByteBuffer buffer, Callback callback, boolean eof)
         {
             this.buffer = buffer;
             this.callback = callback;
+            this.eof = eof;
         }
     }
 
