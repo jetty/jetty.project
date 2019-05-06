@@ -241,7 +241,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public Duration getWriteIdleTimeout()
+    public Duration getWriteTimeout()
     {
         if (getConnection() == null)
             return idleWriteTimeout;
@@ -250,7 +250,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public void setWriteIdleTimeout(Duration timeout)
+    public void setWriteTimeout(Duration timeout)
     {
         if (getConnection() == null)
             idleWriteTimeout = timeout;
