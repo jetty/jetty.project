@@ -186,7 +186,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             String target = destination.getOrigin().getAddress().asString();
             Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
-            Request connect = httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
+            HttpRequest connect = (HttpRequest)httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
                     .method(HttpMethod.CONNECT)
                     .path(target)
                     .header(HttpHeader.HOST, target);
@@ -194,12 +194,8 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());
 
-            HttpConversation conversation = ((HttpRequest)connect).getConversation();
-            conversation.setAttribute(EndPoint.class.getName(), endPoint);
-
             connect.attribute(Connection.class.getName(), new ProxyConnection(destination, connection, promise));
-
-            connection.send(connect, new TunnelListener(conversation));
+            connection.send(connect, new TunnelListener(connect.getConversation()));
         }
 
         private void tunnelSucceeded(EndPoint endPoint)

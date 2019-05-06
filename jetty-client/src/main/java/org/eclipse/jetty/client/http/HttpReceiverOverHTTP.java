@@ -260,6 +260,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
+        if (isTunnel(exchange))
+            exchange.getRequest().getConversation().setAttribute(EndPoint.class.getName(), getHttpConnection().getEndPoint());
+
         return !responseHeaders(exchange);
     }
 

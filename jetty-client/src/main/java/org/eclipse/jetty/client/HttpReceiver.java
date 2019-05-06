@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -542,6 +542,12 @@ public abstract class HttpReceiver
         return updated;
     }
 
+    protected boolean isTunnel(HttpExchange exchange)
+    {
+        return HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
+                exchange.getResponse().getStatus() == HttpStatus.OK_200;
+    }
+
     @Override
     public String toString()
     {
@@ -605,7 +611,7 @@ public abstract class HttpReceiver
         }
 
         @Override
-        protected Action process() throws Throwable
+        protected Action process()
         {
             while (true)
             {
