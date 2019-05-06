@@ -435,6 +435,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (delayedFrame != null)
             delayedFrame.run();
+        else
+            demand();
     }
 
     private void demand()
