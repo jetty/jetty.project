@@ -141,16 +141,26 @@ public interface FrameHandler extends IncomingFrames
          */
         Duration getIdleTimeout();
 
-        Duration getWriteIdleTimeout();
+        /**
+         * Get the Write Timeout
+         *
+         * @return the write timeout
+         */
+        Duration getWriteTimeout();
 
         /**
          * Set the Idle Timeout.
          *
-         * @param timeout the timeout duration
+         * @param timeout the timeout duration (timeout &lt;= 0 implies an infinite timeout)
          */
         void setIdleTimeout(Duration timeout);
 
-        void setWriteIdleTimeout(Duration timeout);
+        /**
+         * Set the Write Timeout.
+         *
+         * @param timeout the timeout duration (timeout &lt;= 0 implies an infinite timeout)
+         */
+        void setWriteTimeout(Duration timeout);
 
         boolean isAutoFragment();
 
@@ -396,7 +406,7 @@ public interface FrameHandler extends IncomingFrames
             }
 
             @Override
-            public Duration getWriteIdleTimeout()
+            public Duration getWriteTimeout()
             {
                 return Duration.ZERO;
             }
@@ -407,7 +417,7 @@ public interface FrameHandler extends IncomingFrames
             }
 
             @Override
-            public void setWriteIdleTimeout(Duration timeout)
+            public void setWriteTimeout(Duration timeout)
             {
             }
 
@@ -511,7 +521,7 @@ public interface FrameHandler extends IncomingFrames
 
     class ConfigurationCustomizer implements Customizer, Configuration
     {
-        private Duration timeout;
+        private Duration idleTimeout;
         private Duration writeTimeout;
         private Boolean autoFragment;
         private Long maxFrameSize;
@@ -523,25 +533,25 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public Duration getIdleTimeout()
         {
-            return timeout==null ? Duration.ZERO : timeout;
+            return idleTimeout;
         }
 
         @Override
-        public Duration getWriteIdleTimeout()
+        public Duration getWriteTimeout()
         {
-            return timeout==null ? Duration.ZERO : timeout;
+            return writeTimeout;
         }
 
         @Override
         public void setIdleTimeout(Duration timeout)
         {
-            this.timeout = timeout;
+            this.idleTimeout = timeout==null ? Duration.ZERO : timeout;
         }
 
         @Override
-        public void setWriteIdleTimeout(Duration timeout)
+        public void setWriteTimeout(Duration timeout)
         {
-            this.writeTimeout = timeout;
+            this.writeTimeout = timeout==null ? Duration.ZERO : timeout;
         }
 
         @Override
@@ -619,10 +629,10 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public void customize(CoreSession session)
         {
-            if (timeout!=null)
-                session.setIdleTimeout(timeout);
+            if (idleTimeout !=null)
+                session.setIdleTimeout(idleTimeout);
             if (writeTimeout!=null)
-                session.setWriteIdleTimeout(timeout);
+                session.setWriteTimeout(idleTimeout);
             if (autoFragment!=null)
                 session.setAutoFragment(autoFragment);
             if (maxFrameSize!=null)

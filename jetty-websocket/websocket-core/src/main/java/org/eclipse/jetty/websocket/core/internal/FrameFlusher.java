@@ -62,6 +62,7 @@ public class FrameFlusher extends IteratingCallback
 
     private ByteBuffer batchBuffer = null;
     private boolean canEnqueue = true;
+    private boolean flushed = true;
     private Throwable closedCause;
     private LongAdder messagesOut = new LongAdder();
     private LongAdder bytesOut = new LongAdder();
@@ -108,6 +109,10 @@ public class FrameFlusher extends IteratingCallback
                     else
                         queue.offerLast(entry);
 
+                    /* If the queue was empty then no timeout has been set, so we set a timeout to check the current
+                    entry when it expires. When the timeout expires we will go over entries in the queue and
+                    entries list to see if any of them have expired, it will then reset the timeout for the frame
+                    with the soonest expiry time. */
                     if ((idleTimeout > 0) && (queue.size()==1) && entries.isEmpty())
                         timeoutScheduler.schedule(this::timeoutExpired, idleTimeout, TimeUnit.MILLISECONDS);
 
@@ -159,6 +164,9 @@ public class FrameFlusher extends IteratingCallback
             previousEntries.addAll(entries);
             entries.clear();
 
+            if (flushed && batchBuffer!=null)
+                BufferUtil.clear(batchBuffer);
+
             while (!queue.isEmpty() && entries.size() <= maxGather)
             {
                 Entry entry = queue.poll();
@@ -202,10 +210,7 @@ public class FrameFlusher extends IteratingCallback
                     // Add the payload to the list of buffers
                     ByteBuffer payload = entry.frame.getPayload();
                     if (BufferUtil.hasContent(payload))
-                    {
                         buffers.add(payload);
-                        break;
-                    }
                 }
                 else
                 {
@@ -216,6 +221,8 @@ public class FrameFlusher extends IteratingCallback
                     if (BufferUtil.hasContent(payload))
                         buffers.add(payload);
                 }
+
+                flushed = flush;
             }
         }
 
@@ -265,7 +272,6 @@ public class FrameFlusher extends IteratingCallback
         }
 
         return Action.SCHEDULED;
-
     }
 
     private int getQueueSize()
@@ -284,17 +290,19 @@ public class FrameFlusher extends IteratingCallback
             if (closedCause != null)
                 return;
 
-            long time = System.currentTimeMillis();
-            long nextTimeout = -1;
+            long currentTime = System.currentTimeMillis();
+            long expiredIfCreatedBefore = currentTime - idleTimeout;
+            long earliestEntry = currentTime;
 
+            /* Iterate through entries in both the queue and entries list.
+            If any entry has expired then we fail the FrameFlusher.
+            Otherwise we will try to schedule a new timeout. */
             Iterator<Entry> iterator = TypeUtil.concat(entries.iterator(), queue.iterator());
-
             while (iterator.hasNext())
             {
                 Entry entry = iterator.next();
-                long timeSinceCreation = time - entry.getTimeOfCreation();
 
-                if (timeSinceCreation >= idleTimeout)
+                if (entry.getTimeOfCreation() <= expiredIfCreatedBefore)
                 {
                     LOG.warn("FrameFlusher write timeout on entry: {}", entry);
                     failed = true;
@@ -307,12 +315,16 @@ public class FrameFlusher extends IteratingCallback
                     break;
                 }
 
-                if (timeSinceCreation > nextTimeout)
-                    nextTimeout = timeSinceCreation;
+                if (entry.getTimeOfCreation() < earliestEntry)
+                    earliestEntry = entry.getTimeOfCreation();
             }
 
-            if (!failed && idleTimeout>0 && !entries.isEmpty())
+            // if a timeout is set schedule a new timeout if we haven't failed and still have entries
+            if (!failed && idleTimeout>0 && !(entries.isEmpty() && queue.isEmpty()))
+            {
+                long nextTimeout = earliestEntry + idleTimeout - currentTime;
                 timeoutScheduler.schedule(this::timeoutExpired, nextTimeout, TimeUnit.MILLISECONDS);
+            }
         }
 
         if (failed)

@@ -99,12 +99,12 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
     public long getWriteIdleTimeout()
     {
-        return channel.getWriteIdleTimeout().toMillis();
+        return channel.getWriteTimeout().toMillis();
     }
 
     public void setWriteIdleTimeout(long ms)
     {
-        channel.setWriteIdleTimeout(Duration.ofMillis(ms));
+        channel.setWriteTimeout(Duration.ofMillis(ms));
     }
 
     @Override

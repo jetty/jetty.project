@@ -36,6 +36,12 @@ public interface WebSocketServletFactory extends FrameHandler.Configuration
     void setIdleTimeout(Duration duration);
 
     @Override
+    Duration getWriteTimeout();
+
+    @Override
+    void setWriteTimeout(Duration duration);
+
+    @Override
     int getInputBufferSize();
 
     @Override
