@@ -394,7 +394,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public int getReservedThreads()
     {
         if (isStarted())
-            return getBean(ReservedThreadExecutor.class).getCapacity();
+        {
+            ReservedThreadExecutor reservedThreadExecutor = getBean(ReservedThreadExecutor.class);
+            if (reservedThreadExecutor != null)
+                return reservedThreadExecutor.getCapacity();
+        }
         return _reservedThreads;
     }
 
