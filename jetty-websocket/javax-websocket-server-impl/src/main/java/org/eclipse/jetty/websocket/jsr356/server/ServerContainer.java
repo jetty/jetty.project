@@ -19,14 +19,10 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
-
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
-import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -37,7 +33,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
@@ -289,23 +284,5 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         this.configuration.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
         this.configuration.getPolicy().setMaxTextMessageBufferSize(max);
-    }
-
-    @Override
-    public void onSessionClosed(WebSocketSession session)
-    {
-        getWebSocketServerFactory().onSessionClosed(session);
-    }
-
-    @Override
-    public void onSessionOpened(WebSocketSession session)
-    {
-        getWebSocketServerFactory().onSessionOpened(session);
-    }
-
-    @Override
-    public Set<Session> getOpenSessions()
-    {
-        return new HashSet<>(getWebSocketServerFactory().getBeans(Session.class));
     }
 }
