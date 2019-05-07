@@ -33,6 +33,14 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * @author janb
+ *
+ */
+/**
+ * @author janb
+ *
+ */
 public abstract class LoginAuthenticator implements Authenticator
 {
     private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
@@ -53,8 +61,21 @@ public abstract class LoginAuthenticator implements Authenticator
         //empty implementation as the default
     }
 
+    /**
+     * If the UserIdentity is not null after this method calls LoginService.login, it
+     * is assumed that the user is fully authenticated and we need to change the session id to prevent
+     * session fixation vulnerability. If the UserIdentity is not necessarily fully
+     * authenticated, then subclasses must override this method and
+     * determine when the UserIdentity IS fully authenticated and renew the session id.
+     * 
+     * @param username the username of the client to be authenticated
+     * @param password the user's credential
+     * @param servletRequest the inbound request that needs authentication
+     * @return
+     */
     public UserIdentity login(String username, Object password, ServletRequest servletRequest)
     {
+
         UserIdentity user = _loginService.login(username, password, servletRequest);
         if (user != null)
         {
