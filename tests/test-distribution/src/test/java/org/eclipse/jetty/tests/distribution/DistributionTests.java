@@ -242,7 +242,8 @@ public class DistributionTests extends AbstractDistributionTest
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            // Give it time to download the dependencies
+            assertTrue(run1.awaitFor(30, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
