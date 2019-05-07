@@ -58,7 +58,7 @@ etc/jetty-ssl-context.xml
 
 ## The Endpoint Identification Algorithm
 ## Same as javax.net.ssl.SSLParameters#setEndpointIdentificationAlgorithm(String)
-#jetty.sslContext.endpointIdentificationAlgorithm=HTTPS
+#jetty.sslContext.endpointIdentificationAlgorithm=
 
 ## SSL JSSE Provider
 # jetty.sslContext.provider=
