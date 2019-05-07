@@ -18,19 +18,14 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.security.SecureRandom;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Random;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.StreamSupport;
 
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
