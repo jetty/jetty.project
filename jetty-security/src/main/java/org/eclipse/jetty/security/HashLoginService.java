@@ -133,7 +133,8 @@ public class HashLoginService extends AbstractLoginService
      */
     public void setUserStore(UserStore userStore)
     {
-        this._userStore = userStore;
+        updateBean(_userStore, userStore);
+        _userStore = userStore;
     }
 
     /* ------------------------------------------------------------ */
@@ -189,12 +190,29 @@ public class HashLoginService extends AbstractLoginService
             PropertyUserStore propertyUserStore = new PropertyUserStore();
             propertyUserStore.setHotReload(hotReload);
             propertyUserStore.setConfigPath(_config);
-            propertyUserStore.start();
-            _userStore = propertyUserStore;
+            setUserStore(propertyUserStore);
             _userStoreAutoCreate = true;
         }
     }
+    
+    /**
+     * To facilitate testing.
+     * @return the UserStore
+     */
+    UserStore getUserStore ()
+    {
+        return _userStore;
+    }
 
+    
+    /**
+     * To facilitate testing.
+     * @return true if a UserStore has been created from a config, false if a UserStore was provided.
+     */
+    boolean isUserStoreAutoCreate ()
+    {
+        return _userStoreAutoCreate;
+    }
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
@@ -203,8 +221,10 @@ public class HashLoginService extends AbstractLoginService
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_userStore != null && _userStoreAutoCreate)
-            _userStore.stop();
-        _userStore = null;
+        if ( _userStoreAutoCreate)
+        {
+            setUserStore(null);
+            _userStoreAutoCreate = false;
+        }
     }
 }
