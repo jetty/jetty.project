@@ -61,7 +61,7 @@ basehome:modules/ssl/keystore|etc/keystore
 
 ## The Endpoint Identification Algorithm
 ## Same as javax.net.ssl.SSLParameters#setEndpointIdentificationAlgorithm(String)
-#jetty.sslContext.endpointIdentificationAlgorithm=HTTPS
+#jetty.sslContext.endpointIdentificationAlgorithm=
 
 ## SSL JSSE Provider
 # jetty.sslContext.provider=
