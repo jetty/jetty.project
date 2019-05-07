@@ -19,13 +19,9 @@
 package org.eclipse.jetty.util;
 
 import java.io.File;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
