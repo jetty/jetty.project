@@ -436,17 +436,18 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (delayedFrame != null)
             delayedFrame.run();
         else
-            demand();
+            session.getCoreSession().demand(1);
     }
 
     private void demand()
     {
+        boolean demand = false;
         synchronized (this)
         {
             switch(state)
             {
                 case DEMANDING:
-                    session.getCoreSession().demand(1);
+                    demand = true;
                     break;
 
                 case SUSPENDED:
@@ -460,6 +461,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     throw new IllegalStateException();
             }
         }
+
+        if (demand)
+            session.getCoreSession().demand(1);
     }
 
     static Throwable convertCause(Throwable cause)
