@@ -546,8 +546,8 @@ public class JettyRunMojo extends AbstractJettyMojo
             if (mavenProject != null)
             {
                 File projectPath = "test-jar".equals( artifact.getType() )?
-                    Paths.get(mavenProject.getBuild().getTestOutputDirectory()).toFile()
-                    : Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
+                    Paths.get( mavenProject.getBuild().getTestOutputDirectory() ).toFile()
+                    : Paths.get( mavenProject.getBuild().getOutputDirectory() ).toFile();
                 getLog().debug( "Adding project directory " + projectPath.toString() );
                 dependencyFiles.add( projectPath );
                 continue;
@@ -576,9 +576,9 @@ public class JettyRunMojo extends AbstractJettyMojo
             if("test-jar".equals(artifact.getType()))
             {
                 // getId use type so comparing getId will fail in case of test-jar dependency
-                if (StringUtils.equals( mavenProject.getGroupId(), artifact.getGroupId())
-                        && StringUtils.equals( mavenProject.getArtifactId(), artifact.getArtifactId())
-                        && StringUtils.equals( mavenProject.getVersion(), artifact.getBaseVersion()))
+                if ( StringUtils.equals( mavenProject.getGroupId(), artifact.getGroupId() )
+                        && StringUtils.equals( mavenProject.getArtifactId(), artifact.getArtifactId() )
+                        && StringUtils.equals( mavenProject.getVersion(), artifact.getBaseVersion()) )
                 {
                     return mavenProject;
                 }
