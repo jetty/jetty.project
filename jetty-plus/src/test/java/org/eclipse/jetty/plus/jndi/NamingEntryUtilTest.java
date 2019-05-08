@@ -33,12 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class NamingEntryUtilTest{
 
     @Test
-    public void testBindToENCWithEmptyStringAndBindToENCThrowsNamingException() {
+    public void testBindToENCWithEmptyStringAndBindToENCThrowsNamingException()
+    {
         assertThrows(NamingException.class, () -> NamingEntryUtil.bindToENC(new Object(), "", ""));
     }
 
     @Test
-    public void testBindToENCWithNullAndNullThrowsNamingException() {
+    public void testBindToENCWithNullAndNullThrowsNamingException()
+    {
         assertThrows( NamingException.class, () -> NamingEntryUtil.bindToENC( null, null, "@=<9"));
     }
 

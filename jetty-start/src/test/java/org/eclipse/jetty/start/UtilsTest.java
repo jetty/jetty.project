@@ -31,47 +31,54 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Unit tests for class {@link Utils}.
  *
  * @see Utils
- *
  */
-public class UtilsTest{
-
+public class UtilsTest
+{
     @Test
-    public void testIsNotBlankReturningTrue() {
+    public void testIsNotBlankReturningTrue()
+    {
         assertTrue(Utils.isNotBlank(" @t;3/|O)t"));
     }
 
     @Test
-    public void testIsNotBlankReturningFalse() {
+    public void testIsNotBlankReturningFalse()
+    {
         assertFalse(Utils.isNotBlank(null));
     }
 
     @Test
-    public void testIsBlank() {
+    public void testIsBlank()
+    {
         assertFalse(Utils.isBlank(" i3o0e!#4u%QW"));
     }
 
     @Test
-    public void testIsBlankUsingNull() {
+    public void testIsBlankUsingNull()
+    {
         assertTrue(Utils.isBlank(null));
     }
 
     @Test
-    public void testJoin() {
-        assertEquals("", Utils.join((Collection<?>) null, "V9ewe2K"));
+    public void testJoin()
+    {
+        assertEquals("", Utils.join((Collection<?>)null, "V9ewe2K"));
     }
 
     @Test
-    public void testJoinTaking4ArgumentsAndReturningEmptyString() {
-        assertEquals("", Utils.join((Object[]) null, (-3563), 1051, ""));
+    public void testJoinTaking4ArgumentsAndReturningEmptyString()
+    {
+        assertEquals("", Utils.join((Object[])null, (-3563), 1051, ""));
     }
 
     @Test
-    public void testJoinUsingObjectArrayOne() {
-        assertEquals("", Utils.join((Object[]) null, ""));
+    public void testJoinUsingObjectArrayOne()
+    {
+        assertEquals("", Utils.join((Object[])null, ""));
     }
 
     @Test
-    public void testJoinUsingObjectArrayTwo() {
+    public void testJoinUsingObjectArrayTwo()
+    {
         Object[] objectArray = new Object[8];
         String joinedString = Utils.join(objectArray, "%.g[{2G<1");
 
