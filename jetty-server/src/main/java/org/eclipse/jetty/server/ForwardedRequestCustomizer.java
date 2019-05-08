@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.http.QuotedCSVParser;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.HostPort;
@@ -41,8 +41,6 @@ import org.eclipse.jetty.util.log.Logger;
 
 import static java.lang.invoke.MethodType.methodType;
 
-
-/* ------------------------------------------------------------ */
 
 /**
  * Customize Requests for Proxy Forwarding.
@@ -157,7 +155,7 @@ public class ForwardedRequestCustomizer implements Customizer
      */
     public void setForcedHost(String hostAndPort)
     {
-        _forcedHost = new HostPortHttpField(hostAndPort);
+        _forcedHost = new HostPortHttpField(new ForcedHostPort(hostAndPort));
     }
 
     /**
@@ -377,76 +375,26 @@ public class ForwardedRequestCustomizer implements Customizer
             throw new RuntimeException(e);
         }
 
-        // Determine host
-        if (_forcedHost != null)
+        if (forwarded._proto!=null)
         {
-            // Update host header
-            httpFields.put(_forcedHost);
-            request.setAuthority(_forcedHost.getHost(), _forcedHost.getPort());
-        }
-        else if (forwarded._rfc7239 != null && forwarded._rfc7239._host != null)
-        {
-            HostPortHttpField auth = forwarded._rfc7239._host;
-            httpFields.put(auth);
-            request.setAuthority(auth.getHost(), auth.getPort());
-        }
-        else if (forwarded._forwardedHost != null)
-        {
-            HostPortHttpField auth = new HostPortHttpField(forwarded._forwardedHost);
-            httpFields.put(auth);
-            request.setAuthority(auth.getHost(), auth.getPort());
-        }
-        else if (_proxyAsAuthority)
-        {
-            if (forwarded._rfc7239 != null && forwarded._rfc7239._by != null)
-            {
-                HostPortHttpField auth = forwarded._rfc7239._by;
-                httpFields.put(auth);
-                request.setAuthority(auth.getHost(), auth.getPort());
-            }
-            else if (forwarded._forwardedServer != null)
-            {
-                request.setAuthority(forwarded._forwardedServer, request.getServerPort());
-            }
+            request.setScheme(forwarded._proto);
+            if (forwarded._proto.equalsIgnoreCase(config.getSecureScheme()))
+                request.setSecure(true);
         }
 
-        // handle remote end identifier
-        if (forwarded._rfc7239 != null && forwarded._rfc7239._for != null)
+        if (forwarded._host!=null)
         {
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._rfc7239._for.getHost(), forwarded._rfc7239._for.getPort()));
-        }
-        else if (forwarded._forwardedFor != null)
-        {
-            int port = (forwarded._forwardedPort > 0)
-                ? forwarded._forwardedPort
-                : (forwarded._forwardedFor.getPort() > 0)
-                ? forwarded._forwardedFor.getPort()
-                : request.getRemotePort();
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._forwardedFor.getHost(), port));
+            httpFields.put(new HostPortHttpField(forwarded._host));
+            request.setAuthority(forwarded._host.getHost(), forwarded._host.getPort());
         }
 
-        // handle protocol identifier
-        if (forwarded._rfc7239 != null && forwarded._rfc7239._proto != null)
+        if (forwarded._for!=null)
         {
-            request.setScheme(forwarded._rfc7239._proto);
-            if (forwarded._rfc7239._proto.equals(config.getSecureScheme()))
-                request.setSecure(true);
-        }
-        else if (forwarded._forwardedProto != null)
-        {
-            request.setScheme(forwarded._forwardedProto);
-            if (forwarded._forwardedProto.equals(config.getSecureScheme()))
-                request.setSecure(true);
-        }
-        else if (forwarded._forwardedHttps != null && ("on".equalsIgnoreCase(forwarded._forwardedHttps) || "true".equalsIgnoreCase(forwarded._forwardedHttps)))
-        {
-            request.setScheme(HttpScheme.HTTPS.asString());
-            if (HttpScheme.HTTPS.asString().equals(config.getSecureScheme()))
-                request.setSecure(true);
+            int port = forwarded._for.getPort()>0 ? forwarded._for.getPort() : request.getRemotePort();
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(),port));
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected String getLeftMost(String headerValue)
     {
         if (headerValue == null)
@@ -462,26 +410,6 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // The left-most value is the farthest downstream client
         return headerValue.substring(0, commaIndex).trim();
-    }
-
-    protected HostPort getRemoteAddr(String headerValue)
-    {
-        String leftMost = getLeftMost(headerValue);
-        if (leftMost == null)
-        {
-            return null;
-        }
-
-        try
-        {
-            return new HostPort(leftMost);
-        }
-        catch (Exception e)
-        {
-            // failed to parse in host[:port] format
-            LOG.ignore(e);
-            return null;
-        }
     }
 
     @Override
@@ -505,48 +433,6 @@ public class ForwardedRequestCustomizer implements Customizer
     public void setHostHeader(String hostHeader)
     {
         _forcedHost = new HostPortHttpField(hostHeader);
-    }
-
-    private final class RFC7239 extends QuotedCSV
-    {
-        HostPortHttpField _by;
-        HostPortHttpField _for;
-        HostPortHttpField _host;
-        String _proto;
-
-        private RFC7239()
-        {
-            super(false);
-        }
-
-        @Override
-        protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
-        {
-            if (valueLength == 0 && paramValue > paramName)
-            {
-                String name = StringUtil.asciiToLowerCase(buffer.substring(paramName, paramValue - 1));
-                String value = buffer.substring(paramValue);
-                switch (name)
-                {
-                    case "by":
-                        if (_by == null && !value.startsWith("_") && !"unknown".equals(value))
-                            _by = new HostPortHttpField(value);
-                        break;
-                    case "for":
-                        if (_for == null && !value.startsWith("_") && !"unknown".equals(value))
-                            _for = new HostPortHttpField(value);
-                        break;
-                    case "host":
-                        if (_host == null)
-                            _host = new HostPortHttpField(value);
-                        break;
-                    case "proto":
-                        if (_proto == null)
-                            _proto = value;
-                        break;
-                }
-            }
-        }
     }
 
     private void updateHandles()
@@ -589,23 +475,52 @@ public class ForwardedRequestCustomizer implements Customizer
         }
     }
 
-    private class Forwarded
+    private static class ForcedHostPort extends HostPort
+    {
+        ForcedHostPort(String authority)
+        {
+            super(authority);
+        }
+    }
+
+    private static class XHostPort extends HostPort
+    {
+        XHostPort(String authority)
+        {
+            super(authority);
+        }
+
+        XHostPort(String host, int port)
+        {
+            super(host, port);
+        }
+    }
+
+    private static class Rfc7239HostPort extends HostPort
+    {
+        Rfc7239HostPort(String authority)
+        {
+            super(authority);
+        }
+    }
+
+    private class Forwarded extends QuotedCSVParser
     {
         HttpConfiguration _config;
         Request _request;
 
-        RFC7239 _rfc7239 = null;
-        String _forwardedHost = null;
-        String _forwardedServer = null;
-        String _forwardedProto = null;
-        HostPort _forwardedFor = null;
-        int _forwardedPort = -1;
-        String _forwardedHttps = null;
+        boolean _protoRfc7239;
+        String _proto;
+        HostPort _for;
+        HostPort _host;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
+            super(false);
             _request = request;
             _config = config;
+            if (_forcedHost!=null)
+                _host = _forcedHost.getHostPort();
         }
 
         public void handleCipherSuite(HttpField field)
@@ -630,39 +545,87 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleHost(HttpField field)
         {
-            _forwardedHost = getLeftMost(field.getValue());
+            if (_host==null)
+                _host = new XHostPort(getLeftMost(field.getValue()));
         }
 
         public void handleServer(HttpField field)
         {
-            _forwardedServer = getLeftMost(field.getValue());
+            if (_proxyAsAuthority && _host==null)
+                _host = new XHostPort(getLeftMost(field.getValue()));
         }
 
         public void handleProto(HttpField field)
         {
-            _forwardedProto = getLeftMost(field.getValue());
+            if (_proto==null)
+                _proto = getLeftMost(field.getValue());
         }
 
         public void handleFor(HttpField field)
         {
-            _forwardedFor = getRemoteAddr(field.getValue());
+            if (_for==null)
+                _for = new XHostPort(getLeftMost(field.getValue()));
+            else if (_for instanceof XHostPort && "unknown".equals(_for.getHost()))
+                _for = new XHostPort(HostPort.normalizeHost(getLeftMost(field.getValue())),_for.getPort());
         }
 
         public void handlePort(HttpField field)
         {
-            _forwardedPort = field.getIntValue();
+            if (_for == null)
+                _for = new XHostPort("unknown", field.getIntValue());
+            else if (_for instanceof XHostPort && _for.getPort()<=0)
+                _for = new XHostPort(HostPort.normalizeHost(_for.getHost()), field.getIntValue());
         }
 
         public void handleHttps(HttpField field)
         {
-            _forwardedHttps = getLeftMost(field.getValue());
+            if (_proto==null && ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue())))
+                _proto = HttpScheme.HTTPS.asString();
         }
 
         public void handleRFC7239(HttpField field)
         {
-            if (_rfc7239 == null)
-                _rfc7239 = new RFC7239();
-            _rfc7239.addValue(field.getValue());
+            addValue(field.getValue());
+        }
+
+        @Override
+        protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+        {
+            if (valueLength == 0 && paramValue > paramName)
+            {
+                String name = StringUtil.asciiToLowerCase(buffer.substring(paramName, paramValue - 1));
+                String value = buffer.substring(paramValue);
+                switch (name)
+                {
+                    case "by":
+                        if (!_proxyAsAuthority)
+                            break;
+                        if (value.startsWith("_") || "unknown".equals(value))
+                            break;
+                        if (_host == null || _host instanceof XHostPort)
+                            _host = new Rfc7239HostPort(value);
+                        break;
+                    case "for":
+                        if (value.startsWith("_") || "unknown".equals(value))
+                            break;
+                        if (_for == null || _for instanceof XHostPort)
+                            _for = new Rfc7239HostPort(value);
+                        break;
+                    case "host":
+                        if (value.startsWith("_") || "unknown".equals(value))
+                            break;
+                        if (_host == null || _host instanceof XHostPort)
+                            _host = new Rfc7239HostPort(value);
+                        break;
+                    case "proto":
+                        if (_proto == null || !_protoRfc7239)
+                        {
+                            _protoRfc7239 = true;
+                            _proto = value;
+                        }
+                        break;
+                }
+            }
         }
     }
 }

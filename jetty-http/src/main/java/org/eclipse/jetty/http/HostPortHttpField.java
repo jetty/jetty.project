@@ -22,9 +22,9 @@ package org.eclipse.jetty.http;
 import org.eclipse.jetty.util.HostPort;
 
 
-
-/* ------------------------------------------------------------ */
 /**
+ * A HttpField holding a preparsed Host and port number
+ * @see HostPort
  */
 public class HostPortHttpField extends HttpField
 {
@@ -35,7 +35,6 @@ public class HostPortHttpField extends HttpField
         this(HttpHeader.HOST,HttpHeader.HOST.asString(),authority);
     }
 
-    /* ------------------------------------------------------------ */
     protected HostPortHttpField(HttpHeader header, String name, String authority)
     {
         super(header,name,authority);
@@ -49,20 +48,17 @@ public class HostPortHttpField extends HttpField
         }
     }
 
-    /* ------------------------------------------------------------ */
     public HostPortHttpField(String host, int port)
     {
         this(new HostPort(host, port));
     }
 
-    /* ------------------------------------------------------------ */
-    protected HostPortHttpField(HostPort hostport)
+    public HostPortHttpField(HostPort hostport)
     {
         super(HttpHeader.HOST,HttpHeader.HOST.asString(),hostport.toString());
         _hostPort = hostport;
     }
 
-    /* ------------------------------------------------------------ */
     /** Get the host.
      * @return the host
      */
@@ -71,7 +67,6 @@ public class HostPortHttpField extends HttpField
         return _hostPort.getHost();
     }
 
-    /* ------------------------------------------------------------ */
     /** Get the port.
      * @return the port
      */
@@ -80,7 +75,6 @@ public class HostPortHttpField extends HttpField
         return _hostPort.getPort();
     }
     
-    /* ------------------------------------------------------------ */
     /** Get the port.
      * @param defaultPort The default port to return if no port set
      * @return the port
@@ -88,5 +82,10 @@ public class HostPortHttpField extends HttpField
     public int getPort(int defaultPort)
     {
         return _hostPort.getPort(defaultPort);
+    }
+
+    public HostPort getHostPort()
+    {
+        return _hostPort;
     }
 }
