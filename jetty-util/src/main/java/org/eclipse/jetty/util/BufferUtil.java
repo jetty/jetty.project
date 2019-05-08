@@ -1082,6 +1082,8 @@ public class BufferUtil
 
     private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
     {
+        // Take a readonly copy so we can adjust the limit
+        buffer = buffer.asReadOnlyBuffer();
         try
         {
             for (int i = 0; i < buffer.position(); i++)

@@ -37,6 +37,7 @@ import org.eclipse.jetty.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -98,6 +99,23 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     {
         _authenticationDuration = authenticationDuration;
     }
+
+    /**
+     * Only renew the session id if the user has been fully authenticated, don't
+     * renew the session for any of the intermediate request/response handshakes.
+     */
+    @Override
+    public UserIdentity login(String username, Object password, ServletRequest servletRequest)
+    {
+        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, servletRequest);
+        if (user != null && user.isEstablished())
+        {
+            Request request = Request.getBaseRequest(servletRequest);
+            renewSession(request, request == null ? null : request.getResponse());
+        }
+        return user;
+    }
+    
 
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException

@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -78,22 +79,47 @@ public class SessionData implements Serializable
         out.writeObject(entries);
         for (Entry<String,Object> entry: data._attributes.entrySet())
         {
-            out.writeUTF(entry.getKey());     
-            ClassLoader loader = entry.getValue().getClass().getClassLoader();
-            boolean isServerLoader = false;
-
-            if (loader == Thread.currentThread().getContextClassLoader()) //is it the webapp classloader?
-                isServerLoader = false;
-            else if (loader == Thread.currentThread().getContextClassLoader().getParent() || loader == SessionData.class.getClassLoader() || loader == null) // is it the container loader?
-                isServerLoader = true;
-            else
-                throw new IOException ("Unknown loader"); // we don't know what loader to use
+            out.writeUTF(entry.getKey());
             
-            out.writeBoolean(isServerLoader);
+            Class<?> clazz = entry.getValue().getClass();
+            ClassLoader loader = clazz.getClassLoader();
+            ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+            boolean isContextLoader;
+
+            if (loader == contextLoader) //is it the context classloader?
+                isContextLoader = true;
+            else if (contextLoader == null) //not context classloader
+                isContextLoader = false;
+            else if (contextLoader instanceof ClassVisibilityChecker)
+            {
+                //Clazz not loaded by context classloader, but ask if loadable by context classloader,
+                //because preferable to use context classloader if possible (eg for deep structures).
+                ClassVisibilityChecker  checker = (ClassVisibilityChecker)(contextLoader);
+                isContextLoader = (checker.isSystemClass(clazz) && !(checker.isServerClass(clazz)));
+            }
+            else
+            {
+                //Class wasn't loaded by context classloader, but try loading from context loader,
+                //because preferable to use context classloader if possible (eg for deep structures).
+                try 
+                { 
+                    Class<?> result = contextLoader.loadClass(clazz.getName());
+                    isContextLoader = (result == clazz); //only if TTCL loaded this instance of the class
+                }
+                catch (Throwable e)
+                { 
+                    isContextLoader = false; //TCCL can't see the class
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Attribute {} class={} isServerLoader={}", entry.getKey(),clazz.getName(),(!isContextLoader));
+            out.writeBoolean(!isContextLoader);
             out.writeObject(entry.getValue());
         }
     }
-    
+
+
     /**
      * De-serialize the attribute map of a session.
      * 
@@ -118,12 +144,15 @@ public class SessionData implements Serializable
 
             data._attributes = new ConcurrentHashMap<>();
             int entries = ((Integer)o).intValue();
+            ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+            ClassLoader serverLoader = SessionData.class.getClassLoader();
             for (int i=0; i < entries; i++)
             {
                 String name = in.readUTF(); //attribute name
                 boolean isServerClassLoader = in.readBoolean(); //use server or webapp classloader to load
-
-                Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader?SessionData.class.getClassLoader():Thread.currentThread().getContextClassLoader());
+                if (LOG.isDebugEnabled())
+                 LOG.debug("Deserialize {} isServerLoader={} serverLoader={} tccl={}", name, isServerClassLoader,serverLoader, contextLoader);
+                Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader?serverLoader:contextLoader);
                 data._attributes.put(name, value);
             }
         }

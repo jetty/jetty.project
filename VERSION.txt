@@ -1,4 +1,13 @@
-jetty-9.4.18-SNAPSHOT
+jetty-9.4.19-SNAPSHOT
+
+jetty-9.4.18.v20190429 - 29 April 2019
+ + 3476 IllegalStateException in WebSocket ConnectionState
+ + 3550 Server becomes unresponsive after sitting idle from a load spike
+ + 3563 Update to apache jasper 8.5.40
+ + 3573 Update jetty-bom for new infinispan artifacts.
+ + 3582 HeapByteBuffer cleared unexpected
+ + 3597 Session persistence broken from 9.4.13+
+ + 3609 Fix infinispan start module dependencies
 
 jetty-9.4.17.v20190418 - 18 April 2019
  + 3464 Split SslContextFactory into Client and Server
@@ -78,6 +87,10 @@ jetty-9.4.15.v20190215 - 15 February 2019
  + 3350 Do not expect to be able to connect to https URLs with the HttpClient
    created from a parameterless constructor
 
+jetty-9.3.27.v20190418 - 18 April 2019
+ + 3549 Directory Listing on Windows reveals Resource Base path
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context
+
 jetty-9.3.26.v20190403 - 03 April 2019
  + 2954 Improve cause reporting for HttpClient failures
  + 3274 OSGi versions of java.base classes in
@@ -86,13 +99,17 @@ jetty-9.3.26.v20190403 - 03 April 2019
    ForwardedRequestCustomizer
  + 3319 Allow reverse sort for directory listed files
 
+jetty-9.2.28.v20190418 - 18 April 2019
+ + 3549 Directory Listing on Windows reveals Resource Base path
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context
+
 jetty-9.2.27.v20190403 - 03 April 2019
- + + 3319 Refactored Directory Listing to modernize and avoid XSS
+ + 3319 Refactored Directory Listing to modernize and avoid XSS
 
 jetty-9.4.14.v20181114 - 14 November 2018
- + + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls +
-   3103 HttpClientLoadTest reports a leak in byte buffer + 3104 Align
-   jetty-schemas version within apache-jsp module as well
+ + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
+ + 3103 HttpClientLoadTest reports a leak in byte buffer
+ + 3104 Align jetty-schemas version within apache-jsp module as well
 
 jetty-9.4.13.v20181111 - 11 November 2018
  + 2191 JPMS Support

@@ -94,8 +94,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         public void onCompleteFailure(Throwable failure)
         {
-            super.onCompleteFailure(failure);
             AbstractWebSocketConnection.this.close(failure);
+            super.onCompleteFailure(failure);
         }
     }
 

@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.File;
 import java.util.List;
 
@@ -40,6 +33,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
@@ -93,8 +94,8 @@ public class GlobalWebappConfigBindingTest
         String currentClasses[] = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
-        assertThat("Default Server Classes",addedClass,not(isIn(defaultClasses)));
-        assertThat("Current Server Classes",addedClass,isIn(currentClasses));
+        assertThat("Default Server Classes",addedClass,not(is(in(defaultClasses))));
+        assertThat("Current Server Classes",addedClass,is(in(currentClasses)));
 
         //  boolean jndiPackage = false;
 

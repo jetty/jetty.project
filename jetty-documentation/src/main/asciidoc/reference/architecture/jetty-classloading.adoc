@@ -162,6 +162,10 @@ You can do so directly to the API via a context XML file such as the following:
 
 If none of the alternatives already described meet your needs, you can always provide a custom classloader for your webapp.
 We recommend, but do not require, that your custom loader subclasses link:{JDURL}/org/eclipse/jetty/webapp/WebAppClassLoader.html[WebAppClassLoader].
+
+If you do not subclass WebAppClassLoader, we recommend that you implement the link:{JDURL}/org/eclipse/jetty/util/ClassVisibilityChecker.html[ClassVisibilityChecker] interface.
+Without this interface, session persistence will be slower.
+
 You configure the classloader for the webapp like so:
 
 [source, java, subs="{sub-order}"]

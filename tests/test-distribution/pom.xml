@@ -3,7 +3,7 @@
   <parent>
     <artifactId>tests-parent</artifactId>
     <groupId>org.eclipse.jetty.tests</groupId>
-    <version>9.4.18-SNAPSHOT</version>
+    <version>9.4.19-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -78,7 +78,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

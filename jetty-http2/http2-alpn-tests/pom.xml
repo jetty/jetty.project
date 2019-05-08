@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-parent</artifactId>
-        <version>9.4.18-SNAPSHOT</version>
+        <version>9.4.19-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -77,11 +77,6 @@
         <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-test-helper</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

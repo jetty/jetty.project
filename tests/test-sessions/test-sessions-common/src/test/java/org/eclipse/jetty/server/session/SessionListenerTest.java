@@ -18,19 +18,10 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.HttpCookie;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +36,15 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * SessionListenerTest
@@ -98,7 +98,7 @@ public class SessionListenerTest
                 assertTrue (TestServlet.bindingListener.bound);
                 
                 String sessionId = TestServer.extractSessionId(sessionCookie);
-                assertThat(sessionId, isIn(listener.createdSessions));
+                assertThat(sessionId, is(in(listener.createdSessions)));
                 
                 // Make a request which will invalidate the existing session
                 Request request2 = client.newRequest(url + "?action=test");
@@ -164,12 +164,12 @@ public class SessionListenerTest
             
             String sessionId = TestServer.extractSessionId(sessionCookie);     
 
-            assertThat(sessionId, isIn(listener.createdSessions));
+            assertThat(sessionId, is(in(listener.createdSessions)));
             
             //and wait until the session should have expired
             Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(inactivePeriod+(scavengePeriod)));
 
-            assertThat(sessionId, isIn(listener.destroyedSessions));
+            assertThat(sessionId, is(in(listener.destroyedSessions)));
 
             assertNull(listener.ex);
         }

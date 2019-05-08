@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.util.component;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-public class DumpableCollectionTest
-{
+import static org.hamcrest.MatcherAssert.assertThat;
 
+public class DumpableTest
+{
     @Test
     public void testNullDumpableCollection () throws Exception
     {

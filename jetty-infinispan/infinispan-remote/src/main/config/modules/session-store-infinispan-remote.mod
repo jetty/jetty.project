@@ -10,9 +10,9 @@ session-store
 [depend]
 infinispan-common
 infinispan-remote
+infinispan-remote-query-libs
 
 [files]
-maven://org.infinispan/infinispan-remote-it/${infinispan.version}|lib/infinispan/infinispan-remote-it-${infinispan.version}.jar
 basehome:modules/session-store-infinispan-remote/resources/hotrod-client.properties|resources/hotrod-client.properties
 
 [ini]
