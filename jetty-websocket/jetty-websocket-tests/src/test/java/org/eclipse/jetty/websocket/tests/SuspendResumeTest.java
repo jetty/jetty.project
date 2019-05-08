@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -129,9 +130,9 @@ public class SuspendResumeTest
         assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
         assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
 
-        // check no errors occurred
-        assertNull(clientSocket.error);
-        assertNull(serverSocket.error);
+        // check we closed normally
+        assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
+        assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
     }
 
     @Test
@@ -167,8 +168,35 @@ public class SuspendResumeTest
         assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
         assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
 
-        // check no errors occurred
-        assertNull(clientSocket.error);
-        assertNull(serverSocket.error);
+        // check we closed normally
+        assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
+        assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
+    }
+
+    @Test
+    public void testSuspendAfterClose() throws Exception
+    {
+        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        EventSocket clientSocket = new EventSocket();
+        Future<Session> connect = client.connect(clientSocket, uri);
+        connect.get(5, TimeUnit.SECONDS);
+
+        // verify connection by sending a message from server to client
+        assertTrue(serverSocket.open.await(5, TimeUnit.SECONDS));
+        serverSocket.session.getRemote().sendString("verification");
+        assertThat(clientSocket.receivedMessages.poll(5, TimeUnit.SECONDS), is("verification"));
+
+        // make sure both sides are closed
+        clientSocket.session.close();
+        assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+
+        // check we closed normally
+        assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
+        assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
+
+        // suspend the client so that no read events occur
+        SuspendToken suspendToken = clientSocket.session.suspend();
+        suspendToken.resume();
     }
 }
