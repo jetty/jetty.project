@@ -76,6 +76,11 @@
                        STATIC_INIT, INSTANCE_INIT, METHOD_DEF, CTOR_DEF, VARIABLE_DEF"/>
     </module>
 
+    <!-- Indentation Rules -->
+    <module name="Indentation">
+      <property name="throwsIndent" value="0"/>
+    </module>
+
     <!-- Interface Type Parameter Name -->
     <module name="InterfaceTypeParameterName">
       <property name="format" value="^[A-Z][A-Z0-9]*$"/>
@@ -83,7 +88,9 @@
 
     <!-- left curly brace must be on new line -->
     <module name="LeftCurly">
+      <property name="id" value="LeftCurlyNewLine_NotLambdas"/>
       <property name="option" value="nl"/>
+      <property name="tokens" value="ANNOTATION_DEF, CLASS_DEF, CTOR_DEF, ENUM_CONSTANT_DEF, ENUM_DEF, INTERFACE_DEF, LITERAL_CASE, LITERAL_CATCH, LITERAL_DEFAULT, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF, LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, METHOD_DEF, OBJBLOCK, STATIC_INIT" />
     </module>
 
     <!-- Method Type Parameter Name -->
@@ -217,9 +224,6 @@
 
     <!-- Local Parameter Name Format -->
     <module name="LocalVariableName" />
-
-    <!-- Indentation Rules -->
-    <module name="Indentation" />
 
     <!-- Method Name Format -->
     <module name="MethodName" />
