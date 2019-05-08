@@ -35,7 +35,6 @@
     <!-- Check abbreviations(consecutive capital letters) length in identifier name -->
     <module name="AbbreviationAsWordInName">
       <property name="ignoreFinal" value="true"/>
-      <property name="allowedAbbreviationLength" value="1"/>
       <property name="allowedAbbreviations" value="RFC,XML,URL,URI,HTTP,IP,ID,ISO8859,UTF8,CRLF,AWT"/>
     </module>
 
