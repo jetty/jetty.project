@@ -72,9 +72,9 @@
             </goals>
             <configuration>
               <tasks>
-                  <concat destfile="${project.build.directory}/infinispan-remote-query-libs.mod">
-                      <fileset file="src/main/config-template/modules/sessions/infinispan/infinispan-remote-query-libs.mod"/>
-                  <fileset file="${project.build.directory}/deps.txt"/>
+                <concat destfile="${project.build.directory}/infinispan-remote-query-libs.mod">
+                    <fileset file="src/main/config-template/modules/sessions/infinispan/remote/infinispan-remote-query-libs.mod"/>
+                    <fileset file="${project.build.directory}/deps.txt"/>
                 </concat>
               </tasks>
             </configuration>
