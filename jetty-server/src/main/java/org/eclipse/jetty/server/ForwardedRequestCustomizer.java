@@ -43,7 +43,9 @@ import static java.lang.invoke.MethodType.methodType;
 
 
 /* ------------------------------------------------------------ */
-/** Customize Requests for Proxy Forwarding.
+
+/**
+ * Customize Requests for Proxy Forwarding.
  * <p>
  * This customizer looks at at HTTP request for headers that indicate
  * it has been forwarded by one or more proxies.  Specifically handled are
@@ -59,7 +61,8 @@ import static java.lang.invoke.MethodType.methodType;
  * so that the proxy is not seen as the other end point of the connection on which
  * the request came</p>
  * <p>Headers can also be defined so that forwarded SSL Session IDs and Cipher
- * suites may be customised</p> 
+ * suites may be customised</p>
+ *
  * @see <a href="http://en.wikipedia.org/wiki/X-Forwarded-For">Wikipedia: X-Forwarded-For</a>
  */
 public class ForwardedRequestCustomizer implements Customizer
@@ -76,9 +79,9 @@ public class ForwardedRequestCustomizer implements Customizer
     private String _forwardedHttpsHeader = "X-Proxied-Https";
     private String _forwardedCipherSuiteHeader = "Proxy-auth-cert";
     private String _forwardedSslSessionIdHeader = "Proxy-ssl-id";
-    private boolean _proxyAsAuthority=false;
-    private boolean _sslIsSecure=true;
-    private Trie <MethodHandle> _handles;
+    private boolean _proxyAsAuthority = false;
+    private boolean _sslIsSecure = true;
+    private Trie<MethodHandle> _handles;
 
     public ForwardedRequestCustomizer()
     {
@@ -97,7 +100,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param proxyAsAuthority if true, use the proxy address obtained via
-     * {@code X-Forwarded-Server} or RFC7239 "by" as the request authority.
+     *                         {@code X-Forwarded-Server} or RFC7239 "by" as the request authority.
      */
     public void setProxyAsAuthority(boolean proxyAsAuthority)
     {
@@ -114,49 +117,47 @@ public class ForwardedRequestCustomizer implements Customizer
     {
         if (rfc7239only)
         {
-            if (_forwardedHeader==null)
-                _forwardedHeader=HttpHeader.FORWARDED.toString();
-            _forwardedHostHeader=null;
-            _forwardedServerHeader=null;
-            _forwardedForHeader=null;
-            _forwardedPortHeader=null;
-            _forwardedProtoHeader=null;
-            _forwardedHttpsHeader=null;
+            if (_forwardedHeader == null)
+                _forwardedHeader = HttpHeader.FORWARDED.toString();
+            _forwardedHostHeader = null;
+            _forwardedServerHeader = null;
+            _forwardedForHeader = null;
+            _forwardedPortHeader = null;
+            _forwardedProtoHeader = null;
+            _forwardedHttpsHeader = null;
         }
         else
         {
-            if (_forwardedHostHeader==null)
+            if (_forwardedHostHeader == null)
                 _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
-            if (_forwardedServerHeader==null)
+            if (_forwardedServerHeader == null)
                 _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
-            if (_forwardedForHeader==null)
+            if (_forwardedForHeader == null)
                 _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
-            if (_forwardedPortHeader==null)
+            if (_forwardedPortHeader == null)
                 _forwardedPortHeader = HttpHeader.X_FORWARDED_PORT.toString();
-            if (_forwardedProtoHeader==null)
+            if (_forwardedProtoHeader == null)
                 _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
-            if (_forwardedHttpsHeader==null)
+            if (_forwardedHttpsHeader == null)
                 _forwardedHttpsHeader = "X-Proxied-Https";
         }
 
         updateHandles();
     }
-    
+
     public String getForcedHost()
     {
         return _forcedHost.getValue();
     }
-    
+
     /**
      * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
      *
-     * @param hostAndPort
-     *            The value of the host header to force.
+     * @param hostAndPort The value of the host header to force.
      */
     public void setForcedHost(String hostAndPort)
     {
         _forcedHost = new HostPortHttpField(hostAndPort);
-        updateHandles();
     }
 
     /**
@@ -168,13 +169,15 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedHeader 
-     *            The header name for RFC forwarded (default Forwarded)
+     * @param forwardedHeader The header name for RFC forwarded (default Forwarded)
      */
     public void setForwardedHeader(String forwardedHeader)
     {
-        _forwardedHeader = forwardedHeader;
-        updateHandles();
+        if (_forwardedHeader == null || !_forwardedHeader.equals(forwardedHeader))
+        {
+            _forwardedHeader = forwardedHeader;
+            updateHandles();
+        }
     }
 
     public String getForwardedHostHeader()
@@ -183,13 +186,15 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedHostHeader
-     *            The header name for forwarded hosts (default {@code X-Forwarded-Host})
+     * @param forwardedHostHeader The header name for forwarded hosts (default {@code X-Forwarded-Host})
      */
     public void setForwardedHostHeader(String forwardedHostHeader)
     {
-        _forwardedHostHeader = forwardedHostHeader;
-        updateHandles();
+        if (_forwardedHostHeader == null || !_forwardedHostHeader.equalsIgnoreCase(forwardedHostHeader))
+        {
+            _forwardedHostHeader = forwardedHostHeader;
+            updateHandles();
+        }
     }
 
     /**
@@ -201,13 +206,15 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedServerHeader
-     *            The header name for forwarded server (default {@code X-Forwarded-Server})
+     * @param forwardedServerHeader The header name for forwarded server (default {@code X-Forwarded-Server})
      */
     public void setForwardedServerHeader(String forwardedServerHeader)
     {
-        _forwardedServerHeader = forwardedServerHeader;
-        updateHandles();
+        if (_forwardedServerHeader == null || !_forwardedServerHeader.equalsIgnoreCase(forwardedServerHeader))
+        {
+            _forwardedServerHeader = forwardedServerHeader;
+            updateHandles();
+        }
     }
 
     /**
@@ -219,13 +226,15 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedRemoteAddressHeader
-     *            The header name for forwarded for (default {@code X-Forwarded-For})
+     * @param forwardedRemoteAddressHeader The header name for forwarded for (default {@code X-Forwarded-For})
      */
     public void setForwardedForHeader(String forwardedRemoteAddressHeader)
     {
-        _forwardedForHeader = forwardedRemoteAddressHeader;
-        updateHandles();
+        if (_forwardedForHeader == null || !_forwardedForHeader.equalsIgnoreCase(forwardedRemoteAddressHeader))
+        {
+            _forwardedForHeader = forwardedRemoteAddressHeader;
+            updateHandles();
+        }
     }
 
     public String getForwardedPortHeader()
@@ -234,13 +243,15 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedPortHeader
-     *            The header name for forwarded hosts (default {@code X-Forwarded-Port})
+     * @param forwardedPortHeader The header name for forwarded hosts (default {@code X-Forwarded-Port})
      */
     public void setForwardedPortHeader(String forwardedPortHeader)
     {
-        _forwardedHostHeader = forwardedPortHeader;
-        updateHandles();
+        if (_forwardedHostHeader == null || !_forwardedHostHeader.equalsIgnoreCase(forwardedPortHeader))
+        {
+            _forwardedHostHeader = forwardedPortHeader;
+            updateHandles();
+        }
     }
 
     /**
@@ -256,13 +267,15 @@ public class ForwardedRequestCustomizer implements Customizer
     /**
      * Set the forwardedProtoHeader.
      *
-     * @param forwardedProtoHeader
-     *            the forwardedProtoHeader to set (default {@code X-Forwarded-Proto})
+     * @param forwardedProtoHeader the forwardedProtoHeader to set (default {@code X-Forwarded-Proto})
      */
     public void setForwardedProtoHeader(String forwardedProtoHeader)
     {
-        _forwardedProtoHeader = forwardedProtoHeader;
-        updateHandles();
+        if (_forwardedProtoHeader == null || !_forwardedProtoHeader.equalsIgnoreCase(forwardedProtoHeader))
+        {
+            _forwardedProtoHeader = forwardedProtoHeader;
+            updateHandles();
+        }
     }
 
     /**
@@ -274,13 +287,15 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedCipherSuite
-     *            The header name holding a forwarded cipher suite (default {@code Proxy-auth-cert})
+     * @param forwardedCipherSuiteHeader The header name holding a forwarded cipher suite (default {@code Proxy-auth-cert})
      */
-    public void setForwardedCipherSuiteHeader(String forwardedCipherSuite)
+    public void setForwardedCipherSuiteHeader(String forwardedCipherSuiteHeader)
     {
-        _forwardedCipherSuiteHeader = forwardedCipherSuite;
-        updateHandles();
+        if (_forwardedCipherSuiteHeader == null || !_forwardedCipherSuiteHeader.equalsIgnoreCase(forwardedCipherSuiteHeader))
+        {
+            _forwardedCipherSuiteHeader = forwardedCipherSuiteHeader;
+            updateHandles();
+        }
     }
 
     /**
@@ -292,13 +307,15 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param forwardedSslSessionId
-     *            The header name holding a forwarded SSL Session ID (default {@code Proxy-ssl-id})
+     * @param forwardedSslSessionIdHeader The header name holding a forwarded SSL Session ID (default {@code Proxy-ssl-id})
      */
-    public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
+    public void setForwardedSslSessionIdHeader(String forwardedSslSessionIdHeader)
     {
-        _forwardedSslSessionIdHeader = forwardedSslSessionId;
-        updateHandles();
+        if (_forwardedSslSessionIdHeader == null || !_forwardedSslSessionIdHeader.equalsIgnoreCase(forwardedSslSessionIdHeader))
+        {
+            _forwardedSslSessionIdHeader = forwardedSslSessionIdHeader;
+            updateHandles();
+        }
     }
 
     /**
@@ -314,10 +331,13 @@ public class ForwardedRequestCustomizer implements Customizer
      */
     public void setForwardedHttpsHeader(String forwardedHttpsHeader)
     {
-        _forwardedHttpsHeader = forwardedHttpsHeader;
-        updateHandles();
+        if (_forwardedHttpsHeader == null || !_forwardedHttpsHeader.equalsIgnoreCase(forwardedHttpsHeader))
+        {
+            _forwardedHttpsHeader = forwardedHttpsHeader;
+            updateHandles();
+        }
     }
-    
+
     /**
      * @return true if the presence of a SSL session or certificate header is sufficient
      * to indicate a secure request (default is true)
@@ -329,7 +349,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param sslIsSecure true if the presence of a SSL session or certificate header is sufficient
-     * to indicate a secure request (default is true)
+     *                    to indicate a secure request (default is true)
      */
     public void setSslIsSecure(boolean sslIsSecure)
     {
@@ -362,13 +382,13 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             // Update host header
             httpFields.put(_forcedHost);
-            request.setAuthority(_forcedHost.getHost(),_forcedHost.getPort());
+            request.setAuthority(_forcedHost.getHost(), _forcedHost.getPort());
         }
-        else if (forwarded._rfc7239!=null && forwarded._rfc7239._host!=null)
+        else if (forwarded._rfc7239 != null && forwarded._rfc7239._host != null)
         {
             HostPortHttpField auth = forwarded._rfc7239._host;
             httpFields.put(auth);
-            request.setAuthority(auth.getHost(),auth.getPort());
+            request.setAuthority(auth.getHost(), auth.getPort());
         }
         else if (forwarded._forwardedHost != null)
         {
@@ -378,26 +398,26 @@ public class ForwardedRequestCustomizer implements Customizer
         }
         else if (_proxyAsAuthority)
         {
-            if (forwarded._rfc7239!=null && forwarded._rfc7239._by!=null)
+            if (forwarded._rfc7239 != null && forwarded._rfc7239._by != null)
             {
                 HostPortHttpField auth = forwarded._rfc7239._by;
                 httpFields.put(auth);
-                request.setAuthority(auth.getHost(),auth.getPort());
+                request.setAuthority(auth.getHost(), auth.getPort());
             }
             else if (forwarded._forwardedServer != null)
             {
-                request.setAuthority(forwarded._forwardedServer,request.getServerPort());
+                request.setAuthority(forwarded._forwardedServer, request.getServerPort());
             }
         }
 
         // handle remote end identifier
-        if (forwarded._rfc7239!=null && forwarded._rfc7239._for!=null)
+        if (forwarded._rfc7239 != null && forwarded._rfc7239._for != null)
         {
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._rfc7239._for.getHost(),forwarded._rfc7239._for.getPort()));
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._rfc7239._for.getHost(), forwarded._rfc7239._for.getPort()));
         }
         else if (forwarded._forwardedFor != null)
         {
-            int port = (forwarded._forwardedPort>0)
+            int port = (forwarded._forwardedPort > 0)
                 ? forwarded._forwardedPort
                 : (forwarded._forwardedFor.getPort() > 0)
                 ? forwarded._forwardedFor.getPort()
@@ -406,7 +426,7 @@ public class ForwardedRequestCustomizer implements Customizer
         }
 
         // handle protocol identifier
-        if (forwarded._rfc7239!=null && forwarded._rfc7239._proto!=null)
+        if (forwarded._rfc7239 != null && forwarded._rfc7239._proto != null)
         {
             request.setScheme(forwarded._rfc7239._proto);
             if (forwarded._rfc7239._proto.equals(config.getSecureScheme()))
@@ -418,7 +438,7 @@ public class ForwardedRequestCustomizer implements Customizer
             if (forwarded._forwardedProto.equals(config.getSecureScheme()))
                 request.setSecure(true);
         }
-        else if (forwarded._forwardedHttps !=null && ("on".equalsIgnoreCase(forwarded._forwardedHttps)||"true".equalsIgnoreCase(forwarded._forwardedHttps)))
+        else if (forwarded._forwardedHttps != null && ("on".equalsIgnoreCase(forwarded._forwardedHttps) || "true".equalsIgnoreCase(forwarded._forwardedHttps)))
         {
             request.setScheme(HttpScheme.HTTPS.asString());
             if (HttpScheme.HTTPS.asString().equals(config.getSecureScheme()))
@@ -441,7 +461,7 @@ public class ForwardedRequestCustomizer implements Customizer
         }
 
         // The left-most value is the farthest downstream client
-        return headerValue.substring(0,commaIndex).trim();
+        return headerValue.substring(0, commaIndex).trim();
     }
 
     protected HostPort getRemoteAddr(String headerValue)
@@ -463,11 +483,11 @@ public class ForwardedRequestCustomizer implements Customizer
             return null;
         }
     }
-    
+
     @Override
     public String toString()
     {
-        return String.format("%s@%x",this.getClass().getSimpleName(),hashCode());
+        return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
     @Deprecated
@@ -475,12 +495,11 @@ public class ForwardedRequestCustomizer implements Customizer
     {
         return _forcedHost.getValue();
     }
-    
+
     /**
      * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
      *
-     * @param hostHeader
-     *            The value of the host header to force.
+     * @param hostHeader The value of the host header to force.
      */
     @Deprecated
     public void setHostHeader(String hostHeader)
@@ -494,7 +513,7 @@ public class ForwardedRequestCustomizer implements Customizer
         HostPortHttpField _for;
         HostPortHttpField _host;
         String _proto;
-        
+
         private RFC7239()
         {
             super(false);
@@ -503,27 +522,27 @@ public class ForwardedRequestCustomizer implements Customizer
         @Override
         protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
         {
-            if (valueLength==0 && paramValue>paramName)
+            if (valueLength == 0 && paramValue > paramName)
             {
-                String name=StringUtil.asciiToLowerCase(buffer.substring(paramName,paramValue-1));
-                String value=buffer.substring(paramValue);
-                switch(name)
+                String name = StringUtil.asciiToLowerCase(buffer.substring(paramName, paramValue - 1));
+                String value = buffer.substring(paramValue);
+                switch (name)
                 {
                     case "by":
-                        if (_by==null && !value.startsWith("_") && !"unknown".equals(value))
-                            _by=new HostPortHttpField(value);
+                        if (_by == null && !value.startsWith("_") && !"unknown".equals(value))
+                            _by = new HostPortHttpField(value);
                         break;
                     case "for":
-                        if (_for==null && !value.startsWith("_") && !"unknown".equals(value))
-                            _for=new HostPortHttpField(value);
+                        if (_for == null && !value.startsWith("_") && !"unknown".equals(value))
+                            _for = new HostPortHttpField(value);
                         break;
                     case "host":
-                        if (_host==null)
-                            _host=new HostPortHttpField(value);
+                        if (_host == null)
+                            _host = new HostPortHttpField(value);
                         break;
                     case "proto":
-                        if (_proto==null)
-                            _proto=value;
+                        if (_proto == null)
+                            _proto = value;
                         break;
                 }
             }
@@ -536,7 +555,7 @@ public class ForwardedRequestCustomizer implements Customizer
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodType type = methodType(Void.TYPE, HttpField.class);
 
-        while(true)
+        while (true)
         {
             try
             {
@@ -563,7 +582,7 @@ public class ForwardedRequestCustomizer implements Customizer
                     continue;
                 break;
             }
-            catch (NoSuchMethodException|IllegalAccessException e)
+            catch (NoSuchMethodException | IllegalAccessException e)
             {
                 throw new IllegalStateException(e);
             }
@@ -591,7 +610,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleCipherSuite(HttpField field)
         {
-            _request.setAttribute("javax.servlet.request.cipher_suite",field.getValue());
+            _request.setAttribute("javax.servlet.request.cipher_suite", field.getValue());
             if (isSslIsSecure())
             {
                 _request.setSecure(true);
@@ -633,6 +652,7 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             _forwardedPort = field.getIntValue();
         }
+
         public void handleHttps(HttpField field)
         {
             _forwardedHttps = getLeftMost(field.getValue());
@@ -640,11 +660,9 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleRFC7239(HttpField field)
         {
-            if (_rfc7239 ==null)
+            if (_rfc7239 == null)
                 _rfc7239 = new RFC7239();
             _rfc7239.addValue(field.getValue());
         }
-
-
     }
 }
