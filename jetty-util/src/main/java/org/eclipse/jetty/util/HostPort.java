@@ -32,6 +32,12 @@ public class HostPort
     private final String _host;
     private final int _port;
 
+    public HostPort(String host, int port) throws IllegalArgumentException
+    {
+        _host = host;
+        _port = port;
+    }
+
     public HostPort(String authority) throws IllegalArgumentException
     {
         if (authority==null)
@@ -66,8 +72,16 @@ public class HostPort
                 int c = authority.lastIndexOf(':');
                 if (c>=0)
                 {
-                    _host=authority.substring(0,c);
-                    _port=StringUtil.toInt(authority,c+1);
+                    if (c!=authority.indexOf(':'))
+                    {
+                        _host="[" + authority + "]";
+                        _port=0;
+                    }
+                    else
+                    {
+                        _host = authority.substring(0, c);
+                        _port = StringUtil.toInt(authority, c + 1);
+                    }
                 }
                 else
                 {
@@ -93,7 +107,6 @@ public class HostPort
             throw new IllegalArgumentException("Bad port");
     }
 
-    /* ------------------------------------------------------------ */
     /** Get the host.
      * @return the host
      */
@@ -102,7 +115,6 @@ public class HostPort
         return _host;
     }
 
-    /* ------------------------------------------------------------ */
     /** Get the port.
      * @return the port
      */
@@ -111,7 +123,6 @@ public class HostPort
         return _port;
     }
     
-    /* ------------------------------------------------------------ */
     /** Get the port.
      * @param defaultPort, the default port to return if a port is not specified
      * @return the port
@@ -121,7 +132,14 @@ public class HostPort
         return _port>0?_port:defaultPort;
     }
 
-    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        if (_port>0)
+            return normalizeHost(_host) + ":" + _port;
+        return _host;
+    }
+
     /** Normalize IPv6 address as per https://www.ietf.org/rfc/rfc2732.txt
      * @param host A host name
      * @return Host name surrounded by '[' and ']' as needed.

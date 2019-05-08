@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -40,6 +35,11 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ForwardedRequestCustomizerTest
 {
@@ -247,6 +247,23 @@ public class ForwardedRequestCustomizerTest
         assertEquals("80",_results.poll());
         assertEquals("[2001:db8:cafe::17]",_results.poll());
         assertEquals("1111",_results.poll());
+    }
+
+    @Test
+    public void testForIpv6AndPort() throws Exception
+    {
+        String response=_connector.getResponse(
+                "GET / HTTP/1.1\n"+
+                        "Host: myhost\n"+
+                        "X-Forwarded-For: 1:2:3:4:5:6:7:8\n"+
+                        "X-Forwarded-Port: 2222\n"+
+                        "\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("myhost",_results.poll());
+        assertEquals("80",_results.poll());
+        assertEquals("[1:2:3:4:5:6:7:8]",_results.poll());
+        assertEquals("2222",_results.poll());
     }
 
     @Test

@@ -50,6 +50,19 @@ public class HostPortHttpField extends HttpField
     }
 
     /* ------------------------------------------------------------ */
+    public HostPortHttpField(String host, int port)
+    {
+        this(new HostPort(host, port));
+    }
+
+    /* ------------------------------------------------------------ */
+    protected HostPortHttpField(HostPort hostport)
+    {
+        super(HttpHeader.HOST,HttpHeader.HOST.asString(),hostport.toString());
+        _hostPort = hostport;
+    }
+
+    /* ------------------------------------------------------------ */
     /** Get the host.
      * @return the host
      */
