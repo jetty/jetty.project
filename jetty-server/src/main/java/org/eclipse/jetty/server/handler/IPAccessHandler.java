@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IPAddressMap;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -347,40 +348,11 @@ public class IPAccessHandler extends HandlerWrapper
     /**
      * Dump the handler configuration
      */
-    @Override
-    public String dump()
+    public void dump(Appendable out, String indent) throws IOException
     {
-        StringBuilder buf = new StringBuilder();
-
-        buf.append(toString());
-        buf.append(" WHITELIST:\n");
-        dump(buf, _white);
-        buf.append(toString());
-        buf.append(" BLACKLIST:\n");
-        dump(buf, _black);
-
-        return buf.toString();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Dump a pattern map into a StringBuilder buffer
-     *
-     * @param buf buffer
-     * @param patternMap pattern map to dump
-     */
-    protected void dump(StringBuilder buf, PathMap<IPAddressMap<Boolean>> patternMap)
-    {
-        for (String path: patternMap.keySet())
-        {
-            for (String addr: patternMap.get(path).keySet())
-            {
-                buf.append("# ");
-                buf.append(addr);
-                buf.append("|");
-                buf.append(path);
-                buf.append("\n");
-            }
-        }
+        dumpObjects(out, indent,
+          DumpableCollection.from("white", _white),
+          DumpableCollection.from("black", _black),
+          DumpableCollection.from("whiteListByPath", _whiteListByPath));
     }
  }

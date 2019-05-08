@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIn.isIn;
-
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -39,6 +34,11 @@ import org.eclipse.jetty.servlet.ServletTester;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
 
 public class HeaderFilterTest
 {
@@ -108,7 +108,7 @@ public class HeaderFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), isIn(response.getFieldNamesCollection()));
+        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), is(in(response.getFieldNamesCollection())));
     }
 
     @Test
@@ -125,7 +125,7 @@ public class HeaderFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), isIn(response.getFieldNamesCollection()));
+        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), is(in(response.getFieldNamesCollection())));
     }
 
     public static class NullServlet extends HttpServlet

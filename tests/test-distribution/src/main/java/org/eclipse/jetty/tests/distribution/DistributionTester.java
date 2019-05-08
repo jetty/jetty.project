@@ -62,6 +62,8 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -140,6 +142,9 @@ public class DistributionTester
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
+        // we get artifacts from local repo first
+        args = new ArrayList<>(args);
+        args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
         commands.addAll(args);
 
         LOGGER.info("Executing: {}", commands);
@@ -167,6 +172,21 @@ public class DistributionTester
     }
 
     /**
+     * Installs content from {@code src/test/resources/<testResourcePath>} into {@code ${jetty.base}/<baseResourcePath>}
+     *
+     * @param testResourcePath the location of the source file in {@code src/test/resources}
+     * @param baseResourcePath the location of the destination file in {@code ${jetty.base}}
+     * @throws IOException if unable to copy file
+     */
+    public void installBaseResource(String testResourcePath, String baseResourcePath) throws IOException
+    {
+        Path srcFile = MavenTestingUtils.getTestResourcePath(testResourcePath);
+        Path destFile = config.jettyBase.resolve(baseResourcePath);
+
+        Files.copy(srcFile, destFile);
+    }
+
+    /**
      * Installs in {@code ${jetty.base}/webapps} the given war file under the given context path.
      *
      * @param warFile the war file to install
@@ -176,7 +196,7 @@ public class DistributionTester
     public void installWarFile(File warFile, String context) throws IOException
     {
         //webapps
-        Path webapps = Paths.get(config.jettyBase.toString(), "webapps", context);
+        Path webapps = config.jettyBase.resolve("webapps").resolve(context);
         if (!Files.exists(webapps))
             Files.createDirectories(webapps);
         unzip(warFile, webapps.toFile());
@@ -213,7 +233,9 @@ public class DistributionTester
 
         if (config.jettyBase == null)
         {
-            config.jettyBase = Files.createTempDirectory("jetty_base_");
+            Path bases = MavenTestingUtils.getTargetTestingPath("bases");
+            FS.ensureDirExists(bases);
+            config.jettyBase = Files.createTempDirectory(bases, "jetty_base_");
         }
         else
         {
@@ -225,12 +247,12 @@ public class DistributionTester
     private String getJavaExecutable()
     {
         String[] javaExecutables = new String[]{"java", "java.exe"};
-        File javaHomeDir = new File(System.getProperty("java.home"));
+        Path javaBinDir = Paths.get(System.getProperty("java.home")).resolve("bin");
         for (String javaExecutable : javaExecutables)
         {
-            File javaFile = new File(javaHomeDir, "bin" + File.separator + javaExecutable);
-            if (javaFile.exists() && javaFile.isFile())
-                return javaFile.getAbsolutePath();
+            Path javaFile = javaBinDir.resolve(javaExecutable);
+            if (Files.exists(javaFile) && Files.isRegularFile(javaFile))
+                return javaFile.toAbsolutePath().toString();
         }
         return "java";
     }

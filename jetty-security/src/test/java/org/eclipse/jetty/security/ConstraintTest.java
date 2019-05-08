@@ -34,8 +34,6 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import javax.servlet.DispatcherType;
 import javax.servlet.HttpConstraintElement;
 import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletException;
@@ -76,8 +74,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -419,7 +417,7 @@ public class ConstraintTest
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
         assertNotNull(uncoveredPaths);
         assertEquals(1, uncoveredPaths.size());
-        assertThat("/user/*", isIn(uncoveredPaths));
+        assertThat("/user/*", is(in(uncoveredPaths)));
         
         //Test an explicitly named method with a http-method-omission to cover all other methods
         Constraint constraint2a = new Constraint();
@@ -447,7 +445,7 @@ public class ConstraintTest
         _security.addConstraintMapping(mapping3);
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
         assertNotNull(uncoveredPaths);
-        assertThat("/omit/*", isIn(uncoveredPaths));
+        assertThat("/omit/*", is(in(uncoveredPaths)));
         
         _security.setDenyUncoveredHttpMethods(true);
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();

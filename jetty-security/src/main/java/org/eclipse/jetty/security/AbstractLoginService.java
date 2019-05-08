@@ -27,6 +27,7 @@ import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.util.security.Credential;
 /**
  * AbstractLoginService
  */
-public abstract class AbstractLoginService extends AbstractLifeCycle implements LoginService
+public abstract class AbstractLoginService extends ContainerLifeCycle implements LoginService
 {
     private static final Logger LOG = Log.getLogger(AbstractLoginService.class);
     
@@ -116,6 +117,11 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
     /* ------------------------------------------------------------ */
     protected abstract UserPrincipal loadUserInfo (String username);
     
+    protected AbstractLoginService()
+    {
+        addBean(_identityService);
+    }
+    
     /* ------------------------------------------------------------ */
     /** 
      * @see org.eclipse.jetty.security.LoginService#getName()
@@ -135,6 +141,7 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
     {
         if (isRunning())
             throw new IllegalStateException("Running");
+        updateBean(_identityService, identityService);
         _identityService = identityService;
     }
 

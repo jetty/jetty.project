@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server.session.infinispan;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
@@ -43,19 +39,19 @@ import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RemoteQueryManagerTest
 {
     public static final String DEFAULT_CACHE_NAME =  "remote-session-test";
 
-    
     @Test
     public void test() throws Exception
     {
-        
         SearchMapping mapping = new SearchMapping();
         mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
         
@@ -86,7 +82,6 @@ public class RemoteQueryManagerTest
             
             baos = new ByteArrayOutputStream();
             IO.copy(is, baos);
-            is.close();
         }
         
         String content = baos.toString("UTF-8");
