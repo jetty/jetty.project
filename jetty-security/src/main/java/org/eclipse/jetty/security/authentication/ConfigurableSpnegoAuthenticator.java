@@ -99,8 +99,6 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     {
         _authenticationDuration = authenticationDuration;
     }
-    
-    
 
     /**
      * Only renew the session id if the user has been fully authenticated, don't
