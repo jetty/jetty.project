@@ -23,26 +23,44 @@
       <groupId>org.eclipse.jetty.its.jetty-run-mojo-it</groupId>
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.eclipse.jetty.its.jetty-run-mojo-it</groupId>
+      <artifactId>jetty-simple-base</artifactId>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
       <scope>provided</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-maven-plugin</artifactId>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
-
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
@@ -73,6 +91,7 @@
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <pingServlet>true</pingServlet>
             <helloServlet>true</helloServlet>
+            <helloTestServlet>true</helloTestServlet>
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
@@ -99,6 +118,7 @@
               </systemProperties>
               <nonBlocking>true</nonBlocking>
               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <useTestScope>true</useTestScope>
             </configuration>
           </execution>
         </executions>

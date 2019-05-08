@@ -77,6 +77,14 @@ public class TestGetContent
                     + ", response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println( "contentCheck" );
             }
+            if (Boolean.getBoolean( "helloTestServlet" ))
+            {
+                String response = httpClient.GET( "http://localhost:" + port + "/testhello?name=beer" ).getContentAsString();
+                assertEquals( "Hello from test beer", response.trim(), "it test " + System.getProperty( "maven.it.name" ) );
+                response = httpClient.GET( "http://localhost:" + port + "/testhello?name=foo" ).getContentAsString();
+                assertEquals( "Hello from test foo", response.trim(), "it test " + System.getProperty( "maven.it.name" )  );
+                System.out.println( "helloServlet" );
+            }
         }
         finally
         {
