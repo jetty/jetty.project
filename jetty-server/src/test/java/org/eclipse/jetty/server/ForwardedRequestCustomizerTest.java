@@ -95,6 +95,68 @@ public class ForwardedRequestCustomizerTest
         _server.join();
     }
 
+    @Test
+    public void testHostIpv4() throws Exception
+    {
+        String response=_connector.getResponse(
+            "GET / HTTP/1.1\n"+
+                "Host: 1.2.3.4:2222\n"+
+                "\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("1.2.3.4",_results.poll());
+        assertEquals("2222",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+    }
+
+    @Test
+    public void testHostIpv6() throws Exception
+    {
+        String response=_connector.getResponse(
+            "GET / HTTP/1.1\n"+
+                "Host: [::1]:2222\n"+
+                "\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("[::1]",_results.poll());
+        assertEquals("2222",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+    }
+
+
+
+    @Test
+    public void testURIIpv4() throws Exception
+    {
+        String response=_connector.getResponse(
+            "GET http://1.2.3.4:2222/ HTTP/1.1\n"+
+                "Host: wrong\n"+
+                "\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("1.2.3.4",_results.poll());
+        assertEquals("2222",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+    }
+
+    @Test
+    public void testURIIpv6() throws Exception
+    {
+        String response=_connector.getResponse(
+            "GET http://[::1]:2222/ HTTP/1.1\n"+
+                "Host: wrong\n"+
+                "\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("[::1]",_results.poll());
+        assertEquals("2222",_results.poll());
+        assertEquals("0.0.0.0",_results.poll());
+        assertEquals("0",_results.poll());
+    }
+
 
     @Test
     public void testRFC7239_Examples_4() throws Exception
@@ -208,6 +270,7 @@ public class ForwardedRequestCustomizerTest
             "GET / HTTP/1.1\n"+
              "Host: myhost\n"+
              "X-Forwarded-For: 10.9.8.7,6.5.4.3\n"+
+             "X-Forwarded-For: 8.9.8.7,7.5.4.3\n"+
             "\n");
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals("http",_results.poll());
@@ -258,6 +321,21 @@ public class ForwardedRequestCustomizerTest
                         "X-Forwarded-For: 1:2:3:4:5:6:7:8\n"+
                         "X-Forwarded-Port: 2222\n"+
                         "\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals("http",_results.poll());
+        assertEquals("myhost",_results.poll());
+        assertEquals("80",_results.poll());
+        assertEquals("[1:2:3:4:5:6:7:8]",_results.poll());
+        assertEquals("2222",_results.poll());
+
+        response=_connector.getResponse(
+            "GET / HTTP/1.1\n"+
+                "Host: myhost\n"+
+                "X-Forwarded-Port: 2222\n"+
+                "X-Forwarded-For: 1:2:3:4:5:6:7:8\n"+
+                "X-Forwarded-For: 7:7:7:7:7:7:7:7\n"+
+                "X-Forwarded-Port: 3333\n"+
+                "\n");
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals("http",_results.poll());
         assertEquals("myhost",_results.poll());
@@ -355,7 +433,26 @@ public class ForwardedRequestCustomizerTest
         assertTrue(_wasSecure.get());
         assertEquals("0123456789abcdef",_sslCertificate.get());
     }
-    
+
+
+    @Test
+    public void testMixed() throws Exception
+    {
+        String response = _connector.getResponse(
+            "GET / HTTP/1.1\n" +
+                "Host: myhost\n" +
+                "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
+                "X-Forwarded-Port: 3333\n" +
+                "Forwarded: for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com\n"+
+                "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
+                "\n");
+
+        assertEquals("http",_results.poll());
+        assertEquals("example.com",_results.poll());
+        assertEquals("80",_results.poll());
+        assertEquals("192.0.2.43",_results.poll());
+        assertEquals("0",_results.poll());
+    }
     
     
     interface RequestTester
