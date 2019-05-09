@@ -41,6 +41,7 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -541,16 +542,19 @@ public class JettyRunMojo extends AbstractJettyMojo
                 continue; //only add dependencies of scope=test if explicitly required
 
             MavenProject mavenProject = getProjectReference( artifact, project );
+
             if (mavenProject != null)
             {
-                File projectPath = Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
+                File projectPath = "test-jar".equals( artifact.getType() )?
+                    Paths.get( mavenProject.getBuild().getTestOutputDirectory() ).toFile()
+                    : Paths.get( mavenProject.getBuild().getOutputDirectory() ).toFile();
                 getLog().debug( "Adding project directory " + projectPath.toString() );
                 dependencyFiles.add( projectPath );
                 continue;
             }
 
             dependencyFiles.add(artifact.getFile());
-            getLog().debug( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );   
+            getLog().debug( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );
         }
               
         return dependencyFiles; 
@@ -568,6 +572,16 @@ public class JettyRunMojo extends AbstractJettyMojo
             if ( StringUtils.equals( mavenProject.getId(), artifact.getId() ) )
             {
                 return mavenProject;
+            }
+            if("test-jar".equals(artifact.getType()))
+            {
+                // getId use type so comparing getId will fail in case of test-jar dependency
+                if ( StringUtils.equals( mavenProject.getGroupId(), artifact.getGroupId() )
+                        && StringUtils.equals( mavenProject.getArtifactId(), artifact.getArtifactId() )
+                        && StringUtils.equals( mavenProject.getVersion(), artifact.getBaseVersion()) )
+                {
+                    return mavenProject;
+                }
             }
         }
         return null;

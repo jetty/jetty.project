@@ -35,6 +35,13 @@
         <artifactId>jetty-simple-base</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.its.jetty-run-mojo-it</groupId>
+        <artifactId>jetty-simple-base</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+        <type>test-jar</type>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
