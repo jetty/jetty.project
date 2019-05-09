@@ -31,12 +31,12 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
@@ -957,27 +957,32 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     public String getWeakETag(String suffix)
     {
-        try
+        StringBuilder b = new StringBuilder(32);
+        b.append("W/\"");
+
+        String name=getName();
+        int length=name.length();
+        long lhash=0;
+        for (int i=0; i<length;i++)
+            lhash=31*lhash+name.charAt(i);
+
+        Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
+        b.append(encoder.encodeToString(longToBytes(lastModified() ^ lhash)));
+        b.append(encoder.encodeToString(longToBytes(length() ^ lhash)));
+        b.append(suffix);
+        b.append('"');
+        return b.toString();
+    }
+
+    private static byte[] longToBytes(long value)
+    {
+        byte[] result = new byte[Long.BYTES];
+        for (int i = Long.BYTES - 1; i >= 0; i--)
         {
-            StringBuilder b = new StringBuilder(32);
-            b.append("W/\"");
-            
-            String name=getName();
-            int length=name.length();
-            long lhash=0;
-            for (int i=0; i<length;i++)
-                lhash=31*lhash+name.charAt(i);
-            
-            B64Code.encode(lastModified()^lhash,b);
-            B64Code.encode(length()^lhash,b);
-            b.append(suffix);
-            b.append('"');
-            return b.toString();
-        } 
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
+            result[i] = (byte) (value & 0xFF);
+            value >>= 8;
         }
+        return result;
     }
     
     /* ------------------------------------------------------------ */

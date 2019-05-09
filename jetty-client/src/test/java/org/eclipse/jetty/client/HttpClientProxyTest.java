@@ -21,9 +21,9 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.B64Code;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -82,7 +81,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
     {
         final String user = "foo";
         final String password = "bar";
-        final String credentials = B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
+        final String credentials = Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
         final String serverHost = "server";
         final String realm = "test_realm";
         final int status = HttpStatus.NO_CONTENT_204;
@@ -162,7 +161,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
     {
         String user = "foo";
         String password = "bar";
-        String credentials = B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
+        String credentials = Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
         String proxyHost = "localhost";
         String serverHost = "server";
         int serverPort = HttpScheme.HTTP.is(scenario.getScheme()) ? 80 : 443;

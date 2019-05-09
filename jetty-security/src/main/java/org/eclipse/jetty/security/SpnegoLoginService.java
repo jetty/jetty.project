@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.security;
 
+import java.util.Base64;
 import java.util.Properties;
-
 import javax.security.auth.Subject;
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -121,7 +120,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
     {
         String encodedAuthToken = (String)credentials;
 
-        byte[] authToken = B64Code.decode(encodedAuthToken);
+        byte[] authToken = Base64.getDecoder().decode(encodedAuthToken);
 
         GSSManager manager = GSSManager.getInstance();
         try
