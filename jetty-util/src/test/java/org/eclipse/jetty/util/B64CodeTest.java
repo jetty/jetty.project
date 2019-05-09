@@ -76,7 +76,8 @@ public class B64CodeTest
 
         // Standard Java way
         String javaBase64 = Base64.getMimeEncoder().encodeToString(rawInputBytes);
-        assertThat(javaBase64, is(expected));
+        // NOTE: MIME standard for encoding should not include final "\r\n"
+        assertThat(javaBase64 + "\r\n", is(expected));
     }
 
     @Test
