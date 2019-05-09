@@ -7,20 +7,20 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>src/main/config-template</directory>
+      <directory>src/main/config-templates</directory>
       <outputDirectory></outputDirectory>
       <includes>
         <include>**</include>
       </includes>
       <excludes>
-        <exclude>**/infinispan-remote-query-libs.mod</exclude>
+        <exclude>**/infinispan-embedded-libs.mod</exclude>
       </excludes>
     </fileSet>
     <fileSet>
       <directory>target</directory>
-      <outputDirectory>modules/sessions/infinispan/remote</outputDirectory>
+      <outputDirectory>modules/sessions/infinispan/embedded</outputDirectory>
       <includes>
-        <include>infinispan-remote-query-libs.mod</include>
+        <include>infinispan-embedded-libs.mod</include>
       </includes>
     </fileSet>
   </fileSets>

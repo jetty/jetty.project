@@ -8,12 +8,12 @@ session
 session-store
 
 [depend]
-infinispan-common
+sessions/infinispan/infinispan-common
 infinispan-embedded
-infinispan-query-libs
+sessions/infinispan/embedded/infinispan-embedded-libs
 
 [files]
-basehome:modules/session-store-infinispan-embedded/infinispan.xml|etc/infinispan.xml
+basehome:modules/sessions/infinispan/embedded/infinispan.xml|etc/infinispan.xml
 
 [ini]
 infinispan.version?=9.4.8.Final

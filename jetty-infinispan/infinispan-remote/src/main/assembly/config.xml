@@ -13,14 +13,14 @@
         <include>**</include>
       </includes>
       <excludes>
-        <exclude>**/infinispan-remote-query-libs.mod</exclude>
+        <exclude>**/infinispan-remote-libs.mod</exclude>
       </excludes>
     </fileSet>
     <fileSet>
       <directory>target</directory>
       <outputDirectory>modules/sessions/infinispan/remote</outputDirectory>
       <includes>
-        <include>infinispan-remote-query-libs.mod</include>
+        <include>infinispan-remote-libs.mod</include>
       </includes>
     </fileSet>
   </fileSets>
