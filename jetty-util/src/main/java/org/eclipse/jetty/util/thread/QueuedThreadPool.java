@@ -142,7 +142,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStart() throws Exception
     {
-        if (_reservedThreads<=0)
+        if (_reservedThreads==0)
             _tryExecutor = NO_TRY;
         else
         {
