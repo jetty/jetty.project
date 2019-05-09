@@ -67,8 +67,8 @@
             </goals>
             <configuration>
               <tasks>
-                <concat destfile="${project.build.directory}/infinispan-query-libs.mod">
-                  <fileset file="src/main/config-template/modules/infinispan-query-libs.mod"/>
+                <concat destfile="${project.build.directory}/infinispan-embedded-query-libs.mod">
+                    <fileset file="src/main/config-template/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod"/>
                   <fileset file="${project.build.directory}/deps.txt"/>
                 </concat>
               </tasks>

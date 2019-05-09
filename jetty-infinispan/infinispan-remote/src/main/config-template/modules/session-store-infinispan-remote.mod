@@ -8,12 +8,12 @@ session
 session-store
 
 [depend]
-infinispan-common
+sessions/infinispan/infinispan-common
 infinispan-remote
-infinispan-remote-query-libs
+sessions/infinispan/remote/infinispan-remote-libs
 
 [files]
-basehome:modules/session-store-infinispan-remote/resources/hotrod-client.properties|resources/hotrod-client.properties
+basehome:modules/sessions/infinispan/remote/resources/hotrod-client.properties|resources/hotrod-client.properties
 
 [ini]
 infinispan.version?=9.4.8.Final

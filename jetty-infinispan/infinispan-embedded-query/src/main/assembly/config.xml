@@ -13,14 +13,14 @@
         <include>**</include>
       </includes>
       <excludes>
-        <exclude>**/infinispan-query-libs.mod</exclude>
+        <exclude>**/infinispan-embedded-query-libs.mod</exclude>
       </excludes>
     </fileSet>
     <fileSet>
       <directory>target</directory>
-      <outputDirectory>modules</outputDirectory>
+      <outputDirectory>modules/sessions/infinispan/embedded</outputDirectory>
       <includes>
-        <include>infinispan-query-libs.mod</include>
+        <include>infinispan-embedded-query-libs.mod</include>
       </includes>
     </fileSet>
   </fileSets>
