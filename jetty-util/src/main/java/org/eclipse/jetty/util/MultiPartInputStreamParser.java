@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -934,14 +935,14 @@ public class MultiPartInputStreamParser
     }
 
 
-
+    // TODO: considers switching to Base64.getMimeDecoder().wrap(InputStream)
     private static class Base64InputStream extends InputStream
     {
         ReadLineInputStream _in;
         String _line;
         byte[] _buffer;
         int _pos;
-
+        Base64.Decoder base64Decoder = Base64.getDecoder();
 
         public Base64InputStream(ReadLineInputStream rlis)
         {
@@ -967,7 +968,7 @@ public class MultiPartInputStreamParser
                 else
                 {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream((4*_line.length()/3)+2);
-                    B64Code.decode(_line, baos);
+                    baos.write(base64Decoder.decode(_line));
                     baos.write(13);
                     baos.write(10);
                     _buffer = baos.toByteArray();

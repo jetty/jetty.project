@@ -20,9 +20,9 @@ package org.eclipse.jetty.security.jaspi.modules;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -41,7 +41,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 
@@ -120,7 +119,7 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
     throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ')+1);
-        credentials = B64Code.decode(credentials, StandardCharsets.ISO_8859_1);
+        credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
         int i = credentials.indexOf(':');
         String userName = credentials.substring(0,i);
         String password = credentials.substring(i+1);

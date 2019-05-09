@@ -23,14 +23,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -38,6 +37,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
@@ -93,7 +93,7 @@ public class WebSocketNegotiationTest
         httpFields.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         httpFields.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "testInvalidUpgradeRequest");
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
-        client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
+        client.getOutputStream().write(upgradeRequest.getBytes(ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
 
         assertThat(response, startsWith("HTTP/1.1 101 Switching Protocols"));
@@ -112,7 +112,7 @@ public class WebSocketNegotiationTest
         httpFields.remove(HttpHeader.SEC_WEBSOCKET_KEY);
 
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
-        client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
+        client.getOutputStream().write(upgradeRequest.getBytes(ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
 
         assertThat(response, containsString("400 Missing request header 'Sec-WebSocket-Key'"));
@@ -125,7 +125,7 @@ public class WebSocketNegotiationTest
         fields.add(HttpHeader.HOST, "127.0.0.1");
         fields.add(HttpHeader.UPGRADE, "websocket");
         fields.add(HttpHeader.CONNECTION, "Upgrade");
-        fields.add(HttpHeader.SEC_WEBSOCKET_KEY, new String(B64Code.encode("0123456701234567".getBytes())));
+        fields.add(HttpHeader.SEC_WEBSOCKET_KEY, Base64.getEncoder().encodeToString("0123456701234567".getBytes(ISO_8859_1)));
         fields.add(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
         fields.add(HttpHeader.PRAGMA, "no-cache");
         fields.add(HttpHeader.CACHE_CONTROL, "no-cache");

@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.util.Base64;
+
+import org.eclipse.jetty.util.TypeUtil;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-
-import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.TypeUtil;
-
-import org.junit.jupiter.api.Test;
 
 public class AcceptHashTest
 {
@@ -35,7 +35,7 @@ public class AcceptHashTest
         assertThat("Key size",key.length,is(16));
 
         // what the client sends
-        String clientKey = String.valueOf(B64Code.encode(key));
+        String clientKey = Base64.getEncoder().encodeToString(key);
         // what the server responds with
         String serverHash = AcceptHash.hashKey(clientKey);
 

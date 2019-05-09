@@ -21,8 +21,8 @@ package org.eclipse.jetty.security.jaspi.modules;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -205,7 +204,7 @@ public class DigestAuthModule extends BaseAuthModule
             if (i == 23) break;
         }
 
-        return new String(B64Code.encode(nounce));
+        return Base64.getEncoder().encodeToString(nounce);
     }
 
     /**
@@ -217,7 +216,7 @@ public class DigestAuthModule extends BaseAuthModule
     {
         try
         {
-            byte[] n = B64Code.decode(nonce.toCharArray());
+            byte[] n = Base64.getDecoder().decode(nonce);
             if (n.length != 24) return -1;
 
             long ts = 0;

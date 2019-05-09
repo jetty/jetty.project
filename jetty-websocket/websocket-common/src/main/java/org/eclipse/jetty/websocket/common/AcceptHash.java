@@ -20,8 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-
-import org.eclipse.jetty.util.B64Code;
+import java.util.Base64;
 
 /**
  * Logic for working with the <code>Sec-WebSocket-Key</code> and <code>Sec-WebSocket-Accept</code> headers.
@@ -51,7 +50,7 @@ public class AcceptHash
             MessageDigest md = MessageDigest.getInstance("SHA1");
             md.update(key.getBytes(StandardCharsets.UTF_8));
             md.update(MAGIC);
-            return new String(B64Code.encode(md.digest()));
+            return Base64.getEncoder().encodeToString(md.digest());
         }
         catch (Exception e)
         {

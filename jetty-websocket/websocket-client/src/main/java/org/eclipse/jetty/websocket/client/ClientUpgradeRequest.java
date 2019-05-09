@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -126,7 +126,7 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     public String getKey()
