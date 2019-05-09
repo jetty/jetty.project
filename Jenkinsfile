@@ -69,6 +69,17 @@ pipeline {
           }
         }
 
+        stage("Checkstyle ") {
+          agent { node { label 'linux' } }
+          options { timeout(time: 30, unit: 'MINUTES') }
+          steps {
+            recordIssues(
+                    enabledForFailure: true, aggregatingResults: true,
+                    tools: [java(), checkStyle(pattern: 'build-resources/src/main/resources/jetty-checkstyle.xml', reportEncoding: 'UTF-8')]
+            )
+          }
+        }
+
         stage("Build Compact3") {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
