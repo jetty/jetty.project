@@ -78,8 +78,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private int outputBufferSize = WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE;
     private long maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
-    private Duration idleTimeout;
-    private Duration idleWriteTimeout;
+    private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
+    private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
 
     public WebSocketChannel(FrameHandler handler,
         Behavior behavior,
@@ -225,36 +225,28 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public Duration getIdleTimeout()
     {
-        if (getConnection() == null)
-            return idleTimeout;
-        else
-            return Duration.ofMillis(getConnection().getEndPoint().getIdleTimeout());
+        return idleTimeout;
     }
 
     @Override
     public void setIdleTimeout(Duration timeout)
     {
-        if (getConnection() == null)
-            idleTimeout = timeout;
-        else
-            getConnection().getEndPoint().setIdleTimeout(timeout.toMillis());
+        idleTimeout = timeout;
+        if (connection != null)
+            connection.getEndPoint().setIdleTimeout(timeout.toMillis());
     }
 
     @Override
     public Duration getWriteTimeout()
     {
-        if (getConnection() == null)
-            return idleWriteTimeout;
-        else
-            return Duration.ofMillis(getConnection().getFrameFlusher().getIdleTimeout());
+        return writeTimeout;
     }
 
     @Override
     public void setWriteTimeout(Duration timeout)
     {
-        if (getConnection() == null)
-            idleWriteTimeout = timeout;
-        else
+        writeTimeout = timeout;
+        if (getConnection() != null)
             getConnection().getFrameFlusher().setIdleTimeout(timeout.toMillis());
     }
 
@@ -281,19 +273,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public void setWebSocketConnection(WebSocketConnection connection)
     {
+        connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
+        connection.getFrameFlusher().setIdleTimeout(writeTimeout.toMillis());
         this.connection = connection;
-
-        if (idleTimeout != null)
-        {
-            getConnection().getEndPoint().setIdleTimeout(idleTimeout.toMillis());
-            idleTimeout = null;
-        }
-
-        if (idleWriteTimeout != null)
-        {
-            getConnection().getFrameFlusher().setIdleTimeout(idleWriteTimeout.toMillis());
-            idleWriteTimeout = null;
-        }
     }
 
     /**
