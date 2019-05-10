@@ -533,25 +533,25 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public Duration getIdleTimeout()
         {
-            return idleTimeout;
+            return idleTimeout==null ? WebSocketConstants.DEFAULT_IDLE_TIMEOUT : idleTimeout;
         }
 
         @Override
         public Duration getWriteTimeout()
         {
-            return writeTimeout;
+            return writeTimeout==null ? WebSocketConstants.DEFAULT_WRITE_TIMEOUT : writeTimeout;
         }
 
         @Override
         public void setIdleTimeout(Duration timeout)
         {
-            this.idleTimeout = timeout==null ? Duration.ZERO : timeout;
+            this.idleTimeout = timeout;
         }
 
         @Override
         public void setWriteTimeout(Duration timeout)
         {
-            this.writeTimeout = timeout==null ? Duration.ZERO : timeout;
+            this.writeTimeout = timeout;
         }
 
         @Override
