@@ -146,7 +146,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-client").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-server").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("javax.websocket").artifactId("javax.websocket-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-javax-websocket-api").versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
         return res;
     }
@@ -158,9 +158,9 @@ public class TestOSGiUtil
         res.add(systemProperty("osgi.console.enable.builtin").value("true")); 
         return res;
     }
-    
-    
-    
+
+
+
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<>();
