@@ -33,7 +33,7 @@ public final class WebSocketConstants
     public static final int DEFAULT_INPUT_BUFFER_SIZE = 4 * 1024;
     public static final int DEFAULT_OUTPUT_BUFFER_SIZE = 4 * 1024;
     public static final boolean DEFAULT_AUTO_FRAGMENT = true;
-    public static final Duration DEFAULT_IDLE_TIMEOUT = Duration.ZERO;
+    public static final Duration DEFAULT_IDLE_TIMEOUT = Duration.ofSeconds(30);
     public static final Duration DEFAULT_WRITE_TIMEOUT = Duration.ZERO;
 
     /**
