@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -37,10 +38,12 @@ public class EventSocket
 {
     private final static Logger LOG = Log.getLogger(EventSocket.class);
 
-    protected Session session;
+    public Session session;
     private String behavior;
 
     public BlockingQueue<String> messageQueue = new BlockingArrayQueue<>();
+    public volatile int statusCode = StatusCode.UNDEFINED;
+    public volatile String reason;
     public volatile Throwable error = null;
 
     public CountDownLatch openLatch = new CountDownLatch(1);
@@ -67,6 +70,8 @@ public class EventSocket
     public void onClose(int statusCode, String reason)
     {
         LOG.info("{}  onClose(): {}:{}", toString(), statusCode, reason);
+        this.statusCode = statusCode;
+        this.reason = reason;
         closeLatch.countDown();
     }
 
