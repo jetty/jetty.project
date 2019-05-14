@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
@@ -177,7 +177,7 @@ public class MultiPartBenchmark
     public long testLargeGenerated() throws Exception
     {
         Path multipartRawFile = _file.toPath();
-        Path outputDir = new File("/tmp").toPath();
+        Path outputDir = Files.createTempDirectory("jetty_multipart_benchmark");
         
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         
@@ -188,11 +188,14 @@ public class MultiPartBenchmark
                 case "HTTP":
                 {
                     MultiPartFormInputStream parser = new MultiPartFormInputStream(in, _contentType, config, outputDir.toFile());
+                    parser.setDeleteOnExit(true);
                     if (parser.getParts().size() != _numSections)
                         throw new IllegalStateException("Incorrect Parsing");
                     for (Part p : parser.getParts())
                     {
                         count += p.getSize();
+                        if(p instanceof MultiPartFormInputStream.MultiPart) ((MultiPartFormInputStream.MultiPart)p).cleanUp();
+                        else p.delete();
                     }
                 }
                 break;
@@ -200,11 +203,14 @@ public class MultiPartBenchmark
                 case "UTIL":
                 {
                     org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, _contentType, config, outputDir.toFile());
+                    parser.setDeleteOnExit(true);
                     if (parser.getParts().size() != _numSections)
                         throw new IllegalStateException("Incorrect Parsing");
                     for (Part p : parser.getParts())
                     {
                         count += p.getSize();
+                        if(p instanceof org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart) ((org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)p).cleanUp();
+                        else p.delete();
                     }
                 }
                 break;
@@ -213,7 +219,7 @@ public class MultiPartBenchmark
                     throw new IllegalStateException("Unknown parserType Parameter");
             }
         }
-        
+        IO.delete(outputDir.toFile());
         return count;
     }
     
@@ -236,18 +242,16 @@ public class MultiPartBenchmark
     {
         for (String multiPart : data)
         {
-            //Path multipartRawFile = MavenTestingUtils.getTestResourcePathFile("multipart/" + multiPart + ".raw");
             String expectationPath = "multipart/" + multiPart + ".expected.txt";
-            //Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + multiPart + ".expected.txt");
 
             File expectationFile = File.createTempFile( expectationPath, ".tmp" );
 
-            try(InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(expectationPath);
-                OutputStream os = Files.newOutputStream( expectationFile.toPath() )) {
-                IO.copy( inputStream, os );
+            try(InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(expectationPath); //
+                OutputStream os = Files.newOutputStream( expectationFile.toPath())) {
+                IO.copy(inputStream, os);
             }
 
-            Path outputDir = Files.createTempDirectory( "expected_output_jmh_jetty" );// new File("/tmp").toPath();
+            Path outputDir = Files.createTempDirectory("expected_output_jmh_jetty");
             
             MultipartExpectations multipartExpectations = new MultipartExpectations(expectationFile.toPath());
             MultipartConfigElement config = newMultipartConfigElement(outputDir);
@@ -259,18 +263,24 @@ public class MultiPartBenchmark
                     case "HTTP":
                     {
                         MultiPartFormInputStream parser = new MultiPartFormInputStream(in, multipartExpectations.contentType, config, outputDir.toFile());
+                        parser.setDeleteOnExit(true);
                         for (Part p : parser.getParts())
                         {
                             count += p.getSize();
+                            if(p instanceof MultiPartFormInputStream.MultiPart) ((MultiPartFormInputStream.MultiPart)p).cleanUp();
+                            else p.delete();
                         }
                     }
                     break;
                     case "UTIL":
                     {
                         org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
+                        parser.setDeleteOnExit(true);
                         for (Part p : parser.getParts())
                         {
                             count += p.getSize();
+                            if(p instanceof org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart) ((org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)p).cleanUp();
+                            else p.delete();
                         }
                     }
                     break;
@@ -278,7 +288,8 @@ public class MultiPartBenchmark
                         throw new IllegalStateException("Unknown parserType Parameter");
                 }
             }
-            
+            Files.deleteIfExists(expectationFile.toPath());
+            IO.delete(outputDir.toFile());
         }
         return count;
     }

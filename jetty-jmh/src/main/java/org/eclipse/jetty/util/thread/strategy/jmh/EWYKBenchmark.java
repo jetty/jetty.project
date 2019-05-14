@@ -19,11 +19,14 @@
 package org.eclipse.jetty.util.thread.strategy.jmh;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -89,6 +92,14 @@ public class EWYKBenchmark
     @TearDown(Level.Trial)
     public static void stopServer() throws Exception
     {
+        try
+        {
+            IO.delete(directory);
+        }
+        catch ( Exception e )
+        {
+            System.out.println("cannot delete directory:"+directory);
+        }
         reserved.stop();
         server.stop();
     }
