@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -42,6 +43,7 @@ public class EventSocket
     private String behavior;
 
     public BlockingQueue<String> messageQueue = new BlockingArrayQueue<>();
+    public BlockingQueue<ByteBuffer> binaryMessageQueue = new BlockingArrayQueue<>();
     public volatile int statusCode = StatusCode.UNDEFINED;
     public volatile String reason;
     public volatile Throwable error = null;
@@ -64,6 +66,15 @@ public class EventSocket
     {
         LOG.info("{}  onMessage(): {}", toString(), message);
         messageQueue.offer(message);
+    }
+
+
+    @OnWebSocketMessage
+    public void onMessage(byte buf[], int offset, int len)
+    {
+        ByteBuffer message = ByteBuffer.wrap(buf, offset, len);
+        LOG.info("{}  onMessage(): {}", toString(), message);
+        binaryMessageQueue.offer(message);
     }
 
     @OnWebSocketClose

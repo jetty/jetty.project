@@ -117,7 +117,7 @@ public class ClientConfigTest
     @Test
     public void testMaxBinaryMessageSize() throws Exception
     {
-        client.setMaxTextMessageSize(maxMessageSize);
+        client.setMaxBinaryMessageSize(maxMessageSize);
 
         URI uri = URI.create("ws://localhost:8080/");
         EventSocket clientEndpoint = new EventSocket();

@@ -637,6 +637,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     public void setInputBufferSize(int inputBufferSize)
     {
         this.inputBufferSize = inputBufferSize;
+        if (connection != null)
+            connection.setInputBufferSize(inputBufferSize);
     }
 
     @Override
