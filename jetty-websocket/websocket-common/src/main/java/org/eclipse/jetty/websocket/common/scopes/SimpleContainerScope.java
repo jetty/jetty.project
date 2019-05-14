@@ -28,8 +28,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -39,10 +37,9 @@ import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 public class SimpleContainerScope extends ContainerLifeCycle implements WebSocketContainerScope
 {
     private final ByteBufferPool bufferPool;
-    private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy policy;
-    private final Executor executor;
-    private final Logger logger;
+    private DecoratedObjectFactory objectFactory;
+    private Executor executor;
     private SslContextFactory sslContextFactory;
     private List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
 
@@ -68,10 +65,11 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, SslContextFactory ssl, DecoratedObjectFactory objectFactory)
     {
-        this.logger = Log.getLogger(this.getClass());
         this.policy = policy;
         this.bufferPool = bufferPool;
-        
+        this.executor = executor;
+        this.sslContextFactory = ssl;
+
         if (objectFactory == null)
         {
             this.objectFactory = new DecoratedObjectFactory();
@@ -80,37 +78,6 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
         else
         {
             this.objectFactory = objectFactory;
-        }
-
-        if (ssl == null)
-        {
-            this.sslContextFactory = new SslContextFactory.Server();
-        }
-        else
-        {
-            this.sslContextFactory = ssl;
-        }
-        
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            String behavior = "Container";
-            if (policy != null)
-            {
-                if (policy.getBehavior() == WebSocketBehavior.CLIENT)
-                    behavior = "Client";
-                else if (policy.getBehavior() == WebSocketBehavior.SERVER)
-                    behavior = "Server";
-            }
-            String name = String.format("WebSocket%s@%s", behavior, hashCode());
-            threadPool.setName(name);
-            threadPool.setDaemon(true);
-            this.executor = threadPool;
-            addBean(this.executor);
-        }
-        else
-        {
-            this.executor = executor;
         }
     }
 
@@ -165,5 +132,45 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     public Collection<WebSocketSessionListener> getSessionListeners()
     {
         return sessionListeners;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (sslContextFactory == null)
+        {
+            if (policy.getBehavior() == WebSocketBehavior.CLIENT)
+            {
+                this.sslContextFactory = new SslContextFactory.Client();
+            }
+            else if (policy.getBehavior() == WebSocketBehavior.SERVER)
+            {
+                this.sslContextFactory = new SslContextFactory.Server();
+            }
+        }
+
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String behavior = "Container";
+            if (policy != null)
+            {
+                if (policy.getBehavior() == WebSocketBehavior.CLIENT)
+                {
+                    behavior = "Client";
+                }
+                else if (policy.getBehavior() == WebSocketBehavior.SERVER)
+                {
+                    behavior = "Server";
+                }
+            }
+            String name = String.format("WebSocket%s@%s", behavior, hashCode());
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            this.executor = threadPool;
+            addBean(this.executor);
+        }
+
+        super.doStart();
     }
 }
