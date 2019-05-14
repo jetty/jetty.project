@@ -114,6 +114,8 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
                 addBean(coreClient,false);
             else
                 addManaged(coreClient);
+
+            coreClient.setCustomizer(defaultCustomizer);
         }
 
         return coreClient;

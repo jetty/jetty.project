@@ -40,7 +40,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
     private final HttpClient httpClient;
     private WebSocketExtensionRegistry extensionRegistry;
     private DecoratedObjectFactory objectFactory;
-    private final FrameHandler.Customizer customizer;
+    private FrameHandler.ConfigurationCustomizer customizer;
 
     // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
     // - AsyncWrite Idle Timeout
@@ -51,15 +51,15 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public WebSocketCoreClient()
     {
-        this(null,null);
+        this(null, new FrameHandler.ConfigurationCustomizer());
     }
 
     public WebSocketCoreClient(HttpClient httpClient)
     {
-        this(httpClient, null);
+        this(httpClient, new FrameHandler.ConfigurationCustomizer());
     }
 
-    public WebSocketCoreClient(HttpClient httpClient, FrameHandler.Customizer customizer)
+    public WebSocketCoreClient(HttpClient httpClient, FrameHandler.ConfigurationCustomizer customizer)
     {
         if (httpClient == null)
             httpClient = Objects.requireNonNull(HttpClientProvider.get());
@@ -71,11 +71,20 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
         addBean(httpClient);
     }
 
+    public FrameHandler.ConfigurationCustomizer getCustomizer()
+    {
+        return customizer;
+    }
+
+    public void setCustomizer(FrameHandler.ConfigurationCustomizer customizer)
+    {
+        this.customizer = customizer;
+    }
+
     @Override
     public void customize(FrameHandler.CoreSession session)
     {
-        if (customizer != null)
-            customizer.customize(session);
+        customizer.customize(session);
     }
 
     public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
