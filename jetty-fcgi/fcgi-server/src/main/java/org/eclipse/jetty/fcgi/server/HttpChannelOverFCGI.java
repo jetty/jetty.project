@@ -87,7 +87,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     public void onRequest()
     {
         String uri = path;
-        if (query != null && query.length() > 0)
+        if (query != null && !query.isEmpty())
             uri += "?" + query;
         // TODO https?
         onRequest(new MetaData.Request(method, HttpScheme.HTTP.asString(), hostPort, uri, HttpVersion.fromString(version), fields,Long.MIN_VALUE));

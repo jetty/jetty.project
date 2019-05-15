@@ -107,7 +107,7 @@ public class MultiPartFormInputStream
             // We will either be writing to a file, if it has a filename on the content-disposition
             // and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
             // will need to change to write to a file.
-            if (isWriteFilesWithFilenames() && _filename != null && _filename.trim().length() > 0)
+            if (isWriteFilesWithFilenames() && _filename != null && !_filename.trim().isEmpty())
             {
                 createFile();
             }
@@ -365,7 +365,7 @@ public class MultiPartFormInputStream
         Collection<List<Part>> values = _parts.values();
         for (List<Part> partList : values)
         {
-            if (partList.size() != 0)
+            if (!partList.isEmpty())
                 return false;
         }
         

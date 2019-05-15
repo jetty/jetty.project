@@ -294,7 +294,7 @@ public class PathMap<O> extends HashMap<String,O>
 
         if (path==null)
             return entries;
-        if (path.length()==0)
+        if (path.isEmpty())
             return _defaultSingletonList;
 
         // try exact match
@@ -417,7 +417,7 @@ public class PathMap<O> extends HashMap<String,O>
      */
     public static boolean match(String pathSpec, String path, boolean noDefault)
     {
-        if (pathSpec.length()==0)
+        if (pathSpec.isEmpty())
             return "/".equals(path);
             
         char c = pathSpec.charAt(0);

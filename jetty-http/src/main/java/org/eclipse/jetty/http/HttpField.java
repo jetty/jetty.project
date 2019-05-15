@@ -100,7 +100,7 @@ public class HttpField
     {
         if (search==null)
             return _value==null;
-        if (search.length()==0)
+        if (search.isEmpty())
             return false;
         if (_value==null)
             return false;
