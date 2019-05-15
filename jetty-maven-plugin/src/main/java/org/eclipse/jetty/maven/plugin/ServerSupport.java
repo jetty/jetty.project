@@ -30,11 +30,12 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -63,14 +64,15 @@ public class ServerSupport
      * @param requestLog the request log
      * @throws Exception if unable to configure the handlers
      */
-    public static void configureHandlers (Server server, RequestLog requestLog) throws Exception 
+    public static void configureHandlers (Server server, ContextHandler[] contextHandlers, RequestLog requestLog) throws Exception 
     {
         if (server == null)
             throw new IllegalArgumentException ("Server is null");
 
         DefaultHandler defaultHandler = new DefaultHandler();
+        RequestLogHandler requestLogHandler = new RequestLogHandler();
         if (requestLog != null)
-            server.setRequestLog(requestLog);
+            requestLogHandler.setRequestLog(requestLog);
 
         ContextHandlerCollection contexts = findContextHandlerCollection(server);
         if (contexts == null)
@@ -81,13 +83,21 @@ public class ServerSupport
             {
                 handlers = new HandlerCollection();               
                 server.setHandler(handlers);                            
-                handlers.setHandlers(new Handler[]{contexts, defaultHandler});
+                handlers.setHandlers(new Handler[]{contexts, defaultHandler, requestLogHandler});
             }
             else
             {
                 handlers.addHandler(contexts);
             }
-        }  
+        } 
+        
+        if (contextHandlers != null)
+        {   
+            for (ContextHandler context:contextHandlers)
+            {
+                contexts.addHandler(context);
+            }
+        }
     }
     
 
@@ -96,8 +106,9 @@ public class ServerSupport
      * 
      * @param server the server
      * @param connector the connector
+     * @param properties jetty properties
      */
-    public static void configureConnectors (Server server, Connector connector)
+    public static void configureConnectors (Server server, Connector connector, Map<String,String> properties)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -117,8 +128,14 @@ public class ServerSupport
         {
             //Make a new default connector
             MavenServerConnector tmp = new MavenServerConnector();               
-            //use any jetty.http.port settings provided
-            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
+            //use any jetty.http.port settings provided, trying system properties before jetty properties
+            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY);
+            if (port == null)
+                port = System.getProperty("jetty.port");
+            if (port == null)
+                port = (properties != null? properties.get(MavenServerConnector.PORT_SYSPROPERTY):null);
+            if (port == null)
+                port = MavenServerConnector.DEFAULT_PORT_STR;
             tmp.setPort(Integer.parseInt(port.trim()));
             tmp.setServer(server);
             server.setConnectors(new Connector[] {tmp});
@@ -182,7 +199,7 @@ public class ServerSupport
         if (files == null || files.isEmpty())
             return server;
 
-        Map<String,Object> lastMap = new HashMap<>();
+        Map<String,Object> lastMap = new HashMap<String,Object>();
 
         if (server != null)
             lastMap.put("Server", server);
@@ -230,7 +247,7 @@ public class ServerSupport
      * @param files the xml configs to apply
      * @return the Server after application of configs
      * 
-     * @throws Exception if unable to apply the xml configuration
+     * @throws Exception
      */
     public static Server applyXmlConfigurations (Server server, List<File> files) 
             throws Exception
