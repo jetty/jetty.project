@@ -47,7 +47,7 @@ public class WebSocketCdiListener extends AbstractContainerListener
 
         ScopedInstance sbean = new ScopedInstance();
         Set<Bean<?>> beans = bm.getBeans(clazz,AnyLiteral.INSTANCE);
-        if (beans.size() > 0)
+        if (!beans.isEmpty())
         {
             sbean.bean = beans.iterator().next();
             sbean.creationalContext = bm.createCreationalContext(sbean.bean);
