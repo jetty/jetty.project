@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.CookieCompliance;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class CookieCutterTest
 {
@@ -64,7 +63,24 @@ public class CookieCutterTest
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
     }
-    
+
+    /**
+     * Example from RFC2109 and RFC2965.
+     * <p>
+     *     Lenient parsing, input has no spaces after ';' token.
+     * </p>
+     */
+    @Test
+    public void testRFC_Single_Lenient_NoSpaces()
+    {
+        String rawCookie = "$Version=\"1\";Customer=\"WILE_E_COYOTE\";$Path=\"/acme\"";
+
+        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
+
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
+    }
+
     /**
      * Example from RFC2109 and RFC2965
      */
@@ -156,7 +172,7 @@ public class CookieCutterTest
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
     }
-    
+
     /**
      * Example from RFC6265
      */
@@ -185,7 +201,25 @@ public class CookieCutterTest
         assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 0, null);
         assertCookie("Cookies[1]", cookies[1], "lang", "en-US", 0, null);
     }
-    
+
+    /**
+     * Example from RFC6265.
+     * <p>
+     *     Lenient parsing, input has no spaces after ';' token.
+     * </p>
+     */
+    @Test
+    public void testRFC6265_SidLangExample_Lenient()
+    {
+        String rawCookie = "SID=31d4d96e407aad42;lang=en-US";
+
+        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
+
+        assertThat("Cookies.length", cookies.length, is(2));
+        assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "lang", "en-US", 0, null);
+    }
+
     /**
      * Basic name=value, following RFC6265 rules
      */

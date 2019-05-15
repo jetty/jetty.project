@@ -17,10 +17,10 @@
 //
 
 package org.eclipse.jetty.server;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.CookieCompliance;
@@ -28,14 +28,20 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
-/** Cookie parser
- * <p>Optimized stateful cookie parser.  Cookies fields are added with the
- * {@link #addCookieField(String)} method and parsed on the next subsequent
- * call to {@link #getCookies()}.
- * If the added fields are identical to those last added (as strings), then the 
- * cookies are not re parsed.
- *
+/**
+ * Cookie parser
+ * <p>
+ *     Optimized stateful {@code Cookie} header parser.
+ *     Does not support {@code Set-Cookie} header parsing.
+ * </p>
+ * <p>>
+ *     Cookies fields are added with the {@link #addCookieField(String)} method and
+ *     parsed on the next subsequent call to {@link #getCookies()}.
+ * </p>
+ * <p>
+ *     If the added fields are identical to those last added (as strings), then the
+ *     cookies are not re parsed.
+ * </p>
  */
 public class CookieCutter
 {

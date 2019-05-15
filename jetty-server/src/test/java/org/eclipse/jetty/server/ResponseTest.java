@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -73,9 +74,9 @@ import org.junit.jupiter.api.Test;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -977,7 +978,7 @@ public class ResponseTest
 
         String set = response.getHttpFields().get("Set-Cookie");
 
-        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly", set);
+        assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly", set);
     }
 
     @Test
@@ -1015,7 +1016,7 @@ public class ResponseTest
     
         String set = response.getHttpFields().get("Set-Cookie");
     
-        assertEquals("foo=bar%3Bbaz;Path=/secure", set);
+        assertEquals("foo=bar%3Bbaz; Path=/secure", set);
     }
     
     /**
@@ -1056,8 +1057,8 @@ public class ResponseTest
         assertNotNull(set);
         ArrayList<String> list = Collections.list(set);
         assertThat(list, containsInAnyOrder(
-                "name=value;Path=/path;Domain=domain;Secure;HttpOnly",
-                "name2=value2;Path=/path;Domain=domain"
+                "name=value; Path=/path; Domain=domain; Secure; HttpOnly",
+                "name2=value2; Path=/path; Domain=domain"
         ));
 
         //get rid of the cookies
@@ -1088,15 +1089,17 @@ public class ResponseTest
         response.replaceCookie(new HttpCookie("Foo","value", "A", "/path"));
         response.replaceCookie(new HttpCookie("Foo","value"));
 
-        assertThat(Collections.list(response.getHttpFields().getValues("Set-Cookie")),
-                contains(
-                        "Foo=value",
-                        "Foo=value;Path=/path;Domain=A",
-                        "Foo=value;Path=/path;Domain=B",
-                        "Bar=value",
-                        "Bar=value;Path=/left",
-                        "Bar=value;Path=/right"
-                ));
+        String[] expected = new String[]{
+            "Foo=value",
+            "Foo=value; Path=/path; Domain=A",
+            "Foo=value; Path=/path; Domain=B",
+            "Bar=value",
+            "Bar=value; Path=/left",
+            "Bar=value; Path=/right"
+        };
+
+        List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
+        assertThat("HttpCookie order", actual, hasItems(expected));
     }
 
     @Test
@@ -1252,8 +1255,8 @@ public class ResponseTest
         response.addSetRFC6265Cookie("everything","value","domain","path",0,true,true);
         Enumeration<String> e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=something;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=something; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.get("Expires"));
         assertFalse(e.hasMoreElements());
@@ -1264,9 +1267,9 @@ public class ResponseTest
         response.addSetRFC6265Cookie("everything","value","domain2","path",0,true,true);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=other; Path=path; Domain=domain1; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=value; Path=path; Domain=domain2; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
         //test cookies with same name, same path, one with domain, one without
@@ -1275,9 +1278,9 @@ public class ResponseTest
         response.addSetRFC6265Cookie("everything","value","","path",0,true,true);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=other; Path=path; Domain=domain1; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=value; Path=path; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
 
@@ -1287,9 +1290,9 @@ public class ResponseTest
         response.addSetRFC6265Cookie("everything","value","domain1","path2",0,true,true);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=other; Path=path1; Domain=domain1; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=value; Path=path2; Domain=domain1; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
         //test cookies with same name, same domain, one with path, one without
@@ -1298,9 +1301,9 @@ public class ResponseTest
         response.addSetRFC6265Cookie("everything","value","domain1","",0,true,true);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=other; Path=path1; Domain=domain1; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=value; Domain=domain1; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
         //test cookies same name only, no path, no domain
@@ -1309,8 +1312,8 @@ public class ResponseTest
         response.addSetRFC6265Cookie("everything","value","","",0,true,true);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertEquals("everything=value;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=other; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
+        assertEquals("everything=value; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
         String badNameExamples[] = {

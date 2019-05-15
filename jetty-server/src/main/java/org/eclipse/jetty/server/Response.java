@@ -24,14 +24,12 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -214,47 +212,58 @@ public class Response implements HttpServletResponse
                 if (!old_set_cookie.startsWith(name) || old_set_cookie.length()<= name.length() || old_set_cookie.charAt(name.length())!='=')
                     continue;
 
+                CookieCompliance responseCookieCompliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
+
+                String expectedDomainSegment = "; Domain="; // default to RFC6265
+                if (responseCookieCompliance == CookieCompliance.RFC2965)
+                    expectedDomainSegment = ";Domain=";
+
                 String domain = cookie.getDomain();
+                //noinspection Duplicates
                 if (domain!=null)
                 {
-                    if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
+                    if (responseCookieCompliance == CookieCompliance.RFC2965)
                     {
                         StringBuilder buf = new StringBuilder();
-                        buf.append(";Domain=");
+                        buf.append(expectedDomainSegment);
                         quoteOnlyOrAppend(buf,domain,isQuoteNeededForCookie(domain));
                         domain = buf.toString();
                     }
                     else
                     {
-                        domain = ";Domain="+domain;
+                        domain = expectedDomainSegment+domain;
                     }
                     if (!old_set_cookie.contains(domain))
                         continue;
                 }
-                else if (old_set_cookie.contains(";Domain="))
+                else if (old_set_cookie.contains(expectedDomainSegment))
                     continue;
 
+                String expectedPathSegment = "; Path="; // default to RFC6265
+                if (responseCookieCompliance == CookieCompliance.RFC2965)
+                    expectedPathSegment = ";Path=";
                 String path = cookie.getPath();
+                //noinspection Duplicates
                 if (path!=null)
                 {
-                    if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
+                    if (responseCookieCompliance == CookieCompliance.RFC2965)
                     {
                         StringBuilder buf = new StringBuilder();
-                        buf.append(";Path=");
+                        buf.append(expectedPathSegment);
                         quoteOnlyOrAppend(buf,path,isQuoteNeededForCookie(path));
                         path = buf.toString();
                     }
                     else
                     {
-                        path = ";Path="+path;
+                        path = expectedPathSegment+path;
                     }
                     if (!old_set_cookie.contains(path))
                         continue;
                 }
-                else if (old_set_cookie.contains(";Path="))
+                else if (old_set_cookie.contains(expectedPathSegment))
                     continue;
 
-                if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance() == CookieCompliance.RFC2965)
+                if (responseCookieCompliance == CookieCompliance.RFC2965)
                     i.set(new HttpField(HttpHeader.CONTENT_ENCODING.SET_COOKIE, newRFC2965SetCookie(
                             cookie.getName(),
                             cookie.getValue(),
@@ -377,32 +386,32 @@ public class Response implements HttpServletResponse
 
         // Append path
         if (path!=null && path.length()>0)
-            buf.append(";Path=").append(path);
+            buf.append("; Path=").append(path);
 
         // Append domain
         if (domain!=null && domain.length()>0)
-            buf.append(";Domain=").append(domain);
+            buf.append("; Domain=").append(domain);
 
         // Handle max-age and/or expires
         if (maxAge >= 0)
         {
             // Always use expires
             // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
-            buf.append(";Expires=");
+            buf.append("; Expires=");
             if (maxAge == 0)
                 buf.append(__01Jan1970_COOKIE);
             else
                 DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
 
-            buf.append(";Max-Age=");
+            buf.append("; Max-Age=");
             buf.append(maxAge);
         }
 
         // add the other fields
         if (isSecure)
-            buf.append(";Secure");
+            buf.append("; Secure");
         if (isHttpOnly)
-            buf.append(";HttpOnly");
+            buf.append("; HttpOnly");
         return buf.toString();
     }
 
