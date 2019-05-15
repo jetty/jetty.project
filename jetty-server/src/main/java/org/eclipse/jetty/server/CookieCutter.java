@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  *     Optimized stateful {@code Cookie} header parser.
  *     Does not support {@code Set-Cookie} header parsing.
  * </p>
- * <p>>
+ * <p>
  *     Cookies fields are added with the {@link #addCookieField(String)} method and
  *     parsed on the next subsequent call to {@link #getCookies()}.
  * </p>
