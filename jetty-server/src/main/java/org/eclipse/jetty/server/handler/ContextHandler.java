@@ -2612,7 +2612,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     else
                         callerLoader = callerLoader.getParent();
                 }
-                AccessController.checkPermission(new RuntimePermission("getClassLoader"));
+                System.getSecurityManager().checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
             }
         }
