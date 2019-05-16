@@ -121,10 +121,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create a new WebSocketClient
      *
      * @param sslContextFactory
-     *            ssl context factory to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
+     *            ssl context factory to use on the internal {@link HttpClient}
      */
-    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
         this(sslContextFactory,null, null);
@@ -134,8 +132,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create a new WebSocketClient
      *
      * @param executor
-     *            the executor to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
+     *            the executor to use on the internal {@link HttpClient}
      */
     public WebSocketClient(Executor executor)
     {
@@ -146,10 +143,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create a new WebSocketClient
      *
      * @param bufferPool
-     *            byte buffer pool to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
+     *            byte buffer pool to use on the internal {@link HttpClient}
      */
-    @Deprecated
     public WebSocketClient(ByteBufferPool bufferPool)
     {
         this(null, null, bufferPool);
@@ -159,12 +154,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create a new WebSocketClient
      *
      * @param sslContextFactory
-     *            ssl context factory to use
+     *            ssl context factory to use on the internal {@link HttpClient}
      * @param executor
-     *            the executor to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
+     *            the executor to use on the internal {@link HttpClient}
      */
-    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
         this(sslContextFactory, executor, null);
@@ -561,7 +554,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     }
 
     /**
-     * @return the {@link SslContextFactory} that manages TLS encryption
+     * Get the in use {@link SslContextFactory}
+     *
+     * @return the {@link SslContextFactory} that manages TLS encryption on the internal {@link HttpClient}
      * @see #WebSocketClient(SslContextFactory)
      */
     @Override
@@ -600,7 +595,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Factory method for new ConnectionManager
      *
      * @return the ConnectionManager instance to use
-     * @deprecated use HttpClient instead
+     * @deprecated has no replacement
      */
     @Deprecated
     protected ConnectionManager newConnectionManager()
@@ -614,9 +609,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     }
 
     /**
-     * @param bindAddress the address to bind to
-     * @deprecated (this is a bad bad bad typo) use {@link HttpClient#setBindAddress(SocketAddress)}
-     * on instance passed to {@link #WebSocketClient(HttpClient)}
+     * @param bindAddress the address to bind to the internal {@link HttpClient}
+     *
+     * @deprecated (this is a bad bad bad typo, it has 3 {@code "d"} characters in a row) use {@link HttpClient#setBindAddress(SocketAddress)}
+     * to the internal {@link #WebSocketClient(HttpClient)}
      */
     @Deprecated
     public void setBindAdddress(SocketAddress bindAddress)
@@ -626,20 +622,19 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
 
     /**
-     * @param bindAddress the address to bind to
-     * @deprecated Use {@link HttpClient#setBindAddress(SocketAddress)}
-     * on instance passed to {@link #WebSocketClient(HttpClient)}
+     * Sets the Bind Address on the internal {@link HttpClient}.
+     *
+     * @param bindAddress the local bind address for the internal {@link HttpClient}
      */
-    @Deprecated
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.httpClient.setBindAddress(bindAddress);
     }
 
     /**
+     * Set's the Bind Address on the internal {@link HttpClient}.
+     *
      * @param bufferPool The buffer pool
-     * @deprecated Use {@link HttpClient#setByteBufferPool(ByteBufferPool)}
-     * on the instance passed to {@link #WebSocketClient(HttpClient)}
      */
     public void setBufferPool(ByteBufferPool bufferPool)
     {
@@ -647,10 +642,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     }
 
     /**
-     * Set the timeout for connecting to the remote server.
-     * @param ms the timeout in millisecondspool
-     * @deprecated Use {@link HttpClient#setConnectTimeout(long)}
-     * on the instance passed to {@link #WebSocketClient(HttpClient)}
+     * Set the timeout for connecting to the remote server on the internal {@link HttpClient}
+     *
+     * @param ms the timeout in milliseconds
      */
     public void setConnectTimeout(long ms)
     {
@@ -658,18 +652,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     }
 
     /**
+     * Set the {@link CookieStore} to use on the internal {@link HttpClient}
+     *
      * @param cookieStore The cookie store
-     * @deprecated Use {@link HttpClient#setCookieStore(CookieStore)} on the HttpClient instance passed
-     * to {@link #WebSocketClient(HttpClient)}
      */
-    @Deprecated
     public void setCookieStore(CookieStore cookieStore)
     {
         this.httpClient.setCookieStore(cookieStore);
     }
     
     /**
-     * @deprecated not used, configure threading in HttpClient instead
+     * @deprecated not used, configure threading in {@link HttpClient} instead
      * @param daemon do nothing
      */
     @Deprecated
@@ -678,6 +671,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         // do nothing
     }
 
+    /**
+     * @param dispatchIO true to have IO operations be dispatched to Executor
+     * @deprecated no longer used, this has no replacement
+     */
     @Deprecated
     public void setDispatchIO(boolean dispatchIO)
     {
@@ -685,19 +682,18 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     }
 
     /**
+     * Sets the Executor in use on the internal {@link HttpClient}
+     *
      * @param executor The executor to use
-     * @deprecated Use {@link HttpClient#setExecutor(Executor)}
-     * on the instance passed to {@link #WebSocketClient(HttpClient)}
      */
-    @Deprecated
     public void setExecutor(Executor executor)
     {
         this.httpClient.setExecutor(executor);
     }
     
     /**
+     * @param masker does nothing
      * @deprecated not used, no replacement
-     * @param masker do nothing
      */
     @Deprecated
     public void setMasker(Masker masker)
@@ -728,6 +724,15 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         getPolicy().setMaxTextMessageBufferSize(max);
     }
 
+    /**
+     * Get the internal {@link HttpClient}.
+     * <p>
+     *     Note: this can result in a {@link LinkageError} if used within a WebApp that runs
+     *     on a server that also has {@link HttpClient} on the server classpath.
+     * </p>
+     *
+     * @return the internal {@link HttpClient}
+     */
     public HttpClient getHttpClient()
     {
         return this.httpClient;
