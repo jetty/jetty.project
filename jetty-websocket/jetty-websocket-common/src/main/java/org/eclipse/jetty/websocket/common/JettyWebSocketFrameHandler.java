@@ -148,8 +148,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, coreSession.getMaxTextMessageSize());
 
             if (binaryHandle != null)
-                binarySink = JettyWebSocketFrameHandlerFactory
-                        .createMessageSink(binaryHandle, binarySinkClass, executor, coreSession.getMaxBinaryMessageSize());
+                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, coreSession.getMaxBinaryMessageSize());
 
             if (openHandle != null)
                 openHandle.invoke();

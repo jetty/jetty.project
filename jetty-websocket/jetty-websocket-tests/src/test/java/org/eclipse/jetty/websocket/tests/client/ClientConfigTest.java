@@ -22,6 +22,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -42,7 +44,9 @@ import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -54,19 +58,25 @@ public class ClientConfigTest
 {
     private Server server;
     private WebSocketClient client;
+    private ServerConnector connector;
+
+    private EchoSocket serverSocket = new EchoSocket();
 
     private static String message = "this message is over 20 characters long";
-
     private final int inputBufferSize = 200;
     private final int maxMessageSize = 20;
     private final int idleTimeout = 500;
+
+    public static Stream<Arguments> data()
+    {
+        return Stream.of("clientConfig", "annotatedConfig", "sessionConfig").map(Arguments::of);
+    }
 
     @BeforeEach
     public void start() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -74,7 +84,7 @@ public class ClientConfigTest
         server.setHandler(contextHandler);
 
         JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->new EchoSocket());
+        container.addMapping("/", (req, resp)->serverSocket);
         server.start();
 
         client = new WebSocketClient();
@@ -93,13 +103,48 @@ public class ClientConfigTest
     {
     }
 
-    @Test
-    public void testInputBufferSize() throws Exception
+    @WebSocket
+    public class SessionConfigEndpoint extends EventSocket
     {
-        client.setInputBufferSize(inputBufferSize);
+        @Override
+        public void onOpen(Session session)
+        {
+            session.setIdleTimeout(Duration.ofMillis(idleTimeout));
+            session.setMaxTextMessageSize(maxMessageSize);
+            session.setMaxBinaryMessageSize(maxMessageSize);
+            session.setInputBufferSize(inputBufferSize);
+            super.onOpen(session);
+        }
+    }
 
-        URI uri = URI.create("ws://localhost:8080/");
-        EventSocket clientEndpoint = new EventSocket();
+    public EventSocket getClientSocket(String param)
+    {
+        switch (param)
+        {
+            case "clientConfig":
+                client.setInputBufferSize(inputBufferSize);
+                client.setMaxBinaryMessageSize(maxMessageSize);
+                client.setIdleTimeout(Duration.ofMillis(idleTimeout));
+                client.setMaxTextMessageSize(maxMessageSize);
+                return new EventSocket();
+
+            case "annotatedConfig":
+                return new AnnotatedConfigEndpoint();
+
+            case "sessionConfig":
+                return new SessionConfigEndpoint();
+
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testInputBufferSize(String param) throws Exception
+    {
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");
+        EventSocket clientEndpoint = getClientSocket(param);
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
@@ -112,15 +157,17 @@ public class ClientConfigTest
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertNull(clientEndpoint.error);
+
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.statusCode, is(StatusCode.NO_CODE));
     }
 
-    @Test
-    public void testMaxBinaryMessageSize() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMaxBinaryMessageSize(String param) throws Exception
     {
-        client.setMaxBinaryMessageSize(maxMessageSize);
-
-        URI uri = URI.create("ws://localhost:8080/");
-        EventSocket clientEndpoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");
+        EventSocket clientEndpoint = getClientSocket(param);
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
@@ -128,15 +175,17 @@ public class ClientConfigTest
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
+
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.statusCode, is(StatusCode.MESSAGE_TOO_LARGE));
     }
 
-    @Test
-    public void testMaxIdleTime() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMaxIdleTime(String param) throws Exception
     {
-        client.setIdleTimeout(Duration.ofMillis(idleTimeout));
-
-        URI uri = URI.create("ws://localhost:8080/");
-        EventSocket clientEndpoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");
+        EventSocket clientEndpoint = getClientSocket(param);
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
@@ -145,15 +194,17 @@ public class ClientConfigTest
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.error, instanceOf(WebSocketTimeoutException.class));
+
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.statusCode, is(StatusCode.SHUTDOWN));
     }
 
-    @Test
-    public void testMaxTextMessageSize() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMaxTextMessageSize(String param) throws Exception
     {
-        client.setMaxTextMessageSize(maxMessageSize);
-
-        URI uri = URI.create("ws://localhost:8080/");
-        EventSocket clientEndpoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");
+        EventSocket clientEndpoint = getClientSocket(param);
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
@@ -161,83 +212,8 @@ public class ClientConfigTest
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
-    }
 
-    @Test
-    public void testInputBufferSizeAnnotation() throws Exception
-    {
-        URI uri = URI.create("ws://localhost:8080/");
-        AnnotatedConfigEndpoint clientEndpoint = new AnnotatedConfigEndpoint();
-        CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
-
-        connect.get(5, TimeUnit.SECONDS);
-
-        WebSocketChannel channel = (WebSocketChannel)((WebSocketSession)clientEndpoint.session).getCoreSession();
-        WebSocketConnection connection = channel.getConnection();
-
-        assertThat(connection.getInputBufferSize(), is(inputBufferSize));
-
-        clientEndpoint.session.close();
-        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertNull(clientEndpoint.error);
-    }
-
-    @Test
-    public void testMaxBinaryMessageSizeAnnotation() throws Exception
-    {
-        URI uri = URI.create("ws://localhost:8080/");
-        AnnotatedConfigEndpoint clientEndpoint = new AnnotatedConfigEndpoint();
-        CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
-
-        connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(message));
-        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-
-        assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
-    }
-
-    @Test
-    public void testMaxIdleTimeAnnotation() throws Exception
-    {
-        URI uri = URI.create("ws://localhost:8080/");
-        AnnotatedConfigEndpoint clientEndpoint = new AnnotatedConfigEndpoint();
-        CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
-
-        connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString("hello world");
-        Thread.sleep(idleTimeout + 500);
-
-        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.error, instanceOf(WebSocketTimeoutException.class));
-    }
-
-    @Test
-    public void testMaxTextMessageSizeAnnotation() throws Exception
-    {
-        URI uri = URI.create("ws://localhost:8080/");
-        AnnotatedConfigEndpoint clientEndpoint = new AnnotatedConfigEndpoint();
-        CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
-
-        connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString(message);
-        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-
-        assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
-    }
-
-    @Test
-    public void testBatchModeAnnotation() throws Exception
-    {
-        URI uri = URI.create("ws://localhost:8080/");
-        AnnotatedConfigEndpoint clientEndpoint = new AnnotatedConfigEndpoint();
-        CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
-
-        connect.get(5, TimeUnit.SECONDS);
-
-        assertThat(clientEndpoint.session.getRemote().getBatchMode(), is(BatchMode.ON));
-
-        clientEndpoint.session.close();
-        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertNull(clientEndpoint.error);
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.statusCode, is(StatusCode.MESSAGE_TOO_LARGE));
     }
 }
