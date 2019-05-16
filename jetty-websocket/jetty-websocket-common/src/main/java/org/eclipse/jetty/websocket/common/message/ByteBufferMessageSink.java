@@ -27,6 +27,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.AbstractMessageSink;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -35,14 +36,14 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
     private static final int BUFFER_SIZE = 65535;
-    private final long maxMessageSize;
+    private final Session session;
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteBufferMessageSink(Executor executor, MethodHandle methodHandle, long maxMessageSize)
+    public ByteBufferMessageSink(Executor executor, MethodHandle methodHandle, Session session)
     {
         super(executor, methodHandle);
-        this.maxMessageSize = maxMessageSize;
+        this.session = session;
 
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");
@@ -63,6 +64,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
                 size = size + payload.remaining();
+                long maxMessageSize = session.getMaxBinaryMessageSize();
                 if (maxMessageSize > 0 && size > maxMessageSize)
                     throw new MessageTooLargeException("Message size [" + size + "] exceeds maximum size [" + maxMessageSize + "]");
 

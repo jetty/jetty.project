@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.AbstractMessageSink;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -37,14 +38,14 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 public class StringMessageSink extends AbstractMessageSink
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
-    private final long maxMessageSize;
+    private final Session session;
     private Utf8StringBuilder utf;
     private int size = 0;
 
-    public StringMessageSink(Executor executor, MethodHandle methodHandle, long maxMessageSize)
+    public StringMessageSink(Executor executor, MethodHandle methodHandle, Session session)
     {
         super(executor, methodHandle);
-        this.maxMessageSize = maxMessageSize;
+        this.session = session;
 
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");
@@ -67,6 +68,7 @@ public class StringMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
                 size = size + payload.remaining();
+                long maxMessageSize = session.getMaxTextMessageSize();
                 if (maxMessageSize > 0 && size > maxMessageSize)
                     throw new MessageTooLargeException("Message size [" + size + "] exceeds maximum size [" + maxMessageSize + "]");
 
