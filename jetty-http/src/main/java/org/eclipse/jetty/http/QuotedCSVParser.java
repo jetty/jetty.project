@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.http;
 
+
+/**
+ * Implements a quoted comma separated list parser
+ * in accordance with RFC7230.
+ * OWS is removed and quoted characters ignored for parsing.
+ * @see "https://tools.ietf.org/html/rfc7230#section-3.2.6"
+ * @see "https://tools.ietf.org/html/rfc7230#section-7"
+ */
 public abstract class QuotedCSVParser
 {
     private enum State { VALUE, PARAM_NAME, PARAM_VALUE}
