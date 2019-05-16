@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
@@ -319,7 +320,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public int getMaxBinaryMessageBufferSize()
     {
-        return frameHandler.getMaxBinaryMessageBufferSize();
+        long maxBinaryMsgSize = coreSession.getMaxBinaryMessageSize();
+        return (maxBinaryMsgSize > (long)Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)maxBinaryMsgSize;
     }
 
     /**
@@ -332,7 +334,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void setMaxBinaryMessageBufferSize(int length)
     {
-        frameHandler.setMaxBinaryMessageBufferSize(length);
+        coreSession.setMaxBinaryMessageSize(length);
     }
 
     /**
@@ -368,7 +370,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public int getMaxTextMessageBufferSize()
     {
-        return frameHandler.getMaxTextMessageBufferSize();
+        long maxTextMsgSize = coreSession.getMaxTextMessageSize();
+        return (maxTextMsgSize > (long)Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)maxTextMsgSize;
     }
 
     /**
@@ -381,7 +384,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void setMaxTextMessageBufferSize(int length)
     {
-        frameHandler.setMaxTextMessageBufferSize(length);
+        coreSession.setMaxTextMessageSize(length);
     }
 
     /**

@@ -502,6 +502,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFrame({})", frame);
+
         try
         {
             assertValidIncoming(frame);
@@ -587,6 +590,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void abort()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("abort(): {}", this);
+
         connection.cancelDemand();
         connection.getEndPoint().close();
     }
@@ -673,8 +679,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
-                            frame, callback, channelState, handler);
+                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}", frame, callback, channelState, handler);
 
                 boolean closeConnection = channelState.onIncomingFrame(frame);
 
