@@ -18,10 +18,17 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 
 public class HttpCookie
 {
+    // TODO consider replacing this with java.net.HttpCookie
+    private static final String __COOKIE_DELIM="\",;\\ \t";
+    private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
+
     private final String _name;
     private final String _value;
     private final String _comment;
@@ -66,6 +73,29 @@ public class HttpCookie
         _version = version;
         _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
     }
+
+    enum State { START, NAME, VALUE, QUOTED}
+
+    public HttpCookie(String setCookie)
+    {
+        List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookie);
+        if (cookies.size()!=1)
+            throw new IllegalStateException();
+
+        java.net.HttpCookie cookie = cookies.get(0);
+
+        _name = cookie.getName();
+        _value = cookie.getValue();
+        _domain = cookie.getDomain();
+        _path = cookie.getPath();
+        _maxAge = cookie.getMaxAge();
+        _httpOnly = cookie.isHttpOnly();
+        _secure = cookie.getSecure();
+        _comment = cookie.getComment();
+        _version = cookie.getVersion();
+        _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
+    }
+
 
     /**
      * @return the cookie name
@@ -160,5 +190,202 @@ public class HttpCookie
         if (getPath() != null)
             builder.append(";$Path=").append(getPath());
         return builder.toString();
+    }
+
+
+    private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
+    {
+        if (quote)
+            QuotedStringTokenizer.quoteOnly(buf,s);
+        else
+            buf.append(s);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Does a cookie value need to be quoted?
+     * @param s value string
+     * @return true if quoted;
+     * @throws IllegalArgumentException If there a control characters in the string
+     */
+    private static boolean isQuoteNeededForCookie(String s)
+    {
+        if (s==null || s.length()==0)
+            return true;
+
+        if (QuotedStringTokenizer.isQuoted(s))
+            return false;
+
+        for (int i=0;i<s.length();i++)
+        {
+            char c = s.charAt(i);
+            if (__COOKIE_DELIM.indexOf(c)>=0)
+                return true;
+
+            if (c<0x20 || c>=0x7f)
+                throw new IllegalArgumentException("Illegal character in cookie value");
+        }
+
+        return false;
+    }
+
+    public String getSetCookie(CookieCompliance compliance)
+    {
+        switch(compliance)
+        {
+            case RFC2965:
+                return getRFC2965SetCookie();
+            case RFC6265:
+                return getRFC6265SetCookie();
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    public String getRFC2965SetCookie()
+    {
+        // Check arguments
+        if (_name == null || _name.length() == 0)
+            throw new IllegalArgumentException("Bad cookie name");
+
+        // Format value and params
+        StringBuilder buf = new StringBuilder();
+
+        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
+        boolean quote_name=isQuoteNeededForCookie(_name);
+        quoteOnlyOrAppend(buf,_name,quote_name);
+
+        buf.append('=');
+
+        // Append the value
+        boolean quote_value=isQuoteNeededForCookie(_value);
+        quoteOnlyOrAppend(buf,_value,quote_value);
+
+        // Look for domain and path fields and check if they need to be quoted
+        boolean has_domain = _domain!=null && _domain.length()>0;
+        boolean quote_domain = has_domain && isQuoteNeededForCookie(_domain);
+        boolean has_path = _path!=null && _path.length()>0;
+        boolean quote_path = has_path && isQuoteNeededForCookie(_path);
+
+        // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
+        int version = _version;
+        if (version==0 && ( _comment!=null || quote_name || quote_value || quote_domain || quote_path ||
+            QuotedStringTokenizer.isQuoted(_name) || QuotedStringTokenizer.isQuoted(_value) ||
+            QuotedStringTokenizer.isQuoted(_path) || QuotedStringTokenizer.isQuoted(_domain)))
+            version=1;
+
+        // Append version
+        if (version==1)
+            buf.append (";Version=1");
+        else if (version>1)
+            buf.append (";Version=").append(version);
+
+        // Append path
+        if (has_path)
+        {
+            buf.append(";Path=");
+            quoteOnlyOrAppend(buf,_path,quote_path);
+        }
+
+        // Append domain
+        if (has_domain)
+        {
+            buf.append(";Domain=");
+            quoteOnlyOrAppend(buf,_domain,quote_domain);
+        }
+
+        // Handle max-age and/or expires
+        if (_maxAge >= 0)
+        {
+            // Always use expires
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            buf.append(";Expires=");
+            if (_maxAge == 0)
+                buf.append(__01Jan1970_COOKIE);
+            else
+                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * _maxAge);
+
+            // for v1 cookies, also send max-age
+            if (version>=1)
+            {
+                buf.append(";Max-Age=");
+                buf.append(_maxAge);
+            }
+        }
+
+        // add the other fields
+        if (_secure)
+            buf.append(";Secure");
+        if (_httpOnly)
+            buf.append(";HttpOnly");
+        if (_comment != null)
+        {
+            buf.append(";Comment=");
+            quoteOnlyOrAppend(buf,_comment,isQuoteNeededForCookie(_comment));
+        }
+        return buf.toString();
+    }
+
+    public String getRFC6265SetCookie()
+    {
+        // Check arguments
+        if (_name == null || _name.length() == 0)
+            throw new IllegalArgumentException("Bad cookie name");
+
+        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
+        // Per RFC6265, Cookie.name follows RFC2616 Section 2.2 token rules
+        Syntax.requireValidRFC2616Token(_name, "RFC6265 Cookie name");
+        // Ensure that Per RFC6265, Cookie.value follows syntax rules
+        Syntax.requireValidRFC6265CookieValue(_value);
+
+        // Format value and params
+        StringBuilder buf = new StringBuilder();
+        buf.append(_name).append('=').append(_value==null?"":_value);
+
+        // Append path
+        if (_path!=null && _path.length()>0)
+            buf.append("; Path=").append(_path);
+
+        // Append domain
+        if (_domain!=null && _domain.length()>0)
+            buf.append("; Domain=").append(_domain);
+
+        // Handle max-age and/or expires
+        if (_maxAge >= 0)
+        {
+            // Always use expires
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            buf.append("; Expires=");
+            if (_maxAge == 0)
+                buf.append(__01Jan1970_COOKIE);
+            else
+                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * _maxAge);
+
+            buf.append("; Max-Age=");
+            buf.append(_maxAge);
+        }
+
+        // add the other fields
+        if (_secure)
+            buf.append("; Secure");
+        if (_httpOnly)
+            buf.append("; HttpOnly");
+        return buf.toString();
+    }
+
+
+    public static class SetCookieHttpField extends HttpField
+    {
+        final HttpCookie _cookie;
+
+        public SetCookieHttpField(HttpCookie cookie, CookieCompliance compliance)
+        {
+            super(HttpHeader.SET_COOKIE, cookie.getSetCookie(compliance));
+            this._cookie = cookie;
+        }
+
+        public HttpCookie getHttpCookie()
+        {
+            return _cookie;
+        }
     }
 }
