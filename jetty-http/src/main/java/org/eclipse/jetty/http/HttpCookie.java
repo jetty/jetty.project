@@ -23,9 +23,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 
+// TODO consider replacing this with java.net.HttpCookie
 public class HttpCookie
 {
-    // TODO consider replacing this with java.net.HttpCookie
     private static final String __COOKIE_DELIM="\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
@@ -73,8 +73,6 @@ public class HttpCookie
         _version = version;
         _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
     }
-
-    enum State { START, NAME, VALUE, QUOTED}
 
     public HttpCookie(String setCookie)
     {
@@ -201,7 +199,6 @@ public class HttpCookie
             buf.append(s);
     }
 
-    /* ------------------------------------------------------------ */
     /** Does a cookie value need to be quoted?
      * @param s value string
      * @return true if quoted;
