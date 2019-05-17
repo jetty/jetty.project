@@ -628,7 +628,7 @@ public class ServletHandler extends ScopedHandler
         FilterChain chain = null;
         if (_filterChainsCached)
         {
-            if (filters.size() > 0)
+            if (!filters.isEmpty())
                 chain = newCachedChain(filters, servletHolder);
 
             final Map<String,FilterChain> cache=_chainCache[dispatch];
@@ -652,7 +652,7 @@ public class ServletHandler extends ScopedHandler
                 cache.put(key,chain);
                 lru.add(key);
         }
-        else if (filters.size() > 0)
+        else if (!filters.isEmpty())
             chain = new Chain(baseRequest,filters, servletHolder);
 
         return chain;
@@ -1567,7 +1567,7 @@ public class ServletHandler extends ScopedHandler
          */
         protected CachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
         {
-            if (filters.size()>0)
+            if (!filters.isEmpty())
             {
                 _filterHolder=filters.get(0);
                 filters.remove(0);
