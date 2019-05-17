@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Base64;
 
 
 /** Fast B64 Encoder/Decoder as described in RFC 1421.
@@ -30,8 +31,9 @@ import java.nio.charset.UnsupportedCharsetException;
  * 1521. If you require this you must pre/post process your data.
  * <p> Note that in a web context the usual case is to not want
  * linebreaks or other white space in the encoded output.
- *
+ * @deprecated use {@link java.util.Base64} instead
  */
+@Deprecated
 public class B64Code
 {
     private static final char __pad='=';
@@ -82,9 +84,11 @@ public class B64Code
      * <p>Does not insert whitespace as described in RFC 1521.
      * @param s String to encode.
      * @return String containing the encoded form of the input.
+     * @deprecated use {@link Base64.Encoder#encodeToString(byte[])}} instead.
      */
     public static String encode(String s)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         return encode(s, (Charset)null);
     }
 
@@ -98,6 +102,7 @@ public class B64Code
      */
     public static String encode(String s,String charEncoding)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         byte[] bytes;
         if (charEncoding==null)
             bytes=s.getBytes(StandardCharsets.ISO_8859_1);
@@ -115,6 +120,7 @@ public class B64Code
      */
     public static String encode(String s, Charset charEncoding)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         byte[] bytes=s.getBytes(charEncoding==null ? StandardCharsets.ISO_8859_1 : charEncoding);
         return new String(encode(bytes));
     }
@@ -128,6 +134,7 @@ public class B64Code
      */
     public static char[] encode(byte[] b)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         if (b==null)
             return null;
 
@@ -188,6 +195,7 @@ public class B64Code
      */
     public static char[] encode(byte[] b, boolean rfc2045)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         if (b==null)
             return null;
         if (!rfc2045)
@@ -265,6 +273,7 @@ public class B64Code
     @SuppressWarnings("DefaultCharset")
     public static String decode(String encoded,String charEncoding)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         byte[] decoded=decode(encoded);
         if (charEncoding==null)
             return new String(decoded);
@@ -285,6 +294,7 @@ public class B64Code
     @SuppressWarnings("DefaultCharset")
     public static String decode(String encoded, Charset charEncoding)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         byte[] decoded=decode(encoded);
         if (charEncoding==null)
             return new String(decoded);
@@ -305,6 +315,7 @@ public class B64Code
      */
     public static byte[] decode(char[] b)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         if (b==null)
             return null;
 
@@ -388,6 +399,7 @@ public class B64Code
      */
     public static byte[] decode(String encoded)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         if (encoded==null)
             return null;
 
@@ -405,8 +417,9 @@ public class B64Code
      * @throws IllegalArgumentException if the input is not a valid
      *         B64 encoding.
      */
-    static public void decode (String encoded, ByteArrayOutputStream bout)
+    static public void decode(String encoded, ByteArrayOutputStream bout)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         if (encoded==null)
             return;
         
@@ -457,6 +470,7 @@ public class B64Code
     /* ------------------------------------------------------------ */
     public static byte[] decodeRFC4648URL(String encoded)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         if (encoded==null)
             return null;
 
@@ -476,6 +490,7 @@ public class B64Code
      */
     static public void decodeRFC4648URL (String encoded, ByteArrayOutputStream bout)
     {
+        // FIXME: no Jetty mainline code uses this anymore
         if (encoded==null)
             return;
         
@@ -522,21 +537,21 @@ public class B64Code
 
         return;
     }
-    
 
     public static void encode(int value,Appendable buf) throws IOException
     {
+        // FIXME: no Jetty mainline code uses this anymore
         buf.append(__rfc1421alphabet[0x3f&((0xFC000000&value)>>26)]);
         buf.append(__rfc1421alphabet[0x3f&((0x03F00000&value)>>20)]);
         buf.append(__rfc1421alphabet[0x3f&((0x000FC000&value)>>14)]);
         buf.append(__rfc1421alphabet[0x3f&((0x00003F00&value)>>8)]);
         buf.append(__rfc1421alphabet[0x3f&((0x000000FC&value)>>2)]);
         buf.append(__rfc1421alphabet[0x3f&((0x00000003&value)<<4)]);
-        buf.append('=');
     }
 
     public static void encode(long lvalue,Appendable buf) throws IOException
     {
+        // FIXME: no Jetty mainline code uses this anymore
         int value=(int)(0xFFFFFFFC&(lvalue>>32));
         buf.append(__rfc1421alphabet[0x3f&((0xFC000000&value)>>26)]);
         buf.append(__rfc1421alphabet[0x3f&((0x03F00000&value)>>20)]);
