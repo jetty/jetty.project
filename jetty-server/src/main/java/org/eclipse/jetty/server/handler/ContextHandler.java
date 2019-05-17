@@ -308,6 +308,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
+        if (usingSecurityManager && System.getSecurityManager() == null)
+            throw new IllegalStateException("No security manager");
         _usingSecurityManager = usingSecurityManager;
     }
 
