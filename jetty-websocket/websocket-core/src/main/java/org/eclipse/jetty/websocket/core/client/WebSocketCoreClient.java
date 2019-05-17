@@ -71,16 +71,6 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
         addBean(httpClient);
     }
 
-    public FrameHandler.ConfigurationCustomizer getCustomizer()
-    {
-        return customizer;
-    }
-
-    public void setCustomizer(FrameHandler.ConfigurationCustomizer customizer)
-    {
-        this.customizer = customizer;
-    }
-
     @Override
     public void customize(FrameHandler.CoreSession session)
     {

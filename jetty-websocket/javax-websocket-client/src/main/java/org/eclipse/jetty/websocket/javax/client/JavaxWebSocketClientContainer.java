@@ -40,6 +40,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
@@ -64,34 +65,23 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
     public JavaxWebSocketClientContainer()
     {
-        this(() -> {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient();
-            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
-            return coreClient;
-        });
+        this(new WebSocketComponents(), null, null);
     }
 
-    public JavaxWebSocketClientContainer(Supplier<WebSocketCoreClient> coreClientFactory)
+    public JavaxWebSocketClientContainer(WebSocketComponents components, HttpClient httpClient, Executor executor)
     {
-        this((WebSocketCoreClient)null);
-        this.coreClientFactory = coreClientFactory;
-        this.addBean(coreClientFactory);
-    }
-
-    public JavaxWebSocketClientContainer(WebSocketCoreClient coreClient)
-    {
-        super();
-
-        if (coreClient != null)
-        {
-            coreClient.setCustomizer(defaultCustomizer);
-            this.coreClient = coreClient;
-            this.addBean(coreClient);
-        }
-
-        this.objectFactory = new DecoratedObjectFactory();
-        this.extensionRegistry = new WebSocketExtensionRegistry();
+        this.objectFactory = components.getObjectFactory();
+        this.extensionRegistry = components.getExtensionRegistry();
         this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
+
+        coreClientFactory = () ->
+        {
+            WebSocketCoreClient coreClient = new WebSocketCoreClient(httpClient, defaultCustomizer);
+            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
+            if (executor != null && httpClient == null)
+                coreClient.getHttpClient().setExecutor(executor);
+            return coreClient;
+        };
     }
 
     @Override
@@ -116,12 +106,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         if (coreClient == null)
         {
             coreClient = coreClientFactory.get();
-            if (coreClient.isRunning())
-                addBean(coreClient,false);
-            else
-                addManaged(coreClient);
-
-            coreClient.setCustomizer(defaultCustomizer);
+            addManaged(coreClient);
         }
 
         return coreClient;

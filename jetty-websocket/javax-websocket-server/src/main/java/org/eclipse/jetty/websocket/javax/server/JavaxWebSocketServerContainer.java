@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.internal.AnnotatedServerEndpointConfig;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
@@ -138,13 +137,7 @@ public class JavaxWebSocketServerContainer
      */
     public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, HttpClient httpClient, Executor executor)
     {
-        super(() ->
-        {
-            WebSocketCoreClient client = new WebSocketCoreClient(httpClient);
-            if (executor != null && httpClient == null)
-                client.getHttpClient().setExecutor(executor);
-            return client;
-        });
+        super(webSocketComponents, httpClient, executor);
         this.webSocketMapping = webSocketMapping;
         this.webSocketComponents = webSocketComponents;
         this.executor = executor;
