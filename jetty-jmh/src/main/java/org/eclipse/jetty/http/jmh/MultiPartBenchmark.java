@@ -57,6 +57,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
@@ -177,7 +178,7 @@ public class MultiPartBenchmark
     public long testLargeGenerated() throws Exception
     {
         Path multipartRawFile = _file.toPath();
-        Path outputDir = Files.createTempDirectory("jetty_multipart_benchmark");
+        Path outputDir = Paths.get("/dev/null");// Files.createTempDirectory( "jetty_multipart_benchmark");
         
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         
@@ -251,7 +252,7 @@ public class MultiPartBenchmark
                 IO.copy(inputStream, os);
             }
 
-            Path outputDir = Files.createTempDirectory("expected_output_jmh_jetty");
+            Path outputDir = Paths.get("/dev/null");//Files.createTempDirectory("expected_output_jmh_jetty");
             
             MultipartExpectations multipartExpectations = new MultipartExpectations(expectationFile.toPath());
             MultipartConfigElement config = newMultipartConfigElement(outputDir);
