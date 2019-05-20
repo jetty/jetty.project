@@ -25,11 +25,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A WebAppClassLoader that caches {@link #getResource(String)} results.
+ * A WebAppClassLoader that caches {@link #getResource(String)} and
+ * {@link #loadAsResource(String, boolean)} results.
  * Specifically this ClassLoader caches not found classes and resources,
  * which can greatly increase performance for applications that search
  * for resources.
@@ -37,11 +40,18 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class CachingWebAppClassLoader extends WebAppClassLoader
 {
+    static
+    {
+        registerAsParallelCapable();
+    }
+
     private static final Logger LOG = Log.getLogger(CachingWebAppClassLoader.class);
 
     private final Set<String> _notFound = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String, URL> _cache = new ConcurrentHashMap<>();
-
+    private final ConcurrentHashMap<String,URL> _classCache = new ConcurrentHashMap<>();
+    private volatile boolean useCache;
+    
     public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
     {
         super(parent, context);
@@ -55,6 +65,10 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     @Override
     public URL getResource(String name)
     {
+        if(!useCache)
+        {
+            return super.getResource(name);
+        }
         if (_notFound.contains(name))
         {
             if (LOG.isDebugEnabled())
@@ -87,6 +101,27 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     }
 
     @Override
+    protected URL getClassUrl(String name)
+    {
+        if(!useCache)
+        {
+            return super.getClassUrl(name);
+        }
+        String path = name.replace('.', '/').concat(".class");
+        URL webapp_url = _classCache.get(path);
+        if (webapp_url == null)
+        {
+            webapp_url = findResource(path);
+            if (webapp_url != null)
+            {
+                  _classCache.putIfAbsent(path, webapp_url);
+            }
+        }
+
+        return webapp_url;
+    }
+
+    @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException
     {
         if (_notFound.contains(name))
@@ -115,12 +150,45 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     public void clearCache()
     {
         _cache.clear();
+        _classCache.clear();
         _notFound.clear();
+    }
+
+    public void setUseCache(boolean useCache)
+    {
+            this.useCache = useCache;
     }
 
     @Override
     public String toString()
     {
         return "Caching[" + super.toString() + "]";
+    }
+
+    /**
+     * Lifecycle listener, that can be used from {@link WebAppContext#addLifeCycleListener(LifeCycle.Listener)}
+     * to switch off the {@link #_cache} and {@link #_classCache} after web application has been started.
+     */
+    public static class ClearCacheLifeCycleListener extends AbstractLifeCycle.AbstractLifeCycleListener
+    {
+        private CachingWebAppClassLoader classLoader;
+
+        public ClearCacheLifeCycleListener(CachingWebAppClassLoader classLoader)
+        {
+            this.classLoader = classLoader;
+        }
+
+        @Override
+        public void lifeCycleStarting(LifeCycle event)
+        {
+            classLoader.setUseCache(true);
+        }
+
+        @Override
+        public void lifeCycleStarted(LifeCycle event)
+        {
+            classLoader.setUseCache(false);
+            classLoader.clearCache();
+        }
     }
 }

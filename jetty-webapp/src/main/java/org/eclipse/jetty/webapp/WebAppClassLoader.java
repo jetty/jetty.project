@@ -628,6 +628,18 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         return webappClass;
     }
 
+    /**
+     * Get the URL by class name.
+     * @param name the name of the class to load
+     * @return the class URL
+     */
+    protected URL getClassUrl(final String name)
+    {
+        String path = name.replace('.', '/').concat(".class");
+        URL webapp_url = findResource(path);
+        return webapp_url;
+    }
+
     @Override
     protected Class<?> findClass(final String name) throws ClassNotFoundException
     {
