@@ -35,7 +35,7 @@
     <!-- Check abbreviations(consecutive capital letters) length in identifier name -->
     <module name="AbbreviationAsWordInName">
       <property name="ignoreFinal" value="true"/>
-      <property name="allowedAbbreviations" value="RFC,XML,URL,URI,HTTP,IP,ID,ISO8859,UTF8,CRLF,AWT"/>
+      <property name="allowedAbbreviations" value="RFC, XML, URL, URI, HTTP, IP, ID, ISO8859, UTF8, CRLF, AWT"/>
     </module>
 
     <!-- Location of Annotations -->
@@ -101,6 +101,12 @@
       <property name="format" value="^[_a-z][a-zA-Z0-9]*$"/>
     </module>
 
+    <!-- No Whitespace After specific tokens -->
+    <module name="NoWhitespaceAfter">
+      <property name="tokens" value="ARRAY_INIT, AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR, INDEX_OP, TYPECAST"/>
+      <property name="allowLineBreaks" value="false"/>
+    </module>
+
     <!-- No Whitespace Before specific tokens -->
     <module name="NoWhitespaceBefore">
       <property name="tokens"
@@ -110,6 +116,13 @@
 
     <!-- allowed wrapping for operators -->
     <module name="OperatorWrap">
+      <property name="id" value="OperatorWrapNextLine"/>
+      <property name="tokens" value="QUESTION, COLON"/>
+      <property name="option" value="nl"/>
+    </module>
+    <module name="OperatorWrap">
+      <property name="id" value="OperatorWrapSameLine"/>
+      <property name="tokens" value="EQUAL, NOT_EQUAL, DIV, PLUS, MINUS, STAR, MOD, SR, BSR, GE, GT, SL, LE, LT, BXOR, BOR, LOR, BAND, LAND, TYPE_EXTENSION_AND, LITERAL_INSTANCEOF"/>
       <property name="option" value="eol"/>
     </module>
 
@@ -135,7 +148,7 @@
     </module>
     <module name="SeparatorWrap">
       <property name="id" value="SeparatorWrapSameLine"/>
-      <property name="tokens" value="COMMA,ELLIPSIS,ARRAY_DECLARATOR,METHOD_REF"/>
+      <property name="tokens" value="COMMA, ELLIPSIS, ARRAY_DECLARATOR, METHOD_REF"/>
       <property name="option" value="eol"/>
     </module>
 
@@ -187,9 +200,10 @@
     <module name="MissingSwitchDefault"/>
 
     <!-- require braces if using more then 1 line of code -->
-    <!-- TODO: need better way to allow 1 statement below <module name="NeedBraces">
+    <!-- TODO: need better way to allow 1 statement below -->
+    <module name="NeedBraces">
       <property name="allowSingleLineStatement" value="true"/>
-    </module>-->
+    </module>
 
     <!-- prevent line wrapping of import / package statements -->
     <module name="NoLineWrap"/>
