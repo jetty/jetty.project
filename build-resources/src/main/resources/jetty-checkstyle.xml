@@ -101,10 +101,16 @@
       <property name="format" value="^[_a-z][a-zA-Z0-9]*$"/>
     </module>
 
+    <!-- require braces is disabled - we don't enforce that in Jetty
+    <module name="NeedBraces">
+      <property name="allowSingleLineStatement" value="true"/>
+    </module>
+     -->
+
     <!-- No Whitespace After specific tokens -->
     <module name="NoWhitespaceAfter">
       <property name="tokens" value="ARRAY_INIT, AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR, INDEX_OP, TYPECAST"/>
-      <property name="allowLineBreaks" value="false"/>
+      <property name="allowLineBreaks" value="true"/>
     </module>
 
     <!-- No Whitespace Before specific tokens -->
@@ -198,12 +204,6 @@
 
     <!-- all switch statements should have "default" label declared -->
     <module name="MissingSwitchDefault"/>
-
-    <!-- require braces if using more then 1 line of code -->
-    <!-- TODO: need better way to allow 1 statement below -->
-    <module name="NeedBraces">
-      <property name="allowSingleLineStatement" value="true"/>
-    </module>
 
     <!-- prevent line wrapping of import / package statements -->
     <module name="NoLineWrap"/>
