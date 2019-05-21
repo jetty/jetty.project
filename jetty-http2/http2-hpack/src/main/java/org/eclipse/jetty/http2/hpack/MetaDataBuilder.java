@@ -39,7 +39,7 @@ public class MetaDataBuilder
     private HostPortHttpField _authority;
     private String _path;
     private long _contentLength=Long.MIN_VALUE;
-    private HttpFields _fields = new HttpFields(10);
+    private HttpFields _fields = new HttpFields(16); // TODO make this tunable
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;

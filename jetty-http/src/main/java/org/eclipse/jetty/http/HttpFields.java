@@ -66,7 +66,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public HttpFields()
     {
-        _fields=new HttpField[20];
+        this(16 );  // TODO tune default
     }
     
     /**
