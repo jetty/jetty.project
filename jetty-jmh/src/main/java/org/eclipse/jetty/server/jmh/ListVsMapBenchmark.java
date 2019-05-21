@@ -20,9 +20,11 @@ package org.eclipse.jetty.server.jmh;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -56,11 +58,10 @@ public class ListVsMapBenchmark
     @Param({"1", "10", "20" })
     public static int lookups;
 
-    @Param({"hits", "nears", "misses" })
+    @Param({"hits", "misses", "iterate" })
     public static String mostly;
 
     static final String base = "This-is-the-base-of-All-key-names-and-is-long".substring(0,length);
-    static final String near = base + "-X";
     static final String miss = "X-" + base;
     static final List<String> trials = new ArrayList<>();
 
@@ -68,22 +69,18 @@ public class ListVsMapBenchmark
     public void setup()
     {
         int hits = 1;
-        int nearMisses = 1;
         int misses = 1;
         switch(mostly)
         {
             case "hits" : hits = lookups; break;
-            case "nears" : nearMisses = lookups; break;
             case "misses" : misses = lookups; break;
+            case "iterate" : hits = lookups/2; misses=lookups-hits; break;
             default : throw new IllegalStateException();
         }
 
         int hit = size / 2;
         for (int h = hits; h-->0;)
             trials.add(base + "-" + ((hit++) % size));
-
-        for (int n = nearMisses; n-->0; )
-            trials.add(near);
 
         for (int m = misses; m-->0; )
             trials.add(miss);
@@ -112,6 +109,7 @@ public class ListVsMapBenchmark
     interface Lookup
     {
         Pair get(String key);
+        Iterator<Pair> iterate();
     }
 
     private void fill(Fill fill)
@@ -127,11 +125,40 @@ public class ListVsMapBenchmark
     private long test(Lookup lookup)
     {
         long result = 0;
-        for (String t : trials)
+        if ("iterate".equals(mostly))
         {
-            Pair p = lookup.get(t);
-            if (p!=null)
-                result ^= p.value;
+            Iterator<String> t = trials.iterator();
+            while(t.hasNext())
+            {
+                String one = t.hasNext() ? t.next() : null;
+                String two = t.hasNext() ? t.next() : null;
+                String three = t.hasNext() ? t.next() : null;
+                String four = t.hasNext() ? t.next() : null;
+
+                Iterator<Pair> i = lookup.iterate();
+                while (i.hasNext())
+                {
+                    Pair p = i.next();
+                    String k = p.key;
+                    if (one != null && one.equals(k))
+                        result ^= p.value;
+                    else if (two != null && one.equals(k))
+                        result ^= p.value;
+                    else if (three != null && one.equals(k))
+                        result ^= p.value;
+                    else if (four != null && one.equals(k))
+                        result ^= p.value;
+                }
+            }
+        }
+        else
+        {
+            for (String t : trials)
+            {
+                Pair p = lookup.get(t);
+                if (p != null)
+                    result ^= p.value;
+            }
         }
 
         return result;
@@ -139,15 +166,24 @@ public class ListVsMapBenchmark
 
     private long listLookup(List<Pair> list)
     {
-        return test(k->
-        {
-            for (int i = 0; i<list.size(); i++ )
+        return test(new Lookup() {
+            @Override
+            public Pair get(String k)
             {
-                Pair p = list.get(i);
-                if (p.key.equalsIgnoreCase(k))
-                    return p;
+                for (int i = 0; i<list.size(); i++ )
+                {
+                    Pair p = list.get(i);
+                    if (p.key.equalsIgnoreCase(k))
+                        return p;
+                }
+                return null;
             }
-            return null;
+
+            @Override
+            public Iterator<Pair> iterate()
+            {
+                return list.iterator();
+            }
         });
     }
 
@@ -171,12 +207,41 @@ public class ListVsMapBenchmark
             list.add(p);
             map.put(p.key.toLowerCase(),list);
         });
-        return test(k->
+        return test(new Lookup()
         {
-            List<Pair> list = map.get(k.toLowerCase());
-            if (list==null || list.isEmpty())
-                return null;
-            return list.get(0);
+            @Override
+            public Pair get(String k)
+            {
+                List<Pair> list = map.get(k.toLowerCase());
+                if (list == null || list.isEmpty())
+                    return null;
+                return list.get(0);
+            }
+
+            @Override
+            public Iterator<Pair> iterate()
+            {
+                Iterator<List<Pair>> iter = map.values().iterator();
+
+                return new Iterator<Pair>() {
+                    Iterator<Pair> current;
+                    @Override
+                    public boolean hasNext()
+                    {
+                        if (( current==null || !current.hasNext() ) && iter.hasNext())
+                            current=iter.next().iterator();
+                        return current!=null && current.hasNext();
+                    }
+
+                    @Override
+                    public Pair next()
+                    {
+                        if (hasNext())
+                            return current.next();
+                        throw new NoSuchElementException();
+                    }
+                };
+            }
         });
     }
 
