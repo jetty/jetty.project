@@ -60,7 +60,12 @@ public class HttpFields implements Iterable<HttpField>
 
     private HttpField[] _fields;
     private int _size;
-    
+
+
+    private int iterations = 0;
+    private int lookups;
+
+
     /**
      * Initialize an empty HttpFields.
      */
@@ -98,17 +103,20 @@ public class HttpFields implements Iterable<HttpField>
     @Override
     public Iterator<HttpField> iterator()
     {
+        iterations++;
         return new Itr();
     }
 
     public ListIterator<HttpField> listIterator()
     {
+        iterations++;
         return new Itr();
     }
     
     
     public Stream<HttpField> stream()
     {
+        iterations++;
         return StreamSupport.stream(Arrays.spliterator(_fields,0,_size),false);
     }
 
@@ -151,6 +159,7 @@ public class HttpFields implements Iterable<HttpField>
 
     public HttpField getField(HttpHeader header)
     {
+        lookups++;
         for (int i=0;i<_size;i++)
         {
             HttpField f=_fields[i];
@@ -162,6 +171,7 @@ public class HttpFields implements Iterable<HttpField>
 
     public HttpField getField(String name)
     {
+        lookups++;
         for (int i=0;i<_size;i++)
         {
             HttpField f=_fields[i];
@@ -173,6 +183,7 @@ public class HttpFields implements Iterable<HttpField>
 
     public boolean contains(HttpField field)
     {
+        lookups++;
         for (int i=_size;i-->0;)
         {
             HttpField f=_fields[i];
@@ -184,6 +195,7 @@ public class HttpFields implements Iterable<HttpField>
 
     public boolean contains(HttpHeader header, String value)
     {
+        lookups++;
         for (int i=_size;i-->0;)
         {
             HttpField f=_fields[i];
@@ -195,6 +207,7 @@ public class HttpFields implements Iterable<HttpField>
     
     public boolean contains(String name, String value)
     {
+        lookups++;
         for (int i=_size;i-->0;)
         {
             HttpField f=_fields[i];
@@ -206,6 +219,7 @@ public class HttpFields implements Iterable<HttpField>
 
     public boolean contains(HttpHeader header)
     {
+        lookups++;
         for (int i=_size;i-->0;)
         {
             HttpField f=_fields[i];
@@ -217,6 +231,7 @@ public class HttpFields implements Iterable<HttpField>
     
     public boolean containsKey(String name)
     {
+        lookups++;
         for (int i=_size;i-->0;)
         {
             HttpField f=_fields[i];
@@ -234,6 +249,7 @@ public class HttpFields implements Iterable<HttpField>
     
     public String get(HttpHeader header)
     {
+        lookups++;
         for (int i=0;i<_size;i++)
         {
             HttpField f=_fields[i];
@@ -251,6 +267,7 @@ public class HttpFields implements Iterable<HttpField>
     
     public String get(String header)
     {
+        lookups++;
         for (int i=0;i<_size;i++)
         {
             HttpField f=_fields[i];
@@ -268,6 +285,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public List<String> getValuesList(HttpHeader header)
     {
+        lookups++;
         final List<String> list = new ArrayList<>();
         for (HttpField f : this)
             if (f.getHeader()==header)
@@ -283,6 +301,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public List<String> getValuesList(String name)
     {
+        lookups++;
         final List<String> list = new ArrayList<>();
         for (HttpField f : this)
             if (f.getName().equalsIgnoreCase(name))
@@ -394,6 +413,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public List<String> getCSV(HttpHeader header,boolean keepQuotes)
     {
+        lookups++;
         QuotedCSV values = null;
         for (HttpField f : this)
         {
@@ -417,6 +437,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public List<String> getCSV(String name,boolean keepQuotes)
     {
+        lookups++;
         QuotedCSV values = null;
         for (HttpField f : this)
         {
@@ -903,6 +924,9 @@ public class HttpFields implements Iterable<HttpField>
 
     public void clear()
     {
+        System.err.printf("iterations=%d lookups=%d%n",iterations,lookups);
+        iterations = 0;
+        lookups = 0;
         _size=0;
     }
     

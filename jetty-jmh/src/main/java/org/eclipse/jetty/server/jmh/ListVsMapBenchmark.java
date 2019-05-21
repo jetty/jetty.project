@@ -20,14 +20,11 @@ package org.eclipse.jetty.server.jmh;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.ArrayTrie;
-import org.eclipse.jetty.util.TreeTrie;
-import org.eclipse.jetty.util.Trie;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -48,7 +45,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Threads(1)
 @Warmup(iterations = 6, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
-public class ListVsTrieBenchmark
+public class ListVsMapBenchmark
 {
     @Param({ "12" })   // Chrome has 12 for HTTP/1.1 and 16 for HTTP/2 (including meta headers)
     public static int size;
@@ -165,35 +162,28 @@ public class ListVsTrieBenchmark
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public long testTreeTrie() throws Exception
+    public long testSortedMap() throws Exception
     {
-        Trie<Pair> trie = new TreeTrie<>();
-        fill(p->trie.put(p.key,p));
-        return test(trie::get);
-    }
-
-    @Benchmark
-    @BenchmarkMode({Mode.Throughput})
-    public long testArrayTrie() throws Exception
-    {
-        Trie<Pair> trie = new ArrayTrie<>(length*size);
-        fill(p->trie.put(p.key,p));
-        return test(trie::get);
-    }
-
-    @Benchmark
-    @BenchmarkMode({Mode.Throughput})
-    public long testMap() throws Exception
-    {
-        Map<String,Pair> map = new HashMap<>(size);
-        fill(p->map.put(p.key.toLowerCase(),p));
-        return test(k->map.get(k.toLowerCase()));
+        Map<String,List<Pair>> map = new LinkedHashMap<>(size);
+        fill(p->
+        {
+            List<Pair> list = new ArrayList<>();
+            list.add(p);
+            map.put(p.key.toLowerCase(),list);
+        });
+        return test(k->
+        {
+            List<Pair> list = map.get(k.toLowerCase());
+            if (list==null || list.isEmpty())
+                return null;
+            return list.get(0);
+        });
     }
 
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-            .include(ListVsTrieBenchmark.class.getSimpleName())
+            .include(ListVsMapBenchmark.class.getSimpleName())
             // .addProfiler(GCProfiler.class)
             .forks(1)
             .build();
