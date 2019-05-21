@@ -81,7 +81,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this.generator = new UnitGenerator(Behavior.CLIENT);
 
         CompletableFuture<FrameHandler.CoreSession> futureHandler = this.client.connect(upgradeRequest);
-        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (channel, capture) -> capture);
+        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (session, capture) -> capture);
         this.frameCapture = futureCapture.get(10, TimeUnit.SECONDS);
     }
 

@@ -75,7 +75,7 @@ public interface FrameHandler extends IncomingFrames
      *the connection will be closed. <br>
      * </p>
      *
-     * @param coreSession the channel associated with this connection.
+     * @param coreSession the session associated with this connection.
      * @param callback the callback to indicate success in processing (or failure)
      */
     void onOpen(CoreSession coreSession, Callback callback);
@@ -194,21 +194,21 @@ public interface FrameHandler extends IncomingFrames
     interface CoreSession extends OutgoingFrames, Configuration
     {
         /**
-         * The negotiated WebSocket Sub-Protocol for this channel.
+         * The negotiated WebSocket Sub-Protocol for this session.
          *
-         * @return the negotiated WebSocket Sub-Protocol for this channel.
+         * @return the negotiated WebSocket Sub-Protocol for this session.
          */
         String getNegotiatedSubProtocol();
 
         /**
-         * The negotiated WebSocket Extension Configurations for this channel.
+         * The negotiated WebSocket Extension Configurations for this session.
          *
-         * @return the list of Negotiated Extension Configurations for this channel.
+         * @return the list of Negotiated Extension Configurations for this session.
          */
         List<ExtensionConfig> getNegotiatedExtensions();
 
         /**
-         * The parameter map (from URI Query) for the active channel.
+         * The parameter map (from URI Query) for the active session.
          *
          * @return the immutable map of parameters
          */
@@ -255,7 +255,7 @@ public interface FrameHandler extends IncomingFrames
          * without supporting {@link InetSocketAddress}
          * </p>
          *
-         * @return the SocketAddress for the local connection, or null if not supported by Channel
+         * @return the SocketAddress for the local connection, or null if not supported by Session
          */
         SocketAddress getLocalAddress();
 
@@ -267,7 +267,7 @@ public interface FrameHandler extends IncomingFrames
          * without supporting {@link InetSocketAddress}
          * </p>
          *
-         * @return the SocketAddress for the remote connection, or null if not supported by Channel
+         * @return the SocketAddress for the remote connection, or null if not supported by Session
          */
         SocketAddress getRemoteAddress();
 

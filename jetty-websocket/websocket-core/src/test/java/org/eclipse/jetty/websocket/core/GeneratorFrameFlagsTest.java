@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class GeneratorFrameFlagsTest
 {
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
-    private WebSocketChannel channel;
+    private WebSocketCoreSession session;
 
     public static Stream<Arguments> data()
     {
@@ -65,7 +65,7 @@ public class GeneratorFrameFlagsTest
     {
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
+        this.session = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
     }
 
     @ParameterizedTest
@@ -76,6 +76,6 @@ public class GeneratorFrameFlagsTest
 
         ByteBuffer buffer = ByteBuffer.allocate(100);
         new Generator(bufferPool).generateWholeFrame(invalidFrame, buffer);
-        assertThrows(ProtocolException.class, () -> channel.assertValidOutgoing(invalidFrame));
+        assertThrows(ProtocolException.class, () -> session.assertValidOutgoing(invalidFrame));
     }
 }

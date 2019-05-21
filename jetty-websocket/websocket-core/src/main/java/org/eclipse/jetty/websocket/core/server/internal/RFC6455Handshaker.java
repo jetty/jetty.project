@@ -51,9 +51,9 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -192,17 +192,17 @@ public final class RFC6455Handshaker implements Handshaker
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        // Create the Channel
-        WebSocketChannel channel = newWebSocketChannel(handler, negotiated);
+        // Create the Session
+        WebSocketCoreSession session = newWebSocketCoreSession(handler, negotiated);
         if (defaultCustomizer!=null)
-            defaultCustomizer.customize(channel);
-        negotiator.customize(channel);
+            defaultCustomizer.customize(session);
+        negotiator.customize(session);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("channel {}", channel);
+            LOG.debug("session {}", session);
 
         // Create a connection
-        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), channel);
+        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), session);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)
@@ -211,7 +211,7 @@ public final class RFC6455Handshaker implements Handshaker
         for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
             connection.addListener(listener);
 
-        channel.setWebSocketConnection(connection);
+        session.setWebSocketConnection(connection);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();
@@ -231,20 +231,20 @@ public final class RFC6455Handshaker implements Handshaker
 
         // upgrade
         if (LOG.isDebugEnabled())
-            LOG.debug("upgrade connection={} session={}", connection, channel);
+            LOG.debug("upgrade connection={} session={}", connection, session);
 
         baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
     }
 
-    protected WebSocketChannel newWebSocketChannel(FrameHandler handler, Negotiated negotiated)
+    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)
     {
-        return new WebSocketChannel(handler, Behavior.SERVER, negotiated);
+        return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated);
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession wsCoreSession)
     {
-        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, wsChannel);
+        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, wsCoreSession);
     }
 
     private boolean getSendServerVersion(Connector connector)

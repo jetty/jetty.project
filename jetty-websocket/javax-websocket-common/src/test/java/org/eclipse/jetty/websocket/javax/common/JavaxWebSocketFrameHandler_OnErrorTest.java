@@ -42,7 +42,7 @@ public class JavaxWebSocketFrameHandler_OnErrorTest extends AbstractJavaxWebSock
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // These invocations are the same for all tests
-        localEndpoint.onOpen(channel, Callback.NOOP);
+        localEndpoint.onOpen(session, Callback.NOOP);
         localEndpoint.onError(new RuntimeException("From Testcase"), Callback.NOOP);
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);

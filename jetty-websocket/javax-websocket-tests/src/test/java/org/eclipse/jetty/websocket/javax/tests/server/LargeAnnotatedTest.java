@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 
@@ -85,7 +86,7 @@ public class LargeAnnotatedTest
 
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
                 // wait for connect
-                FrameHandler.CoreSession channel = clientConnectFuture.get(1, TimeUnit.SECONDS);
+                FrameHandler.CoreSession coreSession = clientConnectFuture.get(1, TimeUnit.SECONDS);
                 try
                 {
 
@@ -93,7 +94,7 @@ public class LargeAnnotatedTest
                     byte txt[] = new byte[100 * 1024];
                     Arrays.fill(txt, (byte)'o');
                     String msg = new String(txt, StandardCharsets.UTF_8);
-                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, false);
+                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, false);
 
                     // Receive echo
                     String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -101,7 +102,7 @@ public class LargeAnnotatedTest
                 }
                 finally
                 {
-                    channel.close(Callback.NOOP);
+                    coreSession.close(Callback.NOOP);
                 }
             }
             finally

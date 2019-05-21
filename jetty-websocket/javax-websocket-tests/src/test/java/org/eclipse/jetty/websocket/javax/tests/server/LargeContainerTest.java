@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.OnMessage;
@@ -107,14 +108,14 @@ public class LargeContainerTest
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
 
                 // wait for connect
-                FrameHandler.CoreSession channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
+                FrameHandler.CoreSession coreSession = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 try
                 {
                     // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
                     byte txt[] = new byte[100 * 1024];
                     Arrays.fill(txt, (byte)'o');
                     String msg = new String(txt, StandardCharsets.UTF_8);
-                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, false);
+                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, false);
 
                     // Confirm echo
                     String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -122,7 +123,7 @@ public class LargeContainerTest
                 }
                 finally
                 {
-                    channel.close(Callback.NOOP);
+                    coreSession.close(Callback.NOOP);
                 }
             }
             finally

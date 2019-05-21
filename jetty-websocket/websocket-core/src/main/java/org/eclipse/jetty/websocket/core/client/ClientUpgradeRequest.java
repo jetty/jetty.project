@@ -62,9 +62,9 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 public abstract class ClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
@@ -347,15 +347,15 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, negotiated);
-        wsClient.customize(wsChannel);
+        WebSocketCoreSession wsSession = newWebSocketCoreSession(frameHandler, negotiated);
+        wsClient.customize(wsSession);
 
-        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), wsChannel);
+        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), wsSession);
 
         for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
             wsConnection.addListener(listener);
 
-        wsChannel.setWebSocketConnection(wsConnection);
+        wsSession.setWebSocketConnection(wsConnection);
 
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
@@ -363,7 +363,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         try
         {
             endp.upgrade(wsConnection);
-            futureCoreSession.complete(wsChannel);
+            futureCoreSession.complete(wsSession);
         }
         catch (Throwable t)
         {
@@ -380,14 +380,14 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession wsCoreSession)
     {
-        return new WebSocketConnection(endp, executor, scheduler, byteBufferPool, wsChannel);
+        return new WebSocketConnection(endp, executor, scheduler, byteBufferPool, wsCoreSession);
     }
 
-    protected WebSocketChannel newWebSocketChannel(FrameHandler handler, Negotiated negotiated)
+    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)
     {
-        return new WebSocketChannel(handler, Behavior.CLIENT, negotiated);
+        return new WebSocketCoreSession(handler, Behavior.CLIENT, negotiated);
     }
 
     public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response);
