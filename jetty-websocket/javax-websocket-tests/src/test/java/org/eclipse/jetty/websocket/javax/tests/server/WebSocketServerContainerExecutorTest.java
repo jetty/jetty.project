@@ -48,7 +48,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.WSURI;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
@@ -199,37 +198,6 @@ public class WebSocketServerContainerExecutorTest
             assertThat("Response", response, startsWith("Connected to ws://"));
 
             Executor containerExecutor = ((JavaxWebSocketServerContainer)container).getExecutor();
-            assertThat(containerExecutor, sameInstance(executor));
-        }
-        finally
-        {
-            server.stop();
-        }
-    }
-
-    @Disabled //TODO: the ContextHandler executor attribute is overwritten on ContextHandler.doStart() now we do attribute lookup lazily
-    @Test
-    public void testContextExecutor() throws Exception
-    {
-        Server server = new Server(0);
-        ServletContextHandler contextHandler = new ServletContextHandler();
-        server.setHandler(contextHandler);
-
-        //Executor to use
-        Executor executor = new QueuedThreadPool();
-        contextHandler.setAttribute("org.eclipse.jetty.server.Executor", executor);
-
-        // Using JSR356 Server Techniques to connectToServer()
-        contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        JavaxWebSocketServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addEndpoint(EchoSocket.class);
-        try
-        {
-            server.start();
-            String response = GET(server.getURI().resolve("/connect"));
-            assertThat("Response", response, startsWith("Connected to ws://"));
-
-            Executor containerExecutor = container.getExecutor();
             assertThat(containerExecutor, sameInstance(executor));
         }
         finally

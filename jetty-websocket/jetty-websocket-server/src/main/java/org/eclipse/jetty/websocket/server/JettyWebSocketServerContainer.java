@@ -47,6 +47,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
 public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, LifeCycle.Listener
 {
+    public static final String JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE = WebSocketContainer.class.getName();
 
     public static JettyWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
@@ -54,7 +55,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JettyWebSocketServerContainer container = contextHandler.getBean(JettyWebSocketServerContainer.class);
+        JettyWebSocketServerContainer container = (JettyWebSocketServerContainer)servletContext.getAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
         if (container == null)
         {
             // Find Pre-Existing executor
@@ -67,7 +68,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
                     contextHandler,
                     WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
                     WebSocketComponents.ensureWebSocketComponents(servletContext), executor);
-            servletContext.setAttribute(WebSocketContainer.class.getName(), container);
+            servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
             contextHandler.addLifeCycleListener(container);
         }

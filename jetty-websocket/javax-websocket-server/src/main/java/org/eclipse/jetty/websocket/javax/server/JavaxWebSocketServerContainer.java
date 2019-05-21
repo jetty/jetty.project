@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import javax.servlet.ServletContext;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
-import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -50,33 +49,10 @@ import org.eclipse.jetty.websocket.javax.server.internal.UndefinedServerEndpoint
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
 @ManagedObject("JSR356 Server Container")
-public class JavaxWebSocketServerContainer
-    extends JavaxWebSocketClientContainer
-    implements javax.websocket.server.ServerContainer, LifeCycle.Listener
+public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer, LifeCycle.Listener
 {
+    public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = ServerContainer.class.getName();
     private static final Logger LOG = Log.getLogger(JavaxWebSocketServerContainer.class);
-
-    /**
-     * Get the WebSocketContainer out of the current ThreadLocal reference
-     * of the active ContextHandler.
-     *
-     * @return the WebSocketContainer if found, null if not found.
-     */
-    public static WebSocketContainer getWebSocketContainer()
-    {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
-        if (context == null)
-            return null;
-
-        ContextHandler handler = ContextHandler.getContextHandler(context);
-        if (handler == null)
-            return null;
-
-        if (!(handler instanceof ServletContextHandler))
-            return null;
-
-        return (javax.websocket.WebSocketContainer)handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
-    }
 
     public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
@@ -84,12 +60,12 @@ public class JavaxWebSocketServerContainer
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JavaxWebSocketServerContainer container = contextHandler.getBean(JavaxWebSocketServerContainer.class);
+        JavaxWebSocketServerContainer container = (JavaxWebSocketServerContainer)servletContext.getAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
         if (container==null)
         {
             Supplier<WebSocketCoreClient> coreClientSupplier = () ->
             {
-                WebSocketCoreClient coreClient = contextHandler.getBean(WebSocketCoreClient.class);
+                WebSocketCoreClient coreClient = (WebSocketCoreClient)servletContext.getAttribute(WebSocketCoreClient.WEBSOCKET_CORECLIENT_ATTRIBUTE);
                 if (coreClient == null)
                 {
                     // Find Pre-Existing (Shared?) HttpClient and/or executor
@@ -111,6 +87,7 @@ public class JavaxWebSocketServerContainer
                     coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
                     if (executor != null && httpClient == null)
                         coreClient.getHttpClient().setExecutor(executor);
+                    servletContext.setAttribute(WebSocketCoreClient.WEBSOCKET_CORECLIENT_ATTRIBUTE, coreClient);
                 }
                 return coreClient;
             };
@@ -124,7 +101,7 @@ public class JavaxWebSocketServerContainer
             contextHandler.addLifeCycleListener(container);
         }
         // Store a reference to the ServerContainer per - javax.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
-        servletContext.setAttribute(ServerContainer.class.getName(), container);
+        servletContext.setAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
         return container;
     }
 

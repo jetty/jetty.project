@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public class WebSocketCoreClient extends ContainerLifeCycle
 {
+    public static final String WEBSOCKET_CORECLIENT_ATTRIBUTE = WebSocketCoreClient.class.getName();
 
     private static final Logger LOG = Log.getLogger(WebSocketCoreClient.class);
     private final HttpClient httpClient;
