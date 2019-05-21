@@ -139,7 +139,6 @@ public class PushCacheFilter implements Filter
         loop:
         for (int i = 0; i < fields.size(); i++)
         {
-            fields.iterate();
             HttpField field = fields.getField(i);
             HttpHeader header = field.getHeader();
             if (header == null)

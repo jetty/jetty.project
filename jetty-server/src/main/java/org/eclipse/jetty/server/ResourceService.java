@@ -488,7 +488,6 @@ public class ResourceService
             {
                 // Find multiple fields by iteration as an optimization 
                 HttpFields fields = ((Request)request).getHttpFields();
-                fields.iterate();
                 for (int i=fields.size();i-->0;)
                 {
                     HttpField field=fields.getField(i);
