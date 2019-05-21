@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -140,6 +139,7 @@ public class PushCacheFilter implements Filter
         loop:
         for (int i = 0; i < fields.size(); i++)
         {
+            fields.iterate();
             HttpField field = fields.getField(i);
             HttpHeader header = field.getHeader();
             if (header == null)
