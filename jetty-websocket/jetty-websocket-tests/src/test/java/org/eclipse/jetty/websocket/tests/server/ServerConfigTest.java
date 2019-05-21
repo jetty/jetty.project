@@ -218,6 +218,7 @@ public class ServerConfigTest
 
         connect.get(5, TimeUnit.SECONDS);
 
+        assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         WebSocketChannel channel = (WebSocketChannel)((WebSocketSession)serverEndpoint.session).getCoreSession();
         WebSocketConnection connection = channel.getConnection();
 

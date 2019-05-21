@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.function.Function;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Server;
@@ -34,11 +39,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.javax.tests.framehandlers.FrameEcho;
 import org.eclipse.jetty.websocket.javax.tests.framehandlers.WholeMessageEcho;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.function.Function;
 
 public class CoreServer extends ContainerLifeCycle
 {
@@ -121,9 +121,8 @@ public class CoreServer extends ContainerLifeCycle
         }
 
         @Override
-        public void customize(FrameHandler.CoreSession session)
+        public void customize(FrameHandler.Configuration session)
         {
-
         }
 
         @Override
@@ -178,7 +177,7 @@ public class CoreServer extends ContainerLifeCycle
         }
 
         @Override
-        public void customize(FrameHandler.CoreSession session)
+        public void customize(FrameHandler.Configuration session)
         {
         }
     }

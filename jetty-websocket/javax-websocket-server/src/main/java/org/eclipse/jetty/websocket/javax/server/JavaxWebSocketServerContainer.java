@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.javax.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
 import javax.websocket.DeploymentException;
@@ -33,17 +34,15 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.internal.AnnotatedServerEndpointConfig;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
@@ -88,26 +87,39 @@ public class JavaxWebSocketServerContainer
         JavaxWebSocketServerContainer container = contextHandler.getBean(JavaxWebSocketServerContainer.class);
         if (container==null)
         {
-            // Find Pre-Existing (Shared?) HttpClient and/or executor
-            HttpClient httpClient = (HttpClient)servletContext.getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
-            if (httpClient == null)
-                httpClient = (HttpClient)contextHandler.getServer()
-                    .getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
+            Supplier<WebSocketCoreClient> coreClientSupplier = () ->
+            {
+                WebSocketCoreClient coreClient = contextHandler.getBean(WebSocketCoreClient.class);
+                if (coreClient == null)
+                {
+                    // Find Pre-Existing (Shared?) HttpClient and/or executor
+                    HttpClient httpClient = (HttpClient)servletContext.getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
+                    if (httpClient == null)
+                        httpClient = (HttpClient)contextHandler.getServer().getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
 
-            Executor executor = httpClient == null?null:httpClient.getExecutor();
-            if (executor == null)
-                executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
-            if (executor == null)
-                executor = contextHandler.getServer().getThreadPool();
+                    Executor executor = httpClient == null?null:httpClient.getExecutor();
+                    if (executor == null)
+                        executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
+                    if (executor == null)
+                        executor = contextHandler.getServer().getThreadPool();
 
-            if (httpClient != null && httpClient.getExecutor() == null)
-                httpClient.setExecutor(executor);
+                    if (httpClient != null && httpClient.getExecutor() == null)
+                        httpClient.setExecutor(executor);
+
+                    // create the core client
+                    coreClient = new WebSocketCoreClient(httpClient, WebSocketComponents.ensureWebSocketComponents(servletContext));
+                    coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
+                    if (executor != null && httpClient == null)
+                        coreClient.getHttpClient().setExecutor(executor);
+                }
+                return coreClient;
+            };
 
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
                     WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
                     WebSocketComponents.ensureWebSocketComponents(servletContext),
-                    httpClient, executor);
+                    coreClientSupplier);
             contextHandler.addManaged(container);
             contextHandler.addLifeCycleListener(container);
         }
@@ -117,30 +129,36 @@ public class JavaxWebSocketServerContainer
     }
 
     private final WebSocketMapping webSocketMapping;
-    private final WebSocketComponents webSocketComponents;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
-    private final Executor executor;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
 
-
-    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, HttpClient httpClient, Executor executor)
+    /**
+     * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
+     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     */
+    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping)
     {
-        this(webSocketMapping, new WebSocketComponents(), httpClient, executor);
+        this(webSocketMapping, new WebSocketComponents());
+    }
+
+    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents components)
+    {
+        super(components);
+        this.webSocketMapping = webSocketMapping;
+        this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
 
     /**
      * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
      * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
-     * @param webSocketComponents the {@link WebSocketComponents} instance to use
-     * @param httpClient       the {@link HttpClient} instance to use
+     * @param components the {@link WebSocketComponents} instance to use
+     * @param coreClientSupplier the supplier of the {@link WebSocketCoreClient} instance to use
      */
-    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, HttpClient httpClient, Executor executor)
+    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents components, Supplier<WebSocketCoreClient> coreClientSupplier)
     {
-        super(webSocketComponents, httpClient, executor);
+        super(components, coreClientSupplier);
         this.webSocketMapping = webSocketMapping;
-        this.webSocketComponents = webSocketComponents;
-        this.executor = executor;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
 
@@ -156,35 +174,10 @@ public class JavaxWebSocketServerContainer
         }
     }
 
-
-    @Override
-    public ByteBufferPool getBufferPool()
-    {
-        return webSocketComponents.getBufferPool();
-    }
-
-    @Override
-    public Executor getExecutor()
-    {
-        return this.executor;
-    }
-
-    @Override
-    public WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return webSocketComponents.getExtensionRegistry();
-    }
-
     @Override
     public JavaxWebSocketServerFrameHandlerFactory getFrameHandlerFactory()
     {
         return frameHandlerFactory;
-    }
-
-    @Override
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return webSocketComponents.getObjectFactory();
     }
 
     @Override
@@ -278,8 +271,7 @@ public class JavaxWebSocketServerContainer
     {
         frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
 
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, webSocketComponents
-            .getExtensionRegistry());
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, getExtensionRegistry());
 
         PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
         webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);

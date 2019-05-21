@@ -62,7 +62,7 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     }
 
     @Override
-    public void customize(FrameHandler.CoreSession session)
+    public void customize(FrameHandler.Configuration session)
     {
     }
 

@@ -37,11 +37,8 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
@@ -60,40 +57,27 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     protected WebSocketCoreClient coreClient;
     protected Supplier<WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
-    private DecoratedObjectFactory objectFactory;
-    private WebSocketExtensionRegistry extensionRegistry;
 
     public JavaxWebSocketClientContainer()
     {
-        this(new WebSocketComponents(), null, null);
+        this(new WebSocketComponents());
     }
 
-    public JavaxWebSocketClientContainer(WebSocketComponents components, HttpClient httpClient, Executor executor)
+    public JavaxWebSocketClientContainer(WebSocketComponents components)
     {
-        this.objectFactory = components.getObjectFactory();
-        this.extensionRegistry = components.getExtensionRegistry();
-        this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
-
-        coreClientFactory = () ->
+        this(components, ()->
         {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient(httpClient, defaultCustomizer);
+            WebSocketCoreClient coreClient = new WebSocketCoreClient(components);
             coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
-            if (executor != null && httpClient == null)
-                coreClient.getHttpClient().setExecutor(executor);
             return coreClient;
-        };
+        });
     }
 
-    @Override
-    public JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory()
+    public JavaxWebSocketClientContainer(WebSocketComponents components, Supplier<WebSocketCoreClient> coreClientFactory)
     {
-        return frameHandlerFactory;
-    }
-
-    @Override
-    protected WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return this.extensionRegistry;
+        super(components);
+        this.coreClientFactory = coreClientFactory;
+        this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
     }
 
     protected HttpClient getHttpClient()
@@ -120,6 +104,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
      */
     private CompletableFuture<Session> connect(JavaxClientUpgradeRequest upgradeRequest)
     {
+        upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<Session> fut = upgradeRequest.getFutureSession();
         try
         {
@@ -174,8 +159,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path)
-        throws DeploymentException, IOException
+    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws DeploymentException, IOException
     {
         ClientEndpointConfig clientEndpointConfig = config;
         if (clientEndpointConfig == null)
@@ -213,21 +197,9 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public long getDefaultMaxSessionIdleTimeout()
+    public JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory()
     {
-        return getHttpClient().getIdleTimeout();
-    }
-
-    @Override
-    public void setDefaultMaxSessionIdleTimeout(long timeout)
-    {
-        getHttpClient().setIdleTimeout(timeout);
-    }
-
-    @Override
-    public ByteBufferPool getBufferPool()
-    {
-        return getHttpClient().getByteBufferPool();
+        return frameHandlerFactory;
     }
 
     @Override
@@ -246,11 +218,6 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         {
             throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
         }
-    }
-
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return objectFactory;
     }
 
     public ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException

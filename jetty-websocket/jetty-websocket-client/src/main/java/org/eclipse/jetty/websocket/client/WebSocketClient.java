@@ -53,7 +53,7 @@ import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
@@ -66,8 +66,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
     private final FrameHandler.ConfigurationCustomizer configurationCustomizer = new FrameHandler.ConfigurationCustomizer();
-    private DecoratedObjectFactory objectFactory;
-    private WebSocketExtensionRegistry extensionRegistry;
+    private WebSocketComponents components = new WebSocketComponents();
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -84,14 +83,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      */
     public WebSocketClient(HttpClient httpClient)
     {
-        coreClient = new WebSocketCoreClient(httpClient, configurationCustomizer);
+        coreClient = new WebSocketCoreClient(httpClient, components);
         addManaged(coreClient);
 
         if (httpClient == null)
             coreClient.getHttpClient().setName("Jetty-WebSocketClient@" + hashCode());
 
-        objectFactory = new DecoratedObjectFactory();
-        extensionRegistry = new WebSocketExtensionRegistry();
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
         sessionListeners.add(sessionTracker);
         addBean(sessionTracker);
@@ -149,6 +146,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
                 }
             });
         }
+        upgradeRequest.setConfiguration(configurationCustomizer);
         coreClient.connect(upgradeRequest);
         return upgradeRequest.getFutureSession();
     }
@@ -306,7 +304,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 
     public DecoratedObjectFactory getObjectFactory()
     {
-        return objectFactory;
+        return components.getObjectFactory();
     }
 
     public Collection<Session> getOpenSessions()

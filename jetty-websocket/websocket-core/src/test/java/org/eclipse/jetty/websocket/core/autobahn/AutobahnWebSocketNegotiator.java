@@ -82,7 +82,7 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
     }
 
     @Override
-    public void customize(FrameHandler.CoreSession session)
+    public void customize(FrameHandler.Configuration session)
     {
         session.setIdleTimeout(Duration.ofMillis(10000));
         session.setMaxTextMessageSize(Integer.MAX_VALUE);

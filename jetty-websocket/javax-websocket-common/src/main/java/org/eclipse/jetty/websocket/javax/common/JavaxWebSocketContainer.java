@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
@@ -45,24 +46,34 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     private final SessionTracker sessionTracker = new SessionTracker();
     private List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
     protected FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
+    private WebSocketComponents components;
 
-    public JavaxWebSocketContainer()
+    public JavaxWebSocketContainer(WebSocketComponents components)
     {
+        this.components = components;
         addSessionListener(sessionTracker);
         addBean(sessionTracker);
     }
 
-    public abstract ByteBufferPool getBufferPool();
-
     public abstract Executor getExecutor();
-
-    public abstract DecoratedObjectFactory getObjectFactory();
-
-    protected abstract WebSocketExtensionRegistry getExtensionRegistry();
 
     protected abstract JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory();
 
-    @Override
+    public ByteBufferPool getBufferPool()
+    {
+        return components.getBufferPool();
+    }
+
+    public WebSocketExtensionRegistry getExtensionRegistry()
+    {
+        return components.getExtensionRegistry();
+    }
+
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return components.getObjectFactory();
+    }
+
     public long getDefaultAsyncSendTimeout()
     {
         return defaultCustomizer.getWriteTimeout().toMillis();

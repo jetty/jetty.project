@@ -516,7 +516,7 @@ public interface FrameHandler extends IncomingFrames
 
     interface Customizer
     {
-        void customize(CoreSession session);
+        void customize(Configuration session);
     }
 
     class ConfigurationCustomizer implements Customizer, Configuration
@@ -627,7 +627,7 @@ public interface FrameHandler extends IncomingFrames
         }
 
         @Override
-        public void customize(CoreSession session)
+        public void customize(Configuration session)
         {
             if (idleTimeout !=null)
                 session.setIdleTimeout(idleTimeout);
@@ -645,6 +645,14 @@ public interface FrameHandler extends IncomingFrames
                 session.setMaxBinaryMessageSize(maxBinaryMessageSize);
             if (maxTextMessageSize!=null)
                 session.setMaxTextMessageSize(maxTextMessageSize);
+        }
+
+        public static ConfigurationCustomizer from(ConfigurationCustomizer parent, ConfigurationCustomizer child)
+        {
+            ConfigurationCustomizer customizer = new ConfigurationCustomizer();
+            parent.customize(customizer);
+            child.customize(customizer);
+            return customizer;
         }
     }
 
