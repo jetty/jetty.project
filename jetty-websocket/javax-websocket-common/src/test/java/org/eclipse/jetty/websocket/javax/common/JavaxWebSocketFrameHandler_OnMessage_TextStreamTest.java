@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 
@@ -43,7 +44,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(channel, Callback.NOOP);
+        localEndpoint.onOpen(session, Callback.NOOP);
 
         func.apply(localEndpoint);
 

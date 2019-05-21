@@ -136,17 +136,17 @@ public class EndpointViaConfigTest
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo"));
                 // wait for connect
-                FrameHandler.CoreSession channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
+                FrameHandler.CoreSession coreSession = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 try
                 {
-                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, false);
+                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, false);
 
                     String incomingMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
                     assertThat("Expected message", incomingMessage, is("Hello World"));
                 }
                 finally
                 {
-                    channel.close(Callback.NOOP);
+                    coreSession.close(Callback.NOOP);
                 }
             }
             finally

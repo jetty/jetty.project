@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
@@ -173,7 +173,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketChannel.class))
+        try(StacklessLogging ignore = new StacklessLogging(WebSocketCoreSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -220,11 +220,11 @@ public class ServerCloseTest
             clientEndpoint.getEndPoint().close();
 
             // Verify that client got close
-            clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
+            clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
 
             // Verify that server socket got close event
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-            serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
+            serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
         }
         finally
         {

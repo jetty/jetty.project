@@ -41,11 +41,11 @@ public abstract class AbstractSessionTest
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
         JavaxWebSocketFrameHandler frameHandler =
             container.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, null);
-        FrameHandler.CoreSession channel = new FrameHandler.CoreSession.Empty();
+        FrameHandler.CoreSession coreSession = new FrameHandler.CoreSession.Empty();
         String id = "dummy";
         EndpointConfig endpointConfig = null;
         session = new JavaxWebSocketSession(container,
-            channel,
+            coreSession,
             frameHandler,
             null,
             id,

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
@@ -47,7 +48,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(channel, Callback.NOOP);
+        localEndpoint.onOpen(session, Callback.NOOP);
 
         assertThat("Has Binary Metadata", localEndpoint.getBinaryMetadata(), notNullValue());
 

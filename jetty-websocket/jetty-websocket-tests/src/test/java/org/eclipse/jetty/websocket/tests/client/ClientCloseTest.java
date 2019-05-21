@@ -258,7 +258,7 @@ public class ClientCloseTest
         // client triggers close event on client ws-endpoint
         clientSocket.assertReceivedCloseEvent(2000,
                 is(StatusCode.ABNORMAL),
-                containsString("Channel Closed"));
+                containsString("Session Closed"));
 
         clientSessionTracker.assertClosedProperly(client);
     }
@@ -341,7 +341,7 @@ public class ClientCloseTest
 
             // clients disconnect
             for (int i = 0; i < sessionCount; i++)
-                clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Channel Closed"));
+                clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
 
             // ensure all Sessions are gone. connections are gone. etc. (client and server)
             // ensure ConnectionListener onClose is called 3 times

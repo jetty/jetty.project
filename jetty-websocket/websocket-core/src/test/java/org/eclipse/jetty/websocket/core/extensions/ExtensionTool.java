@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 
@@ -77,7 +77,7 @@ public class ExtensionTool
         {
             this.ext = factory.newInstance(objectFactory, bufferPool, extConfig);
             this.ext.setNextIncomingFrames(capture);
-            this.ext.setWebSocketChannel(newWebsocketChannel());
+            this.ext.setWebSocketCoreSession(newWebSocketCoreSession());
         }
 
         public void parseIncomingHex(String... rawhex)
@@ -150,12 +150,12 @@ public class ExtensionTool
         return new Tester(parameterizedExtension);
     }
 
-    private WebSocketChannel newWebsocketChannel()
+    private WebSocketCoreSession newWebSocketCoreSession()
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        WebSocketChannel channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
-        return channel;
+        WebSocketCoreSession session = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        return session;
     }
 }
