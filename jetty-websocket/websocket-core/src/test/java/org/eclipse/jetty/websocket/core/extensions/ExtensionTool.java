@@ -155,7 +155,7 @@ public class ExtensionTool
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        WebSocketCoreSession session = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
-        return session;
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        return coreSession;
     }
 }

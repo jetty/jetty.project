@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class GeneratorFrameFlagsTest
 {
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
-    private WebSocketCoreSession session;
+    private WebSocketCoreSession coreSession;
 
     public static Stream<Arguments> data()
     {
@@ -65,7 +65,7 @@ public class GeneratorFrameFlagsTest
     {
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        this.session = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
+        this.coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
     }
 
     @ParameterizedTest
@@ -76,6 +76,6 @@ public class GeneratorFrameFlagsTest
 
         ByteBuffer buffer = ByteBuffer.allocate(100);
         new Generator(bufferPool).generateWholeFrame(invalidFrame, buffer);
-        assertThrows(ProtocolException.class, () -> session.assertValidOutgoing(invalidFrame));
+        assertThrows(ProtocolException.class, () -> coreSession.assertValidOutgoing(invalidFrame));
     }
 }

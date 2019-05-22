@@ -413,7 +413,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     static class DemandingTestFrameHandler implements SynchronousFrameHandler
     {
-        private CoreSession session;
+        private CoreSession coreSession;
         String state;
 
         protected BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
@@ -425,7 +425,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
         public CoreSession getCoreSession()
         {
-            return session;
+            return coreSession;
         }
 
         public BlockingQueue<Frame> getFrames()
@@ -437,8 +437,8 @@ public class WebSocketCloseTest extends WebSocketTester
         public void onOpen(CoreSession coreSession)
         {
             LOG.debug("onOpen {}", coreSession);
-            session = coreSession;
-            state = session.toString();
+            this.coreSession = coreSession;
+            state = this.coreSession.toString();
             opened.countDown();
         }
 
@@ -446,7 +446,7 @@ public class WebSocketCloseTest extends WebSocketTester
         public void onFrame(Frame frame, Callback callback)
         {
             LOG.debug("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
-            state = session.toString();
+            state = coreSession.toString();
             receivedCallback.offer(callback);
             receivedFrames.offer(Frame.copy(frame));
 
@@ -458,7 +458,7 @@ public class WebSocketCloseTest extends WebSocketTester
         public void onClosed(CloseStatus closeStatus)
         {
             LOG.debug("onClosed {}", closeStatus);
-            state = session.toString();
+            state = coreSession.toString();
             this.closeStatus = closeStatus;
             closed.countDown();
         }
@@ -468,7 +468,7 @@ public class WebSocketCloseTest extends WebSocketTester
         {
             LOG.debug("onError {} ", cause);
             error = cause;
-            state = session.toString();
+            state = coreSession.toString();
         }
 
         @Override
@@ -484,7 +484,7 @@ public class WebSocketCloseTest extends WebSocketTester
             frame.setPayload(text);
 
             getCoreSession().sendFrame(frame, NOOP, false);
-            state = session.toString();
+            state = coreSession.toString();
         }
     }
 

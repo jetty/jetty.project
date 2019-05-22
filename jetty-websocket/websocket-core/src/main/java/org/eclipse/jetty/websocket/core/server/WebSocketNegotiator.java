@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import java.io.IOException;
+import java.util.function.Function;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-
-import java.io.IOException;
-import java.util.function.Function;
 
 public interface WebSocketNegotiator extends FrameHandler.Customizer
 {
@@ -102,10 +102,10 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
         }
 
         @Override
-        public void customize(FrameHandler.CoreSession session)
+        public void customize(FrameHandler.CoreSession coreSession)
         {
             if (customizer != null)
-                customizer.customize(session);
+                customizer.customize(coreSession);
         }
 
         @Override

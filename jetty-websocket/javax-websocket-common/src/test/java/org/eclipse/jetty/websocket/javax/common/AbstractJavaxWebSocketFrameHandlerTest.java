@@ -51,7 +51,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams;
     protected EndpointConfig endpointConfig;
-    protected FrameHandler.CoreSession session = new FrameHandler.CoreSession.Empty();
+    protected FrameHandler.CoreSession coreSession = new FrameHandler.CoreSession.Empty();
 
     public AbstractJavaxWebSocketFrameHandlerTest()
     {

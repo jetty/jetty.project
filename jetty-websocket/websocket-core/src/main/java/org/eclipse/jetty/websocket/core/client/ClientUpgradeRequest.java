@@ -347,15 +347,15 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        WebSocketCoreSession wsSession = newWebSocketCoreSession(frameHandler, negotiated);
-        wsClient.customize(wsSession);
+        WebSocketCoreSession coreSession = newWebSocketCoreSession(frameHandler, negotiated);
+        wsClient.customize(coreSession);
 
-        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), wsSession);
+        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
 
         for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
             wsConnection.addListener(listener);
 
-        wsSession.setWebSocketConnection(wsConnection);
+        coreSession.setWebSocketConnection(wsConnection);
 
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
@@ -363,7 +363,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         try
         {
             endp.upgrade(wsConnection);
-            futureCoreSession.complete(wsSession);
+            futureCoreSession.complete(coreSession);
         }
         catch (Throwable t)
         {
@@ -380,9 +380,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession wsCoreSession)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
     {
-        return new WebSocketConnection(endp, executor, scheduler, byteBufferPool, wsCoreSession);
+        return new WebSocketConnection(endp, executor, scheduler, byteBufferPool, coreSession);
     }
 
     protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)

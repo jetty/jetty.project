@@ -34,7 +34,7 @@ public abstract class AbstractExtension implements Extension
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
-    private WebSocketCoreSession session;
+    private WebSocketCoreSession coreSession;
 
     public AbstractExtension()
     {
@@ -141,14 +141,14 @@ public abstract class AbstractExtension implements Extension
     }
 
     @Override
-    public void setWebSocketCoreSession(WebSocketCoreSession webSocketCoreSession)
+    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
     {
-        session = webSocketCoreSession;
+        this.coreSession = coreSession;
     }
 
     protected WebSocketCoreSession getWebSocketCoreSession()
     {
-        return session;
+        return coreSession;
     }
 
     @Override

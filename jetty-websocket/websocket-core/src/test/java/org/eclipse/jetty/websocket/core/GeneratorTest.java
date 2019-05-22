@@ -50,7 +50,7 @@ public class GeneratorTest
     private static final Logger LOG = Log.getLogger(Helper.class);
 
     private static Generator generator = new Generator(new MappedByteBufferPool());
-    private static WebSocketCoreSession session = newWebSocketCoreSession(Behavior.SERVER);
+    private static WebSocketCoreSession coreSession = newWebSocketCoreSession(Behavior.SERVER);
 
     private static WebSocketCoreSession newWebSocketCoreSession(Behavior behavior)
     {
@@ -410,7 +410,7 @@ public class GeneratorTest
         BufferUtil.flipToFlush(bb, 0);
 
         closeFrame.setPayload(bb);
-        assertThrows(ProtocolException.class, () -> session.assertValidOutgoing(closeFrame));
+        assertThrows(ProtocolException.class, () -> coreSession.assertValidOutgoing(closeFrame));
     }
 
     /**
@@ -651,7 +651,7 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING);
         pingFrame.setPayload(ByteBuffer.wrap(bytes));
-        assertThrows(WebSocketException.class, () -> session.assertValidOutgoing(pingFrame));
+        assertThrows(WebSocketException.class, () -> coreSession.assertValidOutgoing(pingFrame));
     }
 
     /**
@@ -665,7 +665,7 @@ public class GeneratorTest
 
         Frame pongFrame = new Frame(OpCode.PONG);
         pongFrame.setPayload(ByteBuffer.wrap(bytes));
-        assertThrows(WebSocketException.class, () -> session.assertValidOutgoing(pongFrame));
+        assertThrows(WebSocketException.class, () -> coreSession.assertValidOutgoing(pongFrame));
     }
 
     /**

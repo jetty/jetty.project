@@ -58,7 +58,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
-    private final WebSocketCoreSession session;
+    private final WebSocketCoreSession coreSession;
 
     private final Flusher flusher;
     private final Random random;
@@ -110,7 +110,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         this.bufferPool = bufferPool;
 
-        this.session = coreSession;
+        this.coreSession = coreSession;
 
         this.generator = new Generator(bufferPool);
         this.parser = new Parser(bufferPool, coreSession.isAutoFragment())
@@ -128,7 +128,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());
 
-        this.random = this.session.getBehavior() == Behavior.CLIENT?new Random(endp.hashCode()):null;
+        this.random = this.coreSession.getBehavior() == Behavior.CLIENT?new Random(endp.hashCode()):null;
     }
 
     @Override
@@ -173,8 +173,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
 
-        if (!session.isClosed())
-            session.onEof();
+        if (!coreSession.isClosed())
+            coreSession.onEof();
         flusher.onClose(cause);
         super.onClose(cause);
     }
@@ -187,7 +187,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onIdleExpired()");
 
         // treat as a handler error because socket is still open
-        session.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
+        coreSession.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
         return true;
     }
 
@@ -203,7 +203,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onReadTimeout()");
 
         // treat as a handler error because socket is still open
-        session.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
+        coreSession.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
         return false;
     }
 
@@ -216,7 +216,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (referenced != null)
             referenced.retain();
 
-        session.onFrame(frame, new Callback()
+        coreSession.onFrame(frame, new Callback()
         {
             @Override
             public void succeeded()
@@ -228,7 +228,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (referenced != null)
                     referenced.release();
 
-                if (!session.isDemanding())
+                if (!coreSession.isDemanding())
                     demand(1);
             }
 
@@ -243,7 +243,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     referenced.release();
 
                 // notify session & endpoint
-                session.processHandlerError(cause,NOOP);
+                coreSession.processHandlerError(cause,NOOP);
             }
         });
     }
@@ -435,7 +435,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (filled < 0)
                 {
                     releaseNetworkBuffer();
-                    session.onEof();
+                    coreSession.onEof();
                     return;
                 }
 
@@ -454,7 +454,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.warn(t.toString());
             BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
-            session.processConnectionError(t,Callback.NOOP);
+            coreSession.processConnectionError(t,Callback.NOOP);
         }
     }
 
@@ -496,7 +496,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         // Open Session
         super.onOpen();
-        session.onOpen();
+        coreSession.onOpen();
     }
 
     @Override
@@ -527,7 +527,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return String.format("%s@%x[%s,p=%s,f=%s,g=%s]",
             getClass().getSimpleName(),
             hashCode(),
-            session.getBehavior(),
+            coreSession.getBehavior(),
             parser,
             flusher,
             generator);
@@ -586,7 +586,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     void enqueueFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (session.getBehavior() == Behavior.CLIENT)
+        if (coreSession.getBehavior() == Behavior.CLIENT)
         {
             byte[] mask = new byte[4];
             random.nextBytes(mask);
@@ -607,7 +607,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         @Override
         public void onCompleteFailure(Throwable x)
         {
-            session.processConnectionError(x, NOOP);
+            coreSession.processConnectionError(x, NOOP);
             super.onCompleteFailure(x);
         }
     }

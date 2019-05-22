@@ -72,10 +72,10 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
     }
 
     @Override
-    public void customize(FrameHandler.CoreSession session)
+    public void customize(FrameHandler.CoreSession coreSession)
     {
         if (customizer != null)
-            customizer.customize(session);
+            customizer.customize(coreSession);
     }
 
     public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException

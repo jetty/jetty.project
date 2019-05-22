@@ -422,8 +422,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
 
-        WebSocketCoreSession session = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
-        session.setMaxFrameSize(maxMessageSize);
-        return session;
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        coreSession.setMaxFrameSize(maxMessageSize);
+        return coreSession;
     }
 }

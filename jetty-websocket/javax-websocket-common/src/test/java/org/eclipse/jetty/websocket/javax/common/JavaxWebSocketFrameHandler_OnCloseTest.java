@@ -45,7 +45,7 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // These invocations are the same for all tests
-        localEndpoint.onOpen(session, Callback.NOOP);
+        localEndpoint.onOpen(coreSession, Callback.NOOP);
         CloseStatus status = new CloseStatus(CloseStatus.NORMAL, "Normal");
         Frame closeFrame = status.toFrame();
         localEndpoint.onFrame(closeFrame, Callback.from(() ->

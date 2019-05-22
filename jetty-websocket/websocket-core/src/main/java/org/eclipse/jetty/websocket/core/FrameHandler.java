@@ -516,7 +516,7 @@ public interface FrameHandler extends IncomingFrames
 
     interface Customizer
     {
-        void customize(CoreSession session);
+        void customize(CoreSession coreSession);
     }
 
     class ConfigurationCustomizer implements Customizer, Configuration
@@ -627,24 +627,24 @@ public interface FrameHandler extends IncomingFrames
         }
 
         @Override
-        public void customize(CoreSession session)
+        public void customize(CoreSession coreSession)
         {
             if (idleTimeout !=null)
-                session.setIdleTimeout(idleTimeout);
+                coreSession.setIdleTimeout(idleTimeout);
             if (writeTimeout!=null)
-                session.setWriteTimeout(idleTimeout);
+                coreSession.setWriteTimeout(idleTimeout);
             if (autoFragment!=null)
-                session.setAutoFragment(autoFragment);
+                coreSession.setAutoFragment(autoFragment);
             if (maxFrameSize!=null)
-                session.setMaxFrameSize(maxFrameSize);
+                coreSession.setMaxFrameSize(maxFrameSize);
             if (inputBufferSize!=null)
-                session.setInputBufferSize(inputBufferSize);
+                coreSession.setInputBufferSize(inputBufferSize);
             if (outputBufferSize!=null)
-                session.setOutputBufferSize(outputBufferSize);
+                coreSession.setOutputBufferSize(outputBufferSize);
             if (maxBinaryMessageSize!=null)
-                session.setMaxBinaryMessageSize(maxBinaryMessageSize);
+                coreSession.setMaxBinaryMessageSize(maxBinaryMessageSize);
             if (maxTextMessageSize!=null)
-                session.setMaxTextMessageSize(maxTextMessageSize);
+                coreSession.setMaxTextMessageSize(maxTextMessageSize);
         }
     }
 
