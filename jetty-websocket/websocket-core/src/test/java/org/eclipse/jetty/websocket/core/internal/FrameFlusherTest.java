@@ -189,6 +189,57 @@ public class FrameFlusherTest
         assertThat(error.get(), instanceOf(WebSocketWriteTimeoutException.class));
     }
 
+    @Test
+    public void testErrorClose() throws Exception
+    {
+        Generator generator = new Generator(bufferPool);
+        BlockingEndpoint endPoint = new BlockingEndpoint(bufferPool);
+        endPoint.setBlockTime(100);
+        int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
+        int maxGather = 8;
+        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather);
+
+        // enqueue message before the error close
+        Frame frame1 = new Frame(OpCode.TEXT).setPayload("message before close").setFin(true);
+        LatchCallback callback1 = new LatchCallback();
+        assertTrue(frameFlusher.enqueue(frame1, callback1, false));
+
+        // enqueue the close frame which should fail the previous frame as it is still in the queue
+        Frame closeFrame = new CloseStatus(CloseStatus.MESSAGE_TOO_LARGE).toFrame();
+        LatchCallback closeCallback = new LatchCallback();
+        assertTrue(frameFlusher.enqueue(closeFrame, closeCallback, false));
+        assertTrue(callback1.failure.await(1, TimeUnit.SECONDS));
+
+        // any frames enqueued after this should fail
+        Frame frame2 = new Frame(OpCode.TEXT).setPayload("message after close").setFin(true);
+        LatchCallback callback2 = new LatchCallback();
+        assertFalse(frameFlusher.enqueue(frame2, callback2, false));
+        assertTrue(callback2.failure.await(1, TimeUnit.SECONDS));
+
+        // iterating should succeed the close callback
+        frameFlusher.iterate();
+        assertTrue(closeCallback.success.await(1, TimeUnit.SECONDS));
+    }
+
+    public static class LatchCallback implements Callback
+    {
+        public CountDownLatch success = new CountDownLatch(1);
+        public CountDownLatch failure = new CountDownLatch(1);
+
+        @Override
+        public void succeeded()
+        {
+            success.countDown();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            failure.countDown();
+        }
+    }
+
+
     public static class CapturingEndPoint extends MockEndpoint
     {
         public Parser parser;
