@@ -613,8 +613,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         // Look in the webapp classloader as a resource, to avoid 
         // loading a system class.
         Class<?> webappClass = null;
-        String path = TypeUtil.toClassReference(name);
-        URL webappUrl = findResource(path);
+        URL webappUrl = getResourceClassReference(name);
 
         if (webappUrl != null && (!checkSystemResource || !_context.isSystemResource(name, webappUrl)))
         {
@@ -629,13 +628,13 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
-     * Get the URL by class name.
+     * Get the resource string reference by name
      * @param name the name of the class to load
-     * @return the class URL
+     * @return the class reference
      */
-    protected URL getClassUrl(final String name)
+    protected URL getResourceClassReference(final String name)
     {
-        String path = name.replace('.', '/').concat(".class");
+        String path = TypeUtil.toClassReference(name);
         URL webapp_url = findResource(path);
         return webapp_url;
     }

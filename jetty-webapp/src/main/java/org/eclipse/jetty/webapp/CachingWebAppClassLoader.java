@@ -23,6 +23,8 @@ import java.net.URL;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -101,13 +103,13 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     }
 
     @Override
-    protected URL getClassUrl(String name)
+    protected URL getResourceClassReference(String name)
     {
         if(!useCache)
         {
-            return super.getClassUrl(name);
+            return super.getResourceClassReference(name);
         }
-        String path = name.replace('.', '/').concat(".class");
+        String path = TypeUtil.toClassReference(name);
         URL webapp_url = _classCache.get(path);
         if (webapp_url == null)
         {
@@ -171,24 +173,44 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
      */
     public static class ClearCacheLifeCycleListener extends AbstractLifeCycle.AbstractLifeCycleListener
     {
-        private CachingWebAppClassLoader classLoader;
+        protected ContextHandler container;
 
-        public ClearCacheLifeCycleListener(CachingWebAppClassLoader classLoader)
+        public ClearCacheLifeCycleListener(ContextHandler container)
         {
-            this.classLoader = classLoader;
+            this.container = container;
         }
 
         @Override
         public void lifeCycleStarting(LifeCycle event)
         {
-            classLoader.setUseCache(true);
+            lifeCycleContainer(event,"starting", true);
         }
 
         @Override
         public void lifeCycleStarted(LifeCycle event)
         {
-            classLoader.setUseCache(false);
-            classLoader.clearCache();
+            lifeCycleContainer(event,"started", false);
+        }
+
+        @Override
+        public void lifeCycleFailure(LifeCycle event, Throwable cause)
+        {
+            lifeCycleContainer(event,"failure", false);
+        }
+
+        private void lifeCycleContainer(LifeCycle event, String action, boolean useCache) {
+            if(event == container && container.getClassLoader() instanceof CachingWebAppClassLoader) {
+                CachingWebAppClassLoader classLoader = (CachingWebAppClassLoader)container.getClassLoader();
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("{} using classloader cache in container [{}]",action,event);
+                }
+                classLoader.setUseCache(useCache);
+                if (!useCache)
+                {
+                    classLoader.clearCache();
+                }
+            }
         }
     }
 }
