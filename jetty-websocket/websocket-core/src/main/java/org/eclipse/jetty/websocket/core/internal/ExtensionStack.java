@@ -243,7 +243,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         outgoing.sendFrame(frame, callback, batch);
     }
 
-    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketCoreSession webSocketCoreSession)
+    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketCoreSession coreSession)
     {
         if (extensions == null)
             throw new IllegalStateException();
@@ -259,7 +259,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         }
 
         for (Extension extension : extensions)
-            extension.setWebSocketCoreSession(webSocketCoreSession);
+            extension.setWebSocketCoreSession(coreSession);
     }
 
     @Override

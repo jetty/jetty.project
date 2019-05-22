@@ -91,7 +91,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
     /**
      * Set the {@link WebSocketCoreSession} for this Extension
      *
-     * @param webSocketCoreSession
+     * @param coreSession
      */
-    void setWebSocketCoreSession(WebSocketCoreSession webSocketCoreSession);
+    void setWebSocketCoreSession(WebSocketCoreSession coreSession);
 }

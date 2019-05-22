@@ -193,16 +193,16 @@ public final class RFC6455Handshaker implements Handshaker
             WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Session
-        WebSocketCoreSession session = newWebSocketCoreSession(handler, negotiated);
+        WebSocketCoreSession coreSession = newWebSocketCoreSession(handler, negotiated);
         if (defaultCustomizer!=null)
-            defaultCustomizer.customize(session);
-        negotiator.customize(session);
+            defaultCustomizer.customize(coreSession);
+        negotiator.customize(coreSession);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("session {}", session);
+            LOG.debug("session {}", coreSession);
 
         // Create a connection
-        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), session);
+        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)
@@ -211,7 +211,7 @@ public final class RFC6455Handshaker implements Handshaker
         for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
             connection.addListener(listener);
 
-        session.setWebSocketConnection(connection);
+        coreSession.setWebSocketConnection(connection);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();
@@ -231,7 +231,7 @@ public final class RFC6455Handshaker implements Handshaker
 
         // upgrade
         if (LOG.isDebugEnabled())
-            LOG.debug("upgrade connection={} session={}", connection, session);
+            LOG.debug("upgrade connection={} session={}", connection, coreSession);
 
         baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
@@ -242,9 +242,9 @@ public final class RFC6455Handshaker implements Handshaker
         return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated);
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession wsCoreSession)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
     {
-        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, wsCoreSession);
+        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
     }
 
     private boolean getSendServerVersion(Connector connector)

@@ -101,9 +101,9 @@ public abstract class CompressExtension extends AbstractExtension
     }
 
     @Override
-    public void setWebSocketCoreSession(WebSocketCoreSession webSocketCoreSession)
+    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
     {
-        super.setWebSocketCoreSession(webSocketCoreSession);
+        super.setWebSocketCoreSession(coreSession);
     }
 
     public Deflater getDeflater()

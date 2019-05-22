@@ -31,7 +31,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
 {
     private static Logger LOG = Log.getLogger(TestFrameHandler.class);
 
-    protected CoreSession session;
+    protected CoreSession coreSession;
     public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
     protected Throwable failure;
 
@@ -41,7 +41,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
 
     public CoreSession getCoreSession()
     {
-        return session;
+        return coreSession;
     }
 
     public BlockingQueue<Frame> getFrames()
@@ -58,7 +58,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
     public void onOpen(CoreSession coreSession)
     {
         LOG.info("onOpen {}", coreSession);
-        this.session = coreSession;
+        this.coreSession = coreSession;
         open.countDown();
     }
 

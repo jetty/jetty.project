@@ -44,7 +44,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(session, Callback.NOOP);
+        localEndpoint.onOpen(coreSession, Callback.NOOP);
 
         func.apply(localEndpoint);
 

@@ -50,7 +50,7 @@ public class MessageHandlerTest
 
     boolean demanding;
     int demand;
-    CoreSession session;
+    CoreSession coreSession;
     List<String> textMessages = new ArrayList<>();
     List<ByteBuffer> binaryMessages = new ArrayList<>();
     List<Callback> callbacks = new ArrayList<>();
@@ -63,7 +63,7 @@ public class MessageHandlerTest
         demanding = false;
         demand = 0;
 
-        session = new CoreSession.Empty()
+        coreSession = new CoreSession.Empty()
         {
             private ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 
@@ -110,7 +110,7 @@ public class MessageHandlerTest
             }
         };
 
-        handler.onOpen(session, NOOP);
+        handler.onOpen(coreSession, NOOP);
     }
 
     @Test
@@ -349,7 +349,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxTextMessageSize(4);
-        handler.onOpen(session, NOOP);
+        handler.onOpen(coreSession, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.TEXT, true, "Testing"), callback);
@@ -368,7 +368,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxTextMessageSize(4);
-        handler.onOpen(session, NOOP);
+        handler.onOpen(coreSession, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.TEXT, false, "123"), callback);
@@ -569,7 +569,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxBinaryMessageSize(4);
-        handler.onOpen(session, NOOP);
+        handler.onOpen(coreSession, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.BINARY, true, "Testing"), callback);
@@ -588,7 +588,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         handler.setMaxBinaryMessageSize(4);
-        handler.onOpen(session, NOOP);
+        handler.onOpen(coreSession, NOOP);
 
         callback = new FutureCallback();
         handler.onFrame(new Frame(OpCode.BINARY, false, "123"), callback);
@@ -652,7 +652,7 @@ public class MessageHandlerTest
             }
         };
 
-        handler.onOpen(session, NOOP);
+        handler.onOpen(coreSession, NOOP);
 
         FutureCallback callback;
 
@@ -680,7 +680,7 @@ public class MessageHandlerTest
             }
         };
 
-        handler.onOpen(session, NOOP);
+        handler.onOpen(coreSession, NOOP);
 
         FutureCallback callback;
 

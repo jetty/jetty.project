@@ -48,7 +48,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(session, Callback.NOOP);
+        localEndpoint.onOpen(coreSession, Callback.NOOP);
 
         assertThat("Has Binary Metadata", localEndpoint.getBinaryMetadata(), notNullValue());
 
