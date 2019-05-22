@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,14 +51,26 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         private final CountDownLatch _run = new CountDownLatch(1);
         private final CountDownLatch _stopping = new CountDownLatch(1);
         private final CountDownLatch _stopped = new CountDownLatch(1);
+        private final String _name;
         private final boolean _fail;
         RunningJob()
         {
-            this(false);
+            this(null, false);
+        }
+
+        public RunningJob(String name)
+        {
+            this(name, false);
         }
 
         public RunningJob(boolean fail)
         {
+            this(null, fail);
+        }
+
+        public RunningJob(String name, boolean fail)
+        {
+            _name = name;
             _fail = fail;
         }
 
@@ -93,6 +106,14 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             if (!_stopped.await(10,TimeUnit.SECONDS))
                 throw new IllegalStateException();
         }
+
+        @Override
+        public String toString()
+        {
+            if (_name==null)
+                return super.toString();
+            return String.format("%s@%x",_name,hashCode());
+        }
     }
 
     private class CloseableJob extends RunningJob implements Closeable
@@ -121,42 +142,43 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForThreads(tp,2);
         waitForIdle(tp,2);
 
-        // Doesn't shrink less than 1
-        Thread.sleep(1100);
+        // Doesn't shrink to less than min threads
+        Thread.sleep(3*tp.getIdleTimeout()/2);
         waitForThreads(tp,2);
         waitForIdle(tp,2);
 
         // Run job0
-        RunningJob job0=new RunningJob();
+        RunningJob job0=new RunningJob("JOB0");
         tp.execute(job0);
         assertTrue(job0._run.await(10,TimeUnit.SECONDS));
         waitForIdle(tp,1);
         
         // Run job1
-        RunningJob job1=new RunningJob();
+        RunningJob job1=new RunningJob("JOB1");
         tp.execute(job1);
         assertTrue(job1._run.await(10,TimeUnit.SECONDS));
-        waitForThreads(tp,3);
-        waitForIdle(tp,1);
+        waitForThreads(tp,2);
+        waitForIdle(tp,0);
         
         // Run job2
-        RunningJob job2=new RunningJob();
+        RunningJob job2=new RunningJob("JOB2");
         tp.execute(job2);
         assertTrue(job2._run.await(10,TimeUnit.SECONDS));
-        waitForThreads(tp,4);
-        waitForIdle(tp,1);
+        waitForThreads(tp,3);
+        waitForIdle(tp,0);
         
         // Run job3
-        RunningJob job3=new RunningJob();
+        RunningJob job3=new RunningJob("JOB3");
         tp.execute(job3);
         assertTrue(job3._run.await(10,TimeUnit.SECONDS));
         waitForThreads(tp,4);
+        waitForIdle(tp,0);
         assertThat(tp.getIdleThreads(),is(0));
         Thread.sleep(100);
         assertThat(tp.getIdleThreads(),is(0));
 
         // Run job4. will be queued
-        RunningJob job4=new RunningJob();
+        RunningJob job4=new RunningJob("JOB4");
         tp.execute(job4);
         assertFalse(job4._run.await(1,TimeUnit.SECONDS));
         
@@ -166,21 +188,32 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         
         // job4 should now run
         assertTrue(job4._run.await(10,TimeUnit.SECONDS));
-        waitForThreads(tp,4);
-        waitForIdle(tp,0);
-        
-        // finish job 1,2,3,4
+        assertThat(tp.getThreads(),is(4));
+        assertThat(tp.getIdleThreads(),is(0));
+
+        // finish job 1
         job1._stopping.countDown();
+        assertTrue(job1._stopped.await(10,TimeUnit.SECONDS));
+        waitForIdle(tp,1);
+        assertThat(tp.getThreads(),is(4));
+
+        // finish job 2,3,4
         job2._stopping.countDown();
         job3._stopping.countDown();
         job4._stopping.countDown();
-        assertTrue(job1._stopped.await(10,TimeUnit.SECONDS));
         assertTrue(job2._stopped.await(10,TimeUnit.SECONDS));
         assertTrue(job3._stopped.await(10,TimeUnit.SECONDS));
         assertTrue(job4._stopped.await(10,TimeUnit.SECONDS));
                 
-        waitForThreads(tp,2);
-        waitForIdle(tp,2);
+        waitForIdle(tp,4);
+        assertThat(tp.getThreads(),is(4));
+
+        long duration = System.nanoTime();
+        waitForThreads(tp,3);
+        assertThat(tp.getIdleThreads(),is(3));
+        duration = System.nanoTime() - duration;
+        assertThat(TimeUnit.NANOSECONDS.toMillis(duration), Matchers.greaterThan(tp.getIdleTimeout()/2L));
+        assertThat(TimeUnit.NANOSECONDS.toMillis(duration), Matchers.lessThan(tp.getIdleTimeout()*2L));
     }
 
     @Test
@@ -188,78 +221,83 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     {
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-            QueuedThreadPool tp = new QueuedThreadPool();
+            QueuedThreadPool tp= new QueuedThreadPool();
             tp.setMinThreads(2);
             tp.setMaxThreads(4);
             tp.setIdleTimeout(900);
-            tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
+            tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
 
             tp.start();
 
             // min threads started
-            waitForThreads(tp, 2);
-            waitForIdle(tp, 2);
+            waitForThreads(tp,2);
+            waitForIdle(tp,2);
 
-            // Doesn't shrink less than 1
-            Thread.sleep(1100);
-            waitForThreads(tp, 2);
-            waitForIdle(tp, 2);
+            // Doesn't shrink to less than min threads
+            Thread.sleep(3*tp.getIdleTimeout()/2);
+            waitForThreads(tp,2);
+            waitForIdle(tp,2);
 
             // Run job0
-            RunningJob job0 = new RunningJob(true);
+            RunningJob job0=new RunningJob("JOB0", true);
             tp.execute(job0);
-            assertTrue(job0._run.await(10, TimeUnit.SECONDS));
-            waitForIdle(tp, 1);
+            assertTrue(job0._run.await(10,TimeUnit.SECONDS));
+            waitForIdle(tp,1);
 
             // Run job1
-            RunningJob job1 = new RunningJob(true);
+            RunningJob job1=new RunningJob("JOB1", true);
             tp.execute(job1);
-            assertTrue(job1._run.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 3);
-            waitForIdle(tp, 1);
+            assertTrue(job1._run.await(10,TimeUnit.SECONDS));
+            waitForThreads(tp,2);
+            waitForIdle(tp,0);
 
             // Run job2
-            RunningJob job2 = new RunningJob(true);
+            RunningJob job2=new RunningJob("JOB2", true);
             tp.execute(job2);
-            assertTrue(job2._run.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 4);
-            waitForIdle(tp, 1);
+            assertTrue(job2._run.await(10,TimeUnit.SECONDS));
+            waitForThreads(tp,3);
+            waitForIdle(tp,0);
 
             // Run job3
-            RunningJob job3 = new RunningJob(true);
+            RunningJob job3=new RunningJob("JOB3", true);
             tp.execute(job3);
-            assertTrue(job3._run.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 4);
-            assertThat(tp.getIdleThreads(), is(0));
+            assertTrue(job3._run.await(10,TimeUnit.SECONDS));
+            waitForThreads(tp,4);
+            waitForIdle(tp,0);
+            assertThat(tp.getIdleThreads(),is(0));
             Thread.sleep(100);
-            assertThat(tp.getIdleThreads(), is(0));
+            assertThat(tp.getIdleThreads(),is(0));
 
             // Run job4. will be queued
-            RunningJob job4 = new RunningJob(true);
+            RunningJob job4=new RunningJob("JOB4", true);
             tp.execute(job4);
-            assertFalse(job4._run.await(1, TimeUnit.SECONDS));
+            assertFalse(job4._run.await(1,TimeUnit.SECONDS));
 
             // finish job 0
             job0._stopping.countDown();
-            assertTrue(job0._stopped.await(10, TimeUnit.SECONDS));
+            assertTrue(job0._stopped.await(10,TimeUnit.SECONDS));
 
             // job4 should now run
-            assertTrue(job4._run.await(10, TimeUnit.SECONDS));
-            waitForThreads(tp, 4);
-            waitForIdle(tp, 0);
+            assertTrue(job4._run.await(10,TimeUnit.SECONDS));
+            assertThat(tp.getThreads(),is(4));
+            assertThat(tp.getIdleThreads(),is(0));
 
-            // finish job 1,2,3,4
+            // finish job 1
             job1._stopping.countDown();
+            assertTrue(job1._stopped.await(10,TimeUnit.SECONDS));
+            waitForThreads(tp,3);
+            assertThat(tp.getIdleThreads(),is(0));
+
+            // finish job 2,3,4
             job2._stopping.countDown();
             job3._stopping.countDown();
             job4._stopping.countDown();
-            assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
-            assertTrue(job2._stopped.await(10, TimeUnit.SECONDS));
-            assertTrue(job3._stopped.await(10, TimeUnit.SECONDS));
-            assertTrue(job4._stopped.await(10, TimeUnit.SECONDS));
+            assertTrue(job2._stopped.await(10,TimeUnit.SECONDS));
+            assertTrue(job3._stopped.await(10,TimeUnit.SECONDS));
+            assertTrue(job4._stopped.await(10,TimeUnit.SECONDS));
 
-            waitForThreads(tp, 2);
-            waitForIdle(tp, 2);
+            waitForIdle(tp,2);
+            assertThat(tp.getThreads(),is(2));
         }
     }
 
@@ -268,7 +306,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     {
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setDetailedDump(true);
-        tp.setMinThreads(3);
+        tp.setMinThreads(1);
         tp.setMaxThreads(10);
         tp.setIdleTimeout(500);
 
@@ -288,8 +326,16 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job2._run.await(5, TimeUnit.SECONDS));
         assertTrue(job3._run.await(5, TimeUnit.SECONDS));
 
-        waitForThreads(tp, 4);
         waitForThreads(tp, 3);
+        assertThat(tp.getIdleThreads(),is(0));
+
+        job1._stopping.countDown();
+        assertTrue(job1._stopped.await(10,TimeUnit.SECONDS));
+        waitForIdle(tp, 1);
+        assertThat(tp.getThreads(),is(3));
+
+        waitForIdle(tp, 0);
+        assertThat(tp.getThreads(),is(2));
 
         RunningJob job4 = new RunningJob();
         tp.execute(job4);
@@ -506,20 +552,20 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         String dump = pool.dump();
         // TODO use hamcrest 2.0 regex matcher
         assertThat(dump,containsString("STOPPED"));
-        assertThat(dump,containsString(",3<=0<=4,i=0,r=-1,q=0"));
+        assertThat(dump,containsString(",3<=0<=4,s=0,i=0,r=-1,q=0"));
         assertThat(dump,containsString("[NO_TRY]"));
 
         pool.setReservedThreads(2);
         dump = pool.dump();
         assertThat(dump,containsString("STOPPED"));
-        assertThat(dump,containsString(",3<=0<=4,i=0,r=2,q=0"));
+        assertThat(dump,containsString(",3<=0<=4,s=0,i=0,r=2,q=0"));
         assertThat(dump,containsString("[NO_TRY]"));
 
         pool.start();
         waitForIdle(pool,3);
         dump = pool.dump();
         assertThat(count(dump," - STARTED"),is(2));
-        assertThat(dump,containsString(",3<=3<=4,i=3,r=2,q=0"));
+        assertThat(dump,containsString(",3<=3<=4,s=0,i=3,r=2,q=0"));
         assertThat(dump,containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump," IDLE "),is(3));
         assertThat(count(dump," RESERVED "),is(0));
@@ -542,7 +588,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         dump = pool.dump();
         assertThat(count(dump," - STARTED"),is(2));
-        assertThat(dump,containsString(",3<=3<=4,i=2,r=2,q=0"));
+        assertThat(dump,containsString(",3<=3<=4,s=0,i=2,r=2,q=0"));
         assertThat(dump,containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump," IDLE "),is(2));
         assertThat(count(dump," WAITING "),is(1));
@@ -552,7 +598,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         pool.setDetailedDump(true);
         dump = pool.dump();
         assertThat(count(dump," - STARTED"),is(2));
-        assertThat(dump,containsString(",3<=3<=4,i=2,r=2,q=0"));
+        assertThat(dump,containsString(",3<=3<=4,s=0,i=2,r=2,q=0"));
         assertThat(dump,containsString("s=0/2"));
         assertThat(dump,containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump," IDLE "),is(2));
@@ -566,7 +612,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         dump = pool.dump();
         assertThat(count(dump," - STARTED"),is(2));
-        assertThat(dump,containsString(",3<=3<=4,i=1,r=2,q=0"));
+        assertThat(dump,containsString(",3<=3<=4,s=0,i=1,r=2,q=0"));
         assertThat(dump,containsString("s=1/2"));
         assertThat(dump,containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump," IDLE "),is(1));
