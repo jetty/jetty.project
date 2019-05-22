@@ -58,7 +58,7 @@ public class ListVsMapBenchmark
     @Param({ "11" })  // average length of known headers in HttpHeader
     public static int length;
 
-    @Param({"1", "10", "20" })
+    @Param({"1", "10", "20", "30" })
     public static int lookups;
 
     @Param({"hits", "misses", "iterate" })
@@ -117,12 +117,17 @@ public class ListVsMapBenchmark
 
     private void fill(Fill fill)
     {
-        for (int i=0; i<size; i++)
+        for (int i=0; i<size-1; i++)
         {
             String key = base + "-" + i;
             Pair pair = new Pair(key, Long.toString(random.nextLong(),8));
             fill.put(pair);
         }
+
+        // double up on header 0
+        String key = base + "-0";
+        Pair pair = new Pair(key, Long.toString(random.nextLong(),8));
+        fill.put(pair);
     }
 
     private long test(Lookup lookup)
@@ -133,6 +138,8 @@ public class ListVsMapBenchmark
             Iterator<String> t = trials.iterator();
             while(t.hasNext())
             {
+                // Look for 4 headers at once because that is what the common case of a
+                // ResourceService does
                 String one = t.hasNext() ? t.next() : null;
                 String two = t.hasNext() ? t.next() : null;
                 String three = t.hasNext() ? t.next() : null;
@@ -145,11 +152,11 @@ public class ListVsMapBenchmark
                     String k = p.key;
                     if (one != null && one.equals(k))
                         result ^= p.value.hashCode();
-                    else if (two != null && one.equals(k))
+                    else if (two != null && two.equals(k))
                         result ^= p.value.hashCode();
-                    else if (three != null && one.equals(k))
+                    else if (three != null && three.equals(k))
                         result ^= p.value.hashCode();
-                    else if (four != null && one.equals(k))
+                    else if (four != null && four.equals(k))
                         result ^= p.value.hashCode();
                 }
             }
@@ -274,6 +281,31 @@ public class ListVsMapBenchmark
             map.put(p.key.toLowerCase(),list);
             order.add(p);
         });
+        return mapLookup(map, order);
+    }
+
+
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    public long testHashMapAndArrayList() throws Exception
+    {
+        // This keeps the true ordering of fields
+        Map<String,List<Pair>> map = new HashMap<>(size);
+        List<Pair> order = new ArrayList<>();
+
+        fill(p->
+        {
+            List<Pair> list = new ArrayList<>(2);
+            list.add(p);
+            map.put(p.key.toLowerCase(),list);
+            order.add(p);
+        });
+        return mapLookup(map, order);
+    }
+
+    private long mapLookup(Map<String, List<Pair>> map, List<Pair> order)
+    {
         return test(new Lookup()
         {
             @Override
