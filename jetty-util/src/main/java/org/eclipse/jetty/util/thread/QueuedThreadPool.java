@@ -143,7 +143,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     protected void doStart() throws Exception
     {
         if (_reservedThreads==0)
+        {
             _tryExecutor = NO_TRY;
+        }
         else
         {
             ReservedThreadExecutor reserved = new ReservedThreadExecutor(this,_reservedThreads);
@@ -198,28 +200,22 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
 
         Thread.yield();
-        int size = _threads.size();
-        if (size > 0)
+        if (LOG.isDebugEnabled())
         {
-            Thread.yield();
-            
-            if (LOG.isDebugEnabled())
+            for (Thread unstopped : _threads)
             {
-                for (Thread unstopped : _threads)
+                StringBuilder dmp = new StringBuilder();
+                for (StackTraceElement element : unstopped.getStackTrace())
                 {
-                    StringBuilder dmp = new StringBuilder();
-                    for (StackTraceElement element : unstopped.getStackTrace())
-                    {
-                        dmp.append(System.lineSeparator()).append("\tat ").append(element);
-                    }
-                    LOG.warn("Couldn't stop {}{}", unstopped, dmp.toString());
+                    dmp.append(System.lineSeparator()).append("\tat ").append(element);
                 }
+                LOG.warn("Couldn't stop {}{}", unstopped, dmp.toString());
             }
-            else
-            {
-                for (Thread unstopped : _threads)
-                    LOG.warn("{} Couldn't stop {}",this,unstopped);
-            }
+        }
+        else
+        {
+            for (Thread unstopped : _threads)
+                LOG.warn("{} Couldn't stop {}",this,unstopped);
         }
 
         // Close any un-executed jobs
@@ -784,7 +780,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         @Override
         public void run()
         {
-
             boolean idle = false;
             Runnable job = null;
 
@@ -807,14 +802,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                             _counts.add(0,0,1); // threads, starting, idle
                         }
 
-                        job = idleJobPoll();
+                        long idleTimeout = getIdleTimeout();
+                        job = idleJobPoll(idleTimeout);
 
                         // maybe we should shrink?
-                        if (job == null && getThreads() > _minThreads)
+                        if (job == null && getThreads() > _minThreads && idleTimeout > 0)
                         {
                             long last = _lastShrink.get();
                             long now = System.nanoTime();
-                            if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
+                            if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout))
                             {
                                 if (_lastShrink.compareAndSet(last, now))
                                 {
@@ -872,11 +868,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
         }
 
-        private Runnable idleJobPoll() throws InterruptedException
+        private Runnable idleJobPoll(long idleTimeout) throws InterruptedException
         {
-            if (_idleTimeout <= 0)
+            if (idleTimeout <= 0)
                 return _jobs.take();
-            return _jobs.poll(_idleTimeout, TimeUnit.MILLISECONDS);
+            return _jobs.poll(idleTimeout, TimeUnit.MILLISECONDS);
         }
     }
 }

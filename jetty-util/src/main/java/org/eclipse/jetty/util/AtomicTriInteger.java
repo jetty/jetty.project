@@ -27,6 +27,7 @@ public class AtomicTriInteger extends AtomicLong
 {
     public static int MAX_VALUE = 0x1FFFFF;
     public static int MIN_VALUE = 0;
+
     /**
      * Sets the hi and lo values.
      *
@@ -51,7 +52,7 @@ public class AtomicTriInteger extends AtomicLong
      */
     public boolean compareAndSet(long expectEncoded, int w0, int w1, int w2)
     {
-        return compareAndSet(expectEncoded,encode(w0, w1, w2));
+        return compareAndSet(expectEncoded, encode(w0, w1, w2));
     }
 
     /**
@@ -63,18 +64,17 @@ public class AtomicTriInteger extends AtomicLong
      */
     public void add(int delta0, int delta1, int delta2)
     {
-        while(true)
+        while (true)
         {
             long encoded = get();
             long update = encode(
-                getWord0(encoded)+delta0,
-                getWord1(encoded)+delta1,
-                getWord2(encoded)+delta2);
-            if (compareAndSet(encoded,update))
+                getWord0(encoded) + delta0,
+                getWord1(encoded) + delta1,
+                getWord2(encoded) + delta2);
+            if (compareAndSet(encoded, update))
                 return;
         }
     }
-
 
     /**
      * Gets word 0 value
@@ -115,7 +115,7 @@ public class AtomicTriInteger extends AtomicLong
      */
     public static int getWord0(long encoded)
     {
-        return (int) ((encoded>>42)&0x1FFFFFL);
+        return (int)((encoded >> 42) & MAX_VALUE);
     }
 
     /**
@@ -126,7 +126,7 @@ public class AtomicTriInteger extends AtomicLong
      */
     public static int getWord1(long encoded)
     {
-        return (int) ((encoded>>21)&0x1FFFFFL);
+        return (int)((encoded >> 21) & MAX_VALUE);
     }
 
     /**
@@ -137,7 +137,7 @@ public class AtomicTriInteger extends AtomicLong
      */
     public static int getWord2(long encoded)
     {
-        return (int) (encoded&0x1FFFFFL);
+        return (int)(encoded & MAX_VALUE);
     }
 
     /**
@@ -150,26 +150,26 @@ public class AtomicTriInteger extends AtomicLong
      */
     public static long encode(int w0, int w1, int w2)
     {
-        if (w0<MIN_VALUE
-            || w0>MAX_VALUE
-            || w1<MIN_VALUE
-            || w1>MAX_VALUE
-            || w2<MIN_VALUE
-            || w2>MAX_VALUE)
-            throw new IllegalArgumentException(String.format("Words must be 0<= word <= 0x1FFFFF: %d, %d, %d", w0, w1, w2));
-        long wl0 = ((long)w0)&0x1FFFFFL;
-        long wl1 = ((long)w1)&0x1FFFFFL;
-        long wl2 = ((long)w2)&0x1FFFFFL;
-        return (wl0<<42)+(wl1<<21)+(wl2);
+        if (w0 < MIN_VALUE
+            || w0 > MAX_VALUE
+            || w1 < MIN_VALUE
+            || w1 > MAX_VALUE
+            || w2 < MIN_VALUE
+            || w2 > MAX_VALUE)
+            throw new IllegalArgumentException(String.format("Words must be %d <= word <= %d: %d, %d, %d", MIN_VALUE, MAX_VALUE, w0, w1, w2));
+        long wl0 = ((long)w0) & MAX_VALUE;
+        long wl1 = ((long)w1) & MAX_VALUE;
+        long wl2 = ((long)w2) & MAX_VALUE;
+        return (wl0 << 42) + (wl1 << 21) + (wl2);
     }
 
     @Override
     public String toString()
     {
-        long value = get();
-        int w0 = getWord0(value);
-        int w1 = getWord1(value);
-        int w2 = getWord2(value);
-        return String.format("{%d,%d,%d}",w0,w1,w2);
+        long encoded = get();
+        int w0 = getWord0(encoded);
+        int w1 = getWord1(encoded);
+        int w2 = getWord2(encoded);
+        return String.format("{%d,%d,%d}", w0, w1, w2);
     }
 }
