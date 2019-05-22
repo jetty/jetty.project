@@ -116,7 +116,7 @@ public class HttpFields implements Iterable<HttpField>
     
     public Stream<HttpField> stream()
     {
-        return Arrays.stream(_fields);
+        return Arrays.stream(_fields).filter(f->f!=null);
     }
 
     /**
@@ -173,6 +173,22 @@ public class HttpFields implements Iterable<HttpField>
                 return f;
         }
         return null;
+    }
+
+    public List<HttpField> getFields(HttpHeader header)
+    {
+        List<HttpField> fields = null;
+        for (int i=0;i<_size;i++)
+        {
+            HttpField f=_fields[i];
+            if (f.getHeader()==header)
+            {
+                if (fields==null)
+                    fields = new ArrayList<>();
+                fields.add(f);
+            }
+        }
+        return fields==null?Collections.emptyList():fields;
     }
 
     public boolean contains(HttpField field)

@@ -24,14 +24,11 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -1348,37 +1345,27 @@ public class Response implements HttpServletResponse
         _reason = null;
         _contentLength = -1;
         
-        List<HttpField> cookies = preserveCookies
-            ?_fields.stream()
-            .filter(f->f.getHeader()==HttpHeader.SET_COOKIE)
-            .collect(Collectors.toList()):null;
-        
+        List<HttpField> cookies = preserveCookies ?_fields.getFields(HttpHeader.SET_COOKIE):null;
         _fields.clear();
 
-        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());  
-        if (connection != null)
+        for (String value: _channel.getRequest().getHttpFields().getCSV(HttpHeader.CONNECTION,false))
         {
-            for (String value: StringUtil.csvSplit(null,connection,0,connection.length()))
+            HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
+            if (cb != null)
             {
-                HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
-
-                if (cb != null)
+                switch (cb)
                 {
-                    switch (cb)
-                    {
-                        case CLOSE:
-                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
-                            break;
-
-                        case KEEP_ALIVE:
-                            if (HttpVersion.HTTP_1_0.is(_channel.getRequest().getProtocol()))
-                                _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
-                            break;
-                        case TE:
-                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
-                            break;
-                        default:
-                    }
+                    case CLOSE:
+                        _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
+                        break;
+                    case KEEP_ALIVE:
+                        if (HttpVersion.HTTP_1_0.is(_channel.getRequest().getProtocol()))
+                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
+                        break;
+                    case TE:
+                        _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
+                        break;
+                    default:
                 }
             }
         }

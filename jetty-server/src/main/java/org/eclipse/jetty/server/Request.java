@@ -41,7 +41,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -465,8 +464,8 @@ public class Request implements HttpServletRequest
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == __NONE)
             {
-                contentType = HttpFields.valueParameters(contentType, null);
-                if (MimeTypes.Type.FORM_ENCODED.is(contentType) &&
+                String baseType = HttpFields.valueParameters(contentType, null);
+                if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
                     if (_metaData!=null)
@@ -477,7 +476,7 @@ public class Request implements HttpServletRequest
                     }
                     extractFormParameters(_contentParameters);
                 }
-                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&
+                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
                         _multiParts == null)
                 {
@@ -485,7 +484,7 @@ public class Request implements HttpServletRequest
                     {
                         if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
                             throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
-                        getParts(_contentParameters);
+                        getParts(contentType, _contentParameters);
                     }
                     catch (IOException | ServletException e)
                     {
@@ -2324,13 +2323,13 @@ public class Request implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        if (getContentType() == null || 
-                !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(getContentType(),null)))
+        String contentType = getContentType();
+        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(contentType,null)))
             throw new ServletException("Content-Type != multipart/form-data");
-        return getParts(null);
+        return getParts(contentType, null);
     }
 
-    private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
+    private Collection<Part> getParts(String contentType, MultiMap<String> params) throws IOException, ServletException
     {        
         if (_multiParts == null)
             _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
@@ -2342,7 +2341,7 @@ public class Request implements HttpServletRequest
                 throw new IllegalStateException("No multipart config for servlet");
 
             _multiParts = newMultiParts(getInputStream(),
-                                       getContentType(), config,
+                                       contentType, config,
                                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
 
             setAttribute(__MULTIPARTS, _multiParts);
@@ -2417,12 +2416,12 @@ public class Request implements HttpServletRequest
         switch(compliance)
         {
             case RFC7578:
-                return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
+                return new MultiParts.MultiPartsHttpParser(getInputStream(), contentType, config,
                         (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
                 
             case LEGACY: 
             default:
-                return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
+                return new MultiParts.MultiPartsUtilParser(getInputStream(), contentType, config,
                     (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
                         
         }
