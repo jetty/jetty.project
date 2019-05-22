@@ -29,7 +29,6 @@ import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -393,7 +392,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             this.connection.disconnect();
             try
             {
-                notifySessionListeners(containerScope, (listener) -> listener.onSessionClosed(this));
+                containerScope.notifySessionListeners((listener) -> listener.onSessionClosed(this));
             }
             catch (Throwable cause)
             {
@@ -453,7 +452,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                 {
                     try
                     {
-                        notifySessionListeners(containerScope, (listener)-> listener.onSessionOpened(this));
+                        containerScope.notifySessionListeners((listener) -> listener.onSessionOpened(this));
                     }
                     catch (Throwable t)
                     {
@@ -553,21 +552,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public BatchMode getBatchMode()
     {
         return BatchMode.AUTO;
-    }
-
-    private void notifySessionListeners(WebSocketContainerScope scope, Consumer<WebSocketSessionListener> consumer)
-    {
-        for (WebSocketSessionListener listener : scope.getSessionListeners())
-        {
-            try
-            {
-                consumer.accept(listener);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Exception while invoking listener " + listener, x);
-            }
-        }
     }
 
     @Override

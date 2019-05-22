@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
-import java.util.Collection;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -60,24 +60,17 @@ public interface WebSocketContainerScope
      */
     WebSocketPolicy getPolicy();
 
-
     /**
      * The SslContextFactory in use by the container.
      * 
      * @return the SslContextFactory in use by the container (can be null if no SSL context is defined)
      */
     SslContextFactory getSslContextFactory();
-    
+
     /**
-     * Test for if the container has been started.
+     * Notify the registered {@link WebSocketSessionListener}s of events.
      *
-     * @return true if container is started and running
+     * @param eventConsumer the event to process against each listener.
      */
-    boolean isRunning();
-
-    void addSessionListener(WebSocketSessionListener listener);
-
-    void removeSessionListener(WebSocketSessionListener listener);
-
-    Collection<WebSocketSessionListener> getSessionListeners();
+    void notifySessionListeners(Consumer<WebSocketSessionListener> eventConsumer);
 }

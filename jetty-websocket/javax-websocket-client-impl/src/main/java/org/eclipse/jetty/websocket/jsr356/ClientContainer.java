@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -29,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -51,13 +51,13 @@ import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.client.ClientContainerScope;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
@@ -99,7 +99,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
-        this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
+        this(new ClientContainerScope());
         client.setDaemon(true);
         client.addManaged(client.getHttpClient());
     }
@@ -425,21 +425,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
 
     @Override
-    public void addSessionListener(WebSocketSessionListener listener)
+    public void notifySessionListeners(Consumer<WebSocketSessionListener> eventConsumer)
     {
-        client.addSessionListener(listener);
-    }
-
-    @Override
-    public void removeSessionListener(WebSocketSessionListener listener)
-    {
-        client.removeSessionListener(listener);
-    }
-
-    @Override
-    public Collection<WebSocketSessionListener> getSessionListeners()
-    {
-        return client.getSessionListeners();
+        this.client.notifySessionListeners(eventConsumer);
     }
 
     private EndpointInstance newClientEndpointInstance(Class<?> endpointClass, ClientEndpointConfig config)

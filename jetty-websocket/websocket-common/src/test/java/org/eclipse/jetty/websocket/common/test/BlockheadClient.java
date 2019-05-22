@@ -19,9 +19,7 @@
 package org.eclipse.jetty.websocket.common.test;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -40,7 +38,6 @@ public class BlockheadClient extends HttpClient implements WebSocketContainerSco
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
     private ExtensionFactory extensionFactory;
     private DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
-    private List<WebSocketSessionListener> listeners = new ArrayList<>();
 
     public BlockheadClient()
     {
@@ -71,21 +68,9 @@ public class BlockheadClient extends HttpClient implements WebSocketContainerSco
     }
 
     @Override
-    public void addSessionListener(WebSocketSessionListener listener)
+    public void notifySessionListeners(Consumer<WebSocketSessionListener> eventConsumer)
     {
-        listeners.add(listener);
-    }
-
-    @Override
-    public void removeSessionListener(WebSocketSessionListener listener)
-    {
-        listeners.remove(listener);
-    }
-
-    @Override
-    public Collection<WebSocketSessionListener> getSessionListeners()
-    {
-        return listeners;
+        // do nothing
     }
 
     public BlockheadClientRequest newWsRequest(URI destURI)

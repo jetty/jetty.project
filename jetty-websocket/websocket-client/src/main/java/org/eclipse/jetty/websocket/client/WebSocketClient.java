@@ -23,13 +23,13 @@ import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -58,7 +58,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
@@ -114,7 +114,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
     {
-        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), null, null, null, objectFactory), null, null, httpClient);
+        this(new ClientContainerScope(httpClient).setObjectFactory(objectFactory), null, null, httpClient);
     }
 
     /**
@@ -127,7 +127,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory,null, null);
+        this(new ClientContainerScope().setSslContextFactory(sslContextFactory));
     }
 
     /**
@@ -139,7 +139,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(Executor executor)
     {
-        this(null, executor, null);
+        this(new ClientContainerScope().setExecutor(executor));
     }
 
     /**
@@ -152,7 +152,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(ByteBufferPool bufferPool)
     {
-        this(null, null, bufferPool);
+        this(new ClientContainerScope().setBufferPool(bufferPool));
     }
 
     /**
@@ -167,7 +167,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
-        this(sslContextFactory, executor, null);
+        this(new ClientContainerScope().setSslContextFactory(sslContextFactory).setExecutor(executor));
     }
 
     /**
@@ -192,9 +192,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *            SSL ContextFactory to use in preference to one from
      *            {@link WebSocketContainerScope#getSslContextFactory()}
      */
-    public WebSocketClient(WebSocketContainerScope scope, SslContextFactory sslContextFactory)
+    public WebSocketClient(WebSocketContainerScope scope, final SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory, scope.getExecutor(), scope.getBufferPool(), scope.getObjectFactory());
+        this(new DelegatedContainerScope(scope)
+        {
+            @Override
+            public SslContextFactory getSslContextFactory()
+            {
+                return sslContextFactory;
+            }
+        });
+        Objects.requireNonNull(sslContextFactory, "SslContextFactory");
     }
 
     /**
@@ -210,7 +218,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
     {
-        this(sslContextFactory, executor, bufferPool, null);
+        this(new ClientContainerScope().setSslContextFactory(sslContextFactory).setExecutor(executor).setBufferPool(bufferPool));
     }
 
     /**
@@ -228,8 +236,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), bufferPool, executor, sslContextFactory, objectFactory));
-        addBean(this.httpClient);
+        this(new ClientContainerScope()
+            .setSslContextFactory(sslContextFactory)
+            .setExecutor(executor)
+            .setBufferPool(bufferPool)
+            .setObjectFactory(objectFactory));
     }
 
     /**
@@ -570,22 +581,30 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getSslContextFactory();
     }
 
-    @Override
     public void addSessionListener(WebSocketSessionListener listener)
     {
         this.sessionListeners.add(listener);
     }
 
-    @Override
     public void removeSessionListener(WebSocketSessionListener listener)
     {
         this.sessionListeners.remove(listener);
     }
 
     @Override
-    public Collection<WebSocketSessionListener> getSessionListeners()
+    public void notifySessionListeners(Consumer<WebSocketSessionListener> eventConsumer)
     {
-        return this.sessionListeners;
+        for (WebSocketSessionListener listener : this.sessionListeners)
+        {
+            try
+            {
+                eventConsumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     private synchronized void init()

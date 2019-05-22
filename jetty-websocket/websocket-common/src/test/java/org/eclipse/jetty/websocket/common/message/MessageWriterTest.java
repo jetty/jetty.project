@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.util.Arrays;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -39,6 +36,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {
@@ -65,7 +65,7 @@ public class MessageWriterTest
         policy.setMaxTextMessageBufferSize(1024);
 
         // Container
-        WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
+        WebSocketContainerScope containerScope = new SimpleContainerScope(policy).setBufferPool(bufferPool);
     
         // Event Driver factory
         EventDriverFactory factory = new EventDriverFactory(containerScope);

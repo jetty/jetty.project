@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,8 +31,11 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExtensionStackTest
 {
@@ -58,7 +57,7 @@ public class ExtensionStackTest
     private ExtensionStack createExtensionStack()
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        WebSocketContainerScope container = new SimpleContainerScope(policy,bufferPool);
+        WebSocketContainerScope container = new SimpleContainerScope(policy).setBufferPool(bufferPool);
         
         WebSocketExtensionFactory factory = new WebSocketExtensionFactory(container);
         return new ExtensionStack(factory);

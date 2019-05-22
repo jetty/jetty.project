@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -189,22 +190,30 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         listeners.add(this.sessionTracker);
     }
 
-    @Override
     public void addSessionListener(WebSocketSessionListener listener)
     {
         this.listeners.add(listener);
     }
 
-    @Override
     public void removeSessionListener(WebSocketSessionListener listener)
     {
         this.listeners.remove(listener);
     }
 
     @Override
-    public Collection<WebSocketSessionListener> getSessionListeners()
+    public void notifySessionListeners(Consumer<WebSocketSessionListener> eventConsumer)
     {
-        return this.listeners;
+        for (WebSocketSessionListener listener : this.listeners)
+        {
+            try
+            {
+                eventConsumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     @Override

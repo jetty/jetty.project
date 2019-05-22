@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.lang.reflect.Method;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -27,8 +26,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.client.ClientContainerScope;
 
 /**
  * Client {@link ContainerProvider} implementation.
@@ -177,8 +175,9 @@ public class JettyClientContainerProvider extends ContainerProvider
             // Still no instance?
             if (webSocketContainer == null)
             {
-                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-                ClientContainer clientContainer = new ClientContainer(containerScope);
+                ClientContainerScope clientScope = new ClientContainerScope();
+                // TODO: grab executors / bufferPool / sslContextFactory from server here to populate containerScope?
+                ClientContainer clientContainer = new ClientContainer(clientScope);
                 
                 if (contextHandler != null && contextHandler instanceof ContainerLifeCycle)
                 {

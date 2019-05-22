@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 
@@ -40,6 +36,10 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 
 public class ExtensionTool
@@ -130,7 +130,7 @@ public class ExtensionTool
     public ExtensionTool(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this.policy = policy;
-        WebSocketContainerScope container = new SimpleContainerScope(policy, bufferPool);
+        WebSocketContainerScope container = new SimpleContainerScope(policy).setBufferPool(bufferPool);
         WebSocketExtensionFactory extFactory = new WebSocketExtensionFactory(container);
         this.factory = extFactory;
     }

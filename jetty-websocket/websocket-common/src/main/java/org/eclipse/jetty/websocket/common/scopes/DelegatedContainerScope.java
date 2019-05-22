@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
-import java.util.Collection;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -31,13 +31,18 @@ public class DelegatedContainerScope implements WebSocketContainerScope
 {
     private final WebSocketPolicy policy;
     private final WebSocketContainerScope delegate;
-    
+
+    public DelegatedContainerScope(WebSocketContainerScope parentScope)
+    {
+        this(parentScope.getPolicy(), parentScope);
+    }
+
     public DelegatedContainerScope(WebSocketPolicy policy, WebSocketContainerScope parentScope)
     {
         this.policy = policy;
         this.delegate = parentScope;
     }
-    
+
     @Override
     public ByteBufferPool getBufferPool()
     {
@@ -67,28 +72,10 @@ public class DelegatedContainerScope implements WebSocketContainerScope
     {
         return this.delegate.getSslContextFactory();
     }
-    
-    @Override
-    public boolean isRunning()
-    {
-        return this.delegate.isRunning();
-    }
 
     @Override
-    public void addSessionListener(WebSocketSessionListener listener)
+    public void notifySessionListeners(Consumer<WebSocketSessionListener> eventConsumer)
     {
-        this.delegate.addSessionListener(listener);
-    }
-
-    @Override
-    public void removeSessionListener(WebSocketSessionListener listener)
-    {
-        this.delegate.removeSessionListener(listener);
-    }
-
-    @Override
-    public Collection<WebSocketSessionListener> getSessionListeners()
-    {
-        return this.delegate.getSessionListeners();
+        this.delegate.notifySessionListeners(eventConsumer);
     }
 }

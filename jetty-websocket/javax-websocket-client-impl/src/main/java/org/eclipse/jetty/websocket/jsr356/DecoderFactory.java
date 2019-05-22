@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -166,8 +166,8 @@ public class DecoderFactory implements Configurable
         {
             LOG.debug("init({})",config);
         }
-        
-        if(!containerScope.isRunning())
+
+        if ((containerScope instanceof LifeCycle) && (!((LifeCycle)containerScope).isRunning()))
         {
             throw new RuntimeException(containerScope.getClass().getName() + " is not running yet");
         }
