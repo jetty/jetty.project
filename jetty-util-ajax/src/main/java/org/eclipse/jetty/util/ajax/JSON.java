@@ -214,7 +214,7 @@ public class JSON
         try
         {
             buffer.append('"');
-            if (input != null && input.length() > 0)
+            if (input != null && !input.isEmpty())
             {
                 escapeString(buffer, input);
             }
