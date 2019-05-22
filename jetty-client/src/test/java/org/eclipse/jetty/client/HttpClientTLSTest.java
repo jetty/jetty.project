@@ -45,6 +45,7 @@ import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -501,7 +502,7 @@ public class HttpClientTLSTest
                 while (true)
                 {
                     String line = reader.readLine();
-                    if (line == null || line.isEmpty())
+                    if (StringUtil.isEmpty(line))
                         break;
                 }
 
