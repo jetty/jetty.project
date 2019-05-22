@@ -183,8 +183,8 @@ public class PushCacheFilter implements Filter
                     port = request.isSecure() ? 443 : 80;
             }
 
-            boolean referredFromHere = _hosts.size() > 0 ? _hosts.contains(host) : host.equals(request.getServerName());
-            referredFromHere &= _ports.size() > 0 ? _ports.contains(port) : port == request.getServerPort();
+            boolean referredFromHere = !_hosts.isEmpty()? _hosts.contains(host) : host.equals(request.getServerName());
+            referredFromHere &= !_ports.isEmpty()? _ports.contains(port) : port == request.getServerPort();
 
             if (referredFromHere)
             {
