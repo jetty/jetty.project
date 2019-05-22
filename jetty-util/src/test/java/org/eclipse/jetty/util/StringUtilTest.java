@@ -261,6 +261,22 @@ public class StringUtilTest
         assertTrue(StringUtil.isNotBlank("."));
         assertTrue(StringUtil.isNotBlank(";\n"));
     }
+
+    @Test
+    public void testIsEmpty()
+    {
+        assertTrue(StringUtil.isEmpty(null));
+        assertTrue(StringUtil.isEmpty(""));
+        assertFalse(StringUtil.isEmpty("\r\n"));
+        assertFalse(StringUtil.isEmpty("\t"));
+        assertFalse(StringUtil.isEmpty("   "));
+
+        assertFalse(StringUtil.isEmpty("a"));
+        assertFalse(StringUtil.isEmpty("  a"));
+        assertFalse(StringUtil.isEmpty("a  "));
+        assertFalse(StringUtil.isEmpty("."));
+        assertFalse(StringUtil.isEmpty(";\n"));
+    }
     
     @Test
     public void testSanitizeHTML()

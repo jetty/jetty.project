@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -1132,7 +1133,7 @@ public class HttpParser
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Header Folding");
 
                             // header value without name - continuation?
-                            if (_valueString==null || _valueString.isEmpty())
+                            if ( StringUtil.isEmpty(_valueString))
                             {
                                 _string.setLength(0);
                                 _length=0;
