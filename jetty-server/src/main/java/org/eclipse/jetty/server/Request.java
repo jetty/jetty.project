@@ -195,6 +195,7 @@ public class Request implements HttpServletRequest
     private boolean _requestedSessionIdFromCookie = false;
     private Attributes _attributes;
     private Authentication _authentication;
+    private String _contentType;
     private String _characterEncoding;
     private ContextHandler.Context _context;
     private CookieCutter _cookies;
@@ -484,7 +485,7 @@ public class Request implements HttpServletRequest
                     {
                         if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
                             throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
-                        getParts(contentType, _contentParameters);
+                        getParts(_contentParameters);
                     }
                     catch (IOException | ServletException e)
                     {
@@ -664,7 +665,18 @@ public class Request implements HttpServletRequest
     public String getCharacterEncoding()
     {
         if (_characterEncoding==null)
-            getContentType();
+        {
+            if (_contentType==null)
+                getContentType();
+            if (_contentType!=null)
+            {
+
+                MimeTypes.Type mime = MimeTypes.CACHE.get(_contentType);
+                String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(_contentType) : mime.getCharset().toString();
+                if (charset != null)
+                    _characterEncoding=charset;
+            }
+        }
         return _characterEncoding;
     }
 
@@ -720,16 +732,12 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        MetaData.Request metadata = _metaData;
-        String content_type = metadata==null?null:metadata.getFields().get(HttpHeader.CONTENT_TYPE);
-        if (_characterEncoding==null && content_type!=null)
+        if (_contentType==null)
         {
-            MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
-            String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(content_type) : mime.getCharset().toString();
-            if (charset != null)
-                _characterEncoding=charset;
+            MetaData.Request metadata = _metaData;
+            _contentType = metadata == null ? null : metadata.getFields().get(HttpHeader.CONTENT_TYPE);
         }
-        return content_type;
+        return _contentType;
     }
 
     /* ------------------------------------------------------------ */
@@ -1853,6 +1861,7 @@ public class Request implements HttpServletRequest
         _handled = false;
         if (_attributes != null)
             _attributes.clearAttributes();
+        _contentType = null;
         _characterEncoding = null;
         _contextPath = null;
         if (_cookies != null)
@@ -2011,10 +2020,8 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.ServletRequest#getContentType()
      */
     public void setContentType(String contentType)
-    {        
-        MetaData.Request metadata = _metaData;
-        if (metadata!=null)
-            metadata.getFields().put(HttpHeader.CONTENT_TYPE,contentType);
+    {
+        _contentType = contentType;
     }
 
     /* ------------------------------------------------------------ */
@@ -2326,10 +2333,10 @@ public class Request implements HttpServletRequest
         String contentType = getContentType();
         if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(contentType,null)))
             throw new ServletException("Content-Type != multipart/form-data");
-        return getParts(contentType, null);
+        return getParts(null);
     }
 
-    private Collection<Part> getParts(String contentType, MultiMap<String> params) throws IOException, ServletException
+    private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
     {        
         if (_multiParts == null)
             _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
@@ -2341,7 +2348,7 @@ public class Request implements HttpServletRequest
                 throw new IllegalStateException("No multipart config for servlet");
 
             _multiParts = newMultiParts(getInputStream(),
-                                       contentType, config,
+                                       _contentType, config,
                                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
 
             setAttribute(__MULTIPARTS, _multiParts);
