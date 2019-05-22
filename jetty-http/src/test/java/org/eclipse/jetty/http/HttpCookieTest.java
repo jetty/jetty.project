@@ -77,9 +77,6 @@ public class HttpCookieTest
     @Test
     public void testSetRFC6265Cookie() throws Exception
     {
-        //  HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
-        // httpCookie = new HttpCookie("name", "value", "domain", "path", maxAge, secure, httpOnly);
-
         HttpCookie httpCookie;
 
         httpCookie = new HttpCookie("null",null,null,null,-1,false,false, null, -1);
