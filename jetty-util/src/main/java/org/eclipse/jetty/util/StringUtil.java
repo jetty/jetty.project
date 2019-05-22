@@ -487,7 +487,7 @@ public class StringUtil
      *
      * @param str
      *            the string to test.
-     * @return true if string is null or only whitespace characters, false if non-whitespace characters encountered.
+     * @return true if string is null or empty.
      */
     public static boolean isEmpty(String str)
     {
