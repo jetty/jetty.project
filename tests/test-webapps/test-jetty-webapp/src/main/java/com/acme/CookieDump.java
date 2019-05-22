@@ -46,10 +46,10 @@ public class CookieDump extends HttpServlet
         String value =  request.getParameter("Value");
         String age =  request.getParameter("Age");
 
-        if (name!=null && name.length()>0)
+        if (name!=null && !name.isEmpty())
         {
             Cookie cookie = new Cookie(name,value);
-            if (age!=null && age.length()>0)
+            if (age!=null && !age.isEmpty())
                 cookie.setMaxAge(Integer.parseInt(age));
             response.addCookie(cookie);
         }

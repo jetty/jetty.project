@@ -28,6 +28,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
 import javax.servlet.ServletException;
@@ -43,13 +44,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -280,7 +281,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     return false;
                 }
                 String b64 = proxyAuthorization.substring("Basic ".length());
-                String credentials = B64Code.decode(b64, StandardCharsets.UTF_8);
+                String credentials = new String(Base64.getDecoder().decode(b64), StandardCharsets.UTF_8);
                 return "test:test".equals(credentials);
             }
         };
@@ -314,7 +315,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
 
         // Try with authentication
-        String credentials = "Basic " + B64Code.encode("test:test");
+        String credentials = "Basic " + Base64.getEncoder().encodeToString("test:test".getBytes(ISO_8859_1));
         request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +

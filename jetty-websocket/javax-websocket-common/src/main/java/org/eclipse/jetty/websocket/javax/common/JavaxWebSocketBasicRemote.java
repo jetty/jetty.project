@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.nio.ByteBuffer;
+
+import javax.websocket.EncodeException;
+import javax.websocket.RemoteEndpoint;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -27,22 +35,15 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.util.TextUtil;
 
-import javax.websocket.EncodeException;
-import javax.websocket.RemoteEndpoint;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.nio.ByteBuffer;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint implements RemoteEndpoint.Basic
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketBasicRemote.class);
 
-    protected JavaxWebSocketBasicRemote(JavaxWebSocketSession session, FrameHandler.CoreSession channel)
+    protected JavaxWebSocketBasicRemote(JavaxWebSocketSession session, FrameHandler.CoreSession coreSession)
     {
-        super(session, channel);
+        super(session, coreSession);
     }
 
     @Override

@@ -974,7 +974,7 @@ public class HttpParser
                         else
                         {
                             List<String> values = new QuotedCSV(_valueString).getValues();
-                            if (values.size()>0 && HttpHeaderValue.CHUNKED.is(values.get(values.size()-1)))
+                            if (!values.isEmpty() && HttpHeaderValue.CHUNKED.is(values.get(values.size()-1)))
                             {
                                 _endOfContent=EndOfContent.CHUNKED_CONTENT;
                                 _contentLength=-1;

@@ -18,16 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 @ManagedObject("Abstract Extension")
 public abstract class AbstractExtension implements Extension
@@ -37,7 +34,7 @@ public abstract class AbstractExtension implements Extension
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
-    private WebSocketChannel channel;
+    private WebSocketCoreSession coreSession;
 
     public AbstractExtension()
     {
@@ -144,14 +141,14 @@ public abstract class AbstractExtension implements Extension
     }
 
     @Override
-    public void setWebSocketChannel(WebSocketChannel webSocketChannel)
+    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
     {
-        channel = webSocketChannel;
+        this.coreSession = coreSession;
     }
 
-    protected WebSocketChannel getWebSocketChannel()
+    protected WebSocketCoreSession getWebSocketCoreSession()
     {
-        return channel;
+        return coreSession;
     }
 
     @Override

@@ -26,7 +26,7 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
 /**
  * Atomic Connection State
  */
-public class WebSocketChannelState
+public class WebSocketSessionState
 {
     enum State
     {
@@ -38,7 +38,7 @@ public class WebSocketChannelState
         CLOSED
     }
 
-    private State _channelState = State.CONNECTING;
+    private State _sessionState = State.CONNECTING;
     private byte _incomingContinuation = OpCode.UNDEFINED;
     private byte _outgoingContinuation = OpCode.UNDEFINED;
     CloseStatus _closeStatus = null;
@@ -47,10 +47,10 @@ public class WebSocketChannelState
     {
         synchronized (this)
         {
-            if (_channelState != State.CONNECTING)
-                throw new IllegalStateException(_channelState.toString());
+            if (_sessionState != State.CONNECTING)
+                throw new IllegalStateException(_sessionState.toString());
 
-            _channelState = State.CONNECTED;
+            _sessionState = State.CONNECTED;
         }
     }
 
@@ -58,10 +58,10 @@ public class WebSocketChannelState
     {
         synchronized (this)
         {
-            switch(_channelState)
+            switch(_sessionState)
             {
                 case CONNECTED:
-                    _channelState = State.OPEN;
+                    _sessionState = State.OPEN;
                     break;
 
                 case OSHUT:
@@ -70,7 +70,7 @@ public class WebSocketChannelState
                     break;
 
                 default:
-                    throw new IllegalStateException(_channelState.toString());
+                    throw new IllegalStateException(_sessionState.toString());
             }
         }
     }
@@ -80,7 +80,7 @@ public class WebSocketChannelState
     {
         synchronized (this)
         {
-            return _channelState;
+            return _sessionState;
         }
     }
 
@@ -113,11 +113,11 @@ public class WebSocketChannelState
     {
         synchronized (this)
         {
-            if (_channelState == State.CLOSED)
+            if (_sessionState == State.CLOSED)
                 return false;
 
             _closeStatus = closeStatus;
-            _channelState = State.CLOSED;
+            _sessionState = State.CLOSED;
             return true;
         }
     }
@@ -126,7 +126,7 @@ public class WebSocketChannelState
     {
         synchronized (this)
         {
-            switch (_channelState)
+            switch (_sessionState)
             {
                 case CLOSED:
                 case ISHUT:
@@ -134,8 +134,8 @@ public class WebSocketChannelState
 
                 default:
                     if (_closeStatus == null || CloseStatus.isOrdinary(_closeStatus))
-                        _closeStatus = new CloseStatus(CloseStatus.NO_CLOSE, "Channel Closed");
-                    _channelState = State.CLOSED;
+                        _closeStatus = new CloseStatus(CloseStatus.NO_CLOSE, "Session Closed");
+                    _sessionState = State.CLOSED;
                     return true;
             }
         }
@@ -149,30 +149,30 @@ public class WebSocketChannelState
         synchronized (this)
         {
             if (!isOutputOpen())
-                throw new IllegalStateException(_channelState.toString());
+                throw new IllegalStateException(_sessionState.toString());
 
             if (opcode == OpCode.CLOSE)
             {
                 _closeStatus = CloseStatus.getCloseStatus(frame);
-                if (_closeStatus instanceof WebSocketChannel.AbnormalCloseStatus)
+                if (_closeStatus instanceof WebSocketCoreSession.AbnormalCloseStatus)
                 {
-                    _channelState = State.CLOSED;
+                    _sessionState = State.CLOSED;
                     return true;
                 }
 
-                switch (_channelState)
+                switch (_sessionState)
                 {
                     case CONNECTED:
                     case OPEN:
-                        _channelState = State.OSHUT;
+                        _sessionState = State.OSHUT;
                         return false;
 
                     case ISHUT:
-                        _channelState = State.CLOSED;
+                        _sessionState = State.CLOSED;
                         return true;
 
                     default:
-                        throw new IllegalStateException(_channelState.toString());
+                        throw new IllegalStateException(_sessionState.toString());
                 }
             }
             else if (frame.isDataFrame())
@@ -192,22 +192,22 @@ public class WebSocketChannelState
         synchronized (this)
         {
             if (!isInputOpen())
-                throw new IllegalStateException(_channelState.toString());
+                throw new IllegalStateException(_sessionState.toString());
 
             if (opcode == OpCode.CLOSE)
             {
                 _closeStatus = CloseStatus.getCloseStatus(frame);
 
-                switch (_channelState)
+                switch (_sessionState)
                 {
                     case OPEN:
-                        _channelState = State.ISHUT;
+                        _sessionState = State.ISHUT;
                         return false;
                     case OSHUT:
-                        _channelState = State.CLOSED;
+                        _sessionState = State.CLOSED;
                         return true;
                     default:
-                        throw new IllegalStateException(_channelState.toString());
+                        throw new IllegalStateException(_sessionState.toString());
                 }
             }
             else if (frame.isDataFrame())
@@ -224,7 +224,7 @@ public class WebSocketChannelState
     public String toString()
     {
         return String.format("%s@%x{%s,i=%s,o=%s,c=%s}",getClass().getSimpleName(),hashCode(),
-                _channelState,
+                _sessionState,
                 OpCode.name(_incomingContinuation),
                 OpCode.name(_outgoingContinuation),
                 _closeStatus);

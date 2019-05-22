@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 /**
  * Interface for WebSocket Extensions.
@@ -89,9 +89,9 @@ public interface Extension extends IncomingFrames, OutgoingFrames
     void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
 
     /**
-     * Set the {@link WebSocketChannel} for this Extension
+     * Set the {@link WebSocketCoreSession} for this Extension
      *
-     * @param webSocketChannel
+     * @param coreSession
      */
-    void setWebSocketChannel(WebSocketChannel webSocketChannel);
+    void setWebSocketCoreSession(WebSocketCoreSession coreSession);
 }

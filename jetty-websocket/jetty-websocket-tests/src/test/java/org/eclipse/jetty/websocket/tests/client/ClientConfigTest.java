@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
@@ -149,8 +149,8 @@ public class ClientConfigTest
 
         connect.get(5, TimeUnit.SECONDS);
 
-        WebSocketChannel channel = (WebSocketChannel)((WebSocketSession)clientEndpoint.session).getCoreSession();
-        WebSocketConnection connection = channel.getConnection();
+        WebSocketCoreSession coreSession = (WebSocketCoreSession)((WebSocketSession)clientEndpoint.session).getCoreSession();
+        WebSocketConnection connection = coreSession.getConnection();
 
         assertThat(connection.getInputBufferSize(), is(inputBufferSize));
 

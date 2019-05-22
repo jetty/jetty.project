@@ -52,7 +52,7 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 import org.junit.jupiter.api.Test;
 
@@ -237,7 +237,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void init(DeflateFrameExtension ext)
     {
-        ext.setWebSocketChannel(channelWithMaxMessageSize(20 * 1024 * 1024));
+        ext.setWebSocketCoreSession(sessionWithMaxMessageSize(20 * 1024 * 1024));
         ext.init(new ExtensionConfig(ext.getName()), bufferPool);
     }
 
@@ -379,11 +379,11 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         init(clientExtension);
-        clientExtension.setWebSocketChannel(channelWithMaxMessageSize(maxMessageSize));
+        clientExtension.setWebSocketCoreSession(sessionWithMaxMessageSize(maxMessageSize));
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         init(serverExtension);
-        serverExtension.setWebSocketChannel(channelWithMaxMessageSize(maxMessageSize));
+        serverExtension.setWebSocketCoreSession(sessionWithMaxMessageSize(maxMessageSize));
 
         // Chain the next element to decompress.
         clientExtension.setNextOutgoingFrames((frame, callback, batch) ->
@@ -416,14 +416,14 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
 
-    private WebSocketChannel channelWithMaxMessageSize(int maxMessageSize)
+    private WebSocketCoreSession sessionWithMaxMessageSize(int maxMessageSize)
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
 
-        WebSocketChannel channel = new WebSocketChannel(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
-        channel.setMaxFrameSize(maxMessageSize);
-        return channel;
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        coreSession.setMaxFrameSize(maxMessageSize);
+        return coreSession;
     }
 }

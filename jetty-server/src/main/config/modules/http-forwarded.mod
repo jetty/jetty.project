@@ -23,6 +23,7 @@ etc/jetty-http-forwarded.xml
 # jetty.httpConfig.forwardedServerHeader=X-Forwarded-Server
 # jetty.httpConfig.forwardedProtoHeader=X-Forwarded-Proto
 # jetty.httpConfig.forwardedForHeader=X-Forwarded-For
+# jetty.httpConfig.forwardedPortHeader=X-Forwarded-Port
 # jetty.httpConfig.forwardedHttpsHeader=X-Proxied-Https
 # jetty.httpConfig.forwardedSslSessionIdHeader=Proxy-ssl-id
 # jetty.httpConfig.forwardedCipherSuiteHeader=Proxy-auth-cert

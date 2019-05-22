@@ -121,7 +121,7 @@ public class CoreServer extends ContainerLifeCycle
         }
 
         @Override
-        public void customize(FrameHandler.Configuration session)
+        public void customize(FrameHandler.Configuration configurable)
         {
         }
 
@@ -177,7 +177,7 @@ public class CoreServer extends ContainerLifeCycle
         }
 
         @Override
-        public void customize(FrameHandler.Configuration session)
+        public void customize(FrameHandler.Configuration configurable)
         {
         }
     }

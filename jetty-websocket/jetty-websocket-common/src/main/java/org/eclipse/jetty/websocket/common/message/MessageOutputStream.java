@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -28,10 +32,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-
 /**
  * Support for writing a single WebSocket BINARY message via a {@link OutputStream}
  */
@@ -39,7 +39,7 @@ public class MessageOutputStream extends OutputStream
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
 
-    private final FrameHandler.CoreSession channel;
+    private final FrameHandler.CoreSession coreSession;
     private final ByteBufferPool bufferPool;
     private final SharedBlockingCallback blocker;
     private long frameCount;
@@ -49,9 +49,9 @@ public class MessageOutputStream extends OutputStream
     private Callback callback;
     private boolean closed;
 
-    public MessageOutputStream(FrameHandler.CoreSession channel, int bufferSize, ByteBufferPool bufferPool)
+    public MessageOutputStream(FrameHandler.CoreSession coreSession, int bufferSize, ByteBufferPool bufferPool)
     {
-        this.channel = channel;
+        this.coreSession = coreSession;
         this.bufferPool = bufferPool;
         this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
@@ -138,7 +138,7 @@ public class MessageOutputStream extends OutputStream
             frame.setFin(fin);
             try (SharedBlockingCallback.Blocker b = blocker.acquire())
             {
-                channel.sendFrame(frame, b, false);
+                coreSession.sendFrame(frame, b, false);
                 b.block();
                 assert buffer.remaining() == 0;
             }

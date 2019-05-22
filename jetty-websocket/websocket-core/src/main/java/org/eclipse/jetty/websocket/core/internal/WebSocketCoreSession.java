@@ -59,13 +59,13 @@ import static org.eclipse.jetty.util.Callback.NOOP;
 /**
  * The Core WebSocket Session.
  */
-public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSession, Dumpable
+public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSession, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(WebSocketChannel.class);
+    private static final Logger LOG = Log.getLogger(WebSocketCoreSession.class);
     private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
     private final Behavior behavior;
-    private final WebSocketChannelState channelState = new WebSocketChannelState();
+    private final WebSocketSessionState sessionState = new WebSocketSessionState();
     private final FrameHandler handler;
     private final Negotiated negotiated;
     private final boolean demanding;
@@ -81,9 +81,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
 
-    public WebSocketChannel(FrameHandler handler,
-        Behavior behavior,
-        Negotiated negotiated)
+    public WebSocketCoreSession(FrameHandler handler,
+                                Behavior behavior,
+                                Negotiated negotiated)
     {
         this.handler = handler;
         this.behavior = behavior;
@@ -93,7 +93,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     /**
-     * @return True if the channels handling is demanding.
+     * @return True if the sessions handling is demanding.
      */
     public boolean isDemanding()
     {
@@ -263,12 +263,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public boolean isOutputOpen()
     {
-        return channelState.isOutputOpen();
+        return sessionState.isOutputOpen();
     }
 
     public boolean isClosed()
     {
-        return channelState.isClosed();
+        return sessionState.isClosed();
     }
 
     public void setWebSocketConnection(WebSocketConnection connection)
@@ -318,8 +318,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (LOG.isDebugEnabled())
             LOG.debug("onEof() {}", this);
 
-        if (channelState.onEof())
-            closeConnection(new ClosedChannelException(), channelState.getCloseStatus(), Callback.NOOP);
+        if (sessionState.onEof())
+            closeConnection(new ClosedChannelException(), sessionState.getCloseStatus(), Callback.NOOP);
     }
 
     public void closeConnection(Throwable cause, CloseStatus closeStatus, Callback callback)
@@ -403,7 +403,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             close(closeStatus, callback);
         else
         {
-            if (channelState.onClosed(closeStatus))
+            if (sessionState.onClosed(closeStatus))
                 closeConnection(cause, closeStatus, callback);
         }
     }
@@ -444,13 +444,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             LOG.debug("onOpen() {}", this);
 
         // Upgrade success
-        channelState.onConnected();
+        sessionState.onConnected();
         if (LOG.isDebugEnabled())
             LOG.debug("ConnectionState: Transition to CONNECTED");
 
         Callback openCallback = Callback.from(()->
                 {
-                    channelState.onOpen();
+                    sessionState.onOpen();
                     if (!demanding)
                         connection.demand(1);
                     if (LOG.isDebugEnabled())
@@ -484,7 +484,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
-        if (!channelState.isInputOpen())
+        if (!sessionState.isInputOpen())
             throw new IllegalStateException("FrameHandler input not open: " + this); // TODO Perhaps this is a NOOP?
         connection.demand(n);
     }
@@ -541,14 +541,14 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 if (LOG.isDebugEnabled())
                     LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
 
-                boolean closeConnection = channelState.onOutgoingFrame(frame);
+                boolean closeConnection = sessionState.onOutgoingFrame(frame);
                 if (closeConnection)
                 {
                     Throwable cause = AbnormalCloseStatus.getCause(CloseStatus.getCloseStatus(frame));
 
                     Callback closeConnectionCallback = Callback.from(
-                            ()->closeConnection(cause, channelState.getCloseStatus(), callback),
-                            t->closeConnection(cause, channelState.getCloseStatus(), Callback.from(callback, t)));
+                            ()->closeConnection(cause, sessionState.getCloseStatus(), callback),
+                            t->closeConnection(cause, sessionState.getCloseStatus(), Callback.from(callback, t)));
 
                     flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
                 }
@@ -567,7 +567,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                if (closeStatus instanceof AbnormalCloseStatus && channelState.onClosed(closeStatus))
+                if (closeStatus instanceof AbnormalCloseStatus && sessionState.onClosed(closeStatus))
                     closeConnection(AbnormalCloseStatus.getCause(closeStatus), closeStatus, Callback.from(callback, t));
                 else
                     callback.failed(t);
@@ -679,9 +679,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}", frame, callback, channelState, handler);
+                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}", frame, callback, sessionState, handler);
 
-                boolean closeConnection = channelState.onIncomingFrame(frame);
+                boolean closeConnection = sessionState.onIncomingFrame(frame);
 
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
@@ -696,13 +696,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
                 if (closeConnection)
                 {
-                    closeCallback = Callback.from(()-> closeConnection(null, channelState.getCloseStatus(), callback));
+                    closeCallback = Callback.from(()-> closeConnection(null, sessionState.getCloseStatus(), callback));
                 }
                 else
                 {
                     closeCallback = Callback.from(()->
                     {
-                        if (channelState.isOutputOpen())
+                        if (sessionState.isOutputOpen())
                         {
                             CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                             if (LOG.isDebugEnabled())
@@ -796,10 +796,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public String toString()
     {
-        return String.format("WSChannel@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
+        return String.format("WSCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
             hashCode(),
             behavior,
-            channelState,
+                sessionState,
             negotiated,
             autoFragment,
             inputBufferSize,

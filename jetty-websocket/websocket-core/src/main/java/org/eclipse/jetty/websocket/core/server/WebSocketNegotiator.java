@@ -102,10 +102,10 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
         }
 
         @Override
-        public void customize(FrameHandler.Configuration session)
+        public void customize(FrameHandler.Configuration configurable)
         {
             if (customizer != null)
-                customizer.customize(session);
+                customizer.customize(configurable);
         }
 
         @Override

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.util.Map;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -27,8 +29,6 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.NullAppendable;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-
-import java.util.Map;
 
 import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
@@ -62,7 +62,7 @@ public class ValidationExtension extends AbstractExtension
                 incomingSequence.check(frame.getOpCode(), frame.isFin());
 
             if (incomingFrameValidation)
-                getWebSocketChannel().assertValidIncoming(frame);
+                getWebSocketCoreSession().assertValidIncoming(frame);
 
             if (incomingUtf8Validation != null)
                 validateUTF8(frame, incomingUtf8Validation, continuedInOpCode);
@@ -85,7 +85,7 @@ public class ValidationExtension extends AbstractExtension
                 outgoingSequence.check(frame.getOpCode(), frame.isFin());
 
             if (outgoingFrameValidation)
-                getWebSocketChannel().assertValidOutgoing(frame);
+                getWebSocketCoreSession().assertValidOutgoing(frame);
 
             if (outgoingUtf8Validation != null)
                 validateUTF8(frame, outgoingUtf8Validation, continuedOutOpCode);
