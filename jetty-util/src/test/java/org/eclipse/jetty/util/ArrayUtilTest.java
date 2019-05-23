@@ -38,7 +38,7 @@ public class ArrayUtilTest
     public void testAddToArrayWithEmptyArray()
     {
         String[] stringArray = new String[0];
-        String[] resultArray = ArrayUtil.addToArray(stringArray, "Ca{q&HOz_a`?@y0B?", Object.class);
+        String[] resultArray = ArrayUtil.addToArray(stringArray, "Ca?", Object.class);
 
         assertEquals(0, stringArray.length);
         assertEquals(1, resultArray.length);
