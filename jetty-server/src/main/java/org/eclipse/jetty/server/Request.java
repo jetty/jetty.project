@@ -666,13 +666,11 @@ public class Request implements HttpServletRequest
     {
         if (_characterEncoding==null)
         {
-            if (_contentType==null)
-                getContentType();
-            if (_contentType!=null)
+            String contentType = getContentType();
+            if (contentType!=null)
             {
-
-                MimeTypes.Type mime = MimeTypes.CACHE.get(_contentType);
-                String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(_contentType) : mime.getCharset().toString();
+                MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
+                String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
                 if (charset != null)
                     _characterEncoding=charset;
             }

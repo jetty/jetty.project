@@ -66,7 +66,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public HttpFields()
     {
-        this(16 );  // TODO tune default. Currently based on small same of Chrome requests.
+        this(16);  // TODO tune default. Currently based on small sample of Chrome requests.
     }
     
     /**
@@ -116,7 +116,7 @@ public class HttpFields implements Iterable<HttpField>
     
     public Stream<HttpField> stream()
     {
-        return Arrays.stream(_fields).filter(f->f!=null);
+        return Arrays.stream(_fields).limit(_size);
     }
 
     /**
