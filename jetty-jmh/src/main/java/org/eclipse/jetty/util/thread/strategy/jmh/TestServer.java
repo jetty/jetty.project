@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.thread.strategy.jmh;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,7 +45,7 @@ public class TestServer implements Executor, TryExecutor
     
     TestServer()
     {
-        this(new File("/tmp/"));
+        this(new File(System.getProperty("java.io.tmpdir")));
     }
     
     
