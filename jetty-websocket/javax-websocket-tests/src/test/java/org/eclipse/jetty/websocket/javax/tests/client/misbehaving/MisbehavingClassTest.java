@@ -18,18 +18,19 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client.misbehaving;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
+
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -71,7 +72,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
             // expecting IOException during onOpen
             Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
@@ -92,7 +93,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
             // expecting IOException during onOpen
             Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");

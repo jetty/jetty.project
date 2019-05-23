@@ -41,17 +41,17 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
     private byte partial = OpCode.UNDEFINED;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
-    private FrameHandler.CoreSession channel;
+    private FrameHandler.CoreSession coreSession;
 
     public FrameHandler.CoreSession getCoreSession()
     {
-        return channel;
+        return coreSession;
     }
 
     @Override
     public void onOpen(CoreSession coreSession)
     {
-        this.channel = coreSession;
+        this.coreSession = coreSession;
         onOpen();
     }
 
@@ -121,7 +121,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
 
         try
         {
-            channel.sendFrame(new Frame(PONG).setPayload(pongBuf), callback, false);
+            coreSession.sendFrame(new Frame(PONG).setPayload(pongBuf), callback, false);
         }
         catch (Throwable t)
         {
@@ -338,7 +338,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
         }
 
         if (respond > 0)
-            channel.close(respond, reason, callback);
+            coreSession.close(respond, reason, callback);
         else
             callback.succeeded();
     }

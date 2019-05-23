@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler.CoreSession;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketServer;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,7 +102,7 @@ public class WebSocketClientServerTest
                 super.receivedFrames.offer(Frame.copy(frame));
                 if (frame.getOpCode() == OpCode.CLOSE)
                 {
-                    LOG.info("channel aborted");
+                    LOG.info("session aborted");
                     getCoreSession().abort();
                     callback.failed(new Exception());
                 }
@@ -140,7 +140,7 @@ public class WebSocketClientServerTest
         assertNotNull(recv);
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
 
-        ((WebSocketChannel)clientHandler.getCoreSession()).getConnection().getEndPoint().close();
+        ((WebSocketCoreSession)clientHandler.getCoreSession()).getConnection().getEndPoint().close();
 
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));

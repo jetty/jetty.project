@@ -568,7 +568,7 @@ public class HttpURI
     public String getHost()
     {
         // Return null for empty host to retain compatibility with java.net.URI
-        if (_host!=null && _host.length()==0)
+        if (_host!=null && _host.isEmpty())
             return null;
         return _host;
     }
@@ -613,7 +613,7 @@ public class HttpURI
     /* ------------------------------------------------------------ */
     public boolean hasQuery()
     {
-        return _query!=null && _query.length()>0;
+        return _query!=null && !_query.isEmpty();
     }
 
     /* ------------------------------------------------------------ */
@@ -667,7 +667,7 @@ public class HttpURI
     /* ------------------------------------------------------------ */
     public boolean isAbsolute()
     {
-        return _scheme!=null && _scheme.length()>0;
+        return _scheme!=null && !_scheme.isEmpty();
     }
     
     /* ------------------------------------------------------------ */

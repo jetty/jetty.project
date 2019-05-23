@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -609,7 +610,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
                         while (true)
                         {
                             String line = reader.readLine();
-                            if (line == null || line.isEmpty())
+                            if (StringUtil.isEmpty(line))
                                 break;
                         }
 

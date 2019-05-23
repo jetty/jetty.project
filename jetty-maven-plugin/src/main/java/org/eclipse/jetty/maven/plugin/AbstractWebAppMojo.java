@@ -371,7 +371,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     //End of distro-only parameters
     
     
-    //Start of parameters on valid for fork
+    //Start of parameters only valid for fork
     /**
      * The file into which to generate the quickstart web xml for the forked process to use
      * 
@@ -379,6 +379,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter (defaultValue="${project.build.directory}/fork-web.xml")
     protected File forkWebXml;
     //End of fork-only parameters
+    
     /**
      * maven-war-plugin reference
      */
@@ -508,7 +509,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setHttpConnector(httpConnector);
         jetty.setJettyProperties(jettyProperties);
         jetty.setRequestLog(requestLog);
-        jetty.setContextHandlers(contextHandlers);
         jetty.setLoginServices(loginServices);
 
         configureWebApp();

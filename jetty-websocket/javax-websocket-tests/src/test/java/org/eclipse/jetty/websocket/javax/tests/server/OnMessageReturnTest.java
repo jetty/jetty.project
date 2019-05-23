@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -108,11 +109,11 @@ public class OnMessageReturnTest
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echoreturn"));
 
                 // wait for connect
-                FrameHandler.CoreSession channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
+                FrameHandler.CoreSession coreSession = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 try
                 {
                     // Send message
-                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, false);
+                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, false);
 
                     // Confirm response
                     String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -120,7 +121,7 @@ public class OnMessageReturnTest
                 }
                 finally
                 {
-                    channel.close(Callback.NOOP);
+                    coreSession.close(Callback.NOOP);
                 }
             }
             finally

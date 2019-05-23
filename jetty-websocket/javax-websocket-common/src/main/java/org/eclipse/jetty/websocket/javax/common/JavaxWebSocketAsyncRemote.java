@@ -42,9 +42,9 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
 {
     static final Logger LOG = Log.getLogger(JavaxWebSocketAsyncRemote.class);
 
-    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, FrameHandler.CoreSession channel)
+    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, FrameHandler.CoreSession coreSession)
     {
-        super(session, channel);
+        super(session, coreSession);
     }
 
     @Override

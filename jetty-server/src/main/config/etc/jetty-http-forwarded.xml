@@ -11,6 +11,7 @@
         <Set name="forwardedServerHeader"><Property name="jetty.httpConfig.forwardedServerHeader" default="X-Forwarded-Server"/></Set>
         <Set name="forwardedProtoHeader"><Property name="jetty.httpConfig.forwardedProtoHeader" default="X-Forwarded-Proto"/></Set>
         <Set name="forwardedForHeader"><Property name="jetty.httpConfig.forwardedForHeader" default="X-Forwarded-For"/></Set>
+        <Set name="forwardedPortHeader"><Property name="jetty.httpConfig.forwardedPortHeader" default="X-Forwarded-Port"/></Set>
         <Set name="forwardedHttpsHeader"><Property name="jetty.httpConfig.forwardedHttpsHeader" default="X-Proxied-Https"/></Set>
         <Set name="forwardedSslSessionIdHeader"><Property name="jetty.httpConfig.forwardedSslSessionIdHeader" default="Proxy-ssl-id" /></Set>
         <Set name="forwardedCipherSuiteHeader"><Property name="jetty.httpConfig.forwardedCipherSuiteHeader" default="Proxy-auth-cert"/></Set>
