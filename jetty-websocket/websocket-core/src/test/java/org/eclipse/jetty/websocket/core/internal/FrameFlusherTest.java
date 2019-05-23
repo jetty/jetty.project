@@ -199,46 +199,30 @@ public class FrameFlusherTest
         int maxGather = 8;
         FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather);
 
-        // enqueue message before the error close
+        // Enqueue message before the error close.
         Frame frame1 = new Frame(OpCode.TEXT).setPayload("message before close").setFin(true);
-        LatchCallback callback1 = new LatchCallback();
-        assertTrue(frameFlusher.enqueue(frame1, callback1, false));
+        CountDownLatch failedFrame1 = new CountDownLatch(1);
+        Callback callbackFrame1 = Callback.from(()->{}, t->failedFrame1.countDown());
+        assertTrue(frameFlusher.enqueue(frame1, callbackFrame1, false));
 
-        // enqueue the close frame which should fail the previous frame as it is still in the queue
+        // Enqueue the close frame which should fail the previous frame as it is still in the queue.
         Frame closeFrame = new CloseStatus(CloseStatus.MESSAGE_TOO_LARGE).toFrame();
-        LatchCallback closeCallback = new LatchCallback();
-        assertTrue(frameFlusher.enqueue(closeFrame, closeCallback, false));
-        assertTrue(callback1.failure.await(1, TimeUnit.SECONDS));
+        CountDownLatch succeededCloseFrame = new CountDownLatch(1);
+        Callback closeFrameCallback = Callback.from(succeededCloseFrame::countDown, t->{});
+        assertTrue(frameFlusher.enqueue(closeFrame, closeFrameCallback, false));
+        assertTrue(failedFrame1.await(1, TimeUnit.SECONDS));
 
-        // any frames enqueued after this should fail
+        // Any frames enqueued after this should fail.
         Frame frame2 = new Frame(OpCode.TEXT).setPayload("message after close").setFin(true);
-        LatchCallback callback2 = new LatchCallback();
-        assertFalse(frameFlusher.enqueue(frame2, callback2, false));
-        assertTrue(callback2.failure.await(1, TimeUnit.SECONDS));
+        CountDownLatch failedFrame2 = new CountDownLatch(1);
+        Callback callbackFrame2 = Callback.from(()->{}, t->failedFrame2.countDown());
+        assertFalse(frameFlusher.enqueue(frame2, callbackFrame2, false));
+        assertTrue(failedFrame2.await(1, TimeUnit.SECONDS));
 
-        // iterating should succeed the close callback
+        // Iterating should succeed the close callback.
         frameFlusher.iterate();
-        assertTrue(closeCallback.success.await(1, TimeUnit.SECONDS));
+        assertTrue(succeededCloseFrame.await(1, TimeUnit.SECONDS));
     }
-
-    public static class LatchCallback implements Callback
-    {
-        public CountDownLatch success = new CountDownLatch(1);
-        public CountDownLatch failure = new CountDownLatch(1);
-
-        @Override
-        public void succeeded()
-        {
-            success.countDown();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            failure.countDown();
-        }
-    }
-
 
     public static class CapturingEndPoint extends MockEndpoint
     {

@@ -44,6 +44,8 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
 
+import static org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession.AbnormalCloseStatus;
+
 public class FrameFlusher extends IteratingCallback
 {
     public static final Frame FLUSH_FRAME = new Frame(OpCode.BINARY);
@@ -117,8 +119,7 @@ public class FrameFlusher extends IteratingCallback
                             else
                             {
                                 //fail all existing entries in the queue, and enqueue the close frame
-                                failedEntries = new ArrayList<>();
-                                failedEntries.addAll(queue);
+                                failedEntries = new ArrayList<>(queue);
                                 queue.clear();
                                 queue.offerFirst(entry);
                             }
@@ -152,9 +153,17 @@ public class FrameFlusher extends IteratingCallback
 
         if (failedEntries != null)
         {
+            WebSocketException failure = new WebSocketException("Flusher received abnormal CloseFrame: " + CloseStatus.codeString(closeStatus.getCode()));
+            if (closeStatus instanceof AbnormalCloseStatus)
+            {
+                Throwable cause = ((AbnormalCloseStatus)closeStatus).getCause();
+                if (cause != null)
+                    failure.addSuppressed(cause);
+            }
+
             for (Entry e : failedEntries)
             {
-                notifyCallbackFailure(e.callback, new WebSocketException(CloseStatus.codeString(closeStatus.getCode())));
+                notifyCallbackFailure(e.callback, failure);
             }
         }
 
