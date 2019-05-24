@@ -161,7 +161,8 @@ public abstract class WebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        if (mapping.upgrade(req, resp, customizer))
+        // provide a null default customizer the customizer will be on the negotiator in the mapping
+        if (mapping.upgrade(req, resp, null))
             return;
 
         // If we reach this point, it means we had an incoming request to upgrade

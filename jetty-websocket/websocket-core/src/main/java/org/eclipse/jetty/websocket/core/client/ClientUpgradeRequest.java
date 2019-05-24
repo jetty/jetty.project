@@ -83,6 +83,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
     protected final CompletableFuture<FrameHandler.CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
+    private FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
 
     public ClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
@@ -117,6 +118,11 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         version(HttpVersion.HTTP_1_1);
 
         getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
+    }
+
+    public void setConfiguration(FrameHandler.ConfigurationCustomizer config)
+    {
+        config.customize(customizer);
     }
 
     public void addListener(UpgradeListener listener)
@@ -348,7 +354,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             WebSocketConstants.SPEC_VERSION_STRING);
 
         WebSocketCoreSession coreSession = newWebSocketCoreSession(frameHandler, negotiated);
-        wsClient.customize(coreSession);
+        customizer.customize(coreSession);
 
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
 

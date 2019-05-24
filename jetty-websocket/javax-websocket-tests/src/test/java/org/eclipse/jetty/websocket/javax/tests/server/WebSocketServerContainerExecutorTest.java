@@ -26,6 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executor;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -185,36 +186,6 @@ public class WebSocketServerContainerExecutorTest
 
         //Executor to use
         Executor executor = server.getThreadPool();
-
-        // Using JSR356 Server Techniques to connectToServer()
-        contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addEndpoint(EchoSocket.class);
-        try
-        {
-            server.start();
-            String response = GET(server.getURI().resolve("/connect"));
-            assertThat("Response", response, startsWith("Connected to ws://"));
-
-            Executor containerExecutor = ((JavaxWebSocketServerContainer)container).getExecutor();
-            assertThat(containerExecutor, sameInstance(executor));
-        }
-        finally
-        {
-            server.stop();
-        }
-    }
-
-    @Test
-    public void testContextExecutor() throws Exception
-    {
-        Server server = new Server(0);
-        ServletContextHandler contextHandler = new ServletContextHandler();
-        server.setHandler(contextHandler);
-
-        //Executor to use
-        Executor executor = new QueuedThreadPool();
-        contextHandler.setAttribute("org.eclipse.jetty.server.Executor", executor);
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");

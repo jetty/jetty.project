@@ -516,7 +516,7 @@ public interface FrameHandler extends IncomingFrames
 
     interface Customizer
     {
-        void customize(CoreSession coreSession);
+        void customize(Configuration configurable);
     }
 
     class ConfigurationCustomizer implements Customizer, Configuration
@@ -627,24 +627,32 @@ public interface FrameHandler extends IncomingFrames
         }
 
         @Override
-        public void customize(CoreSession coreSession)
+        public void customize(Configuration configurable)
         {
             if (idleTimeout !=null)
-                coreSession.setIdleTimeout(idleTimeout);
+                configurable.setIdleTimeout(idleTimeout);
             if (writeTimeout!=null)
-                coreSession.setWriteTimeout(idleTimeout);
+                configurable.setWriteTimeout(idleTimeout);
             if (autoFragment!=null)
-                coreSession.setAutoFragment(autoFragment);
+                configurable.setAutoFragment(autoFragment);
             if (maxFrameSize!=null)
-                coreSession.setMaxFrameSize(maxFrameSize);
+                configurable.setMaxFrameSize(maxFrameSize);
             if (inputBufferSize!=null)
-                coreSession.setInputBufferSize(inputBufferSize);
+                configurable.setInputBufferSize(inputBufferSize);
             if (outputBufferSize!=null)
-                coreSession.setOutputBufferSize(outputBufferSize);
+                configurable.setOutputBufferSize(outputBufferSize);
             if (maxBinaryMessageSize!=null)
-                coreSession.setMaxBinaryMessageSize(maxBinaryMessageSize);
+                configurable.setMaxBinaryMessageSize(maxBinaryMessageSize);
             if (maxTextMessageSize!=null)
-                coreSession.setMaxTextMessageSize(maxTextMessageSize);
+                configurable.setMaxTextMessageSize(maxTextMessageSize);
+        }
+
+        public static ConfigurationCustomizer from(ConfigurationCustomizer parent, ConfigurationCustomizer child)
+        {
+            ConfigurationCustomizer customizer = new ConfigurationCustomizer();
+            parent.customize(customizer);
+            child.customize(customizer);
+            return customizer;
         }
     }
 

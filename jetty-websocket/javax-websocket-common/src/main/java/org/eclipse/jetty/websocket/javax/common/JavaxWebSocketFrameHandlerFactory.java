@@ -179,11 +179,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             config,
             future);
 
-        if (metadata.hasTextMetdata() && metadata.getTextMetadata().isMaxMessageSizeSet())
-            frameHandler.setMaxTextMessageBufferSize(metadata.getTextMetadata().maxMessageSize);
-        if (metadata.hasBinaryMetadata() && metadata.getBinaryMetadata().isMaxMessageSizeSet())
-            frameHandler.setMaxBinaryMessageBufferSize(metadata.getBinaryMetadata().maxMessageSize);
-
         return frameHandler;
     }
 

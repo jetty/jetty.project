@@ -164,7 +164,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         return frameHandler;
     }
 
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, long maxMessageSize)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
     {
         if (msgHandle == null)
             return null;
@@ -175,8 +175,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             try
             {
-                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Long.TYPE);
-                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, maxMessageSize);
+                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Session.class);
+                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, session);
                 return messageSink;
             }
             catch (NoSuchMethodException e)

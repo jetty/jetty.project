@@ -502,6 +502,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFrame({})", frame);
+
         try
         {
             assertValidIncoming(frame);
@@ -587,6 +590,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void abort()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("abort(): {}", this);
+
         connection.cancelDemand();
         connection.getEndPoint().close();
     }
@@ -637,6 +643,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     public void setInputBufferSize(int inputBufferSize)
     {
         this.inputBufferSize = inputBufferSize;
+        if (connection != null)
+            connection.setInputBufferSize(inputBufferSize);
     }
 
     @Override
@@ -671,8 +679,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
-                            frame, callback, sessionState, handler);
+                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}", frame, callback, sessionState, handler);
 
                 boolean closeConnection = sessionState.onIncomingFrame(frame);
 
