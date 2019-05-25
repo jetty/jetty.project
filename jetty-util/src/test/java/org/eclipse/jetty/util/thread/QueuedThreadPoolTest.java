@@ -586,6 +586,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         pool.start();
         waitForIdle(pool,3);
+        Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump," - STARTED"),is(2));
         assertThat(dump,containsString(",3<=3<=4,i=3,r=2,q=0"));
@@ -608,7 +609,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
         });
         started.await();
-
+        Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump," - STARTED"),is(2));
         assertThat(dump,containsString(",3<=3<=4,i=2,r=2,q=0"));
@@ -631,7 +632,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         assertFalse(pool.tryExecute(()->{}));
         waitForReserved(pool,1);
-
+        Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
         assertThat(count(dump," - STARTED"),is(2));
         assertThat(dump,containsString(",3<=3<=4,i=1,r=2,q=0"));
