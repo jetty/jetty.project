@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -87,7 +88,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     public void onRequest()
     {
         String uri = path;
-        if (query != null && !query.isEmpty())
+        if (!StringUtil.isEmpty(query))
             uri += "?" + query;
         // TODO https?
         onRequest(new MetaData.Request(method, HttpScheme.HTTP.asString(), hostPort, uri, HttpVersion.fromString(version), fields,Long.MIN_VALUE));

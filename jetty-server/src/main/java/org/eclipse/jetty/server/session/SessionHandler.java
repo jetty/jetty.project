@@ -725,7 +725,7 @@ public class SessionHandler extends ScopedHandler
         if (isUsingCookies())
         {
             String sessionPath = (_cookieConfig.getPath()==null) ? contextPath : _cookieConfig.getPath();
-            sessionPath = (sessionPath==null||sessionPath.isEmpty()) ? "/" : sessionPath;
+            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
             String id = getExtendedId(session);
             HttpCookie cookie = null;
             if (_sessionComment == null)
