@@ -54,7 +54,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     /**
      * Encodes thread counts: <dl>
      *     <dt>Hi</dt><dd>Total thread count
-     *     <dt>Lo</dt><dd>Idle threads</dd>
+     *     <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size</dd>
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger();
@@ -158,7 +158,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         super.doStart();
 
         _counts.set(0,0); // threads, idle
-        ensureThreads();
+        ensureMinThreads();
     }
 
     @Override
@@ -314,7 +314,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             _maxThreads = _minThreads;
 
         if (isStarted())
-            ensureThreads();
+            ensureMinThreads();
     }
     
     /**
@@ -483,7 +483,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
             if (idle <= 0 && threads < _maxThreads)
             {
-                // There are no idle threads, so start a new thread if we are less than maxThreads
+                // There are no idle threads and we are less than max threads,  so start a new thread
                 if (!_counts.compareAndSet(counts, threads + 1, idle))
                     continue;
                 startThread = true;
@@ -500,6 +500,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (!isRunning() || !_jobs.offer(job))
         {
             LOG.warn("{} rejected {}", this, job);
+            // reverse our changes to _counts.
             _counts.add(startThread?-1:0,startThread?0:1);
             throw new RejectedExecutionException(job.toString());
         }
@@ -507,7 +508,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (LOG.isDebugEnabled())
             LOG.debug("queue {} startThread={}",job, startThread);
 
-        // Start a thread if we need one
+        // Start a thread if one was needed
         if (startThread)
             startThread();
     }
@@ -553,7 +554,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public int getIdleThreads()
     {
         int idle = _counts.getLo();
-        return Math.max(0,idle);
+        return Math.max(0, idle);
     }
 
     /**
@@ -583,15 +584,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         return getMaxThreads() - getThreads() + getIdleThreads() - getQueueSize() <= getLowThreadsThreshold();
     }
 
-    private void ensureThreads()
+    private void ensureMinThreads()
     {
         while (isRunning())
         {
             long counts = _counts.get();
             int threads = AtomicBiInteger.getHi(counts);
             int idle = AtomicBiInteger.getLo(counts);
-
-            if (threads >= _maxThreads || threads>=_minThreads)
+            if (threads>=_minThreads)
                 break;
             if (!_counts.compareAndSet(counts, threads + 1, idle+1))
                 continue;

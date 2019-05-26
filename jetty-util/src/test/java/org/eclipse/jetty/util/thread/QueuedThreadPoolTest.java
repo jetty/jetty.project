@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -215,18 +216,21 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         duration = System.nanoTime() - duration;
         assertThat(TimeUnit.NANOSECONDS.toMillis(duration), Matchers.greaterThan(tp.getIdleTimeout()/2L));
         assertThat(TimeUnit.NANOSECONDS.toMillis(duration), Matchers.lessThan(tp.getIdleTimeout()*2L));
+
+        tp.stop();
     }
 
     @Test
     public void testThreadPoolFailingJobs() throws Exception
     {
+        QueuedThreadPool tp= new QueuedThreadPool();
+        tp.setMinThreads(2);
+        tp.setMaxThreads(4);
+        tp.setIdleTimeout(900);
+        tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
+
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-            QueuedThreadPool tp= new QueuedThreadPool();
-            tp.setMinThreads(2);
-            tp.setMaxThreads(4);
-            tp.setIdleTimeout(900);
-            tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
 
             tp.start();
 
@@ -300,6 +304,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             waitForIdle(tp,2);
             assertThat(tp.getThreads(),is(2));
         }
+
+        tp.stop();
     }
 
     @Test
@@ -341,6 +347,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         RunningJob job4 = new RunningJob();
         tp.execute(job4);
         assertTrue(job4._run.await(5, TimeUnit.SECONDS));
+
+        tp.stop();
     }
 
     @Test
@@ -392,6 +400,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         // Verify ClosableJobs have not been run but have been closed
         assertThat(job4._run.await(200, TimeUnit.MILLISECONDS), is(false));
         assertThat(job3._closed.await(200, TimeUnit.MILLISECONDS), is(true));
+
+        tp.stop();
     }
 
 
@@ -438,6 +448,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         }
         waitForThreads(tp,2);
         waitForIdle(tp,2);
+        tp.stop();
     }
 
     @Test
@@ -542,6 +553,39 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             Thread.sleep(100);
             assertThat(tp.getThreads(),greaterThanOrEqualTo(5));
         }
+        tp.stop();
+    }
+
+
+    @Test
+    public void testEfficientThreadUsage() throws Exception
+    {
+        QueuedThreadPool tp= new QueuedThreadPool();
+        tp.setMinThreads(1);
+        tp.setMaxThreads(100);
+        tp.setIdleTimeout(1000);
+        tp.start();
+
+        CountDownLatch jobs = new CountDownLatch(200);
+        Runnable job = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if (jobs.getCount() > 0)
+                {
+                    tp.execute(this);
+                    jobs.countDown();
+                }
+            }
+        };
+        tp.execute(job);
+        assertTrue(jobs.await(10,TimeUnit.SECONDS));
+
+        // This is an arbitrary check, but desirable to not use max threads in this scenario
+        assertThat(tp.getThreads(), lessThan(Runtime.getRuntime().availableProcessors()*2));
+
+        tp.stop();
     }
 
     @Test
