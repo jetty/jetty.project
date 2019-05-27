@@ -42,8 +42,8 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 5, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 3, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 20000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 20000, timeUnit = TimeUnit.MILLISECONDS)
 public class ThreadPoolBenchmark
 {
     public enum Type
