@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -552,38 +551,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             Thread.sleep(100);
             assertThat(tp.getThreads(),greaterThanOrEqualTo(5));
         }
-        tp.stop();
-    }
-
-
-    @Test
-    public void testEfficientThreadUsage() throws Exception
-    {
-        QueuedThreadPool tp= new QueuedThreadPool();
-        tp.setMinThreads(1);
-        tp.setMaxThreads(100);
-        tp.setIdleTimeout(1000);
-        tp.start();
-
-        CountDownLatch jobs = new CountDownLatch(200);
-        Runnable job = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                if (jobs.getCount() > 0)
-                {
-                    tp.execute(this);
-                    jobs.countDown();
-                }
-            }
-        };
-        tp.execute(job);
-        assertTrue(jobs.await(10,TimeUnit.SECONDS));
-
-        // This is an arbitrary check, but desirable to not use max threads in this scenario
-        assertThat(tp.getThreads(), lessThan(Runtime.getRuntime().availableProcessors()*2));
-
         tp.stop();
     }
 
