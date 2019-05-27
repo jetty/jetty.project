@@ -158,7 +158,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         super.doStart();
 
         _counts.set(0,0); // threads, idle
-        ensureMinThreads();
+        ensureThreads();
     }
 
     @Override
@@ -314,7 +314,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             _maxThreads = _minThreads;
 
         if (isStarted())
-            ensureMinThreads();
+            ensureThreads();
     }
     
     /**
@@ -484,7 +484,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             if (idle <= 0 && threads < _maxThreads)
             {
                 // There are no idle threads and we are less than max threads,  so start a new thread
-                if (!_counts.compareAndSet(counts, threads + 1, idle))
+                if (!_counts.compareAndSet(counts, threads + 1, idle + 1 - 1))
                     continue;
                 startThread = true;
             }
@@ -584,18 +584,24 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         return getMaxThreads() - getThreads() + getIdleThreads() - getQueueSize() <= getLowThreadsThreshold();
     }
 
-    private void ensureMinThreads()
+    private void ensureThreads()
     {
         while (isRunning())
         {
             long counts = _counts.get();
             int threads = AtomicBiInteger.getHi(counts);
             int idle = AtomicBiInteger.getLo(counts);
-            if (threads>=_minThreads)
+            if (threads<_minThreads || (idle<0 && threads<_maxThreads))
+            {
+                if (!_counts.compareAndSet(counts, threads + 1, idle))
+                    continue;
+                _jobs.offer(NOOP);
+                startThread();
+            }
+            else
+            {
                 break;
-            if (!_counts.compareAndSet(counts, threads + 1, idle+1))
-                continue;
-            startThread();
+            }
         }
     }
 
@@ -815,11 +821,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
             Runnable job = null;
-            boolean isIdle = false;
             try
             {
                 while (isRunning())
                 {
+                    // If we had a job, signal that we can handle another
+                    if (job != null)
+                        _counts.add(0, 1);
+
                     try
                     {
                         job = _jobs.poll();
@@ -848,7 +857,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         // run job
                         if (job != null)
                         {
-                            isIdle = false;
                             if (LOG.isDebugEnabled())
                                 LOG.debug("run {} in {}", job, QueuedThreadPool.this);
                             Thread.interrupted();
@@ -867,13 +875,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     {
                         LOG.warn(e);
                     }
-
-                    if (job != null)
-                    {
-                        isIdle = true;
-                        _counts.add(0, 1);
-                        job = null;
-                    }
                 }
             }
             finally
@@ -883,8 +884,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 if (LOG.isDebugEnabled())
                     LOG.debug("Runner exited for {}", QueuedThreadPool.this);
 
-                _counts.add(-1, isIdle?-1:0);
-                ensureMinThreads();
+                _counts.add(-1, job==null?-1:0);
+                ensureThreads();
             }
         }
     }
