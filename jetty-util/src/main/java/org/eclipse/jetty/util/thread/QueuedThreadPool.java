@@ -90,6 +90,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         this(maxThreads, minThreads, 60000);
     }
 
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads,  @Name("minThreads") int minThreads, @Name("queue") BlockingQueue<Runnable> queue)
+    {
+        this(maxThreads, minThreads, 60000, -1, queue, null);
+    }
+
     public QueuedThreadPool(@Name("maxThreads") int maxThreads,  @Name("minThreads") int minThreads, @Name("idleTimeout")int idleTimeout)
     {
         this(maxThreads, minThreads, idleTimeout, null);
@@ -119,7 +124,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         setReservedThreads(reservedThreads);
         if (queue==null)
         {
-            int capacity=Math.max(_minThreads, 8);
+            int capacity=Math.max(_minThreads, 8) * 1024;
             queue=new BlockingArrayQueue<>(capacity, capacity);
         }
         _jobs=queue;

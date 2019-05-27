@@ -484,7 +484,15 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public int drainTo(Collection<? super E> c)
     {
-        throw new UnsupportedOperationException();
+        int count = 0;
+        E item = poll();
+        while (item!=null)
+        {
+            count++;
+            c.add(item);
+            item = poll();
+        }
+        return count;
     }
 
     @Override
