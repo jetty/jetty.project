@@ -231,7 +231,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-
             tp.start();
 
             // min threads started

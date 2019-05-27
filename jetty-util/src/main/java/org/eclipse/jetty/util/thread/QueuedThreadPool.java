@@ -815,67 +815,66 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
             Runnable job = null;
-            boolean wasIdle = false;
+            boolean isIdle = false;
             try
             {
-                while (true)
+                while (isRunning())
                 {
-                    job = _jobs.poll();
-                    if (job == null)
+                    try
                     {
-                        long idleTimeout = getIdleTimeout();
-                        job = idleJobPoll(idleTimeout);
-
-                        // maybe we should shrink?
-                        if (job == null && getThreads() > _minThreads && idleTimeout > 0)
+                        job = _jobs.poll();
+                        if (job == null)
                         {
-                            long last = _lastShrink.get();
-                            long now = System.nanoTime();
-                            if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout))
+                            long idleTimeout = getIdleTimeout();
+                            job = idleJobPoll(idleTimeout);
+
+                            // maybe we should shrink?
+                            if (job == null && getThreads() > _minThreads && idleTimeout > 0)
                             {
-                                if (_lastShrink.compareAndSet(last, now))
+                                long last = _lastShrink.get();
+                                long now = System.nanoTime();
+                                if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout))
                                 {
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                    break;
+                                    if (_lastShrink.compareAndSet(last, now))
+                                    {
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("shrinking {}", QueuedThreadPool.this);
+                                        break;
+                                    }
                                 }
                             }
                         }
+
+                        // run job
+                        if (job != null)
+                        {
+                            isIdle = false;
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("run {} in {}", job, QueuedThreadPool.this);
+                            Thread.interrupted();
+                            runJob(job);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
+                        }
+                    }
+                    catch (InterruptedException e)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("interrupted {} in {}", job, QueuedThreadPool.this);
+                        LOG.ignore(e);
+                    }
+                    catch (Throwable e)
+                    {
+                        LOG.warn(e);
                     }
 
-                    // run job
                     if (job != null)
                     {
-                        wasIdle = false;
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("run {} in {}", job, QueuedThreadPool.this);
-                        runJob(job);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
-
-                        // Clear interrupted status
-                        Thread.interrupted();
-                        job = null;
-
-                        // We ran a job without exception, so we are now idle or stopping!
-                        if (!isRunning())
-                            break;
-                        wasIdle = true;
+                        isIdle = true;
                         _counts.add(0, 1);
+                        job = null;
                     }
                 }
-            }
-            catch (InterruptedException e)
-            {
-                // TODO do we need to die?
-                if (LOG.isDebugEnabled())
-                    LOG.debug("interrupted {} in {}", job, QueuedThreadPool.this);
-                LOG.ignore(e);
-            }
-            catch (Throwable e)
-            {
-                // TODO do we need to die?
-                LOG.warn(String.format("Unexpected thread death: %s in %s", job, QueuedThreadPool.this), e);
             }
             finally
             {
@@ -884,29 +883,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 if (LOG.isDebugEnabled())
                     LOG.debug("Runner exited for {}", QueuedThreadPool.this);
 
-                while (true)
-                {
-                    long counts = _counts.get();
-                    int threads = AtomicBiInteger.getHi(counts);
-                    int idle = AtomicBiInteger.getLo(counts);
-                    if (wasIdle)
-                        idle--;
-
-                    if ((idle < 0 || threads<=_minThreads) && isRunning())
-                    {
-                        if (!_counts.compareAndSet(counts,threads,idle+1))
-                            continue;
-                        startThread();
-                    }
-                    else
-                    {
-                        if (!_counts.compareAndSet(counts,threads-1, idle))
-                            continue;
-                    }
-                    break;
-                }
+                _counts.add(-1, isIdle?-1:0);
+                ensureMinThreads();
             }
         }
-
     }
 }
