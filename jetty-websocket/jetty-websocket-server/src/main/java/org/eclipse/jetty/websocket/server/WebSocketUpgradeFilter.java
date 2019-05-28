@@ -22,7 +22,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 
 /**
- * @Deprecated Moved to #org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter
+ * @deprecated Moved to #org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter
  */
 @Deprecated
 public class WebSocketUpgradeFilter extends org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter
@@ -33,7 +33,7 @@ public class WebSocketUpgradeFilter extends org.eclipse.jetty.websocket.servlet.
         super.init(config);
         config.getServletContext().log(
             WebSocketUpgradeFilter.class.getName() +
-                " is deprecated Use " +
+                " is deprecated use " +
                 org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter.class.getName());
     }
 }
