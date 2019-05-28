@@ -300,7 +300,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             assertTrue(job4._stopped.await(10,TimeUnit.SECONDS));
 
             waitForIdle(tp,2);
-            assertThat(tp.getThreads(),is(2));
+            waitForThreads(tp,2);
         }
 
         tp.stop();
