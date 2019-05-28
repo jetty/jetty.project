@@ -33,7 +33,7 @@ public class WebSocketUpgradeFilter extends org.eclipse.jetty.websocket.servlet.
         super.init(config);
         config.getServletContext().log(
             WebSocketUpgradeFilter.class.getName() +
-                " is deprecated use " +
+                " is deprecated. Use " +
                 org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter.class.getName());
     }
 }
