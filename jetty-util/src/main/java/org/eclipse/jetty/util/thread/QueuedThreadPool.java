@@ -488,8 +488,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
             // Get the number of threads started (might not yet be running)
             int threads = AtomicBiInteger.getHi(counts);
-            if (threads<0)
-                return;
+            if (threads == Integer.MIN_VALUE)
+                throw new RejectedExecutionException(job.toString());
 
             // Get the number of truly idle threads. This count is reduced by the
             // job queue size so that any threads that are idle but are about to take
@@ -510,8 +510,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (!_jobs.offer(job))
         {
             // reverse our changes to _counts.
-            addCounts(startThread?-1:0, 1);
-            if (isRunning())
+            if (addCounts(startThread?-1:0, 1))
                 LOG.warn("{} rejected {}", this, job);
             throw new RejectedExecutionException(job.toString());
         }
@@ -908,7 +907,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         // run job
                         if (LOG.isDebugEnabled())
                             LOG.debug("run {} in {}", job, QueuedThreadPool.this);
-                        Thread.interrupted();
+                        // Thread.interrupted();
                         runJob(job);
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {} in {}", job, QueuedThreadPool.this);

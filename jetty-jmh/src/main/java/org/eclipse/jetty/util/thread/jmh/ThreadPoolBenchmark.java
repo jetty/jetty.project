@@ -45,8 +45,8 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 5, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 3, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 8, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 3, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 public class ThreadPoolBenchmark
 {
     public enum Type
@@ -54,7 +54,7 @@ public class ThreadPoolBenchmark
         QTP, ETP, LQTP, LETP, AQTP, AETP;
     }
 
-    @Param({ "QTP", "ETP", "LQTP", "LETP", "AQTP", "AETP"})
+    @Param({ "QTP", "ETP" /*, "LQTP", "LETP", "AQTP", "AETP" */ })
     Type type;
 
     @Param({ "200" })
