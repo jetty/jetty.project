@@ -26,6 +26,7 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.junit.jupiter.api.AfterAll;
@@ -76,7 +77,7 @@ public class MisbehavingClassTest
         {
             // expecting IOException during onOpen
             Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-            assertThat(e.getCause(), instanceOf(ExecutionException.class));
+            assertThat(e.getCause(), instanceOf(CloseException.class));
 
             assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
 
@@ -97,7 +98,7 @@ public class MisbehavingClassTest
         {
             // expecting IOException during onOpen
             Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-            assertThat(e.getCause(), instanceOf(ExecutionException.class));
+            assertThat(e.getCause(), instanceOf(CloseException.class));
 
             assertThat("Close should have occurred", socket.closeLatch.await(5, TimeUnit.SECONDS), is(true));
 
