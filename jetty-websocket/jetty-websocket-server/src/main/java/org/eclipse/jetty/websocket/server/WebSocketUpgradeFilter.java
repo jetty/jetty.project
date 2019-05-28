@@ -31,6 +31,9 @@ public class WebSocketUpgradeFilter extends org.eclipse.jetty.websocket.servlet.
     public void init(FilterConfig config) throws ServletException
     {
         super.init(config);
-        config.getServletContext().log("org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter is deprecated. Use org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter");
+        config.getServletContext().log(
+            WebSocketUpgradeFilter.class.getName() +
+                " is deprecated Use " +
+                org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter.class.getName());
     }
 }
