@@ -19,18 +19,23 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-@SuppressWarnings("unused")
-@WebSocket
-public class EchoSocket
+public class SimpleStatusServlet extends HttpServlet
 {
-    @OnWebSocketMessage
-    public void onMessage(Session session, String msg) throws IOException
+    private final int statusCode;
+
+    public SimpleStatusServlet(int statusCode)
     {
-        session.getRemote().sendString(msg);
+        this.statusCode = statusCode;
+    }
+
+    @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        resp.setStatus(this.statusCode);
     }
 }
