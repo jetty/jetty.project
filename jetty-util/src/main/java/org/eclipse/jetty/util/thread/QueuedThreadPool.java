@@ -907,10 +907,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         // run job
                         if (LOG.isDebugEnabled())
                             LOG.debug("run {} in {}", job, QueuedThreadPool.this);
-                        // Thread.interrupted();
                         runJob(job);
+
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
+
+                        // Clear any interrupted status
+                        Thread.interrupted();
                     }
                     catch (InterruptedException e)
                     {

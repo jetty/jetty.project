@@ -484,21 +484,56 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     @Override
     public int drainTo(Collection<? super E> c)
     {
-        int count = 0;
-        E item = poll();
-        while (item!=null)
-        {
-            count++;
-            c.add(item);
-            item = poll();
-        }
-        return count;
+        return drainTo(c, Integer.MAX_VALUE);
     }
 
     @Override
     public int drainTo(Collection<? super E> c, int maxElements)
     {
-        throw new UnsupportedOperationException();
+        int elements = 0;
+        _tailLock.lock();
+        try
+        {
+            _headLock.lock();
+            try
+            {
+                final int head = _indexes[HEAD_OFFSET];
+                final int tail = _indexes[TAIL_OFFSET];
+                final int capacity = _elements.length;
+
+                int i = head;
+                while (i!=tail && elements<maxElements)
+                {
+                    elements++;
+                    c.add((E)_elements[i]);
+                    ++i;
+                    if (i == capacity)
+                        i = 0;
+
+                }
+
+                if (i==tail)
+                {
+                    _indexes[HEAD_OFFSET] = 0;
+                    _indexes[TAIL_OFFSET] = 0;
+                    _size.set(0);
+                }
+                else
+                {
+                    _indexes[HEAD_OFFSET] = i;
+                    _size.addAndGet(-elements);
+                }
+            }
+            finally
+            {
+                _headLock.unlock();
+            }
+        }
+        finally
+        {
+            _tailLock.unlock();
+        }
+        return elements;
     }
 
     /*----------------------------------------------------------------------------*/
@@ -513,7 +548,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _tailLock.lock();
         try
         {
-
             _headLock.lock();
             try
             {

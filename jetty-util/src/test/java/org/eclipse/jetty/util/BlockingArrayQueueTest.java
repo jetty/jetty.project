@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,9 +28,15 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class BlockingArrayQueueTest
 {
@@ -493,5 +496,29 @@ public class BlockingArrayQueueTest
         assertEquals(element1, element);
         assertTrue(iterator.hasNext());
         assertFalse(iterator.hasPrevious());
+    }
+
+
+    @Test
+    public void testDrainTo() throws Exception
+    {
+        BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
+        queue.add("one");
+        queue.add("two");
+        queue.add("three");
+        queue.add("four");
+        queue.add("five");
+        queue.add("six");
+
+        List<String> to = new ArrayList<>();
+        queue.drainTo(to,3);
+        assertThat(to, Matchers.contains("one", "two", "three"));
+        assertThat(queue.size(),Matchers.is(3));
+        assertThat(queue, Matchers.contains("four", "five", "six"));
+
+        queue.drainTo(to);
+        assertThat(to, Matchers.contains("one", "two", "three", "four", "five", "six"));
+        assertThat(queue.size(),Matchers.is(0));
+        assertThat(queue, Matchers.empty());
     }
 }
