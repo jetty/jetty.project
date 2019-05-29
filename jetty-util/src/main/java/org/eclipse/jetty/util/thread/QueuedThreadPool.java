@@ -176,15 +176,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         super.doStop();
 
         // Signal the Runner threads that we are stopping
-        _counts.getAndSetHi(Integer.MIN_VALUE);
+        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
 
         // If stop timeout try to gracefully stop
         long timeout = getStopTimeout();
         BlockingQueue<Runnable> jobs = getQueue();
         if (timeout > 0)
         {
-            // Fill job Q with noop jobs to wakeup idle
-            for (int i = getThreads(); i-- > 0; )
+            // Fill the job queue with noop jobs to wakeup idle threads.
+            for (int i = 0; i < threads; ++i)
             {
                 jobs.offer(NOOP);
             }
@@ -606,19 +606,18 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         {
             long counts = _counts.get();
             int threads = AtomicBiInteger.getHi(counts);
-            int idle = AtomicBiInteger.getLo(counts);
-
             if (threads == Integer.MIN_VALUE)
                 break;
 
             // If we have less than min threads
-            // OR insufficient idle threads to meet demand?
+            // OR insufficient idle threads to meet demand
+            int idle = AtomicBiInteger.getLo(counts);
             if (threads < _minThreads || (idle < 0 && threads < _maxThreads))
             {
-                // Try to start a thread
+                // Then try to start a thread.
                 if (_counts.compareAndSet(counts, threads + 1, idle))
                     startThread();
-                // continue to check state again.
+                // Otherwise continue to check state again.
                 continue;
             }
             break;
@@ -936,12 +935,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             finally
             {
-                removeThread(Thread.currentThread());
+                Thread thread = Thread.currentThread();
+                removeThread(thread);
 
                 // Decrement the total thread count and the idle count if we had no job
                 addCounts(-1, job == null ? -1 : 0);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Runner exited for {}", QueuedThreadPool.this);
+                    LOG.debug("{} exited for {}", thread, QueuedThreadPool.this);
 
                 // There is a chance that we shrunk just as a job was queued for us, so
                 // check again if we have sufficient threads to meet demand
