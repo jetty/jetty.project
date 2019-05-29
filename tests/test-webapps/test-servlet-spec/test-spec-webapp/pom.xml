@@ -76,6 +76,7 @@
             <Import-Package>
               javax.transaction*;version="[1.1,1.3)",
               javax.servlet*;version="[2.6,4.1)",
+	            org.eclipse.jetty.util;version="[9.3.0.RC0,9.3.1)",
               org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
               org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional",
               org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional",
@@ -197,12 +198,6 @@
     <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
