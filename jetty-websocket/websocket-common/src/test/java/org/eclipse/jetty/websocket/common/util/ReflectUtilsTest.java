@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
+import org.eclipse.jetty.io.AbstractConnection;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for class {@link ReflectUtils}.
@@ -66,6 +68,18 @@ public class ReflectUtilsTest
     public void testIsDefaultConstructableWithIntegerClass()
     {
         assertFalse(ReflectUtils.isDefaultConstructable(Integer.class));
+    }
+
+    @Test
+    public void testIsDefaultConstructableWithAbstractClass()
+    {
+        assertFalse(ReflectUtils.isDefaultConstructable(AbstractConnection.class));
+    }
+
+    @Test
+    public void testIsDefaultConstructableWithObjectClass()
+    {
+        assertTrue(ReflectUtils.isDefaultConstructable(Object.class));
     }
 
     @Test
