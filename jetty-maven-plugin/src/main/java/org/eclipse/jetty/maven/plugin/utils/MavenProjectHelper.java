@@ -65,7 +65,7 @@ public class MavenProjectHelper
      */
     public Path getArtifactPath(Artifact artifact)
     {
-        Path path = Paths.get(artifact.getFile().toURI());
+        Path path = artifact.getFile().toPath();
         MavenProject mavenProject = getMavenProject(artifact);
         if (mavenProject != null)
         {
