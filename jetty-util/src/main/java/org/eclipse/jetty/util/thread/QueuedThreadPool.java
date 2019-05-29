@@ -748,7 +748,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     {
         long count = _counts.get();
         int threads = Math.max(0,AtomicBiInteger.getHi(count));
-        int idle = AtomicBiInteger.getLo(count);
+        int idle = Math.max(0,AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
         return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d}[%s]",
