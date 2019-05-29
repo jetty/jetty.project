@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -147,6 +148,10 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             if (timeout>0)
                 return sessionFuture.get(timeout+1000, TimeUnit.MILLISECONDS);
             return sessionFuture.get();
+        }
+        catch (ExecutionException e)
+        {
+            throw new IOException("Connection future not completed " + destURI, e.getCause());
         }
         catch (TimeoutException e)
         {
