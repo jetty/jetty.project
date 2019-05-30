@@ -18,42 +18,37 @@
 
 package org.eclipse.jetty.websocket.javax.tests.coders;
 
-import org.eclipse.jetty.websocket.javax.common.decoders.IntegerDecoder;
+import org.eclipse.jetty.websocket.javax.common.decoders.ShortDecoder;
 import org.junit.jupiter.api.Test;
 
 import javax.websocket.DecodeException;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class IntegerDecoderTest
+/**
+ * Unit tests for class {@link ShortDecoder}.
+ *
+ * @see ShortDecoder
+ */
+public class ShortDecoderTest
 {
-    @Test
-    public void testDecode() throws DecodeException
-    {
-        IntegerDecoder decoder = new IntegerDecoder();
-        Integer val = decoder.decode("123");
-        assertThat("Decoded value", val, is(123));
-    }
-
     @Test
     public void testWillDecodeWithNull()
     {
-        assertFalse(new IntegerDecoder().willDecode(null));
+        assertFalse(new ShortDecoder().willDecode(null));
     }
 
     @Test
     public void testWillDecodeWithNonEmptyString()
     {
-        assertFalse(new IntegerDecoder().willDecode("a"));
+        assertFalse(new ShortDecoder().willDecode(".iix/PN}f[&-<n$B9q"));
     }
 
     @Test
     public void testDecodeThrowsDecodeException()
     {
-        assertThrows(DecodeException.class, () -> IntegerDecoder.INSTANCE.decode(""));
+        assertThrows(DecodeException.class, () -> ShortDecoder.INSTANCE.decode("$Yta3*m*%"));
 
     }
 }

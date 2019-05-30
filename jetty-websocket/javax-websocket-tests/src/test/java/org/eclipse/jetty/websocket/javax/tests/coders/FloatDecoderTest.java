@@ -18,42 +18,50 @@
 
 package org.eclipse.jetty.websocket.javax.tests.coders;
 
-import org.eclipse.jetty.websocket.javax.common.decoders.IntegerDecoder;
+import org.eclipse.jetty.websocket.javax.common.decoders.FloatDecoder;
 import org.junit.jupiter.api.Test;
 
 import javax.websocket.DecodeException;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IntegerDecoderTest
+/**
+ * Unit tests for class {@link FloatDecoder}.
+ *
+ * @see FloatDecoder
+ */
+public class FloatDecoderTest
 {
     @Test
-    public void testDecode() throws DecodeException
+    public void testWillDecodeReturningTrue()
     {
-        IntegerDecoder decoder = new IntegerDecoder();
-        Integer val = decoder.decode("123");
-        assertThat("Decoded value", val, is(123));
+        assertTrue(new FloatDecoder().willDecode("21"));
+    }
+
+    @Test
+    public void testWillDecodeReturningFalse()
+    {
+        assertFalse(new FloatDecoder().willDecode("NaN"));
     }
 
     @Test
     public void testWillDecodeWithNull()
     {
-        assertFalse(new IntegerDecoder().willDecode(null));
-    }
-
-    @Test
-    public void testWillDecodeWithNonEmptyString()
-    {
-        assertFalse(new IntegerDecoder().willDecode("a"));
+        assertFalse(FloatDecoder.INSTANCE.willDecode(null));
     }
 
     @Test
     public void testDecodeThrowsDecodeException()
     {
-        assertThrows(DecodeException.class, () -> IntegerDecoder.INSTANCE.decode(""));
+        assertThrows(DecodeException.class, () -> new FloatDecoder().decode("NaN"));
+    }
 
+    @Test
+    public void testDecode() throws DecodeException
+    {
+        assertEquals(4.1F, new FloatDecoder().decode("4.1"), 0.01F);
     }
 }
