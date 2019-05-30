@@ -95,12 +95,13 @@ pipeline {
 
 def slackNotif() {
   stage("Slack Notification"){
-//    when {
-//      anyOf {
-//        branch 'jetty-10.0.x'
-//        branch 'jetty-9.4.x'
-//      }
-//    }
+    when {
+      anyOf {
+        branch 'jetty-10.0.x'
+        branch 'jetty-9.4.x'
+        branch 'jetty-9.4.x_slack_when_branch'
+      }
+    }
     steps {
       script {
         //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
