@@ -293,9 +293,8 @@ public class JettyRunMojo extends AbstractJettyMojo
                     getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
                     return p.toFile();
                 }).collect(Collectors.toList());
-        getLog().info("WEB-INF/lib initialized (at root)");
+        getLog().debug("WEB-INF/lib initialized (at root)");
         webApp.setWebInfLib(webInfLibs);
-
 
        //if we have not already set web.xml location, need to set one up
        if (webApp.getDescriptor() == null)
