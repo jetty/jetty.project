@@ -94,8 +94,8 @@ pipeline {
 }
 
 def slackNotif() {
+    def branch = ${env.BRANCH_NAME}
     script {
-      def branch = ${env.BRANCH_NAME}
       if (branch=='jetty-10.0.x' ||
           branch=='jetty-9.4.x' ||
           branch=='jetty-9.4.x_slack_when_branch') {
