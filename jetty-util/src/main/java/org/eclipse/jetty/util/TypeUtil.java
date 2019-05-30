@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -35,9 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -501,175 +496,22 @@ public class TypeUtil
         }
     }
 
-
-    public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg)
-       throws InvocationTargetException, NoSuchMethodException
+    @Deprecated
+    public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg) throws InvocationTargetException, NoSuchMethodException
     {
-        Objects.requireNonNull(oClass,"Class cannot be null");
-        Objects.requireNonNull(methodName,"Method name cannot be null");
-        if (StringUtil.isBlank(methodName))
-        {
-            throw new IllegalArgumentException("Method name cannot be blank");
-        }
-        
-        // Lets just try all methods for now
-        for (Method method : oClass.getMethods())
-        {
-            if (!method.getName().equals(methodName))
-                continue;            
-            if (method.getParameterCount() != arg.length)
-                continue;
-            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
-                continue;
-            if ((obj == null) && method.getDeclaringClass() != oClass)
-                continue;
-
-            try
-            {
-                return method.invoke(obj, arg);
-            }
-            catch (IllegalAccessException | IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        
-        // Lets look for a method with optional arguments
-        Object[] args_with_opts=null;
-        
-        for (Method method : oClass.getMethods())
-        {
-            if (!method.getName().equals(methodName))
-                continue;            
-            if (method.getParameterCount() != arg.length+1)
-                continue;
-            if (!method.getParameterTypes()[arg.length].isArray())
-                continue;
-            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
-                continue;
-            if ((obj == null) && method.getDeclaringClass() != oClass)
-                continue;
-
-            if (args_with_opts==null)
-                args_with_opts=ArrayUtil.addToArray(arg,new Object[]{},Object.class);
-            try
-            {
-                return method.invoke(obj, args_with_opts);
-            }
-            catch (IllegalAccessException | IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        
-        
-        throw new NoSuchMethodException(methodName);
+        throw new UnsupportedOperationException();
     }
 
+    @Deprecated
     public static Object construct(Class<?> klass, Object[] arguments) throws InvocationTargetException, NoSuchMethodException
     {
-        Objects.requireNonNull(klass,"Class cannot be null");
-        
-        for (Constructor<?> constructor : klass.getConstructors())
-        {
-            if (arguments == null)
-            {
-                // null arguments in .newInstance() is allowed
-                if (constructor.getParameterCount() != 0)
-                    continue;
-            }
-            else if (constructor.getParameterCount() != arguments.length)
-                continue;
-
-            try
-            {
-                return constructor.newInstance(arguments);
-            }
-            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        throw new NoSuchMethodException("<init>");
+        throw new UnsupportedOperationException();
     }
-    
+
+    @Deprecated
     public static Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
     {
-        Objects.requireNonNull(klass,"Class cannot be null");
-        Objects.requireNonNull(namedArgMap,"Named Argument Map cannot be null");
-        
-        for (Constructor<?> constructor : klass.getConstructors())
-        {
-            if (arguments == null)
-            {
-                // null arguments in .newInstance() is allowed
-                if (constructor.getParameterCount() != 0)
-                    continue;
-            }
-            else if (constructor.getParameterCount() != arguments.length)
-                continue;
-
-            try
-            {
-                Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
-                
-                if (arguments == null || arguments.length == 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Constructor has no arguments");
-                    return constructor.newInstance(arguments);
-                }
-                else if (parameterAnnotations == null || parameterAnnotations.length == 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Constructor has no parameter annotations");
-                    return constructor.newInstance(arguments);
-                }
-                else
-                {
-                   Object[] swizzled = new Object[arguments.length];
-                   
-                   int count = 0;
-                   for ( Annotation[] annotations : parameterAnnotations )
-                   {
-                       for ( Annotation annotation : annotations)
-                       {
-                           if ( annotation instanceof Name )
-                           {
-                               Name param = (Name)annotation;
-                               
-                               if (namedArgMap.containsKey(param.value()))
-                               {
-                                   if (LOG.isDebugEnabled())
-                                       LOG.debug("placing named {} in position {}", param.value(), count);
-                                   swizzled[count] = namedArgMap.get(param.value());
-                               }
-                               else
-                               {
-                                   if (LOG.isDebugEnabled())
-                                       LOG.debug("placing {} in position {}", arguments[count], count);
-                                   swizzled[count] = arguments[count];
-                               }
-                               ++count;
-                           }
-                           else
-                           {
-                               if (LOG.isDebugEnabled())
-                                   LOG.debug("passing on annotation {}", annotation);
-                           }
-                       }
-                   }
-                   
-                   return constructor.newInstance(swizzled);
-                }
-                
-            }
-            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        throw new NoSuchMethodException("<init>");
+        throw new UnsupportedOperationException();
     }
 
     /* ------------------------------------------------------------ */

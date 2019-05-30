@@ -25,9 +25,15 @@ public class AnnotatedTestConfiguration
     private String first;
     private String second;
     private String third;
-    
-    AnnotatedTestConfiguration nested;
-    
+    private String deprecated;
+    private AnnotatedTestConfiguration nested;
+
+    // Do not remove deprecation, used in tests.
+    @Deprecated
+    public AnnotatedTestConfiguration()
+    {
+    }
+
     public AnnotatedTestConfiguration(@Name("first") String first, @Name("second") String second, @Name("third") String third)
     {
         this.first = first;
@@ -74,5 +80,18 @@ public class AnnotatedTestConfiguration
     {
         this.nested = nested;
     }
-    
+
+    // Do not remove deprecation, used in tests.
+    @Deprecated
+    public void setDeprecated(String value)
+    {
+        this.deprecated = value;
+    }
+
+    // Do not remove deprecation, used in tests.
+    @Deprecated
+    public String getDeprecated()
+    {
+        return deprecated;
+    }
 }

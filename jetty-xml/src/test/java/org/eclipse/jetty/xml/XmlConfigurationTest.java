@@ -981,4 +981,17 @@ public class XmlConfigurationTest
             assertThat(propName, tc.getTestString(), startsWith("file:"));
         }
     }
+
+    @Test
+    public void testDeprecated() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+            "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+            "  <Set name=\"deprecated\">foo</Set>" +
+            "  <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
+            "</Configure>");
+
+        xmlConfiguration.configure();
+        // Cannot test that the warnings are logged.
+    }
 }
