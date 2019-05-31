@@ -275,7 +275,7 @@ public class StringUtilTest
         assertFalse(StringUtil.isEmpty("  a"));
         assertFalse(StringUtil.isEmpty("a  "));
         assertFalse(StringUtil.isEmpty("."));
-        assertTrue(StringUtil.isEmpty(";\n"));
+        assertFalse(StringUtil.isEmpty(";\n"));
     }
     
     @Test
