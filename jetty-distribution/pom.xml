@@ -431,6 +431,27 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-jaas-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-jndi-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-documentation</artifactId>
       <version>${project.version}</version>

@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.util.thread.jmh;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -42,16 +45,16 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 5, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 3, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 8, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 3, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 public class ThreadPoolBenchmark
 {
     public enum Type
     {
-        QTP, ETP;
+        QTP, ETP, LQTP, LETP, AQTP, AETP;
     }
 
-    @Param({ "QTP", "ETP"})
+    @Param({ "QTP", "ETP" /*, "LQTP", "LETP", "AQTP", "AETP" */ })
     Type type;
 
     @Param({ "200" })
@@ -65,11 +68,39 @@ public class ThreadPoolBenchmark
         switch(type)
         {
             case QTP:
-                pool = new QueuedThreadPool(size,size);
+            {
+                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new BlockingArrayQueue<>(32768, 32768));
+                qtp.setReservedThreads(0);
+                pool = qtp;
                 break;
+            }
                 
             case ETP:
-                pool = new ExecutorThreadPool(size,size);
+                pool = new ExecutorThreadPool(size, size, new BlockingArrayQueue<>(32768, 32768));
+                break;
+                
+            case LQTP:
+            {
+                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new LinkedBlockingQueue<>());
+                qtp.setReservedThreads(0);
+                pool = qtp;
+                break;
+            }
+                
+            case LETP:
+                pool = new ExecutorThreadPool(size, size, new LinkedBlockingQueue<>());
+                break;
+                
+            case AQTP:
+            {
+                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new ArrayBlockingQueue<>(32768));
+                qtp.setReservedThreads(0);
+                pool = qtp;
+                break;
+            }
+                
+            case AETP:
+                pool = new ExecutorThreadPool(size, size, new ArrayBlockingQueue<>(32768));
                 break;
         }
         LifeCycle.start(pool);

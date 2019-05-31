@@ -211,17 +211,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote</artifactId>
+        <artifactId>infinispan-common</artifactId>
         <version>9.4.19-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-remote-query</artifactId>
-        <version>9.4.19-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded</artifactId>
         <version>9.4.19-SNAPSHOT</version>
       </dependency>
       <dependency>
