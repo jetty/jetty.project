@@ -96,8 +96,7 @@ pipeline {
 def slackNotif() {
     script {
       if (env.BRANCH_NAME=='jetty-10.0.x' ||
-          env.BRANCH_NAME=='jetty-9.4.x' ||
-          env.BRANCH_NAME=='jetty-9.4.x_slack_when_branch') {
+          env.BRANCH_NAME=='jetty-9.4.x') {
           //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
           // by ${BUILD_USER}
           COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
