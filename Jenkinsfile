@@ -94,24 +94,17 @@ pipeline {
 }
 
 def slackNotif() {
-  stage("Slack Notification"){
-//    when {
-//      anyOf {
-//        branch 'jetty-10.0.x'
-//        branch 'jetty-9.4.x'
-//      }
-//    }
-    steps {
-      script {
-        //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
-        // by ${BUILD_USER}
-        COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
+    script {
+      if (env.BRANCH_NAME=='jetty-10.0.x' ||
+          env.BRANCH_NAME=='jetty-9.4.x') {
+          //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
+          // by ${BUILD_USER}
+          COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
+          slackSend channel: '#jenkins',
+                  color: COLOR_MAP[currentBuild.currentResult],
+                  message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
       }
-      slackSend channel: '#jenkins',
-                color: COLOR_MAP[currentBuild.currentResult],
-                message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
     }
-  }
 }
 
 /**
