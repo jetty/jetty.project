@@ -109,7 +109,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory
     public abstract JavaxWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
 
     public JavaxWebSocketFrameHandler newJavaxWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest,
-                                                                    UpgradeResponse upgradeResponse,
                                                                     CompletableFuture<Session> futureSession)
     {
         Object endpoint;
@@ -171,7 +170,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         JavaxWebSocketFrameHandler frameHandler = new JavaxWebSocketFrameHandler(
             container,
             endpoint,
-            upgradeRequest, upgradeResponse,
+            upgradeRequest,
             openHandle, closeHandle, errorHandle,
             textMetadata, binaryMetadata,
             pongHandle,

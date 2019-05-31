@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
@@ -43,8 +45,10 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
 {
     private final WebSocketClient containerContext;
     private final Object websocketPojo;
-    private final CompletableFuture<Session> futureSession;
     private final DelegatedJettyClientUpgradeRequest handshakeRequest;
+    private final CompletableFuture<Session> completableFutureSession;
+    private final CompletableFuture<Session> futureSession;
+    private UpgradeResponse upgradeResponse;
 
     public JettyClientUpgradeRequest(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request,
                                      URI requestURI, Object websocketPojo)
@@ -52,7 +56,13 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
-        this.futureSession = new CompletableFuture<>();
+        this.completableFutureSession = new CompletableFuture<>();
+        this.futureSession = completableFutureSession.thenApply(s->
+        {
+            // Note: we must set the upgrade response before the future session will complete
+            ((WebSocketSession)s).setUpgradeResponse(upgradeResponse);
+            return s;
+        });
 
         if (request != null)
         {
@@ -102,17 +112,21 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
     protected void handleException(Throwable failure)
     {
         super.handleException(failure);
-        futureSession.completeExceptionally(failure);
+        completableFutureSession.completeExceptionally(failure);
     }
 
     @Override
-    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+    public void upgrade(HttpResponse response, HttpConnectionOverHTTP httpConnection)
     {
-        UpgradeResponse upgradeResponse = new DelegatedJettyClientUpgradeResponse(response);
+        // Set the upgrade response which is used in the callback on the futureSession
+        upgradeResponse = new DelegatedJettyClientUpgradeResponse(response);
+        super.upgrade(response, httpConnection);
+    }
 
-        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
-            handshakeRequest, upgradeResponse, futureSession);
-
+    @Override
+    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
+    {
+        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, handshakeRequest, completableFutureSession);
         return frameHandler;
     }
 

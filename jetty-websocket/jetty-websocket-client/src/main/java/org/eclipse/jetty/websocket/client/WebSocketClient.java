@@ -43,7 +43,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.impl.JettyClientUpgradeRequest;
@@ -312,10 +311,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         return sessionTracker.getSessions();
     }
 
-    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest,
         CompletableFuture<Session> futureSession)
     {
-        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
+        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, upgradeRequest, futureSession);
     }
 
     /**

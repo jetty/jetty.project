@@ -67,10 +67,9 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
         BasicEndpointConfig config = new BasicEndpointConfig();
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, config);
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
-        UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
 
         JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxWebSocketFrameHandler(endpoint,
-            upgradeRequest, upgradeResponse, new CompletableFuture<>());
+            upgradeRequest, new CompletableFuture<>());
 
         return localEndpoint;
     }

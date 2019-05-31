@@ -38,9 +38,8 @@ public abstract class AbstractSessionTest
         container.start();
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
-        UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
         JavaxWebSocketFrameHandler frameHandler =
-            container.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, null);
+            container.newFrameHandler(websocketPojo, upgradeRequest, null);
         FrameHandler.CoreSession coreSession = new FrameHandler.CoreSession.Empty();
         String id = "dummy";
         EndpointConfig endpointConfig = null;

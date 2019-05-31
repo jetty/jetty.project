@@ -103,7 +103,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     /**
      * Immutable javax.websocket.HandshakeResponse available via Session
      */
-    private final UpgradeResponse upgradeResponse;
     private final String id;
     private final EndpointConfig endpointConfig;
     private final CompletableFuture<Session> futureSession;
@@ -118,7 +117,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
         Object endpointInstance,
-        UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+        UpgradeRequest upgradeRequest,
         MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
         JavaxWebSocketFrameHandlerMetadata.MessageMetadata textMetadata,
         JavaxWebSocketFrameHandlerMetadata.MessageMetadata binaryMetadata,
@@ -138,7 +137,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
         this.endpointInstance = endpointInstance;
         this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;

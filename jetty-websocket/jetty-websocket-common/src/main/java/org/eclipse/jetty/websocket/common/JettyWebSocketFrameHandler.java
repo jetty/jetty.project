@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.CloseException;
@@ -71,10 +70,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
      * Immutable HandshakeRequest available via Session
      */
     private final UpgradeRequest upgradeRequest;
-    /**
-     * Immutable HandshakeResponse available via Session
-     */
-    private final UpgradeResponse upgradeResponse;
+
     private final CompletableFuture<Session> futureSession;
     private final Customizer customizer;
     private MessageSink textSink;
@@ -86,7 +82,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
         Object endpointInstance,
-        UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+        UpgradeRequest upgradeRequest,
         MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
         MethodHandle textHandle, MethodHandle binaryHandle,
         Class<? extends MessageSink> textSinkClass,
@@ -102,7 +98,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.container = container;
         this.endpointInstance = endpointInstance;
         this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
@@ -131,7 +126,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
-            session = new WebSocketSession(coreSession, this, batchMode, upgradeRequest, upgradeResponse);
+            session = new WebSocketSession(coreSession, this, batchMode, upgradeRequest);
 
             frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
             openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);

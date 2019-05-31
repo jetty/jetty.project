@@ -45,19 +45,17 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     private final JettyWebSocketFrameHandler frameHandler;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
-    private final UpgradeResponse upgradeResponse;
+    private UpgradeResponse upgradeResponse;
 
     public WebSocketSession(
             FrameHandler.CoreSession coreSession,
             JettyWebSocketFrameHandler frameHandler, BatchMode batchMode,
-            UpgradeRequest upgradeRequest,
-            UpgradeResponse upgradeResponse)
+            UpgradeRequest upgradeRequest)
     {
         this.coreSession = Objects.requireNonNull(coreSession);
         this.frameHandler = Objects.requireNonNull(frameHandler);
         this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession, batchMode);
         this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
     }
 
     @Override
@@ -198,6 +196,11 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     public UpgradeRequest getUpgradeRequest()
     {
         return this.upgradeRequest;
+    }
+
+    public void setUpgradeResponse(UpgradeResponse upgradeResponse)
+    {
+        this.upgradeResponse = upgradeResponse;
     }
 
     @Override

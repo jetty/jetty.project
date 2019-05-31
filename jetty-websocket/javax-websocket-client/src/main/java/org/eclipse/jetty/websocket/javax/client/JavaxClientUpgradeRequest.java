@@ -23,13 +23,11 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.websocket.Session;
 
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
 
 public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
 {
@@ -53,13 +51,10 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
     }
 
     @Override
-    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
     {
         UpgradeRequest upgradeRequest = new DelegatedJavaxClientUpgradeRequest(this);
-        UpgradeResponse upgradeResponse = new DelegatedJavaxClientUpgradeResponse(response);
-
-        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
-
+        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, futureSession);
         return frameHandler;
     }
 

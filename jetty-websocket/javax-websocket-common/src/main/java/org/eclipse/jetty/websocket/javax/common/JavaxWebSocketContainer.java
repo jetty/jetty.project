@@ -156,10 +156,10 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return sessionTracker.getSessions();
     }
 
-    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest,
         CompletableFuture<Session> futureSession)
     {
-        return getFrameHandlerFactory().newJavaxWebSocketFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, futureSession);
+        return getFrameHandlerFactory().newJavaxWebSocketFrameHandler(websocketPojo, upgradeRequest, futureSession);
     }
 
     /**

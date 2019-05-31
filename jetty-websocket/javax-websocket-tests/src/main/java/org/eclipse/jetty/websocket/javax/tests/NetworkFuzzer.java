@@ -28,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -66,8 +65,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         super();
         this.server = server;
         this.client = new WebSocketCoreClient();
-        CompletableFuture<FrameCapture> futureOnCapture = new CompletableFuture<>();
-        this.upgradeRequest = new RawUpgradeRequest(client, wsURI, futureOnCapture);
+        this.upgradeRequest = new RawUpgradeRequest(client, wsURI);
         if (requestHeaders != null)
         {
             HttpFields fields = this.upgradeRequest.getHeaders();
@@ -81,7 +79,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this.generator = new UnitGenerator(Behavior.CLIENT);
 
         CompletableFuture<FrameHandler.CoreSession> futureHandler = this.client.connect(upgradeRequest);
-        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (session, capture) -> capture);
+        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(upgradeRequest.getFuture(), (session, capture) -> capture);
         this.frameCapture = futureCapture.get(10, TimeUnit.SECONDS);
     }
 
@@ -186,27 +184,31 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
 
     public static class RawUpgradeRequest extends ClientUpgradeRequest
     {
+        private final FrameCapture frameCapture = new FrameCapture();
         private final CompletableFuture<FrameCapture> futureCapture;
-        private EndPoint endPoint;
 
-        public RawUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI, CompletableFuture<FrameCapture> futureCapture)
+        public RawUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
         {
             super(webSocketClient, requestURI);
-            this.futureCapture = futureCapture;
+            this.futureCapture = new CompletableFuture<>();
+        }
+
+        public CompletableFuture<FrameCapture> getFuture()
+        {
+            return futureCapture;
         }
 
         @Override
-        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
         {
-            FrameCapture frameCapture = new FrameCapture(this.endPoint);
-            futureCapture.complete(frameCapture);
             return frameCapture;
         }
 
         @Override
         protected void customize(EndPoint endp)
         {
-            this.endPoint = endp;
+            frameCapture.setEndpoint(endp);
+            futureCapture.complete(frameCapture);
         }
 
         @Override
@@ -220,15 +222,34 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     public static class FrameCapture implements FrameHandler
     {
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
-        private final EndPoint endPoint;
+        private EndPoint endPoint;
+        private final CompletableFuture<EndPoint> endPointFuture = new CompletableFuture<>();
         private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
         private CoreSession coreSession;
 
-        public FrameCapture(EndPoint endPoint)
+        public void setEndpoint(EndPoint endpoint)
         {
-            this.endPoint = endPoint;
+            endPointFuture.complete(endpoint);
         }
 
+        private EndPoint getEndpoint() throws IOException
+        {
+            if (endPoint == null)
+            {
+                try
+                {
+                    endPoint = endPointFuture.get(5, TimeUnit.SECONDS);
+                    if (endPoint == null)
+                        throw new IllegalStateException();
+                }
+                catch (Exception e)
+                {
+                    throw new IOException(e);
+                }
+            }
+
+            return endPoint;
+        }
 
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
@@ -256,14 +277,13 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
             callback.succeeded();
         }
 
-
         public void writeRaw(ByteBuffer buffer) throws IOException
         {
             synchronized (this)
             {
                 try (SharedBlockingCallback.Blocker blocker = blockingCallback.acquire())
                 {
-                    this.endPoint.write(blocker, buffer);
+                    getEndpoint().write(blocker, buffer);
                 }
             }
         }

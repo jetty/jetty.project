@@ -42,8 +42,6 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactor
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.javax.tests.MessageType;
 import org.eclipse.jetty.websocket.javax.tests.SessionMatchers;
 import org.eclipse.jetty.websocket.javax.tests.handlers.ByteArrayWholeHandler;
@@ -80,11 +78,10 @@ public class SessionAddMessageHandlerTest
         ConfiguredEndpoint ei = new ConfiguredEndpoint(new DummyEndpoint(), endpointConfig);
 
         UpgradeRequest handshakeRequest = new UpgradeRequestAdapter();
-        UpgradeResponse handshakeResponse = new UpgradeResponseAdapter();
 
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
-        frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest, handshakeResponse, futureSession);
+        frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest, futureSession);
         frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Session

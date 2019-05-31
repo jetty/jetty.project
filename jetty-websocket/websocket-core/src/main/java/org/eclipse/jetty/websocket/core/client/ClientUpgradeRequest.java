@@ -49,6 +49,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -73,7 +74,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         return new ClientUpgradeRequest(webSocketClient, requestURI)
         {
             @Override
-            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
             {
                 return frameHandler;
             }
@@ -83,6 +84,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
     protected final CompletableFuture<FrameHandler.CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
+    private FrameHandler frameHandler;
     private FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
 
@@ -187,6 +189,10 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     @Override
     public void send(final Response.CompleteListener listener)
     {
+        frameHandler = getFrameHandler(wsClient);
+        if (frameHandler == null)
+            throw new WebSocketException("FrameHandler was null");
+
         initWebSocketHeaders();
         super.send(listener);
     }
@@ -224,19 +230,17 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
 
             Throwable failure = result.getFailure();
-            if ((failure instanceof java.net.SocketException) ||
+            if (!((failure instanceof java.net.SocketException) ||
                 (failure instanceof java.io.InterruptedIOException) ||
                 (failure instanceof HttpResponseException) ||
-                (failure instanceof UpgradeException))
-            {
-                // handle as-is
-                handleException(failure);
-            }
-            else
+                (failure instanceof UpgradeException)))
             {
                 // wrap in UpgradeException
-                handleException(new UpgradeException(requestURI, responseStatusCode, responseLine, failure));
+                failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
             }
+
+            handleException(failure);
+            frameHandler.onError(failure, Callback.NOOP);
         }
 
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -332,19 +336,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         EndPoint endp = httpConnection.getEndPoint();
         customize(endp);
 
-        FrameHandler frameHandler = getFrameHandler(wsClient, response);
-
-        if (frameHandler == null)
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("FrameHandler is null for request ").append(this.getURI().toASCIIString());
-            if (negotiatedSubProtocol != null)
-            {
-                err.append(" [subprotocol: ").append(negotiatedSubProtocol).append("]");
-            }
-            throw new WebSocketException(err.toString());
-        }
-
         Request request = response.getRequest();
         Negotiated negotiated = new Negotiated(
             request.getURI(),
@@ -396,7 +387,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         return new WebSocketCoreSession(handler, Behavior.CLIENT, negotiated);
     }
 
-    public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response);
+    public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient);
 
     private final String genRandomKey()
     {

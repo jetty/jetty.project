@@ -41,7 +41,6 @@ import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -119,7 +118,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest,
         CompletableFuture<Session> futureSession)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
@@ -152,7 +151,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
             container,
             endpointInstance,
-            upgradeRequest, upgradeResponse,
+            upgradeRequest,
             openHandle, closeHandle, errorHandle,
             textHandle, binaryHandle,
             textSinkClass, binarySinkClass,
