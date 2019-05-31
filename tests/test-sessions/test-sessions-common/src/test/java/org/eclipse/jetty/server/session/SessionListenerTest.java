@@ -18,9 +18,14 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpCookie;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -35,6 +40,8 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -121,13 +128,27 @@ public class SessionListenerTest
 
     
     /**
-     * Test that listeners are called when a session expires.
+     * Test that listeners are called when a session expires
+     * and that the listener is able to access webapp classes.
      * 
      * @throws Exception
      */
     @Test
     public void testSessionExpiresWithListener() throws Exception
     {
+      //Use a class that would only be known to the webapp classloader
+        InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
+        File foodir = new File (MavenTestingUtils.getTargetDir(), "foo");
+        foodir.mkdirs();
+        File fooclass = new File (foodir, "Foo.class");
+        IO.copy(foostream, new FileOutputStream(fooclass));
+        
+        assertTrue(fooclass.exists());
+        assertTrue(fooclass.length() != 0);
+        
+        URL[] foodirUrls = new URL[]{foodir.toURI().toURL()};
+        URLClassLoader contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
+        
         String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 3;
@@ -143,8 +164,9 @@ public class SessionListenerTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
+        context.setClassLoader(contextClassLoader);
         context.addServlet(holder, servletMapping);
-        TestHttpSessionListener listener = new TestHttpSessionListener(true);
+        TestHttpSessionListener listener = new TestHttpSessionListenerWithWebappClasses(true);
         context.getSessionHandler().addEventListener(listener);
         
         server1.start();
