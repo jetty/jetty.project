@@ -46,8 +46,8 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
     private final WebSocketClient containerContext;
     private final Object websocketPojo;
     private final DelegatedJettyClientUpgradeRequest handshakeRequest;
-    private final CompletableFuture<Session> completableFutureSession;
     private final CompletableFuture<Session> futureSession;
+    private final JettyWebSocketFrameHandler frameHandler;
     private UpgradeResponse upgradeResponse;
 
     public JettyClientUpgradeRequest(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request,
@@ -56,7 +56,7 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
-        this.completableFutureSession = new CompletableFuture<>();
+        CompletableFuture<Session> completableFutureSession = new CompletableFuture<>();
         this.futureSession = completableFutureSession.thenApply(s->
         {
             // Note: we must set the upgrade response before the future session will complete
@@ -100,6 +100,7 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         }
 
         handshakeRequest = new DelegatedJettyClientUpgradeRequest(this);
+        frameHandler = containerContext.newFrameHandler(websocketPojo, handshakeRequest, completableFutureSession);
     }
 
     @Override
@@ -109,10 +110,11 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         handshakeRequest.configure(endp);
     }
 
+    @Override
     protected void handleException(Throwable failure)
     {
         super.handleException(failure);
-        completableFutureSession.completeExceptionally(failure);
+        futureSession.completeExceptionally(failure);
     }
 
     @Override
@@ -126,7 +128,6 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
     @Override
     public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
     {
-        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, handshakeRequest, completableFutureSession);
         return frameHandler;
     }
 

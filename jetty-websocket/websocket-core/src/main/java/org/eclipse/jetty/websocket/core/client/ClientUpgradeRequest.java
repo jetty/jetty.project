@@ -189,12 +189,19 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     @Override
     public void send(final Response.CompleteListener listener)
     {
-        frameHandler = getFrameHandler(wsClient);
-        if (frameHandler == null)
-            throw new WebSocketException("FrameHandler was null");
+        try
+        {
+            frameHandler = getFrameHandler(wsClient);
+            if (frameHandler == null)
+                throw new WebSocketException("FrameHandler was null");
 
-        initWebSocketHeaders();
-        super.send(listener);
+            initWebSocketHeaders();
+            super.send(listener);
+        }
+        catch (Throwable t)
+        {
+            abort(t);
+        }
     }
 
     public CompletableFuture<FrameHandler.CoreSession> sendAsync()
@@ -230,17 +237,17 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
 
             Throwable failure = result.getFailure();
-            if (!((failure instanceof java.net.SocketException) ||
-                (failure instanceof java.io.InterruptedIOException) ||
-                (failure instanceof HttpResponseException) ||
-                (failure instanceof UpgradeException)))
+            if (((failure instanceof java.net.SocketException) ||
+                 (failure instanceof java.io.InterruptedIOException) ||
+                 (failure instanceof HttpResponseException) ||
+                 (failure instanceof UpgradeException)))
             {
-                // wrap in UpgradeException
-                failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
+                handleException(failure);
             }
-
-            handleException(failure);
-            frameHandler.onError(failure, Callback.NOOP);
+            else
+            {
+                handleException(new UpgradeException(requestURI, responseStatusCode, responseLine, failure));
+            }
         }
 
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -254,6 +261,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     protected void handleException(Throwable failure)
     {
         futureCoreSession.completeExceptionally(failure);
+        if (frameHandler != null)
+            frameHandler.onError(failure, Callback.NOOP);
     }
 
     @SuppressWarnings("Duplicates")
