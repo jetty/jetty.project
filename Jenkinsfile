@@ -80,6 +80,7 @@ pipeline {
       }
     }
   }
+  /*
   post {
     failure {
       slackNotif()
@@ -91,8 +92,10 @@ pipeline {
       slackNotif()
     }
   }
+  */
 }
 
+/*
 def slackNotif() {
     script {
       if (env.BRANCH_NAME=='jetty-10.0.x' ||
@@ -106,6 +109,7 @@ def slackNotif() {
       }
     }
 }
+*/
 
 /**
  * To other developers, if you are using this method above, please use the following syntax.
