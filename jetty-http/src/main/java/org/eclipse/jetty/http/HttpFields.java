@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -47,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * <p>This class is not synchronized as it is expected that modifications will only be performed by a
  * single thread.
- * 
+ *
  * <p>The cookie handling provided by this class is guided by the Servlet specification and RFC6265.
  *
  */
@@ -66,27 +65,27 @@ public class HttpFields implements Iterable<HttpField>
      */
     public HttpFields()
     {
-        this(16);  // TODO tune default. Currently based on small sample of Chrome requests.
+        this(16);  // Based on small sample of Chrome requests.
     }
-    
+
     /**
      * Initialize an empty HttpFields.
-     * 
+     *
      * @param capacity the capacity of the http fields
      */
     public HttpFields(int capacity)
     {
         _fields=new HttpField[capacity];
     }
-    
+
     /**
      * Initialize HttpFields from copy.
-     * 
+     *
      * @param fields the fields to copy data from
      */
     public HttpFields(HttpFields fields)
     {
-        _fields=Arrays.copyOf(fields._fields,fields._fields.length+10);
+        _fields=Arrays.copyOf(fields._fields,fields._fields.length);
         _size=fields._size;
     }
 
@@ -96,24 +95,17 @@ public class HttpFields implements Iterable<HttpField>
     }
 
     @Override
-    public void forEach(Consumer<? super HttpField> action)
-    {
-        for (HttpField f : this)
-            action.accept(f);
-    }
-    
-    @Override
     public Iterator<HttpField> iterator()
     {
-        return new Itr();
+        return new ListItr();
     }
 
     public ListIterator<HttpField> listIterator()
     {
         return new ListItr();
     }
-    
-    
+
+
     public Stream<HttpField> stream()
     {
         return Arrays.stream(_fields).limit(_size);
@@ -125,10 +117,15 @@ public class HttpFields implements Iterable<HttpField>
      */
     public Set<String> getFieldNamesCollection()
     {
-        final Set<String> set = new HashSet<>(_size);
-        for (HttpField f : this)
+        Set<String> set = null;
+        for (int i=0;i<_size;i++)
+        {
+            HttpField f=_fields[i];
+            if (set==null)
+                set = new HashSet<>();
             set.add(f.getName());
-        return set;
+        }
+        return set==null?Collections.emptySet():set;
     }
 
     /**
@@ -143,7 +140,7 @@ public class HttpFields implements Iterable<HttpField>
 
     /**
      * Get a Field by index.
-     * @param index the field index 
+     * @param index the field index
      * @return A Field value or null if the Field value has not been set
      */
     public HttpField getField(int index)
@@ -212,7 +209,7 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-    
+
     public boolean contains(String name, String value)
     {
         for (int i=_size;i-->0;)
@@ -234,7 +231,7 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-    
+
     public boolean containsKey(String name)
     {
         for (int i=_size;i-->0;)
@@ -251,7 +248,7 @@ public class HttpFields implements Iterable<HttpField>
     {
         return get(header);
     }
-    
+
     public String get(HttpHeader header)
     {
         for (int i=0;i<_size;i++)
@@ -268,7 +265,7 @@ public class HttpFields implements Iterable<HttpField>
     {
         return get(name);
     }
-    
+
     public String get(String header)
     {
         for (int i=0;i<_size;i++)
@@ -297,10 +294,10 @@ public class HttpFields implements Iterable<HttpField>
         }
         return list;
     }
-    
+
     /**
      * Get multiple header of the same name
-     *    
+     *
      * @return List the header values
      * @param name the case-insensitive field name
      */
@@ -337,7 +334,7 @@ public class HttpFields implements Iterable<HttpField>
                 existing.addValue(f.getValue());
             }
         }
-        
+
         String value = addCSV(existing,values);
         if (value!=null)
         {
@@ -346,7 +343,7 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-    
+
     /**
      * Add comma separated values, but only if not already
      * present.
@@ -383,7 +380,7 @@ public class HttpFields implements Iterable<HttpField>
         if (existing!=null && !existing.isEmpty())
         {
             add = false;
-        
+
             for (int i=values.length;i-->0;)
             {
                 String unquoted = QuotedCSV.unquote(values[i]);
@@ -393,7 +390,7 @@ public class HttpFields implements Iterable<HttpField>
                     add = true;
             }
         }
-            
+
         if (add)
         {
             StringBuilder value = new StringBuilder();
@@ -408,12 +405,12 @@ public class HttpFields implements Iterable<HttpField>
             if (value.length()>0)
                 return value.toString();
         }
-        
+
         return null;
     }
-    
+
     /**
-     * Get multiple field values of the same name, split 
+     * Get multiple field values of the same name, split
      * as a {@link QuotedCSV}
      *
      * @return List the values with OWS stripped
@@ -527,7 +524,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i=0;i<_size;i++)
         {
             final HttpField f = _fields[i];
-            
+
             if (f.getName().equalsIgnoreCase(name) && f.getValue()!=null)
             {
                 final int first=i;
@@ -541,7 +538,7 @@ public class HttpFields implements Iterable<HttpField>
                     {
                         if (field==null)
                         {
-                            while (i<_size) 
+                            while (i<_size)
                             {
                                 field=_fields[i++];
                                 if (field.getName().equalsIgnoreCase(name) && field.getValue()!=null)
@@ -641,7 +638,7 @@ public class HttpFields implements Iterable<HttpField>
         if (!put)
             add(field);
     }
-    
+
     /**
      * Set a field.
      *
@@ -933,7 +930,7 @@ public class HttpFields implements Iterable<HttpField>
     {
         _size=0;
     }
-    
+
     public void add(HttpField field)
     {
         if (field!=null)
@@ -1111,10 +1108,10 @@ public class HttpFields implements Iterable<HttpField>
         return values.getValues();
     }
 
-
-    private class Itr implements Iterator<HttpField>
+    private class ListItr implements ListIterator<HttpField>
     {
         int _cursor;       // index of next element to return
+        int _current =-1;
 
         @Override
         public boolean hasNext()
@@ -1127,48 +1124,20 @@ public class HttpFields implements Iterable<HttpField>
         {
             if (_cursor == _size)
                 throw new NoSuchElementException();
-            return _fields[_cursor++];
+            _current = _cursor++;
+            return _fields[_current];
         }
 
         @Override
         public void remove()
         {
-            if (_cursor==0)
+            if (_current <0)
                 throw new IllegalStateException();
-            System.arraycopy(_fields, _cursor, _fields,_cursor-1,_size - _cursor);
             _size--;
-            _cursor--;
-        }
-    }
-
-    private class ListItr implements ListIterator<HttpField>
-    {
-        int _cursor;       // index of next element to return
-        int _last=-1;
-
-        @Override
-        public boolean hasNext() 
-        {
-            return _cursor != _size;
-        }
-
-        @Override
-        public HttpField next() 
-        {
-            if (_cursor == _size)
-                throw new NoSuchElementException();
-            _last = _cursor++;
-            return _fields[_last];
-        }
-
-        @Override
-        public void remove() 
-        {
-            if (_last<0)
-                throw new IllegalStateException();
-            System.arraycopy(_fields,_last+1,_fields,_last,--_size-_last);
-            _cursor=_last;
-            _last=-1;
+            System.arraycopy(_fields, _current +1,_fields, _current,_size- _current);
+            _fields[_size]=null;
+            _cursor= _current;
+            _current =-1;
         }
 
         @Override
@@ -1182,8 +1151,8 @@ public class HttpFields implements Iterable<HttpField>
         {
             if (_cursor == 0)
                 throw new NoSuchElementException();
-            _last = --_cursor;
-            return _fields[_last];
+            _current = --_cursor;
+            return _fields[_current];
         }
 
         @Override
@@ -1200,10 +1169,10 @@ public class HttpFields implements Iterable<HttpField>
 
         @Override
         public void set(HttpField field)
-        { 
-            if (_last<0)
+        {
+            if (_current <0)
                 throw new IllegalStateException();
-            _fields[_last] = field;
+            _fields[_current] = field;
         }
 
         @Override
@@ -1212,7 +1181,7 @@ public class HttpFields implements Iterable<HttpField>
             _fields = Arrays.copyOf(_fields,_fields.length+1);
             System.arraycopy(_fields,_cursor,_fields,_cursor+1,_size++);
             _fields[_cursor++] = field;
-            _last=-1;
+            _current =-1;
         }
     }
 }
