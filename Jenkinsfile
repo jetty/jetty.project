@@ -86,7 +86,7 @@ pipeline {
 
 def slackNotif() {
     script {
-      if (enXmlConfigurationv.BRANCH_NAME=='jetty-10.0.x' ||
+      if (env.BRANCH_NAME=='jetty-10.0.x' ||
           env.BRANCH_NAME=='jetty-9.4.x') {
           //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
           // by ${BUILD_USER}
