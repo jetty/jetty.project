@@ -896,7 +896,7 @@ public class XmlConfiguration
                     argsWithVarargs = ArrayUtil.addToArray(arg, new Object[0], Object.class);
                 try
                 {
-                    invokeMethod(method, obj, argsWithVarargs);
+                    return invokeMethod(method, obj, argsWithVarargs);
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)
                 {
@@ -974,7 +974,9 @@ public class XmlConfiguration
                         continue;
                 }
                 else if (constructor.getParameterCount() != arguments.length)
+                {
                     continue;
+                }
 
                 try
                 {
