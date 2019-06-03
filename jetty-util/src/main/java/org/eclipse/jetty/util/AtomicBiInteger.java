@@ -24,7 +24,22 @@ import java.util.concurrent.atomic.AtomicLong;
  * An AtomicLong with additional methods to treat it as two hi/lo integers.
  */
 public class AtomicBiInteger extends AtomicLong
-{    
+{
+
+    public AtomicBiInteger()
+    {
+    }
+
+    public AtomicBiInteger(long encoded)
+    {
+        super(encoded);
+    }
+
+    public AtomicBiInteger(int hi, int lo)
+    {
+        super(encode(hi, lo));
+    }
+
     /**
      * @return the hi value
      */

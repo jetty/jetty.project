@@ -4,20 +4,27 @@
 # Additional ini files are in demo-base/start.d
 # 
 
-# Enable security via jaas, and configure it
---module=jaas
-jetty.jaas.login.conf=etc/login.conf
+[depends]
+rewrite
+jaas
+test-keystore
 
+
+[xml]
 # Enable rewrite examples
---module=rewrite
 etc/demo-rewrite-rules.xml
+
+# Add the test realm
+etc/test-realm.xml
+
+[ini-template]
+# Enable security via jaas, and configure it
+jetty.jaas.login.conf=etc/login.conf
 
 # Websocket chat examples needs websocket enabled
 # Don't start for all contexts (set to true in test.xml context)
 org.eclipse.jetty.websocket.jsr356=false
---module=websocket
 
 # Create and configure the test realm
-etc/test-realm.xml
 jetty.demo.realm=etc/realm.properties
 
