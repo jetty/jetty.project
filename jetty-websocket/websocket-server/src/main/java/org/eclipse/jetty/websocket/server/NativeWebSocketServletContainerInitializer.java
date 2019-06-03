@@ -83,7 +83,7 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
         context.addEventListener(
             ContainerInitializer
                 .asContextListener(new NativeWebSocketServletContainerInitializer())
-                .setPostOnStartupConsumer((servletContext) ->
+                .afterStartup((servletContext) ->
                 {
                     NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)servletContext.getAttribute(ATTR_KEY);
                     configurator.accept(servletContext, configuration);

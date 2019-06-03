@@ -37,11 +37,11 @@ public final class ContainerInitializer
      * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when
      * using Embedded Jetty.
      *
-     * <code>
+     * <pre>
      * ServletContextHandler context = new ServletContextHandler();
      * ServletContainerInitializer corpSci = new MyCorporateSCI();
      * context.addEventListener(ContainerInitializer.asContextListener(corpSci));
-     * </code>
+     * </pre>
      *
      * <p>
      * The {@link ServletContainerInitializer} will have its {@link ServletContainerInitializer#onStartup(Set, ServletContext)}
@@ -52,22 +52,22 @@ public final class ContainerInitializer
      *
      * @param sci the {@link ServletContainerInitializer} to call
      * @return the {@link ServletContextListener} wrapping the SCI
-     * @see SCIAsContextListener#addClasses(Class[])
-     * @see SCIAsContextListener#addClasses(String...)
+     * @see ServletContainerInitializerServletContextListener#addClasses(Class[])
+     * @see ServletContainerInitializerServletContextListener#addClasses(String...)
      */
-    public static SCIAsContextListener asContextListener(ServletContainerInitializer sci)
+    public static ServletContainerInitializerServletContextListener asContextListener(ServletContainerInitializer sci)
     {
-        return new SCIAsContextListener(sci);
+        return new ServletContainerInitializerServletContextListener(sci);
     }
 
-    public static class SCIAsContextListener implements ServletContextListener
+    public static class ServletContainerInitializerServletContextListener implements ServletContextListener
     {
         private final ServletContainerInitializer sci;
         private Set<String> classNames;
         private Set<Class<?>> classes = new HashSet<>();
-        private Consumer<ServletContext> postOnStartupConsumer;
+        private Consumer<ServletContext> afterStartupConsumer;
 
-        public SCIAsContextListener(ServletContainerInitializer sci)
+        public ServletContainerInitializerServletContextListener(ServletContainerInitializer sci)
         {
             this.sci = sci;
         }
@@ -80,9 +80,9 @@ public final class ContainerInitializer
          * </p>
          *
          * @param classNames the class names to load and pass into the {@link ServletContainerInitializer#onStartup(Set, ServletContext)}  call
-         * @return this configured {@link SCIAsContextListener} instance.
+         * @return this configured {@link ServletContainerInitializerServletContextListener} instance.
          */
-        public SCIAsContextListener addClasses(String... classNames)
+        public ServletContainerInitializerServletContextListener addClasses(String... classNames)
         {
             if (this.classNames == null)
             {
@@ -101,9 +101,9 @@ public final class ContainerInitializer
          * </p>
          *
          * @param classes the classes to pass into the {@link ServletContainerInitializer#onStartup(Set, ServletContext)}  call
-         * @return this configured {@link SCIAsContextListener} instance.
+         * @return this configured {@link ServletContainerInitializerServletContextListener} instance.
          */
-        public SCIAsContextListener addClasses(Class<?>... classes)
+        public ServletContainerInitializerServletContextListener addClasses(Class<?>... classes)
         {
             this.classes.addAll(Arrays.asList(classes));
             return this;
@@ -121,13 +121,12 @@ public final class ContainerInitializer
          *     This consumer is typically used for Embedded Jetty users to configure Jetty for their specific needs.
          * </p>
          *
-         *
          * @param consumer the consumer to execute after the SCI has executed
-         * @return this configured {@link SCIAsContextListener} instance.
+         * @return this configured {@link ServletContainerInitializerServletContextListener} instance.
          */
-        public SCIAsContextListener setPostOnStartupConsumer(Consumer<ServletContext> consumer)
+        public ServletContainerInitializerServletContextListener afterStartup(Consumer<ServletContext> consumer)
         {
-            this.postOnStartupConsumer = consumer;
+            this.afterStartupConsumer = consumer;
             return this;
         }
 
@@ -138,9 +137,9 @@ public final class ContainerInitializer
             try
             {
                 sci.onStartup(getClasses(), servletContext);
-                if (postOnStartupConsumer != null)
+                if (afterStartupConsumer != null)
                 {
-                    postOnStartupConsumer.accept(servletContext);
+                    afterStartupConsumer.accept(servletContext);
                 }
             }
             catch (RuntimeException rte)

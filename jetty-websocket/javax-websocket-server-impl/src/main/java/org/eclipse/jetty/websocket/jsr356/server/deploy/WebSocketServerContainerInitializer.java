@@ -142,7 +142,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * @return a configured {@link ServerContainer} instance
      * @throws ServletException if the {@link WebSocketUpgradeFilter} cannot be configured
      * @deprecated use {@link #configure(ServletContextHandler, Configurator)} instead
-     * @see #configure(ServletContextHandler, Configurator)
+     * @see #initialize(ServletContext)
      */
     @Deprecated
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
@@ -153,12 +153,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     }
 
     /**
-     * @param context not used
-     * @param jettyContext the {@link ServletContextHandler} to use
+     * @param context the {@link ServletContext} to use
+     * @param jettyContext not used
      * @return a configured {@link ServerContainer} instance
      * @throws ServletException if the {@link WebSocketUpgradeFilter} cannot be configured
      * @deprecated use {@link #configure(ServletContextHandler, Configurator)} instead
-     * @see #configure(ServletContextHandler, Configurator)
+     * @see #initialize(ServletContext)
      */
     @Deprecated
     public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
@@ -254,9 +254,8 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         // the initialization phase is over. (important for this SCI to function)
         context.getServletContext().setExtendedListenerTypes(true);
 
-        context.addEventListener(
-            ContainerInitializer.asContextListener(new WebSocketServerContainerInitializer())
-                .setPostOnStartupConsumer((servletContext) ->
+        context.addEventListener(ContainerInitializer.asContextListener(new WebSocketServerContainerInitializer())
+                .afterStartup((servletContext) ->
                 {
                     ServerContainer serverContainer = (ServerContainer)servletContext.getAttribute(ATTR_JAVAX_SERVER_CONTAINER);
                     try
