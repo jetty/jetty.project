@@ -487,7 +487,7 @@ public class Request implements HttpServletRequest
                             throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
                         getParts(_contentParameters);
                     }
-                    catch (IOException | ServletException e)
+                    catch (IOException e)
                     {
                         LOG.debug(e);
                         throw new RuntimeIOException(e);
@@ -2320,7 +2320,6 @@ public class Request implements HttpServletRequest
     public Part getPart(String name) throws IOException, ServletException
     {
         getParts();
-
         return _multiParts.getPart(name);
     }
 
@@ -2334,7 +2333,7 @@ public class Request implements HttpServletRequest
         return getParts(null);
     }
 
-    private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
+    private Collection<Part> getParts(MultiMap<String> params) throws IOException
     {        
         if (_multiParts == null)
             _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
@@ -2345,12 +2344,9 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiParts = newMultiParts(getInputStream(),
-                                       _contentType, config,
-                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
-
+            _multiParts = newMultiParts(config);
             setAttribute(__MULTIPARTS, _multiParts);
-            Collection<Part> parts = _multiParts.getParts(); //causes parsing
+            Collection<Part> parts = _multiParts.getParts();
                        
             String _charset_ = null;
             Part charsetPart = _multiParts.getPart("_charset_");
@@ -2412,7 +2408,7 @@ public class Request implements HttpServletRequest
     }
 
     
-    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException
+    private MultiParts newMultiParts(MultipartConfigElement config) throws IOException
     {
         MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
         if(LOG.isDebugEnabled())

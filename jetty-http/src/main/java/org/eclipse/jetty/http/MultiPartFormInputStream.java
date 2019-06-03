@@ -299,9 +299,8 @@ public class MultiPartFormInputStream
          */
         public void cleanUp() throws IOException
         {
-            if (_temporary && _file != null && _file.exists())
-                if (!_file.delete())
-                    throw new IOException("Could Not Delete File");
+            if (_temporary)
+                delete();
         }
         
         /**
@@ -398,31 +397,21 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        if (!_parsed)
-            return;
-        
-        Collection<Part> parts;
-        try
-        {
-            parts = getParts();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-        
         MultiException err = null;
-        for (Part p : parts)
+        for (List<Part> parts : _parts.values())
         {
-            try
+            for (Part p : parts)
             {
-                ((MultiPart)p).cleanUp();
-            }
-            catch (Exception e)
-            {
-                if (err == null)
-                    err = new MultiException();
-                err.add(e);
+                try
+                {
+                    ((MultiPart)p).cleanUp();
+                }
+                catch (Exception e)
+                {
+                    if (err == null)
+                        err = new MultiException();
+                    err.add(e);
+                }
             }
         }
         _parts.clear();
@@ -477,6 +466,9 @@ public class MultiPartFormInputStream
     {
         if (_err != null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("MultiPart latched exception ", _err);
+
             _err.addSuppressed(new Throwable());
             if (_err instanceof IOException)
                 throw (IOException)_err;

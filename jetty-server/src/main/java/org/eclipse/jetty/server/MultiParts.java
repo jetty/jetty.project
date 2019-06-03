@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
@@ -44,13 +43,12 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
  */
 public interface MultiParts extends Closeable
 {   
-    public Collection<Part> getParts();
-    public Part getPart(String name);
-    public boolean isEmpty();
-    public ContextHandler.Context getContext();
-    
-    
-    public class MultiPartsHttpParser implements MultiParts
+    Collection<Part> getParts() throws IOException;
+    Part getPart(String name) throws IOException;
+    boolean isEmpty();
+    ContextHandler.Context getContext();
+
+    class MultiPartsHttpParser implements MultiParts
     {   
         private final MultiPartFormInputStream _httpParser;
         private final ContextHandler.Context _context;
@@ -59,32 +57,18 @@ public interface MultiParts extends Closeable
         {
             _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
             _context = request.getContext();
-            _httpParser.getParts();
         }
 
         @Override
-        public Collection<Part> getParts() 
+        public Collection<Part> getParts() throws IOException
         {
-            try
-            {
-                return _httpParser.getParts();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+            return _httpParser.getParts();
         }
 
         @Override
-        public Part getPart(String name) {
-            try
-            {
-                return _httpParser.getPart(name);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+        public Part getPart(String name) throws IOException
+        {
+            return _httpParser.getPart(name);
         }
 
         @Override
@@ -104,65 +88,36 @@ public interface MultiParts extends Closeable
         {
             return _context;
         }
-
     }
     
-    
-    @SuppressWarnings("deprecation") 
-    public class MultiPartsUtilParser implements MultiParts
+    @SuppressWarnings("deprecation")
+    class MultiPartsUtilParser implements MultiParts
     {   
         private final MultiPartInputStreamParser _utilParser;
         private final ContextHandler.Context _context;
+        private final Request _request;
 
         public MultiPartsUtilParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request) throws IOException
         {
             _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
             _context = request.getContext();
-            _utilParser.getParts();
-
-            EnumSet<NonCompliance> nonComplianceWarnings = _utilParser.getNonComplianceWarnings();
-            if (!nonComplianceWarnings.isEmpty())
-            {
-                @SuppressWarnings("unchecked")
-                List<String> violations = (List<String>)request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
-                if (violations==null)
-                {
-                    violations = new ArrayList<>();
-                    request.setAttribute(HttpCompliance.VIOLATIONS_ATTR,violations);
-                }
-
-                for(NonCompliance nc : nonComplianceWarnings)
-                    violations.add(nc.name()+": "+nc.getURL());
-                
-                System.out.println(violations);
-            }
-            
+            _request = request;
         }
 
         @Override
-        public Collection<Part> getParts()
+        public Collection<Part> getParts() throws IOException
         {
-            try
-            {
-                return _utilParser.getParts();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+            Collection<Part> parts = _utilParser.getParts();
+            setNonComplianceViolationsOnRequest();
+            return parts;
         }
 
         @Override
-        public Part getPart(String name)
+        public Part getPart(String name) throws IOException
         {
-            try
-            {
-                return _utilParser.getPart(name);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+            Part part = _utilParser.getPart(name);
+            setNonComplianceViolationsOnRequest();
+            return part;
         }
 
         @Override
@@ -181,6 +136,20 @@ public interface MultiParts extends Closeable
         public Context getContext()
         {
             return _context;
+        }
+
+        private void setNonComplianceViolationsOnRequest()
+        {
+            @SuppressWarnings("unchecked")
+            List<String> violations = (List<String>)_request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
+            if (violations != null)
+                return;
+
+            EnumSet<NonCompliance> nonComplianceWarnings = _utilParser.getNonComplianceWarnings();
+            violations = new ArrayList<>();
+            for (NonCompliance nc : nonComplianceWarnings)
+                violations.add(nc.name() + ": " + nc.getURL());
+            _request.setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
         }
     }
 }

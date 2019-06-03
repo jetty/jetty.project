@@ -61,7 +61,6 @@ public class MultiPartServletTest
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
-
     private Path tmpDir;
 
     private static final int MAX_FILE_SIZE = 512 * 1024;
@@ -92,7 +91,6 @@ public class MultiPartServletTest
     public void start() throws Exception
     {
         tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
-        System.err.println(tmpDir);
 
         server = new Server();
         connector = new ServerConnector(server);
