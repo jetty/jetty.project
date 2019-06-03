@@ -67,8 +67,8 @@ public class TestJettyOSGiBootWithAnnotations
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
      
         options.addAll(TestOSGiUtil.coreJettyDependencies());
-        options.add(mavenBundle().groupId("javax.servlet").artifactId("javax.servlet-api").version("3.1.0").noStart());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").version("9.3.0.RC0").noStart());
+        // TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
+        // options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").version("9.4.19.v????????").noStart());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));

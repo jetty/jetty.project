@@ -19,6 +19,8 @@
 package com.acme.test;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collection;
 
 import javax.servlet.ServletConfig;
@@ -30,7 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.util.IO;
 /**
  * MultiPartTest
  * 
@@ -58,7 +59,6 @@ public class MultiPartTest extends HttpServlet
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-
         try
         {
             response.setContentType("text/html");
@@ -78,7 +78,7 @@ public class MultiPartTest extends HttpServlet
                 if (p.getContentType() == null || p.getContentType().startsWith("text/plain"))
                 {
                     out.println("<p>");
-                    IO.copy(p.getInputStream(),out);
+                    copy(p.getInputStream(),out);
                     out.println("</p>");
                 }
             } 
@@ -116,8 +116,20 @@ public class MultiPartTest extends HttpServlet
             throw new ServletException(e);
         }
     }
-    
 
-  
-   
+    public static void copy(InputStream in,
+                            OutputStream out)
+        throws IOException
+    {
+        int bufferSize = 8192;
+        byte buffer[] = new byte[bufferSize];
+
+        while (true)
+        {
+            int len=in.read(buffer,0,bufferSize);
+            if (len<0 )
+                break;
+            out.write(buffer,0,len);
+        }
+    }
 }
