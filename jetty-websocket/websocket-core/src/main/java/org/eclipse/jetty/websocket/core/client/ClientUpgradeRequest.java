@@ -194,14 +194,14 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             frameHandler = getFrameHandler(wsClient);
             if (frameHandler == null)
                 throw new WebSocketException("FrameHandler was null");
-
-            initWebSocketHeaders();
-            super.send(listener);
         }
         catch (Throwable t)
         {
-            abort(t);
+            throw new IllegalArgumentException("FrameHandler could not be created", t);
         }
+
+        initWebSocketHeaders();
+        super.send(listener);
     }
 
     public CompletableFuture<FrameHandler.CoreSession> sendAsync()
