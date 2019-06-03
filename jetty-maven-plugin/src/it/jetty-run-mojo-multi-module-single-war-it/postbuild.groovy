@@ -20,7 +20,7 @@ File buildLog = new File( basedir, 'build.log' )
 assert buildLog.text.contains( 'Started Jetty Server' )
 
 assert buildLog.text.contains( '(1a) >> javax.servlet.ServletContextListener loaded from jar:' )
-assert buildLog.text.contains( 'local-repo/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar!/javax/servlet/ServletContextListener.class << (1b)' )
+assert buildLog.text.contains( 'local-repo/org/eclipse/jetty/toolchain/jetty-servlet-api/4.0.2/jetty-servlet-api-4.0.2.jar!/javax/servlet/ServletContextListener.class << (1b)' )
 
 assert buildLog.text.contains( '(2a) >> mca.common.CommonService loaded from file:' )
 assert buildLog.text.contains( 'common/target/classes/mca/common/CommonService.class << (2b)' )
