@@ -114,16 +114,13 @@ public class FrameFlusher extends IteratingCallback
                     {
                         case OpCode.CLOSE:
                             closeStatus = CloseStatus.getCloseStatus(frame);
-                            if (CloseStatus.isOrdinary(closeStatus))
-                                queue.offerLast(entry);
-                            else
+                            if (!CloseStatus.isOrdinary(closeStatus))
                             {
-                                //fail all existing entries in the queue, and enqueue the close frame
+                                //fail all existing entries in the queue, and enqueue the error close
                                 failedEntries = new ArrayList<>(queue);
                                 queue.clear();
-                                queue.offerFirst(entry);
                             }
-
+                            queue.offerLast(entry);
                             this.canEnqueue = false;
                             break;
 
@@ -157,8 +154,7 @@ public class FrameFlusher extends IteratingCallback
             if (closeStatus instanceof AbnormalCloseStatus)
             {
                 Throwable cause = ((AbnormalCloseStatus)closeStatus).getCause();
-                if (cause != null)
-                    failure.addSuppressed(cause);
+                failure.initCause(cause);
             }
 
             for (Entry e : failedEntries)

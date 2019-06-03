@@ -176,10 +176,7 @@ public class CloseStatus
     public static boolean isOrdinary(CloseStatus closeStatus)
     {
         int code = closeStatus.getCode();
-        if (code == NORMAL || code == NO_CODE || code >= 3000)
-            return true;
-        else
-            return false;
+        return (code == NORMAL || code == NO_CODE || code >= 3000);
     }
 
     public int getCode()
