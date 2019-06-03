@@ -19,13 +19,21 @@
 package org.eclipse.jetty.xml;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -991,7 +999,27 @@ public class XmlConfigurationTest
             "  <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
             "</Configure>");
 
+        ByteArrayOutputStream logBytes = null;
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        if (logger instanceof StdErrLog)
+        {
+            StdErrLog stdErrLog = (StdErrLog)logger;
+            logBytes = new ByteArrayOutputStream();
+            stdErrLog.setStdErrStream(new PrintStream(logBytes));
+        }
+
         xmlConfiguration.configure();
-        // Cannot test that the warnings are logged.
+
+        if (logBytes != null)
+        {
+            List<String> warnings = Arrays.stream(logBytes.toString("UTF-8").split(System.lineSeparator()))
+                .filter(line -> line.contains(":WARN:") && line.contains("AnnotatedTestConfiguration"))
+                .collect(Collectors.toList());
+            // 1. Deprecated constructor
+            // 2. Deprecated <Set>
+            // 3. Deprecated <Get>
+            // 4. Deprecated <Call>
+            assertEquals(4, warnings.size());
+        }
     }
 }
