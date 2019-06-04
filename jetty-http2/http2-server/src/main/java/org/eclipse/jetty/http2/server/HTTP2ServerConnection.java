@@ -176,7 +176,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
-        HTTP2Channel channel = (HTTP2Channel)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onData(frame, callback);
@@ -193,7 +193,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing trailers {} on {}", frame, stream);
-        HTTP2Channel channel = (HTTP2Channel)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onTrailer(frame);
@@ -204,7 +204,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
-        HTTP2Channel channel = (HTTP2Channel)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         boolean result = channel != null && channel.onTimeout(failure, task -> offerTask(task, true));
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
@@ -215,7 +215,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing failure on {}: {}", stream, failure);
-        HTTP2Channel channel = (HTTP2Channel)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onFailure(failure, callback);
@@ -234,9 +234,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         // Compute whether all requests are idle.
         boolean result = session.getStreams().stream()
                 .map(stream -> (IStream)stream)
-                .map(stream -> (HTTP2Channel)stream.getAttachment())
+                .map(stream -> (HTTP2Channel.Server)stream.getAttachment())
                 .filter(Objects::nonNull)
-                .map(HTTP2Channel::isIdle)
+                .map(HTTP2Channel.Server::isIdle)
                 .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);

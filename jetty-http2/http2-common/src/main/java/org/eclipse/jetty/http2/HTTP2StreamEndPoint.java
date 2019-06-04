@@ -28,10 +28,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -41,7 +39,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
 
-public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
+public abstract class HTTP2StreamEndPoint implements EndPoint
 {
     private static final Logger LOG = Log.getLogger(HTTP2StreamEndPoint.class);
 
@@ -512,8 +510,7 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
         newConnection.onOpen();
     }
 
-    @Override
-    public Runnable onData(DataFrame frame, Callback callback)
+    protected void offerData(DataFrame frame, Callback callback)
     {
         ByteBuffer buffer = frame.getData();
         if (LOG.isDebugEnabled())
@@ -521,60 +518,28 @@ public class HTTP2StreamEndPoint implements EndPoint, HTTP2Channel
         if (frame.isEndStream())
         {
             if (buffer.hasRemaining())
-                offer(new Entry(buffer, Callback.from(() -> {}, callback::failed), false));
-            offer(new Entry(BufferUtil.EMPTY_BUFFER, callback, true));
+                offer(buffer, Callback.from(() -> {}, callback::failed), false);
+            offer(BufferUtil.EMPTY_BUFFER, callback, true);
         }
         else
         {
             if (buffer.hasRemaining())
-                offer(new Entry(buffer, callback, false));
+                offer(buffer, callback, false);
+            else
+                callback.succeeded();
         }
         process();
-        return null;
     }
 
-    private void offer(Entry entry)
+    private void offer(ByteBuffer buffer, Callback callback, boolean eof)
     {
         synchronized (this)
         {
-            dataQueue.offer(entry);
+            dataQueue.offer(new Entry(buffer, callback, eof));
         }
     }
 
-    @Override
-    public Runnable onTrailer(HeadersFrame frame)
-    {
-        // TODO
-        return null;
-    }
-
-    @Override
-    public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
-    {
-        // TODO: Runnable not used.
-        if (LOG.isDebugEnabled())
-            LOG.debug("idle timeout on {}: {}", this, failure);
-        Connection connection = getConnection();
-        if (connection != null)
-            return connection.onIdleExpired();
-        return true;
-    }
-
-    @Override
-    public Runnable onFailure(Throwable failure, Callback callback)
-    {
-        // TODO
-        return null;
-    }
-
-    @Override
-    public boolean isIdle()
-    {
-        // TODO
-        return false;
-    }
-
-    private void process()
+    protected void process()
     {
         boolean empty;
         synchronized (this)

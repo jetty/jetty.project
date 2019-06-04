@@ -34,7 +34,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.HTTP2Channel;
-import org.eclipse.jetty.http2.HTTP2StreamEndPoint;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -50,7 +49,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, WriteFlusher.Listener, HTTP2Channel
+public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, WriteFlusher.Listener, HTTP2Channel.Server
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
@@ -391,7 +390,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     public EndPoint getTunnellingEndPoint()
     {
         // TODO: idle timeout
-        return new HTTP2StreamEndPoint(getStream());
+        return new ServerHTTP2StreamEndPoint(getStream());
     }
 
     @Override

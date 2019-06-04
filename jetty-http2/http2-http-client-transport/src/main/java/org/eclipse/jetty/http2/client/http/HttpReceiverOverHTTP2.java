@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -40,7 +39,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
-import org.eclipse.jetty.http2.HTTP2StreamEndPoint;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -53,7 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Retainable;
 
-public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel
+public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.Client
 {
     private final ContentNotifier contentNotifier = new ContentNotifier();
 
@@ -100,7 +98,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel
                 if (isTunnel(exchange))
                 {
                     HttpRequest httpRequest = exchange.getRequest();
-                    HTTP2StreamEndPoint endPoint = new HTTP2StreamEndPoint((IStream)stream);
+                    ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((IStream)stream);
                     long idleTimeout = httpRequest.getIdleTimeout();
                     if (idleTimeout < 0)
                         idleTimeout = getHttpDestination().getHttpClient().getIdleTimeout();
@@ -135,7 +133,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel
             return null;
 
         HttpRequest request = exchange.getRequest();
-        MetaData.Request metaData = (MetaData.Request)frame.getMetaData();
+        MetaData.Request metaData = frame.getMetaData();
         HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
@@ -162,7 +160,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel
     }
 
     @Override
-    public Runnable onData(DataFrame frame, Callback callback)
+    public void onData(DataFrame frame, Callback callback)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -173,14 +171,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel
         {
             notifyContent(exchange, frame, callback);
         }
-        return null;
-    }
-
-    @Override
-    public Runnable onTrailer(HeadersFrame frame)
-    {
-        // TODO
-        return null;
     }
 
     void onReset(Stream stream, ResetFrame frame)
@@ -193,7 +183,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel
     }
 
     @Override
-    public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
+    public boolean onTimeout(Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -202,23 +192,15 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel
     }
 
     @Override
-    public Runnable onFailure(Throwable failure, Callback callback)
+    public void onFailure(Throwable failure, Callback callback)
     {
         responseFailure(failure);
         callback.succeeded();
-        return null;
     }
 
     void onClosed(Stream stream)
     {
         getHttpChannel().onStreamClosed((IStream)stream);
-    }
-
-    @Override
-    public boolean isIdle()
-    {
-        // TODO
-        return false;
     }
 
     private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)

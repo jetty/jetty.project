@@ -183,7 +183,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         @Override
         public void onData(Stream stream, DataFrame frame, Callback callback)
         {
-            HTTP2Channel channel = (HTTP2Channel)((IStream)stream).getAttachment();
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
             channel.onData(frame, callback);
         }
 
@@ -197,14 +197,14 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         @Override
         public boolean onIdleTimeout(Stream stream, Throwable x)
         {
-            HTTP2Channel channel = (HTTP2Channel)((IStream)stream).getAttachment();
-            return channel.onTimeout(x, Runnable::run);
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
+            return channel.onTimeout(x);
         }
 
         @Override
         public void onFailure(Stream stream, int error, String reason, Callback callback)
         {
-            HTTP2Channel channel = (HTTP2Channel)((IStream)stream).getAttachment();
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
             channel.onFailure(new IOException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
         }
 

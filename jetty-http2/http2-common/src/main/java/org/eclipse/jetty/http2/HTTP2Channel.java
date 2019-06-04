@@ -24,20 +24,27 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 
-// TODO: split in client and server?
 public interface HTTP2Channel
 {
-    public Runnable onData(DataFrame frame, Callback callback);
+    public interface Client
+    {
+        public void onData(DataFrame frame, Callback callback);
 
-    // TODO: this seems server-specific.
-    public Runnable onTrailer(HeadersFrame frame);
+        public boolean onTimeout(Throwable failure);
 
-    public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer);
+        public void onFailure(Throwable failure, Callback callback);
+    }
 
-    public Runnable onFailure(Throwable failure, Callback callback);
+    public interface Server
+    {
+        public Runnable onData(DataFrame frame, Callback callback);
 
-    // TODO: this seems server-specific.
-    public boolean isIdle();
+        public Runnable onTrailer(HeadersFrame frame);
 
-    // TODO: onReset() is missing here?
+        public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer);
+
+        public Runnable onFailure(Throwable failure, Callback callback);
+
+        public boolean isIdle();
+    }
 }
