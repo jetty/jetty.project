@@ -287,7 +287,7 @@ public class DistributionTests extends AbstractDistributionTest
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
-            assertTrue(Paths.get(jettyBase.toString(), "resources", "log4j2.xml" ).toFile().exists());
+            assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
 
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
@@ -302,7 +302,7 @@ public class DistributionTests extends AbstractDistributionTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("Hello"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
-                assertTrue(Paths.get(jettyBase.toString(), "resources", "log4j2.xml" ).toFile().exists());
+                assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
             }
         } finally
         {
