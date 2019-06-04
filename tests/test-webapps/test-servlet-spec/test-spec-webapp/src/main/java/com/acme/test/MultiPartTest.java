@@ -117,6 +117,7 @@ public class MultiPartTest extends HttpServlet
         }
     }
 
+    // TODO remove inline once 9.4.19 is released with a fix for #3726
     public static void copy(InputStream in,
                             OutputStream out)
         throws IOException

@@ -5,7 +5,9 @@
   <Get name="servletContext">
     <Call name="log"><Arg>The test-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg><Arg></Arg></Call>
   </Get>
+  <!--TODO uncomment once 9.4.19 is released with a fix for #3726
   <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
     <Call name="info"><Arg>WEB-INF/lib/jetty-util.jar logging used!</Arg></Call>
   </Get>
+  -->
 </Configure>
