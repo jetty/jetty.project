@@ -19,13 +19,21 @@
 package org.eclipse.jetty.xml;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -979,6 +987,47 @@ public class XmlConfigurationTest
 
             assertThat(propName, tc.getTestString(), is(notNullValue()));
             assertThat(propName, tc.getTestString(), startsWith("file:"));
+        }
+    }
+
+    @Test
+    public void testDeprecated() throws Exception
+    {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+            "<Configure class=\"" + testClass.getName() + "\">" +
+            "  <Set name=\"deprecated\">foo</Set>" +
+            "  <Set name=\"obsolete\">" +
+            "    <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
+            "  </Set>" +
+            "  <Get name=\"obsolete\" />" +
+            "</Configure>");
+
+        ByteArrayOutputStream logBytes = null;
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        if (logger instanceof StdErrLog)
+        {
+            StdErrLog stdErrLog = (StdErrLog)logger;
+            logBytes = new ByteArrayOutputStream();
+            stdErrLog.setStdErrStream(new PrintStream(logBytes));
+        }
+
+        xmlConfiguration.configure();
+
+        if (logBytes != null)
+        {
+            String[] lines = logBytes.toString("UTF-8").split(System.lineSeparator());
+            List<String> warnings = Arrays.stream(lines)
+                .filter(line -> line.contains(":WARN:"))
+                .filter(line -> line.contains(testClass.getSimpleName()))
+                .collect(Collectors.toList());
+            // 1. Deprecated constructor
+            // 2. Deprecated <Set> method
+            // 3. Deprecated <Get> method
+            // 4. Deprecated <Call> method
+            // 5. Deprecated <Set> field
+            // 6. Deprecated <Get> field
+            assertEquals(6, warnings.size());
         }
     }
 }
