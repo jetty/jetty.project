@@ -21,6 +21,8 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.stream.Stream;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -47,7 +49,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -65,6 +69,11 @@ public class MultiPartServletTest
 
     private static final int MAX_FILE_SIZE = 512 * 1024;
     private static final int LARGE_MESSAGE_SIZE = 1024 * 1024;
+
+    public static Stream<Arguments> data()
+    {
+        return Arrays.asList(MultiPartFormDataCompliance.values()).stream().map(Arguments::of);
+    }
 
     public static class MultiPartServlet extends HttpServlet
     {
@@ -94,8 +103,6 @@ public class MultiPartServletTest
 
         server = new Server();
         connector = new ServerConnector(server);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
-                .setMultiPartFormDataCompliance(MultiPartFormDataCompliance.RFC7578);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -123,10 +130,12 @@ public class MultiPartServletTest
         IO.delete(tmpDir.toFile());
     }
 
-    @Test
-    public void testTempFilesDeletedOnError() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testTempFilesDeletedOnError(MultiPartFormDataCompliance compliance) throws Exception
     {
-        String partName = "partName";
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+                .setMultiPartFormDataCompliance(compliance);
 
         byte[] byteArray = new byte[LARGE_MESSAGE_SIZE];
         for (int i=0; i<byteArray.length; i++)
@@ -134,7 +143,7 @@ public class MultiPartServletTest
         BytesContentProvider contentProvider = new BytesContentProvider(byteArray);
 
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        multiPart.addFieldPart(partName, contentProvider, null);
+        multiPart.addFieldPart("largePart", contentProvider, null);
         multiPart.close();
 
         try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
@@ -147,7 +156,7 @@ public class MultiPartServletTest
 
             assertEquals(500, response.getStatus());
             assertThat(response.getContentAsString(),
-                    containsString("Multipart Mime part partName exceeds max filesize"));
+                    containsString("Multipart Mime part largePart exceeds max filesize"));
         }
 
         assertThat(tmpDir.toFile().list().length, is(0));

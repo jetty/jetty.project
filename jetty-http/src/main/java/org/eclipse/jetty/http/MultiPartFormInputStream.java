@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
@@ -467,7 +466,7 @@ public class MultiPartFormInputStream
         if (_err != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("MultiPart latched exception ", _err);
+                LOG.debug("MultiPart parsing failure ", _err);
 
             _err.addSuppressed(new Throwable());
             if (_err instanceof IOException)
@@ -487,7 +486,9 @@ public class MultiPartFormInputStream
         if (_parsed)
             return;
         _parsed = true;
-        
+
+        MultiPartParser parser = null;
+        Handler handler = new Handler();
         try
         {
             // initialize
@@ -523,9 +524,7 @@ public class MultiPartFormInputStream
                 contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart, bend)).trim());
             }
             
-            Handler handler = new Handler();
-            MultiPartParser parser = new MultiPartParser(handler, contentTypeBoundary);
-            
+            parser = new MultiPartParser(handler, contentTypeBoundary);
             byte[] data = new byte[_bufferSize];
             int len;
             long total = 0;
@@ -537,7 +536,6 @@ public class MultiPartFormInputStream
                 
                 if (len > 0)
                 {
-                    
                     // keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
                     total += len;
                     if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
@@ -587,6 +585,10 @@ public class MultiPartFormInputStream
         catch (Throwable e)
         {
             _err = e;
+
+            // Notify parser if failure occurs
+            if (parser != null)
+                parser.parse(BufferUtil.EMPTY_BUFFER, true);
         }
     }
     
@@ -734,6 +736,16 @@ public class MultiPartFormInputStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Early EOF {}", MultiPartFormInputStream.this);
+
+            try
+            {
+                if (_part != null)
+                    _part.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn("part could not be closed", e);
+            }
         }
         
         public void reset()

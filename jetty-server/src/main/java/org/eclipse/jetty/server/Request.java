@@ -2417,12 +2417,12 @@ public class Request implements HttpServletRequest
         switch(compliance)
         {
             case RFC7578:
-                return new MultiParts.MultiPartsHttpParser(getInputStream(), contentType, config,
+                return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
                         (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
                 
             case LEGACY: 
             default:
-                return new MultiParts.MultiPartsUtilParser(getInputStream(), contentType, config,
+                return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
                     (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
                         
         }
