@@ -239,6 +239,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         public void onOpen(CoreSession coreSession, Callback callback)
         {
             this.coreSession = coreSession;
+            this.openLatch.countDown();
             callback.succeeded();
         }
 
