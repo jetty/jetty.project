@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +41,8 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -207,7 +210,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         @Override
         protected void customize(EndPoint endp)
         {
-            frameCapture.setEndpoint(endp);
+            frameCapture.setEndPoint(endp);
             futureCapture.complete(frameCapture);
         }
 
@@ -223,32 +226,13 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private EndPoint endPoint;
-        private final CompletableFuture<EndPoint> endPointFuture = new CompletableFuture<>();
+        private CountDownLatch openLatch = new CountDownLatch(1);
         private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
         private CoreSession coreSession;
 
-        public void setEndpoint(EndPoint endpoint)
+        public void setEndPoint(EndPoint endpoint)
         {
-            endPointFuture.complete(endpoint);
-        }
-
-        private EndPoint getEndpoint() throws IOException
-        {
-            if (endPoint == null)
-            {
-                try
-                {
-                    endPoint = endPointFuture.get(5, TimeUnit.SECONDS);
-                    if (endPoint == null)
-                        throw new IllegalStateException();
-                }
-                catch (Exception e)
-                {
-                    throw new IOException(e);
-                }
-            }
-
-            return endPoint;
+            this.endPoint = endpoint;
         }
 
         @Override
@@ -279,11 +263,20 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
 
         public void writeRaw(ByteBuffer buffer) throws IOException
         {
+            try
+            {
+                assertTrue(openLatch.await(1, TimeUnit.SECONDS));
+            }
+            catch (InterruptedException e)
+            {
+                throw new IOException(e);
+            }
+
             synchronized (this)
             {
                 try (SharedBlockingCallback.Blocker blocker = blockingCallback.acquire())
                 {
-                    getEndpoint().write(blocker, buffer);
+                    endPoint.write(blocker, buffer);
                 }
             }
         }

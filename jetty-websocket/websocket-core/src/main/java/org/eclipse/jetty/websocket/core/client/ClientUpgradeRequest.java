@@ -193,7 +193,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         {
             frameHandler = getFrameHandler(wsClient);
             if (frameHandler == null)
-                throw new WebSocketException("FrameHandler was null");
+                throw new IllegalArgumentException("FrameHandler could not be created");
         }
         catch (Throwable t)
         {
@@ -237,17 +237,13 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
 
             Throwable failure = result.getFailure();
-            if (((failure instanceof java.net.SocketException) ||
-                 (failure instanceof java.io.InterruptedIOException) ||
-                 (failure instanceof HttpResponseException) ||
-                 (failure instanceof UpgradeException)))
-            {
-                handleException(failure);
-            }
-            else
-            {
-                handleException(new UpgradeException(requestURI, responseStatusCode, responseLine, failure));
-            }
+            boolean wrapFailure = !((failure instanceof java.net.SocketException) ||
+                                    (failure instanceof java.io.InterruptedIOException) ||
+                                    (failure instanceof HttpResponseException) ||
+                                    (failure instanceof UpgradeException));
+            if (wrapFailure)
+                failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
+            handleException(failure);
         }
 
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -262,7 +258,16 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
         futureCoreSession.completeExceptionally(failure);
         if (frameHandler != null)
-            frameHandler.onError(failure, Callback.NOOP);
+        {
+            try
+            {
+                frameHandler.onError(failure, Callback.NOOP);
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("FrameHandler onError threw", t);
+            }
+        }
     }
 
     @SuppressWarnings("Duplicates")
