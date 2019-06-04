@@ -18,12 +18,10 @@
 
 package org.eclipse.jetty.jndi;
 
-
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.WeakHashMap;
-
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
@@ -77,8 +75,6 @@ public class ContextFactory implements ObjectFactory
      * when finding the comp context.
      */
     private static final ThreadLocal<ClassLoader> __threadClassLoader = new ThreadLocal<ClassLoader>();
-    
-
 
     /**
      * Find or create a context which pertains to a classloader.
