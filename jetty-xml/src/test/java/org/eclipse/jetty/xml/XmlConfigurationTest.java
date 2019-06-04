@@ -993,10 +993,14 @@ public class XmlConfigurationTest
     @Test
     public void testDeprecated() throws Exception
     {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
         XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
-            "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+            "<Configure class=\"" + testClass.getName() + "\">" +
             "  <Set name=\"deprecated\">foo</Set>" +
-            "  <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
+            "  <Set name=\"obsolete\">" +
+            "    <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
+            "  </Set>" +
+            "  <Get name=\"obsolete\" />" +
             "</Configure>");
 
         ByteArrayOutputStream logBytes = null;
@@ -1012,14 +1016,18 @@ public class XmlConfigurationTest
 
         if (logBytes != null)
         {
-            List<String> warnings = Arrays.stream(logBytes.toString("UTF-8").split(System.lineSeparator()))
-                .filter(line -> line.contains(":WARN:") && line.contains("AnnotatedTestConfiguration"))
+            String[] lines = logBytes.toString("UTF-8").split(System.lineSeparator());
+            List<String> warnings = Arrays.stream(lines)
+                .filter(line -> line.contains(":WARN:"))
+                .filter(line -> line.contains(testClass.getSimpleName()))
                 .collect(Collectors.toList());
             // 1. Deprecated constructor
-            // 2. Deprecated <Set>
-            // 3. Deprecated <Get>
-            // 4. Deprecated <Call>
-            assertEquals(4, warnings.size());
+            // 2. Deprecated <Set> method
+            // 3. Deprecated <Get> method
+            // 4. Deprecated <Call> method
+            // 5. Deprecated <Set> field
+            // 6. Deprecated <Get> field
+            assertEquals(6, warnings.size());
         }
     }
 }

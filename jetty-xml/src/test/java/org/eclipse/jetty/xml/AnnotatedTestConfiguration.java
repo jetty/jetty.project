@@ -27,6 +27,9 @@ public class AnnotatedTestConfiguration
     private String third;
     private String deprecated;
     private AnnotatedTestConfiguration nested;
+    // Do not remove deprecation, used in tests.
+    @Deprecated
+    public String obsolete;
 
     // Do not remove deprecation, used in tests.
     @Deprecated

@@ -577,7 +577,7 @@ public class XmlConfiguration
                 Field field = oClass.getField(attr);
                 if (Modifier.isPublic(field.getModifiers()))
                 {
-                    field.set(obj, value);
+                    setField(field, obj, value);
                     return;
                 }
             }
@@ -677,7 +677,7 @@ public class XmlConfiguration
         {
             Object result = constructor.newInstance(args);
             if (constructor.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated {} in {}", constructor, _url);
+                LOG.warn("Deprecated constructor {} in {}", constructor, _url);
             return result;
         }
 
@@ -685,8 +685,23 @@ public class XmlConfiguration
         {
             Object result = method.invoke(obj, args);
             if (method.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated {} in {}", method, _url);
+                LOG.warn("Deprecated method {} in {}", method, _url);
             return result;
+        }
+
+        private Object getField(Field field, Object object) throws IllegalAccessException
+        {
+            Object result = field.get(object);
+            if (field.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated field {} in {}", field, _url);
+            return result;
+        }
+
+        private void setField(Field field, Object obj, Object arg) throws IllegalAccessException
+        {
+            field.set(obj, arg);
+            if (field.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated field {} in {}", field, _url);
         }
 
         /**
@@ -787,7 +802,7 @@ public class XmlConfiguration
                 {
                     // Try the field.
                     Field field = oClass.getField(name);
-                    obj = field.get(obj);
+                    obj = getField(field, obj);
                     configure(obj, node, 0);
                 }
                 catch (NoSuchFieldException nsfe)
