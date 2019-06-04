@@ -38,9 +38,13 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
+
+import static org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession.AbnormalCloseStatus;
 
 public class FrameFlusher extends IteratingCallback
 {
@@ -96,6 +100,8 @@ public class FrameFlusher extends IteratingCallback
         byte opCode = frame.getOpCode();
 
         Throwable dead;
+        List<Entry> failedEntries = null;
+        CloseStatus closeStatus = null;
 
         synchronized (this)
         {
@@ -104,10 +110,29 @@ public class FrameFlusher extends IteratingCallback
                 dead = closedCause;
                 if (dead == null)
                 {
-                    if (opCode == OpCode.PING || opCode == OpCode.PONG)
-                        queue.offerFirst(entry);
-                    else
-                        queue.offerLast(entry);
+                    switch (opCode)
+                    {
+                        case OpCode.CLOSE:
+                            closeStatus = CloseStatus.getCloseStatus(frame);
+                            if (!CloseStatus.isOrdinary(closeStatus))
+                            {
+                                //fail all existing entries in the queue, and enqueue the error close
+                                failedEntries = new ArrayList<>(queue);
+                                queue.clear();
+                            }
+                            queue.offerLast(entry);
+                            this.canEnqueue = false;
+                            break;
+
+                        case OpCode.PING:
+                        case OpCode.PONG:
+                            queue.offerFirst(entry);
+                            break;
+
+                        default:
+                            queue.offerLast(entry);
+                            break;
+                    }
 
                     /* If the queue was empty then no timeout has been set, so we set a timeout to check the current
                     entry when it expires. When the timeout expires we will go over entries in the queue and
@@ -115,14 +140,26 @@ public class FrameFlusher extends IteratingCallback
                     with the soonest expiry time. */
                     if ((idleTimeout > 0) && (queue.size()==1) && entries.isEmpty())
                         timeoutScheduler.schedule(this::timeoutExpired, idleTimeout, TimeUnit.MILLISECONDS);
-
-                    if (opCode == OpCode.CLOSE)
-                        this.canEnqueue = false;
                 }
             }
             else
             {
                 dead = new ClosedChannelException();
+            }
+        }
+
+        if (failedEntries != null)
+        {
+            WebSocketException failure = new WebSocketException("Flusher received abnormal CloseFrame: " + CloseStatus.codeString(closeStatus.getCode()));
+            if (closeStatus instanceof AbnormalCloseStatus)
+            {
+                Throwable cause = ((AbnormalCloseStatus)closeStatus).getCause();
+                failure.initCause(cause);
+            }
+
+            for (Entry e : failedEntries)
+            {
+                notifyCallbackFailure(e.callback, failure);
             }
         }
 
