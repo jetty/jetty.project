@@ -31,7 +31,6 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
@@ -40,8 +39,6 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -119,8 +116,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
-        CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
@@ -145,19 +141,13 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         pingHandle = bindTo(pingHandle, endpointInstance);
         pongHandle = bindTo(pongHandle, endpointInstance);
 
-        CompletableFuture<Session> future = futureSession;
-        if (future == null)
-            future = new CompletableFuture<>();
-
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
             container,
             endpointInstance,
-            upgradeRequest, upgradeResponse,
             openHandle, closeHandle, errorHandle,
             textHandle, binaryHandle,
             textSinkClass, binarySinkClass,
             frameHandle, pingHandle, pongHandle,
-            future,
             batchMode,
             metadata);
 

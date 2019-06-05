@@ -61,10 +61,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
     private final FrameHandler.CoreSession coreSession;
-    private final Principal principal;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final EndpointConfig config;
-    private final String id;
     private final AvailableDecoders availableDecoders;
     private final AvailableEncoders availableEncoders;
     private final Map<String, String> pathParameters;
@@ -77,15 +75,11 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
         FrameHandler.CoreSession coreSession,
         JavaxWebSocketFrameHandler frameHandler,
-        Principal upgradeRequestPrincipal,
-        String id,
         EndpointConfig endpointConfig)
     {
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
-        this.principal = upgradeRequestPrincipal;
-        this.id = id;
 
         this.config = endpointConfig == null?new BasicEndpointConfig():endpointConfig;
 
@@ -139,7 +133,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         }
 
         frameHandler.addMessageHandler(this, clazz, handler);
-
     }
 
     /**
@@ -308,7 +301,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getId()
     {
-        return this.id;
+        return this.frameHandler.getUpgradeRequest().toString();
     }
 
     /**
@@ -516,7 +509,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Principal getUserPrincipal()
     {
-        return this.principal;
+        return this.frameHandler.getUpgradeRequest().getUserPrincipal();
     }
 
     /**

@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.CloseReason;
@@ -108,9 +107,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     public abstract JavaxWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
 
-    public JavaxWebSocketFrameHandler newJavaxWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest,
-                                                                    UpgradeResponse upgradeResponse,
-                                                                    CompletableFuture<Session> futureSession)
+    public JavaxWebSocketFrameHandler newJavaxWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest)
     {
         Object endpoint;
         EndpointConfig config;
@@ -162,22 +159,13 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         errorHandle = InvokerUtils.bindTo(errorHandle, endpoint);
         pongHandle = InvokerUtils.bindTo(pongHandle, endpoint);
 
-        CompletableFuture<Session> future = futureSession;
-        if (future == null)
-            future = new CompletableFuture<>();
-
-        String id = upgradeRequest.toString();
-
         JavaxWebSocketFrameHandler frameHandler = new JavaxWebSocketFrameHandler(
             container,
             endpoint,
-            upgradeRequest, upgradeResponse,
             openHandle, closeHandle, errorHandle,
             textMetadata, binaryMetadata,
             pongHandle,
-            id,
-            config,
-            future);
+            config);
 
         return frameHandler;
     }

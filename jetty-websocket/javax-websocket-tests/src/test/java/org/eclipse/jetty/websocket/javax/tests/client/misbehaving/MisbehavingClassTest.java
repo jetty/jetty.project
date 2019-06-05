@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MisbehavingClassTest
 {
@@ -62,11 +61,9 @@ public class MisbehavingClassTest
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            // Expecting CloseException during onOpen().
-            assertThrows(CloseException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-
+            // expecting RuntimeException during onOpen
+            container.connectToServer(socket, server.getWsUri());
             assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
-
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));
         }
@@ -81,11 +78,9 @@ public class MisbehavingClassTest
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            // Expecting CloseException during onOpen().
-            assertThrows(CloseException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-
+            // expecting RuntimeException during onOpen
+            container.connectToServer(socket, server.getWsUri());
             assertThat("Close should have occurred", socket.closeLatch.await(5, TimeUnit.SECONDS), is(true));
-
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));
         }
