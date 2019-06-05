@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -139,7 +140,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         JavaxClientUpgradeRequest upgradeRequest = new JavaxClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
         EndpointConfig config = configuredEndpoint.getConfig();
-        if (config != null && config instanceof ClientEndpointConfig)
+        if (config instanceof ClientEndpointConfig)
         {
             ClientEndpointConfig clientEndpointConfig = (ClientEndpointConfig)config;
 
@@ -153,26 +154,35 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
                 upgradeRequest.setSubProtocols(clientEndpointConfig.getPreferredSubprotocols());
         }
 
+        long timeout = getWebSocketCoreClient().getHttpClient().getConnectTimeout();
         try
         {
             Future<Session> sessionFuture = connect(upgradeRequest);
-            long timeout = getWebSocketCoreClient().getHttpClient().getConnectTimeout();
             if (timeout>0)
                 return sessionFuture.get(timeout+1000, TimeUnit.MILLISECONDS);
             return sessionFuture.get();
         }
+        catch (ExecutionException e)
+        {
+            var cause = e.getCause();
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
+            if (cause instanceof IOException)
+                throw (IOException)cause;
+            throw new IOException(cause);
+        }
         catch (TimeoutException e)
         {
-            throw new IOException("Connection future not completed " + destURI, e);
+            throw new IOException("Connection future timeout " + timeout + " ms for " + destURI, e);
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
             throw new IOException("Unable to connect to " + destURI, e);
         }
     }
 
     @Override
-    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws IOException
     {
         ClientEndpointConfig clientEndpointConfig = config;
         if (clientEndpointConfig == null)
@@ -184,7 +194,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws IOException
     {
         ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new EmptyClientEndpointConfig());
         return connect(instance, path);
@@ -225,11 +235,11 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     {
         try
         {
-            return newConfiguredEndpoint(endpointClass.newInstance(), config);
+            return newConfiguredEndpoint(endpointClass.getConstructor().newInstance(), config);
         }
-        catch (DeploymentException | InstantiationException | IllegalAccessException e)
+        catch (Throwable e)
         {
-            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
+            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getName());
         }
     }
 

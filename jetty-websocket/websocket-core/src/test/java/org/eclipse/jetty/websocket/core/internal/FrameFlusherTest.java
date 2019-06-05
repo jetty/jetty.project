@@ -189,6 +189,41 @@ public class FrameFlusherTest
         assertThat(error.get(), instanceOf(WebSocketWriteTimeoutException.class));
     }
 
+    @Test
+    public void testErrorClose() throws Exception
+    {
+        Generator generator = new Generator(bufferPool);
+        BlockingEndpoint endPoint = new BlockingEndpoint(bufferPool);
+        endPoint.setBlockTime(100);
+        int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
+        int maxGather = 8;
+        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather);
+
+        // Enqueue message before the error close.
+        Frame frame1 = new Frame(OpCode.TEXT).setPayload("message before close").setFin(true);
+        CountDownLatch failedFrame1 = new CountDownLatch(1);
+        Callback callbackFrame1 = Callback.from(()->{}, t->failedFrame1.countDown());
+        assertTrue(frameFlusher.enqueue(frame1, callbackFrame1, false));
+
+        // Enqueue the close frame which should fail the previous frame as it is still in the queue.
+        Frame closeFrame = new CloseStatus(CloseStatus.MESSAGE_TOO_LARGE).toFrame();
+        CountDownLatch succeededCloseFrame = new CountDownLatch(1);
+        Callback closeFrameCallback = Callback.from(succeededCloseFrame::countDown, t->{});
+        assertTrue(frameFlusher.enqueue(closeFrame, closeFrameCallback, false));
+        assertTrue(failedFrame1.await(1, TimeUnit.SECONDS));
+
+        // Any frames enqueued after this should fail.
+        Frame frame2 = new Frame(OpCode.TEXT).setPayload("message after close").setFin(true);
+        CountDownLatch failedFrame2 = new CountDownLatch(1);
+        Callback callbackFrame2 = Callback.from(()->{}, t->failedFrame2.countDown());
+        assertFalse(frameFlusher.enqueue(frame2, callbackFrame2, false));
+        assertTrue(failedFrame2.await(1, TimeUnit.SECONDS));
+
+        // Iterating should succeed the close callback.
+        frameFlusher.iterate();
+        assertTrue(succeededCloseFrame.await(1, TimeUnit.SECONDS));
+    }
+
     public static class CapturingEndPoint extends MockEndpoint
     {
         public Parser parser;

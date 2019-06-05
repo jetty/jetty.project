@@ -50,13 +50,13 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
     @Override
     public long getSendTimeout()
     {
-        return getWriteIdleTimeout();
+        return getWriteTimeout();
     }
 
     @Override
     public void setSendTimeout(long timeoutmillis)
     {
-        setWriteIdleTimeout(timeoutmillis);
+        setWriteTimeout(timeoutmillis);
     }
 
     @Override

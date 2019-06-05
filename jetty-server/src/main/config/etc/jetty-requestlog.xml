@@ -30,7 +30,7 @@
 
       <!-- Format String -->
       <Arg>
-        <Property name="jetty.customrequestlog.formatString">
+        <Property name="jetty.requestlog.formatString" deprecated="jetty.customrequestlog.formatString">
           <Default>
             <Get class="org.eclipse.jetty.server.CustomRequestLog" name="EXTENDED_NCSA_FORMAT"/>
           </Default>

@@ -175,16 +175,8 @@ public class CloseStatus
     // TODO consider defining a precedence for every CloseStatus, and change SessionState only if higher precedence
     public static boolean isOrdinary(CloseStatus closeStatus)
     {
-        switch (closeStatus.getCode())
-        {
-            case NORMAL:
-            case SHUTDOWN:
-            case NO_CODE:
-                return true;
-
-            default:
-                return false;
-        }
+        int code = closeStatus.getCode();
+        return (code == NORMAL || code == NO_CODE || code >= 3000);
     }
 
     public int getCode()
@@ -291,8 +283,8 @@ public class CloseStatus
     public Frame toFrame()
     {
         if (isTransmittableStatusCode(code))
-            return new CloseFrame(this, OpCode.CLOSE, true, asPayloadBuffer(code, reason));
-        return new CloseFrame(this, OpCode.CLOSE);
+            return new CloseFrame(OpCode.CLOSE, true, asPayloadBuffer(code, reason));
+        return new CloseFrame(OpCode.CLOSE);
     }
 
     public static Frame toFrame(int closeStatus)
@@ -356,12 +348,12 @@ public class CloseStatus
 
     class CloseFrame extends Frame implements CloseStatus.Supplier
     {
-        public CloseFrame(CloseStatus closeStatus, byte opcode)
+        public CloseFrame(byte opcode)
         {
             super(opcode);
         }
 
-        public CloseFrame(CloseStatus closeStatus, byte opCode, boolean fin, ByteBuffer payload)
+        public CloseFrame(byte opCode, boolean fin, ByteBuffer payload)
         {
             super(opCode, fin, payload);
         }

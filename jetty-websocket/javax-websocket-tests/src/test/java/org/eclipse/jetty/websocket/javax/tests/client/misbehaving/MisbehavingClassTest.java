@@ -24,10 +24,11 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,32 +37,21 @@ import static org.hamcrest.Matchers.is;
 
 public class MisbehavingClassTest
 {
+    private CoreServer server;
 
-    private static CoreServer server;
-
-    @SuppressWarnings("Duplicates")
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
         server = new CoreServer(new CoreServer.EchoNegotiator());
-        // Start Server
         server.start();
     }
 
-    @AfterAll
-    public static void stopServer()
+    @AfterEach
+    public void stopServer() throws Exception
     {
-        try
-        {
-            server.stop();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-        }
+        server.stop();
     }
 
-    @SuppressWarnings("Duplicates")
     @Test
     public void testEndpointRuntimeOnOpen() throws Exception
     {
@@ -79,7 +69,6 @@ public class MisbehavingClassTest
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Test
     public void testAnnotatedRuntimeOnOpen() throws Exception
     {
