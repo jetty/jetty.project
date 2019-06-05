@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.websocket.javax.server;
 
-import java.util.concurrent.CompletableFuture;
-
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -67,7 +64,6 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
     {
-        CompletableFuture<Session> completableFuture = new CompletableFuture<>();
-        return newJavaxWebSocketFrameHandler(websocketPojo, new DelegatedJavaxServletUpgradeRequest(upgradeRequest), completableFuture);
+        return newJavaxWebSocketFrameHandler(websocketPojo, new DelegatedJavaxServletUpgradeRequest(upgradeRequest));
     }
 }

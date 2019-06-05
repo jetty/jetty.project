@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client.misbehaving;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
@@ -35,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MisbehavingClassTest
 {
@@ -74,12 +71,9 @@ public class MisbehavingClassTest
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            // expecting IOException during onOpen
-            Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-            assertThat(e.getCause(), instanceOf(ExecutionException.class));
-
+            // expecting RuntimeException during onOpen
+            container.connectToServer(socket, server.getWsUri());
             assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
-
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));
         }
@@ -95,12 +89,9 @@ public class MisbehavingClassTest
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            // expecting IOException during onOpen
-            Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-            assertThat(e.getCause(), instanceOf(ExecutionException.class));
-
+            // expecting RuntimeException during onOpen
+            container.connectToServer(socket, server.getWsUri());
             assertThat("Close should have occurred", socket.closeLatch.await(5, TimeUnit.SECONDS), is(true));
-
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));
         }

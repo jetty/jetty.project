@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.javax.common;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import javax.websocket.EndpointConfig;
 
@@ -68,8 +67,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, config);
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
 
-        JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxWebSocketFrameHandler(endpoint,
-            upgradeRequest, new CompletableFuture<>());
+        JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxWebSocketFrameHandler(endpoint, upgradeRequest);
 
         return localEndpoint;
     }

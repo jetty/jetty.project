@@ -74,7 +74,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         return new ClientUpgradeRequest(webSocketClient, requestURI)
         {
             @Override
-            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
+            public FrameHandler getFrameHandler()
             {
                 return frameHandler;
             }
@@ -191,7 +191,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
         try
         {
-            frameHandler = getFrameHandler(wsClient);
+            frameHandler = getFrameHandler();
             if (frameHandler == null)
                 throw new IllegalArgumentException("FrameHandler could not be created");
         }
@@ -401,7 +401,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         return new WebSocketCoreSession(handler, Behavior.CLIENT, negotiated);
     }
 
-    public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient);
+    public abstract FrameHandler getFrameHandler();
 
     private final String genRandomKey()
     {

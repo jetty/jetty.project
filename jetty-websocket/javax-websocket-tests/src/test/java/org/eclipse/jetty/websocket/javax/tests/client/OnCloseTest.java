@@ -20,12 +20,10 @@ package org.eclipse.jetty.websocket.javax.tests.client;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -106,9 +104,7 @@ public class OnCloseTest
         container.start();
 
         UpgradeRequest request = new UpgradeRequestAdapter();
-        CompletableFuture<Session> futureSession = new CompletableFuture<>();
-
-        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request, futureSession);
+        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request);
         frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Execute onClose call

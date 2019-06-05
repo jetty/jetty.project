@@ -146,8 +146,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
             });
         }
         upgradeRequest.setConfiguration(configurationCustomizer);
-        coreClient.connect(upgradeRequest);
-        return upgradeRequest.getFutureSession();
+        CompletableFuture<Session> futureSession = new CompletableFuture<>();
+
+        coreClient.connect(upgradeRequest).whenComplete((coreSession, error)->
+        {
+            if (error != null)
+            {
+                futureSession.completeExceptionally(error);
+                return;
+            }
+
+            JettyWebSocketFrameHandler frameHandler = (JettyWebSocketFrameHandler)upgradeRequest.getFrameHandler();
+            futureSession.complete(frameHandler.getSession());
+        });
+
+        return futureSession;
     }
 
     @Override
@@ -311,10 +324,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         return sessionTracker.getSessions();
     }
 
-    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest,
-        CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo)
     {
-        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, upgradeRequest, futureSession);
+        return frameHandlerFactory.newJettyFrameHandler(websocketPojo);
     }
 
     /**

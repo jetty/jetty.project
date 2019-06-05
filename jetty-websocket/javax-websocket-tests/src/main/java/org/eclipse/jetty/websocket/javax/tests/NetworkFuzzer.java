@@ -202,7 +202,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
+        public FrameHandler getFrameHandler()
         {
             return frameCapture;
         }

@@ -19,10 +19,9 @@
 package org.eclipse.jetty.websocket.javax.client;
 
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 
-import javax.websocket.Session;
-
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -32,34 +31,29 @@ import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
 {
     private final JavaxWebSocketClientContainer containerContext;
-    private final Object websocketPojo;
-    private final CompletableFuture<Session> futureSession;
+    private final JavaxWebSocketFrameHandler frameHandler;
+
 
     public JavaxClientUpgradeRequest(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
-        this.websocketPojo = websocketPojo;
-        this.futureSession = new CompletableFuture<>();
-    }
 
-    @Override
-    protected void handleException(Throwable failure)
-    {
-        super.handleException(failure);
-        futureSession.completeExceptionally(failure);
-    }
-
-    @Override
-    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient)
-    {
         UpgradeRequest upgradeRequest = new DelegatedJavaxClientUpgradeRequest(this);
-        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest, futureSession);
-        return frameHandler;
+        frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest);
     }
 
-    public CompletableFuture<Session> getFutureSession()
+    @Override
+    public void upgrade(HttpResponse response, HttpConnectionOverHTTP httpConnection)
     {
-        return futureSession;
+        frameHandler.setUpgradeRequest(new DelegatedJavaxClientUpgradeRequest(this));
+        frameHandler.setUpgradeResponse(new DelegatedJavaxClientUpgradeResponse(response));
+        super.upgrade(response, httpConnection);
+    }
+
+    @Override
+    public FrameHandler getFrameHandler()
+    {
+        return frameHandler;
     }
 }

@@ -23,12 +23,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import javax.websocket.Extension;
-import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -156,10 +154,9 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return sessionTracker.getSessions();
     }
 
-    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest,
-        CompletableFuture<Session> futureSession)
+    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest)
     {
-        return getFrameHandlerFactory().newJavaxWebSocketFrameHandler(websocketPojo, upgradeRequest, futureSession);
+        return getFrameHandlerFactory().newJavaxWebSocketFrameHandler(websocketPojo, upgradeRequest);
     }
 
     /**

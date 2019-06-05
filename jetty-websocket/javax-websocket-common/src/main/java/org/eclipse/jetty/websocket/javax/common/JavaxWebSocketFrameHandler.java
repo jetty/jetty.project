@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.websocket.CloseReason;
@@ -35,7 +34,6 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -96,16 +94,11 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private JavaxWebSocketFrameHandlerMetadata.MessageMetadata binaryMetadata;
     // TODO: need pingHandle ?
     private MethodHandle pongHandle;
-    /**
-     * Immutable HandshakeRequest available via Session
-     */
-    private final UpgradeRequest upgradeRequest;
-    /**
-     * Immutable javax.websocket.HandshakeResponse available via Session
-     */
-    private final String id;
+
+    private UpgradeRequest upgradeRequest;
+    private UpgradeResponse upgradeResponse;
+
     private final EndpointConfig endpointConfig;
-    private final CompletableFuture<Session> futureSession;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
@@ -117,14 +110,11 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
         Object endpointInstance,
-        UpgradeRequest upgradeRequest,
         MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
         JavaxWebSocketFrameHandlerMetadata.MessageMetadata textMetadata,
         JavaxWebSocketFrameHandlerMetadata.MessageMetadata binaryMetadata,
         MethodHandle pongHandle,
-        String id,
-        EndpointConfig endpointConfig,
-        CompletableFuture<Session> futureSession)
+        EndpointConfig endpointConfig)
     {
         this.LOG = Log.getLogger(endpointInstance.getClass());
 
@@ -136,7 +126,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             throw oops;
         }
         this.endpointInstance = endpointInstance;
-        this.upgradeRequest = upgradeRequest;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
@@ -145,9 +134,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         this.binaryMetadata = binaryMetadata;
         this.pongHandle = pongHandle;
 
-        this.id = id;
         this.endpointConfig = endpointConfig;
-        this.futureSession = futureSession;
         this.messageHandlerMap = new HashMap<>();
     }
 
@@ -172,7 +159,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         try
         {
             this.coreSession = coreSession;
-            session = new JavaxWebSocketSession(container, coreSession, this, upgradeRequest.getUserPrincipal(), id, endpointConfig);
+            session = new JavaxWebSocketSession(container, coreSession, this, endpointConfig);
 
             openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
             closeHandle = InvokerUtils.bindTo(closeHandle, session);
@@ -212,13 +199,11 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
             container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
             callback.succeeded();
-            futureSession.complete(session);
         }
         catch (Throwable cause)
         {
             Exception wse = new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause);
             callback.failed(wse);
-            futureSession.completeExceptionally(wse);
         }
     }
 
@@ -279,8 +264,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         try
         {
-            futureSession.completeExceptionally(cause);
-
             if (errorHandle != null)
                 errorHandle.invoke(cause);
             else
@@ -292,7 +275,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getSimpleName() + " ERROR method error: " + cause.getMessage(), t);
             wsError.addSuppressed(cause);
             callback.failed(wsError);
-            // TODO should futureSession be failed here?
         }
     }
 
@@ -627,5 +609,25 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             default:
                 throw new ProtocolException("Unable to process continuation during dataType " + dataType);
         }
+    }
+
+    public void setUpgradeRequest(UpgradeRequest upgradeRequest)
+    {
+        this.upgradeRequest = upgradeRequest;
+    }
+
+    public void setUpgradeResponse(UpgradeResponse upgradeResponse)
+    {
+        this.upgradeResponse = upgradeResponse;
+    }
+
+    public UpgradeRequest getUpgradeRequest()
+    {
+        return upgradeRequest;
+    }
+
+    public UpgradeResponse getUpgradeResponse()
+    {
+        return upgradeResponse;
     }
 }

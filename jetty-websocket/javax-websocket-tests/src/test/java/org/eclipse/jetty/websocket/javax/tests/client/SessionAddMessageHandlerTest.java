@@ -21,12 +21,10 @@ package org.eclipse.jetty.websocket.javax.tests.client;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.MessageHandler;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -80,8 +78,7 @@ public class SessionAddMessageHandlerTest
         UpgradeRequest handshakeRequest = new UpgradeRequestAdapter();
 
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
-        CompletableFuture<Session> futureSession = new CompletableFuture<>();
-        frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest, futureSession);
+        frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest);
         frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Session
