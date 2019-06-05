@@ -296,14 +296,20 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
 
-        if (anno.inputBufferSize()>=0)
-            metadata.setInputBufferSize(anno.inputBufferSize());
-        if (anno.maxBinaryMessageSize()>=0)
-           metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
-        if (anno.maxTextMessageSize()>=0)
-        metadata.setMaxTextMessageSize(anno.maxTextMessageSize());
-        if (anno.maxIdleTime()>=0)
-            metadata.setIdleTimeout(Duration.ofMillis(anno.maxIdleTime()));
+        int max = anno.inputBufferSize();
+        if (max>=0)
+            metadata.setInputBufferSize(max);
+        max = anno.maxBinaryMessageSize();
+        if (max>=0)
+           metadata.setMaxBinaryMessageSize(max);
+        max = anno.maxTextMessageSize();
+        if (max>=0)
+            metadata.setMaxTextMessageSize(max);
+        max = anno.idleTimeout();
+        if (max<0)
+            max = anno.maxIdleTime();
+        if (max>=0)
+            metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
 
         Method onmethod;

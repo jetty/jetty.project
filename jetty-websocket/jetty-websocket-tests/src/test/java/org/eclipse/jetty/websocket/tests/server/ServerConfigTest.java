@@ -40,8 +40,8 @@ import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
@@ -96,7 +96,7 @@ public class ServerConfigTest
         return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
-    @WebSocket(maxIdleTime=idleTimeout, maxTextMessageSize=maxMessageSize, maxBinaryMessageSize=maxMessageSize, inputBufferSize=inputBufferSize, batchMode=BatchMode.ON)
+    @WebSocket(idleTimeout=idleTimeout, maxTextMessageSize=maxMessageSize, maxBinaryMessageSize=maxMessageSize, inputBufferSize=inputBufferSize, batchMode=BatchMode.ON)
     public static class AnnotatedConfigEndpoint extends EventSocket
     {
     }
@@ -257,7 +257,7 @@ public class ServerConfigTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testMaxIdleTime(String path) throws Exception
+    public void testIdleTimeout(String path) throws Exception
     {
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/" + path);
         EventSocket clientEndpoint = new EventSocket();

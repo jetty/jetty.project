@@ -71,7 +71,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
  * <b>Configuration / Init-Parameters:</b>
  * </p>
  * <dl>
- * <dt>maxIdleTime</dt>
+ * <dt>idleTimeout</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
@@ -119,7 +119,13 @@ public abstract class WebSocketServlet extends HttpServlet
             components = WebSocketComponents.ensureWebSocketComponents(servletContext);
             mapping = new WebSocketMapping(components);
 
-            String max = getInitParameter("maxIdleTime");
+            String max = getInitParameter("idleTimeout");
+            if (max == null)
+            {
+                max = getInitParameter("maxIdleTime");
+                if (max != null)
+                    LOG.warn("'maxIdleTime' init param is deprecated, use 'idleTimeout' instead");
+            }
             if (max != null)
                 customizer.setIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
 
