@@ -26,17 +26,6 @@
        <artifactId>javax.servlet-api</artifactId>
        <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>javax.el</groupId>
-      <artifactId>javax.el-api</artifactId>
-      <version>3.0.0</version>
-    </dependency>
-<!--    <dependency>
-      <groupId>org.mortbay.jasper</groupId>
-      <artifactId>apache-el</artifactId>
-      <version>9.0.19</version>
-      <classifier>provided</classifier>
-    </dependency>-->
     <!-- included in webapp -->
     <dependency>
       <groupId>org.jboss.weld.servlet</groupId>
