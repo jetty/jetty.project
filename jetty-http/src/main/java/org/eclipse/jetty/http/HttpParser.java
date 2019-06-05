@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -974,7 +975,7 @@ public class HttpParser
                         else
                         {
                             List<String> values = new QuotedCSV(_valueString).getValues();
-                            if (values.size()>0 && HttpHeaderValue.CHUNKED.is(values.get(values.size()-1)))
+                            if (!values.isEmpty() && HttpHeaderValue.CHUNKED.is(values.get(values.size()-1)))
                             {
                                 _endOfContent=EndOfContent.CHUNKED_CONTENT;
                                 _contentLength=-1;
@@ -1092,7 +1093,7 @@ public class HttpParser
                             checkViolation(Violation.MULTILINE_FIELD_VALUE);
 
                             // header value without name - continuation?
-                            if (_valueString==null || _valueString.isEmpty())
+                            if ( StringUtil.isEmpty(_valueString))
                             {
                                 _string.setLength(0);
                                 _length=0;

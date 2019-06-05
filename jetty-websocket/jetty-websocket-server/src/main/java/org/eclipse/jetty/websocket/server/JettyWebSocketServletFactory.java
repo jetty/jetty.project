@@ -74,7 +74,7 @@ public class JettyWebSocketServletFactory
 
     public long getMaxBinaryMessageSize()
     {
-        return factory.getMaxFrameSize();
+        return factory.getMaxBinaryMessageSize();
     }
 
     public void setMaxBinaryMessageSize(long bufferSize)
@@ -89,7 +89,7 @@ public class JettyWebSocketServletFactory
 
     public void setMaxTextMessageSize(long bufferSize)
     {
-        factory.setMaxBinaryMessageSize(bufferSize);
+        factory.setMaxTextMessageSize(bufferSize);
     }
 
     public int getOutputBufferSize()

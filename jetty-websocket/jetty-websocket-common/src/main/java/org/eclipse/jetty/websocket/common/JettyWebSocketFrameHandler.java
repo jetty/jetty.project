@@ -145,11 +145,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             Executor executor = container.getExecutor();
 
             if (textHandle != null)
-                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, coreSession.getMaxTextMessageSize());
+                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, session);
 
             if (binaryHandle != null)
-                binarySink = JettyWebSocketFrameHandlerFactory
-                        .createMessageSink(binaryHandle, binarySinkClass, executor, coreSession.getMaxBinaryMessageSize());
+                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, session);
 
             if (openHandle != null)
                 openHandle.invoke();
@@ -435,16 +434,19 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         if (delayedFrame != null)
             delayedFrame.run();
+        else
+            session.getCoreSession().demand(1);
     }
 
     private void demand()
     {
+        boolean demand = false;
         synchronized (this)
         {
             switch(state)
             {
                 case DEMANDING:
-                    session.getCoreSession().demand(1);
+                    demand = true;
                     break;
 
                 case SUSPENDED:
@@ -458,6 +460,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     throw new IllegalStateException();
             }
         }
+
+        if (demand)
+            session.getCoreSession().demand(1);
     }
 
     static Throwable convertCause(Throwable cause)

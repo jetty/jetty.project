@@ -18,6 +18,24 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.Part;
+
+import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
+import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.Test;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -32,24 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.Part;
-
-import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
-import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Test;
 
 /**
  * MultiPartInputStreamTest
@@ -862,7 +862,7 @@ public class MultiPartFormInputStreamTest
                         "Content-Transfer-Encoding: base64\r\n" +
                         "Content-Type: application/octet-stream\r\n" +
                         "\r\n" +
-                        B64Code.encode("hello jetty") + "\r\n" +
+                        Base64.getEncoder().encodeToString("hello jetty".getBytes(ISO_8859_1)) + "\r\n" +
                         "--AaB03x\r\n" +
                         "Content-disposition: form-data; name=\"final\"\r\n" +
                         "Content-Type: text/plain\r\n" +
@@ -889,7 +889,7 @@ public class MultiPartFormInputStreamTest
         assertNotNull(p2);
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
-        assertEquals(B64Code.encode("hello jetty"), baos.toString("US-ASCII"));
+        assertEquals(Base64.getEncoder().encodeToString("hello jetty".getBytes(ISO_8859_1)), baos.toString("US-ASCII"));
         
         Part p3 = mpis.getPart("final");
         assertNotNull(p3);

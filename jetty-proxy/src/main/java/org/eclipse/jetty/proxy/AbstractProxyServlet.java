@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -578,11 +577,16 @@ public abstract class AbstractProxyServlet extends HttpServlet
         boolean aborted = proxyRequest.abort(failure);
         if (!aborted)
         {
-            int status = failure instanceof TimeoutException ?
-                    HttpStatus.REQUEST_TIMEOUT_408 :
-                    HttpStatus.INTERNAL_SERVER_ERROR_500;
+            int status = clientRequestStatus(failure);
             sendProxyResponseError(clientRequest, proxyResponse, status);
         }
+    }
+
+    protected int clientRequestStatus(Throwable failure) 
+    {
+        return failure instanceof TimeoutException ? 
+           HttpStatus.REQUEST_TIMEOUT_408 : 
+           HttpStatus.INTERNAL_SERVER_ERROR_500;
     }
 
     protected void onServerResponseHeaders(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
@@ -649,14 +653,19 @@ public abstract class AbstractProxyServlet extends HttpServlet
         if (_log.isDebugEnabled())
             _log.debug(getRequestId(clientRequest) + " proxying failed", failure);
 
-        int status = failure instanceof TimeoutException ?
-            HttpStatus.GATEWAY_TIMEOUT_504 :
-                HttpStatus.BAD_GATEWAY_502;
+        int status = proxyResponseStatus(failure);
         int serverStatus = serverResponse == null ? status : serverResponse.getStatus();
         if (expects100Continue(clientRequest) && serverStatus >= HttpStatus.OK_200)
             status = serverStatus;
         sendProxyResponseError(clientRequest, proxyResponse, status);
         
+    }
+
+    protected int proxyResponseStatus(Throwable failure) 
+    {
+        return failure instanceof TimeoutException ? 
+            HttpStatus.GATEWAY_TIMEOUT_504 : 
+            HttpStatus.BAD_GATEWAY_502;
     }
 
     protected int getRequestId(HttpServletRequest clientRequest)

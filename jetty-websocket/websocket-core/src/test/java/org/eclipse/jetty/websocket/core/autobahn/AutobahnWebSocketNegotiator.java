@@ -82,12 +82,12 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
     }
 
     @Override
-    public void customize(FrameHandler.CoreSession session)
+    public void customize(FrameHandler.Configuration configurable)
     {
-        session.setIdleTimeout(Duration.ofMillis(10000));
-        session.setMaxTextMessageSize(Integer.MAX_VALUE);
-        session.setMaxBinaryMessageSize(Integer.MAX_VALUE);
-        session.setMaxFrameSize(65536*2);
+        configurable.setIdleTimeout(Duration.ofMillis(10000));
+        configurable.setMaxTextMessageSize(Integer.MAX_VALUE);
+        configurable.setMaxBinaryMessageSize(Integer.MAX_VALUE);
+        configurable.setMaxFrameSize(65536*2);
     }
 
     @Override

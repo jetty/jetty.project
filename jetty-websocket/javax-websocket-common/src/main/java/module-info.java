@@ -24,7 +24,7 @@ module org.eclipse.jetty.websocket.javax.common
     exports org.eclipse.jetty.websocket.javax.common.messages;
     exports org.eclipse.jetty.websocket.javax.common.util;
 
-    requires javax.websocket.api;
+    requires jetty.websocket.api;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.util;

@@ -164,7 +164,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         return frameHandler;
     }
 
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, long maxMessageSize)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
     {
         if (msgHandle == null)
             return null;
@@ -175,8 +175,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             try
             {
-                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Long.TYPE);
-                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, maxMessageSize);
+                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Session.class);
+                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, session);
                 return messageSink;
             }
             catch (NoSuchMethodException e)
@@ -296,14 +296,20 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
 
-        if (anno.inputBufferSize()>=0)
-            metadata.setInputBufferSize(anno.inputBufferSize());
-        if (anno.maxBinaryMessageSize()>=0)
-           metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
-        if (anno.maxTextMessageSize()>=0)
-        metadata.setMaxTextMessageSize(anno.maxTextMessageSize());
-        if (anno.maxIdleTime()>=0)
-            metadata.setIdleTimeout(Duration.ofMillis(anno.maxIdleTime()));
+        int max = anno.inputBufferSize();
+        if (max>=0)
+            metadata.setInputBufferSize(max);
+        max = anno.maxBinaryMessageSize();
+        if (max>=0)
+           metadata.setMaxBinaryMessageSize(max);
+        max = anno.maxTextMessageSize();
+        if (max>=0)
+            metadata.setMaxTextMessageSize(max);
+        max = anno.idleTimeout();
+        if (max<0)
+            max = anno.maxIdleTime();
+        if (max>=0)
+            metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
 
         Method onmethod;

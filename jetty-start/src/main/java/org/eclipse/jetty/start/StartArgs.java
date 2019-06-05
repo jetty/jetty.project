@@ -866,7 +866,7 @@ public class StartArgs
 
     public boolean hasJvmArgs()
     {
-        return jvmArgs.size() > 0;
+        return !jvmArgs.isEmpty();
     }
 
     public boolean hasSystemProperties()

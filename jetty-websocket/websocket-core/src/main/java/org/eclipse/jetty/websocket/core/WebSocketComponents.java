@@ -22,7 +22,6 @@ import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 
 /**
@@ -34,16 +33,16 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
  */
 public class WebSocketComponents
 {
+    public static final String WEBSOCKET_COMPONENTS_ATTRIBUTE = WebSocketComponents.class.getName();
+
     public static WebSocketComponents ensureWebSocketComponents(ServletContext servletContext)
     {
-        ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
-
         // Ensure a mapping exists
-        WebSocketComponents components = contextHandler.getBean(WebSocketComponents.class);
+        WebSocketComponents components = (WebSocketComponents)servletContext.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components == null)
         {
             components = new WebSocketComponents();
-            contextHandler.addBean(components);
+            servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, components);
         }
 
         return components;

@@ -71,7 +71,36 @@ pipeline {
       }
     }
   }
+  /*
+  post {
+    failure {
+      slackNotif()
+    }
+    unstable {
+      slackNotif()
+    }
+    fixed {
+      slackNotif()
+    }
+  }
+  */
 }
+
+/*
+def slackNotif() {
+    script {
+      if (env.BRANCH_NAME=='jetty-10.0.x' ||
+          env.BRANCH_NAME=='jetty-9.4.x') {
+          //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
+          // by ${BUILD_USER}
+          COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
+          slackSend channel: '#jenkins',
+                  color: COLOR_MAP[currentBuild.currentResult],
+                  message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
+      }
+    }
+}
+*/
 
 /**
  * To other developers, if you are using this method above, please use the following syntax.

@@ -47,26 +47,26 @@ public class MessageOutputStreamTest
         bufferPool.assertNoLeaks();
     }
 
-    private OutgoingMessageCapture channelCapture;
+    private OutgoingMessageCapture sessionCapture;
 
     @BeforeEach
     public void setupTest() throws Exception
     {
-        channelCapture = new OutgoingMessageCapture();
+        sessionCapture = new OutgoingMessageCapture();
     }
 
     @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, OUTPUT_BUFFER_SIZE, bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, OUTPUT_BUFFER_SIZE, bufferPool))
         {
             stream.write("Hello".getBytes("UTF-8"));
             stream.write(" ".getBytes("UTF-8"));
             stream.write("World".getBytes("UTF-8"));
         }
 
-        assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
-        ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Socket.binaryMessages.size", sessionCapture.binaryMessages.size(), is(1));
+        ByteBuffer buffer = sessionCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         assertThat("Message", message, is("Hello World"));
     }
@@ -74,13 +74,13 @@ public class MessageOutputStreamTest
     @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, OUTPUT_BUFFER_SIZE, bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, OUTPUT_BUFFER_SIZE, bufferPool))
         {
             stream.write("Hello World".getBytes("UTF-8"));
         }
 
-        assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
-        ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Socket.binaryMessages.size", sessionCapture.binaryMessages.size(), is(1));
+        ByteBuffer buffer = sessionCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         assertThat("Message", message, is("Hello World"));
     }
@@ -94,13 +94,13 @@ public class MessageOutputStreamTest
         Arrays.fill(buf, (byte)'x');
         buf[bufsize - 1] = (byte)'o'; // mark last entry for debugging
 
-        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, OUTPUT_BUFFER_SIZE, bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, OUTPUT_BUFFER_SIZE, bufferPool))
         {
             stream.write(buf);
         }
 
-        assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
-        ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Socket.binaryMessages.size", sessionCapture.binaryMessages.size(), is(1));
+        ByteBuffer buffer = sessionCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         assertThat("Message", message, endsWith("xxxxxo"));
     }

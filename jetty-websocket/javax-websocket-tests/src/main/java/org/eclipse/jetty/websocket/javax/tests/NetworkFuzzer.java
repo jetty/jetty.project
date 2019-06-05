@@ -81,7 +81,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this.generator = new UnitGenerator(Behavior.CLIENT);
 
         CompletableFuture<FrameHandler.CoreSession> futureHandler = this.client.connect(upgradeRequest);
-        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (channel, capture) -> capture);
+        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (session, capture) -> capture);
         this.frameCapture = futureCapture.get(10, TimeUnit.SECONDS);
     }
 
@@ -156,7 +156,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
-                frameCapture.session.sendFrame(f, blocker, false);
+                frameCapture.coreSession.sendFrame(f, blocker, false);
             }
         }
     }
@@ -168,7 +168,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
-                frameCapture.session.sendFrame(f, blocker, false);
+                frameCapture.coreSession.sendFrame(f, blocker, false);
             }
         }
     }
@@ -222,7 +222,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private final EndPoint endPoint;
         private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
-        private CoreSession session;
+        private CoreSession coreSession;
 
         public FrameCapture(EndPoint endPoint)
         {
@@ -233,7 +233,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
         {
-            this.session = coreSession;
+            this.coreSession = coreSession;
             callback.succeeded();
         }
 

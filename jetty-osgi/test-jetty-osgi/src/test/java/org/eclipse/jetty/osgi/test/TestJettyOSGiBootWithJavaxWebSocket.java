@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,15 +29,12 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import aQute.bnd.osgi.Constants;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -112,8 +108,6 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-        fixJavaxWebSocketApi();
-
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
@@ -141,24 +135,6 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         {
             assertTrue(socket.closeLatch.await(1, TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
         }
-    }
-
-    private void fixJavaxWebSocketApi() throws BundleException
-    {
-        // this is necessary because the javax.websocket-api jar does not have manifest headers
-        // that allow it to use ServiceLoader in osgi, this corrects that defect
-        TinyBundle bundle = TinyBundles.bundle();
-        bundle.set(Constants.FRAGMENT_HOST, "javax.websocket-api");
-        bundle.set(Constants.REQUIRE_CAPABILITY,
-                "osgi.serviceloader;filter:=\"(osgi.serviceloader=javax.websocket.ContainerProvider)\";resolution:=optional;cardinality:=multiple, osgi.extender; filter:=\"(osgi.extender=osgi.serviceloader.processor)\"");
-        bundle.set(Constants.BUNDLE_SYMBOLICNAME, "javax.websocket.api.fragment");
-        InputStream is = bundle.build(TinyBundles.withBnd());
-        bundleContext.installBundle("dummyLocation", is);
-
-        Bundle websocketApiBundle = TestOSGiUtil.getBundle(bundleContext, "javax.websocket-api");
-        assertNotNull(websocketApiBundle);
-        websocketApiBundle.update();
-        websocketApiBundle.start();
     }
 
     private void startBundle(BundleContext bundleContext, String symbolicName) throws BundleException

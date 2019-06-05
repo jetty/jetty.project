@@ -41,7 +41,7 @@ public class MetaDataBuilder
     private String _path;
     private String _protocol;
     private long _contentLength=Long.MIN_VALUE;
-    private HttpFields _fields = new HttpFields(10);
+    private HttpFields _fields = new HttpFields();
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -269,7 +269,7 @@ public class MetaDataBuilder
         }
         finally
         {
-            _fields = new HttpFields(Math.max(10, fields.size() + 5));
+            _fields = new HttpFields(Math.max(16, fields.size() + 5));
             _request = false;
             _response = false;
             _status = null;

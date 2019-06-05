@@ -82,6 +82,7 @@ public enum HttpHeader
     TE("TE"),
     USER_AGENT("User-Agent"),
     X_FORWARDED_FOR("X-Forwarded-For"),
+    X_FORWARDED_PORT("X-Forwarded-Port"),
     X_FORWARDED_PROTO("X-Forwarded-Proto"),
     X_FORWARDED_SERVER("X-Forwarded-Server"),
     X_FORWARDED_HOST("X-Forwarded-Host"),

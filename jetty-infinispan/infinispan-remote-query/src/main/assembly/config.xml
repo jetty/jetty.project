@@ -18,7 +18,7 @@
     </fileSet>
     <fileSet>
       <directory>target</directory>
-      <outputDirectory>modules</outputDirectory>
+      <outputDirectory>modules/sessions/infinispan/remote</outputDirectory>
       <includes>
         <include>infinispan-remote-query-libs.mod</include>
       </includes>

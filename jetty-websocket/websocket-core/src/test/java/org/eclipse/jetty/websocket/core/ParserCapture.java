@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.is;
 public class ParserCapture
 {
     private final Parser parser;
-    private final WebSocketChannel channel;
+    private final WebSocketCoreSession coreSession;
     public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public boolean closed = false;
     public boolean copy;
@@ -60,7 +60,7 @@ public class ParserCapture
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
+        this.coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
     }
 
     public void parse(ByteBuffer buffer)
@@ -71,7 +71,7 @@ public class ParserCapture
             if (frame == null)
                 break;
 
-            channel.assertValidIncoming(frame);
+            coreSession.assertValidIncoming(frame);
 
             if (!onFrame(frame))
                 break;

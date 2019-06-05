@@ -22,6 +22,7 @@ import java.security.KeyStore;
 import java.security.Principal;
 import java.security.cert.CRL;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Collection;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
@@ -113,7 +113,8 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                     if (principal == null) principal = cert.getIssuerDN();
                     final String username = principal == null ? "clientcert" : principal.getName();
 
-                    final char[] credential = B64Code.encode(cert.getSignature());
+                    // TODO: investigate if using a raw byte[] is better vs older char[]
+                    final char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
 
                     UserIdentity user = login(username, credential, req);
                     if (user!=null)

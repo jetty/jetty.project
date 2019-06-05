@@ -114,7 +114,7 @@ public class FilterMapping implements Dumpable
     /* ------------------------------------------------------------ */
     private int _dispatches=DEFAULT;
     private String _filterName;
-    private transient FilterHolder _holder;
+    private FilterHolder _holder;
     private String[] _pathSpecs;
     private String[] _servletNames;
 
@@ -148,8 +148,11 @@ public class FilterMapping implements Dumpable
      */
     boolean appliesTo(int type)
     {
+        FilterHolder holder = _holder;
+        if (_holder==null)
+            return false;
         if (_dispatches==0)
-                return type==REQUEST || type==ASYNC && _holder.isAsyncSupported();
+                return type==REQUEST || type==ASYNC && holder.isAsyncSupported();
         return (_dispatches&type)!=0;
     }
 

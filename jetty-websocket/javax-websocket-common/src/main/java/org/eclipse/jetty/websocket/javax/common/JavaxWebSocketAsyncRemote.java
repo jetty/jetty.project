@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
+
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -29,35 +38,25 @@ import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
 import org.eclipse.jetty.websocket.javax.common.util.TextUtil;
 
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.SendHandler;
-import javax.websocket.SendResult;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
-
 public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint.Async
 {
     static final Logger LOG = Log.getLogger(JavaxWebSocketAsyncRemote.class);
 
-    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, FrameHandler.CoreSession channel)
+    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, FrameHandler.CoreSession coreSession)
     {
-        super(session, channel);
+        super(session, coreSession);
     }
 
     @Override
     public long getSendTimeout()
     {
-        // TODO: verify that JSR356 "send timeout" means the same as connection idle timeout
-        return getIdleTimeout();
+        return getWriteTimeout();
     }
 
     @Override
     public void setSendTimeout(long timeoutmillis)
     {
-        // TODO: verify that JSR356 "send timeout" means the same as connection idle timeout
-        setIdleTimeout(timeoutmillis);
+        setWriteTimeout(timeoutmillis);
     }
 
     @Override

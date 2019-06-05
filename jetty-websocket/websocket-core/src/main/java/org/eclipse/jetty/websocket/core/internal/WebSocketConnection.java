@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
@@ -57,7 +58,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
-    private final WebSocketChannel channel;
+    private final WebSocketCoreSession coreSession;
 
     private final Flusher flusher;
     private final Random random;
@@ -79,10 +80,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     public WebSocketConnection(EndPoint endp,
         Executor executor,
+        Scheduler scheduler,
         ByteBufferPool bufferPool,
-        WebSocketChannel channel)
+        WebSocketCoreSession coreSession)
     {
-        this(endp, executor, bufferPool, channel, true);
+        this(endp, executor, scheduler, bufferPool, coreSession, true);
     }
 
     /**
@@ -94,38 +96,39 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     public WebSocketConnection(EndPoint endp,
         Executor executor,
+        Scheduler scheduler,
         ByteBufferPool bufferPool,
-        WebSocketChannel channel,
+        WebSocketCoreSession coreSession,
         boolean validating)
     {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
-        Objects.requireNonNull(channel, "Channel");
+        Objects.requireNonNull(coreSession, "Session");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
         this.bufferPool = bufferPool;
 
-        this.channel = channel;
+        this.coreSession = coreSession;
 
         this.generator = new Generator(bufferPool);
-        this.parser = new Parser(bufferPool, channel.isAutoFragment())
+        this.parser = new Parser(bufferPool, coreSession.isAutoFragment())
         {
             @Override
             protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
             {
                 super.checkFrameSize(opcode, payloadLength);
-                if (!channel.isAutoFragment() && channel.getMaxFrameSize() > 0 && payloadLength > channel.getMaxFrameSize())
-                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + channel.getMaxFrameSize());
+                if (!coreSession.isAutoFragment() && coreSession.getMaxFrameSize() > 0 && payloadLength > coreSession.getMaxFrameSize())
+                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + coreSession.getMaxFrameSize());
             }
 
         };
 
-        this.flusher = new Flusher(channel.getOutputBufferSize(), generator, endp);
-        this.setInputBufferSize(channel.getInputBufferSize());
+        this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
+        this.setInputBufferSize(coreSession.getInputBufferSize());
 
-        this.random = this.channel.getBehavior() == Behavior.CLIENT?new Random(endp.hashCode()):null;
+        this.random = this.coreSession.getBehavior() == Behavior.CLIENT?new Random(endp.hashCode()):null;
     }
 
     @Override
@@ -170,8 +173,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
 
-        if (!channel.isClosed())
-            channel.onEof();
+        if (!coreSession.isClosed())
+            coreSession.onEof();
         flusher.onClose(cause);
         super.onClose(cause);
     }
@@ -184,7 +187,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onIdleExpired()");
 
         // treat as a handler error because socket is still open
-        channel.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
+        coreSession.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
         return true;
     }
 
@@ -200,7 +203,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onReadTimeout()");
 
         // treat as a handler error because socket is still open
-        channel.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
+        coreSession.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
         return false;
     }
 
@@ -213,7 +216,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (referenced != null)
             referenced.retain();
 
-        channel.onFrame(frame, new Callback()
+        coreSession.onFrame(frame, new Callback()
         {
             @Override
             public void succeeded()
@@ -225,7 +228,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (referenced != null)
                     referenced.release();
 
-                if (!channel.isDemanding())
+                if (!coreSession.isDemanding())
                     demand(1);
             }
 
@@ -240,7 +243,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     referenced.release();
 
                 // notify session & endpoint
-                channel.processHandlerError(cause,NOOP);
+                coreSession.processHandlerError(cause,NOOP);
             }
         });
     }
@@ -432,7 +435,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (filled < 0)
                 {
                     releaseNetworkBuffer();
-                    channel.onEof();
+                    coreSession.onEof();
                     return;
                 }
 
@@ -451,7 +454,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.warn(t.toString());
             BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
-            channel.processConnectionError(t,Callback.NOOP);
+            coreSession.processConnectionError(t,Callback.NOOP);
         }
     }
 
@@ -491,9 +494,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen() {}", this);
 
-        // Open Channel
+        // Open Session
         super.onOpen();
-        channel.onOpen();
+        coreSession.onOpen();
     }
 
     @Override
@@ -524,7 +527,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return String.format("%s@%x[%s,p=%s,f=%s,g=%s]",
             getClass().getSimpleName(),
             hashCode(),
-            channel.getBehavior(),
+            coreSession.getBehavior(),
             parser,
             flusher,
             generator);
@@ -544,6 +547,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
 
         setInitialBuffer(prefilled);
+    }
+
+    public FrameFlusher getFrameFlusher()
+    {
+        return flusher;
     }
 
     @Override
@@ -578,7 +586,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     void enqueueFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (channel.getBehavior() == Behavior.CLIENT)
+        if (coreSession.getBehavior() == Behavior.CLIENT)
         {
             byte[] mask = new byte[4];
             random.nextBytes(mask);
@@ -591,15 +599,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private class Flusher extends FrameFlusher
     {
-        private Flusher(int bufferSize, Generator generator, EndPoint endpoint)
+        private Flusher(Scheduler scheduler, int bufferSize, Generator generator, EndPoint endpoint)
         {
-            super(bufferPool, generator, endpoint, bufferSize, 8);
+            super(bufferPool, scheduler, generator, endpoint, bufferSize, 8);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
-            channel.processConnectionError(x, NOOP);
+            coreSession.processConnectionError(x, NOOP);
             super.onCompleteFailure(x);
         }
     }

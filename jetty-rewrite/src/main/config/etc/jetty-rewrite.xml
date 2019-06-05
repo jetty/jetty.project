@@ -22,8 +22,8 @@
 	</Set>
 
         <Get id="Rewrite" name="ruleContainer"/>
-        
-	<!-- see rewrite-compactpath.xml for example how to add a rule -->
+
+	<!-- see rewrite-rules.xml in $JETTY_BASE for how to add a rule(s) -->
 
       </New>
     </Arg>

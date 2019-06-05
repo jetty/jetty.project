@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.SendHandler;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -31,36 +39,29 @@ import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
 
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.SendHandler;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-
 public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketRemoteEndpoint.class);
 
     protected final JavaxWebSocketSession session;
-    private final FrameHandler.CoreSession channel;
+    private final FrameHandler.CoreSession coreSession;
     protected boolean batch = false;
     protected byte messageType = -1;
 
-    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, FrameHandler.CoreSession channel)
+    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, FrameHandler.CoreSession coreSession)
     {
         this.session = session;
-        this.channel = channel;
+        this.coreSession = coreSession;
     }
 
     protected MessageWriter newMessageWriter()
     {
-        return new MessageWriter(channel, channel.getOutputBufferSize());
+        return new MessageWriter(coreSession, coreSession.getOutputBufferSize());
     }
 
     protected MessageOutputStream newMessageOutputStream()
     {
-        return new MessageOutputStream(channel, channel.getOutputBufferSize(), session.getContainerImpl().getBufferPool());
+        return new MessageOutputStream(coreSession, coreSession.getOutputBufferSize(), session.getContainerImpl().getBufferPool());
     }
 
     @Override
@@ -68,7 +69,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     {
         try (SharedBlockingCallback.Blocker blocker = session.getBlocking().acquire())
         {
-            channel.flush(blocker);
+            coreSession.flush(blocker);
         }
     }
 
@@ -88,12 +89,22 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
     public long getIdleTimeout()
     {
-        return channel.getIdleTimeout().toMillis();
+        return coreSession.getIdleTimeout().toMillis();
     }
 
     public void setIdleTimeout(long ms)
     {
-        channel.setIdleTimeout(Duration.ofMillis(ms));
+        coreSession.setIdleTimeout(Duration.ofMillis(ms));
+    }
+
+    public long getWriteTimeout()
+    {
+        return coreSession.getWriteTimeout().toMillis();
+    }
+
+    public void setWriteTimeout(long ms)
+    {
+        coreSession.setWriteTimeout(Duration.ofMillis(ms));
     }
 
     @Override
@@ -135,7 +146,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
         try
         {
-            channel.sendFrame(frame, callback, batch);
+            coreSession.sendFrame(frame, callback, batch);
         }
         finally
         {

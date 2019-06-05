@@ -19,11 +19,16 @@
 package org.eclipse.jetty.util.thread.strategy.jmh;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -51,7 +56,7 @@ public class EWYKBenchmark
 {
     static TestServer server;
     static ReservedThreadExecutor reserved;
-    static File directory;
+    static Path directory;
 
     @Param({"PC","PEC","EWYK"})
     public static String strategyName;
@@ -66,21 +71,15 @@ public class EWYKBenchmark
     public static void setupServer() throws Exception
     {
         // Make a test directory
-        directory = File.createTempFile("ewyk","dir");
-        if (directory.exists())
-            directory.delete();
-        directory.mkdir();
-        directory.deleteOnExit();
-        
+        directory = Files.createTempDirectory("ewyk");
+
         // Make some test files
         for (int i=0;i<75;i++)
         {
-            File file =new File(directory,i+".txt");
-            file.createNewFile();
-            file.deleteOnExit();
+            File.createTempFile( "ewyk_benchmark", i + ".txt" , directory.toFile());
         }
         
-        server=new TestServer(directory);
+        server=new TestServer(directory.toFile());
         server.start();
         reserved = new ReservedThreadExecutor(server,20);
         reserved.start();
@@ -89,6 +88,14 @@ public class EWYKBenchmark
     @TearDown(Level.Trial)
     public static void stopServer() throws Exception
     {
+        try
+        {
+            IO.delete(directory.toFile());
+        }
+        catch ( Exception e )
+        {
+            System.out.println("cannot delete directory:"+directory);
+        }
         reserved.stop();
         server.stop();
     }

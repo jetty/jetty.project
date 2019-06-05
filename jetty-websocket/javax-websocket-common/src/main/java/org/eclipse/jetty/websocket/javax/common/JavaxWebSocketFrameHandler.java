@@ -46,7 +46,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
@@ -111,8 +110,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
-    private int maxTextMessageBufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
-    private int maxBinaryMessageBufferSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
     private JavaxWebSocketSession session;
     private Map<Byte, RegisteredMessageHandler> messageHandlerMap;
     private CoreSession coreSession;
@@ -171,26 +168,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         return session;
     }
 
-    public int getMaxTextMessageBufferSize()
-    {
-        return maxTextMessageBufferSize;
-    }
-
-    public void setMaxTextMessageBufferSize(int maxTextMessageBufferSize)
-    {
-        this.maxTextMessageBufferSize = maxTextMessageBufferSize;
-    }
-
-    public int getMaxBinaryMessageBufferSize()
-    {
-        return maxBinaryMessageBufferSize;
-    }
-
-    public void setMaxBinaryMessageBufferSize(int maxBinaryMessageBufferSize)
-    {
-        this.maxBinaryMessageBufferSize = maxBinaryMessageBufferSize;
-    }
-
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
@@ -210,6 +187,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
             if (actualTextMetadata != null)
             {
+                if (actualTextMetadata.isMaxMessageSizeSet())
+                    session.setMaxTextMessageBufferSize(actualTextMetadata.maxMessageSize);
+
                 actualTextMetadata.handle = InvokerUtils.bindTo(actualTextMetadata.handle, endpointInstance, endpointConfig, session);
                 actualTextMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualTextMetadata.handle, session);
                 textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualTextMetadata);
@@ -219,6 +199,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
             if (actualBinaryMetadata != null)
             {
+                if (actualBinaryMetadata.isMaxMessageSizeSet())
+                    session.setMaxBinaryMessageBufferSize(actualBinaryMetadata.maxMessageSize);
+
                 actualBinaryMetadata.handle = InvokerUtils.bindTo(actualBinaryMetadata.handle, endpointInstance, endpointConfig, session);
                 actualBinaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualBinaryMetadata.handle, session);
                 binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualBinaryMetadata);

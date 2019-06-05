@@ -119,7 +119,7 @@ public class JettyJspServlet extends JspServlet
      */
     private String addPaths(String servletPath, String pathInfo)
     {
-        if (servletPath.length()==0)
+        if (servletPath.isEmpty())
             return pathInfo;
        
         if (pathInfo==null)

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +58,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
@@ -335,7 +335,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (settingsField == null)
                 throw new BadMessageException("Missing " + HttpHeader.HTTP2_SETTINGS + " header");
             String value = settingsField.getValue();
-            final byte[] settings = B64Code.decodeRFC4648URL(value == null ? "" : value);
+            final byte[] settings = Base64.getUrlDecoder().decode(value == null ? "" : value);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
