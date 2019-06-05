@@ -152,7 +152,7 @@ public class FilterMapping implements Dumpable
         if (_holder==null)
             return false;
         if (_dispatches==0)
-                return type==REQUEST || type==ASYNC && holder.isAsyncSupported();
+            return type==REQUEST || type==ASYNC && holder.isAsyncSupported();
         return (_dispatches&type)!=0;
     }
 
