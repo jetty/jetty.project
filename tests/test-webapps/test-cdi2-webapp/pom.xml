@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>test-webapps-parent</artifactId>
+    <version>9.4.19-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>test-cdi2-webapp</artifactId>
+  <name>Test :: CDI2 On Jetty :: Included in WebApp</name>
+  <packaging>war</packaging>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.cdi2.webapp</bundle-symbolic-name>
+  </properties>
+
+  <build>
+    <finalName>cdi2-demo</finalName>
+  </build>
+
+  <dependencies>
+    <!-- provided by container -->
+    <dependency>
+       <groupId>javax.servlet</groupId>
+       <artifactId>javax.servlet-api</artifactId>
+       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.el</groupId>
+      <artifactId>javax.el-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jasper</groupId>
+      <artifactId>apache-el</artifactId>
+      <version>9.0.19</version>
+      <classifier>provided</classifier>
+    </dependency>
+    <!-- included in webapp -->
+    <dependency>
+      <groupId>org.jboss.weld.servlet</groupId>
+      <artifactId>weld-servlet</artifactId>
+      <version>${weld.version}</version>
+    </dependency>
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
