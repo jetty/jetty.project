@@ -473,7 +473,7 @@ public class DistributionTester
         @Override
         public void close()
         {
-            stop();
+            destroy();
         }
 
         /**
