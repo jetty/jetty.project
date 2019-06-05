@@ -19,8 +19,10 @@
 package org.eclipse.jetty.jndi;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.WeakHashMap;
+import java.util.Map;
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
@@ -62,7 +64,7 @@ public class ContextFactory implements ObjectFactory
     /**
      * Map of classloaders to contexts.
      */
-    private static final WeakHashMap __contextMap = new WeakHashMap();
+    private static final Map<ClassLoader, Context> __contextMap = Collections.synchronizedMap(new WeakHashMap<>());
 
     /**
      * Threadlocal for injecting a context to use
@@ -102,7 +104,8 @@ public class ContextFactory implements ObjectFactory
         Context ctx = (Context)__threadContext.get();
         if (ctx != null)
         {
-            if(__log.isDebugEnabled()) __log.debug("Using the Context that is bound on the thread");
+            if(__log.isDebugEnabled())
+                __log.debug("Using the Context that is bound on the thread");
             return ctx;
         }
 
@@ -111,37 +114,47 @@ public class ContextFactory implements ObjectFactory
         ClassLoader loader = (ClassLoader)__threadClassLoader.get();
         if (loader != null)
         {
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Using threadlocal classloader");
-            ctx = getContextForClassLoader(loader);
-            if (ctx == null)
+            if (__log.isDebugEnabled())
+                __log.debug("Using threadlocal classloader");
+            synchronized(__contextMap)
             {
-                ctx = newNamingContext(obj, loader, env, name, nameCtx);
-                __contextMap.put (loader, ctx);
-                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
+                ctx = getContextForClassLoader(loader);
+                if (ctx == null)
+                {
+                    ctx = newNamingContext(obj, loader, env, name, nameCtx);
+                    __contextMap.put (loader, ctx);
+                    if(__log.isDebugEnabled())
+                        __log.debug("Made context {} for classloader {}",name.get(0),loader);
+                }
+                return ctx;
             }
-            return ctx;
         }
-       
+
         //If the thread context classloader is set, then try its hierarchy to find a matching context
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         loader = tccl;      
         if (loader != null)
         {
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Trying thread context classloader");
-            while (ctx == null && loader != null)
+            if (__log.isDebugEnabled())
+                __log.debug("Trying thread context classloader");
+            synchronized(__contextMap)
             {
-                ctx = getContextForClassLoader(loader);
-                if (ctx == null && loader != null)
-                    loader = loader.getParent();
-            }
+                while (ctx == null && loader != null)
+                {
+                    ctx = getContextForClassLoader(loader);
+                    if (ctx == null && loader != null)
+                        loader = loader.getParent();
+                }
 
-            if (ctx == null)
-            {
-                ctx = newNamingContext(obj, tccl, env, name, nameCtx);
-                __contextMap.put (tccl, ctx);
-                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+tccl);
+                if (ctx == null)
+                {
+                    ctx = newNamingContext(obj, tccl, env, name, nameCtx);
+                    __contextMap.put (tccl, ctx);
+                    if(__log.isDebugEnabled())
+                        __log.debug("Made context {} for classloader {}", name.get(0), tccl);
+                }
+                return ctx;
             }
-            return ctx;
         }
 
 
@@ -149,19 +162,23 @@ public class ContextFactory implements ObjectFactory
         //classloader associated with the current context
         if (ContextHandler.getCurrentContext() != null)
         {
-            
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
-            loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
-            ctx = (Context)__contextMap.get(loader);    
-
-            if (ctx == null && loader != null)
+            if (__log.isDebugEnabled() && loader != null)
+                __log.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
+            synchronized(__contextMap)
             {
-                ctx = newNamingContext(obj, loader, env, name, nameCtx);
-                __contextMap.put (loader, ctx);
-                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
-            }
+                loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
+                ctx = (Context)__contextMap.get(loader);    
 
-            return ctx;
+                if (ctx == null && loader != null)
+                {
+                    ctx = newNamingContext(obj, loader, env, name, nameCtx);
+                    __contextMap.put (loader, ctx);
+                    if(__log.isDebugEnabled())
+                        __log.debug("Made context {} for classloader {} ", name.get(0), loader);
+                }
+
+                return ctx;
+            }
         }
         return null;
     }
@@ -239,6 +256,9 @@ public class ContextFactory implements ObjectFactory
 
     public static void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@",__contextMap.hashCode()), __contextMap);
+        synchronized (__contextMap)
+        {
+            Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@",__contextMap.hashCode()), __contextMap);
+        }
     }
 }
