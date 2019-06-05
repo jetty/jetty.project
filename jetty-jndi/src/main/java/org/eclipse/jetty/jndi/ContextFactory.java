@@ -20,7 +20,6 @@ package org.eclipse.jetty.jndi;
 
 import java.io.IOException;
 import java.util.Hashtable;
-import java.util.Map;
 import java.util.WeakHashMap;
 import javax.naming.Context;
 import javax.naming.Name;
@@ -30,6 +29,7 @@ import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -239,17 +239,6 @@ public class ContextFactory implements ObjectFactory
 
     public static void dump(Appendable out, String indent) throws IOException
     {
-        out.append("o.e.j.jndi.ContextFactory@").append(Long.toHexString(__contextMap.hashCode())).append("\n");
-        int size=__contextMap.size();
-        int i=0;
-        for (Map.Entry<ClassLoader,NamingContext> entry : ((Map<ClassLoader,NamingContext>)__contextMap).entrySet())
-        {
-            boolean last=++i==size;
-            ClassLoader loader=entry.getKey();
-            out.append(indent).append(" +- ").append(loader.getClass().getSimpleName()).append("@").append(Long.toHexString(loader.hashCode())).append(": ");
-
-            NamingContext context = entry.getValue();
-            context.dump(out,indent+(last?"    ":" |  "));
-        }
+        Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@",__contextMap.hashCode()), __contextMap);
     }
 }

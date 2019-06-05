@@ -84,6 +84,7 @@ public class NamingContext implements Context, Dumpable
     protected String _name = null;
     protected NameParser _parser = null;
     private Collection<Listener> _listeners;
+    private Object _lock;
 
     /*------------------------------------------------*/
     /**
@@ -190,13 +191,21 @@ public class NamingContext implements Context, Dumpable
         _parser = parser;
     }
 
-
     public final void setEnv (Hashtable<String,Object> env)
     {
-        _env.clear();
-        if(env == null)
-            return;
-        _env.putAll(env);
+        Object lock = _env.get(LOCK_PROPERTY);
+        try
+        {
+            _env.clear();
+            if (env == null)
+                return;
+            _env.putAll(env);
+        }
+        finally
+        {
+            if (lock!=null)
+                _env.put(LOCK_PROPERTY, lock);
+        }
     }
 
     private Object dereference(Object ctx, String firstComponent) throws NamingException
@@ -888,7 +897,6 @@ public class NamingContext implements Context, Dumpable
         return _parser;
     }
 
-
     /*------------------------------------------------*/
     /**
      * Get the full name of this Context node
@@ -917,7 +925,6 @@ public class NamingContext implements Context, Dumpable
         return name.toString();
     }
 
-
     /*------------------------------------------------*/
     /**
      * Add an environment setting to this Context
@@ -932,12 +939,24 @@ public class NamingContext implements Context, Dumpable
                                    Object propVal)
         throws NamingException
     {
-        if (isLocked() && !(propName.equals(UNLOCK_PROPERTY)))
-            throw new NamingException ("This context is immutable");
+        switch(propName)
+        {
+            case LOCK_PROPERTY:
+                if (_lock == null)
+                    _lock = propVal;
+                return null;
 
-        return _env.put (propName, propVal);
+            case UNLOCK_PROPERTY:
+                if (propVal != null && propVal.equals(_lock))
+                    _lock = null;
+                return null;
+
+            default:
+                if (isLocked())
+                    throw new NamingException("This context is immutable");
+                return _env.put(propName, propVal);
+        }
     }
-
 
     /*------------------------------------------------*/
     /**
@@ -1080,17 +1099,8 @@ public class NamingContext implements Context, Dumpable
     /* ------------------------------------------------------------ */
     public boolean isLocked()
     {
-       if ((_env.get(LOCK_PROPERTY) == null) && (_env.get(UNLOCK_PROPERTY) == null))
-           return false;
-
-       Object lockKey = _env.get(LOCK_PROPERTY);
-       Object unlockKey = _env.get(UNLOCK_PROPERTY);
-
-       if ((lockKey != null) && (unlockKey != null) && (lockKey.equals(unlockKey)))
-           return false;
-       return true;
+        return _lock != null || (_parent!=null && _parent.isLocked());
     }
-
 
     /* ------------------------------------------------------------ */
     @Override
