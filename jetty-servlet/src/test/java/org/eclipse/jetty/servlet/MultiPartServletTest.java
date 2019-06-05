@@ -21,8 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.stream.Stream;
+
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -39,8 +38,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.MultiPartFormDataCompliance;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
@@ -49,9 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -69,11 +64,6 @@ public class MultiPartServletTest
 
     private static final int MAX_FILE_SIZE = 512 * 1024;
     private static final int LARGE_MESSAGE_SIZE = 1024 * 1024;
-
-    public static Stream<Arguments> data()
-    {
-        return Arrays.asList(MultiPartFormDataCompliance.values()).stream().map(Arguments::of);
-    }
 
     public static class MultiPartServlet extends HttpServlet
     {
@@ -130,13 +120,9 @@ public class MultiPartServletTest
         IO.delete(tmpDir.toFile());
     }
 
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testTempFilesDeletedOnError(MultiPartFormDataCompliance compliance) throws Exception
+    @Test
+    public void testTempFilesDeletedOnError() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
-                .setMultiPartFormDataCompliance(compliance);
-
         byte[] byteArray = new byte[LARGE_MESSAGE_SIZE];
         for (int i=0; i<byteArray.length; i++)
             byteArray[i] = 1;
