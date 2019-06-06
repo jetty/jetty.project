@@ -19,11 +19,7 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
@@ -86,22 +82,24 @@ public class CDITests extends AbstractDistributionTest
     }
 
     /**
-     * Tests a WAR file that is expects CDI to be provided by the server.
+     * Tests a WAR file that is expects CDI to be configured by the server.
      *
      * <p>
-     *     This means the WAR does NOT have the weld libs in its
+     *     This means the WAR has the weld libs in its
      *     WEB-INF/lib directory.
      * </p>
      *
      * <p>
-     *     The expectation is that CDI2 is provided by weld
-     *     and the javax.el support comes from JSP
+     *     The expectation is that a context xml deployable file is not
+     *     required when using this `cdi2` module, and the appropriate
+     *     server side libs are made available to allow weld to function.
+     *     (the required server side javax.el support comes from the cdi2 module)
      * </p>
      *
      * @throws Exception
      */
     @Test
-    public void testCDI2_ProvidedByServer() throws Exception
+    public void testCDI2_ConfiguredByServer() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
@@ -123,17 +121,7 @@ public class CDITests extends AbstractDistributionTest
             assertEquals(0, run1.getExitValue());
 
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-cdi2-webapp:war:" + jettyVersion);
-            Path demoDir = distribution.installWarFile(war, "demo");
-            // Remove weld libs
-            Path libDir = demoDir.resolve("WEB-INF/lib");
-            List<Path> weldLibs = Files.list(libDir).filter((path) -> path.getFileName().toString().contains("weld"))
-                .collect(Collectors.toList());
-            for (Path weldLib : weldLibs)
-            {
-                assertTrue(Files.deleteIfExists(weldLib));
-            }
-
-            distribution.installBaseResource("cdi/demo_context.xml", "webapps/demo.xml");
+            distribution.installWarFile(war, "demo");
 
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))

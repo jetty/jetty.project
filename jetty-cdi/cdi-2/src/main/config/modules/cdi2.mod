@@ -6,6 +6,9 @@ Jetty setup to support Weld/CDI2 with WELD inside the webapp
 [depend]
 deploy
 
+[lib]
+lib/apache-jsp/org.mortbay.jasper.apache-el-*.jar
+
 [xml]
 etc/cdi2/jetty-cdi2.xml
 
