@@ -666,7 +666,6 @@ public class XmlConfigurationTest
                 "    </New>" +
                 "  </Set>" +
                 "</Configure>");
-//        XmlConfiguration xmlConfiguration = new XmlConfiguration(url);
 
         DefaultTestConfiguration atc = (DefaultTestConfiguration)xmlConfiguration.configure();
 

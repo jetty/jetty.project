@@ -38,8 +38,9 @@ public interface ConfigurationProcessor
      */
     @Deprecated
     void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
+
     void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration);
-    
+
     Object configure( Object obj) throws Exception;
     Object configure() throws Exception;
 }

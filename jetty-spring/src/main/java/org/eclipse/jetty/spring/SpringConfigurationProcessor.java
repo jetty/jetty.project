@@ -69,6 +69,45 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
     private String _main;
 
     @Override
+    public void init(org.eclipse.jetty.util.resource.Resource jettyResource, XmlParser.Node config, XmlConfiguration configuration)
+    {
+        try
+        {
+            _configuration = configuration;
+
+            Resource springResource;
+
+            if (jettyResource != null)
+            {
+                springResource = new UrlResource(jettyResource.getURI());
+            }
+            else
+            {
+                springResource = new ByteArrayResource(("" +
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                        "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
+                        config).getBytes(StandardCharsets.UTF_8));
+            }
+
+            _beanFactory = new DefaultListableBeanFactory()
+            {
+                @Override
+                protected void applyPropertyValues(String beanName, BeanDefinition mbd, BeanWrapper bw, PropertyValues pvs)
+                {
+                    _configuration.initializeDefaults(bw.getWrappedInstance());
+                    super.applyPropertyValues(beanName, mbd, bw, pvs);
+                }
+            };
+
+            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(springResource);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void init(URL url, XmlParser.Node config, XmlConfiguration configuration)
     {
         try

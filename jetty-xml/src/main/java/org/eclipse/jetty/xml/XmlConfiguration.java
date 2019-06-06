@@ -268,6 +268,15 @@ public class XmlConfiguration
         }
     }
 
+    private String getLocation()
+    {
+        if (_location == null)
+        {
+            return "UNKNOWN-LOCATION";
+        }
+        return _location.toString();
+    }
+
     private void setConfig(XmlParser.Node config)
     {
         if ("Configure".equals(config.getTag()))
@@ -283,7 +292,7 @@ public class XmlConfiguration
                     break;
             }
             if (_processor == null)
-                throw new IllegalStateException("Unknown configuration type: " + config.getTag() + " in " + this);
+                throw new IllegalStateException("Unknown configuration type: " + config.getTag() + " in " + getLocation());
         }
         else
         {
@@ -371,7 +380,7 @@ public class XmlConfiguration
         @Override
         public void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration)
         {
-            _location = resource == null ? null : resource.toString();
+            _location = resource == null ? "UNKNOWN_RESOURCE" : resource.toString();
             _root = root;
             _configuration = configuration;
         }
@@ -379,7 +388,7 @@ public class XmlConfiguration
         @Override
         public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
         {
-            _location = url == null ? null : url.toString();
+            _location = url == null ? "UNKNOWN_URL" : url.toString();
             _root = root;
             _configuration = configuration;
         }
