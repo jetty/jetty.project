@@ -26,6 +26,7 @@ import javax.naming.NameParser;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
@@ -41,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class NamingEntry
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(NamingEntry.class);
     public static final String __contextName = "__"; //all NamingEntries stored in context called "__"
     protected final Object _scope;
     protected final String _jndiName;  //the name representing the object associated with the NamingEntry
@@ -104,7 +105,8 @@ public abstract class NamingEntry
         // TODO - check on the whole overriding/non-overriding thing
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
-        __log.debug("Binding java:comp/env/"+localName+" to "+_objectNameString);
+        if(LOG.isDebugEnabled())
+            LOG.debug("Binding java:comp/env/"+localName+" to "+_objectNameString);
         NamingUtil.bind(env, localName, new LinkRef(_objectNameString));
     }
     
@@ -117,12 +119,13 @@ public abstract class NamingEntry
         {
             InitialContext ic = new InitialContext();
             Context env = (Context)ic.lookup("java:comp/env");
-            __log.debug("Unbinding java:comp/env/"+getJndiName());
+            if(LOG.isDebugEnabled())
+                LOG.debug("Unbinding java:comp/env/"+getJndiName());
             env.unbind(getJndiName());
         }
         catch (NamingException e)
         {
-            __log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -141,7 +144,7 @@ public abstract class NamingEntry
         }
         catch (NamingException e)
         {
-            __log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -191,7 +194,8 @@ public abstract class NamingEntry
     protected void save (Object object)
     throws NamingException
     {
-        __log.debug("SAVE {} in {}",this,_scope);
+        if(LOG.isDebugEnabled())
+            LOG.debug("SAVE {} in {}",this,_scope);
         InitialContext ic = new InitialContext();
         NameParser parser = ic.getNameParser("");
         Name prefix = NamingEntryUtil.getNameForScope(_scope);

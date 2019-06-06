@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.jndi.java;
 
-
 import java.util.Hashtable;
-
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
@@ -31,7 +29,7 @@ import javax.naming.StringRefAddr;
 
 import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -46,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class javaRootURLContext implements Context
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(javaRootURLContext.class);
 
     public static final String URL_PREFIX = "java:";
 
@@ -76,7 +74,7 @@ public class javaRootURLContext implements Context
         }
         catch (Exception e)
         {
-            __log.warn(e);
+            LOG.warn(e);
         }
     }
 
@@ -319,7 +317,8 @@ public class javaRootURLContext implements Context
         {
             String head = name.get(0);
 
-            if(__log.isDebugEnabled())__log.debug("Head element of name is: "+head);
+            if(LOG.isDebugEnabled())
+                LOG.debug("Head element of name is: "+head);
 
             if (head.startsWith(URL_PREFIX))
             {
@@ -328,7 +327,8 @@ public class javaRootURLContext implements Context
                 if (head.length() > 0)
                     name.add(0, head);
 
-                if(__log.isDebugEnabled())__log.debug("name modified to "+name.toString());
+                if(LOG.isDebugEnabled())
+                    LOG.debug("name modified to "+name.toString());
             }
         }
 

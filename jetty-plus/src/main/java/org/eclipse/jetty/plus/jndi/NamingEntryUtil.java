@@ -21,7 +21,6 @@ package org.eclipse.jetty.plus.jndi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -31,13 +30,13 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
 public class NamingEntryUtil
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(NamingEntryUtil.class);
 
     /**
      * Link a name in a webapp's java:/comp/evn namespace to a pre-existing
@@ -176,7 +175,7 @@ public class NamingEntryUtil
         }
         catch (NamingException e)
         {
-            __log.warn(e);
+            LOG.warn(e);
             return null;
         }
     }
@@ -227,7 +226,8 @@ public class NamingEntryUtil
         }
         catch (NameNotFoundException e)
         {
-            __log.debug("No entries of type "+clazz.getName()+" in context="+context);
+            if(LOG.isDebugEnabled())
+                LOG.debug("No entries of type "+clazz.getName()+" in context="+context);
         }
 
         return list;

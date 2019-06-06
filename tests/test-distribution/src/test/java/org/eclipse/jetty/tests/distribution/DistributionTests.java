@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
@@ -263,6 +264,49 @@ public class DistributionTests extends AbstractDistributionTest
         finally
         {
             Files.deleteIfExists(sockFile);
+        }
+    }
+
+    @Test
+    public void testLog4j2ModuleWithSimpleWebAppWithJSP() throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory( "jetty_base");
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,http,webapp,deploy,jsp,servlet,servlets,logging-log4j2"
+        };
+        try (DistributionTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+            assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
+
+            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            distribution.installWarFile(war, "test");
+
+            int port = distribution.freePort();
+            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), not(containsString("<%")));
+                assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
+            }
+        } finally
+        {
+            IO.delete(jettyBase.toFile());
         }
     }
 }
