@@ -44,6 +44,7 @@ import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /** 
@@ -57,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("unchecked")
 public class NamingContext implements Context, Dumpable
 {
-    private final static Logger __log=NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(NamingContext.class);
     private final static List<Binding> __empty = Collections.emptyList();
     public static final String DEEP_BINDING = "org.eclipse.jetty.jndi.deepBinding";
     public static final String LOCK_PROPERTY = "org.eclipse.jetty.jndi.lock";
@@ -137,8 +138,8 @@ public class NamingContext implements Context, Dumpable
         _parent = parent;
         _parser = parser;
         _bindings = bindings==null ? new ConcurrentHashMap<>() : bindings;
-        if(__log.isDebugEnabled())
-            __log.debug("new {}", this);
+        if(LOG.isDebugEnabled())
+            LOG.debug("new {}", this);
     }
 
     /**
@@ -223,7 +224,7 @@ public class NamingContext implements Context, Dumpable
             }
             catch (Exception e)
             {
-                __log.warn("",e);
+                LOG.warn("",e);
                 throw new NamingException (e.getMessage());
             }
         }
@@ -294,8 +295,8 @@ public class NamingContext implements Context, Dumpable
         }
         else
         {
-            if(__log.isDebugEnabled())
-                __log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
+            if(LOG.isDebugEnabled())
+                LOG.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
 
             //walk down the subcontext hierarchy
             //need to ignore trailing empty "" name components
@@ -448,12 +449,14 @@ public class NamingContext implements Context, Dumpable
     public Object lookup(Name name)
         throws NamingException
     {
-        if(__log.isDebugEnabled())__log.debug("Looking up name=\""+name+"\"");
+        if(LOG.isDebugEnabled())
+            LOG.debug("Looking up name=\""+name+"\"");
         Name cname = toCanonicalName(name);
 
         if ((cname == null) || (cname.size() == 0))
         {
-            __log.debug("Null or empty name, returning shallowCopy of this context");
+            if(LOG.isDebugEnabled())
+                LOG.debug("Null or empty name, returning shallowCopy of this context");
             return shallowCopy();
         }
 
@@ -496,7 +499,7 @@ public class NamingContext implements Context, Dumpable
                 }
                 catch (Exception e)
                 {
-                    __log.warn("",e);
+                    LOG.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -583,7 +586,8 @@ public class NamingContext implements Context, Dumpable
     public NamingEnumeration list(Name name)
         throws NamingException
     {
-        if(__log.isDebugEnabled())__log.debug("list() on Context="+getName()+" for name="+name);
+        if(LOG.isDebugEnabled())
+            LOG.debug("list() on Context="+getName()+" for name="+name);
         Name cname = toCanonicalName(name);
 
         if (cname == null)
@@ -1011,8 +1015,8 @@ public class NamingContext implements Context, Dumpable
                 break;
         }
 
-        if(__log.isDebugEnabled())
-            __log.debug("Adding binding with key="+key+" obj="+obj+" for context="+_name+" as "+binding);
+        if(LOG.isDebugEnabled())
+            LOG.debug("Adding binding with key="+key+" obj="+obj+" for context="+_name+" as "+binding);
 
         if (binding!=null)
         {
@@ -1058,8 +1062,8 @@ public class NamingContext implements Context, Dumpable
     public void removeBinding (Name name)
     {
         String key = name.toString();
-        if (__log.isDebugEnabled())
-            __log.debug("Removing binding with key="+key);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Removing binding with key="+key);
         Binding binding = _bindings.remove(key);
         if (binding!=null)
         {

@@ -38,7 +38,7 @@ import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class localContextRoot implements Context
 {
-    private final static Logger __log=NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(localContextRoot.class);
     protected final static NamingContext __root = new NamingRoot();
     private final Hashtable<String,Object> _env;
 
@@ -171,7 +171,7 @@ public class localContextRoot implements Context
             }
             catch (Exception e)
             {
-                __log.warn(e);
+                LOG.warn(e);
                 throw new NamingException (e.getMessage());
             }
         }
@@ -298,7 +298,7 @@ public class localContextRoot implements Context
                 }
                 catch (Exception e)
                 {
-                    __log.warn("",e);
+                    LOG.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -333,7 +333,8 @@ public class localContextRoot implements Context
     @Override
     public Object lookup(Name name) throws NamingException
     {
-        if(__log.isDebugEnabled())__log.debug("Looking up name=\""+name+"\"");
+        if(LOG.isDebugEnabled())
+            LOG.debug("Looking up name=\""+name+"\"");
         Name cname = __root.toCanonicalName(name);
 
         if ((cname == null) || cname.isEmpty())
@@ -450,8 +451,8 @@ public class localContextRoot implements Context
         }
         else
         {
-            if(__log.isDebugEnabled())
-                __log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
+            if(LOG.isDebugEnabled())
+                LOG.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
 
             getContext(cname).bind (cname.getSuffix(1), obj);
         }
@@ -492,8 +493,8 @@ public class localContextRoot implements Context
         else
         {
             //walk down the subcontext hierarchy
-            if(__log.isDebugEnabled())
-                __log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
+            if(LOG.isDebugEnabled())
+                LOG.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
 
             getContext(cname).rebind (cname.getSuffix(1), obj);
         }

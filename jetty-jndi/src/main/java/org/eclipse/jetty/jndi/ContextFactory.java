@@ -21,8 +21,8 @@ package org.eclipse.jetty.jndi;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Hashtable;
-import java.util.WeakHashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
@@ -32,6 +32,7 @@ import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -59,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ContextFactory implements ObjectFactory
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(ContextFactory.class);
 
     /**
      * Map of classloaders to contexts.
@@ -104,8 +105,8 @@ public class ContextFactory implements ObjectFactory
         Context ctx = (Context)__threadContext.get();
         if (ctx != null)
         {
-            if(__log.isDebugEnabled())
-                __log.debug("Using the Context that is bound on the thread");
+            if(LOG.isDebugEnabled())
+                LOG.debug("Using the Context that is bound on the thread");
             return ctx;
         }
 
@@ -114,8 +115,8 @@ public class ContextFactory implements ObjectFactory
         ClassLoader loader = (ClassLoader)__threadClassLoader.get();
         if (loader != null)
         {
-            if (__log.isDebugEnabled())
-                __log.debug("Using threadlocal classloader");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using threadlocal classloader");
             synchronized(__contextMap)
             {
                 ctx = getContextForClassLoader(loader);
@@ -123,8 +124,8 @@ public class ContextFactory implements ObjectFactory
                 {
                     ctx = newNamingContext(obj, loader, env, name, nameCtx);
                     __contextMap.put (loader, ctx);
-                    if(__log.isDebugEnabled())
-                        __log.debug("Made context {} for classloader {}",name.get(0),loader);
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Made context {} for classloader {}",name.get(0),loader);
                 }
                 return ctx;
             }
@@ -135,8 +136,8 @@ public class ContextFactory implements ObjectFactory
         loader = tccl;      
         if (loader != null)
         {
-            if (__log.isDebugEnabled())
-                __log.debug("Trying thread context classloader");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Trying thread context classloader");
             synchronized(__contextMap)
             {
                 while (ctx == null && loader != null)
@@ -150,8 +151,8 @@ public class ContextFactory implements ObjectFactory
                 {
                     ctx = newNamingContext(obj, tccl, env, name, nameCtx);
                     __contextMap.put (tccl, ctx);
-                    if(__log.isDebugEnabled())
-                        __log.debug("Made context {} for classloader {}", name.get(0), tccl);
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Made context {} for classloader {}", name.get(0), tccl);
                 }
                 return ctx;
             }
@@ -162,8 +163,8 @@ public class ContextFactory implements ObjectFactory
         //classloader associated with the current context
         if (ContextHandler.getCurrentContext() != null)
         {
-            if (__log.isDebugEnabled() && loader != null)
-                __log.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
+            if (LOG.isDebugEnabled() && loader != null)
+                LOG.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
             synchronized(__contextMap)
             {
                 loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
@@ -173,8 +174,8 @@ public class ContextFactory implements ObjectFactory
                 {
                     ctx = newNamingContext(obj, loader, env, name, nameCtx);
                     __contextMap.put (loader, ctx);
-                    if(__log.isDebugEnabled())
-                        __log.debug("Made context {} for classloader {} ", name.get(0), loader);
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Made context {} for classloader {} ", name.get(0), loader);
                 }
 
                 return ctx;
