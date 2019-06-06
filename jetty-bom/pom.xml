@@ -111,16 +111,6 @@
         <version>9.4.20-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.cdi</groupId>
-        <artifactId>cdi-core</artifactId>
-        <version>9.4.20-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.cdi</groupId>
-        <artifactId>cdi-servlet</artifactId>
-        <version>9.4.20-SNAPSHOT</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
         <version>9.4.20-SNAPSHOT</version>
