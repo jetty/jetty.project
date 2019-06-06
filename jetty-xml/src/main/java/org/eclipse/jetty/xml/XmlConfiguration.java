@@ -272,7 +272,7 @@ public class XmlConfiguration
         }
     }
 
-    private String getLocation()
+    private String toLocation()
     {
         if (_location == null)
         {
@@ -296,7 +296,7 @@ public class XmlConfiguration
                     break;
             }
             if (_processor == null)
-                throw new IllegalStateException("Unknown configuration type: " + config.getTag() + " in " + getLocation());
+                throw new IllegalStateException("Unknown configuration type: " + config.getTag() + " in " + toLocation());
         }
         else
         {
