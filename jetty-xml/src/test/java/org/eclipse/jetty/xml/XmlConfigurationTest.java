@@ -18,12 +18,10 @@
 
 package org.eclipse.jetty.xml;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -627,7 +625,7 @@ public class XmlConfigurationTest
     @Test
     public void testArgumentsGetIgnoredMissingDTD() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteArrayInputStream(("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
                 "  <Arg>arg1</Arg>  " +
                 "  <Arg>arg2</Arg>  " +
@@ -639,7 +637,7 @@ public class XmlConfigurationTest
                 "      <Arg>arg3</Arg>\n" + 
                 "    </New>" +
                 "  </Set>" +
-                "</Configure>").getBytes(StandardCharsets.ISO_8859_1)));
+                "</Configure>");
 //        XmlConfiguration xmlConfiguration = new XmlConfiguration(url);
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
@@ -655,7 +653,7 @@ public class XmlConfigurationTest
     @Test
     public void testSetGetIgnoredMissingDTD() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteArrayInputStream(("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
                 "  <Set name=\"first\">arg1</Set>  " +
                 "  <Set name=\"second\">arg2</Set>  " +
@@ -667,7 +665,7 @@ public class XmlConfigurationTest
                 "      <Set name=\"third\">arg3</Set>  " +
                 "    </New>" +
                 "  </Set>" +
-                "</Configure>").getBytes(StandardCharsets.UTF_8)));
+                "</Configure>");
 //        XmlConfiguration xmlConfiguration = new XmlConfiguration(url);
 
         DefaultTestConfiguration atc = (DefaultTestConfiguration)xmlConfiguration.configure();

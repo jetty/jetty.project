@@ -91,7 +91,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
 
             if (globalContextSettings.exists())
             {
-                XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings.getInputStream());
+                XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings);
                 Resource resource = Resource.newResource(app.getOriginId());
                 app.getDeploymentManager().scope(jettyXmlConfig,resource);
                 jettyXmlConfig.configure(context);

@@ -20,6 +20,8 @@ package org.eclipse.jetty.xml;
 
 import java.net.URL;
 
+import org.eclipse.jetty.util.resource.Resource;
+
 /**
  * A ConfigurationProcessor for non XmlConfiguration format files.
  * <p>
@@ -31,8 +33,13 @@ import java.net.URL;
  */
 public interface ConfigurationProcessor
 {
-    public void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
+    /**
+     * @deprecated use {@link #init(Resource, XmlParser.Node, XmlConfiguration)} instead
+     */
+    @Deprecated
+    void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
+    void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration);
     
-    public Object configure( Object obj) throws Exception;
-    public Object configure() throws Exception;
+    Object configure( Object obj) throws Exception;
+    Object configure() throws Exception;
 }
