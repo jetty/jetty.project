@@ -22,7 +22,6 @@ import java.util.Set;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 
@@ -36,38 +35,29 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
     }
 
     /**
-     * Initialize the ServletContext with the default (and empty) {@link NativeWebSocketConfiguration}
+     * Immediately initialize the {@link ServletContextHandler} with the default {@link NativeWebSocketConfiguration}.
+     *
+     * <p>
+     * This will return the default {@link NativeWebSocketConfiguration} if already initialized,
+     * and not create a new {@link NativeWebSocketConfiguration} each time it is called.
+     * </p>
      *
      * @param context the context to work with
+     * @return the default {@link NativeWebSocketConfiguration}
      */
-    public static void initialize(ServletContext context)
+    public static NativeWebSocketConfiguration initialize(ServletContextHandler context)
     {
-        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)context.getAttribute(ATTR_KEY);
-        if (configuration != null)
-            return; // it exists.
-
-        // Not provided to us, create a new default one.
-        configuration = new NativeWebSocketConfiguration(context);
-        context.setAttribute(ATTR_KEY, configuration);
-
-        // Attach default configuration to context lifecycle
-        if (context instanceof ContextHandler.Context)
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(ATTR_KEY);
+        if (configuration == null)
         {
-            ContextHandler handler = ((ContextHandler.Context)context).getContextHandler();
-            // Let ContextHandler handle configuration lifecycle
-            handler.addManaged(configuration);
-        }
-    }
+            // Not provided to us, create a new default one.
+            configuration = new NativeWebSocketConfiguration(context.getServletContext());
+            context.setAttribute(ATTR_KEY, configuration);
 
-    /**
-     * Configure the {@link ServletContextHandler} to call the {@link NativeWebSocketServletContainerInitializer}
-     * during the {@link ServletContext} initialization phase.
-     *
-     * @param context the context to add listener to.
-     */
-    public static void configure(ServletContextHandler context)
-    {
-        context.addEventListener(ContainerInitializer.asContextListener(new NativeWebSocketServletContainerInitializer()));
+            // Attach default configuration to context lifecycle
+            context.addManaged(configuration);
+        }
+        return configuration;
     }
 
     /**
@@ -85,8 +75,11 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
                 .asContextListener(new NativeWebSocketServletContainerInitializer())
                 .afterStartup((servletContext) ->
                 {
-                    NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)servletContext.getAttribute(ATTR_KEY);
-                    configurator.accept(servletContext, configuration);
+                    if (configurator != null)
+                    {
+                        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) servletContext.getAttribute(ATTR_KEY);
+                        configurator.accept(servletContext, configuration);
+                    }
                 }));
     }
 
@@ -95,7 +88,6 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
      *
      * @param context the context to work with
      * @return the default {@link NativeWebSocketConfiguration}
-     * @see #initialize(ServletContext)
      * @see #configure(ServletContextHandler)
      * @see #configure(ServletContextHandler, Configurator)
      * @deprecated use {@link #configure(ServletContextHandler, Configurator)} instead
@@ -103,14 +95,22 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
     @Deprecated
     public static NativeWebSocketConfiguration getDefaultFrom(ServletContext context)
     {
-        initialize(context);
-        return (NativeWebSocketConfiguration)context.getAttribute(ATTR_KEY);
+        ServletContextHandler handler = ServletContextHandler.getServletContextHandler(context);
+        if (handler == null)
+        {
+            throw new IllegalStateException("Unable to find ServletContextHandler for provided ServletContext");
+        }
+        return initialize(handler);
     }
 
     @Override
-    public void onStartup(Set<Class<?>> c, ServletContext ctx)
+    public void onStartup(Set<Class<?>> c, ServletContext context)
     {
-        // initialize
-        initialize(ctx);
+        ServletContextHandler handler = ServletContextHandler.getServletContextHandler(context);
+        if (handler == null)
+        {
+            throw new IllegalStateException("Unable to find ServletContextHandler for provided ServletContext");
+        }
+        initialize(handler);
     }
 }

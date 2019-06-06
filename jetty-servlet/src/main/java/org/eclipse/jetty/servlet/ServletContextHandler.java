@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -61,7 +60,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -778,6 +776,16 @@ public class ServletContextHandler extends ContextHandler
     void destroyFilter(Filter filter)
     {
         _objFactory.destroy(filter);
+    }
+
+    public static ServletContextHandler getServletContextHandler(ServletContext context)
+    {
+        ContextHandler handler = getContextHandler(context);
+        if (handler == null)
+            return null;
+        if (handler instanceof ServletContextHandler)
+            return (ServletContextHandler) handler;
+        return null;
     }
 
     /* ------------------------------------------------------------ */
