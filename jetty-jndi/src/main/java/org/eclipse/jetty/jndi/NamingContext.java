@@ -1103,7 +1103,8 @@ public class NamingContext implements Context, Dumpable
     /* ------------------------------------------------------------ */
     public boolean isLocked()
     {
-        return _lock != null || (_parent!=null && _parent.isLocked());
+        //TODO lock whole hierarchy?
+        return _lock != null;
     }
 
     /* ------------------------------------------------------------ */
