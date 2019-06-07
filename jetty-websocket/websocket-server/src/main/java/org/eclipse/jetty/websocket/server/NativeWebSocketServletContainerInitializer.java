@@ -88,7 +88,6 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
      *
      * @param context the context to work with
      * @return the default {@link NativeWebSocketConfiguration}
-     * @see #configure(ServletContextHandler)
      * @see #configure(ServletContextHandler, Configurator)
      * @deprecated use {@link #configure(ServletContextHandler, Configurator)} instead
      */
