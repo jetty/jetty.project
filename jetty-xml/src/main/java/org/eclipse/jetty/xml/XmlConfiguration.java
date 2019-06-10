@@ -121,9 +121,9 @@ public class XmlConfiguration
         parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config93);
         parser.redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd",config93);
         parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config93);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config93);
         parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd",config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd",config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd",config93);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd",config93);
         parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd",config93);
 
         parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config93);
