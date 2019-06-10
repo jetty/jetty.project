@@ -98,13 +98,13 @@ public class XmlConfiguration
 
     private static XmlParser initParser()
     {
-        ClassLoader loader = XmlConfiguration.class.getClassLoader();
         XmlParser parser = new XmlParser();
 
-        URL config60 = loader.getResource("configure_6_0.dtd");
-        URL config76 = loader.getResource("configure_7_6.dtd");
-        URL config90 = loader.getResource("configure_9_0.dtd");
-        URL config93 = loader.getResource("configure_9_3.dtd");
+        Class<?> klass = XmlConfiguration.class;
+        URL config60 = klass.getResource("configure_6_0.dtd");
+        URL config76 = klass.getResource("configure_7_6.dtd");
+        URL config90 = klass.getResource("configure_9_0.dtd");
+        URL config93 = klass.getResource("configure_9_3.dtd");
         parser.redirectEntity("configure.dtd",config93);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);

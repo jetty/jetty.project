@@ -593,7 +593,7 @@ public class AntWebAppContext extends WebAppContext
             TaskLog.logWithTimestamp("Starting web application "+this.getDescriptor());
             
             if (jettyEnvXml != null && jettyEnvXml.exists())
-                getConfiguration(EnvConfiguration.class).setJettyEnvXml(Resource.toURL(jettyEnvXml));
+                getConfiguration(EnvConfiguration.class).setJettyEnvResource(new PathResource(jettyEnvXml));
             
             ClassLoader parentLoader = this.getClass().getClassLoader();
             if (parentLoader instanceof AntClassLoader)
