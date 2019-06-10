@@ -121,9 +121,11 @@ public class XmlConfiguration
         parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config93);
         parser.redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd",config93);
         parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config93);
-        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config93);
-        parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd",config93);
-        
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd",config93);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd",config93);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd",config93);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd",config93);
+
         parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config93);
         parser.redirectEntity("-//Jetty//Configure//EN",config93);
 
@@ -231,7 +233,7 @@ public class XmlConfiguration
      */
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
-        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
+        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure.dtd\">"
                             + configuration;
         InputSource source = new InputSource(new StringReader(configuration));
         synchronized (__parser)
