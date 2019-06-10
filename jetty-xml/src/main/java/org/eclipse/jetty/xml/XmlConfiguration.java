@@ -30,7 +30,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -207,20 +206,10 @@ public class XmlConfiguration
      * @param configuration the URL of the XML configuration
      * @throws IOException if the configuration could not be read
      * @throws SAXException if the configuration could not be parsed
+     * @deprecated use {@link XmlConfiguration(Resource)} instead due to escaping issues
      */
+    @Deprecated
     public XmlConfiguration(URL configuration) throws SAXException, IOException
-    {
-        this(Resource.newResource(configuration));
-    }
-
-    /**
-     * Reads and parses the XML configuration file.
-     *
-     * @param configuration the URI and location of the XML configuration
-     * @throws IOException if the configuration could not be read
-     * @throws SAXException if the configuration could not be parsed
-     */
-    public XmlConfiguration(URI configuration) throws SAXException, IOException
     {
         this(Resource.newResource(configuration));
     }
@@ -1569,7 +1558,7 @@ public class XmlConfiguration
             if ("Env".equals(tag))
                 return envObj(node);
 
-            LOG.warn("Unknown value tag: " + node + " in " + this, new Throwable());
+            LOG.warn("Unknown value tag: " + node + " in " + _configuration, new Throwable());
             return null;
         }
 
