@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
@@ -57,7 +57,7 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
-    private URL jettyEnvXmlUrl;
+    private Resource jettyEnvXmlResource;
 
     public EnvConfiguration()
     {
@@ -66,9 +66,14 @@ public class EnvConfiguration extends AbstractConfiguration
         protectAndExpose("org.eclipse.jetty.jndi.");
     }
 
+    public void setJettyEnvResource(Resource resource)
+    {
+        this.jettyEnvXmlResource = resource;
+    }
+
     public void setJettyEnvXml (URL url)
     {
-        this.jettyEnvXmlUrl = url;
+        this.jettyEnvXmlResource = Resource.newResource(url);
     }
 
     @Override
@@ -86,7 +91,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
-        if (jettyEnvXmlUrl == null)
+        if (jettyEnvXmlResource == null)
         {
             //look for a file called WEB-INF/jetty-env.xml
             //and process it if it exists
@@ -96,12 +101,12 @@ public class EnvConfiguration extends AbstractConfiguration
                 org.eclipse.jetty.util.resource.Resource jettyEnv = web_inf.addPath("jetty-env.xml");
                 if(jettyEnv.exists())
                 {
-                    jettyEnvXmlUrl = jettyEnv.getURI().toURL();
+                    jettyEnvXmlResource = jettyEnv;
                 }
             }
         }
 
-        if (jettyEnvXmlUrl != null)
+        if (jettyEnvXmlResource != null)
         {
             synchronized (localContextRoot.getRoot())
             {
@@ -125,7 +130,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 try
                 {
                     localContextRoot.getRoot().addListener(listener);
-                    XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlUrl);
+                    XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlResource);
                     configuration.setJettyStandardIdsAndProperties(context.getServer(), null);
                     WebAppClassLoader.runWithServerClassAccess(()->{configuration.configure(context);return null;});
                 }

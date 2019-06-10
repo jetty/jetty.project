@@ -18,17 +18,12 @@
 
 package org.eclipse.jetty.test.support;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +36,13 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.
@@ -49,7 +50,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class XmlBasedJettyServer
 {
     private static final Logger LOG = Log.getLogger(XmlBasedJettyServer.class);
-    private List<URL> _xmlConfigurations;
+    private List<Resource> _xmlConfigurations;
     private final Map<String,String> _properties = new HashMap<>();
     private Server _server;
     private int _serverPort;
@@ -94,14 +95,14 @@ public class XmlBasedJettyServer
             _properties.put(String.valueOf(key),String.valueOf(properties.get(key)));
     }
 
-    public void addXmlConfiguration(URL xmlConfig)
+    public void addXmlConfiguration(Resource xmlConfig)
     {
         _xmlConfigurations.add(xmlConfig);
     }
 
-    public void addXmlConfiguration(File xmlConfigFile) throws MalformedURLException
+    public void addXmlConfiguration(File xmlConfigFile)
     {
-        _xmlConfigurations.add(xmlConfigFile.toURI().toURL());
+        _xmlConfigurations.add(new PathResource(xmlConfigFile));
     }
 
     public void addXmlConfiguration(String testConfigName) throws MalformedURLException
@@ -122,9 +123,9 @@ public class XmlBasedJettyServer
         // Configure everything
         for (int i = 0; i < this._xmlConfigurations.size(); i++)
         {
-            URL configURL = this._xmlConfigurations.get(i);
-            LOG.debug("configuring: "+configURL);
-            XmlConfiguration configuration = new XmlConfiguration(configURL);
+            Resource configResource = this._xmlConfigurations.get(i);
+            LOG.debug("configuring: "+configResource);
+            XmlConfiguration configuration = new XmlConfiguration(configResource);
             if (last != null)
             {
                 configuration.getIdMap().putAll(last.getIdMap());

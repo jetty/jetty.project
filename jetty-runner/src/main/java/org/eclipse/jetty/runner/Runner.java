@@ -327,7 +327,7 @@ public class Runner
                             for (String cfg : _configFiles) 
                             {
                                 try (Resource resource = Resource.newResource(cfg)) {
-                                    XmlConfiguration xmlConfiguration = new XmlConfiguration(resource.getURI());
+                                    XmlConfiguration xmlConfiguration = new XmlConfiguration(resource);
                                     xmlConfiguration.configure(_server);
                                 }
                             }
@@ -432,7 +432,7 @@ public class Runner
                         if (!ctx.isDirectory() && ctx.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                         {
                             // It is a context config file
-                            XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx.getURI());
+                            XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx);
                             xmlConfiguration.getIdMap().put("Server", _server);
                             ContextHandler handler = (ContextHandler) xmlConfiguration.configure();
                             if (contextPathSet)

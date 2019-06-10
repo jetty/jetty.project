@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -556,7 +557,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 contextXml = path.toFile().getAbsolutePath();
             }
     
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(path.toFile()));
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(new PathResource(path));
             getLog().info("Applying context xml file "+contextXml);
             xmlConfiguration.configure(webApp);   
         }

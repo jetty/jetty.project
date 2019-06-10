@@ -48,8 +48,7 @@ public class Quickstart
         //apply context xml file
         if (contextXml != null)
         {
-            // System.err.println("Applying "+contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml.getURI());
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
             xmlConfiguration.configure(webapp);   
         }
         

@@ -36,9 +36,8 @@ public class FileServerXml
 {
     public static void main( String[] args ) throws Exception
     {
-        Resource fileserverXml = Resource.newSystemResource("fileserver.xml");
-        XmlConfiguration configuration = new XmlConfiguration(
-                fileserverXml.getInputStream());
+        Resource fileServerXml = Resource.newSystemResource("fileserver.xml");
+        XmlConfiguration configuration = new XmlConfiguration(fileServerXml);
         Server server = (Server) configuration.configure();
         server.start();
         server.join();

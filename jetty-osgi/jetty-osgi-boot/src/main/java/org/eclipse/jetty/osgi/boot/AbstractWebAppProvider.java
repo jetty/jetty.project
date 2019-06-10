@@ -414,7 +414,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 // Apply it just as the standard jetty ContextProvider would do
                 LOG.info("Applying " + contextXmlUri + " to " + _webApp);
 
-                XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUri);
+                XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(contextXmlUri));
                 WebAppClassLoader.runWithServerClassAccess(()->
                 {
                     HashMap<String,String> properties = new HashMap<>();

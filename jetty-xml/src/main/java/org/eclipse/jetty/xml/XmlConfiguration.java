@@ -20,7 +20,6 @@ package org.eclipse.jetty.xml;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -30,7 +29,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -63,7 +61,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
@@ -101,13 +98,13 @@ public class XmlConfiguration
 
     private static XmlParser initParser()
     {
+        ClassLoader loader = XmlConfiguration.class.getClassLoader();
         XmlParser parser = new XmlParser();
 
-        Class<?> klass = XmlConfiguration.class;
-        URL config60 = klass.getResource("configure_6_0.dtd");
-        URL config76 = klass.getResource("configure_7_6.dtd");
-        URL config90 = klass.getResource("configure_9_0.dtd");
-        URL config93 = klass.getResource("configure_9_3.dtd");
+        URL config60 = loader.getResource("configure_6_0.dtd");
+        URL config76 = loader.getResource("configure_7_6.dtd");
+        URL config90 = loader.getResource("configure_9_0.dtd");
+        URL config93 = loader.getResource("configure_9_3.dtd");
         parser.redirectEntity("configure.dtd",config93);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
@@ -185,81 +182,38 @@ public class XmlConfiguration
 
     private final Map<String, Object> _idMap = new HashMap<>();
     private final Map<String, String> _propertyMap = new HashMap<>();
-    private final URL _url;
+    private final Resource _location;
     private final String _dtd;
     private ConfigurationProcessor _processor;
 
     /**
      * Reads and parses the XML configuration file.
      *
-     * @param configuration the URL of the XML configuration
+     * @param resource the Resource to the XML configuration
      * @throws IOException if the configuration could not be read
      * @throws SAXException if the configuration could not be parsed
      */
-    public XmlConfiguration(URL configuration) throws SAXException, IOException
+    public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
         synchronized (__parser)
         {
-            _url = configuration;
-            setConfig(__parser.parse(configuration.toString()));
+            _location = resource;
+            try(InputStream inputStream = resource.getInputStream())
+            {
+                setConfig(__parser.parse(inputStream));
+            }
             _dtd = __parser.getDTD();
         }
     }
 
-    /**
-     * Reads and parses the XML configuration file.
-     *
-     * @param configuration the URI of the XML configuration
-     * @throws IOException if the configuration could not be read
-     * @throws SAXException if the configuration could not be parsed
-     */
-    public XmlConfiguration(URI configuration) throws SAXException, IOException
+    @Override
+    public String toString()
     {
-        synchronized (__parser)
+        if (_location == null)
         {
-            _url=configuration.toURL();
-            setConfig(__parser.parse(configuration.toString()));
-            _dtd=__parser.getDTD();
+            return "UNKNOWN-LOCATION";
         }
-    }
-
-    /**
-     * Reads and parses the XML configuration string.
-     *
-     * @param configuration String of XML configuration commands excluding the normal XML preamble.
-     * The String should start with a "&lt;Configure ....&gt;" element.
-     * @throws IOException if the configuration could not be read
-     * @throws SAXException if the configuration could not be parsed
-     */
-    public XmlConfiguration(String configuration) throws SAXException, IOException
-    {
-        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure.dtd\">"
-                            + configuration;
-        InputSource source = new InputSource(new StringReader(configuration));
-        synchronized (__parser)
-        {
-            _url = null;
-            setConfig(__parser.parse(source));
-            _dtd = __parser.getDTD();
-        }
-    }
-
-    /**
-     * Reads and parses the XML configuration stream.
-     *
-     * @param configuration An input stream containing a complete configuration file
-     * @throws IOException if the configuration could not be read
-     * @throws SAXException if the configuration could not be parsed
-     */
-    public XmlConfiguration(InputStream configuration) throws SAXException, IOException
-    {
-        InputSource source = new InputSource(configuration);
-        synchronized (__parser)
-        {
-            _url = null;
-            setConfig(__parser.parse(source));
-            _dtd = __parser.getDTD();
-        }
+        return _location.toString();
     }
 
     private void setConfig(XmlParser.Node config)
@@ -283,7 +237,7 @@ public class XmlConfiguration
         {
             throw new IllegalArgumentException("Unknown XML tag:" + config.getTag());
         }
-        _processor.init(_url, config, this);
+        _processor.init(_location, config, this);
     }
 
     /**
@@ -358,14 +312,12 @@ public class XmlConfiguration
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
     {
-        private String _url;
         XmlParser.Node _root;
         XmlConfiguration _configuration;
 
         @Override
-        public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
+        public void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration)
         {
-            _url = url == null ? null : url.toString();
             _root = root;
             _configuration = configuration;
         }
@@ -378,7 +330,7 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader() == obj.getClass().getClassLoader()) ? "" : "Object Class and type Class are from different loaders.";
-                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders + " in " + _url);
+                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders + " in " + _configuration);
             }
             String id = _root.getAttribute("id");
             if (id != null)
@@ -430,7 +382,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s", oClass, arguments, namedArgMap, _url));
+                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s", oClass, arguments, namedArgMap, _configuration));
                 }
             }
             if (id != null)
@@ -522,12 +474,12 @@ public class XmlConfiguration
                             envObj(node);
                             break;
                         default:
-                            throw new IllegalStateException("Unknown tag: " + tag + " in " + _url);
+                            throw new IllegalStateException("Unknown tag: " + tag + " in " + _configuration);
                     }
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Config error at " + node, e.toString() + " in " + _url);
+                    LOG.warn("Config error at " + node, e.toString() + " in " + _configuration);
                     throw e;
                 }
             }
@@ -703,7 +655,7 @@ public class XmlConfiguration
         {
             Object result = constructor.newInstance(args);
             if (constructor.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated constructor {} in {}", constructor, _url);
+                LOG.warn("Deprecated constructor {} in {}", constructor, _configuration);
             return result;
         }
 
@@ -711,7 +663,7 @@ public class XmlConfiguration
         {
             Object result = method.invoke(obj, args);
             if (method.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated method {} in {}", method, _url);
+                LOG.warn("Deprecated method {} in {}", method, _configuration);
             return result;
         }
 
@@ -719,7 +671,7 @@ public class XmlConfiguration
         {
             Object result = field.get(object);
             if (field.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated field {} in {}", field, _url);
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
             return result;
         }
 
@@ -727,7 +679,7 @@ public class XmlConfiguration
         {
             field.set(obj, arg);
             if (field.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated field {} in {}", field, _url);
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
         }
 
         /**
@@ -1545,7 +1497,7 @@ public class XmlConfiguration
             if ("Env".equals(tag))
                 return envObj(node);
 
-            LOG.warn("Unknown value tag: " + node, new Throwable());
+            LOG.warn("Unknown value tag: " + node + " in " + _configuration, new Throwable());
             return null;
         }
 
@@ -1754,7 +1706,7 @@ public class XmlConfiguration
                 {
                     if (!arg.toLowerCase(Locale.ENGLISH).endsWith(".properties") && (arg.indexOf('=') < 0))
                     {
-                        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg).getURI().toURL());
+                        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg));
                         if (last != null)
                             configuration.getIdMap().putAll(last.getIdMap());
                         if (properties.size() > 0)
