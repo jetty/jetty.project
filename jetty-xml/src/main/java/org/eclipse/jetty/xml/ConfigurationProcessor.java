@@ -37,7 +37,11 @@ public interface ConfigurationProcessor
      * @deprecated use {@link #init(Resource, XmlParser.Node, XmlConfiguration)} instead
      */
     @Deprecated
-    void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
+    default void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
+    {
+        // Moving back and forth between URL and File/FileSystem/Path/Resource is known to cause escaping issues.
+        init(Resource.newResource(url), root, configuration);
+    }
 
     void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration);
 
