@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -142,10 +141,10 @@ public class ServerInstanceWrapper
 
         for (URL jettyConfiguration : jettyConfigurations)
         {
-            try(InputStream in = jettyConfiguration.openStream())
+            try
             {
                 // Execute a Jetty configuration file
-                XmlConfiguration config = new XmlConfiguration(in);
+                XmlConfiguration config = new XmlConfiguration(jettyConfiguration);
 
                 config.getIdMap().putAll(id_map);
                 config.getProperties().putAll(properties);
