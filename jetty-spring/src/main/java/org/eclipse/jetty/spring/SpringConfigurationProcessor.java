@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.spring;
 
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
@@ -66,6 +67,13 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
     private XmlConfiguration _configuration;
     private DefaultListableBeanFactory _beanFactory;
     private String _main;
+
+    @Override
+    public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
+    {
+        // Moving back and forth between URL and File/FileSystem/Path/Resource is known to cause escaping issues.
+        init(org.eclipse.jetty.util.resource.Resource.newResource(url), root, configuration);
+    }
 
     @Override
     public void init(org.eclipse.jetty.util.resource.Resource jettyResource, XmlParser.Node config, XmlConfiguration configuration)

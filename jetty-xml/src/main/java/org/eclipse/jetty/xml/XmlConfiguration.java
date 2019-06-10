@@ -272,7 +272,8 @@ public class XmlConfiguration
         }
     }
 
-    private String toLocation()
+    @Override
+    public String toString()
     {
         if (_location == null)
         {
@@ -296,7 +297,7 @@ public class XmlConfiguration
                     break;
             }
             if (_processor == null)
-                throw new IllegalStateException("Unknown configuration type: " + config.getTag() + " in " + toLocation());
+                throw new IllegalStateException("Unknown configuration type: " + config.getTag() + " in " + this);
         }
         else
         {
@@ -377,25 +378,20 @@ public class XmlConfiguration
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
     {
-        private Resource _location;
         XmlParser.Node _root;
         XmlConfiguration _configuration;
 
         @Override
-        public void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration)
+        public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
         {
-            _location = resource;
-            _root = root;
-            _configuration = configuration;
+            // nobody calls this.
         }
 
-        private String toLocation()
+        @Override
+        public void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration)
         {
-            if (_location == null)
-            {
-                return "UNKNOWN-LOCATION";
-            }
-            return _location.toString();
+            _root = root;
+            _configuration = configuration;
         }
 
         @Override
@@ -406,7 +402,7 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader() == obj.getClass().getClassLoader()) ? "" : "Object Class and type Class are from different loaders.";
-                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders + " in " + toLocation());
+                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders + " in " + _configuration);
             }
             String id = _root.getAttribute("id");
             if (id != null)
@@ -458,7 +454,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s", oClass, arguments, namedArgMap, toLocation()));
+                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s", oClass, arguments, namedArgMap, _configuration));
                 }
             }
             if (id != null)
@@ -550,12 +546,12 @@ public class XmlConfiguration
                             envObj(node);
                             break;
                         default:
-                            throw new IllegalStateException("Unknown tag: " + tag + " in " + toLocation());
+                            throw new IllegalStateException("Unknown tag: " + tag + " in " + _configuration);
                     }
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Config error at " + node, e.toString() + " in " + toLocation());
+                    LOG.warn("Config error at " + node, e.toString() + " in " + _configuration);
                     throw e;
                 }
             }
@@ -731,7 +727,7 @@ public class XmlConfiguration
         {
             Object result = constructor.newInstance(args);
             if (constructor.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated constructor {} in {}", constructor, toLocation());
+                LOG.warn("Deprecated constructor {} in {}", constructor, _configuration);
             return result;
         }
 
@@ -739,7 +735,7 @@ public class XmlConfiguration
         {
             Object result = method.invoke(obj, args);
             if (method.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated method {} in {}", method, toLocation());
+                LOG.warn("Deprecated method {} in {}", method, _configuration);
             return result;
         }
 
@@ -747,7 +743,7 @@ public class XmlConfiguration
         {
             Object result = field.get(object);
             if (field.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated field {} in {}", field, toLocation());
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
             return result;
         }
 
@@ -755,7 +751,7 @@ public class XmlConfiguration
         {
             field.set(obj, arg);
             if (field.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated field {} in {}", field, toLocation());
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
         }
 
         /**
@@ -1573,7 +1569,7 @@ public class XmlConfiguration
             if ("Env".equals(tag))
                 return envObj(node);
 
-            LOG.warn("Unknown value tag: " + node + " in " + toLocation(), new Throwable());
+            LOG.warn("Unknown value tag: " + node + " in " + this, new Throwable());
             return null;
         }
 

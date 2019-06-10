@@ -22,7 +22,6 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -248,13 +246,12 @@ public class XmlConfigurationTest
 
     public XmlConfiguration asXmlConfiguration(String rawXml) throws IOException, SAXException
     {
-        Path testFile = workDir.getPathFile("raw.xml");
-        try(StringReader reader = new StringReader(rawXml);
-            BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
+        Path testFile = workDir.getEmptyPathDir().resolve("raw.xml");
+        try(BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
         {
-            IO.copy(reader, writer);
-            return new XmlConfiguration(new PathResource(testFile));
+            writer.write(rawXml);
         }
+        return new XmlConfiguration(new PathResource(testFile));
     }
 
     @Test
@@ -266,7 +263,7 @@ public class XmlConfigurationTest
         assertEquals(TestConfiguration.class,tc.testObject);
         
         configuration =
-            new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get class=\"java.lang.String\" name=\"class\"><Get id=\"simple\" name=\"simpleName\"/></Get></Set></Configure>");
+            asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get class=\"java.lang.String\" name=\"class\"><Get id=\"simple\" name=\"simpleName\"/></Get></Set></Configure>");
         configuration.configure(tc);
         assertEquals(String.class,tc.testObject);
         assertEquals("String",configuration.getIdMap().get("simple"));
@@ -504,7 +501,7 @@ public class XmlConfigurationTest
     @Test
     public void testConstructorNamedInjectionOrderedMixed() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
                 "  <Arg name=\"first\">arg1</Arg>  " +
                 "  <Arg>arg2</Arg>  " +
