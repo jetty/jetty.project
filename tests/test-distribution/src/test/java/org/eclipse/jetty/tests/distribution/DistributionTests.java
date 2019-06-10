@@ -190,29 +190,6 @@ public class DistributionTests extends AbstractDistributionTest
     }
 
     @Test
-    public void testDemoBase() throws Exception
-    {
-        String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .jettyBase(Paths.get("demo-base"))
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
-
-        int port = distribution.freePort();
-        try (DistributionTester.Run run1 = distribution.start("jetty.http.port=" + port))
-        {
-            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
-
-            startHttpClient();
-            ContentResponse response = client.GET("http://localhost:" + port + "/test/jsp/dump.jsp");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertThat(response.getContentAsString(), containsString("PathInfo"));
-            assertThat(response.getContentAsString(), not(containsString("<%")));
-        }
-    }
-
-    @Test
     public void testUnixSocket() throws Exception
     {
         Path tmpSockFile;

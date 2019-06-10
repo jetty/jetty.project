@@ -38,8 +38,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class StringUtil
 {
     private static final Logger LOG = Log.getLogger(StringUtil.class);
-    
-    
+
+
     private final static Trie<String> CHARSETS= new ArrayTrie<>(256);
     
     public static final String ALL_INTERFACES="0.0.0.0";

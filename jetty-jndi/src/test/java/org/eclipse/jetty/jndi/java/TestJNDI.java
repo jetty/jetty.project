@@ -479,7 +479,10 @@ public class TestJNDI
             {
                 zzz = new InitialContext();
 
-                ((Context)zzz.lookup("java:comp/ttt/ttt2")).bind("zzz2", "zzz2");
+                //TODO test deep locking
+                //  ((Context)zzz.lookup("java:comp/ttt/ttt2")).bind("zzz2", "zzz2");
+                // fail("Should not be able to write to locked context");
+                ((Context)zzz.lookup("java:comp")).bind("foo", "bar");
                 fail("Should not be able to write to locked context");
             }
             catch (NamingException ne)
