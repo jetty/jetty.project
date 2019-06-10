@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+
 import javax.annotation.Resource;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.webapp.WebAppConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
@@ -91,7 +93,8 @@ public class AnnotatedAsyncListenerTest
                 new MetaInfConfiguration(),
                 new FragmentConfiguration(),
                 new EnvConfiguration(),
-                new PlusConfiguration()
+                new PlusConfiguration(),
+                new WebAppConfiguration()
             });
         context.addServlet(new ServletHolder(servlet), "/*");
         new EnvEntry(context, "value", 1307D, false);
