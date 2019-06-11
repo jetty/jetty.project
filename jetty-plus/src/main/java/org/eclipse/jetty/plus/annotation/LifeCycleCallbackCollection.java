@@ -21,15 +21,25 @@ package org.eclipse.jetty.plus.annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * LifeCycleCallbackCollection
+ * 
+ * This class collects the classes and methods that have been configured
+ * in web.xml with postconstruct/predestroy callbacks, or that contain the
+ * equivalent annotations.  It is also responsible for calling the 
+ * callbacks.
+ * 
+ * This class is not threadsafe for concurrent modifications, but is
+ * threadsafe for reading with concurrent modifications.
  */
 public class LifeCycleCallbackCollection
 {
@@ -37,8 +47,8 @@ public class LifeCycleCallbackCollection
 
     public static final String LIFECYCLE_CALLBACK_COLLECTION = "org.eclipse.jetty.lifecyleCallbackCollection";
 
-    private HashMap<String, List<LifeCycleCallback>> postConstructCallbacksMap = new HashMap<String, List<LifeCycleCallback>>();
-    private HashMap<String, List<LifeCycleCallback>> preDestroyCallbacksMap = new HashMap<String, List<LifeCycleCallback>>();
+    private final ConcurrentMap<String, List<LifeCycleCallback>> postConstructCallbacksMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, List<LifeCycleCallback>> preDestroyCallbacksMap = new ConcurrentHashMap<>();
     
     /**
      * Add a Callback to the list of callbacks.
@@ -48,10 +58,11 @@ public class LifeCycleCallbackCollection
     public void add (LifeCycleCallback callback)
     {
         if ((callback==null) || (callback.getTargetClassName()==null))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Ignoring empty LifeCycleCallback");
             return;
+        }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Adding callback for class="+callback.getTargetClass()+ " on "+callback.getTarget());
         Map<String, List<LifeCycleCallback>> map = null;
         if (callback instanceof PreDestroyCallback)
             map = preDestroyCallbacksMap;
@@ -64,13 +75,18 @@ public class LifeCycleCallbackCollection
         List<LifeCycleCallback> callbacks = map.get(callback.getTargetClassName());
         if (callbacks==null)
         {
-            callbacks = new ArrayList<LifeCycleCallback>();
-            map.put(callback.getTargetClassName(), callbacks);
+            callbacks = map.putIfAbsent(callback.getTargetClassName(), new CopyOnWriteArrayList<LifeCycleCallback>());
+            if (callbacks == null)
+                callbacks = map.get(callback.getTargetClassName());
         }
-       
+
         //don't add another callback for exactly the same method
         if (!callbacks.contains(callback))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding callback for class={} on method={}", callback.getTargetClassName(), callback.getMethodName());
             callbacks.add(callback);
+        }
     }
 
     public List<LifeCycleCallback> getPreDestroyCallbacks (Object o)

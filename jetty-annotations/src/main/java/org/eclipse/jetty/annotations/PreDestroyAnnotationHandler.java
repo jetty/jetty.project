@@ -72,7 +72,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                             return;
 
                     PreDestroyCallback callback = new PreDestroyCallback();
-                    callback.setTarget(clazz.getName(), m.getName());
+                    callback.setTarget(clazz, m.getName());
 
                     LifeCycleCallbackCollection lifecycles = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
                     if (lifecycles == null)

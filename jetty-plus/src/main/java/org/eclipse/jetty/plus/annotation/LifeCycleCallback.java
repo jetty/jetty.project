@@ -21,6 +21,7 @@ package org.eclipse.jetty.plus.annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.eclipse.jetty.util.Loader;
@@ -30,8 +31,10 @@ import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * LifeCycleCallback
- *
- *
+ * 
+ * Holds information about a class and method
+ * that has either been configured in web.xml to have postconstruct or
+ * predestroy callbacks, or has the equivalent annotations.
  */
 public abstract class LifeCycleCallback
 {
@@ -45,7 +48,6 @@ public abstract class LifeCycleCallback
     public LifeCycleCallback()
     {
     }
-
 
     /**
      * @return the _targetClass
@@ -76,12 +78,16 @@ public abstract class LifeCycleCallback
 
     public void setTarget (String className, String methodName)
     {
+        Objects.requireNonNull(className);
+        Objects.requireNonNull(methodName);
         _className = className;
         _methodName = methodName;
     }
 
     public void setTarget (Class<?> clazz, String methodName)
     {
+        Objects.requireNonNull(clazz);
+        Objects.requireNonNull(methodName);
         try
         {
             Method method = IntrospectionUtil.findMethod(clazz, methodName, null, true, true);
@@ -155,31 +161,41 @@ public abstract class LifeCycleCallback
         }
     }
 
+    
+    @Override
+    public int hashCode()
+    {
+        int hash = 0;
+        if (_className != null)
+            hash = _className.hashCode();
+        if (_methodName != null)
+            hash ^= _methodName.hashCode();
+        return hash;
+    }
+
+
     @Override
     public boolean equals (Object o)
     {
         if (o==null)
             return false;
-        if (!(o instanceof LifeCycleCallback))
+
+        if (!LifeCycleCallback.class.isInstance(o))
             return false;
+
         LifeCycleCallback callback = (LifeCycleCallback)o;
+        
+        if (this == callback)
+            return true;
 
-        if (callback.getTargetClass()==null)
-        {
-            if (getTargetClass() != null)
-                return false;
-        }
-        else if(!callback.getTargetClass().equals(getTargetClass()))
-           return false;
-        if (callback.getTarget()==null)
-        {
-            if (getTarget() != null)
-                return false;
-        }
-        else if (!callback.getTarget().equals(getTarget()))
-            return false;
+        if (getTargetClassName() == null)
+            return (getMethodName() == null && callback.getTargetClassName() == null && callback.getMethodName() == null);
 
-        return true;
+        if (getTargetClassName().equals(callback.getTargetClassName()))
+            return ((getMethodName() == null && callback.getMethodName() == null)
+                || (getMethodName().equals(callback.getMethodName())));
+
+        return false;
     }
 
     public abstract void validate (Class<?> clazz, Method m);
