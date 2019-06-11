@@ -1301,6 +1301,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         try
         {
             ServletContext ctx = getServletHandler().getServletContext();
+            if (ctx == null)
+                return getHeldClass().getDeclaredConstructor().newInstance();
             return ctx.createServlet(getHeldClass());
         }
         catch (ServletException se)
