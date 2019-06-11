@@ -16,14 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.api;
 
 /**
- * Interface for Listeners that are interested in knowing about the WebSocketSession history.
+ * Interface for Listeners that are interested in knowing about the Session history.
  */
 public interface WebSocketSessionListener
 {
-    void onWebSocketSessionOpened(WebSocketSession session);
+    void onWebSocketSessionOpened(Session session);
 
-    void onWebSocketSessionClosed(WebSocketSession session);
+    void onWebSocketSessionClosed(Session session);
 }

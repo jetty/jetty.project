@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
 public class DummyContainer extends ContainerLifeCycle implements WebSocketContainer
 {
