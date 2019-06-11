@@ -19,7 +19,6 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -60,34 +59,20 @@ public class LikeJettyXml
     public static void main( String[] args ) throws Exception
     {
         // Path to as-built jetty-distribution directory
-        String jettyHomeBuild = "jetty-distribution/target/distribution";
-        
+        String jettyHomeBuild = JettyDistribution.DISTRIBUTION.toString();
+
         // Find jetty home and base directories
         String homePath = System.getProperty("jetty.home", jettyHomeBuild);
-        File start_jar = new File(homePath,"start.jar");
-        if (!start_jar.exists())
-        {
-            homePath = jettyHomeBuild = "jetty-distribution/target/distribution";
-            start_jar = new File(homePath,"start.jar");
-            if (!start_jar.exists())
-                throw new FileNotFoundException(start_jar.toString());
-        }
-
         File homeDir = new File(homePath);
 
         String basePath = System.getProperty("jetty.base", homeDir + "/demo-base");
         File baseDir = new File(basePath);
-        if(!baseDir.exists())
-        {
-            throw new FileNotFoundException(baseDir.getAbsolutePath());
-        }
         
         // Configure jetty.home and jetty.base system properties
         String jetty_home = homeDir.getAbsolutePath();
         String jetty_base = baseDir.getAbsolutePath();
         System.setProperty("jetty.home", jetty_home);
         System.setProperty("jetty.base", jetty_base);
-
 
         // === jetty.xml ===
         // Setup Threadpool
@@ -219,7 +204,6 @@ public class LikeJettyXml
         lowResourcesMonitor.setPeriod(1000);
         lowResourcesMonitor.setLowResourcesIdleTimeout(200);
         lowResourcesMonitor.setMonitorThreads(true);
-        lowResourcesMonitor.setMaxConnections(0);
         lowResourcesMonitor.setMaxMemory(0);
         lowResourcesMonitor.setMaxLowResourcesTime(5000);
         server.addBean(lowResourcesMonitor);
