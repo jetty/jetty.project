@@ -40,13 +40,15 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.EchoFrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler.CoreSession;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.TestAsyncFrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -59,14 +61,16 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketProxyTest
 {
     private Server _server;
     private WebSocketCoreClient _client;
     private WebSocketProxy proxy;
-    private BasicFrameHandler.ServerEchoHandler serverFrameHandler;
+    private EchoFrameHandler serverFrameHandler;
     private TestHandler testHandler;
+    FrameHandler.ConfigurationCustomizer defaultCustomizer;
 
     private class TestHandler extends AbstractHandler
     {
@@ -103,23 +107,23 @@ public class WebSocketProxyTest
         testHandler = new TestHandler();
         handlers.addHandler(testHandler);
 
-        FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
-        customizer.setIdleTimeout(Duration.ofSeconds(3));
+        defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
+        defaultCustomizer.setIdleTimeout(Duration.ofSeconds(3));
 
         ContextHandler serverContext = new ContextHandler("/server");
-        serverFrameHandler = new BasicFrameHandler.ServerEchoHandler("SERVER");
-        WebSocketNegotiator negotiator = WebSocketNegotiator.from((negotiation) -> serverFrameHandler, customizer);
+        serverFrameHandler = new EchoFrameHandler("SERVER");
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from((negotiation) -> serverFrameHandler, defaultCustomizer);
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
         serverContext.setHandler(upgradeHandler);
         handlers.addHandler(serverContext);
 
-        _client = new WebSocketCoreClient(null, customizer);
+        _client = new WebSocketCoreClient();
         _client.start();
         URI uri = new URI("ws://localhost:8080/server/");
 
         ContextHandler proxyContext = new ContextHandler("/proxy");
         proxy = new WebSocketProxy(_client, uri);
-        negotiator = WebSocketNegotiator.from((negotiation) -> proxy.client2Proxy, customizer);
+        negotiator = WebSocketNegotiator.from((negotiation) -> proxy.client2Proxy, defaultCustomizer);
         upgradeHandler = new WebSocketUpgradeHandler(negotiator);
         proxyContext.setHandler(upgradeHandler);
         handlers.addHandler(proxyContext);
@@ -151,17 +155,19 @@ public class WebSocketProxyTest
     @Test
     public void testEcho() throws Exception
     {
-        BasicFrameHandler clientHandler = new BasicFrameHandler("CLIENT");
+        TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientHandler);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+        upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
+
         response.get(5, TimeUnit.SECONDS);
-        clientHandler.sendText("hello world");
-        clientHandler.close("standard close");
-        clientHandler.awaitClose();
-        serverFrameHandler.awaitClose();
+        clientFrameHandler.sendText("hello world");
+        clientFrameHandler.close(CloseStatus.NORMAL, "standard close");
+        assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
         awaitProxyClose(proxyClientSide, proxyServerSide);
 
         assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
@@ -170,17 +176,17 @@ public class WebSocketProxyTest
         assertThat(proxyClientSide.receivedFrames.poll().getPayloadAsUTF8(), is("hello world"));
         assertThat(serverFrameHandler.receivedFrames.poll().getPayloadAsUTF8(), is("hello world"));
         assertThat(proxyServerSide.receivedFrames.poll().getPayloadAsUTF8(), is("hello world"));
-        assertThat(clientHandler.receivedFrames.poll().getPayloadAsUTF8(), is("hello world"));
+        assertThat(clientFrameHandler.receivedFrames.poll().getPayloadAsUTF8(), is("hello world"));
 
         assertThat(CloseStatus.getCloseStatus(proxyClientSide.receivedFrames.poll()).getReason(), is("standard close"));
         assertThat(CloseStatus.getCloseStatus(serverFrameHandler.receivedFrames.poll()).getReason(), is("standard close"));
         assertThat(CloseStatus.getCloseStatus(proxyServerSide.receivedFrames.poll()).getReason(), is("standard close"));
-        assertThat(CloseStatus.getCloseStatus(clientHandler.receivedFrames.poll()).getReason(), is("standard close"));
+        assertThat(CloseStatus.getCloseStatus(clientFrameHandler.receivedFrames.poll()).getReason(), is("standard close"));
 
         assertNull(proxyClientSide.receivedFrames.poll());
         assertNull(serverFrameHandler.receivedFrames.poll());
         assertNull(proxyServerSide.receivedFrames.poll());
-        assertNull(clientHandler.receivedFrames.poll());
+        assertNull(clientFrameHandler.receivedFrames.poll());
     }
 
     @Test
@@ -190,14 +196,16 @@ public class WebSocketProxyTest
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        BasicFrameHandler clientHandler = new BasicFrameHandler("CLIENT");
-        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketChannel.class))
+        TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
         {
-            CompletableFuture<CoreSession> response = _client.connect(clientHandler, new URI("ws://localhost:8080/proxy/"));
+            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+            upgradeRequest.setConfiguration(defaultCustomizer);
+            CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
             response.get(5, TimeUnit.SECONDS);
-            clientHandler.sendText("hello world");
-            clientHandler.close("standard close");
-            clientHandler.awaitClose();
+            clientFrameHandler.sendText("hello world");
+            clientFrameHandler.close();
+            assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
             awaitProxyClose(proxyClientSide, null);
         }
 
@@ -207,9 +215,9 @@ public class WebSocketProxyTest
         assertNull(proxyServerSide.receivedFrames.poll());
         assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.FAILED));
 
-        assertFalse(serverFrameHandler.opened.await(250, TimeUnit.MILLISECONDS));
+        assertFalse(serverFrameHandler.openLatch.await(250, TimeUnit.MILLISECONDS));
 
-        CloseStatus closeStatus = CloseStatus.getCloseStatus(clientHandler.receivedFrames.poll());
+        CloseStatus closeStatus = CloseStatus.getCloseStatus(clientFrameHandler.receivedFrames.poll());
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code:"));
     }
@@ -218,25 +226,26 @@ public class WebSocketProxyTest
     @Test
     public void testClientError() throws Exception
     {
-        BasicFrameHandler clientHandler = new BasicFrameHandler("CLIENT")
+        TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT")
         {
             @Override
             public void onOpen(CoreSession coreSession, Callback callback)
             {
-                System.err.println(name + " onOpen(): " + coreSession);
                 throw new IllegalStateException("simulated client onOpen error");
             }
         };
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketChannel.class))
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
         {
-            CompletableFuture<CoreSession> response = _client.connect(clientHandler, new URI("ws://localhost:8080/proxy/"));
+            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+            upgradeRequest.setConfiguration(defaultCustomizer);
+            CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
             Exception e = assertThrows(ExecutionException.class, ()->response.get(5, TimeUnit.SECONDS));
             assertThat(e.getMessage(), containsString("simulated client onOpen error"));
-            clientHandler.awaitClose();
-            serverFrameHandler.awaitClose();
+            assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
             awaitProxyClose(proxyClientSide, proxyServerSide);
         }
 
@@ -254,10 +263,8 @@ public class WebSocketProxyTest
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), containsString("simulated client onOpen error"));
 
-        assertNull(clientHandler.receivedFrames.poll());
+        assertNull(clientFrameHandler.receivedFrames.poll());
     }
-
-
 
     @Test
     public void testServerError() throws Exception
@@ -266,14 +273,15 @@ public class WebSocketProxyTest
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        BasicFrameHandler clientHandler = new BasicFrameHandler("CLIENT");
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientHandler);
-
+        TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+        upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
+
         response.get(5, TimeUnit.SECONDS);
-        clientHandler.sendText("hello world");
-        clientHandler.awaitClose();
-        serverFrameHandler.awaitClose();
+        clientFrameHandler.sendText("hello world");
+        assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
         awaitProxyClose(proxyClientSide, proxyServerSide);
 
         CloseStatus closeStatus;
@@ -298,7 +306,7 @@ public class WebSocketProxyTest
         assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
 
         // Client
-        frame = clientHandler.receivedFrames.poll();
+        frame = clientFrameHandler.receivedFrames.poll();
         closeStatus = CloseStatus.getCloseStatus(frame);
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
@@ -323,21 +331,23 @@ public class WebSocketProxyTest
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        BasicFrameHandler clientHandler = new BasicFrameHandler("CLIENT")
+        TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT")
         {
             @Override
             public void onFrame(Frame frame, Callback callback)
             {
-                System.err.println(name + " onFrame(): " + frame);
+                LOG.info("[{}] onFrame {}", name, frame);
                 receivedFrames.offer(Frame.copy(frame));
             }
         };
 
-        CompletableFuture<CoreSession> response = _client.connect(clientHandler, new URI("ws://localhost:8080/proxy/"));
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+        upgradeRequest.setConfiguration(defaultCustomizer);
+        CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
         response.get(5, TimeUnit.SECONDS);
-        clientHandler.sendText("hello world");
-        clientHandler.awaitClose();
-        serverFrameHandler.awaitClose();
+        clientFrameHandler.sendText("hello world");
+        assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
         awaitProxyClose(proxyClientSide, proxyServerSide);
 
         CloseStatus closeStatus;
@@ -361,11 +371,11 @@ public class WebSocketProxyTest
         assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
 
         // Client
-        frame = clientHandler.receivedFrames.poll();
+        frame = clientFrameHandler.receivedFrames.poll();
         closeStatus = CloseStatus.getCloseStatus(frame);
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
-        assertNull(clientHandler.receivedFrames.poll());
+        assertNull(clientFrameHandler.receivedFrames.poll());
 
         // Client2Proxy does NOT receive close response from the client and fails
         assertNull(proxyClientSide.receivedFrames.poll());
