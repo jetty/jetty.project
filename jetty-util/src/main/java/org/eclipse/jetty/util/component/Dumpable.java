@@ -92,14 +92,14 @@ public interface Dumpable
             String s;
             if (o==null)
                 s = "null";
+            else if (o instanceof Dumpable)
+                s = ((Dumpable)o).dumpSelf().replace("\r\n","|").replace("\n","|");
             else if (o instanceof Collection)
                 s = String.format("%s@%x(size=%d)",o.getClass().getName(),o.hashCode(),((Collection)o).size());
             else if (o.getClass().isArray())
                 s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
             else if (o instanceof Map)
                 s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
-            else if (o instanceof Dumpable)
-                s = ((Dumpable)o).dumpSelf().replace("\r\n","|").replace("\n","|");
             else
                 s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
 
@@ -226,5 +226,14 @@ public interface Dumpable
             else
                 dumpObjects(out, nextIndent, item);
         }
+    }
+
+    static Dumpable named(String name, Object object)
+    {
+        return (out, indent) ->
+        {
+            out.append(name).append(": ");
+            Dumpable.dumpObjects(out, indent, object);
+        };
     }
 }

@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.naming.Binding;
@@ -1118,7 +1120,17 @@ public class NamingContext implements Context, Dumpable
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,this, _bindings);
+        Map<String, Object> bindings = new HashMap<>();
+        for (Map.Entry<String,Binding> binding : _bindings.entrySet())
+            bindings.put(binding.getKey(), binding.getValue().getObject());
+
+        if (_env.size()==0)
+            Dumpable.dumpObjects(out,indent,this,
+                Dumpable.named("BND", bindings));
+        else
+            Dumpable.dumpObjects(out,indent,this,
+                Dumpable.named("ENV", _env),
+                Dumpable.named("BND", bindings));
     }
 
     private Collection<Listener> findListeners()

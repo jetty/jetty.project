@@ -21,9 +21,7 @@ package org.eclipse.jetty.plus.webapp;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -36,6 +34,7 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.NamingDump;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -54,6 +53,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
     private URL jettyEnvXmlUrl;
+    private NamingDump _dumper;
 
     public void setJettyEnvXml (URL url)
     {
@@ -128,6 +128,9 @@ public class EnvConfiguration extends AbstractConfiguration
 
         //add java:comp/env entries for any EnvEntries that have been defined so far
         bindEnvEntries(context);
+
+        _dumper = new NamingDump(context.getClassLoader(),"java:comp");
+        context.addBean(_dumper);
     }
 
 
@@ -138,6 +141,9 @@ public class EnvConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure (WebAppContext context) throws Exception
     {
+        context.removeBean(_dumper);
+        _dumper = null;
+
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
@@ -206,40 +212,23 @@ public class EnvConfiguration extends AbstractConfiguration
     public void bindEnvEntries (WebAppContext context)
     throws NamingException
     {
-        LOG.debug("Binding env entries from the jvm scope");
         InitialContext ic = new InitialContext();
         Context envCtx = (Context)ic.lookup("java:comp/env");
-        Object scope = null;
-        List<Object> list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
-        Iterator<Object> itor = list.iterator();
-        while (itor.hasNext())
-        {
-            EnvEntry ee = (EnvEntry)itor.next();
-            ee.bindToENC(ee.getJndiName());
-            Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
-            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
-        }
+
+        LOG.debug("Binding env entries from the jvm scope");
+        doBindings(envCtx, null);
 
         LOG.debug("Binding env entries from the server scope");
-
-        scope = context.getServer();
-        list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
-        itor = list.iterator();
-        while (itor.hasNext())
-        {
-            EnvEntry ee = (EnvEntry)itor.next();
-            ee.bindToENC(ee.getJndiName());
-            Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
-            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
-        }
+        doBindings(envCtx, context.getServer());
 
         LOG.debug("Binding env entries from the context scope");
-        scope = context;
-        list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
-        itor = list.iterator();
-        while (itor.hasNext())
+        doBindings(envCtx, context);
+    }
+
+    private void doBindings(Context envCtx, Object scope) throws NamingException
+    {
+        for (EnvEntry ee : NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class))
         {
-            EnvEntry ee = (EnvEntry)itor.next();
             ee.bindToENC(ee.getJndiName());
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
             NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
