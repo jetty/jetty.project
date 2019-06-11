@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.core;
 import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -44,7 +43,7 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     }
 
     public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool,
-        FrameHandler frameHandler)
+                                   FrameHandler frameHandler)
     {
         this.objectFactory = objectFactory;
         this.extensionRegistry = extensionRegistry;
@@ -56,18 +55,14 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     public FrameHandler negotiate(Negotiation negotiation) throws IOException
     {
         List<String> offeredSubprotocols = negotiation.getOfferedSubprotocols();
-        if (!offeredSubprotocols.contains("test"))
-            return null;
-        negotiation.setSubprotocol("test");
+        if (!offeredSubprotocols.isEmpty())
+            negotiation.setSubprotocol(offeredSubprotocols.get(0));
 
-        // TODO better to call negotiation.setNegotiatedExtensions();
-        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),
-            "@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8");
         return frameHandler;
     }
 
     @Override
-    public void customize(FrameHandler.CoreSession session)
+    public void customize(FrameHandler.Configuration configurable)
     {
     }
 

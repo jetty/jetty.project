@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
-import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -47,7 +42,6 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
@@ -60,6 +54,10 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
+import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 /**
  * Abstract resource service, used by DefaultServlet and ResourceHandler
@@ -625,7 +623,7 @@ public class ResourceService
 
         byte[] data=null;
         String base = URIUtil.addEncodedPaths(request.getRequestURI(),URIUtil.SLASH);
-        String dir = resource.getListHTML(base,pathInContext.length()>1);
+        String dir = resource.getListHTML(base,pathInContext.length()>1, request.getQueryString());
         if (dir==null)
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,

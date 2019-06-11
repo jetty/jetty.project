@@ -19,21 +19,27 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.lang.annotation.ElementType;
 import java.util.Properties;
 
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
-import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
+import org.eclipse.jetty.util.IO;
+import org.hibernate.search.cfg.Environment;
+import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 
@@ -45,7 +51,7 @@ import org.infinispan.protostream.SerializationContext;
 public class RemoteInfinispanTestSupport
 {
     public static final String DEFAULT_CACHE_NAME =  "session_test_cache";
-    public  RemoteCache<String,Object> _cache;
+    public  RemoteCache<String,SessionData> _cache;
     private String _name;
     public static  RemoteCacheManager _manager;
     
@@ -54,8 +60,14 @@ public class RemoteInfinispanTestSupport
         try
         {
             String host = System.getProperty("hotrod.host","127.0.0.1");
+            
+            SearchMapping mapping = new SearchMapping();
+            mapping.entity(SessionData.class).indexed().providedId()
+                .property("expiry", ElementType.METHOD).field();
+            
             Properties properties = new Properties();
-
+            properties.put(Environment.MODEL_MAPPING, mapping);
+            
             ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
             clientBuilder.withProperties(properties).addServer().host(host).marshaller(new ProtoStreamMarshaller());
 
@@ -67,6 +79,19 @@ public class RemoteInfinispanTestSupport
             SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_manager);
             serCtx.registerProtoFiles(fds);
             serCtx.registerMarshaller(new SessionDataMarshaller());
+            
+            ByteArrayOutputStream baos;
+            try(InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
+            {
+                if (is == null)
+                    throw new IllegalStateException("inputstream is null");
+                
+                baos = new ByteArrayOutputStream();
+                IO.copy(is, baos);
+            }
+            
+            String content = baos.toString("UTF-8");
+            _manager.getCache("___protobuf_metadata").put("session.proto", content);   
         }
         catch (Exception e)
         {
@@ -89,7 +114,7 @@ public class RemoteInfinispanTestSupport
     
  
   
-    public RemoteCache<String,Object> getCache ()
+    public RemoteCache<String,SessionData> getCache ()
     {
         return _cache;
     }

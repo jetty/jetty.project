@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
@@ -60,10 +61,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
     private final FrameHandler.CoreSession coreSession;
-    private final Principal principal;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final EndpointConfig config;
-    private final String id;
     private final AvailableDecoders availableDecoders;
     private final AvailableEncoders availableEncoders;
     private final Map<String, String> pathParameters;
@@ -76,15 +75,11 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
         FrameHandler.CoreSession coreSession,
         JavaxWebSocketFrameHandler frameHandler,
-        Principal upgradeRequestPrincipal,
-        String id,
         EndpointConfig endpointConfig)
     {
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
-        this.principal = upgradeRequestPrincipal;
-        this.id = id;
 
         this.config = endpointConfig == null?new BasicEndpointConfig():endpointConfig;
 
@@ -138,7 +133,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         }
 
         frameHandler.addMessageHandler(this, clazz, handler);
-
     }
 
     /**
@@ -307,7 +301,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getId()
     {
-        return this.id;
+        return this.frameHandler.getUpgradeRequest().toString();
     }
 
     /**
@@ -319,7 +313,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public int getMaxBinaryMessageBufferSize()
     {
-        return frameHandler.getMaxBinaryMessageBufferSize();
+        long maxBinaryMsgSize = coreSession.getMaxBinaryMessageSize();
+        return (maxBinaryMsgSize > (long)Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)maxBinaryMsgSize;
     }
 
     /**
@@ -332,7 +327,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void setMaxBinaryMessageBufferSize(int length)
     {
-        frameHandler.setMaxBinaryMessageBufferSize(length);
+        coreSession.setMaxBinaryMessageSize(length);
     }
 
     /**
@@ -368,7 +363,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public int getMaxTextMessageBufferSize()
     {
-        return frameHandler.getMaxTextMessageBufferSize();
+        long maxTextMsgSize = coreSession.getMaxTextMessageSize();
+        return (maxTextMsgSize > (long)Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)maxTextMsgSize;
     }
 
     /**
@@ -381,7 +377,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public void setMaxTextMessageBufferSize(int length)
     {
-        frameHandler.setMaxTextMessageBufferSize(length);
+        coreSession.setMaxTextMessageSize(length);
     }
 
     /**
@@ -513,7 +509,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Principal getUserPrincipal()
     {
-        return this.principal;
+        return this.frameHandler.getUpgradeRequest().getUserPrincipal();
     }
 
     /**

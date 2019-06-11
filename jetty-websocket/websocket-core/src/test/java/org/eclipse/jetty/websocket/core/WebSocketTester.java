@@ -45,14 +45,14 @@ import static org.hamcrest.Matchers.startsWith;
 public class WebSocketTester
 {
     private static String NON_RANDOM_KEY = new String(B64Code.encode("0123456701234567".getBytes()));
-    private static SslContextFactory sslContextFactory;
+    private static SslContextFactory.Client sslContextFactory;
     protected ByteBufferPool bufferPool;
     protected Parser parser;
 
     @BeforeAll
     public static void startSslContextFactory() throws Exception
     {
-        sslContextFactory = new SslContextFactory(true);
+        sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.setEndpointIdentificationAlgorithm("");
         sslContextFactory.start();
     }
@@ -84,17 +84,9 @@ public class WebSocketTester
     {
         return newClient(port, false, extensions);
     }
-    
-    protected Socket newClient(int port, boolean tls, String extensions) throws Exception
+
+    protected static HttpFields newUpgradeRequest(String extensions)
     {
-        Socket client;
-        if (!tls)
-            client = new Socket();
-        else
-            client = sslContextFactory.newSslSocket();
-
-        client.connect(new InetSocketAddress("127.0.0.1", port));
-
         HttpFields fields = new HttpFields();
         fields.add(HttpHeader.HOST, "127.0.0.1");
         fields.add(HttpHeader.UPGRADE, "websocket");
@@ -107,10 +99,11 @@ public class WebSocketTester
         if (extensions != null)
             fields.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensions);
 
-        client.getOutputStream().write(("GET / HTTP/1.1\r\n" + fields.toString()).getBytes(StandardCharsets.ISO_8859_1));
+        return fields;
+    }
 
-        InputStream in = client.getInputStream();
-
+    protected static String getUpgradeResponse(InputStream in) throws IOException
+    {
         int state = 0;
         StringBuilder buffer = new StringBuilder();
         while (state < 4)
@@ -139,7 +132,23 @@ public class WebSocketTester
             }
         }
 
-        String response = buffer.toString();
+        return buffer.toString();
+    }
+
+    protected Socket newClient(int port, boolean tls, String extensions) throws Exception
+    {
+        Socket client;
+        if (!tls)
+            client = new Socket();
+        else
+            client = sslContextFactory.newSslSocket();
+
+        client.connect(new InetSocketAddress("127.0.0.1", port));
+
+        String upgradeRequest = "GET / HTTP/1.1\r\n" + newUpgradeRequest(extensions);
+        client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
+        String response = getUpgradeResponse(client.getInputStream());
+
         assertThat(response, startsWith("HTTP/1.1 101 Switching Protocols"));
         assertThat(response, containsString("Sec-WebSocket-Protocol: test"));
         assertThat(response, containsString("Sec-WebSocket-Accept: +WahVcVmeMLKQUMm0fvPrjSjwzI="));

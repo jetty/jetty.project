@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -31,12 +26,16 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTest
 {
@@ -59,7 +58,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
             assertNotNull(response);
             assertEquals(200, response.getStatus());
 
-            HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
+            HttpDestination httpDestination = (HttpDestination)destination;
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
             assertTrue(connectionPool.getActiveConnections().isEmpty());
             assertTrue(connectionPool.getIdleConnections().isEmpty());
@@ -94,7 +93,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
         assertFalse(httpConnection.getEndPoint().isOpen());
 
-        HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
+        HttpDestination httpDestination = (HttpDestination)destination;
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
         assertTrue(connectionPool.getActiveConnections().isEmpty());
         assertTrue(connectionPool.getIdleConnections().isEmpty());

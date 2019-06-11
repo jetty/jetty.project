@@ -40,6 +40,7 @@ import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -68,6 +69,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class DeploymentManager extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(DeploymentManager.class);
+    private MultiException onStartupErrors;
 
     /**
      * Represents a single tracked app within the deployment manager.
@@ -152,7 +154,6 @@ public class DeploymentManager extends ContainerLifeCycle
         }
     }
 
-    /* ------------------------------------------------------------ */
     /** Set the AppProviders.
      * The providers passed are added via {@link #addBean(Object)} so that 
      * their lifecycles may be managed as a {@link ContainerLifeCycle}.
@@ -170,7 +171,6 @@ public class DeploymentManager extends ContainerLifeCycle
                 addBean(provider);
     }
 
-    @ManagedAttribute("Application Providers")
     public Collection<AppProvider> getAppProviders()
     {
         return Collections.unmodifiableList(_providers);
@@ -181,7 +181,7 @@ public class DeploymentManager extends ContainerLifeCycle
         if (isRunning())
             throw new IllegalStateException();
         _providers.add(provider);
-        addBean(provider);        
+        addBean(provider);
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
@@ -239,6 +239,12 @@ public class DeploymentManager extends ContainerLifeCycle
         {
             startAppProvider(provider);
         }
+
+        if (onStartupErrors != null)
+        {
+            onStartupErrors.ifExceptionThrow();
+        }
+
         super.doStart();
     }
 
@@ -292,7 +298,6 @@ public class DeploymentManager extends ContainerLifeCycle
         return Collections.unmodifiableCollection(_apps);
     }
 
-    @ManagedAttribute("Deployed Apps")
     public Collection<App> getApps()
     {
         List<App> ret = new ArrayList<  >();
@@ -522,7 +527,21 @@ public class DeploymentManager extends ContainerLifeCycle
                 // The runBindings failed for 'failed' node
                 LOG.ignore(ignore);
             }
+
+            if (isStarting())
+            {
+                addOnStartupError(t);
+            }
         }
+    }
+
+    private synchronized void addOnStartupError(Throwable cause)
+    {
+        if(onStartupErrors == null)
+        {
+            onStartupErrors = new MultiException();
+        }
+        onStartupErrors.add(cause);
     }
 
     /**

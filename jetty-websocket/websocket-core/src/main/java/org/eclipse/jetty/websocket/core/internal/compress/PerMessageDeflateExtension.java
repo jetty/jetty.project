@@ -83,10 +83,10 @@ public class PerMessageDeflateExtension extends CompressExtension
         }
 
         //TODO fix this to use long instead of int
-        if (getWebSocketChannel().getMaxFrameSize() > Integer.MAX_VALUE)
+        if (getWebSocketCoreSession().getMaxFrameSize() > Integer.MAX_VALUE)
             throw new IllegalArgumentException("maxFrameSize too large for ByteAccumulator");
 
-        ByteAccumulator accumulator = new ByteAccumulator((int)getWebSocketChannel().getMaxFrameSize());
+        ByteAccumulator accumulator = new ByteAccumulator((int)getWebSocketCoreSession().getMaxFrameSize());
 
         try
         {
@@ -169,7 +169,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
                 case "server_no_context_takeover":
                 {
-                    params_negotiated.put("client_no_context_takeover", null);
+                    params_negotiated.put("server_no_context_takeover", null);
                     outgoingContextTakeover = false;
                     break;
                 }

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +33,12 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
@@ -58,32 +58,29 @@ public class TestJettyOSGiBootWithJsp
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false,"jetty-http-boot-with-jsp.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-jsp.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
-     
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+
         options.addAll(TestOSGiUtil.coreJettyDependencies());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
         options.add(CoreOptions.cleanCaches(true));
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
-
-
 
     public static List<Option> jspDependencies()
     {
-        List<Option> res = new ArrayList<>();
-        res.addAll(TestOSGiUtil.jspDependencies());
+        List<Option> res = new ArrayList<>(TestOSGiUtil.jspDependencies());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
-        
         return res;
     }
-
 
     public void assertAllBundlesActiveOrResolved()
     {
@@ -91,25 +88,24 @@ public class TestJettyOSGiBootWithJsp
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
-   
     @Test
     public void testJspDump() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-        
+
         HttpClient client = new HttpClient();
         try
         {
             client.start();
-            
+
             String port = System.getProperty("boot.jsp.port");
             assertNotNull(port);
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/jsp/jstl.jsp");
-            
+
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
-            assertTrue(content.contains("JSTL Example"));           
+            assertTrue(content.contains("JSTL Example"));
         }
         finally
         {

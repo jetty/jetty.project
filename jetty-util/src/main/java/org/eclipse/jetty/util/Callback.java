@@ -337,6 +337,7 @@ public interface Callback extends Invocable
             return callback.getInvocationType();
         }
     }
+
     /**
      * <p>A CompletableFuture that is also a Callback.</p>
      */

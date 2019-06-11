@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import java.io.File;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
@@ -48,7 +46,6 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
 {
     private static final Logger LOG = Log.getLogger(GlobalWebappConfigBinding.class);
-
 
     private String _jettyXml;
 
@@ -95,7 +92,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
 
             if (globalContextSettings.exists())
             {
-                XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings.getInputStream());
+                XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings);
                 Resource resource = Resource.newResource(app.getOriginId());
                 app.getDeploymentManager().scope(jettyXmlConfig,resource);
                 WebAppClassLoader.runWithServerClassAccess(()->{jettyXmlConfig.configure(context);return null;});

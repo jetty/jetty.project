@@ -18,52 +18,40 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client.misbehaving;
 
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
-import org.eclipse.jetty.websocket.javax.tests.CoreServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.javax.tests.CoreServer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MisbehavingClassTest
 {
+    private CoreServer server;
 
-    private static CoreServer server;
-
-    @SuppressWarnings("Duplicates")
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
         server = new CoreServer(new CoreServer.EchoNegotiator());
-        // Start Server
         server.start();
     }
 
-    @AfterAll
-    public static void stopServer()
+    @AfterEach
+    public void stopServer() throws Exception
     {
-        try
-        {
-            server.stop();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-        }
+        server.stop();
     }
 
-    @SuppressWarnings("Duplicates")
     @Test
     public void testEndpointRuntimeOnOpen() throws Exception
     {
@@ -71,20 +59,16 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            // expecting IOException during onOpen
-            Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-            assertThat(e.getCause(), instanceOf(ExecutionException.class));
-
+            // expecting RuntimeException during onOpen
+            container.connectToServer(socket, server.getWsUri());
             assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
-
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Test
     public void testAnnotatedRuntimeOnOpen() throws Exception
     {
@@ -92,14 +76,11 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(WebSocketChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            // expecting IOException during onOpen
-            Exception e = assertThrows(IOException.class, () -> container.connectToServer(socket, server.getWsUri()), "Should have failed .connectToServer()");
-            assertThat(e.getCause(), instanceOf(ExecutionException.class));
-
+            // expecting RuntimeException during onOpen
+            container.connectToServer(socket, server.getWsUri());
             assertThat("Close should have occurred", socket.closeLatch.await(5, TimeUnit.SECONDS), is(true));
-
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));
         }

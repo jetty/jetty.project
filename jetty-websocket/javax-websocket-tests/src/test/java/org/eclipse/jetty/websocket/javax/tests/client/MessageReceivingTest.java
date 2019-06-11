@@ -25,10 +25,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
+import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -55,9 +56,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 /**
  * This class tests receiving of messages by different types of {@link javax.websocket.MessageHandler}
@@ -132,6 +133,8 @@ public class MessageReceivingTest
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Echo'd Message: another", msg, is("Another Echo"));
         }
+
+        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
     }
 
     /**
@@ -162,6 +165,8 @@ public class MessageReceivingTest
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Received Message", msg, is("I can live for two months on a good compliment."));
         }
+
+        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
     }
 
     /**
@@ -190,6 +195,8 @@ public class MessageReceivingTest
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Received Message", msg, is("Echo"));
         }
+
+        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
     }
 
     /**
@@ -228,6 +235,8 @@ public class MessageReceivingTest
             msg = clientEndpoint.handler.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Received Message: another", msg, is("Another Echo"));
         }
+
+        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
     }
 
     public static class SendPartialTextFrameHandler extends MessageHandler
@@ -373,6 +382,7 @@ public class MessageReceivingTest
     public static class TestEndpoint extends Endpoint
     {
         public final AbstractHandler handler;
+        public final CountDownLatch closeLatch = new CountDownLatch(1);
 
         public TestEndpoint(AbstractHandler handler)
         {
@@ -385,6 +395,12 @@ public class MessageReceivingTest
             session.setMaxTextMessageBufferSize(2 * 1024 * 1024);
             session.setMaxBinaryMessageBufferSize(2 * 1024 * 1024);
             session.addMessageHandler(handler);
+        }
+
+        @Override
+        public void onClose(Session session, CloseReason closeReason)
+        {
+            closeLatch.countDown();
         }
 
         @Override

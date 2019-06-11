@@ -57,9 +57,9 @@ import org.hamcrest.Matchers;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -144,7 +144,7 @@ public class GzipTester
             }
             else
             {
-                assertThat("Unexpected response content-encoding", contentEncoding, isEmptyOrNullString());
+                assertThat("Unexpected response content-encoding", contentEncoding, is(emptyOrNullString()));
             }
             
             uncompressedStream = new ByteArrayOutputStream((int)size); 

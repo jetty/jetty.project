@@ -37,13 +37,12 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -52,7 +51,6 @@ import static org.hamcrest.Matchers.is;
 /**
  * Tests for conditions due to bad networking.
  */
-@Disabled("Needs triage")
 public class BadNetworkTest
 {
     private Server server;
@@ -76,12 +74,11 @@ public class BadNetworkTest
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
-        JettyWebSocketServletContainerInitializer.configure(context);
         context.setContextPath("/");
-        ServletHolder holder = new ServletHolder(new WebSocketServlet()
+        ServletHolder holder = new ServletHolder(new JettyWebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(JettyWebSocketServletFactory factory)
             {
                 factory.setIdleTimeout(Duration.ofSeconds(10));
                 factory.setMaxTextMessageSize(1024 * 1024 * 2);
@@ -94,6 +91,7 @@ public class BadNetworkTest
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         server.start();
     }

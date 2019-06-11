@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -33,11 +34,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 /**
@@ -49,13 +52,15 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
     private final WebSocketExtensionRegistry factory;
+    private final Behavior behavior;
     private List<Extension> extensions;
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
 
-    public ExtensionStack(WebSocketExtensionRegistry factory)
+    public ExtensionStack(WebSocketExtensionRegistry factory, Behavior behavior)
     {
         this.factory = factory;
+        this.behavior = behavior;
     }
 
     @ManagedAttribute(name = "Extension List", readonly = true)
@@ -107,20 +112,60 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      * <p>
      * For the list of negotiated extensions, use {@link #getNegotiatedExtensions()}
      *
-     * @param configs the configurations being requested
+     * @param offeredConfigs    the configurations being requested by the client
+     * @param negotiatedConfigs the configurations accepted by the server
      */
-    public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> configs)
+    public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> offeredConfigs, List<ExtensionConfig> negotiatedConfigs)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Extension Configs={}", configs);
+            LOG.debug("Extension Configs={}", negotiatedConfigs);
 
         this.extensions = new ArrayList<>();
 
         String rsvClaims[] = new String[3];
 
-        for (ExtensionConfig config : configs)
+        for (ExtensionConfig config : negotiatedConfigs)
         {
-            Extension ext = factory.newInstance(objectFactory, bufferPool, config);
+            Extension ext;
+
+            try
+            {
+                ext = factory.newInstance(objectFactory, bufferPool, config);
+            }
+            catch (Throwable t)
+            {
+                /* If there was an error creating the extension we need to differentiate between a
+                bad ExtensionConfig offered by the client and a bad ExtensionConfig negotiated by the server.
+
+                When deciding whether to throw a BadMessageException and send a 400 response or a WebSocketException
+                and send a 500 response it depends on whether this is running on the client or the server. */
+                switch (behavior)
+                {
+                    case SERVER:
+                    {
+                        String parameterizedName = config.getParameterizedName();
+                        for (ExtensionConfig offered : offeredConfigs)
+                        {
+                            if (offered.getParameterizedName().equals(parameterizedName))
+                                throw new BadMessageException("could not instantiate offered extension", t);
+                        }
+                        throw new WebSocketException("could not instantiate negotiated extension", t);
+                    }
+                    case CLIENT:
+                    {
+                        String parameterizedName = config.getParameterizedName();
+                        for (ExtensionConfig offered : offeredConfigs)
+                        {
+                            if (offered.getParameterizedName().equals(parameterizedName))
+                                throw new WebSocketException("could not instantiate offered extension", t);
+                        }
+                        throw new BadMessageException("could not instantiate negotiated extension", t);
+                    }
+                    default:
+                        throw new IllegalStateException();
+                }
+            }
+
             if (ext == null)
             {
                 // Extension not present on this side
@@ -198,7 +243,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         outgoing.sendFrame(frame, callback, batch);
     }
 
-    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketChannel webSocketChannel)
+    public void initialize(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketCoreSession coreSession)
     {
         if (extensions == null)
             throw new IllegalStateException();
@@ -214,7 +259,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         }
 
         for (Extension extension : extensions)
-            extension.setWebSocketChannel(webSocketChannel);
+            extension.setWebSocketCoreSession(coreSession);
     }
 
     @Override

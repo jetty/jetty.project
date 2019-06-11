@@ -24,13 +24,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
@@ -66,12 +67,12 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects", 
-                                               "sun.security", "sun.security.x509","sun.security.ssl"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects",
+                "sun.security", "sun.security.x509", "sun.security.ssl"));
         options.addAll(http2JettyDependencies());
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
@@ -94,10 +95,10 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
         res.add(CoreOptions.systemProperty("jetty.sslContext.provider").value("Conscrypt"));
-        
+
         res.add(wrappedBundle(mavenBundle().groupId("org.conscrypt").artifactId("conscrypt-openjdk-uber").versionAsInProject())
                 .imports("javax.net.ssl,*")
-                .exports("org.conscrypt;version="+System.getProperty("conscrypt-version"))
+                .exports("org.conscrypt;version=" + System.getProperty("conscrypt-version"))
                 .instructions("Bundle-NativeCode=META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so")
                 .start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
@@ -129,32 +130,38 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             assertAllBundlesActiveOrResolved();
 
         HTTP2Client client = new HTTP2Client();
-        try 
+        try
         {
             String port = System.getProperty("boot.https.port");
             assertNotNull(port);
-            
-            Path path = Paths.get("src",  "test", "config");
+
+            Path path = Paths.get("src", "test", "config");
             File keys = path.resolve("etc").resolve("keystore").toFile();
-            
-            HTTP2Client http2Client = new HTTP2Client();
-            SslContextFactory sslContextFactory = new SslContextFactory();
+
+            ClientConnector clientConnector = new ClientConnector();
+            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setProvider("Conscrypt");
             sslContextFactory.setEndpointIdentificationAlgorithm(null);
-            HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
+            if (JavaVersion.VERSION.getPlatform() < 9)
+            {
+                // Conscrypt enables TLSv1.3 by default but it's not supported in Java 8.
+                sslContextFactory.addExcludeProtocols("TLSv1.3");
+            }
+            clientConnector.setSslContextFactory(sslContextFactory);
+            HTTP2Client http2Client = new HTTP2Client(clientConnector);
+            HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
 
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:"+port+"/jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
-
         }
         finally
         {

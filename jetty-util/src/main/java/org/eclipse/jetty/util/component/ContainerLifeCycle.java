@@ -96,35 +96,64 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         _doStarted = true;
 
         // start our managed and auto beans
-        for (Bean b : _beans)
+        try
         {
-            if (b._bean instanceof LifeCycle)
+            for (Bean b : _beans)
             {
-                LifeCycle l = (LifeCycle)b._bean;
-                switch(b._managed)
+                if (b._bean instanceof LifeCycle)
                 {
-                    case MANAGED:
-                        if (!l.isRunning())
-                            start(l);
-                        break;
-                        
-                    case AUTO:
-                        if (l.isRunning())
-                            unmanage(b);
-                        else
-                        {
-                            manage(b);
-                            start(l);
-                        }
-                        break;
-                        
-                    default:
-                        break;
+                    LifeCycle l = (LifeCycle)b._bean;
+                    switch (b._managed)
+                    {
+                        case MANAGED:
+                            if (!l.isRunning())
+                                start(l);
+                            break;
+
+                        case AUTO:
+                            if (l.isRunning())
+                                unmanage(b);
+                            else
+                            {
+                                manage(b);
+                                start(l);
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
                 }
             }
-        }
 
-        super.doStart();
+            super.doStart();
+        }
+        catch (Throwable t)
+        {
+            // on failure, stop any managed components that have been started
+            List<Bean> reverse = new ArrayList<>(_beans);
+            Collections.reverse(reverse);
+            for (Bean b : reverse)
+            {
+                if (b._bean instanceof LifeCycle && b._managed == Managed.MANAGED)
+                {
+                    LifeCycle l = (LifeCycle)b._bean;
+                    if (l.isRunning())
+                    {
+                        try
+                        {
+                            l.stop();
+                        }
+                        catch(Throwable t2)
+                        {
+                            if (t2!=t)
+                                t.addSuppressed(t2);
+                        }
+                    }
+                }
+            }
+            throw t;
+        }
     }
 
     /**

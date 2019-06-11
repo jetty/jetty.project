@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.contains;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -34,9 +33,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -74,10 +72,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -85,6 +84,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -198,7 +198,7 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
 
         response.setHeader("Content-Type", "text/something");
         assertEquals("text/something", response.getContentType());
@@ -304,7 +304,7 @@ public class ResponseTest
         // Inferred from encoding.properties
         Response response = getResponse();
 
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
 
         response.setHeader("Content-Type", "application/xhtml+xml");
         assertEquals("application/xhtml+xml", response.getContentType());
@@ -319,7 +319,7 @@ public class ResponseTest
         Response response = getResponse();
 
         // Assumed from known types
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
         response.setHeader("Content-Type", "text/json");
         assertEquals("text/json", response.getContentType());
         response.getWriter();
@@ -329,7 +329,7 @@ public class ResponseTest
         response.recycle();
 
         // Assumed from encoding.properties
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
         response.setHeader("Content-Type", "application/vnd.api+json");
         assertEquals("application/vnd.api+json", response.getContentType());
         response.getWriter();
@@ -342,7 +342,7 @@ public class ResponseTest
     {
         Response response = getResponse();
 
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
 
         response.recycle();
         response.setContentType("text/html;charset=utf-8;charset=UTF-8");
@@ -352,7 +352,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testLocale() throws Exception
+    public void testLocale()
     {
         Response response = getResponse();
 
@@ -362,7 +362,7 @@ public class ResponseTest
         response.getHttpChannel().getRequest().setContext(context.getServletContext());
 
         response.setLocale(java.util.Locale.ITALIAN);
-        assertEquals(null, response.getContentType());
+        assertNull(response.getContentType());
         response.setContentType("text/plain");
         assertEquals("text/plain;charset=ISO-8859-2", response.getContentType());
 
@@ -580,23 +580,29 @@ public class ResponseTest
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
     }
 
+    @Test
+    public void testPrint_Empty() throws Exception
+    {
+        Response response = getResponse();
+        response.setCharacterEncoding(UTF_8.name());
+
+        try(ServletOutputStream outputStream = response.getOutputStream())
+        {
+            outputStream.print("ABC");
+            outputStream.print("");
+            outputStream.println();
+            outputStream.flush();
+        }
+
+        String expected = "ABC\r\n";
+        assertEquals(expected,BufferUtil.toString(_content, UTF_8));
+    }
 
     @Test
     public void testPrintln() throws Exception
     {
         Response response = getResponse();
-        Request request = response.getHttpChannel().getRequest();
-
-        SessionHandler session_handler = new SessionHandler();
-        session_handler.setServer(_server);
-        session_handler.setUsingCookies(true);
-        session_handler.start();
-        request.setSessionHandler(session_handler);
-        HttpSession session = request.getSession(true);
         response.setCharacterEncoding(UTF_8.name());
-
-        assertThat(session,not(nullValue()));
-        assertTrue(session.isNew());
 
         String expected = "";
         response.getOutputStream().print("ABC");
@@ -687,7 +693,7 @@ public class ResponseTest
 
         response.setStatus(200);
         assertEquals(200, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertNull(response.getReason());
 
         response = getResponse();
 
@@ -720,7 +726,7 @@ public class ResponseTest
 
         response.setStatus(200);
         assertEquals(200, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertNull(response.getReason());
 
         response = getResponse();
 
@@ -752,7 +758,6 @@ public class ResponseTest
 
     @Test
     public void testEncodeRedirect()
-            throws Exception
     {
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
@@ -875,7 +880,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testInvalidSendRedirect() throws Exception
+    public void testInvalidSendRedirect()
     {
         // Request is /path/info, so we need 3 ".." for an invalid redirect.
         Response response = getResponse();
@@ -898,10 +903,10 @@ public class ResponseTest
         Response response = getResponse();
         PrintWriter writer = response.getWriter();
         response.setContentLength(0);
-        assertTrue(!response.isCommitted());
-        assertTrue(!writer.checkError());
+        assertFalse(response.isCommitted());
+        assertFalse(writer.checkError());
         writer.print("");
-        assertTrue(!writer.checkError());
+        assertFalse(writer.checkError());
         assertTrue(response.isCommitted());
     }
 
@@ -914,7 +919,7 @@ public class ResponseTest
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
                     response.setStatus(200);
                     response.setContentType("text/plain");
@@ -964,7 +969,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testAddCookie() throws Exception
+    public void testAddCookie()
     {
         Response response = getResponse();
 
@@ -978,11 +983,11 @@ public class ResponseTest
 
         String set = response.getHttpFields().get("Set-Cookie");
 
-        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly", set);
+        assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly", set);
     }
 
     @Test
-    public void testAddCookieComplianceRFC2965() throws Exception
+    public void testAddCookieComplianceRFC2965()
     {
         Response response = getResponse();
         response.getHttpChannel().getHttpConfiguration().setResponseCookieCompliance(CookieCompliance.RFC2965);
@@ -1016,7 +1021,7 @@ public class ResponseTest
     
         String set = response.getHttpFields().get("Set-Cookie");
     
-        assertEquals("foo=bar%3Bbaz;Path=/secure", set);
+        assertEquals("foo=bar%3Bbaz; Path=/secure", set);
     }
     
     /**
@@ -1033,7 +1038,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testCookiesWithReset() throws Exception
+    public void testCookiesWithReset()
     {
         Response response = getResponse();
 
@@ -1057,8 +1062,8 @@ public class ResponseTest
         assertNotNull(set);
         ArrayList<String> list = Collections.list(set);
         assertThat(list, containsInAnyOrder(
-                "name=value;Path=/path;Domain=domain;Secure;HttpOnly",
-                "name2=value2;Path=/path;Domain=domain"
+                "name=value; Path=/path; Domain=domain; Secure; HttpOnly",
+                "name2=value2; Path=/path; Domain=domain"
         ));
 
         //get rid of the cookies
@@ -1089,15 +1094,43 @@ public class ResponseTest
         response.replaceCookie(new HttpCookie("Foo","value", "A", "/path"));
         response.replaceCookie(new HttpCookie("Foo","value"));
 
-        assertThat(Collections.list(response.getHttpFields().getValues("Set-Cookie")),
-                contains(
-                        "Foo=value",
-                        "Foo=value;Path=/path;Domain=A",
-                        "Foo=value;Path=/path;Domain=B",
-                        "Bar=value",
-                        "Bar=value;Path=/left",
-                        "Bar=value;Path=/right"
-                ));
+        String[] expected = new String[]{
+            "Foo=value",
+            "Foo=value; Path=/path; Domain=A",
+            "Foo=value; Path=/path; Domain=B",
+            "Bar=value",
+            "Bar=value; Path=/left",
+            "Bar=value; Path=/right"
+        };
+
+        List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
+        assertThat("HttpCookie order", actual, hasItems(expected));
+    }
+
+
+    @Test
+    public void testReplaceParsedHttpCookie()
+    {
+        Response response = getResponse();
+
+        response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
+        response.replaceCookie(new HttpCookie("Foo","value"));
+        List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
+        assertThat(actual, hasItems(new String[] {"Foo=value"}));
+
+        response.setHeader(HttpHeader.SET_COOKIE,"Foo=123456; domain=Bah; Path=/path");
+        response.replaceCookie(new HttpCookie("Foo","other"));
+        actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
+        assertThat(actual, hasItems(new String[] {"Foo=123456; domain=Bah; Path=/path", "Foo=other"}));
+
+        response.replaceCookie(new HttpCookie("Foo","replaced", "Bah", "/path"));
+        actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
+        assertThat(actual, hasItems(new String[] {"Foo=replaced; Path=/path; Domain=Bah", "Foo=other"}));
+
+        response.setHeader(HttpHeader.SET_COOKIE,"Foo=123456; domain=Bah; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; Path=/path");
+        response.replaceCookie(new HttpCookie("Foo","replaced", "Bah", "/path"));
+        actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
+        assertThat(actual, hasItems(new String[] {"Foo=replaced; Path=/path; Domain=Bah"}));
     }
 
     @Test
@@ -1111,312 +1144,6 @@ public class ResponseTest
         output.write(data);
         // Must not throw
         output.flush();
-    }
-
-    @Test
-    public void testSetRFC2965Cookie() throws Exception
-    {
-        Response response = _channel.getResponse();
-        HttpFields fields = response.getHttpFields();
-
-        response.addSetRFC2965Cookie("null",null,null,null,-1,null,false,false,-1);
-        assertEquals("null=",fields.get("Set-Cookie"));
-
-        fields.clear();
-
-        response.addSetRFC2965Cookie("minimal","value",null,null,-1,null,false,false,-1);
-        assertEquals("minimal=value",fields.get("Set-Cookie"));
-
-        fields.clear();
-        //test cookies with same name, domain and path
-        response.addSetRFC2965Cookie("everything","something","domain","path",0,"noncomment",true,true,0);
-        response.addSetRFC2965Cookie("everything","value","domain","path",0,"comment",true,true,0);
-        Enumeration<String> e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=something;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment",e.nextElement());
-        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
-        assertFalse(e.hasMoreElements());
-        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.get("Expires"));
-        assertFalse(e.hasMoreElements());
-
-        //test cookies with same name, different domain
-        fields.clear();
-        response.addSetRFC2965Cookie("everything","other","domain1","path",0,"blah",true,true,0);
-        response.addSetRFC2965Cookie("everything","value","domain2","path",0,"comment",true,true,0);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Version=1;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Version=1;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        //test cookies with same name, same path, one with domain, one without
-        fields.clear();
-        response.addSetRFC2965Cookie("everything","other","domain1","path",0,"blah",true,true,0);
-        response.addSetRFC2965Cookie("everything","value","","path",0,"comment",true,true,0);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Version=1;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Version=1;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-
-        //test cookies with same name, different path
-        fields.clear();
-        response.addSetRFC2965Cookie("everything","other","domain1","path1",0,"blah",true,true,0);
-        response.addSetRFC2965Cookie("everything","value","domain1","path2",0,"comment",true,true,0);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Version=1;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Version=1;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        //test cookies with same name, same domain, one with path, one without
-        fields.clear();
-        response.addSetRFC2965Cookie("everything","other","domain1","path1",0,"blah",true,true,0);
-        response.addSetRFC2965Cookie("everything","value","domain1","",0,"comment",true,true,0);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Version=1;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Version=1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        //test cookies same name only, no path, no domain
-        fields.clear();
-        response.addSetRFC2965Cookie("everything","other","","",0,"blah",true,true,0);
-        response.addSetRFC2965Cookie("everything","value","","",0,"comment",true,true,0);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Version=1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
-        assertEquals("everything=value;Version=1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        fields.clear();
-        response.addSetRFC2965Cookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,1);
-        String setCookie=fields.get("Set-Cookie");
-        assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Path=\"pa th\";Domain=\"do main\";Expires="));
-        assertThat(setCookie,Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
-
-        fields.clear();
-        response.addSetRFC2965Cookie("name","value",null,null,-1,null,false,false,0);
-        setCookie=fields.get("Set-Cookie");
-        assertEquals(-1,setCookie.indexOf("Version="));
-        fields.clear();
-        response.addSetRFC2965Cookie("name","v a l u e",null,null,-1,null,false,false,0);
-        setCookie=fields.get("Set-Cookie");
-
-        fields.clear();
-        response.addSetRFC2965Cookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
-        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.get("Set-Cookie"));
-
-        fields.clear();
-        response.addSetRFC2965Cookie("name","value","domain",null,-1,null,false,false,-1);
-        response.addSetRFC2965Cookie("name","other","domain",null,-1,null,false,false,-1);
-        response.addSetRFC2965Cookie("name","more","domain",null,-1,null,false,false,-1);
-        e = fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertThat(e.nextElement(), Matchers.startsWith("name=value"));
-        assertThat(e.nextElement(), Matchers.startsWith("name=other"));
-        assertThat(e.nextElement(), Matchers.startsWith("name=more"));
-
-        response.addSetRFC2965Cookie("foo","bar","domain",null,-1,null,false,false,-1);
-        response.addSetRFC2965Cookie("foo","bob","domain",null,-1,null,false,false,-1);
-        assertThat(fields.get("Set-Cookie"), Matchers.startsWith("name=value"));
-
-
-        fields.clear();
-        response.addSetRFC2965Cookie("name","value%=",null,null,-1,null,false,false,0);
-        setCookie=fields.get("Set-Cookie");
-        assertEquals("name=value%=",setCookie);
-    }
-
-    @Test
-    public void testSetRFC6265Cookie() throws Exception
-    {
-        Response response = _channel.getResponse();
-        HttpFields fields = response.getHttpFields();
-
-        response.addSetRFC6265Cookie("null",null,null,null,-1,false,false);
-        assertEquals("null=",fields.get("Set-Cookie"));
-
-        fields.clear();
-
-        response.addSetRFC6265Cookie("minimal","value",null,null,-1,false,false);
-        assertEquals("minimal=value",fields.get("Set-Cookie"));
-
-        fields.clear();
-        //test cookies with same name, domain and path
-        response.addSetRFC6265Cookie("everything","something","domain","path",0,true,true);
-        response.addSetRFC6265Cookie("everything","value","domain","path",0,true,true);
-        Enumeration<String> e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=something;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertFalse(e.hasMoreElements());
-        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.get("Expires"));
-        assertFalse(e.hasMoreElements());
-
-        //test cookies with same name, different domain
-        fields.clear();
-        response.addSetRFC6265Cookie("everything","other","domain1","path",0,true,true);
-        response.addSetRFC6265Cookie("everything","value","domain2","path",0,true,true);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        //test cookies with same name, same path, one with domain, one without
-        fields.clear();
-        response.addSetRFC6265Cookie("everything","other","domain1","path",0,true,true);
-        response.addSetRFC6265Cookie("everything","value","","path",0,true,true);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-
-        //test cookies with same name, different path
-        fields.clear();
-        response.addSetRFC6265Cookie("everything","other","domain1","path1",0,true,true);
-        response.addSetRFC6265Cookie("everything","value","domain1","path2",0,true,true);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        //test cookies with same name, same domain, one with path, one without
-        fields.clear();
-        response.addSetRFC6265Cookie("everything","other","domain1","path1",0,true,true);
-        response.addSetRFC6265Cookie("everything","value","domain1","",0,true,true);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        //test cookies same name only, no path, no domain
-        fields.clear();
-        response.addSetRFC6265Cookie("everything","other","","",0,true,true);
-        response.addSetRFC6265Cookie("everything","value","","",0,true,true);
-        e =fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertEquals("everything=value;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
-        assertFalse(e.hasMoreElements());
-
-        String badNameExamples[] = {
-                "\"name\"",
-                "name\t",
-                "na me",
-                "name\u0082",
-                "na\tme",
-                "na;me",
-                "{name}",
-                "[name]",
-                "\""
-        };
-    
-        for (String badNameExample : badNameExamples)
-        {
-            fields.clear();
-            try
-            {
-                response.addSetRFC6265Cookie(badNameExample, "value", null, "/", 1, true, true);
-            }
-            catch (IllegalArgumentException ex)
-            {
-                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
-                assertThat("Testing bad name: [" + badNameExample + "]", ex.getMessage(),
-                        allOf(containsString("RFC6265"), containsString("RFC2616")));
-            }
-        }
-    
-        String badValueExamples[] = {
-                "va\tlue",
-                "\t",
-                "value\u0000",
-                "val\u0082ue",
-                "va lue",
-                "va;lue",
-                "\"value",
-                "value\"",
-                "val\\ue",
-                "val\"ue",
-                "\""
-        };
-    
-        for (String badValueExample : badValueExamples)
-        {
-            fields.clear();
-            try
-            {
-                response.addSetRFC6265Cookie("name", badValueExample, null, "/", 1, true, true);
-            }
-            catch (IllegalArgumentException ex)
-            {
-                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
-                assertThat("Testing bad value [" + badValueExample + "]", ex.getMessage(), Matchers.containsString("RFC6265"));
-            }
-        }
-        
-        String goodNameExamples[] = {
-                "name",
-                "n.a.m.e",
-                "na-me",
-                "+name",
-                "na*me",
-                "na$me",
-                "#name"
-        };
-    
-        for (String goodNameExample : goodNameExamples)
-        {
-            fields.clear();
-            response.addSetRFC6265Cookie(goodNameExample, "value", null, "/", 1, true, true);
-            // should not throw an exception
-        }
-    
-        String goodValueExamples[] = {
-                "value",
-                "",
-                null,
-                "val=ue",
-                "val-ue",
-                "val/ue",
-                "v.a.l.u.e"
-        };
-    
-        for (String goodValueExample : goodValueExamples)
-        {
-            fields.clear();
-            response.addSetRFC6265Cookie("name", goodValueExample, null, "/", 1, true, true);
-            // should not throw an exception
-        }
-        
-        fields.clear();
-        
-        response.addSetRFC6265Cookie("name","value","domain",null,-1,false,false);
-        response.addSetRFC6265Cookie("name","other","domain",null,-1,false,false);
-        response.addSetRFC6265Cookie("name","more","domain",null,-1,false,false);
-        e = fields.getValues("Set-Cookie");
-        assertTrue(e.hasMoreElements());
-        assertThat(e.nextElement(), Matchers.startsWith("name=value"));
-        assertThat(e.nextElement(), Matchers.startsWith("name=other"));
-        assertThat(e.nextElement(), Matchers.startsWith("name=more"));
-
-        response.addSetRFC6265Cookie("foo","bar","domain",null,-1,false,false);
-        response.addSetRFC6265Cookie("foo","bob","domain",null,-1,false,false);
-        assertThat(fields.get("Set-Cookie"), Matchers.startsWith("name=value"));
     }
     
     private Response getResponse()

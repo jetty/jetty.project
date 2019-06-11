@@ -18,17 +18,15 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,10 +35,19 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextHandlerTest
 {
@@ -715,6 +722,29 @@ public class ContextHandlerTest
         {
             handler.stop();
         }
+    }
+
+    @Test
+    public void testClassPath_WithSpaces() throws IOException
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("/");
+
+        Path baseDir = MavenTestingUtils.getTargetTestingPath("testClassPath_WithSpaces");
+        FS.ensureEmpty(baseDir);
+
+        Path spacey = baseDir.resolve("and extra directory");
+        FS.ensureEmpty(spacey);
+
+        Path jar = spacey.resolve("empty.jar");
+        FS.touch(jar);
+
+        URLClassLoader cl = new URLClassLoader(new URL[]{jar.toUri().toURL()});
+        handler.setClassLoader(cl);
+
+        String classpath = handler.getClassPath();
+        assertThat("classpath", classpath, containsString(jar.toString()));
     }
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException

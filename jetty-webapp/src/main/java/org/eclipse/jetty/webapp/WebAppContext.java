@@ -931,7 +931,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void loadConfigurations()
     {
         //if the configuration instances have been set explicitly, use them
-        if (_configurations.size()>0)
+        if (!_configurations.isEmpty())
             return;
         
         _configurations.add(Configurations.getServerDefault(getServer()).toArray());

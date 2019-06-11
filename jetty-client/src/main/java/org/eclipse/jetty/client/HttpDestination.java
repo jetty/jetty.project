@@ -23,20 +23,25 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -52,12 +57,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject
-public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
+public class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final HttpClient client;
-    private final Origin origin;
+    private final Key key;
     private final Queue<HttpExchange> exchanges;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
@@ -67,21 +72,38 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final TimeoutTask timeout;
     private ConnectionPool connectionPool;
 
-    public HttpDestination(HttpClient client, Origin origin)
+    public HttpDestination(HttpClient client, Key key)
+    {
+        this(client, key, Function.identity());
+    }
+
+    public HttpDestination(HttpClient client, Key key, Function<ClientConnectionFactory, ClientConnectionFactory> factoryFn)
     {
         this.client = client;
-        this.origin = origin;
+        this.key = key;
 
         this.exchanges = newExchangeQueue(client);
 
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier();
-        
+
         this.timeout = new TimeoutTask(client.getScheduler());
 
+        String host = HostPort.normalizeHost(getHost());
+        if (!client.isDefaultPort(getScheme(), getPort()))
+            host += ":" + getPort();
+        hostField = new HttpField(HttpHeader.HOST, host);
+
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
-        proxy = proxyConfig.match(origin);
-        ClientConnectionFactory connectionFactory = client.getTransport();
+        this.proxy = proxyConfig.match(getOrigin());
+
+        this.connectionFactory = factoryFn.apply(createClientConnectionFactory());
+    }
+
+    private ClientConnectionFactory createClientConnectionFactory()
+    {
+        ProxyConfiguration.Proxy proxy = getProxy();
+        ClientConnectionFactory connectionFactory = getHttpClient().getTransport();
         if (proxy != null)
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
@@ -93,12 +115,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (isSecure())
                 connectionFactory = newSslClientConnectionFactory(connectionFactory);
         }
-        this.connectionFactory = connectionFactory;
-
-        String host = HostPort.normalizeHost(getHost());
-        if (!client.isDefaultPort(getScheme(), getPort()))
-            host += ":" + getPort();
-        hostField = new HttpField(HttpHeader.HOST, host);
+        return connectionFactory;
     }
 
     @Override
@@ -147,9 +164,14 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return client;
     }
 
+    public Key getKey()
+    {
+        return key;
+    }
+
     public Origin getOrigin()
     {
-        return origin;
+        return key.origin;
     }
 
     public Queue<HttpExchange> getHttpExchanges()
@@ -181,7 +203,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @ManagedAttribute(value = "The destination scheme", readonly = true)
     public String getScheme()
     {
-        return origin.getScheme();
+        return getOrigin().getScheme();
     }
 
     @Override
@@ -190,14 +212,14 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     {
         // InetSocketAddress.getHostString() transforms the host string
         // in case of IPv6 addresses, so we return the original host string
-        return origin.getAddress().getHost();
+        return getOrigin().getAddress().getHost();
     }
 
     @Override
     @ManagedAttribute(value = "The destination port", readonly = true)
     public int getPort()
     {
-        return origin.getAddress().getPort();
+        return getOrigin().getAddress().getPort();
     }
 
     @ManagedAttribute(value = "The number of queued requests", readonly = true)
@@ -208,7 +230,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public Origin.Address getConnectAddress()
     {
-        return proxy == null ? origin.getAddress() : proxy.getAddress();
+        return proxy == null ? getOrigin().getAddress() : proxy.getAddress();
     }
 
     public HttpField getHostField()
@@ -235,7 +257,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     }
 
     protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
-    {        
+    {
         if (!getScheme().equalsIgnoreCase(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
         if (!getHost().equalsIgnoreCase(request.getHost()))
@@ -343,7 +365,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             }
             else
             {
-                SendFailure result = send(connection, exchange);
+                SendFailure result = ((IConnection)connection).send(exchange);
                 if (result != null)
                 {
                     if (LOG.isDebugEnabled())
@@ -357,8 +379,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             return getHttpExchanges().peek() != null;
         }
     }
-
-    protected abstract SendFailure send(Connection connection, HttpExchange exchange);
 
     @Override
     public void newConnection(Promise<Connection> promise)
@@ -476,7 +496,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public String asString()
     {
-        return origin.asString();
+        return getKey().asString();
     }
 
     @Override
@@ -490,8 +510,178 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 exchanges.size(),
                 connectionPool);
     }
-    
-    // The TimeoutTask that expires when the next check of expiry is needed
+
+    @FunctionalInterface
+    public interface Multiplexed
+    {
+        void setMaxRequestsPerConnection(int maxRequestsPerConnection);
+    }
+
+    /**
+     * <p>Class that groups the elements that uniquely identify a destination.</p>
+     * <p>The elements are an {@link Origin}, a {@link Protocol} and an opaque
+     * string that further distinguishes destinations that have the same origin
+     * and protocol.</p>
+     * <p>In general it is possible that, for the same origin, the server can
+     * speak different protocols (for example, clear-text HTTP/1.1 and clear-text
+     * HTTP/2), so the {@link Protocol} makes that distinction.</p>
+     * <p>Furthermore, it may be desirable to have different destinations for
+     * the same origin and protocol (for example, when using the PROXY protocol
+     * in a reverse proxy server, you want to be able to map the client ip:port
+     * to the destination {@code kind}, so that all the connections to the server
+     * associated to that destination can specify the PROXY protocol bytes for
+     * that particular client connection.</p>
+     */
+    public static class Key
+    {
+        private final Origin origin;
+        private final Protocol protocol;
+        private final String kind;
+
+        /**
+         * Creates a Key with the given origin and protocol and a {@code null} kind.
+         *
+         * @param origin   the origin
+         * @param protocol the protocol
+         */
+        public Key(Origin origin, Protocol protocol)
+        {
+            this(origin, protocol, null);
+        }
+
+        /**
+         * Creates a Key with the given origin and protocol and kind.
+         *
+         * @param origin   the origin
+         * @param protocol the protocol
+         * @param kind     the opaque kind
+         */
+        public Key(Origin origin, Protocol protocol, String kind)
+        {
+            this.origin = origin;
+            this.protocol = protocol;
+            this.kind = kind;
+        }
+
+        public Origin getOrigin()
+        {
+            return origin;
+        }
+
+        public Protocol getProtocol()
+        {
+            return protocol;
+        }
+
+        public String getKind()
+        {
+            return kind;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            Key that = (Key)obj;
+            return origin.equals(that.origin) &&
+                    Objects.equals(protocol, that.protocol) &&
+                    Objects.equals(kind, that.kind);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(origin, protocol, kind);
+        }
+
+        public String asString()
+        {
+            return String.format("%s|%s,kind=%s",
+                    origin.asString(),
+                    protocol == null ? "null" : protocol.asString(),
+                    kind);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
+        }
+    }
+
+    /**
+     * <p>The representation of a network protocol.</p>
+     * <p>A network protocol may have multiple protocol <em>names</em>
+     * associated to it, for example {@code ["h2", "h2-17", "h2-16"]}.</p>
+     * <p>A Protocol is then rendered into a {@link ClientConnectionFactory}
+     * chain, for example in
+     * {@link HttpClientTransportDynamic#newConnection(EndPoint, Map)}.</p>
+     */
+    public static class Protocol
+    {
+        private final List<String> protocols;
+        private final boolean negotiate;
+
+        /**
+         * Creates a Protocol with the given list of protocol names
+         * and whether it should negotiate the protocol.
+         *
+         * @param protocols the protocol names
+         * @param negotiate whether the protocol should be negotiated
+         */
+        public Protocol(List<String> protocols, boolean negotiate)
+        {
+            this.protocols = protocols;
+            this.negotiate = negotiate;
+        }
+
+        public List<String> getProtocols()
+        {
+            return protocols;
+        }
+
+        public boolean isNegotiate()
+        {
+            return negotiate;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            Protocol that = (Protocol)obj;
+            return protocols.equals(that.protocols) && negotiate == that.negotiate;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(protocols, negotiate);
+        }
+
+        public String asString()
+        {
+            return String.format("proto=%s,nego=%b", protocols, negotiate);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
+        }
+    }
+
+    /**
+     * This class enforces the total timeout for exchanges that are still in the queue.
+     * The total timeout for exchanges that are not in the destination queue is enforced
+     * by {@link HttpChannel}.
+     */
     private class TimeoutTask extends CyclicTimeout
     {
         private final AtomicLong nextTimeout = new AtomicLong(Long.MAX_VALUE);
@@ -504,10 +694,13 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         @Override
         public void onTimeoutExpired()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} timeout expired", this);
+
             nextTimeout.set(Long.MAX_VALUE);
             long now = System.nanoTime();
             long nextExpiresAt = Long.MAX_VALUE;
-            
+
             // Check all queued exchanges for those that have expired
             // and to determine when the next check must be.
             for (HttpExchange exchange : exchanges)
@@ -521,7 +714,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 else if (expiresAt < nextExpiresAt)
                     nextExpiresAt = expiresAt;
             }
-            
+
             if (nextExpiresAt < Long.MAX_VALUE && client.isRunning())
                 schedule(nextExpiresAt);
         }
@@ -536,12 +729,16 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (timeoutAt != expiresAt)
             {
                 long delay = expiresAt - System.nanoTime();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Scheduled timeout in {} ms", TimeUnit.NANOSECONDS.toMillis(delay));
                 if (delay <= 0)
+                {
                     onTimeoutExpired();
+                }
                 else
+                {
                     schedule(delay, TimeUnit.NANOSECONDS);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} scheduled timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
+                }
             }
         }
     }

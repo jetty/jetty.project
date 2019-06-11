@@ -53,6 +53,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+/**
+ * <p>A server-side connector for UNIX sockets.</p>
+ */
 @ManagedObject("Connector using UNIX Socket")
 public class UnixSocketConnector extends AbstractConnector
 {
@@ -67,10 +70,9 @@ public class UnixSocketConnector extends AbstractConnector
     private volatile boolean _reuseAddress = true;
 
     /**
-     * HTTP Server Connection.
-     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     * <p>Constructs a UnixSocketConnector with the default configuration.</p>
      *
-     * @param server The {@link Server} this connector will accept connection for.
+     * @param server the {@link Server} this connector will accept connections for.
      */
     public UnixSocketConnector(@Name("server") Server server)
     {
@@ -78,11 +80,10 @@ public class UnixSocketConnector extends AbstractConnector
     }
 
     /**
-     * HTTP Server Connection.
-     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     * <p>Constructs a UnixSocketConnector with the given number of selectors</p>
      *
-     * @param server    The {@link Server} this connector will accept connection for.
-     * @param selectors the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param server    the {@link Server} this connector will accept connections for.
+     * @param selectors the number of selectors, or &lt;=0 for a default value.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors)
     {
@@ -90,11 +91,10 @@ public class UnixSocketConnector extends AbstractConnector
     }
 
     /**
-     * Generic Server Connection with default configuration.
-     * <p>Construct a Server Connector with the passed Connection factories.</p>
+     * <p>Constructs a UnixSocketConnector with the given ConnectionFactories.</p>
      *
-     * @param server    The {@link Server} this connector will accept connection for.
-     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     * @param server    the {@link Server} this connector will accept connections for.
+     * @param factories zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("factories") ConnectionFactory... factories)
     {
@@ -102,12 +102,11 @@ public class UnixSocketConnector extends AbstractConnector
     }
 
     /**
-     * HTTP Server Connection.
-     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     * <p>Constructs a UnixSocketConnector with the given selectors and ConnectionFactories.</p>
      *
-     * @param server    The {@link Server} this connector will accept connection for.
-     * @param selectors the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
-     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     * @param server    the {@link Server} this connector will accept connections for.
+     * @param selectors the number of selectors, or &lt;=0 for a default value.
+     * @param factories zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors, @Name("factories") ConnectionFactory... factories)
     {
@@ -115,55 +114,49 @@ public class UnixSocketConnector extends AbstractConnector
     }
 
     /**
-     * HTTP Server Connection.
-     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
+     * <p>Constructs a UnixSocketConnector with the given SslContextFactory.</p>
      *
-     * @param server            The {@link Server} this connector will accept connection for.
-     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
-     *                          list of HTTP Connection Factory.
+     * @param server            the {@link Server} this connector will accept connections for.
+     * @param sslContextFactory when non null a {@link SslConnectionFactory} prepended to the other ConnectionFactories
      */
-    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
         this(server, -1, sslContextFactory);
     }
 
     /**
-     * HTTP Server Connection.
-     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
+     * <p>Constructs a UnixSocketConnector with the given selectors and SslContextFactory.</p>.
      *
-     * @param server            The {@link Server} this connector will accept connection for.
-     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
-     *                          list of HTTP Connection Factory.
-     * @param selectors         the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param server            the {@link Server} this connector will accept connections for.
+     * @param sslContextFactory when non null a {@link SslConnectionFactory} prepended to the other ConnectionFactories
+     * @param selectors         the number of selectors, or &lt;=0 for a default value.
      */
-    public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors, @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
         this(server, null, null, null, selectors, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
     }
 
     /**
-     * Generic SSL Server Connection.
+     * <p>Constructs a UnixSocketConnector with the given SslContextFactory and ConnectionFactories.</p>.
      *
-     * @param server            The {@link Server} this connector will accept connection for.
-     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
-     *                          list of ConnectionFactories, with the first factory being the default protocol for the SslConnectionFactory.
-     * @param factories         Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     * @param server            the {@link Server} this connector will accept connections for.
+     * @param sslContextFactory when non null a {@link SslConnectionFactory} prepended to the other ConnectionFactories
+     * @param factories         zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
-    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory sslContextFactory, @Name("factories") ConnectionFactory... factories)
+    public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory, @Name("factories") ConnectionFactory... factories)
     {
         this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, factories));
     }
 
     /**
-     * Generic Server Connection.
+     * <p>Constructs a UnixSocketConnector with the given parameters.</p>.
      *
-     * @param server     The server this connector will be accept connection for.
-     * @param executor   An executor used to run tasks for handling requests, acceptors and selectors.
-     *                   If null then use the servers executor
-     * @param scheduler  A scheduler used to schedule timeouts. If null then use the servers scheduler
-     * @param bufferPool A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
-     * @param selectors  the number of selector threads, or &lt;=0 for a default value(1). Selectors notice and schedule established connection that can make IO progress.
-     * @param factories  Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     * @param server     the {@link Server} this connector will accept connections for.
+     * @param executor   the executor that runs tasks for handling requests, acceptors and selectors.
+     * @param scheduler  the scheduler used to schedule timed tasks.
+     * @param bufferPool the ByteBufferPool used to allocate buffers.
+     * @param selectors  the number of selectors, or &lt;=0 for a default value.
+     * @param factories  zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("executor") Executor executor, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool, @Name("selectors") int selectors, @Name("factories") ConnectionFactory... factories)
     {
@@ -172,7 +165,7 @@ public class UnixSocketConnector extends AbstractConnector
         addBean(_manager, true);
     }
 
-    @ManagedAttribute
+    @ManagedAttribute("The UNIX socket file name")
     public String getUnixSocket()
     {
         return _unixSocket;
@@ -295,7 +288,7 @@ public class UnixSocketConnector extends AbstractConnector
         return _acceptChannel;
     }
 
-    protected UnixSocketEndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
+    protected UnixSocketEndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
     {
         return new UnixSocketEndPoint((UnixSocketChannel)channel, selector, key, getScheduler());
     }
@@ -321,6 +314,7 @@ public class UnixSocketConnector extends AbstractConnector
      * @return whether the server socket reuses addresses
      * @see ServerSocket#getReuseAddress()
      */
+    @ManagedAttribute("Whether the server socket reuses addresses")
     public boolean getReuseAddress()
     {
         return _reuseAddress;
@@ -338,9 +332,7 @@ public class UnixSocketConnector extends AbstractConnector
     @Override
     public String toString()
     {
-        return String.format("%s{%s}",
-                super.toString(),
-                _unixSocket);
+        return String.format("%s{%s}", super.toString(), _unixSocket);
     }
 
     protected class UnixSocketConnectorManager extends SelectorManager
@@ -363,15 +355,15 @@ public class UnixSocketConnector extends AbstractConnector
         }
 
         @Override
-        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            UnixSocketEndPoint endp = UnixSocketConnector.this.newEndPoint(channel, selector, selectionKey);
-            endp.setIdleTimeout(getIdleTimeout());
-            return endp;
+            UnixSocketEndPoint endPoint = UnixSocketConnector.this.newEndPoint(channel, selector, selectionKey);
+            endPoint.setIdleTimeout(getIdleTimeout());
+            return endPoint;
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
             return getDefaultConnectionFactory().newConnection(UnixSocketConnector.this, endpoint);
         }

@@ -19,23 +19,25 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MulticastConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SerializerConfig;
-
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.config.MapConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * HazelcastTestHelper
@@ -73,8 +75,22 @@ public class HazelcastTestHelper
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
         factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
-        factory.setHazelcastInstance(_instance);
-        
+        if(onlyClient){
+            ClientNetworkConfig clientNetworkConfig = new ClientNetworkConfig()
+                    .setAddresses(Collections.singletonList("localhost:"+_instance.getConfig().getNetworkConfig().getPort()));
+            ClientConfig clientConfig = new ClientConfig()
+                    .setNetworkConfig(clientNetworkConfig);
+
+            SerializerConfig sc = new SerializerConfig().
+                    setImplementation(new SessionDataSerializer()).
+                    setTypeClass(SessionData.class);
+            clientConfig.getSerializationConfig().addSerializerConfig(sc);
+
+            factory.setHazelcastInstance(HazelcastClient.newHazelcastClient(clientConfig));
+
+        } else {
+            factory.setHazelcastInstance(_instance);
+        }
         return factory;
     }
     

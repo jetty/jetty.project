@@ -19,10 +19,12 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.matchesRegex;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class EventQueue extends LinkedBlockingDeque<String>
 {
@@ -33,10 +35,18 @@ public class EventQueue extends LinkedBlockingDeque<String>
 
     public void assertEvents(String... regexEvents)
     {
-        Iterator<String> capturedIterator = iterator();
-        for (int i = 0; i < regexEvents.length; i++)
+        int i = 0;
+        try
         {
-            assertThat("Event [" + i + "]", capturedIterator.next(), matchesPattern(regexEvents[i]));
+            Iterator<String> capturedIterator = iterator();
+            for (i = 0; i < regexEvents.length; i++)
+            {
+                assertThat("Event [" + i + "]", capturedIterator.next(), matchesRegex(regexEvents[i]));
+            }
+        }
+        catch (NoSuchElementException e)
+        {
+            fail("Event [" + (i) + "] not found: " + regexEvents[i]);
         }
     }
 }

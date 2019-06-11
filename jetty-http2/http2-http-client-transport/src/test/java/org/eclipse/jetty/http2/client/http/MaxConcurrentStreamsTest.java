@@ -206,7 +206,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                     }
                 }, promise, context);
             }
-        }, null);
+        });
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);
@@ -264,7 +264,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                 });
 
         // The last exchange should remain in the queue.
-        HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)client.getDestination("http", "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", connector.getLocalPort());
         assertEquals(1, destination.getHttpExchanges().size());
         assertEquals(path, destination.getHttpExchanges().peek().getRequest().getPath());
 

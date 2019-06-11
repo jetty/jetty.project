@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
-import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +35,14 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.tinybundles.core.TinyBundle;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-
-import aQute.bnd.osgi.Constants;
 import org.osgi.framework.BundleException;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * Test using websocket in osgi
@@ -67,20 +62,21 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         // options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-javax-websocket.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
-     
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+
         options.addAll(TestOSGiUtil.coreJettyDependencies());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
         options.addAll(testJettyWebApp());
         options.addAll(extraDependencies());
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
-
 
     public static List<Option> jspDependencies()
     {
@@ -94,14 +90,14 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
+
     public static List<Option> extraDependencies()
     {
         List<Option> res = new ArrayList<>();
         res.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("bndlib").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").version("2.1.1").start());        
+        res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").version("2.1.1").start());
         return res;
     }
-
 
     public void assertAllBundlesActiveOrResolved()
     {
@@ -112,9 +108,6 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-
-        fixJavaxWebSocketApi();
-
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
@@ -131,43 +124,23 @@ public class TestJettyOSGiBootWithJavaxWebSocket
 
         SimpleJavaxWebSocket socket = new SimpleJavaxWebSocket();
         URI uri = new URI("ws://127.0.0.1:" + port + "/javax.websocket/");
-        Session session = container.connectToServer(socket,uri);
-        try
+        try (Session session = container.connectToServer(socket, uri))
         {
             RemoteEndpoint.Basic remote = session.getBasicRemote();
             String msg = "Foo";
             remote.sendText(msg);
-            assertTrue(socket.messageLatch.await(1,TimeUnit.SECONDS)); // give remote 1 second to respond
+            assertTrue(socket.messageLatch.await(1, TimeUnit.SECONDS)); // give remote 1 second to respond
         }
         finally
         {
-            session.close();
-            assertTrue(socket.closeLatch.await(1,TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
+            assertTrue(socket.closeLatch.await(1, TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
         }
-    }
-
-    private void fixJavaxWebSocketApi() throws BundleException
-    {
-        // this is necessary because the javax.websocket-api jar does not have manifest headers
-        // that allow it to use ServiceLoader in osgi, this corrects that defect
-        TinyBundle bundle = TinyBundles.bundle();
-        bundle.set(Constants.FRAGMENT_HOST, "javax.websocket-api");
-        bundle.set(Constants.REQUIRE_CAPABILITY,
-                   "osgi.serviceloader;filter:=\"(osgi.serviceloader=javax.websocket.ContainerProvider)\";resolution:=optional;cardinality:=multiple, osgi.extender; filter:=\"(osgi.extender=osgi.serviceloader.processor)\"");
-        bundle.set(Constants.BUNDLE_SYMBOLICNAME, "javax.websocket.api.fragment");
-        InputStream is = bundle.build(TinyBundles.withBnd());
-        bundleContext.installBundle("dummyLocation", is);
-
-        Bundle websocketApiBundle = TestOSGiUtil.getBundle(bundleContext, "javax.websocket-api");
-        assertNotNull(websocketApiBundle);
-        websocketApiBundle.update();
-        websocketApiBundle.start();
     }
 
     private void startBundle(BundleContext bundleContext, String symbolicName) throws BundleException
     {
         Bundle bundle = TestOSGiUtil.getBundle(bundleContext, symbolicName);
-        assertNotNull("Bundle[" + symbolicName + "] should exist",bundle);
+        assertNotNull("Bundle[" + symbolicName + "] should exist", bundle);
         bundle.start();
     }
 }

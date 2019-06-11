@@ -56,6 +56,7 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketError(Throwable cause)
     {
+        LOG.debug("onWebSocketError({})", cause.getClass().getSimpleName());
         errors.offer(cause);
     }
 

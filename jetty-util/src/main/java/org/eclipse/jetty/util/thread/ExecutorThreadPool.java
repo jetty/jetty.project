@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -63,7 +64,12 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     
     public ExecutorThreadPool(int maxThreads, int minThreads)
     {
-        this(new ThreadPoolExecutor(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>()), minThreads, -1, null);
+        this(maxThreads, minThreads, new LinkedBlockingQueue<>());
+    }
+
+    public ExecutorThreadPool(int maxThreads, int minThreads, BlockingQueue<Runnable> queue)
+    {
+        this(new ThreadPoolExecutor(maxThreads, maxThreads, 60, TimeUnit.SECONDS, queue), minThreads, -1, null);
     }
 
     public ExecutorThreadPool(ThreadPoolExecutor executor)

@@ -42,13 +42,13 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 {
     @Override
-    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
+    public HttpClient newHttpClient(HttpClientTransport transport)
     {
         long timeout = 1000;
         transport.setConnectionPoolFactory(destination ->
                 new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
 
-        return super.newHttpClient(scenario, transport);
+        return super.newHttpClient(transport);
     }
 
     @ParameterizedTest

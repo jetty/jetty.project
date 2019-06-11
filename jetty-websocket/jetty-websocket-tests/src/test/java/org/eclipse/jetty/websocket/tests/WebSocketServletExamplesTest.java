@@ -19,9 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -39,19 +37,14 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.examples.MyAdvancedEchoServlet;
 import org.eclipse.jetty.websocket.tests.examples.MyAuthedServlet;
 import org.eclipse.jetty.websocket.tests.examples.MyEchoServlet;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,46 +53,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketServletExamplesTest
 {
+    private Server _server;
+    private ServletContextHandler _context;
 
-    @WebSocket
-    public static class ClientSocket
-    {
-        CountDownLatch closed = new CountDownLatch(1);
-        ArrayBlockingQueue<String> messageQueue = new ArrayBlockingQueue<>(2);
-
-        @OnWebSocketConnect
-        public void onOpen(Session sess)
-        {
-            System.err.println("ClientSocket Connected: " + sess);
-        }
-
-        @OnWebSocketMessage
-        public void onMessage(String message)
-        {
-            messageQueue.offer(message);
-            System.err.println("Received TEXT message: " + message);
-        }
-
-        @OnWebSocketClose
-        public void onClose(int statusCode, String reason)
-        {
-            System.err.println("ClientSocket Closed: " + statusCode + ":" + reason);
-            closed.countDown();
-        }
-
-        @OnWebSocketError
-        public void onError(Throwable cause)
-        {
-            cause.printStackTrace(System.err);
-        }
-    }
-
-
-    static Server _server;
-    static ServletContextHandler _context;
-
-    @BeforeAll
-    public static void setup() throws Exception
+    @BeforeEach
+    public void setup() throws Exception
     {
         _server = new Server();
         ServerConnector connector = new ServerConnector(_server);
@@ -115,12 +73,12 @@ public class WebSocketServletExamplesTest
         _context.addServlet(MyAdvancedEchoServlet.class, "/advancedEcho");
         _context.addServlet(MyAuthedServlet.class, "/authed");
 
-        JettyWebSocketServletContainerInitializer.configure(_context);
+        JettyWebSocketServletContainerInitializer.configureContext(_context);
         _server.start();
     }
 
-    @AfterAll
-    public static void stop() throws Exception
+    @AfterEach
+    public void stop() throws Exception
     {
         _server.stop();
     }
@@ -150,7 +108,6 @@ public class WebSocketServletExamplesTest
         return security;
     }
 
-
     @Test
     public void testEchoServlet() throws Exception
     {
@@ -158,7 +115,7 @@ public class WebSocketServletExamplesTest
         client.start();
 
         URI uri = URI.create("ws://localhost:8080/echo");
-        ClientSocket socket = new ClientSocket();
+        EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
@@ -169,9 +126,8 @@ public class WebSocketServletExamplesTest
             assertThat(response, is(message));
         }
 
-        assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
+        assertTrue(socket.closeLatch.await(10, TimeUnit.SECONDS));
     }
-
 
     @Test
     public void testAdvancedEchoServlet() throws Exception
@@ -180,7 +136,7 @@ public class WebSocketServletExamplesTest
         client.start();
 
         URI uri = URI.create("ws://localhost:8080/advancedEcho");
-        ClientSocket socket = new ClientSocket();
+        EventSocket socket = new EventSocket();
 
         UpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("text");
@@ -194,9 +150,8 @@ public class WebSocketServletExamplesTest
             assertThat(response, is(message));
         }
 
-        assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
+        assertTrue(socket.closeLatch.await(10, TimeUnit.SECONDS));
     }
-
 
     @Test
     public void testAuthedServlet() throws Exception
@@ -210,7 +165,7 @@ public class WebSocketServletExamplesTest
         BasicAuthentication basicAuthentication = new BasicAuthentication(uri, "testRealm", "user", "password");
         authenticationStore.addAuthentication(basicAuthentication);
 
-        ClientSocket socket = new ClientSocket();
+        EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
@@ -221,6 +176,6 @@ public class WebSocketServletExamplesTest
             assertThat(response, is(message));
         }
 
-        assertTrue(socket.closed.await(10, TimeUnit.SECONDS));
+        assertTrue(socket.closeLatch.await(10, TimeUnit.SECONDS));
     }
 }

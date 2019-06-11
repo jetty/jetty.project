@@ -13,8 +13,12 @@ server
 [lib]
 lib/jetty-rewrite-${jetty.version}.jar
 
+[files]
+basehome:modules/rewrite/rewrite-rules.xml|etc/rewrite-rules.xml
+
 [xml]
 etc/jetty-rewrite.xml
+etc/rewrite-rules.xml
 
 [ini-template]
 ## Whether to rewrite the request URI

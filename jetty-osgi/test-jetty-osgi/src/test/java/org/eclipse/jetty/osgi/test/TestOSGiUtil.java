@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +32,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
@@ -56,7 +59,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  */
 public class TestOSGiUtil
 {
-    
     public static final String BUNDLE_DEBUG = "bundle.debug";
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
@@ -144,7 +146,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-client").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-server").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("javax.websocket").artifactId("javax.websocket-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-javax-websocket-api").versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
         return res;
     }
@@ -156,9 +158,9 @@ public class TestOSGiUtil
         res.add(systemProperty("osgi.console.enable.builtin").value("true")); 
         return res;
     }
-    
-    
-    
+
+
+
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<>();
@@ -276,10 +278,10 @@ public class TestOSGiUtil
        return bundleContext.getAllServiceReferences(service, null);
     }
 
-    protected static SslContextFactory newSslContextFactory()
+    protected static SslContextFactory.Client newClientSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         return sslContextFactory;
     }
 
@@ -330,7 +332,10 @@ public class TestOSGiUtil
         }, null, null);
 
         // now test the servlet
-        HttpClient client = protocol.equals("https") ? new HttpClient(newSslContextFactory()) : new HttpClient();
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(newClientSslContextFactory());
+        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         try
         {
             client.start();

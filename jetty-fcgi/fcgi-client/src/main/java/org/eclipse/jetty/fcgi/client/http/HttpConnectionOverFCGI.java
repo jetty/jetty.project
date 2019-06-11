@@ -34,6 +34,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.IConnection;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
@@ -54,7 +55,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpConnectionOverFCGI extends AbstractConnection implements Connection
+public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverFCGI.class);
 
@@ -96,7 +97,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         delegate.send(request, listener);
     }
 
-    protected SendFailure send(HttpExchange exchange)
+    @Override
+    public SendFailure send(HttpExchange exchange)
     {
         return delegate.send(exchange);
     }
@@ -342,7 +344,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
 
         @Override
-        protected SendFailure send(HttpExchange exchange)
+        public SendFailure send(HttpExchange exchange)
         {
             Request request = exchange.getRequest();
             normalizeRequest(request);

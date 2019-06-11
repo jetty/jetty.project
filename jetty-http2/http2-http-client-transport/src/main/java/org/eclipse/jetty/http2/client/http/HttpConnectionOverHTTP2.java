@@ -51,6 +51,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
+    private boolean recycleHttpChannels;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
     {
@@ -63,8 +64,18 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return session;
     }
 
+    public boolean isRecycleHttpChannels()
+    {
+        return recycleHttpChannels;
+    }
+
+    public void setRecycleHttpChannels(boolean recycleHttpChannels)
+    {
+        this.recycleHttpChannels = recycleHttpChannels;
+    }
+
     @Override
-    protected SendFailure send(HttpExchange exchange)
+    public SendFailure send(HttpExchange exchange)
     {
         HttpRequest request = exchange.getRequest();
         request.version(HttpVersion.HTTP_2);
@@ -99,7 +110,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             // Recycle only non-failed channels.
             if (channel.isFailed())
                 channel.destroy();
-            else
+            else if (isRecycleHttpChannels())
                 idleChannels.offer(channel);
         }
         else

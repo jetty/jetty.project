@@ -18,18 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client;
 
-import javax.websocket.EndpointConfig;
-
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.javax.tests.DummyEndpoint;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.tests.DummyEndpoint;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -45,18 +41,9 @@ public abstract class AbstractClientSessionTest
         container.start();
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
-        UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
-        JavaxWebSocketFrameHandler frameHandler =
-            container.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse, null);
-        FrameHandler.CoreSession channel = new FrameHandler.CoreSession.Empty();
-        String id = "dummy";
-        EndpointConfig endpointConfig = null;
-        session = new JavaxWebSocketSession(container,
-            channel,
-            frameHandler,
-            null,
-            id,
-            endpointConfig);
+        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
+        FrameHandler.CoreSession coreSession = new FrameHandler.CoreSession.Empty();
+        session = new JavaxWebSocketSession(container, coreSession, frameHandler, null);
         container.addManaged(session);
     }
 

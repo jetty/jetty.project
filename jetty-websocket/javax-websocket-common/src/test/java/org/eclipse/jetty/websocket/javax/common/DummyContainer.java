@@ -18,19 +18,18 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.Executor;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.Session;
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 /**
  * Dummy Container for testing.
@@ -38,15 +37,12 @@ import java.util.concurrent.Executor;
 public class DummyContainer extends JavaxWebSocketContainer
 {
     private final JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
-    private final ByteBufferPool bufferPool;
     private final QueuedThreadPool executor;
-    private final DecoratedObjectFactory objectFactory;
 
     public DummyContainer()
     {
+        super(new WebSocketComponents());
         this.frameHandlerFactory = new DummyFrameHandlerFactory(this);
-        this.bufferPool = new MappedByteBufferPool();
-        this.objectFactory = new DecoratedObjectFactory();
         this.executor = new QueuedThreadPool();
         this.executor.setName("qtp-DummyContainer");
         addBean(this.executor, true);
@@ -61,7 +57,6 @@ public class DummyContainer extends JavaxWebSocketContainer
     @Override
     public void setAsyncSendTimeout(long timeoutmillis)
     {
-
     }
 
     @Override
@@ -97,7 +92,6 @@ public class DummyContainer extends JavaxWebSocketContainer
     @Override
     public void setDefaultMaxSessionIdleTimeout(long timeout)
     {
-
     }
 
     @Override
@@ -107,15 +101,8 @@ public class DummyContainer extends JavaxWebSocketContainer
     }
 
     @Override
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return this.objectFactory;
-    }
-
-    @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
-
     }
 
     @Override
@@ -127,13 +114,6 @@ public class DummyContainer extends JavaxWebSocketContainer
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
-
-    }
-
-    @Override
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
     }
 
     @Override
@@ -149,7 +129,7 @@ public class DummyContainer extends JavaxWebSocketContainer
     }
 
     @Override
-    protected WebSocketExtensionRegistry getExtensionRegistry()
+    public WebSocketExtensionRegistry getExtensionRegistry()
     {
         return null;
     }

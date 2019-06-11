@@ -75,7 +75,7 @@ public interface FrameHandler extends IncomingFrames
      * the connection will be closed. <br>
      * </p>
      *
-     * @param coreSession the channel associated with this connection.
+     * @param coreSession the session associated with this connection.
      * @param callback the callback to indicate success in processing (or failure)
      */
     void onOpen(CoreSession coreSession, Callback callback);
@@ -142,11 +142,25 @@ public interface FrameHandler extends IncomingFrames
         Duration getIdleTimeout();
 
         /**
+         * Get the Write Timeout
+         *
+         * @return the write timeout
+         */
+        Duration getWriteTimeout();
+
+        /**
          * Set the Idle Timeout.
          *
-         * @param timeout the timeout duration
+         * @param timeout the timeout duration (timeout &lt;= 0 implies an infinite timeout)
          */
         void setIdleTimeout(Duration timeout);
+
+        /**
+         * Set the Write Timeout.
+         *
+         * @param timeout the timeout duration (timeout &lt;= 0 implies an infinite timeout)
+         */
+        void setWriteTimeout(Duration timeout);
 
         boolean isAutoFragment();
 
@@ -180,21 +194,21 @@ public interface FrameHandler extends IncomingFrames
     interface CoreSession extends OutgoingFrames, Configuration
     {
         /**
-         * The negotiated WebSocket Sub-Protocol for this channel.
+         * The negotiated WebSocket Sub-Protocol for this session.
          *
-         * @return the negotiated WebSocket Sub-Protocol for this channel.
+         * @return the negotiated WebSocket Sub-Protocol for this session.
          */
         String getNegotiatedSubProtocol();
 
         /**
-         * The negotiated WebSocket Extension Configurations for this channel.
+         * The negotiated WebSocket Extension Configurations for this session.
          *
-         * @return the list of Negotiated Extension Configurations for this channel.
+         * @return the list of Negotiated Extension Configurations for this session.
          */
         List<ExtensionConfig> getNegotiatedExtensions();
 
         /**
-         * The parameter map (from URI Query) for the active channel.
+         * The parameter map (from URI Query) for the active session.
          *
          * @return the immutable map of parameters
          */
@@ -241,7 +255,7 @@ public interface FrameHandler extends IncomingFrames
          * without supporting {@link InetSocketAddress}
          * </p>
          *
-         * @return the SocketAddress for the local connection, or null if not supported by Channel
+         * @return the SocketAddress for the local connection, or null if not supported by Session
          */
         SocketAddress getLocalAddress();
 
@@ -253,7 +267,7 @@ public interface FrameHandler extends IncomingFrames
          * without supporting {@link InetSocketAddress}
          * </p>
          *
-         * @return the SocketAddress for the remote connection, or null if not supported by Channel
+         * @return the SocketAddress for the remote connection, or null if not supported by Session
          */
         SocketAddress getRemoteAddress();
 
@@ -392,7 +406,18 @@ public interface FrameHandler extends IncomingFrames
             }
 
             @Override
+            public Duration getWriteTimeout()
+            {
+                return Duration.ZERO;
+            }
+
+            @Override
             public void setIdleTimeout(Duration timeout)
+            {
+            }
+
+            @Override
+            public void setWriteTimeout(Duration timeout)
             {
             }
 
@@ -491,12 +516,13 @@ public interface FrameHandler extends IncomingFrames
 
     interface Customizer
     {
-        void customize(CoreSession session);
+        void customize(Configuration configurable);
     }
 
     class ConfigurationCustomizer implements Customizer, Configuration
     {
-        private Duration timeout;
+        private Duration idleTimeout;
+        private Duration writeTimeout;
         private Boolean autoFragment;
         private Long maxFrameSize;
         private Integer outputBufferSize;
@@ -507,13 +533,25 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public Duration getIdleTimeout()
         {
-            return timeout==null ? Duration.ZERO : timeout;
+            return idleTimeout==null ? WebSocketConstants.DEFAULT_IDLE_TIMEOUT : idleTimeout;
+        }
+
+        @Override
+        public Duration getWriteTimeout()
+        {
+            return writeTimeout==null ? WebSocketConstants.DEFAULT_WRITE_TIMEOUT : writeTimeout;
         }
 
         @Override
         public void setIdleTimeout(Duration timeout)
         {
-            this.timeout = timeout;
+            this.idleTimeout = timeout;
+        }
+
+        @Override
+        public void setWriteTimeout(Duration timeout)
+        {
+            this.writeTimeout = timeout;
         }
 
         @Override
@@ -589,22 +627,32 @@ public interface FrameHandler extends IncomingFrames
         }
 
         @Override
-        public void customize(CoreSession session)
+        public void customize(Configuration configurable)
         {
-            if (timeout!=null)
-                session.setIdleTimeout(timeout);
+            if (idleTimeout !=null)
+                configurable.setIdleTimeout(idleTimeout);
+            if (writeTimeout!=null)
+                configurable.setWriteTimeout(idleTimeout);
             if (autoFragment!=null)
-                session.setAutoFragment(autoFragment);
+                configurable.setAutoFragment(autoFragment);
             if (maxFrameSize!=null)
-                session.setMaxFrameSize(maxFrameSize);
+                configurable.setMaxFrameSize(maxFrameSize);
             if (inputBufferSize!=null)
-                session.setInputBufferSize(inputBufferSize);
+                configurable.setInputBufferSize(inputBufferSize);
             if (outputBufferSize!=null)
-                session.setOutputBufferSize(outputBufferSize);
+                configurable.setOutputBufferSize(outputBufferSize);
             if (maxBinaryMessageSize!=null)
-                session.setMaxBinaryMessageSize(maxBinaryMessageSize);
+                configurable.setMaxBinaryMessageSize(maxBinaryMessageSize);
             if (maxTextMessageSize!=null)
-                session.setMaxTextMessageSize(maxTextMessageSize);
+                configurable.setMaxTextMessageSize(maxTextMessageSize);
+        }
+
+        public static ConfigurationCustomizer from(ConfigurationCustomizer parent, ConfigurationCustomizer child)
+        {
+            ConfigurationCustomizer customizer = new ConfigurationCustomizer();
+            parent.customize(customizer);
+            child.customize(customizer);
+            return customizer;
         }
     }
 

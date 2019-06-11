@@ -266,6 +266,12 @@ public class HttpGeneratorServerHTTPTest
         {
             return 4096;
         }
+
+        @Override
+        public boolean isHeaderCacheCaseSensitive()
+        {
+            return false;
+        }
     }
 
     public final static String CONTENT = "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";

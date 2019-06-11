@@ -29,9 +29,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matcher;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -117,11 +117,11 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     public EndPoint getEndPoint()
     {
         Session session = getSession();
-        assertThat("Session type", session, instanceOf(WebSocketSessionImpl.class));
+        assertThat("Session type", session, instanceOf(WebSocketSession.class));
 
-        WebSocketSessionImpl wsSession = (WebSocketSessionImpl) session;
-        WebSocketChannel wsChannel = (WebSocketChannel) wsSession.getCoreSession();
-        WebSocketConnection wsConnection = wsChannel.getConnection();
+        WebSocketSession wsSession = (WebSocketSession) session;
+        WebSocketCoreSession wsCoreSession = (WebSocketCoreSession) wsSession.getCoreSession();
+        WebSocketConnection wsConnection = wsCoreSession.getConnection();
 
         return wsConnection.getEndPoint();
     }

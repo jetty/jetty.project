@@ -43,6 +43,8 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.websocket.javax.server.examples.GetHttpSessionSocket;
@@ -57,6 +59,8 @@ import static org.hamcrest.Matchers.is;
 
 public class WebSocketServerExamplesTest
 {
+    private static final Logger LOG = Log.getLogger(WebSocketServerExamplesTest.class);
+
     @ClientEndpoint
     public static class ClientSocket
     {
@@ -66,27 +70,27 @@ public class WebSocketServerExamplesTest
         @OnOpen
         public void onOpen(Session sess)
         {
-            System.err.println("ClientSocket Connected: " + sess);
+            LOG.debug("ClientSocket Connected: " + sess);
         }
 
         @OnMessage
         public void onMessage(String message)
         {
             messageQueue.offer(message);
-            System.err.println("Received TEXT message: " + message);
+            LOG.debug("Received TEXT message: " + message);
         }
 
         @OnClose
         public void onClose(CloseReason closeReason)
         {
-            System.err.println("ClientSocket Closed: " + closeReason);
+            LOG.debug("ClientSocket Closed: " + closeReason);
             closed.countDown();
         }
 
         @OnError
         public void onError(Throwable cause)
         {
-            cause.printStackTrace(System.err);
+            LOG.debug(cause);
         }
     }
 

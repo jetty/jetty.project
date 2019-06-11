@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.function.Consumer;
 
 import javax.servlet.ServletContext;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -61,11 +59,10 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
     private static final Logger LOG = Log.getLogger(WebSocketMapping.class);
 
-    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
+    public static WebSocketMapping getMapping(ServletContext servletContext, String mappingKey)
     {
-        ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
+        Object mappingObject = servletContext.getAttribute(mappingKey);
 
-        Object mappingObject = contextHandler.getAttribute(mappingKey);
         if (mappingObject!=null)
         {
             if (WebSocketMapping.class.isInstance(mappingObject))
@@ -73,104 +70,23 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             else
                 throw new IllegalStateException(
                         String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
-                        mappingKey, mappingObject.toString()));
+                                mappingKey, mappingObject.toString()));
         }
-        else
-        {
-            WebSocketMapping mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(servletContext));
-            contextHandler.setAttribute(mappingKey, mapping);
-            return mapping;
-        }
+
+        return null;
     }
 
-    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.servlet.WebSocketMapping";
-
-    private final PathMappings<Negotiator> mappings = new PathMappings<>();
-    private final WebSocketComponents components;
-    private final Handshaker handshaker = Handshaker.newInstance();
-
-    public WebSocketMapping()
+    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
     {
-        this(new WebSocketComponents());
-    }
+        WebSocketMapping mapping = getMapping(servletContext, mappingKey);
 
-    public WebSocketMapping(WebSocketComponents components)
-    {
-        this.components = components;
-    }
-
-    @Override
-    public void lifeCycleStopping(LifeCycle context)
-    {
-        ContextHandler contextHandler = (ContextHandler) context;
-        WebSocketMapping mapping = contextHandler.getBean(WebSocketMapping.class);
-        if (mapping == this)
-        {
-            contextHandler.removeBean(mapping);
-            mappings.reset();
-        }
-    }
-
-    /**
-     * Manually add a WebSocket mapping.
-     * <p>
-     * If mapping is added before this configuration is started, then it is persisted through
-     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
-     * this configuration is stopped.
-     * </p>
-     *
-     * @param pathSpec the pathspec to respond on
-     * @param creator  the websocket creator to activate on the provided mapping.
-     * @param factory  the factory to use to create a FrameHandler for the websocket
-     * @param customizer the customizer to use to customize the WebSocket session.
-     */
-    public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
-    throws WebSocketException
-    {
-        // TODO evaluate why this can't be done
-        //if (getMapping(pathSpec) != null)
-        //    throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
-
-        mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
-    }
-
-    public WebSocketCreator getMapping(PathSpec pathSpec)
-    {
-        Negotiator cn = mappings.get(pathSpec);
-        return cn == null?null:cn.getWebSocketCreator();
-    }
-
-    public boolean removeMapping(PathSpec pathSpec)
-    {
-        return mappings.remove(pathSpec);
-    }
-
-    @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        Dumpable.dumpObjects(out, indent, this, mappings);
-    }
-
-    /**
-     * Get the matching {@link MappedResource} for the provided target.
-     *
-     * @param target the target path
-     * @return the matching resource, or null if no match.
-     */
-    public WebSocketNegotiator getMatchedNegotiator(String target, Consumer<PathSpec> pathSpecConsumer)
-    {
-        MappedResource<Negotiator> mapping = this.mappings.getMatch(target);
         if (mapping == null)
-            return null;
+        {
+            mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(servletContext));
+            servletContext.setAttribute(mappingKey, mapping);
+        }
 
-        pathSpecConsumer.accept(mapping.getPathSpec());
-        return mapping.getResource();
+        return mapping;
     }
 
     /**
@@ -212,40 +128,115 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawSpec + "]");
     }
 
-    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer)
+    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.servlet.WebSocketMapping";
+
+    private final PathMappings<Negotiator> mappings = new PathMappings<>();
+    private final WebSocketComponents components;
+    private final Handshaker handshaker = Handshaker.newInstance();
+
+    public WebSocketMapping()
     {
-        try
+        this(new WebSocketComponents());
+    }
+
+    public WebSocketMapping(WebSocketComponents components)
+    {
+        this.components = components;
+    }
+
+    @Override
+    public void lifeCycleStopping(LifeCycle context)
+    {
+        ContextHandler contextHandler = (ContextHandler) context;
+        WebSocketMapping mapping = contextHandler.getBean(WebSocketMapping.class);
+        if (mapping == this)
         {
-            // Since this may be a filter, we need to be smart about determining the target path.
-            // We should rely on the Container for stripping path parameters and its ilk before
-            // attempting to match a specific mapped websocket creator.
-            String target = request.getServletPath();
-            if (request.getPathInfo() != null)
-                target = target + request.getPathInfo();
-
-            WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
-            {
-                // Store PathSpec resource mapping as request attribute, for WebSocketCreator
-                // implementors to use later if they wish
-                request.setAttribute(PathSpec.class.getName(), pathSpec);
-            });
-
-            if (negotiator == null)
-                return false;
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
-
-            // We have an upgrade request
-            return handshaker.upgradeRequest(negotiator, request, response, defaultCustomizer);
+            contextHandler.removeBean(mapping);
+            mappings.reset();
         }
-        catch (Exception e)
+    }
+
+    @Override
+    public String dump()
+    {
+        return Dumpable.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, mappings);
+    }
+
+    /**
+     * Manually add a WebSocket mapping.
+     * <p>
+     * If mapping is added before this configuration is started, then it is persisted through
+     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     * this configuration is stopped.
+     * </p>
+     *
+     * @param pathSpec the pathspec to respond on
+     * @param creator  the websocket creator to activate on the provided mapping.
+     * @param factory  the factory to use to create a FrameHandler for the websocket
+     * @param customizer the customizer to use to customize the WebSocket session.
+     */
+    public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer) throws WebSocketException
+    {
+        mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
+    }
+
+    public WebSocketCreator getMapping(PathSpec pathSpec)
+    {
+        Negotiator cn = mappings.get(pathSpec);
+        return cn == null?null:cn.getWebSocketCreator();
+    }
+
+    public boolean removeMapping(PathSpec pathSpec)
+    {
+        return mappings.remove(pathSpec);
+    }
+
+    /**
+     * Get the matching {@link MappedResource} for the provided target.
+     *
+     * @param target the target path
+     * @return the matching resource, or null if no match.
+     */
+    public WebSocketNegotiator getMatchedNegotiator(String target, Consumer<PathSpec> pathSpecConsumer)
+    {
+        MappedResource<Negotiator> mapping = this.mappings.getMatch(target);
+        if (mapping == null)
+            return null;
+
+        pathSpecConsumer.accept(mapping.getPathSpec());
+        return mapping.getResource();
+    }
+
+    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
+    {
+        // Since this may be a filter, we need to be smart about determining the target path.
+        // We should rely on the Container for stripping path parameters and its ilk before
+        // attempting to match a specific mapped websocket creator.
+        String target = request.getServletPath();
+        if (request.getPathInfo() != null)
+            target = target + request.getPathInfo();
+
+        WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to upgrade: "+e);
-            LOG.ignore(e);
-        }
-        return false;
+            // Store PathSpec resource mapping as request attribute, for WebSocketCreator
+            // implementors to use later if they wish
+            request.setAttribute(PathSpec.class.getName(), pathSpec);
+        });
+
+        if (negotiator == null)
+            return false;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
+
+        // We have an upgrade request
+        return handshaker.upgradeRequest(negotiator, request, response, defaultCustomizer);
     }
 
     private class Negotiator extends WebSocketNegotiator.AbstractNegotiator
@@ -267,7 +258,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
 
         @Override
-        public FrameHandler negotiate(Negotiation negotiation)
+        public FrameHandler negotiate(Negotiation negotiation) throws IOException
         {
             ServletContext servletContext = negotiation.getRequest().getServletContext();
             if (servletContext == null)
@@ -301,14 +292,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
                     return frameHandler;
 
                 return null;
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeIOException(e);
-            }
-            catch (URISyntaxException e)
-            {
-                throw new RuntimeIOException("Unable to negotiate websocket due to mangled request URI", e);
             }
             finally
             {

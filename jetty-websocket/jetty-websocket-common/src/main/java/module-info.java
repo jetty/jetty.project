@@ -16,6 +16,9 @@
 //  ========================================================================
 //
 
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.ExtensionConfigParser;
+
 module org.eclipse.jetty.websocket.jetty.common
 {
     exports org.eclipse.jetty.websocket.common;
@@ -27,4 +30,6 @@ module org.eclipse.jetty.websocket.jetty.common
     requires org.eclipse.jetty.util;
     requires org.eclipse.jetty.websocket.core;
     requires org.eclipse.jetty.websocket.jetty.api;
+
+    provides ExtensionConfig.Parser with ExtensionConfigParser;
 }

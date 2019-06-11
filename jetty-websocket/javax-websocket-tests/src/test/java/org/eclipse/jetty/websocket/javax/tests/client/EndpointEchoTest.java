@@ -18,23 +18,23 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client;
 
-import org.eclipse.jetty.websocket.javax.tests.LocalServer;
-import org.eclipse.jetty.websocket.javax.tests.WSEndpointTracker;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.CoreMatchers.is;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.javax.tests.LocalServer;
+import org.eclipse.jetty.websocket.javax.tests.WSEndpointTracker;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class EndpointEchoTest
 {

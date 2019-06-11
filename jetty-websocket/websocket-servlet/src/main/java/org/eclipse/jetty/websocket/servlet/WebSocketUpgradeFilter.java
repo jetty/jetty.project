@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -54,7 +55,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
  * <b>Configuration / Init-Parameters:</b>
  * </p>
  * <dl>
- * <dt>maxIdleTime</dt>
+ * <dt>idleTimeout</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
@@ -82,7 +83,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
         for (FilterHolder holder : servletHandler.getFilters())
         {
-            if (holder.getInitParameter(MAPPING_INIT_PARAM) != null)
+            if (holder.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM) != null)
                 return holder;
         }
 
@@ -100,7 +101,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
         holder.setName(name);
-        holder.setInitParameter(MAPPING_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
+        holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
 
         holder.setAsyncSupported(true);
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
@@ -110,7 +111,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return holder;
     }
 
-    public final static String MAPPING_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
+    public final static String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
 
     private final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
     private WebSocketMapping mapping;
@@ -157,13 +158,19 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     {
         final ServletContext context = config.getServletContext();
 
-        String mappingKey = config.getInitParameter(MAPPING_INIT_PARAM);
+        String mappingKey = config.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM);
         if (mappingKey != null)
             mapping = WebSocketMapping.ensureMapping(context, mappingKey);
         else
             mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(context));
 
-        String max = config.getInitParameter("maxIdleTime");
+        String max = config.getInitParameter("idleTimeout");
+        if (max == null)
+        {
+            max = config.getInitParameter("maxIdleTime");
+            if (max != null)
+                LOG.warn("'maxIdleTime' init param is deprecated, use 'idleTimeout' instead");
+        }
         if (max != null)
             defaultCustomizer.setIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
 
@@ -192,5 +199,10 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         String autoFragment = config.getInitParameter("autoFragment");
         if (autoFragment != null)
             defaultCustomizer.setAutoFragment(Boolean.parseBoolean(autoFragment));
+    }
+
+    @Override
+    public void destroy()
+    {
     }
 }

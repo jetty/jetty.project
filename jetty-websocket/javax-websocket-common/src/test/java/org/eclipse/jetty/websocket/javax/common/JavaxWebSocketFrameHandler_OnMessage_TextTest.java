@@ -47,7 +47,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(channel, Callback.NOOP);
+        localEndpoint.onOpen(coreSession, Callback.NOOP);
 
         ByteBuffer payload = BufferUtil.toBuffer(msg, StandardCharsets.UTF_8);
         localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload(payload).setFin(true), Callback.NOOP);

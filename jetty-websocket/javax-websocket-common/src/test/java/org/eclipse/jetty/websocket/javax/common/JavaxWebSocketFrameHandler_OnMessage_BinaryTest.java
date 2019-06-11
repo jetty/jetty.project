@@ -35,9 +35,9 @@ import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -48,7 +48,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(channel, Callback.NOOP);
+        localEndpoint.onOpen(coreSession, Callback.NOOP);
 
         assertThat("Has Binary Metadata", localEndpoint.getBinaryMetadata(), notNullValue());
 

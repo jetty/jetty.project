@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.client;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public interface HttpClientProvider
@@ -34,9 +33,9 @@ public interface HttpClientProvider
             if (client != null)
                 return client;
         }
-        catch (Throwable ignore)
+        catch (Throwable x)
         {
-            Log.getLogger(HttpClientProvider.class).ignore(ignore);
+            Log.getLogger(HttpClientProvider.class).ignore(x);
         }
 
         return HttpClientProvider.newDefaultHttpClient();
@@ -44,7 +43,7 @@ public interface HttpClientProvider
 
     private static HttpClient newDefaultHttpClient()
     {
-        HttpClient client = new HttpClient(new SslContextFactory());
+        HttpClient client = new HttpClient();
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("WebSocketClient@" + client.hashCode());
         client.setExecutor(threadPool);

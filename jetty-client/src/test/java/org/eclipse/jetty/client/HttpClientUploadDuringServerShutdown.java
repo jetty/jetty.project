@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
@@ -29,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -37,7 +33,6 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
@@ -46,8 +41,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientUploadDuringServerShutdown
 {
@@ -67,7 +64,7 @@ public class HttpClientUploadDuringServerShutdown
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
                     baseRequest.setHandled(true);
                     byte[] buffer = new byte[1024];
@@ -105,7 +102,7 @@ public class HttpClientUploadDuringServerShutdown
         {
             QueuedThreadPool clientThreads = new QueuedThreadPool();
             clientThreads.setName("client");
-            HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(2), null);
+            HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(2));
             client.setMaxConnectionsPerDestination(2);
             client.setIdleTimeout(10000);
             client.setExecutor(clientThreads);
@@ -144,7 +141,7 @@ public class HttpClientUploadDuringServerShutdown
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 endPointRef.set(baseRequest.getHttpChannel().getEndPoint());
@@ -212,7 +209,7 @@ public class HttpClientUploadDuringServerShutdown
                     }
                 };
             }
-        }, null);
+        });
         client.setIdleTimeout(10000);
         client.setExecutor(clientThreads);
         client.start();
@@ -252,7 +249,7 @@ public class HttpClientUploadDuringServerShutdown
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", connector.getLocalPort());
         DuplexConnectionPool pool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, pool.getConnectionCount());
         assertEquals(0, pool.getIdleConnections().size());

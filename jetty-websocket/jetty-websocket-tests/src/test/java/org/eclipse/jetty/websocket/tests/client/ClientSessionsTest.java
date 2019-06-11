@@ -37,16 +37,15 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoCreator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,7 +54,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled("Needs triage")
 public class ClientSessionsTest
 {
     private Server server;
@@ -70,12 +68,11 @@ public class ClientSessionsTest
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
-        JettyWebSocketServletContainerInitializer.configure(context);
         context.setContextPath("/");
-        ServletHolder holder = new ServletHolder(new WebSocketServlet()
+        ServletHolder holder = new ServletHolder(new JettyWebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(JettyWebSocketServletFactory factory)
             {
                 factory.setIdleTimeout(Duration.ofSeconds(10));
                 factory.setMaxTextMessageSize(1024 * 1024 * 2);
@@ -88,6 +85,7 @@ public class ClientSessionsTest
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         server.start();
     }
@@ -107,12 +105,12 @@ public class ClientSessionsTest
 
         client.addSessionListener(new WebSocketSessionListener() {
             @Override
-            public void onWebSocketSessionOpened(WebSocketSessionImpl session)
+            public void onWebSocketSessionOpened(WebSocketSession session)
             {
             }
 
             @Override
-            public void onWebSocketSessionClosed(WebSocketSessionImpl session)
+            public void onWebSocketSessionClosed(WebSocketSession session)
             {
                 onSessionCloseLatch.countDown();
             }
@@ -147,6 +145,8 @@ public class ClientSessionsTest
 
                 String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
                 assertThat("Message", received, containsString("Hello World!"));
+
+                sess.close(StatusCode.NORMAL, null);
             }
 
             cliSock.assertReceivedCloseEvent(30000, is(StatusCode.NORMAL));

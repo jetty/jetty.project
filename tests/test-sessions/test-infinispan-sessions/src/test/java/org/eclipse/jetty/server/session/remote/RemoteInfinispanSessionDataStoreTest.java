@@ -19,8 +19,6 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.server.session.SessionContext;
@@ -29,10 +27,19 @@ import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.eclipse.jetty.session.infinispan.RemoteQueryManager;
+import org.infinispan.client.hotrod.Search;
+import org.infinispan.query.dsl.Query;
+import org.infinispan.query.dsl.QueryFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * RemoteInfinispanSessionDataStoreTest
@@ -67,6 +74,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
         factory.setCache(__testSupport.getCache());
+        factory.setQueryManager(new RemoteQueryManager(__testSupport.getCache()));
         return factory;
     }
 
@@ -110,29 +118,6 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     
     
 
-    /** 
-     * This test currently won't work for Infinispan - there is currently no
-     * means to query it to find sessions that have expired.
-     * 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#testGetExpiredPersistedAndExpiredOnly()
-     */
-    @Override
-    public void testGetExpiredPersistedAndExpiredOnly() throws Exception
-    {
-        
-    }
-    
-    
-
-    /** 
-     * This test won't work for Infinispan - there is currently no
-     * means to query infinispan to find other expired sessions.
-     */
-    @Override
-    public void testGetExpiredDifferentNode() throws Exception
-    {
-        //Ignore
-    }
     
     
     /** 
@@ -175,4 +160,32 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         }
     }
 
+    @Test
+    public void testQuery() throws Exception
+    {
+        InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
+        sd1.setLastNode("fred1");
+        __testSupport.getCache().put("session1", sd1);
+        
+        InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
+        sd2.setLastNode("fred2");
+        __testSupport.getCache().put("session2", sd2);
+        
+        InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
+        sd3.setLastNode("fred3");
+        __testSupport.getCache().put("session3", sd3);
+                
+        QueryFactory qf = Search.getQueryFactory(__testSupport.getCache());
+        
+        
+        for(int i=0; i<=3; i++)
+        {
+            long now = System.currentTimeMillis();
+            Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
+            assertEquals(i, q.list().size());
+            Thread.sleep(1000);
+        } 
+    }
 }
+
+

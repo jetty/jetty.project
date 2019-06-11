@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.xml.sax.SAXException;
@@ -451,7 +452,7 @@ public class ServerProxyImpl implements ServerProxy
             XmlConfiguration configuration;
             try
             {
-                configuration = new XmlConfiguration(Resource.toURL(jettyXml));
+                configuration = new XmlConfiguration(new PathResource(jettyXml));
                 configuration.configure(server);
             }
             catch (MalformedURLException e)

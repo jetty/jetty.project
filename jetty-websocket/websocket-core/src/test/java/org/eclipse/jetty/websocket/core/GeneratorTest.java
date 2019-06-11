@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -50,14 +50,14 @@ public class GeneratorTest
     private static final Logger LOG = Log.getLogger(Helper.class);
 
     private static Generator generator = new Generator(new MappedByteBufferPool());
-    private static WebSocketChannel channel = newChannel(Behavior.SERVER);
+    private static WebSocketCoreSession coreSession = newWebSocketCoreSession(Behavior.SERVER);
 
-    private static WebSocketChannel newChannel(Behavior behavior)
+    private static WebSocketCoreSession newWebSocketCoreSession(Behavior behavior)
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>());
-        return new WebSocketChannel(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
+        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
+        return new WebSocketCoreSession(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
     }
 
     /**
@@ -410,7 +410,7 @@ public class GeneratorTest
         BufferUtil.flipToFlush(bb, 0);
 
         closeFrame.setPayload(bb);
-        assertThrows(ProtocolException.class, () -> channel.assertValidOutgoing(closeFrame));
+        assertThrows(ProtocolException.class, () -> coreSession.assertValidOutgoing(closeFrame));
     }
 
     /**
@@ -651,7 +651,7 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING);
         pingFrame.setPayload(ByteBuffer.wrap(bytes));
-        assertThrows(WebSocketException.class, () -> channel.assertValidOutgoing(pingFrame));
+        assertThrows(WebSocketException.class, () -> coreSession.assertValidOutgoing(pingFrame));
     }
 
     /**
@@ -665,7 +665,7 @@ public class GeneratorTest
 
         Frame pongFrame = new Frame(OpCode.PONG);
         pongFrame.setPayload(ByteBuffer.wrap(bytes));
-        assertThrows(WebSocketException.class, () -> channel.assertValidOutgoing(pongFrame));
+        assertThrows(WebSocketException.class, () -> coreSession.assertValidOutgoing(pongFrame));
     }
 
     /**

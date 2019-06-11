@@ -315,8 +315,8 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>javax.websocket</groupId>
-      <artifactId>javax.websocket-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-javax-websocket-api</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>

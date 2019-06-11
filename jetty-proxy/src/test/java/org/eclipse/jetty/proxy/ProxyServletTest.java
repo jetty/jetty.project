@@ -62,14 +62,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
@@ -1088,9 +1088,9 @@ public class ProxyServletTest
         // Make sure the proxy does not receive chunk2.
         assertEquals(-1, input.read());
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        assertEquals(0, connectionPool.getIdleConnections().size());
+        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", port);
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        assertTrue(connectionPool.isEmpty());
     }
 
     @ParameterizedTest
@@ -1158,9 +1158,9 @@ public class ProxyServletTest
                     input.read();
                 });
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        assertEquals(0, connectionPool.getIdleConnections().size());
+        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", port);
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        assertTrue(connectionPool.isEmpty());
     }
 
     @ParameterizedTest

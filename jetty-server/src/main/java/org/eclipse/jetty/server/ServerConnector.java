@@ -150,7 +150,7 @@ public class ServerConnector extends AbstractNetworkConnector
      */
     public ServerConnector(
         @Name("server") Server server,
-        @Name("sslContextFactory") SslContextFactory sslContextFactory)
+        @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
         this(server,null,null,null,-1,-1,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
@@ -170,7 +170,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("server") Server server,
         @Name("acceptors") int acceptors,
         @Name("selectors") int selectors,
-        @Name("sslContextFactory") SslContextFactory sslContextFactory)
+        @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
         this(server,null,null,null,acceptors,selectors,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
@@ -183,7 +183,7 @@ public class ServerConnector extends AbstractNetworkConnector
      */
     public ServerConnector(
         @Name("server") Server server,
-        @Name("sslContextFactory") SslContextFactory sslContextFactory,
+        @Name("sslContextFactory") SslContextFactory.Server sslContextFactory,
         @Name("factories") ConnectionFactory... factories)
     {
         this(server, null, null, null, -1, -1, AbstractConnectionFactory.getFactories(sslContextFactory, factories));

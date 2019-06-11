@@ -24,14 +24,12 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -42,6 +40,7 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -71,12 +70,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class Response implements HttpServletResponse
 {
     private static final Logger LOG = Log.getLogger(Response.class);
-    private static final String __COOKIE_DELIM="\",;\\ \t";
-    private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
     private static final int __MIN_BUFFER_SIZE = 1;
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES,DateGenerator.__01Jan1970);
-    // Cookie building buffer. Reduce garbage for cookie using applications
-    private static final ThreadLocal<StringBuilder> __cookieBuilder = ThreadLocal.withInitial(() -> new StringBuilder(128));
 
     public enum OutputType
     {
@@ -170,30 +165,13 @@ public class Response implements HttpServletResponse
     public void addCookie(HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
-        {
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
-        }
-        
-        if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
-            addSetRFC2965Cookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                cookie.getComment(),
-                cookie.isSecure(),
-                cookie.isHttpOnly(),
-                cookie.getVersion());
-        else
-            addSetRFC6265Cookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                cookie.isSecure(),
-                cookie.isHttpOnly());
+
+        // add the set cookie
+        _fields.add(new SetCookieHttpField(cookie, getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()));
+
+        // Expire responses with set-cookie headers so they do not get cached.
+        _fields.put(__EXPIRES_01JAN1970);
     }
 
     /**
@@ -209,73 +187,34 @@ public class Response implements HttpServletResponse
 
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
-                String old_set_cookie = field.getValue();
-                String name = cookie.getName();
-                if (!old_set_cookie.startsWith(name) || old_set_cookie.length()<= name.length() || old_set_cookie.charAt(name.length())!='=')
-                    continue;
+                CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
 
-                String domain = cookie.getDomain();
-                if (domain!=null)
-                {
-                    if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
-                    {
-                        StringBuilder buf = new StringBuilder();
-                        buf.append(";Domain=");
-                        quoteOnlyOrAppend(buf,domain,isQuoteNeededForCookie(domain));
-                        domain = buf.toString();
-                    }
-                    else
-                    {
-                        domain = ";Domain="+domain;
-                    }
-                    if (!old_set_cookie.contains(domain))
-                        continue;
-                }
-                else if (old_set_cookie.contains(";Domain="))
-                    continue;
-
-                String path = cookie.getPath();
-                if (path!=null)
-                {
-                    if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
-                    {
-                        StringBuilder buf = new StringBuilder();
-                        buf.append(";Path=");
-                        quoteOnlyOrAppend(buf,path,isQuoteNeededForCookie(path));
-                        path = buf.toString();
-                    }
-                    else
-                    {
-                        path = ";Path="+path;
-                    }
-                    if (!old_set_cookie.contains(path))
-                        continue;
-                }
-                else if (old_set_cookie.contains(";Path="))
-                    continue;
-
-                if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance() == CookieCompliance.RFC2965)
-                    i.set(new HttpField(HttpHeader.CONTENT_ENCODING.SET_COOKIE, newRFC2965SetCookie(
-                            cookie.getName(),
-                            cookie.getValue(),
-                            cookie.getDomain(),
-                            cookie.getPath(),
-                            cookie.getMaxAge(),
-                            cookie.getComment(),
-                            cookie.isSecure(),
-                            cookie.isHttpOnly(),
-                            cookie.getVersion())
-                    ));
+                HttpCookie oldCookie;
+                if (field instanceof SetCookieHttpField)
+                    oldCookie = ((SetCookieHttpField)field).getHttpCookie();
                 else
-                    i.set(new HttpField(HttpHeader.CONTENT_ENCODING.SET_COOKIE, newRFC6265SetCookie(
-                            cookie.getName(),
-                            cookie.getValue(),
-                            cookie.getDomain(),
-                            cookie.getPath(),
-                            cookie.getMaxAge(),
-                            cookie.isSecure(),
-                            cookie.isHttpOnly()
-                    )));
+                    oldCookie = new HttpCookie(field.getValue());
+
+                if (!cookie.getName().equals(oldCookie.getName()))
+                    continue;
+
+                if (cookie.getDomain()==null)
+                {
+                    if (oldCookie.getDomain() != null)
+                        continue;
+                }
+                else if (!cookie.getDomain().equalsIgnoreCase(oldCookie.getDomain()))
+                    continue;
+
+                if (cookie.getPath()==null)
+                {
+                    if (oldCookie.getPath() != null)
+                        continue;
+                }
+                else if (!cookie.getPath().equals(oldCookie.getPath()))
+                    continue;
+
+                i.set(new SetCookieHttpField(cookie, compliance));
                 return;
             }
         }
@@ -287,8 +226,11 @@ public class Response implements HttpServletResponse
     @Override
     public void addCookie(Cookie cookie)
     {
+        if (StringUtil.isBlank(cookie.getName()))
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+
         String comment = cookie.getComment();
-        boolean httpOnly = false;
+        boolean httpOnly = cookie.isHttpOnly();
 
         if (comment != null)
         {
@@ -301,264 +243,19 @@ public class Response implements HttpServletResponse
                     comment = null;
             }
         }
-    
-        if (StringUtil.isBlank(cookie.getName()))
-        {
-            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
-        }
 
-        if (getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()==CookieCompliance.RFC2965)
-            addSetRFC2965Cookie(cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                comment,
-                cookie.getSecure(),
-                httpOnly || cookie.isHttpOnly(),
-                cookie.getVersion());
-        else
-            addSetRFC6265Cookie(cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                cookie.getSecure(),
-                httpOnly || cookie.isHttpOnly());
+        addCookie(new HttpCookie(
+            cookie.getName(),
+            cookie.getValue(),
+            cookie.getDomain(),
+            cookie.getPath(),
+            (long) cookie.getMaxAge(),
+            httpOnly,
+            cookie.getSecure(),
+            comment,
+            cookie.getVersion()));
     }
 
-    
-    /**
-     * Format a set cookie value by RFC6265
-     *
-     * @param name the name
-     * @param value the value
-     * @param domain the domain
-     * @param path the path
-     * @param maxAge the maximum age
-     * @param isSecure true if secure cookie
-     * @param isHttpOnly true if for http only
-     */
-    public void addSetRFC6265Cookie(
-            final String name,
-            final String value,
-            final String domain,
-            final String path,
-            final long maxAge,
-            final boolean isSecure,
-            final boolean isHttpOnly)
-    {
-        String set_cookie = newRFC6265SetCookie(name, value, domain, path, maxAge, isSecure, isHttpOnly);
-
-        // add the set cookie
-        _fields.add(HttpHeader.SET_COOKIE, set_cookie);
-
-        // Expire responses with set-cookie headers so they do not get cached.
-        _fields.put(__EXPIRES_01JAN1970);
-        
-    }
-
-    private String newRFC6265SetCookie(String name, String value, String domain, String path, long maxAge, boolean isSecure, boolean isHttpOnly)
-    {
-        // Check arguments
-        if (name == null || name.length() == 0)
-            throw new IllegalArgumentException("Bad cookie name");
-
-        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
-        // Per RFC6265, Cookie.name follows RFC2616 Section 2.2 token rules
-        Syntax.requireValidRFC2616Token(name, "RFC6265 Cookie name");
-        // Ensure that Per RFC6265, Cookie.value follows syntax rules
-        Syntax.requireValidRFC6265CookieValue(value);
-
-        // Format value and params
-        StringBuilder buf = __cookieBuilder.get();
-        buf.setLength(0);
-        buf.append(name).append('=').append(value==null?"":value);
-
-        // Append path
-        if (path!=null && path.length()>0)
-            buf.append(";Path=").append(path);
-
-        // Append domain
-        if (domain!=null && domain.length()>0)
-            buf.append(";Domain=").append(domain);
-
-        // Handle max-age and/or expires
-        if (maxAge >= 0)
-        {
-            // Always use expires
-            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
-            buf.append(";Expires=");
-            if (maxAge == 0)
-                buf.append(__01Jan1970_COOKIE);
-            else
-                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
-
-            buf.append(";Max-Age=");
-            buf.append(maxAge);
-        }
-
-        // add the other fields
-        if (isSecure)
-            buf.append(";Secure");
-        if (isHttpOnly)
-            buf.append(";HttpOnly");
-        return buf.toString();
-    }
-
-    /**
-     * Format a set cookie value
-     *
-     * @param name the name
-     * @param value the value
-     * @param domain the domain
-     * @param path the path
-     * @param maxAge the maximum age
-     * @param comment the comment (only present on versions &gt; 0)
-     * @param isSecure true if secure cookie
-     * @param isHttpOnly true if for http only
-     * @param version version of cookie logic to use (0 == default behavior)
-     */
-    public void addSetRFC2965Cookie(
-            final String name,
-            final String value,
-            final String domain,
-            final String path,
-            final long maxAge,
-            final String comment,
-            final boolean isSecure,
-            final boolean isHttpOnly,
-            int version)
-    {
-        String set_cookie = newRFC2965SetCookie(name, value, domain, path, maxAge, comment, isSecure, isHttpOnly, version);
-
-        // add the set cookie
-        _fields.add(HttpHeader.SET_COOKIE, set_cookie);
-
-        // Expire responses with set-cookie headers so they do not get cached.
-        _fields.put(__EXPIRES_01JAN1970);
-    }
-
-    private String newRFC2965SetCookie(String name, String value, String domain, String path, long maxAge, String comment, boolean isSecure, boolean isHttpOnly, int version)
-    {
-        // Check arguments
-        if (name == null || name.length() == 0)
-            throw new IllegalArgumentException("Bad cookie name");
-
-        // Format value and params
-        StringBuilder buf = __cookieBuilder.get();
-        buf.setLength(0);
-
-        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
-        boolean quote_name=isQuoteNeededForCookie(name);
-        quoteOnlyOrAppend(buf,name,quote_name);
-
-        buf.append('=');
-
-        // Append the value
-        boolean quote_value=isQuoteNeededForCookie(value);
-        quoteOnlyOrAppend(buf,value,quote_value);
-
-        // Look for domain and path fields and check if they need to be quoted
-        boolean has_domain = domain!=null && domain.length()>0;
-        boolean quote_domain = has_domain && isQuoteNeededForCookie(domain);
-        boolean has_path = path!=null && path.length()>0;
-        boolean quote_path = has_path && isQuoteNeededForCookie(path);
-
-        // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
-        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path ||
-                QuotedStringTokenizer.isQuoted(name) || QuotedStringTokenizer.isQuoted(value) ||
-                QuotedStringTokenizer.isQuoted(path) || QuotedStringTokenizer.isQuoted(domain)))
-            version=1;
-
-        // Append version
-        if (version==1)
-            buf.append (";Version=1");
-        else if (version>1)
-            buf.append (";Version=").append(version);
-
-        // Append path
-        if (has_path)
-        {
-            buf.append(";Path=");
-            quoteOnlyOrAppend(buf,path,quote_path);
-        }
-
-        // Append domain
-        if (has_domain)
-        {
-            buf.append(";Domain=");
-            quoteOnlyOrAppend(buf,domain,quote_domain);
-        }
-
-        // Handle max-age and/or expires
-        if (maxAge >= 0)
-        {
-            // Always use expires
-            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
-            buf.append(";Expires=");
-            if (maxAge == 0)
-                buf.append(__01Jan1970_COOKIE);
-            else
-                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
-
-            // for v1 cookies, also send max-age
-            if (version>=1)
-            {
-                buf.append(";Max-Age=");
-                buf.append(maxAge);
-            }
-        }
-
-        // add the other fields
-        if (isSecure)
-            buf.append(";Secure");
-        if (isHttpOnly)
-            buf.append(";HttpOnly");
-        if (comment != null)
-        {
-            buf.append(";Comment=");
-            quoteOnlyOrAppend(buf,comment,isQuoteNeededForCookie(comment));
-        }
-        return buf.toString();
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /** Does a cookie value need to be quoted?
-     * @param s value string
-     * @return true if quoted;
-     * @throws IllegalArgumentException If there a control characters in the string
-     */
-    private static boolean isQuoteNeededForCookie(String s)
-    {
-        if (s==null || s.length()==0)
-            return true;
-
-        if (QuotedStringTokenizer.isQuoted(s))
-            return false;
-
-        for (int i=0;i<s.length();i++)
-        {
-            char c = s.charAt(i);
-            if (__COOKIE_DELIM.indexOf(c)>=0)
-                return true;
-
-            if (c<0x20 || c>=0x7f)
-                throw new IllegalArgumentException("Illegal character in cookie value");
-        }
-
-        return false;
-    }
-
-
-    private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
-    {
-        if (quote)
-            QuotedStringTokenizer.quoteOnly(buf,s);
-        else
-            buf.append(s);
-    }
 
     @Override
     public boolean containsHeader(String name)
@@ -1344,37 +1041,27 @@ public class Response implements HttpServletResponse
         _reason = null;
         _contentLength = -1;
         
-        List<HttpField> cookies = preserveCookies
-            ?_fields.stream()
-            .filter(f->f.getHeader()==HttpHeader.SET_COOKIE)
-            .collect(Collectors.toList()):null;
-        
+        List<HttpField> cookies = preserveCookies ?_fields.getFields(HttpHeader.SET_COOKIE):null;
         _fields.clear();
 
-        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());  
-        if (connection != null)
+        for (String value: _channel.getRequest().getHttpFields().getCSV(HttpHeader.CONNECTION,false))
         {
-            for (String value: StringUtil.csvSplit(null,connection,0,connection.length()))
+            HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
+            if (cb != null)
             {
-                HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
-
-                if (cb != null)
+                switch (cb)
                 {
-                    switch (cb)
-                    {
-                        case CLOSE:
-                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
-                            break;
-
-                        case KEEP_ALIVE:
-                            if (HttpVersion.HTTP_1_0.is(_channel.getRequest().getProtocol()))
-                                _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
-                            break;
-                        case TE:
-                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
-                            break;
-                        default:
-                    }
+                    case CLOSE:
+                        _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
+                        break;
+                    case KEEP_ALIVE:
+                        if (HttpVersion.HTTP_1_0.is(_channel.getRequest().getProtocol()))
+                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
+                        break;
+                    case TE:
+                        _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
+                        break;
+                    default:
                 }
             }
         }

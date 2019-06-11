@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.http;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -179,7 +179,7 @@ public class CookieCutterLenientTest
 
         protected TestCutter()
         {
-            super(CookieCompliance.RFC6265);
+            super(CookieCompliance.RFC6265, null);
         }
 
         @Override

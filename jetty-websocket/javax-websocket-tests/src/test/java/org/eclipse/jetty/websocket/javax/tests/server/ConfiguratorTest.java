@@ -435,17 +435,17 @@ public class ConfiguratorTest
         upgradeRequest.addExtensions("identity");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: identity"));
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
     }
 
@@ -459,17 +459,17 @@ public class ConfiguratorTest
         upgradeRequest.addExtensions("identity");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("negotiatedExtensions=[]"));
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
     }
 
@@ -483,17 +483,17 @@ public class ConfiguratorTest
         upgradeRequest.header("X-Dummy", "Bogus");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [X-Dummy]: Bogus"));
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
     }
 
@@ -507,18 +507,18 @@ public class ConfiguratorTest
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             // first request has this UserProperty
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
 
         // Second request
@@ -526,13 +526,13 @@ public class ConfiguratorTest
         upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         clientConnectFuture = client.connect(upgradeRequest);
 
-        channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             // as this is second request, this should be null
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
             // second request has this UserProperty
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("blueberry"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("blueberry"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = <null>"));
@@ -541,7 +541,7 @@ public class ConfiguratorTest
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
     }
 
@@ -554,13 +554,13 @@ public class ConfiguratorTest
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            SocketAddress expectedLocal = channel.getLocalAddress();
-            SocketAddress expectedRemote = channel.getRemoteAddress();
+            SocketAddress expectedLocal = coreSession.getLocalAddress();
+            SocketAddress expectedRemote = coreSession.getRemoteAddress();
 
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("addr"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("addr"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
 
@@ -576,7 +576,7 @@ public class ConfiguratorTest
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
     }
 
@@ -631,7 +631,7 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        upgradeRequest.header("sec-websocket-protocol", "echo, chat, status");
+        upgradeRequest.setSubProtocols("echo","chat","status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
@@ -650,8 +650,7 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        // header name is not to spec (case wise)
-        upgradeRequest.header("Sec-Websocket-Protocol", "echo, chat, status");
+        upgradeRequest.setSubProtocols("echo","chat","status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
@@ -660,17 +659,17 @@ public class ConfiguratorTest
     protected void assertProtocols(FrameHandlerTracker clientSocket, Future<FrameHandler.CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
         throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
     {
-        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, responseMatcher);
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
     }
 
@@ -687,10 +686,10 @@ public class ConfiguratorTest
         upgradeRequest.setSubProtocols("gmt");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, is("cal=2016.06.20 AD at 14:27:44 +0000"));
@@ -698,7 +697,7 @@ public class ConfiguratorTest
         }
         finally
         {
-            channel.close(Callback.NOOP);
+            coreSession.close(Callback.NOOP);
         }
     }
 }

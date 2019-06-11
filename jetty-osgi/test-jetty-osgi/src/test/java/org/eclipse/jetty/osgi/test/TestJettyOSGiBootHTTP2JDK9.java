@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
@@ -65,9 +66,9 @@ public class TestJettyOSGiBootHTTP2JDK9
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2-jdk9.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2-jdk9.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
         options.addAll(http2JettyDependencies());
@@ -101,7 +102,7 @@ public class TestJettyOSGiBootHTTP2JDK9
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-server").versionAsInProject().start());
         return res;
     }
-
+ 
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
@@ -128,30 +129,33 @@ public class TestJettyOSGiBootHTTP2JDK9
             String port = System.getProperty("boot.https.port");
             assertNotNull(port);
             
-            Path path = Paths.get("src",  "test", "config");
+            Path path = Paths.get("src", "test", "config");
             File keys = path.resolve("etc").resolve("keystore").toFile();
             
-            //set up client to do http2
-            http2Client = new HTTP2Client();
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            ClientConnector clientConnector = new ClientConnector();
+            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setEndpointIdentificationAlgorithm(null);
-            httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
+            clientConnector.setSslContextFactory(sslContextFactory);
+            http2Client = new HTTP2Client(clientConnector);
+            httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:"+port+"/jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
         }
         finally
         {
-            if (httpClient != null) httpClient.stop();
-            if (http2Client != null) http2Client.stop();
+            if (httpClient != null)
+                httpClient.stop();
+            if (http2Client != null)
+                http2Client.stop();
         }
     }
 }

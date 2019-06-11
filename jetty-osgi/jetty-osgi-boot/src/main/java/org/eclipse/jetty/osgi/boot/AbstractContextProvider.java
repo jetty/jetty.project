@@ -158,7 +158,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                     {
                         Thread.currentThread().setContextClassLoader(classLoader);
                         
-                        XmlConfiguration xmlConfiguration = new XmlConfiguration(res.getInputStream());
+                        XmlConfiguration xmlConfiguration = new XmlConfiguration(res);
                         HashMap properties = new HashMap();
                         //put the server instance in
                         properties.put("Server", getServerInstanceWrapper().getServer());

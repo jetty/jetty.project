@@ -111,4 +111,12 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
         }
         throw new IllegalStateException("No ALPNProcessor for " + engine);
     }
+
+    public static class ALPN extends Info
+    {
+        public ALPN(Executor executor, ClientConnectionFactory factory, List<String> protocols)
+        {
+            super(List.of("alpn"), new ALPNClientConnectionFactory(executor, factory, protocols));
+        }
+    }
 }

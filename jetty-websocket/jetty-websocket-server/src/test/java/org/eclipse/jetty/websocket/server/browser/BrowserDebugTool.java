@@ -42,13 +42,13 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 
 /**
  * Tool to help debug websocket circumstances reported around browsers.
@@ -101,7 +101,7 @@ public class BrowserDebugTool
 
         ServletContextHandler context = new ServletContextHandler();
 
-        JettyWebSocketServletContainerInitializer.configure(context);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         context.setContextPath("/");
         Resource staticResourceBase = findStaticResources();
@@ -137,10 +137,10 @@ public class BrowserDebugTool
         server.stop();
     }
 
-    public static class BrowserSocketServlet extends WebSocketServlet
+    public static class BrowserSocketServlet extends JettyWebSocketServlet
     {
         @Override
-        public void configure(WebSocketServletFactory factory) {
+        public void configure(JettyWebSocketServletFactory factory) {
             LOG.debug("Configuring WebSocketServerFactory ...");
 
             // Setup the desired Socket to use for all incoming upgrade requests
@@ -160,10 +160,10 @@ public class BrowserDebugTool
         }
     }
 
-    public static class BrowserSocketCreator implements WebSocketCreator
+    public static class BrowserSocketCreator implements JettyWebSocketCreator
     {
         @Override
-        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+        public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
         {
             LOG.debug("Creating BrowserSocket");
 
@@ -182,7 +182,7 @@ public class BrowserDebugTool
             // manually negotiate extensions
             List<ExtensionConfig> negotiated = new ArrayList<>();
             // adding frame debug
-            negotiated.add(new ExtensionConfig("@frame-capture; output-dir=target"));
+            negotiated.add(ExtensionConfig.parse("@frame-capture; output-dir=target"));
             for (ExtensionConfig config : req.getExtensions())
             {
                 if (config.getName().equals("permessage-deflate"))

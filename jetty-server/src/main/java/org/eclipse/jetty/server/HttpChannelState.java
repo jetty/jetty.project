@@ -740,13 +740,13 @@ public class HttpChannelState
         final Request baseRequest = _channel.getRequest();
         
         int code=HttpStatus.INTERNAL_SERVER_ERROR_500;
-        String reason=null;
+        String message=null;
         Throwable cause = _channel.unwrap(th,BadMessageException.class,UnavailableException.class);
         if (cause instanceof BadMessageException)
         {
             BadMessageException bme = (BadMessageException)cause;
             code = bme.getCode();
-            reason = bme.getReason();
+            message = bme.getReason();
         }
         else if (cause instanceof UnavailableException)
         {
@@ -768,7 +768,7 @@ public class HttpChannelState
                 _event.getSuppliedRequest().setAttribute(ERROR_STATUS_CODE,code);
                 _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION,th);
                 _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
-                _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE,reason);
+                _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE,message);
             }
             else
             {
@@ -778,7 +778,7 @@ public class HttpChannelState
                 baseRequest.setAttribute(ERROR_STATUS_CODE,code);
                 baseRequest.setAttribute(ERROR_EXCEPTION,th);
                 baseRequest.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
-                baseRequest.setAttribute(ERROR_MESSAGE,reason);
+                baseRequest.setAttribute(ERROR_MESSAGE,message);
             }
             
             // Are we blocking?

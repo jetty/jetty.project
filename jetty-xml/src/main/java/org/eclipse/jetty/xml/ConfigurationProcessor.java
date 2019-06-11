@@ -18,21 +18,28 @@
 
 package org.eclipse.jetty.xml;
 
-import java.net.URL;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * A ConfigurationProcessor for non XmlConfiguration format files.
  * <p>
  * A file in non-XmlConfiguration file format may be processed by a {@link ConfigurationProcessor}
  * instance that is returned from a {@link ConfigurationProcessorFactory} instance discovered by the
- * <code>ServiceLoader</code> mechanism.  This is used to allow spring configuration files to be used instead of 
- * jetty.xml
- *
+ * {@code ServiceLoader} mechanism.  This is used to allow spring configuration files to be used instead of
+ * {@code jetty.xml}
  */
 public interface ConfigurationProcessor
 {
-    public void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
-    
-    public Object configure( Object obj) throws Exception;
-    public Object configure() throws Exception;
+    /**
+     * Initialize a ConfigurationProcessor from provided Resource and XML
+     *
+     * @param resource the resource being read
+     * @param root the parsed XML root node for the resource
+     * @param configuration the configuration being used (typically for ref IDs)
+     */
+    void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration);
+
+    Object configure(Object obj) throws Exception;
+
+    Object configure() throws Exception;
 }

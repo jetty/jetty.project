@@ -21,12 +21,10 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
@@ -38,13 +36,11 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends AbstractJavaxWebSocketServerFrameHandlerTest
 {
@@ -52,11 +48,9 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
     private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JavaxWebSocketFrameHandler> func) throws Exception
     {
         UpgradeRequest request = new UpgradeRequestAdapter(URI.create("http://localhost:8080/msg/foo"));
-        UpgradeResponse response = new UpgradeResponseAdapter();
-        CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
         // Establish endpoint function
-        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request, response, futureSession);
+        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request);
         frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
         func.accept(frameHandler);
         return socket;

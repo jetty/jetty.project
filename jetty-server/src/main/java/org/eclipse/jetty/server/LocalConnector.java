@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
@@ -63,7 +62,7 @@ public class LocalConnector extends AbstractConnector
         this(server, null, null, null, -1, new HttpConnectionFactory());
     }
 
-    public LocalConnector(Server server, SslContextFactory sslContextFactory)
+    public LocalConnector(Server server, SslContextFactory.Server sslContextFactory)
     {
         this(server, null, null, null, -1,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
@@ -73,7 +72,7 @@ public class LocalConnector extends AbstractConnector
         this(server, null, null, null, -1, connectionFactory);
     }
 
-    public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
+    public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
     {
         this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
     }
@@ -113,7 +112,7 @@ public class LocalConnector extends AbstractConnector
     }
     
     @Override
-    protected void accept(int acceptorID) throws IOException, InterruptedException
+    protected void accept(int acceptorID) throws InterruptedException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("accepting {}", acceptorID);
@@ -374,7 +373,13 @@ public class LocalConnector extends AbstractConnector
                 {
                     return 0;
                 }
-                
+
+                @Override
+                public boolean isHeaderCacheCaseSensitive()
+                {
+                    return false;
+                }
+
                 @Override
                 public void earlyEOF()
                 {                
@@ -395,7 +400,7 @@ public class LocalConnector extends AbstractConnector
             
             HttpParser parser = new HttpParser(handler);
             parser.setHeadResponse(head);
-            try(ByteArrayOutputStream2 bout = new ByteArrayOutputStream2();)
+            try(ByteArrayOutputStream2 bout = new ByteArrayOutputStream2())
             {
                 loop: while(true)
                 {
@@ -410,7 +415,7 @@ public class LocalConnector extends AbstractConnector
                         {
                             parser.atEOF();
                             parser.parseNext(BufferUtil.EMPTY_BUFFER);
-                            break loop;
+                            break;
                         }
                     }
                     

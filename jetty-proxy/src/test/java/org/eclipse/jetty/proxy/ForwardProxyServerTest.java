@@ -25,9 +25,11 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -60,9 +62,9 @@ public class ForwardProxyServerTest
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         // no server SSL
-        SslContextFactory scenario1 = null;
+        SslContextFactory.Server scenario1 = null;
         // basic server SSL
-        SslContextFactory scenario2 = new SslContextFactory();
+        SslContextFactory.Server scenario2 = new SslContextFactory.Server();
         scenario2.setKeyStorePath(keyStorePath);
         scenario2.setKeyStorePassword("storepwd");
         scenario2.setKeyManagerPassword("keypwd");
@@ -71,13 +73,13 @@ public class ForwardProxyServerTest
         return Stream.of(scenario1, scenario2).map(Arguments::of);
     }
 
-    private SslContextFactory serverSslContextFactory;
+    private SslContextFactory.Server serverSslContextFactory;
     private Server server;
     private ServerConnector serverConnector;
     private Server proxy;
     private ServerConnector proxyConnector;
 
-    public void init(SslContextFactory scenario)
+    public void init(SslContextFactory.Server scenario)
     {
         serverSslContextFactory = scenario;
     }
@@ -143,7 +145,7 @@ public class ForwardProxyServerTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testRequestTarget(SslContextFactory scenario) throws Exception
+    public void testRequestTarget(SslContextFactory.Server scenario) throws Exception
     {
         init(scenario);
 
@@ -202,14 +204,16 @@ public class ForwardProxyServerTest
         });
         startProxy();
 
+        ClientConnector clientConnector = new ClientConnector();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory clientSsl = new SslContextFactory();
+        SslContextFactory.Client clientSsl = new SslContextFactory.Client();
         clientSsl.setKeyStorePath(keyStorePath);
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.setKeyManagerPassword("keypwd");
         clientSsl.setEndpointIdentificationAlgorithm(null);
+        clientConnector.setSslContextFactory(clientSsl);
 
-        HttpClient httpClient = new HttpClient(clientSsl);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -44,5 +45,43 @@ public interface ClientConnectionFactory
         if (client != null)
             client.getBeans(Connection.Listener.class).forEach(connection::addListener);
         return connection;
+    }
+
+    /**
+     * <p>A holder for a list of protocol strings identifying a network protocol
+     * (for example {@code ["h2", "h2-17", "h2-16"]}) and a {@link ClientConnectionFactory}
+     * that creates connections that speak that network protocol.</p>
+     */
+    public static class Info
+    {
+        private final List<String> protocols;
+        private final ClientConnectionFactory factory;
+
+        public Info(List<String> protocols, ClientConnectionFactory factory)
+        {
+            this.protocols = protocols;
+            this.factory = factory;
+        }
+
+        public List<String> getProtocols()
+        {
+            return protocols;
+        }
+
+        public ClientConnectionFactory getClientConnectionFactory()
+        {
+            return factory;
+        }
+
+        /**
+         * Tests whether one of the protocols of this class is also present in the given candidates list.
+         *
+         * @param candidates the candidates to match against
+         * @return whether one of the protocols of this class is present in the candidates
+         */
+        public boolean matches(List<String> candidates)
+        {
+            return protocols.stream().anyMatch(candidates::contains);
+        }
     }
 }

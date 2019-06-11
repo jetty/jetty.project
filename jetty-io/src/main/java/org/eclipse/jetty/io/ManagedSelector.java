@@ -295,8 +295,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug(x);
+            LOG.ignore(x);
             return -1;
         }
     }
@@ -309,8 +308,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug(x);
+            LOG.ignore(x);
             return -1;
         }
     }

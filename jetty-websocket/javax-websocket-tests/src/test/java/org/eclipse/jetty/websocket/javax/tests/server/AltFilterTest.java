@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -31,12 +34,9 @@ import org.eclipse.jetty.websocket.javax.tests.server.sockets.echo.BasicEchoSock
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Testing the use of an alternate {@link org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter}

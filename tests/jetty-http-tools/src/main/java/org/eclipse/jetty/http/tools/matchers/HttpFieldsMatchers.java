@@ -20,27 +20,22 @@ package org.eclipse.jetty.http.tools.matchers;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 
 public class HttpFieldsMatchers
 {
-    @Factory
     public static Matcher<HttpFields> containsHeader(String keyName) {
         return new HttpFieldsContainsHeaderKey(keyName);
     }
 
-    @Factory
     public static Matcher<HttpFields> containsHeader(HttpHeader header) {
         return new HttpFieldsContainsHeaderKey(header);
     }
 
-    @Factory
     public static Matcher<HttpFields> containsHeaderValue(String keyName, String value) {
         return new HttpFieldsContainsHeaderValue(keyName, value);
     }
 
-    @Factory
     public static Matcher<HttpFields> containsHeaderValue(HttpHeader header, String value) {
         return new HttpFieldsContainsHeaderValue(header, value);
     }

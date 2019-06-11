@@ -35,14 +35,14 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.is;
 /**
  * Tests various close scenarios
  */
-@Disabled("Needs triage")
 public class ServerCloseTest
 {
     private WebSocketClient client;
@@ -74,10 +73,10 @@ public class ServerCloseTest
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
 
-        ServletHolder closeEndpoint = new ServletHolder(new WebSocketServlet()
+        ServletHolder closeEndpoint = new ServletHolder(new JettyWebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(JettyWebSocketServletFactory factory)
             {
                 factory.setIdleTimeout(Duration.ofSeconds(2));
                 serverEndpointCreator = new ServerCloseCreator(factory);
@@ -85,13 +84,13 @@ public class ServerCloseTest
             }
         });
         context.addServlet(closeEndpoint, "/ws");
-        JettyWebSocketServletContainerInitializer.configure(context);
 
         HandlerList handlers = new HandlerList();
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
 
         server.setHandler(handlers);
+        JettyWebSocketServletContainerInitializer.configureContext(context);
 
         server.start();
     }
@@ -150,7 +149,7 @@ public class ServerCloseTest
             // Verify that server socket got close event
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
             assertThat("Fast Close Latch", serverEndpoint.closeLatch.await(5, SECONDS), is(true));
-            assertThat("Fast Close.statusCode", serverEndpoint.closeStatusCode, is(StatusCode.ABNORMAL));
+            assertThat("Fast Close.statusCode", serverEndpoint.closeStatusCode, is(StatusCode.NORMAL));
         }
         finally
         {
@@ -174,7 +173,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(FastFailEndpoint.class, WebSocketSessionImpl.class))
+        try(StacklessLogging ignore = new StacklessLogging(WebSocketCoreSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -213,7 +212,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSessionImpl.class))
+        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -221,12 +220,13 @@ public class ServerCloseTest
             clientEndpoint.getEndPoint().close();
 
             // Verify that client got close
-            clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Disconnected"));
+            clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
 
             // Verify that server socket got close event
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-            serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Disconnected"));
-        } finally
+            serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
+        }
+        finally
         {
             close(session);
         }
@@ -241,9 +241,9 @@ public class ServerCloseTest
     @Test
     public void testOpenSessionCleanup() throws Exception
     {
-        fastFail();
-        fastClose();
-        dropConnection();
+        //fastFail();
+        //fastClose();
+        //dropConnection();
 
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("container");
@@ -253,7 +253,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSessionImpl.class))
+        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 

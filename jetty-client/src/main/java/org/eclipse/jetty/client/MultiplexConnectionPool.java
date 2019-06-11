@@ -22,11 +22,10 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -41,11 +40,9 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
 {
     private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
 
-    private final ReentrantLock lock = new ReentrantLock();
     private final HttpDestination destination;
     private final Deque<Holder> idleConnections;
-    private final Map<Connection, Holder> muxedConnections;
-    private final Map<Connection, Holder> busyConnections;
+    private final Map<Connection, Holder> activeConnections;
     private int maxMultiplex;
 
     public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
@@ -53,8 +50,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         super(destination, maxConnections, requester);
         this.destination = destination;
         this.idleConnections = new ArrayDeque<>(maxConnections);
-        this.muxedConnections = new HashMap<>(maxConnections);
-        this.busyConnections = new HashMap<>(maxConnections);
+        this.activeConnections = new LinkedHashMap<>(maxConnections);
         this.maxMultiplex = maxMultiplex;
     }
 
@@ -69,120 +65,73 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             connection = activate();
         }
         return connection;
-    }    
-    
-    protected void lock()
-    {
-        lock.lock();
-    }
-
-    protected void unlock()
-    {
-        lock.unlock();
     }
 
     @Override
     public int getMaxMultiplex()
     {
-        lock();
-        try
+        synchronized (this)
         {
             return maxMultiplex;
-        }
-        finally
-        {
-            unlock();
         }
     }
 
     @Override
     public void setMaxMultiplex(int maxMultiplex)
     {
-        lock();
-        try
+        synchronized (this)
         {
             this.maxMultiplex = maxMultiplex;
-        }
-        finally
-        {
-            unlock();
         }
     }
 
     @Override
     public boolean isActive(Connection connection)
     {
-        lock();
-        try
+        synchronized (this)
         {
-            if (muxedConnections.containsKey(connection))
-                return true;
-            if (busyConnections.containsKey(connection))
-                return true;
-            return false;
-        }
-        finally
-        {
-            unlock();
+            return activeConnections.containsKey(connection);
         }
     }
 
     @Override
     protected void onCreated(Connection connection)
     {
-        lock();
-        try
+        synchronized (this)
         {
             // Use "cold" connections as last.
             idleConnections.offer(new Holder(connection));
         }
-        finally
-        {
-            unlock();
-        }
-
         idle(connection, false);
     }
 
     @Override
     protected Connection activate()
     {
-        Holder holder;
-        lock();
-        try
+        Holder result = null;
+        synchronized (this)
         {
-            while (true)
+            for (Holder holder : activeConnections.values())
             {
-                if (muxedConnections.isEmpty())
-                {
-                    holder = idleConnections.poll();
-                    if (holder == null)
-                        return null;
-                    muxedConnections.put(holder.connection, holder);
-                }
-                else
-                {
-                    holder = muxedConnections.values().iterator().next();
-                }
-
                 if (holder.count < maxMultiplex)
                 {
-                    ++holder.count;
+                    result = holder;
                     break;
                 }
-                else
-                {
-                    muxedConnections.remove(holder.connection);
-                    busyConnections.put(holder.connection, holder);
-                }
             }
-        }
-        finally
-        {
-            unlock();
-        }
 
-        return active(holder.connection);
+            if (result == null)
+            {
+                Holder holder = idleConnections.poll();
+                if (holder == null)
+                    return null;
+                activeConnections.put(holder.connection, holder);
+                result = holder;
+            }
+
+            ++result.count;
+        }
+        return active(result.connection);
     }
 
     @Override
@@ -191,16 +140,15 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         boolean closed = isClosed();
         boolean idle = false;
         Holder holder;
-        lock();
-        try
+        synchronized (this)
         {
-            holder = muxedConnections.get(connection);
+            holder = activeConnections.get(connection);
             if (holder != null)
             {
                 int count = --holder.count;
                 if (count == 0)
                 {
-                    muxedConnections.remove(connection);
+                    activeConnections.remove(connection);
                     if (!closed)
                     {
                         idleConnections.offerFirst(holder);
@@ -208,32 +156,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
                     }
                 }
             }
-            else
-            {
-                holder = busyConnections.remove(connection);
-                if (holder != null)
-                {
-                    int count = --holder.count;
-                    if (!closed)
-                    {
-                        if (count == 0)
-                        {
-                            idleConnections.offerFirst(holder);
-                            idle = true;
-                        }
-                        else
-                        {
-                            muxedConnections.put(connection, holder);
-                        }
-                    }
-                }
-            }
         }
-        finally
-        {
-            unlock();
-        }
-
         if (holder == null)
             return false;
 
@@ -253,16 +176,13 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         boolean activeRemoved = true;
         boolean idleRemoved = false;
-        lock();
-        try
+        synchronized (this)
         {
-            Holder holder = muxedConnections.remove(connection);
-            if (holder == null)
-                holder = busyConnections.remove(connection);
+            Holder holder = activeConnections.remove(connection);
             if (holder == null)
             {
                 activeRemoved = false;
-                for (Iterator<Holder> iterator = idleConnections.iterator(); iterator.hasNext();)
+                for (Iterator<Holder> iterator = idleConnections.iterator(); iterator.hasNext(); )
                 {
                     holder = iterator.next();
                     if (holder.connection == connection)
@@ -274,11 +194,6 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
                 }
             }
         }
-        finally
-        {
-            unlock();
-        }
-
         if (activeRemoved || force)
             released(connection);
         boolean removed = activeRemoved || idleRemoved || force;
@@ -291,65 +206,39 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public void close()
     {
         super.close();
-
         List<Connection> connections;
-        lock();
-        try
+        synchronized (this)
         {
             connections = idleConnections.stream().map(holder -> holder.connection).collect(Collectors.toList());
-            connections.addAll(muxedConnections.keySet());
-            connections.addAll(busyConnections.keySet());
+            connections.addAll(activeConnections.keySet());
         }
-        finally
-        {
-            unlock();
-        }
-
         close(connections);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        DumpableCollection busy;
-        DumpableCollection muxed;
+        DumpableCollection active;
         DumpableCollection idle;
-        lock();
-        try
+        synchronized (this)
         {
-            busy = new DumpableCollection("busy", new ArrayList<>(busyConnections.values()));
-            muxed = new DumpableCollection("muxed", new ArrayList<>(muxedConnections.values()));
+            active = new DumpableCollection("active", new ArrayList<>(activeConnections.values()));
             idle = new DumpableCollection("idle", new ArrayList<>(idleConnections));
         }
-        finally
-        {
-            unlock();
-        }
-
-        Dumpable.dumpObjects(out, indent, this, busy, muxed, idle);
+        Dumpable.dumpObjects(out, indent, this, active, idle);
     }
 
     @Override
     public boolean sweep()
     {
         List<Connection> toSweep = new ArrayList<>();
-        lock();
-        try
+        synchronized (this)
         {
-            busyConnections.values().stream()
-                    .map(holder -> holder.connection)
-                    .filter(connection -> connection instanceof Sweeper.Sweepable)
-                    .collect(Collectors.toCollection(() -> toSweep));
-            muxedConnections.values().stream()
+            activeConnections.values().stream()
                     .map(holder -> holder.connection)
                     .filter(connection -> connection instanceof Sweeper.Sweepable)
                     .collect(Collectors.toCollection(() -> toSweep));
         }
-        finally
-        {
-            unlock();
-        }
-
         for (Connection connection : toSweep)
         {
             if (((Sweeper.Sweepable)connection).sweep())
@@ -363,34 +252,26 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
                         dump());
             }
         }
-
         return false;
     }
 
     @Override
     public String toString()
     {
-        int busySize;
-        int muxedSize;
+        int activeSize;
         int idleSize;
-        lock();
-        try
+        synchronized (this)
         {
-            busySize = busyConnections.size();
-            muxedSize = muxedConnections.size();
+            activeSize = activeConnections.size();
             idleSize = idleConnections.size();
         }
-        finally
-        {
-            unlock();
-        }
-        return String.format("%s@%x[c=%d/%d,b=%d,m=%d,i=%d]",
+        return String.format("%s@%x[connections=%d/%d,multiplex=%d,active=%d,idle=%d]",
                 getClass().getSimpleName(),
                 hashCode(),
                 getConnectionCount(),
                 getMaxConnectionCount(),
-                busySize,
-                muxedSize,
+                getMaxMultiplex(),
+                activeSize,
                 idleSize);
     }
 

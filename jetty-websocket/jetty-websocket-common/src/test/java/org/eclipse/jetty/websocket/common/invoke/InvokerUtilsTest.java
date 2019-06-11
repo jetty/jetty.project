@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.common.invoke;
 
-import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
-import static org.hamcrest.CoreMatchers.is;
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class InvokerUtilsTest
 {

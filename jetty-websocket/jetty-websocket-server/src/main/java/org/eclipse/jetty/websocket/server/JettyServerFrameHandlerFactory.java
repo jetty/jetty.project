@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.util.concurrent.CompletableFuture;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -28,9 +26,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.server.internal.DelegatedJettyServletUpgradeRequest;
-import org.eclipse.jetty.websocket.server.internal.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.server.internal.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -39,21 +34,10 @@ public class JettyServerFrameHandlerFactory
     extends JettyWebSocketFrameHandlerFactory
     implements FrameHandlerFactory, LifeCycle.Listener
 {
-    public static JettyServerFrameHandlerFactory ensureFactory(ServletContext servletContext)
-        throws ServletException
+    public static JettyServerFrameHandlerFactory getFactory(ServletContext context)
     {
-        ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Jetty Websocket");
-
-        JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
-        if (factory == null)
-        {
-            JettyWebSocketServerContainer container = new JettyWebSocketServerContainer(contextHandler);
-            servletContext.setAttribute(WebSocketContainer.class.getName(), container);
-            factory = new JettyServerFrameHandlerFactory(container);
-            contextHandler.addManaged(factory);
-            contextHandler.addLifeCycleListener(factory);
-        }
-        return factory;
+        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(context, "JettyServerFrameHandlerFactory");
+        return contextHandler.getBean(JettyServerFrameHandlerFactory.class);
     }
 
     public JettyServerFrameHandlerFactory(WebSocketContainer container)
@@ -64,8 +48,7 @@ public class JettyServerFrameHandlerFactory
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
     {
-        return super.newJettyFrameHandler(websocketPojo, new DelegatedJettyServletUpgradeRequest(upgradeRequest), new UpgradeResponseAdapter(upgradeResponse),
-            new CompletableFuture<>());
+        return super.newJettyFrameHandler(websocketPojo);
     }
 
     @Override

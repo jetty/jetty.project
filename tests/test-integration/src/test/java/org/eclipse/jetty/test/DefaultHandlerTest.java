@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.tools.HttpTester;
-import org.eclipse.jetty.test.support.TestableJettyServer;
+import org.eclipse.jetty.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.util.IO;
@@ -50,16 +50,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class DefaultHandlerTest
 {
-    private static TestableJettyServer server;
+    private static XmlBasedJettyServer server;
     private int serverPort;
 
     @BeforeAll
     public static void setUpServer() throws Exception
     {
-        server = new TestableJettyServer();
+        server = new XmlBasedJettyServer();
         server.setScheme(HttpScheme.HTTP.asString());
-        server.addConfiguration("DefaultHandler.xml");
-        server.addConfiguration("NIOHttp.xml");
+        server.addXmlConfiguration("DefaultHandler.xml");
+        server.addXmlConfiguration("NIOHttp.xml");
 
         server.load();
         server.start();

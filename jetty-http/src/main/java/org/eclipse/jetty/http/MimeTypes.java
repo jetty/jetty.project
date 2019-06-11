@@ -223,7 +223,7 @@ public class MimeTypes
                     .forEach(x->
                     __dftMimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x))));
 
-                    if (__dftMimeMap.size()==0)
+                    if (__dftMimeMap.isEmpty())
                     {
                         LOG.warn("Empty mime types at {}", resourceName);
                     }
@@ -268,7 +268,7 @@ public class MimeTypes
                             __inferredEncodings.put(t, props.getProperty(t));
                     });
 
-                    if (__inferredEncodings.size()==0)
+                    if (__inferredEncodings.isEmpty())
                     {
                         LOG.warn("Empty encodings at {}", resourceName);
                     }

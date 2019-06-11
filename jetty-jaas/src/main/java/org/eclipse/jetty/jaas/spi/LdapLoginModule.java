@@ -20,12 +20,12 @@ package org.eclipse.jetty.jaas.spi;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -45,7 +45,6 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -755,13 +754,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private static String base64ToHex(String src)
     {
-        byte[] bytes = B64Code.decode(src);
+        byte[] bytes = Base64.getDecoder().decode(src);
         return TypeUtil.toString(bytes, 16);
     }
 
     private static String hexToBase64(String src)
     {
         byte[] bytes = TypeUtil.fromHexString(src);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 }

@@ -116,7 +116,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         String value = config.getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return new HttpClient(new ProxyHttpClientTransportOverFCGI(selectors, scriptRoot), null);
+        return new HttpClient(new ProxyHttpClientTransportOverFCGI(selectors, scriptRoot));
     }
 
     @Override

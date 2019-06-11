@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.annotations;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -54,6 +46,15 @@ import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestAnnotationParser
@@ -142,7 +143,7 @@ public class TestAnnotationParser
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
                 assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassInfo().getClassName());
-                assertThat(info.getMethodName(), isIn(methods));
+                assertThat(info.getMethodName(), is(in(methods)));
                 assertEquals("org.eclipse.jetty.annotations.Sample",annotation);
             }
         }

@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.BitSet;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -233,7 +232,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             byte[] nounce = new byte[24];
             _random.nextBytes(nounce);
 
-            nonce = new Nonce(new String(B64Code.encode(nounce)), request.getTimeStamp(), getMaxNonceCount());
+            nonce = new Nonce(Base64.getEncoder().encodeToString(nounce), request.getTimeStamp(), getMaxNonceCount());
         }
         while (_nonceMap.putIfAbsent(nonce._nonce, nonce) != null);
         _nonceQueue.add(nonce);

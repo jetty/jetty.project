@@ -186,7 +186,7 @@ public class ServletPathSpec extends PathSpec
         assertValidServletPathSpec(servletPathSpec);
 
         // The Root Path Spec
-        if (servletPathSpec.length() == 0)
+        if (servletPathSpec.isEmpty())
         {
             super.pathSpec = "";
             super.pathDepth = -1; // force this to be at the end of the sort order

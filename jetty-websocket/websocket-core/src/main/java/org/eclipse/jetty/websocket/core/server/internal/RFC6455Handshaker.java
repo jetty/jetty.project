@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -42,13 +43,17 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -60,9 +65,8 @@ public final class RFC6455Handshaker implements Handshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeader.UPGRADE.asString());
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request,
-        HttpServletResponse response,
-        FrameHandler.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response,
+                                  FrameHandler.Customizer defaultCustomizer) throws IOException
     {
         Request baseRequest = Request.getBaseRequest(request);
         HttpChannel httpChannel = baseRequest.getHttpChannel();
@@ -118,11 +122,7 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         if (negotiation.getKey() == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no key {}", baseRequest);
-            return false;
-        }
+            throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
 
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation);
@@ -149,60 +149,69 @@ public final class RFC6455Handshaker implements Handshaker
         // Check for handler
         if (handler == null)
         {
-            LOG.warn("not upgraded: no frame handler provided {}", baseRequest);
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded: no frame handler provided {}", baseRequest);
             return false;
         }
 
-        // Check if subprotocol negotiated
+        // validate negotiated subprotocol
         String subprotocol = negotiation.getSubprotocol();
-        if (negotiation.getOfferedSubprotocols().size() > 0)
+        if (subprotocol != null)
         {
-            if (subprotocol == null)
-            {
-                // TODO: this message needs to be returned to Http Client
-                LOG.warn("not upgraded: no subprotocol selected from offered subprotocols {}: {}", negotiation.getOfferedSubprotocols(), baseRequest);
-                return false;
-            }
-
             if (!negotiation.getOfferedSubprotocols().contains(subprotocol))
-            {
-                // TODO: this message needs to be returned to Http Client
-                LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}", subprotocol, negotiation.getOfferedSubprotocols(),
-                    baseRequest);
-                return false;
-            }
+                throw new WebSocketException("not upgraded: selected a subprotocol not present in offered subprotocols");
         }
+        else
+        {
+            if (!negotiation.getOfferedSubprotocols().isEmpty())
+                throw new WebSocketException("not upgraded: no subprotocol selected from offered subprotocols");
+        }
+
+        // validate negotiated extensions
+        for (ExtensionConfig config : negotiation.getNegotiatedExtensions())
+        {
+            if (config.getName().startsWith("@"))
+                continue;
+
+            long matches = negotiation.getOfferedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            if (matches < 1)
+                throw new WebSocketException("Upgrade failed: negotiated extension not requested");
+
+            matches = negotiation.getNegotiatedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            if (matches > 1)
+                throw new WebSocketException("Upgrade failed: multiple negotiated extensions of the same name");
+        }
+
+        // Create and Negotiate the ExtensionStack
+        ExtensionStack extensionStack = negotiation.getExtensionStack();
 
         Negotiated negotiated = new Negotiated(
             baseRequest.getHttpURI().toURI(),
             subprotocol,
             baseRequest.isSecure(),
-            negotiation.getExtensionStack(),
+            extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        // Create the Channel
-        WebSocketChannel channel = newWebSocketChannel(handler, negotiated);
+        // Create the Session
+        WebSocketCoreSession coreSession = newWebSocketCoreSession(handler, negotiated);
         if (defaultCustomizer!=null)
-            defaultCustomizer.customize(channel);
-        negotiator.customize(channel);
+            defaultCustomizer.customize(coreSession);
+        negotiator.customize(coreSession);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("channel {}", channel);
+            LOG.debug("session {}", coreSession);
 
         // Create a connection
-        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getByteBufferPool(), channel);
+        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)
-        {
-            LOG.warn("not upgraded: no connection {}", baseRequest);
-            return false;
-        }
+            throw new WebSocketException("not upgraded: no connection");
 
         for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
             connection.addListener(listener);
 
-        channel.setWebSocketConnection(connection);
+        coreSession.setWebSocketConnection(connection);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();
@@ -222,20 +231,20 @@ public final class RFC6455Handshaker implements Handshaker
 
         // upgrade
         if (LOG.isDebugEnabled())
-            LOG.debug("upgrade connection={} session={}", connection, channel);
+            LOG.debug("upgrade connection={} session={}", connection, coreSession);
 
         baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
     }
 
-    protected WebSocketChannel newWebSocketChannel(FrameHandler handler, Negotiated negotiated)
+    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)
     {
-        return new WebSocketChannel(handler, Behavior.SERVER, negotiated);
+        return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated);
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
     {
-        return new WebSocketConnection(endPoint, executor, byteBufferPool, wsChannel);
+        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
     }
 
     private boolean getSendServerVersion(Connector connector)

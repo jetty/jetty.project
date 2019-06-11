@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.OnMessage;
@@ -42,20 +43,25 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.internal.Parser;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSessionListener;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
-
     @ServerEndpoint("/echo/text")
     public static class TextEchoSocket
     {
@@ -72,11 +78,12 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     private ServerConnector connector;
     private LocalConnector localConnector;
     private ServletContextHandler servletContextHandler;
-    private ServerContainer serverContainer;
+    private JavaxWebSocketServerContainer serverContainer;
+    private TrackingListener trackingListener = new TrackingListener();
     private URI serverUri;
     private URI wsUri;
     private boolean ssl = false;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Server sslContextFactory;
 
     public void enableSsl(boolean ssl)
     {
@@ -162,6 +169,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
         servletContextHandler.setContextPath("/");
         serverContainer = JavaxWebSocketServletContainerInitializer.configureContext(servletContextHandler);
+        serverContainer.addSessionListener(trackingListener);
         configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
     }
@@ -191,7 +199,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             http_config.setSendServerVersion(true);
             http_config.setSendDateHeader(false);
 
-            sslContextFactory = new SslContextFactory();
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
@@ -256,11 +264,19 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
+            JavaxWebSocketServerFrameHandlerFactory factory = new JavaxWebSocketServerFrameHandlerFactory(JavaxWebSocketServerContainer.ensureContainer(getServletContext()));
+
             @Override
             public void configure(WebSocketServletFactory factory)
             {
                 PathSpec pathSpec = factory.parsePathSpec("/");
                 factory.addMapping(pathSpec, creator);
+            }
+
+            @Override
+            public FrameHandlerFactory getFactory()
+            {
+                return factory;
             }
         });
         servletContextHandler.addServlet(holder, urlPattern);
@@ -274,5 +290,38 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     public Server getServer()
     {
         return server;
+    }
+
+    public TrackingListener getTrackingListener()
+    {
+        return trackingListener;
+    }
+
+    public static class TrackingListener implements JavaxWebSocketSessionListener
+    {
+        private BlockingArrayQueue<JavaxWebSocketSession> openedSessions = new BlockingArrayQueue<>();
+        private BlockingArrayQueue<JavaxWebSocketSession> closedSessions = new BlockingArrayQueue<>();
+
+        @Override
+        public void onJavaxWebSocketSessionOpened(JavaxWebSocketSession session)
+        {
+            openedSessions.offer(session);
+        }
+
+        @Override
+        public void onJavaxWebSocketSessionClosed(JavaxWebSocketSession session)
+        {
+            closedSessions.offer(session);
+        }
+
+        public BlockingArrayQueue<JavaxWebSocketSession> getOpenedSessions()
+        {
+            return openedSessions;
+        }
+
+        public BlockingArrayQueue<JavaxWebSocketSession> getClosedSessions()
+        {
+            return closedSessions;
+        }
     }
 }

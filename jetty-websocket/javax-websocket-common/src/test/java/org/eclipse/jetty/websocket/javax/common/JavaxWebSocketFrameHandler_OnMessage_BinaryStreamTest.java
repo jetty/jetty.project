@@ -34,8 +34,8 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
@@ -45,7 +45,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends Abstr
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen(channel, Callback.NOOP);
+        localEndpoint.onOpen(coreSession, Callback.NOOP);
 
         func.apply(localEndpoint);
 

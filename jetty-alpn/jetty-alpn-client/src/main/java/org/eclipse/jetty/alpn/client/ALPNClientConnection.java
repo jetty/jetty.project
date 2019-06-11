@@ -48,6 +48,6 @@ public class ALPNClientConnection extends NegotiatingClientConnection
         if (protocol == null || !protocols.contains(protocol))
             close();
         else
-            completed();
+            completed(protocol);
     }
 }

@@ -20,8 +20,10 @@ module org.eclipse.jetty.client
 {
     exports org.eclipse.jetty.client;
     exports org.eclipse.jetty.client.api;
+    exports org.eclipse.jetty.client.dynamic;
     exports org.eclipse.jetty.client.http;
     exports org.eclipse.jetty.client.jmx to org.eclipse.jetty.jmx;
+    exports org.eclipse.jetty.client.proxy;
     exports org.eclipse.jetty.client.util;
 
     requires org.eclipse.jetty.http;
@@ -30,6 +32,8 @@ module org.eclipse.jetty.client
 
     // Only required if using SPNEGO.
     requires static java.security.jgss;
+    // Only required if using the dynamic transport.
+    requires static org.eclipse.jetty.alpn.client;
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 }

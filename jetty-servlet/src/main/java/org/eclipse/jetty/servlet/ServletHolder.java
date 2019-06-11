@@ -748,11 +748,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         //cleaned up correctly
         if (((Registration)getRegistration()).getMultipartConfig() != null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("multipart cleanup listener added for {}", this);
+
             //Register a listener to delete tmp files that are created as a result of this
             //servlet calling Request.getPart() or Request.getParts()
-
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            ch.addEventListener(MultiPartCleanerListener.INSTANCE);
+            if(!Arrays.asList(ch.getEventListeners()).contains(MultiPartCleanerListener.INSTANCE))
+                ch.addEventListener(MultiPartCleanerListener.INSTANCE);
         }
     }
 

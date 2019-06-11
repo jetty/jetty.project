@@ -342,7 +342,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.startServer(new EmptyServerHandler());
 
         // Use a default SslContextFactory, requests should fail because the server certificate is unknown.
-        scenario.client = scenario.newHttpClient(scenario.provideClientTransport(), new SslContextFactory());
+        SslContextFactory.Client clientTLS = scenario.newClientSslContextFactory();
+        clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
+        scenario.client = scenario.newHttpClient(scenario.provideClientTransport(transport, clientTLS));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);

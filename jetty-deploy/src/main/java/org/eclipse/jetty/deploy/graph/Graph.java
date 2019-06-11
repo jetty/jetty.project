@@ -203,7 +203,6 @@ public class Graph
         Path path = breadthFirst(from,to,new CopyOnWriteArrayList<Path>(),new HashSet<Edge>());
         return path;
     }
-    
 
     private Path breadthFirst(Node from, Node destination, CopyOnWriteArrayList<Path> paths, Set<Edge> seen)
     {
@@ -245,7 +244,6 @@ public class Graph
             return breadthFirst(from,destination,paths,seen);
         return null;
     }
-
 
     public Set<Edge> getEdges()
     {

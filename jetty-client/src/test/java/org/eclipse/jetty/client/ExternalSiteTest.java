@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,11 +26,15 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Disabled
 public class ExternalSiteTest
@@ -44,7 +44,7 @@ public class ExternalSiteTest
     @BeforeEach
     public void prepare() throws Exception
     {
-        client = new HttpClient(new SslContextFactory());
+        client = new HttpClient();
         client.start();
     }
 
@@ -54,6 +54,7 @@ public class ExternalSiteTest
         client.stop();
     }
 
+    @Tag("external")
     @Test
     public void testExternalSite() throws Exception
     {
@@ -64,39 +65,29 @@ public class ExternalSiteTest
         assumeCanConnectTo(host, port);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
-        client.newRequest(host, port).send(new Response.CompleteListener()
+        client.newRequest(host, port).send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                if (!result.isFailed() && result.getResponse().getStatus() == 200)
-                    latch1.countDown();
-            }
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch1.countDown();
         });
-        assertTrue(latch1.await(10, TimeUnit.SECONDS));
+        assertTrue(latch1.await(15, TimeUnit.SECONDS));
 
         // Try again the same URI, but without specifying the port
         final CountDownLatch latch2 = new CountDownLatch(1);
-        client.newRequest("http://" + host).send(new Response.CompleteListener()
+        client.newRequest("http://" + host).send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                assertTrue(result.isSucceeded());
-                assertEquals(200, result.getResponse().getStatus());
-                latch2.countDown();
-            }
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch2.countDown();
         });
-        assertTrue(latch2.await(10, TimeUnit.SECONDS));
+        assertTrue(latch2.await(15, TimeUnit.SECONDS));
     }
 
+    @Tag("external")
     @Test
     public void testExternalSSLSite() throws Exception
     {
-        client.stop();
-        client = new HttpClient(new SslContextFactory());
-        client.start();
-
         String host = "api-3t.paypal.com";
         int port = 443;
 
@@ -104,18 +95,16 @@ public class ExternalSiteTest
         assumeCanConnectTo(host, port);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(host, port).scheme("https").path("/nvp").send(new Response.CompleteListener()
+        client.newRequest(host, port).scheme("https").path("/nvp").send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                    latch.countDown();
-            }
+            assertTrue(result.isSucceeded());
+            assertEquals(200, result.getResponse().getStatus());
+            latch.countDown();
         });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
     }
 
+    @Tag("external")
     @Test
     public void testExternalSiteWrongProtocol() throws Exception
     {
@@ -129,14 +118,7 @@ public class ExternalSiteTest
         {
             final CountDownLatch latch = new CountDownLatch(3);
             client.newRequest(host, port)
-                    .onResponseFailure(new Response.FailureListener()
-                    {
-                        @Override
-                        public void onFailure(Response response, Throwable failure)
-                        {
-                            latch.countDown();
-                        }
-                    })
+                    .onResponseFailure((response, failure) -> latch.countDown())
                     .send(new Response.Listener.Adapter()
                     {
                         @Override
@@ -152,10 +134,11 @@ public class ExternalSiteTest
                             latch.countDown();
                         }
                     });
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(15, TimeUnit.SECONDS));
         }
     }
 
+    @Tag("external")
     @Test
     public void testExternalSiteRedirect() throws Exception
     {
@@ -168,6 +151,7 @@ public class ExternalSiteTest
         ContentResponse response = client.newRequest(host, port)
                 .scheme(HttpScheme.HTTPS.asString())
                 .path("/twitter")
+                .timeout(15, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, response.getStatus());
     }
@@ -180,7 +164,7 @@ public class ExternalSiteTest
         }
         catch (Throwable x)
         {
-            assumeTrue(x == null, "Unable to connect");
+            assumeTrue(false, "Unable to connect");
         }
     }
 }

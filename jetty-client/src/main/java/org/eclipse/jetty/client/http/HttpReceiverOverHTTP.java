@@ -222,6 +222,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
+    public boolean isHeaderCacheCaseSensitive()
+    {
+        // TODO get from configuration
+        return false;
+    }
+
+    @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
         HttpExchange exchange = getHttpExchange();

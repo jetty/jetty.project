@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -47,6 +44,9 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class ComplianceViolations2616Test
 {
@@ -183,7 +183,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: No line Folding"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Line Folding not supported"));
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));
         
     }

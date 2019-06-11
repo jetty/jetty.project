@@ -55,9 +55,8 @@ You can re-enable these by re-declaring the ciphers you want excluded in code:
 
 [source, java, subs="{sub-order}"]
 ----
-SslContextFactory sslContextFactory = new SslContextFactory();
-sslContextFactory.setExcludeCipherSuites(
-            "^.*_(MD5|SHA|SHA1)$");
+SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+sslContextFactory.setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
 ----
 
 If, after making these changes, you still have issues using these ciphers they are likely being blocked at the JVM level.
@@ -664,7 +663,7 @@ the other is `$JETTY/etc/truststore` which contains intermediary CA and root CA.
 [[configuring-sslcontextfactory]]
 ==== Configuring the Jetty SslContextFactory
 
-The generated SSL certificates from above are held in the key store are configured in an instance of link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory] object.
+The generated SSL certificates from above are held in the key store are configured in an instance of link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[SslContextFactory.Server] object.
 
 The `SslContextFactory` is responsible for:
 
@@ -679,9 +678,9 @@ The `SslContextFactory` is responsible for:
 * https://en.wikipedia.org/wiki/Online_Certificate_Status_Protocol[OCSP] Support
 * Client Authentication Support
 
-For Jetty Connectors, the configured `SslContextFactory` is injected into a specific ServerConnector `SslConnectionFactory`.
+For Jetty Connectors, the configured `SslContextFactory.Server` is injected into a specific ServerConnector `SslConnectionFactory`.
 
-For Jetty Clients, the various constructors support using a configured `SslContextFactory`.
+For Jetty Clients, the various constructors support using a configured `SslContextFactory.Client`.
 
 While the `SslContextFactory` can operate without a keystore (this mode is most suitable for the various Jetty Clients) it is best practice to at least configure the keystore being used.
 
@@ -729,7 +728,7 @@ Implementing Conscrypt for the link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscry
 ...
 Security.addProvider(new OpenSSLProvider());
 ...
-SslContextFactory sslContextFactory = new SslContextFactory();
+SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 sslContextFactory.setKeyStorePath("path/to/keystore");
 sslContextFactory.setKeyStorePassword("CleverKeyStorePassword");
 sslContextFactory.setKeyManagerPassword("OBF:VerySecretManagerPassword");
@@ -738,6 +737,9 @@ sslContextFactory.setProvider("Conscrypt");
 ----
 
 If you are using the Jetty Distribution, please see the section on enabling the link:#jetty-conscrypt-distribution[Conscrypt SSL module.]
+
+If you are using Conscrypt with Java 8, you must exclude `TLSv1.3` protocol as it is now enabled per default with Conscrypt 2.0.0 but not supported by Java 8.
+
 
 ==== Configuring SNI
 
@@ -785,9 +787,9 @@ To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can 
 [source, xml, subs="{sub-order}"]
 ----
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN"
-          "http://www.eclipse.org/jetty/configure_9_3.dtd">
+          "https://www.eclipse.org/jetty/configure_9_3.dtd">
 <!-- Tweak SsslContextFactory Includes / Excludes -->
-<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <!-- Mitigate SLOTH Attack -->
   <Call name="addExcludeCipherSuites">
     <Arg>
@@ -822,7 +824,7 @@ $
 ____
 [NOTE]
 The default `SslContextFactory` implementation applies the latest SSL/TLS recommendations surrounding vulnerabilities in SSL/TLS.
-Check the release notes (the `VERSION.txt` found in the root of the Jetty Distribution, or the http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.jetty%22%20AND%20a%3A%22jetty-project%22[alternate (classified 'version') artifacts for the `jetty-project` component]on Maven Central) for updates.
+Check the release notes (the `VERSION.txt` found in the root of the Jetty Distribution, or the http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.jetty%22%20AND%20a%3A%22jetty-project%22[alternate (classified 'version') artifacts for the `jetty-project` component] on Maven Central) for updates.
 The Java JVM also applies exclusions at the JVM level and, as such, if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in *both* the Java JVM and your Jetty configuration.
 ____
 

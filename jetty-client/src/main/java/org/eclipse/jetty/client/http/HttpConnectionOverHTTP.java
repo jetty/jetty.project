@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.IConnection;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
@@ -39,7 +40,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable
+public class HttpConnectionOverHTTP extends AbstractConnection implements IConnection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
@@ -71,9 +72,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return channel;
     }
 
-    public HttpDestinationOverHTTP getHttpDestination()
+    public HttpDestination getHttpDestination()
     {
-        return (HttpDestinationOverHTTP)delegate.getHttpDestination();
+        return delegate.getHttpDestination();
     }
 
     @Override
@@ -116,7 +117,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         delegate.send(request, listener);
     }
 
-    protected SendFailure send(HttpExchange exchange)
+    @Override
+    public SendFailure send(HttpExchange exchange)
     {
         return delegate.send(exchange);
     }
@@ -238,7 +240,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         }
 
         @Override
-        protected SendFailure send(HttpExchange exchange)
+        public SendFailure send(HttpExchange exchange)
         {
             Request request = exchange.getRequest();
             normalizeRequest(request);

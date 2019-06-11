@@ -20,6 +20,7 @@ package org.eclipse.jetty.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -72,14 +73,15 @@ public class TestJettyOSGiBootWebAppAsService
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
 
         options.addAll(TestOSGiUtil.jspDependencies());
         options.addAll(testDependencies());
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
-
 
     public static List<Option> testDependencies()
     {
@@ -95,21 +97,18 @@ public class TestJettyOSGiBootWebAppAsService
         return res;
     }
 
-
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
-
-
     @Test
     public void testBundle() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-
+        
         ServiceReference<?>[] refs = bundleContext.getServiceReferences(WebAppContext.class.getName(), null);
         assertNotNull(refs);
         assertEquals(2, refs.length);
@@ -151,6 +150,5 @@ public class TestJettyOSGiBootWebAppAsService
         {
             client.stop();
         }
-
     }
 }

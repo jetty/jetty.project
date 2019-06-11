@@ -18,19 +18,15 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpCookie;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +40,18 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * SessionListenerTest
@@ -98,7 +105,7 @@ public class SessionListenerTest
                 assertTrue (TestServlet.bindingListener.bound);
                 
                 String sessionId = TestServer.extractSessionId(sessionCookie);
-                assertThat(sessionId, isIn(listener.createdSessions));
+                assertThat(sessionId, is(in(listener.createdSessions)));
                 
                 // Make a request which will invalidate the existing session
                 Request request2 = client.newRequest(url + "?action=test");
@@ -121,13 +128,27 @@ public class SessionListenerTest
 
     
     /**
-     * Test that listeners are called when a session expires.
+     * Test that listeners are called when a session expires
+     * and that the listener is able to access webapp classes.
      * 
      * @throws Exception
      */
     @Test
     public void testSessionExpiresWithListener() throws Exception
     {
+      //Use a class that would only be known to the webapp classloader
+        InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
+        File foodir = new File (MavenTestingUtils.getTargetDir(), "foo");
+        foodir.mkdirs();
+        File fooclass = new File (foodir, "Foo.class");
+        IO.copy(foostream, new FileOutputStream(fooclass));
+        
+        assertTrue(fooclass.exists());
+        assertTrue(fooclass.length() != 0);
+        
+        URL[] foodirUrls = new URL[]{foodir.toURI().toURL()};
+        URLClassLoader contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
+        
         String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 3;
@@ -143,8 +164,9 @@ public class SessionListenerTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
+        context.setClassLoader(contextClassLoader);
         context.addServlet(holder, servletMapping);
-        TestHttpSessionListener listener = new TestHttpSessionListener(true);
+        TestHttpSessionListener listener = new TestHttpSessionListenerWithWebappClasses(true);
         context.getSessionHandler().addEventListener(listener);
         
         server1.start();
@@ -164,12 +186,12 @@ public class SessionListenerTest
             
             String sessionId = TestServer.extractSessionId(sessionCookie);     
 
-            assertThat(sessionId, isIn(listener.createdSessions));
+            assertThat(sessionId, is(in(listener.createdSessions)));
             
             //and wait until the session should have expired
             Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(inactivePeriod+(scavengePeriod)));
 
-            assertThat(sessionId, isIn(listener.destroyedSessions));
+            assertThat(sessionId, is(in(listener.destroyedSessions)));
 
             assertNull(listener.ex);
         }

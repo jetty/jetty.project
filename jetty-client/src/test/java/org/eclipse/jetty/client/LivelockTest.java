@@ -93,7 +93,7 @@ public class LivelockTest
         
         int count = 5;
         HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
-        client = new HttpClient(transport, null);
+        client = new HttpClient(transport);
         client.setMaxConnectionsPerDestination(2 * count);
         client.setMaxRequestsQueuedPerDestination(2 * count);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());

@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -72,7 +71,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
  * <b>Configuration / Init-Parameters:</b>
  * </p>
  * <dl>
- * <dt>maxIdleTime</dt>
+ * <dt>idleTimeout</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
@@ -90,8 +89,6 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 @SuppressWarnings("serial")
 public abstract class WebSocketServlet extends HttpServlet
 {
-    // TODO This servlet should be split into an API neutral version and a Jetty API specific one.
-
     private static final Logger LOG = Log.getLogger(WebSocketServlet.class);
     private final CustomizedWebSocketServletFactory customizer = new CustomizedWebSocketServletFactory();
 
@@ -105,7 +102,12 @@ public abstract class WebSocketServlet extends HttpServlet
      * {@link ContextHandler}, which in practise will mostly the the Jetty WebSocket API factory.
      * @param factory the WebSocketServletFactory
      */
-    public abstract void configure(WebSocketServletFactory factory);
+    protected abstract void configure(WebSocketServletFactory factory);
+
+    /**
+     * @return the instance of {@link FrameHandlerFactory} to be used to create the FrameHandler
+     */
+    public abstract FrameHandlerFactory getFactory();
 
     @Override
     public void init() throws ServletException
@@ -117,7 +119,13 @@ public abstract class WebSocketServlet extends HttpServlet
             components = WebSocketComponents.ensureWebSocketComponents(servletContext);
             mapping = new WebSocketMapping(components);
 
-            String max = getInitParameter("maxIdleTime");
+            String max = getInitParameter("idleTimeout");
+            if (max == null)
+            {
+                max = getInitParameter("maxIdleTime");
+                if (max != null)
+                    LOG.warn("'maxIdleTime' init param is deprecated, use 'idleTimeout' instead");
+            }
             if (max != null)
                 customizer.setIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
 
@@ -159,7 +167,8 @@ public abstract class WebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        if (mapping.upgrade(req, resp, customizer))
+        // provide a null default customizer the customizer will be on the negotiator in the mapping
+        if (mapping.upgrade(req, resp, null))
             return;
 
         // If we reach this point, it means we had an incoming request to upgrade
@@ -175,6 +184,7 @@ public abstract class WebSocketServlet extends HttpServlet
 
     private class CustomizedWebSocketServletFactory extends FrameHandler.ConfigurationCustomizer implements WebSocketServletFactory
     {
+        @Override
         public WebSocketExtensionRegistry getExtensionRegistry()
         {
             return components.getExtensionRegistry();
@@ -189,15 +199,7 @@ public abstract class WebSocketServlet extends HttpServlet
         @Override
         public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
         {
-            // TODO a bit fragile. This code knows that only the JettyFHF is added directly as a been
-            ServletContext servletContext = getServletContext();
-            ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "WebSocketServlet");
-            FrameHandlerFactory frameHandlerFactory = contextHandler.getBean(FrameHandlerFactory.class);
-
-            if (frameHandlerFactory==null)
-                throw new IllegalStateException("No known FrameHandlerFactory");
-
-            mapping.addMapping(pathSpec, creator, frameHandlerFactory, this);
+            mapping.addMapping(pathSpec, creator, getFactory(), this);
         }
 
         @Override

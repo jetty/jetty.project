@@ -38,8 +38,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class StringUtil
 {
     private static final Logger LOG = Log.getLogger(StringUtil.class);
-    
-    
+
+
     private final static Trie<String> CHARSETS= new ArrayTrie<>(256);
     
     public static final String ALL_INTERFACES="0.0.0.0";
@@ -454,7 +454,30 @@ public class StringUtil
         // only whitespace
         return true;
     }
-    
+
+    /**
+     * <p>Checks if a String is empty ("") or null.</p>
+     *
+     * <pre>
+     *   isEmpty(null)   == true
+     *   isEmpty("")     == true
+     *   isEmpty("\r\n") == false
+     *   isEmpty("\t")   == false
+     *   isEmpty("   ")  == false
+     *   isEmpty("a")    == false
+     *   isEmpty(".")    == false
+     *   isEmpty(";\n")  == false
+     * </pre>
+     *
+     * @param str
+     *            the string to test.
+     * @return true if string is null or empty.
+     */
+    public static boolean isEmpty(String str)
+    {
+        return str == null || str.isEmpty();
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * Test if a string is not null and contains at least 1 non-whitespace characters in it.

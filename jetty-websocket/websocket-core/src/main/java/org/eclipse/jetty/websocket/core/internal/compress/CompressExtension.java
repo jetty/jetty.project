@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.FrameEntry;
-import org.eclipse.jetty.websocket.core.internal.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 public abstract class CompressExtension extends AbstractExtension
 {
@@ -101,9 +101,9 @@ public abstract class CompressExtension extends AbstractExtension
     }
 
     @Override
-    public void setWebSocketChannel(WebSocketChannel webSocketChannel)
+    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
     {
-        super.setWebSocketChannel(webSocketChannel);
+        super.setWebSocketCoreSession(coreSession);
     }
 
     public Deflater getDeflater()
