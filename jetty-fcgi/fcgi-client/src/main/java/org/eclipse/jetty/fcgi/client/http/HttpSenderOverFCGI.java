@@ -88,7 +88,7 @@ public class HttpSenderOverFCGI extends HttpSender
         for (HttpField field : headers)
         {
             String name = field.getName();
-            String fcgiName = "HTTP_" + name.replaceAll("-", "_").toUpperCase(Locale.ENGLISH);
+            String fcgiName = "HTTP_" + name.replace('-', '_').toUpperCase(Locale.ENGLISH);
             fcgiHeaders.add(fcgiName, field.getValue());
         }
 

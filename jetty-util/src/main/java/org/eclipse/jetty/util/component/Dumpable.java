@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
@@ -99,9 +100,15 @@ public interface Dumpable
             else if (o instanceof Map)
                 s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
             else if (o instanceof Dumpable)
-                s = ((Dumpable)o).dumpSelf().replace("\r\n","|").replace("\n","|");
+            {
+                s = StringUtil.replace(((Dumpable)o).dumpSelf(), "\r\n", "|")
+                    .replace('\n', '|');
+            }
             else
-                s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
+            {
+                s = StringUtil.replace(String.valueOf(o), "\r\n", "|")
+                    .replace('\n', '|');
+            }
 
             if (o instanceof LifeCycle)
                 out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");

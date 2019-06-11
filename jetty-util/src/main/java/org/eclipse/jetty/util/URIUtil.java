@@ -268,7 +268,19 @@ public class URIUtil
 
         return buf;
     }
-    
+
+    /**
+     * Encode a raw URI String and convert any raw spaces to
+     * their "%20" equivalent.
+     *
+     * @param str input raw string
+     * @return output with spaces converted to "%20"
+     */
+    public static String encodeSpaces(String str)
+    {
+        return StringUtil.replace(str, " ", "%20");
+    }
+
     /* ------------------------------------------------------------ */
     /** Encode a URI path.
      * @param path The path the encode

@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.PatternMatcher;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -210,7 +211,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                     }
                     catch (URISyntaxException e)
                     {
-                        containerUris.add(new URI(u.toString().replaceAll(" ", "%20")));
+                        String fixedUriStr = StringUtil.replace(u.toString(), " ", "%20");
+                        containerUris.add(new URI(fixedUriStr));
                     }
                 }
             }

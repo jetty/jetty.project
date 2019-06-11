@@ -36,7 +36,6 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -57,13 +56,14 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.Part;
 
-
-/** 
+/**
  * Dump Servlet Request.
  */
 @SuppressWarnings("serial")
 public class Dump extends HttpServlet
 {
+    /** Zero Width Space, to allow text to be wrapped at designated spots */
+    private static final String ZWSP = "&#8203;";
     boolean fixed;
     Timer _timer;
 
@@ -647,7 +647,7 @@ public class Dump extends HttpServlet
             {
                 name= (String)a.nextElement();
                 pout.write("</tr><tr>\n");
-                pout.write("<th align=\"right\" valign=\"top\">"+name.replace("."," .")+":&nbsp;</th>");
+                pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 Object value=request.getAttribute(name);
                 if (value instanceof File)
                 {
@@ -678,7 +678,7 @@ public class Dump extends HttpServlet
             {
                 name= (String)a.nextElement();
                 pout.write("</tr><tr>\n");
-                pout.write("<th align=\"right\" valign=\"top\">"+name.replace("."," .")+":&nbsp;</th>");
+                pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 pout.write("<td>"+ toString(getServletContext().getInitParameter(name)) + "</td>");
             }
 
@@ -689,7 +689,7 @@ public class Dump extends HttpServlet
             {
                 name= (String)a.nextElement();
                 pout.write("</tr><tr>\n");
-                pout.write("<th align=\"right\" valign=\"top\">"+name.replace("."," .")+":&nbsp;</th>");
+                pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 pout.write("<td>"+"<pre>" + toString(getServletContext().getAttribute(name)) + "</pre>"+"</td>");
             }
 
@@ -1055,9 +1055,9 @@ public class Dump extends HttpServlet
     {
         if (s==null)
             return "null";
-        s=s.replaceAll("&","&amp;");
-        s=s.replaceAll("<","&lt;");
-        s=s.replaceAll(">","&gt;");
+        s = s.replace("&","&amp;");
+        s = s.replace("<","&lt;");
+        s = s.replace(">","&gt;");
         return s;
     }
 }

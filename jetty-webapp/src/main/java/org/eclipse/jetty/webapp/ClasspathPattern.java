@@ -703,7 +703,7 @@ public class ClasspathPattern extends AbstractSet<String>
             name=name.substring(0,name.length()-6);
         
         // Treat path elements as packages for name matching
-        name=name.replace("/",".");
+        name = name.replace('/', '.');
 
         return combine(_packageOrNamePatterns, name, _locations, ()->
         {

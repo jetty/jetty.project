@@ -52,12 +52,10 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -237,7 +235,7 @@ public class Response implements HttpServletResponse
             if (i >= 0)
             {
                 httpOnly = true;
-                comment = comment.replace(HTTP_ONLY_COMMENT, "").trim();
+                comment = StringUtil.replace(comment.trim(), HTTP_ONLY_COMMENT, "");
                 if (comment.length() == 0)
                     comment = null;
             }

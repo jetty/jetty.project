@@ -26,14 +26,13 @@ import java.util.List;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/** Fast String Utilities.
+/**
+ * Fast String Utilities.
  *
  * These string utilities provide both convenience methods and
  * performance improvements over most standard library versions. The
  * main aim of the optimizations is to avoid object creation unless
  * absolutely required.
- *
- * 
  */
 public class StringUtil
 {
@@ -62,8 +61,7 @@ public class StringUtil
         CHARSETS.put("iso-8859-1",__ISO_8859_1);
         CHARSETS.put("iso_8859_1",__ISO_8859_1);
     }
-    
-    /* ------------------------------------------------------------ */
+
     /** Convert alternate charset names (eg utf8) to normalized
      * name (eg UTF-8).
      * @param s the charset to normalize
@@ -74,8 +72,7 @@ public class StringUtil
         String n=CHARSETS.get(s);
         return (n==null)?s:n;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /** Convert alternate charset names (eg utf8) to normalized
      * name (eg UTF-8).
      * @param s the charset to normalize
@@ -88,9 +85,7 @@ public class StringUtil
         String n=CHARSETS.get(s,offset,length);       
         return (n==null)?s.substring(offset,offset+length):n;
     }
-    
 
-    /* ------------------------------------------------------------ */
     public static final char[] lowercases = {
           '\000','\001','\002','\003','\004','\005','\006','\007',
           '\010','\011','\012','\013','\014','\015','\016','\017',
@@ -109,7 +104,6 @@ public class StringUtil
           '\160','\161','\162','\163','\164','\165','\166','\167',
           '\170','\171','\172','\173','\174','\175','\176','\177' };
 
-    /* ------------------------------------------------------------ */
     /**
      * fast lower case conversion. Only works on ascii (not unicode)
      * @param s the string to convert
@@ -122,7 +116,6 @@ public class StringUtil
         
         char[] c = null;
         int i=s.length();
-
         // look for first conversion
         while (i-->0)
         {
@@ -138,7 +131,6 @@ public class StringUtil
                 }
             }
         }
-
         while (i-->0)
         {
             if(c[i]<=127)
@@ -148,8 +140,43 @@ public class StringUtil
         return c==null?s:new String(c);
     }
 
+    /**
+     * Replace all characters from input string that are known to have
+     * special meaning in various filesytems.
+     *
+     * <p>
+     *     This will replace all of the following characters
+     *     with a "{@code _}" (underscore).
+     * </p>
+     * <ul>
+     *     <li>Control Characters</li>
+     *     <li>Anything not 7-bit printable ASCII</li>
+     *     <li>Special characters "{@code !|/.,:&><\?*"}"</li>
+     * </ul>
+     *
+     * @param str the raw input string
+     * @return the sanitized output string.
+     */
+    public static String sanitizeFileSystemPath(String str)
+    {
+        char[] chars = str.toCharArray();
+        int len = chars.length;
+        for (int i = 0; i < len; i++)
+        {
+            char c = chars[i];
+            if ((c <= 0x1F) || // control characters
+                (c >= 0x7F) || // over 7-bit printable ASCII
+                (c == '!') || (c == '|') || (c == '.') ||
+                (c == ':') || (c == '>') || (c == '<') ||
+                (c == '?') || (c == '/') || (c == '\\') ||
+                (c == '*') || (c == '"') || (c == '&'))
+            {
+                chars[i] = '_';
+            }
+        }
+        return String.valueOf(chars);
+    }
 
-    /* ------------------------------------------------------------ */
     public static boolean startsWithIgnoreCase(String s,String w)
     {
         if (w==null)
@@ -174,13 +201,11 @@ public class StringUtil
         }
         return true;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public static boolean endsWithIgnoreCase(String s,String w)
     {
         if (w==null)
             return true;
-
         if (s==null)
             return false;
             
@@ -206,8 +231,7 @@ public class StringUtil
         }
         return true;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * returns the next index of a character from the chars string
      * @param s the input string to search
@@ -221,10 +245,13 @@ public class StringUtil
               return i;
         return -1;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
-     * replace substrings within string.
+     * Replace substrings within string.
+     * <p>
+     *     Fast replacement for {@code java.lang.String#}{@link String#replace(CharSequence, CharSequence)}
+     * </p>
+     *
      * @param s the input string
      * @param sub the string to look for
      * @param with the string to replace with
@@ -232,27 +259,56 @@ public class StringUtil
      */
     public static String replace(String s, String sub, String with)
     {
-        int c=0;
-        int i=s.indexOf(sub,c);
+        int c = 0;
+        int i = s.indexOf(sub, c);
         if (i == -1)
+        {
             return s;
-    
-        StringBuilder buf = new StringBuilder(s.length()+with.length());
-
+        }
+        StringBuilder buf = new StringBuilder(s.length() + with.length());
         do
         {
-            buf.append(s.substring(c,i));
+            buf.append(s, c, i);
             buf.append(with);
-            c=i+sub.length();
-        } while ((i=s.indexOf(sub,c))!=-1);
-
-        if (c<s.length())
-            buf.append(s.substring(c,s.length()));
-
+            c = i + sub.length();
+        }
+        while ((i = s.indexOf(sub, c)) != -1);
+        if (c < s.length())
+        {
+            buf.append(s.substring(c));
+        }
         return buf.toString();   
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * Replace first substrings within string.
+     * <p>
+     *     Fast replacement for {@code java.lang.String#}{@link String#replaceFirst(String, String)}, but without
+     *     Regex support.
+     * </p>
+     *
+     * @param original the original string
+     * @param target the target string to look for
+     * @param replacement the replacement string to use
+     * @return the replaced string
+     */
+    public static String replaceFirst(String original, String target, String replacement)
+    {
+        int idx = original.indexOf(target);
+        if (idx == -1)
+            return original;
+
+        int offset = 0;
+        int originalLen = original.length();
+        StringBuilder buf = new StringBuilder(originalLen + replacement.length());
+        buf.append(original, offset, idx);
+        offset += idx + target.length();
+        buf.append(replacement);
+        buf.append(original, offset, originalLen);
+
+        return buf.toString();
+    }
+
     /** Remove single or double quotes.
      * @param s the input string
      * @return the string with quotes removed
@@ -263,8 +319,6 @@ public class StringUtil
         return QuotedStringTokenizer.unquote(s);
     }
 
-
-    /* ------------------------------------------------------------ */
     /** Append substring to StringBuilder 
      * @param buf StringBuilder to append to
      * @param s String to append from
@@ -288,8 +342,6 @@ public class StringUtil
         }
     }
 
-    
-    /* ------------------------------------------------------------ */
     /**
      * append hex digit
      * @param buf the buffer to append to
@@ -310,7 +362,6 @@ public class StringUtil
         buf.append((char)c);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Append 2 digits (zero padded) to the StringBuffer
      * 
@@ -325,8 +376,7 @@ public class StringUtil
             buf.append((char)(i%10+'0'));
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Append 2 digits (zero padded) to the StringBuilder
      * 
@@ -341,8 +391,7 @@ public class StringUtil
             buf.append((char)(i%10+'0'));
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     /** Return a non null string.
      * @param s String
      * @return The string passed in or empty string if it is null. 
@@ -353,8 +402,7 @@ public class StringUtil
             return "";
         return s;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public static boolean equals(String s,char[] buf, int offset, int length)
     {
         if (s.length()!=length)
@@ -365,13 +413,11 @@ public class StringUtil
         return true;
     }
 
-    /* ------------------------------------------------------------ */
     public static String toUTF8String(byte[] b,int offset,int length)
     {
         return new String(b,offset,length,StandardCharsets.UTF_8);
     }
 
-    /* ------------------------------------------------------------ */
     public static String toString(byte[] b,int offset,int length,String charset)
     {
         try
@@ -380,6 +426,7 @@ public class StringUtil
         }
         catch (UnsupportedEncodingException e)
         {
+            LOG.warn(e);
             throw new IllegalArgumentException(e);
         }
     }
@@ -431,7 +478,6 @@ public class StringUtil
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Test if a string is null or only has whitespace characters in it.
      * <p>
@@ -494,7 +540,6 @@ public class StringUtil
         return str == null || str.isEmpty();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Test if a string is not null and contains at least 1 non-whitespace characters in it.
      * <p>
@@ -534,14 +579,11 @@ public class StringUtil
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     public static boolean isUTF8(String charset)
     {
         return __UTF8.equalsIgnoreCase(charset)||__UTF8.equalsIgnoreCase(normalizeCharset(charset));
     }
 
-
-    /* ------------------------------------------------------------ */
     public static String printable(String name)
     {
         if (name==null)
@@ -556,7 +598,7 @@ public class StringUtil
         return buf.toString();
     }
     
-    /* ------------------------------------------------------------ */
+
     public static String printable(byte[] b)
     {
         StringBuilder buf = new StringBuilder();
@@ -592,13 +634,10 @@ public class StringUtil
         }
         catch(Exception e)
         {
-            LOG.warn(e);
             return s.getBytes();
         }
     }
-    
-    
-    
+
     /**
      * Converts a binary SID to a string SID
      * 
@@ -631,7 +670,6 @@ public class StringUtil
    
         // the number of subAuthorities we need to attach
         int subAuthorityCount = sidBytes[1];
-
         // attach each of the subAuthorities
         for (int i = 0; i < subAuthorityCount; ++i)
         {
@@ -670,10 +708,8 @@ public class StringUtil
         
         // the revision byte
         sidBytes[byteCount++] = (byte)Integer.parseInt(sidTokens[1]);
-
         // the # of sub authorities byte
         sidBytes[byteCount++] = (byte)subAuthorityCount;
-
         // the certAuthority
         String hexStr = Long.toHexString(Long.parseLong(sidTokens[2]));
         
@@ -681,7 +717,6 @@ public class StringUtil
         {
             hexStr = "0" + hexStr;
         }
-
         // place the certAuthority 6 bytes
         for ( int i = 0 ; i < hexStr.length(); i = i + 2)
         {
@@ -720,7 +755,6 @@ public class StringUtil
         int val = 0;
         boolean started = false;
         boolean minus = false;
-
         for (int i = from; i < string.length(); i++)
         {
             char b = string.charAt(i);
@@ -741,7 +775,6 @@ public class StringUtil
             else
                 break;
         }
-
         if (started)
             return minus?(-val):val;
         throw new NumberFormatException(string);
@@ -759,7 +792,6 @@ public class StringUtil
         long val = 0;
         boolean started = false;
         boolean minus = false;
-
         for (int i = 0; i < string.length(); i++)
         {
             char b = string.charAt(i);
@@ -780,7 +812,6 @@ public class StringUtil
             else
                 break;
         }
-
         if (started)
             return minus?(-val):val;
         throw new NumberFormatException(string);
@@ -799,12 +830,10 @@ public class StringUtil
         {
             return null;
         }
-
         if (str.length() <= maxSize)
         {
             return str;
         }
-
         return str.substring(0,maxSize);
     }
 
@@ -817,20 +846,18 @@ public class StringUtil
     {
         if (s==null)
             return new String[]{};
-
         if (!s.startsWith("[") || !s.endsWith("]"))
             throw new IllegalArgumentException();
         if (s.length()==2)
             return new String[]{};
-
         return csvSplit(s,1,s.length()-2);
     }
     
     /**
-    * Parse a CSV string using {@link #csvSplit(List,String, int, int)}
-    * @param s The string to parse
-    * @return An array of parsed values.
-    */
+     * Parse a CSV string using {@link #csvSplit(List,String, int, int)}
+     * @param s The string to parse
+     * @return An array of parsed values.
+     */
     public static String[] csvSplit(String s)
     {
         if (s==null)
@@ -851,13 +878,12 @@ public class StringUtil
             return null;
         if (off<0 || len<0 || off>s.length())
             throw new IllegalArgumentException();
-
         List<String> list = new ArrayList<>();
         csvSplit(list,s,off,len);
         return list.toArray(new String[list.size()]);
     }
 
-    enum CsvSplitState { PRE_DATA, QUOTE, SLOSH, DATA, WHITE, POST_DATA };
+    enum CsvSplitState { PRE_DATA, QUOTE, SLOSH, DATA, WHITE, POST_DATA }
 
     /** Split a quoted comma separated string to a list
      * <p>Handle <a href="https://www.ietf.org/rfc/rfc4180.txt">rfc4180</a>-like 
@@ -890,7 +916,6 @@ public class StringUtil
                 case PRE_DATA:
                     if (Character.isWhitespace(ch))
                         continue;
-
                     if ('"'==ch)
                     {
                         state=CsvSplitState.QUOTE;
@@ -902,11 +927,9 @@ public class StringUtil
                         list.add("");
                         continue;
                     }
-
                     state=CsvSplitState.DATA;
                     out.append(ch);
                     continue;
-
                 case DATA:
                     if (Character.isWhitespace(ch))
                     {
@@ -923,7 +946,6 @@ public class StringUtil
                         state=CsvSplitState.PRE_DATA;
                         continue;
                     }
-
                     out.append(ch);
                     continue;
                     
@@ -947,7 +969,6 @@ public class StringUtil
                     out.append(ch);
                     last=-1;
                     continue;
-
                 case QUOTE:
                     if ('\\'==ch)
                     {
@@ -978,13 +999,11 @@ public class StringUtil
                     continue;
             }
         }
-
         switch(state)
         {
             case PRE_DATA:
             case POST_DATA:
                 break;
-
             case DATA:
             case QUOTE:
             case SLOSH:
@@ -1011,7 +1030,6 @@ public class StringUtil
         loop: for (;i<html.length();i++)
         {
             char c=html.charAt(i);
-
             switch(c)
             {
                 case '&' :
@@ -1020,13 +1038,11 @@ public class StringUtil
                 case '\'':
                 case '"':
                     break loop;
-
                 default:
                     if (Character.isISOControl(c) && !Character.isWhitespace(c))
                         break loop;
             }
         }
-
         // No characters need sanitizing, so return original string
         if (i==html.length())
             return html;
@@ -1039,7 +1055,6 @@ public class StringUtil
         for (;i<html.length();i++)
         {
             char c=html.charAt(i);
-
             switch(c)
             {
                 case '&' :
@@ -1057,7 +1072,6 @@ public class StringUtil
                 case '"':
                     out.append("&quot;");
                     break;
-
                 default:
                     if (Character.isISOControl(c) && !Character.isWhitespace(c))
                         out.append('?');
@@ -1067,8 +1081,7 @@ public class StringUtil
         }
         return out.toString();
     }
-    
-    /* ------------------------------------------------------------ */
+
     /** The String value of an Object
      * <p>This method calls {@link String#valueOf(Object)} unless the object is null,
      * in which case null is returned</p>

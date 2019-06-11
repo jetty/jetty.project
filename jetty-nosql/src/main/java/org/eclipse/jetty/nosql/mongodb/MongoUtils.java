@@ -27,10 +27,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * MongoUtils
@@ -69,23 +69,23 @@ public class MongoUtils
             throw new IllegalStateException(valueToDecode.getClass().toString());
         }
     }
-   
-    
-    
+
     public static String decodeName(String name)
     {
-        return name.replace("%2E",".").replace("%25","%");
+        String cleaned = name;
+        cleaned = StringUtil.replace(cleaned, "%2E", ".");
+        cleaned = StringUtil.replace(cleaned, "%25", "%");
+        return cleaned;
     }
-    
 
-    
     public static String encodeName(String name)
     {
-        return name.replace("%","%25").replace(".","%2E");
+        String cleaned = name;
+        cleaned = StringUtil.replace(cleaned, "%", "%25");
+        cleaned = StringUtil.replace(cleaned, ".", "%2E");
+        return cleaned;
     }
 
-
-    
     public static Object encodeName(Object value) throws IOException
     {
         if (value instanceof Number || value instanceof String || value instanceof Boolean || value instanceof Date)

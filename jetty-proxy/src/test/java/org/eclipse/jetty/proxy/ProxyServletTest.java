@@ -43,7 +43,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -670,7 +669,7 @@ public class ProxyServletTest
 
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
-                .path((prefix + target).replaceAll("//", "/"))
+                .path((prefix + target).replace("//", "/"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, response.getStatus());

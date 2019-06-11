@@ -20,11 +20,11 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -96,15 +96,22 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
                 group="";
             else
                 group = Matcher.quoteReplacement(group);
-            target=target.replaceAll("\\$"+g,group);
-            if (query!=null)
-                query=query.replaceAll("\\$"+g,group);
+            String dollarGroup = "$" + g;
+            target = StringUtil.replace(target, dollarGroup, group);
+            if (query != null)
+                query = StringUtil.replace(query, dollarGroup, group);
         }
 
         if (query!=null)
         {
             if (_queryGroup)
-                query=query.replace("$Q",request.getQueryString()==null?"":request.getQueryString());
+            {
+                String replacement = "";
+                if (request.getQueryString() != null)
+                    replacement = request.getQueryString();
+
+                query = StringUtil.replace(query, "$Q", replacement);
+            }
             request.setAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q",query);
         }
         
