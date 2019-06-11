@@ -1155,4 +1155,11 @@ public class ResponseTest
             super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
         }
     }
+
+    @Test
+    public void testToString() {
+        // No NPEs please.
+        new Response(null, null).toString();
+    }
+
 }

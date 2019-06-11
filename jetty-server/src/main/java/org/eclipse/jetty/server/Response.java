@@ -1192,7 +1192,8 @@ public class Response implements HttpServletResponse
     @Override
     public String toString()
     {
-        return String.format("%s %d %s%n%s", _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
+        HttpVersion httpVersion = _channel == null ? null : _channel.getRequest() == null ? null : _channel.getRequest().getHttpVersion();
+        return String.format("%s %d %s%n%s", httpVersion, _status, _reason == null ? "" : _reason, _fields);
     }
 
 
