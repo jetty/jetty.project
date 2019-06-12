@@ -601,13 +601,12 @@ public class AnnotationParser
         if (className == null)
             return;
 
-        String tmp = className;
-        className = TypeUtil.toClassReference(className);
-        URL resource = Loader.getResource(className);
+        String classRef = TypeUtil.toClassReference(className);
+        URL resource = Loader.getResource(classRef);
         if (resource!= null)
         {
             Resource r = Resource.newResource(resource);
-            addParsedClass(tmp, r);
+            addParsedClass(className, r);
             try (InputStream is = r.getInputStream())
             {
                 scanClass(handlers, null, is);
@@ -673,16 +672,16 @@ public class AnnotationParser
     {
         MultiException me = new MultiException();
 
-        for (String s:classNames)
+        for (String className : classNames)
         {
             try
             {
-                String name = TypeUtil.toClassReference(s);
-                URL resource = Loader.getResource(s);
+                String classRef = TypeUtil.toClassReference(className);
+                URL resource = Loader.getResource(classRef);
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    addParsedClass(name, r);
+                    addParsedClass(className, r);
                     try (InputStream is = r.getInputStream())
                     {
                         scanClass(handlers, null, is);
@@ -691,7 +690,7 @@ public class AnnotationParser
             }
             catch (Exception e)
             {
-                me.add(new RuntimeException("Error scanning class "+s, e));
+                me.add(new RuntimeException("Error scanning class "+className, e));
             }
         }
         me.ifExceptionThrow();

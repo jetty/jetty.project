@@ -240,8 +240,8 @@ public class NamingEntryUtil
             return "";
 
         String str = scope.getClass().getName() + "@" + Long.toHexString(scope.hashCode());
-        // TODO: Is this sanitize step still needed? (this canonicalizeScope method has been reduced in functionality a lot over the years)
-        str = StringUtil.sanitizeFileSystemName(str);
+        str = StringUtil.replace(str, '/', '_');
+        str = StringUtil.replace(str, ' ', '_');
         return str;
     }
 }
