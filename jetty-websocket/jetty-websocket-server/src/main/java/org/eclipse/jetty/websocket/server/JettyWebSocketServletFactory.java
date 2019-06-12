@@ -22,17 +22,19 @@ import java.time.Duration;
 import java.util.Set;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
-
-public class JettyWebSocketServletFactory
+public class JettyWebSocketServletFactory implements WebSocketPolicy
 {
     private WebSocketServletFactory factory;
 
-    public JettyWebSocketServletFactory(WebSocketServletFactory factory)
+    JettyWebSocketServletFactory(WebSocketServletFactory factory)
     {
         this.factory = factory;
     }
@@ -42,76 +44,128 @@ public class JettyWebSocketServletFactory
         return factory.getExtensionRegistry().getAvailableExtensionNames();
     }
 
-    public Duration getIdleTimeout()
+    @Override
+    public WebSocketBehavior getBehavior()
     {
-        return factory.getIdleTimeout();
+        return WebSocketBehavior.SERVER;
     }
 
-    public void setIdleTimeout(Duration duration)
-    {
-        factory.setIdleTimeout(duration);
-    }
-
-    public int getInputBufferSize()
-    {
-        return factory.getInputBufferSize();
-    }
-
-    public void setInputBufferSize(int bufferSize)
-    {
-        factory.setInputBufferSize(bufferSize);
-    }
-
-    public long getMaxFrameSize()
-    {
-        return factory.getMaxFrameSize();
-    }
-
-    public void setMaxFrameSize(long maxFrameSize)
-    {
-        factory.setMaxFrameSize(maxFrameSize);
-    }
-
-    public long getMaxBinaryMessageSize()
-    {
-        return factory.getMaxBinaryMessageSize();
-    }
-
-    public void setMaxBinaryMessageSize(long bufferSize)
-    {
-        factory.setMaxBinaryMessageSize(bufferSize);
-    }
-
-    public long getMaxTextMessageSize()
-    {
-        return factory.getMaxTextMessageSize();
-    }
-
-    public void setMaxTextMessageSize(long bufferSize)
-    {
-        factory.setMaxTextMessageSize(bufferSize);
-    }
-
-    public int getOutputBufferSize()
-    {
-        return factory.getOutputBufferSize();
-    }
-
-    public void setOutputBufferSize(int bufferSize)
-    {
-        factory.setOutputBufferSize(bufferSize);
-    }
-
+    /**
+     * If true, frames are automatically fragmented to respect the maximum frame size.
+     *
+     * @return whether to automatically fragment incoming WebSocket Frames.
+     */
     public boolean isAutoFragment()
     {
         return factory.isAutoFragment();
     }
 
+    /**
+     * If set to true, frames are automatically fragmented to respect the maximum frame size.
+     *
+     * @param autoFragment whether to automatically fragment incoming WebSocket Frames.
+     */
     public void setAutoFragment(boolean autoFragment)
     {
         factory.setAutoFragment(autoFragment);
     }
 
+    /**
+     * The maximum payload size of any WebSocket Frame which can be received.
+     *
+     * @return the maximum size of a WebSocket Frame.
+     */
+    public long getMaxFrameSize()
+    {
+        return factory.getMaxFrameSize();
+    }
+
+    /**
+     * The maximum payload size of any WebSocket Frame which can be received.
+     * <p>
+     * WebSocket Frames over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
+     *
+     * @param maxFrameSize the maximum allowed size of a WebSocket Frame.
+     */
+    public void setMaxFrameSize(long maxFrameSize)
+    {
+        factory.setMaxFrameSize(maxFrameSize);
+    }
+
+    @Override
+    public Duration getIdleTimeout()
+    {
+        return factory.getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(Duration duration)
+    {
+        factory.setIdleTimeout(duration);
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return factory.getInputBufferSize();
+    }
+
+    @Override
+    public void setInputBufferSize(int bufferSize)
+    {
+        factory.setInputBufferSize(bufferSize);
+    }
+
+    @Override
+    public long getMaxBinaryMessageSize()
+    {
+        return factory.getMaxBinaryMessageSize();
+    }
+
+    @Override
+    public void setMaxBinaryMessageSize(long bufferSize)
+    {
+        factory.setMaxBinaryMessageSize(bufferSize);
+    }
+
+    @Override
+    public long getMaxTextMessageSize()
+    {
+        return factory.getMaxTextMessageSize();
+    }
+
+    @Override
+    public void setMaxTextMessageSize(long bufferSize)
+    {
+        factory.setMaxTextMessageSize(bufferSize);
+    }
+
+    @Override
+    public int getOutputBufferSize()
+    {
+        return factory.getOutputBufferSize();
+    }
+
+    @Override
+    public void setOutputBufferSize(int bufferSize)
+    {
+        factory.setOutputBufferSize(bufferSize);
+    }
+
+
+    /**
+     * add a WebSocket mapping to a provided {@link JettyWebSocketCreator}.
+     * <p>
+     * If mapping is added before this configuration is started, then it is persisted through
+     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     * this configuration is stopped.
+     * </p>
+     *
+     * @param pathSpec the pathspec to respond on
+     * @param creator  the WebSocketCreator to use
+     * @since 10.0
+     */
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
     {
         factory.addMapping(pathSpec, new WrappedCreator(creator));

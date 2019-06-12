@@ -274,7 +274,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             }
 
             @Override
-            public FrameHandlerFactory getFactory()
+            protected FrameHandlerFactory getFactory()
             {
                 return factory;
             }

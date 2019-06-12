@@ -107,7 +107,7 @@ public abstract class WebSocketServlet extends HttpServlet
     /**
      * @return the instance of {@link FrameHandlerFactory} to be used to create the FrameHandler
      */
-    public abstract FrameHandlerFactory getFactory();
+    protected abstract FrameHandlerFactory getFactory();
 
     @Override
     public void init() throws ServletException
