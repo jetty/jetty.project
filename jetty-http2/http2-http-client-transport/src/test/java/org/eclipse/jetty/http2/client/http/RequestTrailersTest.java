@@ -139,4 +139,52 @@ public class RequestTrailersTest extends AbstractTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testEmptyTrailersWithEmptyDeferredContent() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame dataFrame, Callback callback)
+                    {
+                        callback.succeeded();
+                        // We should not receive an empty HEADERS frame for the
+                        // trailers, but instead a DATA frame with endStream=true.
+                        if (dataFrame.isEndStream())
+                        {
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                            HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
+                            stream.headers(responseFrame, Callback.NOOP);
+                        }
+                    }
+                };
+            }
+        });
+
+        HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        HttpFields trailers = new HttpFields();
+        request.trailers(() -> trailers);
+        DeferredContentProvider content = new DeferredContentProvider();
+        request.content(content);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        request.send(result ->
+        {
+            assertTrue(result.isSucceeded());
+            assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+            latch.countDown();
+        });
+
+        // Send deferred content after a while.
+        Thread.sleep(1000);
+        content.close();
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
 }

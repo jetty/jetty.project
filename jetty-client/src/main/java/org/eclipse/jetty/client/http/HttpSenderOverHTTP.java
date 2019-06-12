@@ -94,8 +94,8 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case NEED_CHUNK_TRAILER:
                     {
-                        callback.succeeded();
-                        return;
+                        chunk = bufferPool.acquire(httpClient.getRequestBufferSize(), false);
+                        break;
                     }
                     case FLUSH:
                     {

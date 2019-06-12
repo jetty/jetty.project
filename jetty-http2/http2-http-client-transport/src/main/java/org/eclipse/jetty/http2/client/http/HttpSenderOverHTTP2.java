@@ -133,6 +133,9 @@ public class HttpSenderOverHTTP2 extends HttpSender
     {
         if (content.isConsumed())
         {
+            // The superclass calls sendContent() one more time after the last content.
+            // This is necessary for HTTP/1.1 to generate the terminal chunk (with trailers),
+            // but it's not necessary for HTTP/2 so we just succeed the callback.
             callback.succeeded();
         }
         else

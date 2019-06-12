@@ -740,7 +740,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             }
             else
             {
-                // Was any content sent while committing ?
+                // Was any content sent while committing?
                 ByteBuffer contentBuffer = content.getContent();
                 if (contentBuffer != null)
                 {
