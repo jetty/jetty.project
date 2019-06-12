@@ -1130,7 +1130,7 @@
     <profile>
       <id>jdk11</id>
       <activation>
-        <jdk>[11)</jdk>
+        <jdk>[11,)</jdk>
       </activation>
       <build>
         <pluginManagement>
