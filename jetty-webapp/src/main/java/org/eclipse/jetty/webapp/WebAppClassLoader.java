@@ -498,7 +498,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 // Try the parent loader
                 try
                 {
-                    parent_class = _parent.loadClass(name); 
+                    parent_class = _parent.loadClass(name);
+                    if (parent_class == null)
+                        throw new ClassNotFoundException("Bad ClassLoader: returned null for loadClass(" + name + ")");
 
                     // If the webapp is allowed to see this class
                     if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
