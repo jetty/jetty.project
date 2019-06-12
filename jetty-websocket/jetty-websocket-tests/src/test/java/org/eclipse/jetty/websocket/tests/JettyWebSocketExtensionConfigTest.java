@@ -52,14 +52,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class JettyWebSocketExtensionConfigTest
 {
     private Server server;
+    private ServerConnector connector;
     private WebSocketClient client;
 
     @BeforeEach
     public void start() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -101,7 +101,7 @@ public class JettyWebSocketExtensionConfigTest
     @Test
     public void testJettyExtensionConfig() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/filterPath");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
         EventSocket socket = new EventSocket();
 
         UpgradeRequest request = new ClientUpgradeRequest();

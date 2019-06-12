@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class JettyWebSocketNegotiationTest
 {
     private Server server;
+    private ServerConnector connector;
     private WebSocketClient client;
     private ServletContextHandler contextHandler;
 
@@ -52,8 +53,7 @@ public class JettyWebSocketNegotiationTest
     public void start() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -78,7 +78,7 @@ public class JettyWebSocketNegotiationTest
         JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
         container.addMapping("/", (req, resp)->new EchoSocket());
 
-        URI uri = URI.create("ws://localhost:8080/filterPath");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
         EventSocket socket = new EventSocket();
 
         UpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -100,7 +100,7 @@ public class JettyWebSocketNegotiationTest
             return new EchoSocket();
         });
 
-        URI uri = URI.create("ws://localhost:8080/filterPath");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
         EventSocket socket = new EventSocket();
 
         try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class))
