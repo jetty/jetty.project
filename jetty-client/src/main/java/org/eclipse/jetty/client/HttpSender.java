@@ -22,12 +22,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -67,7 +65,6 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private final AtomicReference<SenderState> senderState = new AtomicReference<>(SenderState.IDLE);
     private final Callback commitCallback = new CommitCallback();
     private final IteratingCallback contentCallback = new ContentCallback();
-    private final Callback trailersCallback = new TrailersCallback();
     private final Callback lastCallback = new LastCallback();
     private final HttpChannel channel;
     private HttpContent content;
@@ -444,15 +441,6 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
      */
     protected abstract void sendContent(HttpExchange exchange, HttpContent content, Callback callback);
 
-    /**
-     * Implementations should send the HTTP trailers and notify the given {@code callback} of the
-     * result of this operation.
-     *
-     * @param exchange the exchange to send
-     * @param callback the callback to notify
-     */
-    protected abstract void sendTrailers(HttpExchange exchange, Callback callback);
-
     protected void reset()
     {
         HttpContent content = this.content;
@@ -745,20 +733,10 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (content == null)
                 return;
 
-            HttpRequest request = exchange.getRequest();
-            Supplier<HttpFields> trailers = request.getTrailers();
-            boolean hasContent = content.hasContent();
-            if (!hasContent)
+            if (!content.hasContent())
             {
-                if (trailers == null)
-                {
-                    // No trailers or content to send, we are done.
-                    someToSuccess(exchange);
-                }
-                else
-                {
-                    sendTrailers(exchange, lastCallback);
-                }
+                // No content to send, we are done.
+                someToSuccess(exchange);
             }
             else
             {
@@ -859,9 +837,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
                 if (lastContent)
                 {
-                    HttpRequest request = exchange.getRequest();
-                    Supplier<HttpFields> trailers = request.getTrailers();
-                    sendContent(exchange, content, trailers == null ? lastCallback : trailersCallback);
+                    sendContent(exchange, content, lastCallback);
                     return Action.IDLE;
                 }
 
@@ -922,28 +898,6 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         {
             // Nothing to do, since we always return IDLE from process().
             // Termination is obtained via LastCallback.
-        }
-    }
-
-    private class TrailersCallback implements Callback
-    {
-        @Override
-        public void succeeded()
-        {
-            HttpExchange exchange = getHttpExchange();
-            if (exchange == null)
-                return;
-            sendTrailers(exchange, lastCallback);
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            HttpContent content = HttpSender.this.content;
-            if (content == null)
-                return;
-            content.failed(x);
-            anyToFailure(x);
         }
     }
 
