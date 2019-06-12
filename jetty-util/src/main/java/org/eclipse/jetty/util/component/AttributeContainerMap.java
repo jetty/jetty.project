@@ -70,6 +70,13 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,String.format("%s@%x",this.getClass().getSimpleName(),hashCode()),_map);
+        Dumpable.dumpObject(out, this);
+        Dumpable.dumpMapEntries(out, indent, _map, true);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{size=%d}",this.getClass().getSimpleName(),hashCode(),_map.size());
     }
 }

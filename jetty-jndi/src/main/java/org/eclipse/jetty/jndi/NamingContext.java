@@ -128,7 +128,7 @@ public class NamingContext implements Context, Dumpable
         this(env, name, parent, parser, null);
     }
 
-    private NamingContext(Hashtable<String,Object> env,
+    protected NamingContext(Hashtable<String,Object> env,
                          String name,
                          NamingContext parent,
                          NameParser parser,
@@ -145,13 +145,12 @@ public class NamingContext implements Context, Dumpable
     }
 
     /**
-     * @return A shallow copy of the Context with the same bindings, but a copy of the Env
+     * @return A shallow copy of the Context with the same bindings, but with the passed environment
      */
-    public NamingContext shallowCopy()
+    public Context shallowCopy(Hashtable<String, Object> env)
     {
-        return new NamingContext(_env, _name, _parent, _parser, _bindings);
+        return new NamingContext(env, _name, _parent, _parser, _bindings);
     }
-
 
     public boolean isDeepBindingSupported()
     {
@@ -459,7 +458,7 @@ public class NamingContext implements Context, Dumpable
         {
             if(LOG.isDebugEnabled())
                 LOG.debug("Null or empty name, returning shallowCopy of this context");
-            return shallowCopy();
+            return shallowCopy(_env);
         }
 
         if (cname.size() == 1)
@@ -543,7 +542,7 @@ public class NamingContext implements Context, Dumpable
 
         if (cname == null || name.isEmpty())
         {
-            return shallowCopy();
+            return shallowCopy(_env);
         }
 
         if (cname.size() == 0)
@@ -1124,13 +1123,13 @@ public class NamingContext implements Context, Dumpable
         for (Map.Entry<String,Binding> binding : _bindings.entrySet())
             bindings.put(binding.getKey(), binding.getValue().getObject());
 
-        if (_env.size()==0)
-            Dumpable.dumpObjects(out,indent,this,
-                Dumpable.named("BND", bindings));
-        else
-            Dumpable.dumpObjects(out,indent,this,
-                Dumpable.named("ENV", _env),
-                Dumpable.named("BND", bindings));
+        Dumpable.dumpObject(out, this);
+        Dumpable.dumpMapEntries(out, indent, bindings, _env.isEmpty());
+        if (!_env.isEmpty())
+        {
+            out.append(indent).append("+> environment\n");
+            Dumpable.dumpMapEntries(out, indent + "   ", _env, true);
+        }
     }
 
     private Collection<Listener> findListeners()

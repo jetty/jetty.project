@@ -20,6 +20,7 @@ package org.eclipse.jetty.plus.jndi;
 
 import javax.naming.InitialContext;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 
 /**
@@ -47,6 +48,8 @@ public class NamingDump implements Dumpable
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         try
         {
+            if (!StringUtil.isBlank(_name))
+                out.append(_name).append(" ");
             if (_loader!=null)
                 Thread.currentThread().setContextClassLoader(_loader);
             Object context = new InitialContext().lookup(_name);
