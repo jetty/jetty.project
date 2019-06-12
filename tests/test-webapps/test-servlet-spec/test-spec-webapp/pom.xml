@@ -114,7 +114,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -128,6 +128,15 @@
                   <includes>**</includes>
                   <overWrite>true</overWrite>
                   <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-util</artifactId>
+                  <!-- deliberately old version to test classloading -->
+                  <version>9.3.0.RC0</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/lib</outputDirectory>
                 </artifactItem>
               </artifactItems>
           </configuration>
@@ -220,12 +229,6 @@
        <groupId>org.eclipse.jetty.tests</groupId>
        <artifactId>test-container-initializer</artifactId>
        <version>${project.version}</version>
-     </dependency>
-     <dependency>
-       <groupId>org.eclipse.jetty</groupId>
-       <artifactId>jetty-util</artifactId>
-       <!-- deliberately old version to test classloading -->
-       <version>9.3.0.RC0</version>
      </dependency>
   </dependencies>
 </project>
