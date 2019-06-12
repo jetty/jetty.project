@@ -541,7 +541,6 @@
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
             <additionalOptions>-html5</additionalOptions>
-            <additionalJOption>--no-module-directories</additionalJOption>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
@@ -1122,6 +1121,25 @@
                 <minSeverity>info</minSeverity>
                 <comparisonVersion>9.4.6.v20170531</comparisonVersion>
                 <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>jdk11</id>
+      <activation>
+        <jdk>[11)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <additionalJOption>--no-module-directories</additionalJOption>
               </configuration>
             </plugin>
           </plugins>
