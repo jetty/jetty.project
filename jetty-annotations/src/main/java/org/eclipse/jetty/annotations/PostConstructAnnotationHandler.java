@@ -72,8 +72,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                          origin == Origin.WebOverride))
                         return;
 
-                    PostConstructCallback callback = new PostConstructCallback();
-                    callback.setTarget(clazz, m.getName());
+                    PostConstructCallback callback = new PostConstructCallback(clazz, m.getName());
                     LifeCycleCallbackCollection lifecycles = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
                     if (lifecycles == null)
                     {

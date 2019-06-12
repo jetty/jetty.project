@@ -122,7 +122,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             }
 
             //work out default name
-            String name = clazz.getCanonicalName()+"/"+field.getName();
+            String name = clazz.getName()+"/"+field.getName();
 
             //allow @Resource name= to override the field name
             name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
@@ -180,10 +180,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     {
                         LOG.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it if the binding succeeded
-                        injection = new Injection();
-                        injection.setTarget(clazz, field, type);
-                        injection.setJndiName(name);
-                        injection.setMappingName(mappedName);
+                        injection = new Injection(clazz, field, type, name, mappedName);
                         injections.add(injection);
 
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
@@ -274,7 +271,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             //default name is the javabean property name
             String name = method.getName().substring(3);
             name = name.substring(0,1).toLowerCase(Locale.ENGLISH)+name.substring(1);
-            name = clazz.getCanonicalName()+"/"+name;
+            name = clazz.getName()+"/"+name;
 
             name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
             String mappedName = (resource.mappedName()!=null && !resource.mappedName().trim().equals("")?resource.mappedName():null);
@@ -338,10 +335,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     {
                         LOG.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it
-                        injection = new Injection();
-                        injection.setTarget(clazz, method,paramType,resourceType);
-                        injection.setJndiName(name);
-                        injection.setMappingName(mappedName);
+                        injection = new Injection(clazz, method,paramType,resourceType, name, mappedName);
                         injections.add(injection);
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
                         metaData.setOrigin("resource-ref."+name+".injection",resource,clazz);

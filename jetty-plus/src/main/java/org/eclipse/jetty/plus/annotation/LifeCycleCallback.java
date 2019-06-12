@@ -40,13 +40,36 @@ public abstract class LifeCycleCallback
 {
     public static final Object[] __EMPTY_ARGS = new Object[] {};
     private Method _target;
-    private Class<?> _targetClass;
-    private String _className;
-    private String _methodName;
+    private Class<?> _targetClass; //Not final so we can do lazy load
+    private final String _className;
+    private final String _methodName;
 
 
-    public LifeCycleCallback()
+    public LifeCycleCallback(String className, String methodName)
     {
+        Objects.requireNonNull(className);
+        Objects.requireNonNull(methodName);
+        _className = className;
+        _methodName = methodName;
+    }
+    
+    public LifeCycleCallback (Class<?> clazz, String methodName)
+    {
+        Objects.requireNonNull(clazz);
+        Objects.requireNonNull(methodName);
+        try
+        {
+            Method method = IntrospectionUtil.findMethod(clazz, methodName, null, true, true);
+            validate(clazz, method);
+            _target = method;
+            _targetClass = clazz;
+            _className = clazz.getName();
+            _methodName = methodName;
+        }
+        catch (NoSuchMethodException e)
+        {
+            throw new IllegalArgumentException ("Method "+methodName+" not found on class "+clazz.getName());
+        }
     }
 
     /**
@@ -75,41 +98,10 @@ public abstract class LifeCycleCallback
         return _target;
     }
 
-
-    public void setTarget (String className, String methodName)
-    {
-        Objects.requireNonNull(className);
-        Objects.requireNonNull(methodName);
-        _className = className;
-        _methodName = methodName;
-    }
-
-    public void setTarget (Class<?> clazz, String methodName)
-    {
-        Objects.requireNonNull(clazz);
-        Objects.requireNonNull(methodName);
-        try
-        {
-            Method method = IntrospectionUtil.findMethod(clazz, methodName, null, true, true);
-            validate(clazz, method);
-            _target = method;
-            _targetClass = clazz;
-            _className = clazz.getCanonicalName();
-            _methodName = methodName;
-        }
-        catch (NoSuchMethodException e)
-        {
-            throw new IllegalArgumentException ("Method "+methodName+" not found on class "+clazz.getName());
-        }
-    }
-
-
-
-
     public void callback (Object instance)
     throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
     {
-        if (_target == null)
+        if (_target == null) //lazy load the target class
         {
             if (_targetClass == null)
                 _targetClass = Loader.loadClass(_className);
@@ -165,12 +157,7 @@ public abstract class LifeCycleCallback
     @Override
     public int hashCode()
     {
-        int hash = 0;
-        if (_className != null)
-            hash = _className.hashCode();
-        if (_methodName != null)
-            hash ^= _methodName.hashCode();
-        return hash;
+        return Objects.hash(_className, _methodName);
     }
 
 
@@ -187,13 +174,10 @@ public abstract class LifeCycleCallback
         
         if (this == callback)
             return true;
-
-        if (getTargetClassName() == null)
-            return (getMethodName() == null && callback.getTargetClassName() == null && callback.getMethodName() == null);
-
-        if (getTargetClassName().equals(callback.getTargetClassName()))
-            return ((getMethodName() == null && callback.getMethodName() == null)
-                || (getMethodName().equals(callback.getMethodName())));
+        
+        if (getTargetClassName().equals(callback.getTargetClassName())
+            && getMethodName().equals(callback.getMethodName()))
+            return true;
 
         return false;
     }

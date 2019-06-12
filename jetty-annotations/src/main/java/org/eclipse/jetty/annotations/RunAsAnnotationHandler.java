@@ -66,9 +66,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                     if (d == null)
                     {
                         metaData.setOrigin(holder.getName()+".servlet.run-as",runAs,clazz);
-                        org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
-                        ra.setTargetClassName(clazz.getCanonicalName());
-                        ra.setRoleName(role);
+                        org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs(clazz.getName(), role);
                         RunAsCollection raCollection = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
                         if (raCollection == null)
                         {

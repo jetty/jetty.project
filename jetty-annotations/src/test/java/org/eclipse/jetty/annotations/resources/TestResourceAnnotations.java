@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Set;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -100,16 +101,16 @@ public class TestResourceAnnotations
         //we should have Injections
         assertNotNull(injections);
 
-        List<Injection> resBInjections = injections.getInjections(ResourceB.class.getCanonicalName());
+        Set<Injection> resBInjections = injections.getInjections(ResourceB.class.getName());
         assertNotNull(resBInjections);
 
         //only 1 field injection because the other has no Resource mapping
         assertEquals(1, resBInjections.size());
-        Injection fi = resBInjections.get(0);
+        Injection fi = resBInjections.iterator().next();
         assertEquals ("f", fi.getTarget().getName());
 
         //3 method injections on class ResourceA, 4 field injections
-        List<Injection> resAInjections = injections.getInjections(ResourceA.class.getCanonicalName());
+        Set<Injection> resAInjections = injections.getInjections(ResourceA.class.getName());
         assertNotNull(resAInjections);
         assertEquals(7, resAInjections.size());
         int fieldCount = 0;
