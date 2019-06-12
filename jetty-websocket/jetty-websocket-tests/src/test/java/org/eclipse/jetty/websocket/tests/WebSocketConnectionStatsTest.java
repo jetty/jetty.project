@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -64,7 +63,8 @@ public class WebSocketConnectionStatsTest
     public static class ClientSocket
     {
         CountDownLatch closed = new CountDownLatch(1);
-
+        int closeStatus;
+        String closeReason;
         String behavior;
 
         @OnWebSocketConnect
@@ -76,6 +76,8 @@ public class WebSocketConnectionStatsTest
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
+            closeStatus = statusCode;
+            closeReason = reason;
             closed.countDown();
         }
 
@@ -202,11 +204,17 @@ public class WebSocketConnectionStatsTest
         assertThat(statistics.getReceivedMessages(), is(numMessages + 2L));
 
         WebSocketFrame textFrame = new TextFrame().setPayload(msgText);
-        WebSocketFrame closeFrame = new CloseInfo(StatusCode.NORMAL).asFrame();
+        WebSocketFrame closeFrame = new CloseInfo(socket.closeStatus, socket.closeReason).asFrame();
 
         final long textFrameSize = getFrameByteSize(textFrame);
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames
+
+        // Pointless Sanity Checks
+        // assertThat("Upgrade Sent Bytes", upgradeSentBytes, is(197L));
+        // assertThat("Upgrade Received Bytes", upgradeReceivedBytes, is(261L));
+        // assertThat("Text Frame Size", textFrameSize, is(13L));
+        // assertThat("Close Frame Size", closeFrameSize, is(4L));
 
         final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
         final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
