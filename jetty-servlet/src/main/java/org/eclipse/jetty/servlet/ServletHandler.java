@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -425,6 +424,23 @@ public class ServletHandler extends ScopedHandler
     public ServletHolder[] getServlets()
     {
         return _servlets;
+    }
+
+    public List<ServletHolder> getServlets(Class<?> clazz)
+    {
+        List<ServletHolder> holders = null;
+        for (ServletHolder holder : _servlets)
+        {
+            Class<? extends Servlet> held = holder.getHeldClass();
+            if ((held == null && holder.getClassName() != null && holder.getClassName().equals(clazz.getName())) ||
+                (held != null && clazz.isAssignableFrom(holder.getHeldClass())))
+            {
+                if (holders == null)
+                    holders = new ArrayList<>();
+                holders.add(holder);
+            }
+        }
+        return holders == null ? Collections.emptyList() : holders;
     }
 
     public ServletHolder getServlet(String name)

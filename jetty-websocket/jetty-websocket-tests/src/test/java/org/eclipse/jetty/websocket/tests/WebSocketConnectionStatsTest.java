@@ -71,13 +71,11 @@ public class WebSocketConnectionStatsTest
         public void onOpen(Session session)
         {
             behavior = session.getPolicy().getBehavior().name();
-            System.err.println(toString() + " Socket Connected: " + session);
         }
 
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            System.err.println(toString() + " Socket Closed: " + statusCode + ":" + reason);
             closed.countDown();
         }
 
@@ -109,7 +107,7 @@ public class WebSocketConnectionStatsTest
         @Override
         public void configure(WebSocketServletFactory factory)
         {
-            factory.setCreator((req, resp)->new EchoSocket());
+            factory.setCreator((req, resp) -> new EchoSocket());
         }
     }
 
@@ -164,7 +162,7 @@ public class WebSocketConnectionStatsTest
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator generator = new Generator(WebSocketPolicy.newClientPolicy(), bufferPool);
-        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength()+10, true);
+        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength() + 10, true);
         int pos = BufferUtil.flipToFill(buffer);
         generator.generateWholeFrame(frame, buffer);
         return buffer.position() - pos;
@@ -189,8 +187,10 @@ public class WebSocketConnectionStatsTest
             upgradeSentBytes = statistics.getSentBytes();
             upgradeReceivedBytes = statistics.getReceivedBytes();
 
-            for (int i=0; i<numMessages; i++)
+            for (int i = 0; i < numMessages; i++)
+            {
                 session.getRemote().sendString(msgText);
+            }
         }
         assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
         assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
@@ -208,10 +208,10 @@ public class WebSocketConnectionStatsTest
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames
 
-        final long expectedSent = upgradeSentBytes + numMessages*textFrameSize + closeFrameSize;
-        final long expectedReceived = upgradeReceivedBytes + numMessages*(textFrameSize+maskSize) + closeFrameSize+maskSize;
+        final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
+        final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
 
-        assertThat(statistics.getSentBytes(), is(expectedSent));
-        assertThat(statistics.getReceivedBytes(), is(expectedReceived));
+        assertThat("stats.sendBytes", statistics.getSentBytes(), is(expectedSent));
+        assertThat("stats.receivedBytes", statistics.getReceivedBytes(), is(expectedReceived));
     }
 }
