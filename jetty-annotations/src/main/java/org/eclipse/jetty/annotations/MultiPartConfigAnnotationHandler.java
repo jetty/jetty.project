@@ -62,9 +62,7 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
         //How to identify the correct Servlet?  If the Servlet has no WebServlet annotation on it, does it mean that this MultipartConfig
         //annotation applies to all declared instances in web.xml/programmatically?
         //Assuming TRUE for now.
-
-        ServletHolder holder = getServletHolderForClass(clazz);
-        if (holder != null)
+        for (ServletHolder holder : _context.getServletHandler().getServlets(clazz))
         {
             Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.multipart-config");
             //if a descriptor has already set the value for multipart config, do not 
@@ -75,22 +73,5 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
                 holder.getRegistration().setMultipartConfig(new MultipartConfigElement(multi));
             }
         }
-    }
-    
-    private ServletHolder getServletHolderForClass (Class clazz)
-    {
-        ServletHolder holder = null;
-        ServletHolder[] holders = _context.getServletHandler().getServlets();
-        if (holders != null)
-        {
-            for (ServletHolder h : holders)
-            {
-                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
-                {
-                    holder = h;
-                }
-            }
-        }
-        return holder;
     }
 }

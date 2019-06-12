@@ -56,8 +56,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
             String role = runAs.value();
             if (role != null)
             {
-                ServletHolder holder = getServletHolderForClass(clazz);
-                if (holder != null)
+                for (ServletHolder holder : _context.getServletHandler().getServlets(clazz))
                 {
                     MetaData metaData = _context.getMetaData();
                     Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.run-as");
@@ -82,7 +81,6 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
             else
                 LOG.warn("Bad value for @RunAs annotation on class "+clazz.getName());
         }
-
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation)
@@ -93,22 +91,5 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation)
     {
         LOG.warn("@RunAs annotation ignored on method: "+className+"."+methodName+" "+signature);
-    }
-
-    private ServletHolder getServletHolderForClass (Class clazz)
-    {
-        ServletHolder holder = null;
-        ServletHolder[] holders = _context.getServletHandler().getServlets();
-        if (holders != null)
-        {
-            for (ServletHolder h : holders)
-            {
-                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
-                {
-                    holder = h;
-                }
-            }
-        }
-        return holder;
     }
 }
