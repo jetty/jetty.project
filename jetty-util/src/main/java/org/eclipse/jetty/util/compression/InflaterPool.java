@@ -16,16 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
-
-import org.apache.commons.pool.ObjectPool;
+package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Inflater;
 
-public class InflaterPool
+public class InflaterPool extends CompressionPool<Inflater>
 {
-
-    private final ObjectPool<Inflater> inflaterPool;
+    private final boolean nowrap;
 
     /**
      * Create a Pool of {@link Inflater} instances.
@@ -39,38 +36,25 @@ public class InflaterPool
      */
     public InflaterPool(int capacity, boolean nowrap)
     {
-        inflaterPool = (capacity <= 0)
-                ? CompressionPool.growingInflaterPool(nowrap)
-                : CompressionPool.limitedInflaterPool(capacity, nowrap);
+        super(capacity);
+        this.nowrap = nowrap;
     }
 
-    /**
-     * @return Inflater taken from the pool if it is not empty or a newly created Inflater
-     */
-    public Inflater acquire()
+    @Override
+    protected Inflater newObject()
     {
-        try
-        {
-            return inflaterPool.borrowObject();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        return new Inflater(nowrap);
     }
 
-    /**
-     * @param inflater returns this Inflater to the pool or calls inflater.end() if the pool is full.
-     */
-    public void release(Inflater inflater)
+    @Override
+    protected void end(Inflater inflater)
     {
-        try
-        {
-            inflaterPool.returnObject(inflater);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        inflater.end();
+    }
+
+    @Override
+    protected void reset(Inflater inflater)
+    {
+        inflater.reset();
     }
 }

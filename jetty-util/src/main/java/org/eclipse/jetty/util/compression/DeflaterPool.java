@@ -16,15 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
-
-import org.apache.commons.pool.ObjectPool;
+package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Deflater;
 
-public class DeflaterPool
+public class DeflaterPool extends CompressionPool<Deflater>
 {
-    private final ObjectPool<Deflater> deflaterPool;
+    private final int compressionLevel;
+    private final boolean nowrap;
 
     /**
      * Create a Pool of {@link Deflater} instances.
@@ -39,41 +38,26 @@ public class DeflaterPool
      */
     public DeflaterPool(int capacity, int compressionLevel, boolean nowrap)
     {
-        deflaterPool = capacity <= 0
-                ? CompressionPool.growingDeflaterPool(compressionLevel, nowrap)
-                : CompressionPool.limitedDeflaterPool(capacity, compressionLevel, nowrap);
+        super(capacity);
+        this.compressionLevel = compressionLevel;
+        this.nowrap = nowrap;
     }
 
-    /**
-     * @return Deflater taken from the pool if it is not empty or a newly created Deflater
-     */
-    public Deflater acquire()
+    @Override
+    protected Deflater newObject()
     {
-        try
-        {
-            return deflaterPool.borrowObject();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        return new Deflater(compressionLevel, nowrap);
     }
 
-    /**
-     * @param deflater returns this Deflater to the pool or calls deflater.end() if the pool is full.
-     */
-    public void release(Deflater deflater)
+    @Override
+    protected void end(Deflater deflater)
     {
-        if (deflater == null)
-            return;
+        deflater.end();
+    }
 
-        try
-        {
-            deflaterPool.returnObject(deflater);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+    @Override
+    protected void reset(Deflater deflater)
+    {
+        deflater.reset();
     }
 }

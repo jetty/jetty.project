@@ -29,9 +29,9 @@ import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.DeflaterPool;
-import org.eclipse.jetty.util.InflaterPool;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
