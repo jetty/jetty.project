@@ -95,9 +95,12 @@ public class AnnotationIntrospector
         
         synchronized(_introspectedClasses)
         {
-            //synchronize on the set of already introspected classes
-            //to protect against multiple threads introspecting the same class,
-            //and use the set to avoid re-introspecting the same class.
+            //Synchronize on the set of already introspected classes.
+            //This ensures that only 1 thread can be introspecting, and that
+            //thread must have fully finished generating the products of
+            //introspection before another thread is allowed in.
+            //We remember the classes that we have introspected to avoid
+            //reprocessing the same class.
             if (_introspectedClasses.add(clazz))
             {
                 for (IntrospectableAnnotationHandler handler:_handlers)

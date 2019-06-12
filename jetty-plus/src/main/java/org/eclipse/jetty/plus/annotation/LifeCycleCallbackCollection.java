@@ -66,10 +66,9 @@ public class LifeCycleCallbackCollection
         Map<String, List<LifeCycleCallback>> map = null;
         if (callback instanceof PreDestroyCallback)
             map = preDestroyCallbacksMap;
-        if (callback instanceof PostConstructCallback)
+        else if (callback instanceof PostConstructCallback)
             map = postConstructCallbacksMap;
-
-        if (map == null)
+        else
             throw new IllegalArgumentException ("Unsupported lifecycle callback type: "+callback);
      
         List<LifeCycleCallback> callbacks = map.get(callback.getTargetClassName());
