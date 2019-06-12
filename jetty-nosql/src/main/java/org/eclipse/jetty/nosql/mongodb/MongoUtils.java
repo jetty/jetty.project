@@ -30,7 +30,7 @@ import java.util.Map;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * MongoUtils
@@ -72,18 +72,12 @@ public class MongoUtils
 
     public static String decodeName(String name)
     {
-        String cleaned = name;
-        cleaned = StringUtil.replace(cleaned, "%2E", ".");
-        cleaned = StringUtil.replace(cleaned, "%25", "%");
-        return cleaned;
+        return URIUtil.decodeSpecific(name, ".%");
     }
 
     public static String encodeName(String name)
     {
-        String cleaned = name;
-        cleaned = StringUtil.replace(cleaned, "%", "%25");
-        cleaned = StringUtil.replace(cleaned, ".", "%2E");
-        return cleaned;
+        return URIUtil.encodeSpecific(name, ".%");
     }
 
     public static Object encodeName(Object value) throws IOException

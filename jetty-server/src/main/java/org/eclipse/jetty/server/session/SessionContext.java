@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * SessionContext
@@ -138,7 +139,6 @@ public class SessionContext
         if (path==null)
             return "";
 
-        return path.replace('/', '_').replace('.','_').replace('\\','_');
+        return StringUtil.sanitizeFileSystemName(path);
     }
-    
 }

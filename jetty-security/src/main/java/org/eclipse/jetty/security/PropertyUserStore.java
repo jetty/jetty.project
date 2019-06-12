@@ -141,7 +141,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         if (colon < 0 || bang_slash < 0 || colon > bang_slash)
             throw new IllegalArgumentException("Not resolved JarFile resource: " + uri);
 
-        String entry_path = StringUtil.sanitizeFileSystemPath(uri.substring(colon + 2));
+        String entry_path = StringUtil.sanitizeFileSystemName(uri.substring(colon + 2));
 
         Path tmpDirectory = Files.createTempDirectory("users_store");
         tmpDirectory.toFile().deleteOnExit();

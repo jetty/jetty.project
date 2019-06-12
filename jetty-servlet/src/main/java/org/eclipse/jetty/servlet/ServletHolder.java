@@ -966,7 +966,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
         catch (Exception e)
         {
-            String tmp = jsp.replace('.','_');
+            String tmp = StringUtil.replace(jsp, '.', '_');
             if (LOG.isDebugEnabled())
             {
                 LOG.warn("JspUtil.makeJavaIdentifier failed for jsp "+jsp +" using "+tmp+" instead");
@@ -1003,9 +1003,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 s = 1;
             
             //remove the element after last slash, which should be name of jsp
-            tmp = tmp.substring(s,i);
+            tmp = tmp.substring(s,i).trim();
 
-            tmp = tmp.replace('/','.').trim();
+            tmp = StringUtil.replace(tmp, '/', '.');
             tmp = (".".equals(tmp)? "": tmp);
             if (LOG.isDebugEnabled())
             {

@@ -101,13 +101,15 @@ public interface Dumpable
                 s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
             else if (o instanceof Dumpable)
             {
-                s = StringUtil.replace(((Dumpable)o).dumpSelf(), "\r\n", "|")
-                    .replace('\n', '|');
+                s = ((Dumpable)o).dumpSelf();
+                s = StringUtil.replace(s, "\r\n", "|");
+                s = StringUtil.replace(s, '\n', '|');
             }
             else
             {
-                s = StringUtil.replace(String.valueOf(o), "\r\n", "|")
-                    .replace('\n', '|');
+                s = String.valueOf(o);
+                s = StringUtil.replace(s, "\r\n", "|");
+                s = StringUtil.replace(s, '\n', '|');
             }
 
             if (o instanceof LifeCycle)

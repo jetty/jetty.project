@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -143,7 +144,7 @@ public class ResponseHeadersTest
         assertThat("Response Code",response.getStatus(),is(200));
         assertThat("Response Header Content-Type",response.get("Content-Type"),is("text/plain;charset=UTF-8"));
 
-        String expected = actualPathInfo.replace("%0A", " "); // replace OBS fold with space
+        String expected = StringUtil.replace(actualPathInfo, "%0A", " "); // replace OBS fold with space
         expected = URLDecoder.decode(expected, "utf-8"); // decode the rest
         expected = expected.trim(); // trim whitespace at start/end
         assertThat("Response Header X-example", response.get("X-Example"), is(expected));

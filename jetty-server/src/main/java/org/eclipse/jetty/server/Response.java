@@ -235,7 +235,7 @@ public class Response implements HttpServletResponse
             if (i >= 0)
             {
                 httpOnly = true;
-                comment = StringUtil.replace(comment.trim(), HTTP_ONLY_COMMENT, "");
+                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
                 if (comment.length() == 0)
                     comment = null;
             }
@@ -1144,7 +1144,7 @@ public class Response implements HttpServletResponse
             return;
 
         _locale = locale;
-        _fields.put(HttpHeader.CONTENT_LANGUAGE, locale.toString().replace('_', '-'));
+        _fields.put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
 
         if (_outputType != OutputType.NONE)
             return;

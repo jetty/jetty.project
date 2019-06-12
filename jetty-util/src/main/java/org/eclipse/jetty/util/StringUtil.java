@@ -142,7 +142,7 @@ public class StringUtil
 
     /**
      * Replace all characters from input string that are known to have
-     * special meaning in various filesytems.
+     * special meaning in various filesystems.
      *
      * <p>
      *     This will replace all of the following characters
@@ -151,14 +151,18 @@ public class StringUtil
      * <ul>
      *     <li>Control Characters</li>
      *     <li>Anything not 7-bit printable ASCII</li>
-     *     <li>Special characters "{@code !|/.,:&><\?*"}"</li>
+     *     <li>Special characters: pipe, redirect, combine, slash, equivalence, bang, glob, selection, etc...</li>
+     *     <li>Space</li>
      * </ul>
      *
      * @param str the raw input string
-     * @return the sanitized output string.
+     * @return the sanitized output string. or null if {@code str} is null.
      */
-    public static String sanitizeFileSystemPath(String str)
+    public static String sanitizeFileSystemName(String str)
     {
+        if (str == null)
+            return null;
+
         char[] chars = str.toCharArray();
         int len = chars.length;
         for (int i = 0; i < len; i++)
@@ -166,10 +170,18 @@ public class StringUtil
             char c = chars[i];
             if ((c <= 0x1F) || // control characters
                 (c >= 0x7F) || // over 7-bit printable ASCII
-                (c == '!') || (c == '|') || (c == '.') ||
-                (c == ':') || (c == '>') || (c == '<') ||
-                (c == '?') || (c == '/') || (c == '\\') ||
-                (c == '*') || (c == '"') || (c == '&'))
+                // piping : special meaning on unix / osx / windows
+                (c == '|') || (c == '>') || (c == '<') || (c == '/') || (c == '&') ||
+                // special characters on windows
+                (c == '\\') || (c == '.') || (c == ':') ||
+                // special characters on osx
+                (c == '=') || (c == '"') || (c == ',') ||
+                // glob / selection characters on most OS's
+                (c == '*') || (c == '?') ||
+                // bang execution on unix / osx
+                (c == '!') ||
+                // spaces are just generally difficult to work with
+                (c == ' '))
             {
                 chars[i] = '_';
             }
@@ -247,6 +259,41 @@ public class StringUtil
     }
 
     /**
+     * Replace chars within string.
+     * <p>
+     *     Fast replacement for {@code java.lang.String#}{@link String#replace(char, char)}
+     * </p>
+     *
+     * @param str the input string
+     * @param find the char to look for
+     * @param with the char to replace with
+     * @return the now replaced string
+     */
+    public static String replace(String str, char find, char with)
+    {
+        if (str == null)
+            return null;
+
+        if (find == with)
+            return str;
+
+        int c = 0;
+        int idx = str.indexOf(find, c);
+        if (idx == -1)
+        {
+            return str;
+        }
+        char[] chars = str.toCharArray();
+        int len = chars.length;
+        for (int i = idx; i < len; i++)
+        {
+            if (chars[i] == find)
+                chars[i] = with;
+        }
+        return String.valueOf(chars);
+    }
+
+    /**
      * Replace substrings within string.
      * <p>
      *     Fast replacement for {@code java.lang.String#}{@link String#replace(CharSequence, CharSequence)}
@@ -259,6 +306,9 @@ public class StringUtil
      */
     public static String replace(String s, String sub, String with)
     {
+        if (s == null)
+            return null;
+
         int c = 0;
         int i = s.indexOf(sub, c);
         if (i == -1)
@@ -277,7 +327,7 @@ public class StringUtil
         {
             buf.append(s.substring(c));
         }
-        return buf.toString();   
+        return buf.toString();
     }
 
     /**
@@ -1080,6 +1130,11 @@ public class StringUtil
             }
         }
         return out.toString();
+    }
+
+    public static String strip(String str, String find)
+    {
+        return StringUtil.replace(str, find, "");
     }
 
     /** The String value of an Object

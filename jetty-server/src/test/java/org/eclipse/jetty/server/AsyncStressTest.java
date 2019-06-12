@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -29,7 +27,6 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -40,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -48,6 +46,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled
 @Tag("stress")
@@ -123,7 +123,7 @@ public class AsyncStressTest
                 int p=path[i][l]=_random.nextInt(__paths.length);
 
                 int period = _random.nextInt(290)+10;
-                String uri=__paths[p][0].replace("<PERIOD>",Integer.toString(period));
+                String uri = StringUtil.replace(__paths[p][0], "<PERIOD>", Integer.toString(period));
 
                 long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 String request =

@@ -41,6 +41,7 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -703,7 +704,7 @@ public class ClasspathPattern extends AbstractSet<String>
             name=name.substring(0,name.length()-6);
         
         // Treat path elements as packages for name matching
-        name = name.replace('/', '.');
+        name = StringUtil.replace(name, '/', '.');
 
         return combine(_packageOrNamePatterns, name, _locations, ()->
         {

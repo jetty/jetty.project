@@ -38,6 +38,8 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.ManifestUtils;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -151,7 +153,7 @@ public class AnnotationParser
         if (name.endsWith(".class"))
             name = name.substring(0, name.length()-".class".length());
 
-        return name.replace('/', '.');
+        return StringUtil.replace(name,'/', '.');
     }
     
     /**
@@ -600,7 +602,7 @@ public class AnnotationParser
             return;
 
         String tmp = className;
-        className = className.replace('.', '/')+".class";
+        className = TypeUtil.toClassReference(className);
         URL resource = Loader.getResource(className);
         if (resource!= null)
         {
@@ -626,7 +628,7 @@ public class AnnotationParser
         Class<?> cz = clazz;
         while (cz != Object.class)
         {
-            String nameAsResource = cz.getName().replace('.', '/')+".class";
+            String nameAsResource = TypeUtil.toClassReference(cz);
             URL resource = Loader.getResource(nameAsResource);
             if (resource!= null)
             {
@@ -675,8 +677,7 @@ public class AnnotationParser
         {
             try
             {
-                String name = s;
-                s = s.replace('.', '/')+".class";
+                String name = TypeUtil.toClassReference(s);
                 URL resource = Loader.getResource(s);
                 if (resource!= null)
                 {
@@ -727,8 +728,9 @@ public class AnnotationParser
                 {
                     Path classpath = rootFile.toPath().relativize(file.toPath());
                     String str = classpath.toString();
-                    str = str.substring(0, str.lastIndexOf(".class")).replace('/', '.').replace('\\', '.');
-                    
+                    str = str.substring(0, str.lastIndexOf(".class"));
+                    str = StringUtil.replace(str, File.separatorChar, '.');
+
                     try
                     {
                         if (LOG.isDebugEnabled())
@@ -910,7 +912,7 @@ public class AnnotationParser
         //check file is a valid class file name
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
-            String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+            String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
             addParsedClass(shortName, Resource.newResource("jar:"+jar.getURI()+"!/"+entry.getNameInJar()));
             if (LOG.isDebugEnabled())
                 LOG.debug("Scanning class from jar {}!/{}", jar, entry);
