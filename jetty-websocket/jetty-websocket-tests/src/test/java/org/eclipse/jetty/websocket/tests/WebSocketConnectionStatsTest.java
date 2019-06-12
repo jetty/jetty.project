@@ -33,7 +33,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -193,9 +195,11 @@ public class WebSocketConnectionStatsTest
             {
                 session.getRemote().sendString(msgText);
             }
+            session.close(StatusCode.NORMAL, null);
+
+            assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
         }
-        assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
-        assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
 
         assertThat(statistics.getConnectionsMax(), is(1L));
         assertThat(statistics.getConnections(), is(0L));
