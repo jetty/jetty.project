@@ -545,7 +545,7 @@
             <detectJavaApiLink>false</detectJavaApiLink>
             <show>protected</show>
             <attach>true</attach>
-            <excludePackageNames>com.acme*,org.slf4j*,org.mortbay*,*.jmh*,org.eclipse.jetty.embedded*,org.eclipse.jetty.example.asyncrest*,org.eclipse.jetty.test*</excludePackageNames>
+            <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
         </plugin>
         <plugin>
@@ -1140,6 +1140,7 @@
               <configuration>
                 <additionalJOption>--no-module-directories</additionalJOption>
                 <additionalOptions>-html5</additionalOptions>
+                <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
               </configuration>
             </plugin>
           </plugins>
