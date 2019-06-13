@@ -515,19 +515,12 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>3.1.0</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.codehaus.plexus</groupId>
-              <artifactId>plexus-java</artifactId>
-              <version>0.9.11</version>
-            </dependency>
-          </dependencies>
           <configuration>
             <source>11</source>
-            <target>11</target>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
+            <additionalJOption>--no-module-directories</additionalJOption>
             <additionalOptions>-html5</additionalOptions>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>

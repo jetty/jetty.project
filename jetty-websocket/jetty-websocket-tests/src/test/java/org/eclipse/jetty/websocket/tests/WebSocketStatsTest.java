@@ -145,7 +145,6 @@ public class WebSocketStatsTest
             {
                 session.getRemote().sendString(msgText);
             }
-            session.close(StatusCode.NORMAL, null);
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
