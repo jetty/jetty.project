@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.Date;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -158,7 +157,7 @@ public class Http2Server
         public void destroy()
         {
         }
-    };
+    }
 
     static Servlet servlet = new HttpServlet()
     {

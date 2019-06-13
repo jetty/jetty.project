@@ -19,11 +19,12 @@
 package org.eclipse.jetty.annotations;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
@@ -298,25 +300,17 @@ public class TestAnnotationParser
 
     private void copyClass(Class<?> clazz, File basedir) throws IOException
     {
-        String classname = clazz.getName().replace('.',File.separatorChar) + ".class";
-        URL url = this.getClass().getResource('/'+classname);
-        assertThat("URL for: " + classname,url,notNullValue());
+        String classRef = TypeUtil.toClassReference(clazz);
+        URL url = this.getClass().getResource('/' + classRef);
+        assertThat("URL for: " + classRef, url, notNullValue());
 
-        String classpath = classname.substring(0,classname.lastIndexOf(File.separatorChar));
-        FS.ensureDirExists(new File(basedir,classpath));
+        Path outputFile = basedir.toPath().resolve(classRef);
+        FS.ensureDirExists(outputFile.getParent());
 
-        InputStream in = null;
-        OutputStream out = null;
-        try
+        try (InputStream in = url.openStream();
+             OutputStream out = Files.newOutputStream(outputFile))
         {
-            in = url.openStream();
-            out = new FileOutputStream(new File(basedir,classname));
-            IO.copy(in,out);
-        }
-        finally
-        {
-            IO.close(out);
-            IO.close(in);
+            IO.copy(in, out);
         }
     }
 }

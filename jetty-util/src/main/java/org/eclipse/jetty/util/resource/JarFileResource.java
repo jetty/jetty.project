@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -326,8 +327,8 @@ public class JarFileResource extends JarResource
         String dir=_urlString.substring(_urlString.lastIndexOf("!/")+2);
         while(e.hasMoreElements())
         {
-            JarEntry entry = e.nextElement();               
-            String name=entry.getName().replace('\\','/');               
+            JarEntry entry = e.nextElement();
+            String name = StringUtil.replace(entry.getName(), '\\', '/');
             if(!name.startsWith(dir) || name.length()==dir.length())
             {
                 continue;

@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class QuotedCSVTest
 {
@@ -111,13 +111,13 @@ public class QuotedCSVTest
             {
                 if (buffer.toString().contains("DELETE"))
                 {
-                    String s = buffer.toString().replace("DELETE","");
+                    String s = StringUtil.strip(buffer.toString(), "DELETE");
                     buffer.setLength(0);
                     buffer.append(s);
                 }
                 if (buffer.toString().contains("APPEND"))
                 {
-                    String s = buffer.toString().replace("APPEND","Append")+"!";
+                    String s = StringUtil.replace(buffer.toString(), "APPEND", "Append") + "!";
                     buffer.setLength(0);
                     buffer.append(s);
                 }

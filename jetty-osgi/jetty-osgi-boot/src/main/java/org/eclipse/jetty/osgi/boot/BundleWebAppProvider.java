@@ -280,7 +280,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             // the location will often reflect the version.
             // maybe this is relevant when the file is a war)
             String location = bundle.getLocation();
-            String toks[] = location.replace('\\', '/').split("/");
+            String toks[] = StringUtil.replace(location, '\\', '/').split("/");
             contextPath = toks[toks.length - 1];
             // remove .jar, .war etc:
             int lastDot = contextPath.lastIndexOf('.');
