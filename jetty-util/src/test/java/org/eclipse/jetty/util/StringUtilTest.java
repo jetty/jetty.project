@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -97,7 +100,36 @@ public class StringUtilTest
 
         s=" \u0690bc ";
         assertEquals(StringUtil.replace(s, "\u0690bc", "xyz")," xyz ");
+    }
 
+    public static Stream<String[]> replaceFirstArgs() {
+        List<String[]> data = new ArrayList<>();
+
+        // [original, target, replacement, expected]
+
+        // no match
+        data.add(new String[]{ "abc", "z", "foo", "abc" });
+
+        // matches at start of string
+        data.add(new String[]{ "abc", "a", "foo", "foobc" });
+        data.add(new String[]{ "abcabcabc", "a", "foo", "foobcabcabc" });
+
+        // matches in middle of string
+        data.add(new String[]{ "abc", "b", "foo", "afooc" });
+        data.add(new String[]{ "abcabcabc", "b", "foo", "afoocabcabc" });
+        data.add(new String[]{ "abcabcabc", "cab", "X", "abXcabc" });
+
+        // matches at end of string
+        data.add(new String[]{ "abc", "c", "foo", "abfoo" });
+
+        return data.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "replaceFirstArgs")
+    public void testReplaceFirst(String original, String target, String replacement, String expected)
+    {
+        assertThat(StringUtil.replaceFirst(original, target, replacement), is(expected));
     }
 
     @Test
@@ -131,48 +163,6 @@ public class StringUtilTest
         StringUtil.append(buf, (byte)-16, 16);
         assertEquals("ab0c10fff0",buf.toString());
 
-    }
-
-    public static void main(String[] arg) throws Exception
-    {
-        String string = "Now \u0690xxxxxxxx";
-        System.err.println(string);
-        byte[] bytes=string.getBytes(StandardCharsets.UTF_8);
-        System.err.println(new String(bytes));
-        System.err.println(bytes.length);
-        long calc=0;
-        Utf8StringBuffer strbuf = new Utf8StringBuffer(bytes.length);
-        for (int i=0;i<10;i++)
-        {
-            long s1=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            for (int j=1000000; j-->0;)
-            {
-                calc+=new String(bytes,0,bytes.length,StandardCharsets.UTF_8).hashCode();
-            }
-            long s2=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            for (int j=1000000; j-->0;)
-            {
-                calc+=StringUtil.toUTF8String(bytes,0,bytes.length).hashCode();
-            }
-            long s3=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            for (int j=1000000; j-->0;)
-            {
-                Utf8StringBuffer buffer = new Utf8StringBuffer(bytes.length);
-                buffer.append(bytes,0,bytes.length);
-                calc+=buffer.toString().hashCode();
-            }
-            long s4=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            for (int j=1000000; j-->0;)
-            {
-                strbuf.reset();
-                strbuf.append(bytes,0,bytes.length);
-                calc+=strbuf.toString().hashCode();
-            }
-            long s5=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-
-            System.err.println((s2-s1)+", "+(s3-s2)+", "+(s4-s3)+", "+(s5-s4));
-        }
-        System.err.println(calc);
     }
 
     @Test

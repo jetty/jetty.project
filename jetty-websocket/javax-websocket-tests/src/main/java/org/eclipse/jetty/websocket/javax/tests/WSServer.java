@@ -34,6 +34,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
@@ -73,7 +75,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     public void copyClass(Class<?> clazz) throws Exception
     {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        String endpointPath = clazz.getName().replace('.', '/') + ".class";
+        String endpointPath = TypeUtil.toClassReference(clazz);
         URL classUrl = cl.getResource(endpointPath);
         assertThat("Class URL for: " + clazz, classUrl, notNullValue());
         Path destFile = classesDir.resolve(endpointPath);

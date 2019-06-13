@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,7 +95,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String otherOrigin = origin.replace("localhost", "127.0.0.1");
+        String otherOrigin = StringUtil.replace(origin, "localhost", "127.0.0.1");
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -284,7 +285,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://localhost";
-        String otherOrigin = origin.replace("localhost", "127.0.0.1");
+        String otherOrigin = StringUtil.replace(origin, "localhost", "127.0.0.1");
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin + "," + otherOrigin);
         tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 

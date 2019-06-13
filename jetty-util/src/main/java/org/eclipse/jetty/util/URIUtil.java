@@ -268,7 +268,134 @@ public class URIUtil
 
         return buf;
     }
-    
+
+    /**
+     * Encode a raw URI String and convert any raw spaces to
+     * their "%20" equivalent.
+     *
+     * @param str input raw string
+     * @return output with spaces converted to "%20"
+     */
+    public static String encodeSpaces(String str)
+    {
+        return StringUtil.replace(str, " ", "%20");
+    }
+
+    /**
+     * Encode a raw String and convert any specific characters to their URI encoded equivalent.
+     *
+     * @param str input raw string
+     * @param charsToEncode the list of raw characters that need to be encoded (if encountered)
+     * @return output with specified characters encoded.
+     */
+    @SuppressWarnings("Duplicates")
+    public static String encodeSpecific(String str, String charsToEncode)
+    {
+        if ((str == null) || (str.length() == 0))
+            return null;
+
+        if ((charsToEncode == null) || (charsToEncode.length() == 0))
+            return str;
+
+        char[] find = charsToEncode.toCharArray();
+        int len = str.length();
+        StringBuilder ret = new StringBuilder((int)(len * 0.20d));
+        for (int i = 0; i < len; i++)
+        {
+            char c = str.charAt(i);
+            boolean escaped = false;
+            for (char f : find)
+            {
+                if (c == f)
+                {
+                    escaped = true;
+                    ret.append('%');
+                    int d = 0xf & ((0xF0 & c) >> 4);
+                    ret.append((char)((d > 9 ? ('A' - 10) : '0') + d));
+                    d = 0xf & c;
+                    ret.append((char)((d > 9 ? ('A' - 10) : '0') + d));
+                    break;
+                }
+            }
+            if (!escaped)
+            {
+                ret.append(c);
+            }
+        }
+        return ret.toString();
+    }
+
+    /**
+     * Decode a raw String and convert any specific URI encoded sequences into characters.
+     *
+     * @param str input raw string
+     * @param charsToDecode the list of raw characters that need to be decoded (if encountered), leaving all other encoded sequences alone.
+     * @return output with specified characters decoded.
+     */
+    @SuppressWarnings("Duplicates")
+    public static String decodeSpecific(String str, String charsToDecode)
+    {
+        if ((str == null) || (str.length() == 0))
+            return null;
+
+        if ((charsToDecode == null) || (charsToDecode.length() == 0))
+            return str;
+
+        int idx = str.indexOf('%');
+        if (idx == -1)
+        {
+            // no hits
+            return str;
+        }
+
+        char[] find = charsToDecode.toCharArray();
+        int len = str.length();
+        Utf8StringBuilder ret = new Utf8StringBuilder(len);
+        ret.append(str, 0, idx);
+
+        for (int i = idx; i < len; i++)
+        {
+            char c = str.charAt(i);
+            switch (c)
+            {
+                case '%':
+                    if ((i + 2) < len)
+                    {
+                        char u = str.charAt(i + 1);
+                        char l = str.charAt(i + 2);
+                        char result = (char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(l)));
+                        boolean decoded = false;
+                        for (char f : find)
+                        {
+                            if (f == result)
+                            {
+                                ret.append(result);
+                                decoded = true;
+                                break;
+                            }
+                        }
+                        if (decoded)
+                        {
+                            i += 2;
+                        }
+                        else
+                        {
+                            ret.append(c);
+                        }
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException("Bad URI % encoding");
+                    }
+                    break;
+                default:
+                    ret.append(c);
+                    break;
+            }
+        }
+        return ret.toString();
+    }
+
     /* ------------------------------------------------------------ */
     /** Encode a URI path.
      * @param path The path the encode

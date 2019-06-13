@@ -164,7 +164,7 @@ public class DefaultHandler extends AbstractHandler
                 {
                     writer.append("<a href=\"").append(href).append("\">");
                 }
-                writer.append(contextPath.replaceAll("%", "&#37;"));
+                writer.append(StringUtil.replace(contextPath, "%", "&#37;"));
                 if (context.isRunning())
                 {
                     writer.append("</a>");

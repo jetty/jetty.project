@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -584,7 +584,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             if (LOG.isDebugEnabled())
                                 LOG.debug("unwrap net_filled={} {} encryptedBuffer={} unwrapBuffer={} appBuffer={}",
                                         net_filled,
-                                        unwrapResult.toString().replace('\n', ' '),
+                                        StringUtil.replace(unwrapResult.toString(), '\n', ' '),
                                         BufferUtil.toSummaryString(_encryptedInput),
                                         BufferUtil.toDetailString(app_in),
                                         BufferUtil.toDetailString(buffer));
@@ -895,7 +895,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
                             if (LOG.isDebugEnabled())
                                 LOG.debug("wrap {} {} ioDone={}/{}",
-                                        wrapResult.toString().replace('\n', ' '),
+                                        StringUtil.replace(wrapResult.toString(), '\n', ' '),
                                         BufferUtil.toSummaryString(_encryptedOutput),
                                         _sslEngine.isInboundDone(),
                                         _sslEngine.isOutboundDone());

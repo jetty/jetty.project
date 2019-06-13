@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
@@ -573,8 +574,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     {
         if (vhost == null)
             return "";
-        
-        return vhost.replace('.', '_');
+
+        return StringUtil.replace(vhost, '.', '_');
     }
   
     

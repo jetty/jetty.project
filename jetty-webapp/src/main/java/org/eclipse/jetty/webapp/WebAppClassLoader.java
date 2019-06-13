@@ -41,7 +41,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -339,12 +340,10 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     if(LOG.isDebugEnabled())
                         LOG.debug("addJar - {}", fn);
                     String fnlc=fn.getName().toLowerCase(Locale.ENGLISH);
-                    // don't check if this is a directory, see Bug 353165
+                    // don't check if this is a directory (prevents use of symlinks), see Bug 353165
                     if (isFileSupported(fnlc))
                     {
-                        String jar=fn.toString();
-                        jar=StringUtil.replace(jar, ",", "%2C");
-                        jar=StringUtil.replace(jar, ";", "%3B");
+                        String jar = URIUtil.encodeSpecific(fn.toString(), ",;");
                         addClassPath(jar);
                     }
                 }
@@ -610,7 +609,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         // Look in the webapp classloader as a resource, to avoid 
         // loading a system class.
         Class<?> webapp_class = null;
-        String path = name.replace('.', '/').concat(".class");
+        String path = TypeUtil.toClassReference(name);
         URL webapp_url = findResource(path);
         
         if (webapp_url!=null && (!checkSystemResource || !_context.isSystemResource(name,webapp_url)))
@@ -636,7 +635,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             return super.findClass(name);
         }
 
-        String path = name.replace('.', '/').concat(".class");
+        String path = TypeUtil.toClassReference(name);
         URL url = findResource(path);
         if (url==null)
             throw new ClassNotFoundException(name);

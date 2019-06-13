@@ -183,7 +183,7 @@ public class JettyWebAppContext extends WebAppContext
     /**
      * Ordered list of wars to overlay on top of the current project. The list
      * may contain an overlay that represents the current project.
-     * 
+     *
      * @param overlays the list of overlays
      */
     public void setOverlays(List<Overlay> overlays)
@@ -194,7 +194,7 @@ public class JettyWebAppContext extends WebAppContext
     /**
      * Set the name of the attribute that is used in each generated xml element
      * to indicate the source of the xml element (eg annotation, web.xml etc).
-     * 
+     *
      * @param name the name of the attribute to use.
      */
     public void setOriginAttribute(String name)
@@ -214,7 +214,7 @@ public class JettyWebAppContext extends WebAppContext
     /**
      * Toggle whether or not the origin attribute will be generated into the
      * xml.
-     * 
+     *
      * @param generateOrigin if true then the origin of each xml element is
      *            added, otherwise it is omitted.
      */
@@ -249,7 +249,7 @@ public class JettyWebAppContext extends WebAppContext
 
     /**
      * Set the file to use into which to generate the quickstart output.
-     * 
+     *
      * @param quickStartWebXml the full path to the file to use
      * @throws Exception
      */
@@ -260,7 +260,7 @@ public class JettyWebAppContext extends WebAppContext
 
     /**
      * Set the Resource to use into which to generate the quickstart output.
-     * 
+     *
      * @param quickStartWebXml
      */
     protected void setQuickStartWebDescriptor(Resource quickStartWebXml)
@@ -282,7 +282,7 @@ public class JettyWebAppContext extends WebAppContext
     /**
      * This method is provided as a convenience for jetty maven plugin
      * configuration
-     * 
+     *
      * @param resourceBases Array of resources strings to set as a
      *            {@link ResourceCollection}. Each resource string may be a
      *            comma separated list of resources
@@ -311,7 +311,7 @@ public class JettyWebAppContext extends WebAppContext
 
     /**
      * If true, a quickstart for the webapp is generated.
-     * 
+     *
      * @param quickStart if true the quickstart is generated, false otherwise
      */
     public void setGenerateQuickStart(boolean quickStart)
@@ -475,7 +475,7 @@ public class JettyWebAppContext extends WebAppContext
                         int i = 0;
                         while (res == null && (i < _webInfClasses.size()))
                         {
-                            String newPath = uri.replace(WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                            String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                             res = Resource.newResource(newPath);
                             if (!res.exists())
                             {
@@ -490,9 +490,11 @@ public class JettyWebAppContext extends WebAppContext
                 {
                     // Return the real jar file for all accesses to
                     // /WEB-INF/lib/*.jar
-                    String jarName = uri.replace(WEB_INF_LIB_PREFIX, "");
-                    if (jarName.startsWith("/") || jarName.startsWith("\\")) jarName = jarName.substring(1);
-                    if (jarName.length() == 0) return null;
+                    String jarName = StringUtil.strip(uri, WEB_INF_LIB_PREFIX);
+                    if (jarName.startsWith("/") || jarName.startsWith("\\")) 
+                        jarName = jarName.substring(1);
+                    if (jarName.length()==0) 
+                        return null;
                     File jarFile = _webInfJarMap.get(jarName);
                     if (jarFile != null) return Resource.newResource(jarFile.getPath());
 
@@ -538,7 +540,7 @@ public class JettyWebAppContext extends WebAppContext
 
                 while (i < _webInfClasses.size())
                 {
-                    String newPath = path.replace(WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                    String newPath = StringUtil.replace(path, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                     allPaths.addAll(super.getResourcePaths(newPath));
                     i++;
                 }

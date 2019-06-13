@@ -196,7 +196,7 @@ public class MimeTypes
             int charset=type.toString().indexOf(";charset=");
             if (charset>0)
             {
-                String alt=type.toString().replace(";charset=","; charset=");
+                String alt = StringUtil.replace(type.toString(), ";charset=", "; charset=");
                 CACHE.put(alt,type);
                 TYPES.put(alt,type.asBuffer());
             }

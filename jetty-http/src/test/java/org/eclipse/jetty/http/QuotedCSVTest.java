@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import java.util.Collections;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -114,13 +115,13 @@ public class QuotedCSVTest
             {
                 if (buffer.toString().contains("DELETE"))
                 {
-                    String s = buffer.toString().replace("DELETE","");
+                    String s = StringUtil.strip(buffer.toString(), "DELETE");
                     buffer.setLength(0);
                     buffer.append(s);
                 }
                 if (buffer.toString().contains("APPEND"))
                 {
-                    String s = buffer.toString().replace("APPEND","Append")+"!";
+                    String s = StringUtil.replace(buffer.toString(), "APPEND", "Append") + "!";
                     buffer.setLength(0);
                     buffer.append(s);
                 }

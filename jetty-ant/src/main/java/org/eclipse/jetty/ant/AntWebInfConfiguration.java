@@ -35,7 +35,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
     {
         return WebInfConfiguration.class;
     }
-    
+
     /**
      * Adds classpath files into web application classloader, and
      * sets web.xml and base directory for the configured web application.

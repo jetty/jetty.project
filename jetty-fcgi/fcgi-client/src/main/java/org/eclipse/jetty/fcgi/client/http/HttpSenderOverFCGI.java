@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.StringUtil;
 
 public class HttpSenderOverFCGI extends HttpSender
 {
@@ -88,7 +89,7 @@ public class HttpSenderOverFCGI extends HttpSender
         for (HttpField field : headers)
         {
             String name = field.getName();
-            String fcgiName = "HTTP_" + name.replaceAll("-", "_").toUpperCase(Locale.ENGLISH);
+            String fcgiName = "HTTP_" + StringUtil.replace(name, '-', '_').toUpperCase(Locale.ENGLISH);
             fcgiHeaders.add(fcgiName, field.getValue());
         }
 

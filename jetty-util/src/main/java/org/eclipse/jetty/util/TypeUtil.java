@@ -207,6 +207,46 @@ public class TypeUtil
         return class2Name.get(type);
     }
 
+    /**
+     * Return the Classpath / Classloader reference for the
+     * provided class file.
+     *
+     * <p>
+     * Convenience method for the code
+     * </p>
+     *
+     * <pre>
+     * String ref = myObject.getClass().getName().replace('.','/') + ".class";
+     * </pre>
+     *
+     * @param clazz the class to reference
+     * @return the classpath reference syntax for the class file
+     */
+    public static String toClassReference(Class<?> clazz)
+    {
+        return TypeUtil.toClassReference(clazz.getName());
+    }
+
+    /**
+     * Return the Classpath / Classloader reference for the
+     * provided class file.
+     *
+     * <p>
+     * Convenience method for the code
+     * </p>
+     *
+     * <pre>
+     * String ref = myClassName.replace('.','/') + ".class";
+     * </pre>
+     *
+     * @param className the class to reference
+     * @return the classpath reference syntax for the class file
+     */
+    public static String toClassReference(String className)
+    {
+        return StringUtil.replace(className, '.', '/').concat(".class");
+    }
+
     /* ------------------------------------------------------------ */
     /** Convert String value to instance.
      * @param type The class of the instance, which may be a primitive TYPE field.
@@ -561,7 +601,7 @@ public class TypeUtil
                 }
             }
             
-            String resourceName = clazz.getName().replace('.', '/') + ".class";
+            String resourceName = TypeUtil.toClassReference(clazz);
             ClassLoader loader = clazz.getClassLoader();
             URL url = (loader == null ? ClassLoader.getSystemClassLoader() : loader).getResource(resourceName);
             if (url != null)
