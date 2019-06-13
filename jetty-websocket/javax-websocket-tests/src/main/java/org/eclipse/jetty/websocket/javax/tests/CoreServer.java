@@ -75,7 +75,6 @@ public class CoreServer extends ContainerLifeCycle
 
         // Basic HTTP connector
         connector = new ServerConnector(server);
-        connector.setPort(0);
 
         // Add network connector
         server.addConnector(connector);

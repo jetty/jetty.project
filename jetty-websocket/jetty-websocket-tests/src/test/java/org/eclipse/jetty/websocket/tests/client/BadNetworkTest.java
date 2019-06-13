@@ -70,7 +70,6 @@ public class BadNetworkTest
         server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();

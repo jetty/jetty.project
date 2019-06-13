@@ -214,14 +214,13 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             // SSL Connector
             connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
                 new HttpConnectionFactory(https_config));
-            connector.setPort(0);
         }
         else
         {
             // Basic HTTP connector
             connector = new ServerConnector(server);
-            connector.setPort(0);
         }
+
         // Add network connector
         server.addConnector(connector);
 

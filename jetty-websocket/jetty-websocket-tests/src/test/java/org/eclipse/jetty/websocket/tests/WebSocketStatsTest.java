@@ -63,6 +63,7 @@ public class WebSocketStatsTest
     }
 
     private Server server;
+    private ServerConnector connector;
     private WebSocketClient client;
     private ConnectionStatistics statistics;
     private CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
@@ -86,8 +87,7 @@ public class WebSocketStatsTest
         };
 
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         connector.addBean(statistics);
         server.addConnector(connector);
 
@@ -124,7 +124,7 @@ public class WebSocketStatsTest
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/testPath");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/testPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
 
