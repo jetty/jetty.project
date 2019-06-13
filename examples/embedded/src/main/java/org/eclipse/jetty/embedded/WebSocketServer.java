@@ -56,7 +56,7 @@ public class WebSocketServer
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping(factory.parsePathSpec("/"), (req,res)->new EchoSocket());
+            factory.addMapping("/", (req,res)->new EchoSocket());
         }
     }
 

@@ -172,23 +172,6 @@ public class JettyWebSocketServletFactory implements WebSocketPolicy
     }
 
     /**
-     * add a WebSocket mapping to a provided {@link JettyWebSocketCreator}.
-     * <p>
-     * If mapping is added before this configuration is started, then it is persisted through
-     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
-     * this configuration is stopped.
-     * </p>
-     *
-     * @param pathSpec the pathspec to respond on
-     * @param creator  the WebSocketCreator to use
-     * @since 10.0
-     */
-    public void addMapping(PathSpec pathSpec, JettyWebSocketCreator creator)
-    {
-        factory.addMapping(pathSpec, new WrappedCreator(creator));
-    }
-
-    /**
      * Add a WebSocket mapping at PathSpec "/" for a creator which creates the endpointClass
      *
      * @param endpointClass the WebSocket class to use
@@ -214,51 +197,13 @@ public class JettyWebSocketServletFactory implements WebSocketPolicy
      * @param pathSpec the pathspec to respond on
      * @return the websocket creator if path spec exists, or null
      */
-    public JettyWebSocketCreator getMapping(PathSpec pathSpec)
+    public JettyWebSocketCreator getMapping(String pathSpec)
     {
-        WebSocketCreator creator = factory.getMapping(pathSpec);
+        WebSocketCreator creator = factory.getMapping(parsePathSpec(pathSpec));
         if (creator instanceof WrappedCreator)
             return ((WrappedCreator)creator).getCreator();
 
         return null;
-    }
-
-    /**
-     * Get the MappedResource for the given target path.
-     *
-     * @param target the target path
-     * @return the MappedResource if matched, or null if not matched.
-     */
-    public JettyWebSocketCreator getMatch(String target)
-    {
-        WebSocketCreator creator = factory.getMatch(target);
-        if (creator instanceof WrappedCreator)
-            return ((WrappedCreator)creator).getCreator();
-
-        return null;
-    }
-
-
-    /**
-     * Parse a PathSpec string into a PathSpec instance.
-     * <p>
-     * Recognized Path Spec syntaxes:
-     * </p>
-     * <dl>
-     * <dt><code>/path/to</code> or <code>/</code> or <code>*.ext</code> or <code>servlet|{spec}</code></dt>
-     * <dd>Servlet Syntax</dd>
-     * <dt><code>^{spec}</code> or <code>regex|{spec}</code></dt>
-     * <dd>Regex Syntax</dd>
-     * <dt><code>uri-template|{spec}</code></dt>
-     * <dd>URI Template (see JSR356 and RFC6570 level 1)</dd>
-     * </dl>
-     *
-     * @param rawSpec the raw path spec as String to parse.
-     * @return the {@link PathSpec} implementation for the rawSpec
-     */
-    public PathSpec parsePathSpec(String rawSpec)
-    {
-        return factory.parsePathSpec(rawSpec);
     }
 
     /**
@@ -267,11 +212,21 @@ public class JettyWebSocketServletFactory implements WebSocketPolicy
      * @param pathSpec the pathspec to respond on
      * @return true if underlying mapping were altered, false otherwise
      */
-    public boolean removeMapping(PathSpec pathSpec)
+    public boolean removeMapping(String pathSpec)
     {
-        return factory.removeMapping(pathSpec);
+        return factory.removeMapping(parsePathSpec(pathSpec));
     }
 
+    /**
+     * Parse a PathSpec string into a PathSpec instance.
+     *
+     * @param rawSpec the raw path spec as String to parse.
+     * @return the {@link PathSpec} implementation for the rawSpec
+     */
+    private PathSpec parsePathSpec(String rawSpec)
+    {
+        return factory.parsePathSpec(rawSpec);
+    }
 
     private static class WrappedCreator implements WebSocketCreator
     {

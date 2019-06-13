@@ -65,7 +65,7 @@ public class WebSocketChatServlet extends JettyWebSocketServlet implements Jetty
     @Override
     public void configure(JettyWebSocketServletFactory factory)
     {
-        factory.addMapping(factory.parsePathSpec("/"), this);
+        factory.addMapping("/", this);
     }
 
     /* ------------------------------------------------------------ */
