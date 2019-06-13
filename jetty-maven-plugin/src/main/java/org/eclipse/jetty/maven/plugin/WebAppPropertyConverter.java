@@ -19,13 +19,9 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -253,7 +249,7 @@ public class WebAppPropertyConverter
         str = props.getProperty("context.xml");
         if (!StringUtil.isBlank(str))
         {
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str).getURI().toURL());
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str));
             xmlConfiguration.getIdMap().put("Server",server);
             //add in any properties
             if (jettyProperties != null)

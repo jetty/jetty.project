@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.deploy.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -53,9 +46,17 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
@@ -63,7 +64,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class XmlConfiguredJetty
 {
-    private List<URL> _xmlConfigurations;
+    private List<Resource> _xmlConfigurations;
     private Map<String,String> _properties = new HashMap<>();
     private Server _server;
     private int _serverPort;
@@ -137,9 +138,9 @@ public class XmlConfiguredJetty
             setProperty(String.valueOf(key),String.valueOf(properties.get(key)));
     }
 
-    public void addConfiguration(File xmlConfigFile) throws MalformedURLException
+    public void addConfiguration(File xmlConfigFile)
     {
-        addConfiguration(Resource.toURL(xmlConfigFile));
+        addConfiguration(new PathResource(xmlConfigFile));
     }
 
     public void addConfiguration(String testConfigName) throws MalformedURLException
@@ -147,7 +148,7 @@ public class XmlConfiguredJetty
         addConfiguration(MavenTestingUtils.getTestResourceFile(testConfigName));
     }
 
-    public void addConfiguration(URL xmlConfig)
+    public void addConfiguration(Resource xmlConfig)
     {
         _xmlConfigurations.add(xmlConfig);
     }
@@ -330,8 +331,8 @@ public class XmlConfiguredJetty
         // Configure everything
         for (int i = 0; i < this._xmlConfigurations.size(); i++)
         {
-            URL configURL = this._xmlConfigurations.get(i);
-            XmlConfiguration configuration = new XmlConfiguration(configURL);
+            Resource configResource = this._xmlConfigurations.get(i);
+            XmlConfiguration configuration = new XmlConfiguration(configResource);
             if (last != null)
                 configuration.getIdMap().putAll(last.getIdMap());
             configuration.getProperties().putAll(_properties);

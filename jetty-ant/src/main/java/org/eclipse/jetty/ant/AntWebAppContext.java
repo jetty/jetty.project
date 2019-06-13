@@ -52,6 +52,7 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
@@ -592,7 +593,7 @@ public class AntWebAppContext extends WebAppContext
             TaskLog.logWithTimestamp("Starting web application "+this.getDescriptor());
             
             if (jettyEnvXml != null && jettyEnvXml.exists())
-                getConfiguration(EnvConfiguration.class).setJettyEnvXml(Resource.toURL(jettyEnvXml));
+                getConfiguration(EnvConfiguration.class).setJettyEnvResource(new PathResource(jettyEnvXml));
             
             ClassLoader parentLoader = this.getClass().getClassLoader();
             if (parentLoader instanceof AntClassLoader)
@@ -608,7 +609,7 @@ public class AntWebAppContext extends WebAppContext
             //apply a context xml file if one was supplied
             if (contextXml != null)
             {
-                XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(contextXml));
+                XmlConfiguration xmlConfiguration = new XmlConfiguration(new PathResource(contextXml));
                 TaskLog.log("Applying context xml file "+contextXml);
                 xmlConfiguration.configure(this);   
             }

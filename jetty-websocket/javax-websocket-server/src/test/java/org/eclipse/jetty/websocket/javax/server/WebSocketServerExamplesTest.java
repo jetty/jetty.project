@@ -95,14 +95,14 @@ public class WebSocketServerExamplesTest
     }
 
     static Server _server;
+    static ServerConnector connector;
     static ServletContextHandler _context;
 
     @BeforeAll
     public static void setup() throws Exception
     {
         _server = new Server();
-        ServerConnector connector = new ServerConnector(_server);
-        connector.setPort(8080);
+        connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
         _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -116,6 +116,7 @@ public class WebSocketServerExamplesTest
         serverContainer.addEndpoint(GetHttpSessionSocket.class);
 
         _server.start();
+        System.setProperty("org.eclipse.jetty.websocket.port", Integer.toString(connector.getLocalPort()));
     }
 
     @AfterAll
@@ -153,7 +154,7 @@ public class WebSocketServerExamplesTest
     public void testMyAuthedSocket() throws Exception
     {
         //HttpClient is configured for BasicAuthentication with the XmlHttpClientProvider
-        URI uri = URI.create("ws://localhost:8080/secured/socket");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/secured/socket");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
@@ -170,7 +171,7 @@ public class WebSocketServerExamplesTest
     @Test
     public void testStreamingEchoSocket() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/echo");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/echo");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
@@ -187,7 +188,7 @@ public class WebSocketServerExamplesTest
     @Test
     public void testGetHttpSessionSocket() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/example");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/example");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();

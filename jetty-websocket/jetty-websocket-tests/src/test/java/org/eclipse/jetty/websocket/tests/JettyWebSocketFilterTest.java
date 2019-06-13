@@ -40,14 +40,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class JettyWebSocketFilterTest
 {
     private Server server;
+    private ServerConnector connector;
     private WebSocketClient client;
 
     @BeforeEach
     public void start() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -72,7 +72,7 @@ public class JettyWebSocketFilterTest
     @Test
     public void test() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/filterPath");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
         try(Session session = connect.get(5, TimeUnit.SECONDS))

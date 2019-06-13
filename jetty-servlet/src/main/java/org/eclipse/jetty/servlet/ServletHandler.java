@@ -409,6 +409,23 @@ public class ServletHandler extends ScopedHandler
         return _servlets;
     }
 
+    public List<ServletHolder> getServlets(Class<?> clazz)
+    {
+        List<ServletHolder> holders = null;
+        for (ServletHolder holder : _servlets)
+        {
+            Class<? extends Servlet> held = holder.getHeldClass();
+            if ((held == null && holder.getClassName() != null && holder.getClassName().equals(clazz.getName())) ||
+                (held != null && clazz.isAssignableFrom(holder.getHeldClass())))
+            {
+                if (holders == null)
+                    holders = new ArrayList<>();
+                holders.add(holder);
+            }
+        }
+        return holders == null ? Collections.emptyList() : holders;
+    }
+
     public ServletHolder getServlet(String name)
     {
         return _servletNameMap.get(name);

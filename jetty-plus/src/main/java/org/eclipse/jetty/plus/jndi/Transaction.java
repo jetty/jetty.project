@@ -26,6 +26,7 @@ import javax.naming.NamingException;
 import javax.transaction.UserTransaction;
 
 import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
@@ -35,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Transaction extends NamingEntry
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(Transaction.class);
     public static final String USER_TRANSACTION = "UserTransaction";
     
 
@@ -74,7 +75,8 @@ public class Transaction extends NamingEntry
     {   
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
-        __log.debug("Binding java:comp/env"+getJndiName()+" to "+_objectNameString);
+        if(LOG.isDebugEnabled())
+            LOG.debug("Binding java:comp/env"+getJndiName()+" to "+_objectNameString);
         NamingUtil.bind(env, localName, new LinkRef(_objectNameString));
     }
     
@@ -88,7 +90,8 @@ public class Transaction extends NamingEntry
         //ignore the name, it is always bound to java:comp
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp");
-        __log.debug("Binding java:comp/"+getJndiName()+" to "+_objectNameString);
+        if(LOG.isDebugEnabled())
+            LOG.debug("Binding java:comp/"+getJndiName()+" to "+_objectNameString);
         NamingUtil.bind(env, getJndiName(), new LinkRef(_objectNameString));
     }
     
@@ -102,12 +105,13 @@ public class Transaction extends NamingEntry
         {
             InitialContext ic = new InitialContext();
             Context env = (Context)ic.lookup("java:comp");
-            __log.debug("Unbinding java:comp/"+getJndiName());
+            if(LOG.isDebugEnabled())
+                LOG.debug("Unbinding java:comp/"+getJndiName());
             env.unbind(getJndiName());
         }
         catch (NamingException e)
         {
-            __log.warn(e);
+            LOG.warn(e);
         }
     }
 }

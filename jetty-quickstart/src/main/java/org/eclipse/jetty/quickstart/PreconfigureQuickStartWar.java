@@ -105,7 +105,7 @@ public class PreconfigureQuickStartWar
         {
             if (xml.isDirectory() || !xml.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                 error("Bad context.xml: "+xml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(xml.getURI());
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(xml);
             xmlConfiguration.configure(webapp);
         }
         webapp.setResourceBase(dir.getFile().getAbsolutePath());

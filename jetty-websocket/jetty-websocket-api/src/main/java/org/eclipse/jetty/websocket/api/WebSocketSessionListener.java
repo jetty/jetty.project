@@ -16,11 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.api;
 
-public interface JsrSessionListener
+/**
+ * Interface for Listeners that are interested in knowing about the Session history.
+ */
+public interface WebSocketSessionListener
 {
-    void onSessionOpened(JsrSession session);
+    void onWebSocketSessionOpened(Session session);
 
-    void onSessionClosed(JsrSession session);
+    void onWebSocketSessionClosed(Session session);
 }

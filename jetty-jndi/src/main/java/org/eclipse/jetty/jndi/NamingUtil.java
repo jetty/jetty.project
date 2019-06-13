@@ -20,7 +20,6 @@ package org.eclipse.jetty.jndi;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.Name;
@@ -29,6 +28,7 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class NamingUtil
 {
-    public final static Logger __log=org.eclipse.jetty.util.log.Log.getLogger("jndi");
+    private static final Logger LOG = Log.getLogger(NamingUtil.class);
 
     /* ------------------------------------------------------------ */
     /**
@@ -67,20 +67,20 @@ public class NamingUtil
             try
             {
                 subCtx = (Context)subCtx.lookup (name.get(i));
-                if(__log.isDebugEnabled())
-                    __log.debug("Subcontext "+name.get(i)+" already exists");
+                if(LOG.isDebugEnabled())
+                    LOG.debug("Subcontext "+name.get(i)+" already exists");
             }
             catch (NameNotFoundException e)
             {
                 subCtx = subCtx.createSubcontext(name.get(i));
-                if(__log.isDebugEnabled())
-                    __log.debug("Subcontext "+name.get(i)+" created");
+                if(LOG.isDebugEnabled())
+                    LOG.debug("Subcontext "+name.get(i)+" created");
             }
         }
 
         subCtx.rebind (name.get(name.size() - 1), obj);
-        if(__log.isDebugEnabled())
-            __log.debug("Bound object to "+name.get(name.size() - 1));
+        if(LOG.isDebugEnabled())
+            LOG.debug("Bound object to "+name.get(name.size() - 1));
         return subCtx;
     }
 

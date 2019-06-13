@@ -125,10 +125,4 @@ public class HttpSenderOverFCGI extends HttpSender
             getHttpChannel().flush(result);
         }
     }
-
-    @Override
-    protected void sendTrailers(HttpExchange exchange, Callback callback)
-    {
-        callback.succeeded();
-    }
 }

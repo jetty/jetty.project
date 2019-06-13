@@ -34,7 +34,7 @@ The following XML configuration file creates some Java objects and sets some att
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 <Configure id="foo" class="com.acme.Foo">
   <Set name="name">demo</Set>
   <Set name="nested">
@@ -89,13 +89,13 @@ The first two lines of an XML must reference the DTD to be used to validate the 
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 ...
 ----
 
 Typcically a good XML editor will fetch the DTD from the URL and use it to give syntax highlighting and validation while a configuration file is being edited.
 Some editors also allows DTD files to be locally cached.
-The URL may point to configure.dtd if you want the latest current version, or to a specific version like configure_9_0.dtd if you want a particular validation feature set.
+The URL may point to configure.dtd if you want the latest current version, or to a specific version like configure_9_3.dtd if you want a particular validation feature set.
 
 Files that conform to the configure.dtd format are processed in Jetty by the `XmlConfiguration` class which may also validate the XML (using a version of the DTD from the classes jar file), but is by default run in a forgiving mode that tries to work around validation failures.
 

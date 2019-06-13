@@ -54,14 +54,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class WebSocketServletExamplesTest
 {
     private Server _server;
+    private ServerConnector connector;
     private ServletContextHandler _context;
 
     @BeforeEach
     public void setup() throws Exception
     {
         _server = new Server();
-        ServerConnector connector = new ServerConnector(_server);
-        connector.setPort(8080);
+        connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
         _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -114,7 +114,7 @@ public class WebSocketServletExamplesTest
         WebSocketClient client = new WebSocketClient();
         client.start();
 
-        URI uri = URI.create("ws://localhost:8080/echo");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/echo");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
@@ -135,7 +135,7 @@ public class WebSocketServletExamplesTest
         WebSocketClient client = new WebSocketClient();
         client.start();
 
-        URI uri = URI.create("ws://localhost:8080/advancedEcho");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/advancedEcho");
         EventSocket socket = new EventSocket();
 
         UpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -160,7 +160,7 @@ public class WebSocketServletExamplesTest
         client.start();
         AuthenticationStore authenticationStore = client.getHttpClient().getAuthenticationStore();
 
-        URI uri = URI.create("ws://localhost:8080/authed");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/authed");
 
         BasicAuthentication basicAuthentication = new BasicAuthentication(uri, "testRealm", "user", "password");
         authenticationStore.addAuthentication(basicAuthentication);

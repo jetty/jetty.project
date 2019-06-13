@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
@@ -398,7 +399,7 @@ public class JettyWebAppContext extends WebAppContext
             for (Configuration c : getWebAppConfigurations())
             {
                 if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                    ((EnvConfiguration) c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
+                    ((EnvConfiguration) c).setJettyEnvResource(new PathResource(new File(getJettyEnvXml())));
             }
         }
         catch (Exception e)

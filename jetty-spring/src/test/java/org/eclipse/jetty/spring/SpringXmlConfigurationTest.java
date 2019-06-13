@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spring;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,16 +26,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class SpringXmlConfigurationTest
 {
     protected String _configure="org/eclipse/jetty/spring/configure.xml";
 
     @BeforeEach
-    public void init() throws Exception
+    public void init()
     {
         // Jetty's XML configuration will make use of java.util.ServiceLoader
         // to load the proper ConfigurationProcessorFactory, so these tests
@@ -60,7 +61,7 @@ public class SpringXmlConfigurationTest
         TestConfiguration.VALUE=77;
 
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
-        XmlConfiguration configuration = new XmlConfiguration(url);
+        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url));
 
         Map<String,String> properties = new HashMap<>();
         properties.put("test", "xxx");
@@ -100,7 +101,7 @@ public class SpringXmlConfigurationTest
 
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
         final AtomicInteger count = new AtomicInteger(0);
-        XmlConfiguration configuration = new XmlConfiguration(url)
+        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url))
         {
             @Override
             public void initializeDefaults(Object object)
@@ -147,7 +148,7 @@ public class SpringXmlConfigurationTest
     public void testJettyXml() throws Exception
     {
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource("org/eclipse/jetty/spring/jetty.xml");
-        XmlConfiguration configuration = new XmlConfiguration(url);
+        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url));
 
         Server server = (Server)configuration.configure();
 

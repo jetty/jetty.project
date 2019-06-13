@@ -265,7 +265,7 @@ public class WebAppProvider extends ScanningAppProvider
 
         if (resource.exists() && FileID.isXmlFile(file))
         {
-            XmlConfiguration xmlc = new XmlConfiguration(resource.getURI().toURL())
+            XmlConfiguration xmlc = new XmlConfiguration(resource)
             {
                 @Override
                 public void initializeDefaults(Object context)

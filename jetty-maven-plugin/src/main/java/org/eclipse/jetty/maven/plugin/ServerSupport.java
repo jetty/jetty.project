@@ -33,8 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -194,7 +193,7 @@ public class ServerSupport
                 PluginLog.getLog().info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );   
 
 
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(new PathResource(xmlFile));
             
             //add in any properties
             if (properties != null)

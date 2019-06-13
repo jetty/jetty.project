@@ -78,7 +78,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
                 Object xml_attr=context.getAttribute(XML_CONFIGURATION);
                 context.removeAttribute(XML_CONFIGURATION);
-                final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration?(XmlConfiguration)xml_attr:new XmlConfiguration(jetty.getURI().toURL());
+                final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration?(XmlConfiguration)xml_attr:new XmlConfiguration(jetty);
 
                 setupXmlConfiguration(context, jetty_config, web_inf);
 

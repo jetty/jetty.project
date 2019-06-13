@@ -23,6 +23,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
@@ -118,7 +119,7 @@ public class PlusConfiguration extends AbstractConfiguration
             _key = random.nextInt();
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.addToEnvironment("org.eclipse.jetty.jndi.lock", _key);
+            compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
         }
         finally
         {

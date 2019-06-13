@@ -225,7 +225,7 @@ Now that we know what XML file these properties relate to, we can navigate to it
 ----
 $ cat $JETTY_HOME/etc/jetty-http.xml
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <!-- ============================================================= -->
 <!-- Configure the Jetty Server instance with an ID "Server"       -->

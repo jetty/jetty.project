@@ -34,11 +34,10 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
@@ -64,7 +63,6 @@ public class ClientSessionsTest
         server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -105,12 +103,12 @@ public class ClientSessionsTest
 
         client.addSessionListener(new WebSocketSessionListener() {
             @Override
-            public void onWebSocketSessionOpened(WebSocketSession session)
+            public void onWebSocketSessionOpened(Session session)
             {
             }
 
             @Override
-            public void onWebSocketSessionClosed(WebSocketSession session)
+            public void onWebSocketSessionClosed(Session session)
             {
                 onSessionCloseLatch.countDown();
             }

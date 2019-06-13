@@ -1,10 +1,52 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.19.v20190610 - 10 June 2019
+ + 2909 Remove B64Code
+ + 3332 jetty-maven-plugin - transitive dependencies not loaded from
+   "target/classes"
+ + 3498 WebSocket Session.suspend() now suspends incoming frames instead
+   of reads
+ + 3534 Use System nanoTime, not currentTimeMillis for IdleTimeout
+ + 3550 Server becomes unresponsive after sitting idle from a load spike
+ + 3562 InetAccessHandler should be able to apply to a certain port or
+   connector
+ + 3568 Make UserStore able to be started/stopped with its LoginService
+ + 3583 jetty-maven plugin in multi-module-project does not use files from
+   /target/test-classes folder of dependent projects
+ + 3605 IdleTimeout with Jetty HTTP/2 and InputStreamResponseListener
+ + 3608 Reply with 400 Bad request to malformed WebSocket handshake
+ + 3616 Backport WebSocket SessionTracker from Jetty 10
+ + 3620 Use of `throwUnavailableOnStartupException=true` does not stop Server
+   in jetty-home
+ + 3627 Only renew session id when spnego authentication is fully complete
+ + 3628 NPE in QueuedThreadPool.getReservedThreads()
+ + 3630 X-Forwarded-For missing last hextet for ipv6
+ + 3633 endpointIdentificationAlgorithm enabled by default
+   jetty-ssl-context.xml
+ + 3653 access control exception if programmatic security manager is used
+ + 3655 Spaces missing on Cookies generated via RFC6265
+ + 3663 Remove deprecation of HttpClient replacement methods in WebSocketClient
+ + 3680 Bom manages non-existent infinispan-remote and infinispan-embedded
+   dependencies due to config classifier
+ + 3683 Multipart file not deleted when client aborts upload
+ + 3690 Upgrade to asm 7.1
+ + 3713 Emit warning when invoking deprecated method in Jetty XML
+ + 3715 Improve Log.condensePackage performance
+ + 3722 HttpSessionListener.sessionDestroyed should be able to access webapp
+   classes
+ + 3726 Remove OSGi export uses of servlet-api from jetty-util
+ + 3729 Make creation of java:comp/env threadsafe
+ + 3743 Update XmlConfiguration usage in Jetty to always use Constructors that
+   provide Location information
+ + 3748 @Resource field not injected in Jetty Demo
+ + 3750 NPE in WebSocketClient.toString()
+ + 3751 Modern Configure DTD / FPI is used inconsistently
+
 jetty-9.4.18.v20190429 - 29 April 2019
  + 3476 IllegalStateException in WebSocket ConnectionState
  + 3550 Server becomes unresponsive after sitting idle from a load spike
  + 3563 Update to apache jasper 8.5.40
- + 3573 Update jetty-bom for new infinispan artifacts.
+ + 3573 Update jetty-bom for new infinispan artifacts
  + 3582 HeapByteBuffer cleared unexpected
  + 3597 Session persistence broken from 9.4.13+
  + 3609 Fix infinispan start module dependencies

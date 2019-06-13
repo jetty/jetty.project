@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -63,6 +64,7 @@ public class WebSocketStatsTest
     }
 
     private Server server;
+    private ServerConnector connector;
     private WebSocketClient client;
     private ConnectionStatistics statistics;
     private CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
@@ -86,8 +88,7 @@ public class WebSocketStatsTest
         };
 
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         connector.addBean(statistics);
         server.addConnector(connector);
 
@@ -124,7 +125,7 @@ public class WebSocketStatsTest
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/testPath");
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/testPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
 
@@ -140,8 +141,10 @@ public class WebSocketStatsTest
             upgradeSentBytes = statistics.getSentBytes();
             upgradeReceivedBytes = statistics.getReceivedBytes();
 
-            for (int i=0; i<numMessages; i++)
+            for (int i = 0; i < numMessages; i++)
+            {
                 session.getRemote().sendString(msgText);
+            }
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));

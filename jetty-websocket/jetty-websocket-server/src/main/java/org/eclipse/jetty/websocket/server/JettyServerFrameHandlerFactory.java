@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.util.concurrent.CompletableFuture;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -28,8 +26,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.server.internal.DelegatedJettyServletUpgradeRequest;
-import org.eclipse.jetty.websocket.server.internal.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -52,8 +48,7 @@ public class JettyServerFrameHandlerFactory
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
     {
-        return super.newJettyFrameHandler(websocketPojo, new DelegatedJettyServletUpgradeRequest(upgradeRequest), new UpgradeResponseAdapter(upgradeResponse),
-            new CompletableFuture<>());
+        return super.newJettyFrameHandler(websocketPojo);
     }
 
     @Override
