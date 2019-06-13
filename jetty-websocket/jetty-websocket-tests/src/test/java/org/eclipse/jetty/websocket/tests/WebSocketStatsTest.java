@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -140,8 +141,11 @@ public class WebSocketStatsTest
             upgradeSentBytes = statistics.getSentBytes();
             upgradeReceivedBytes = statistics.getReceivedBytes();
 
-            for (int i=0; i<numMessages; i++)
+            for (int i = 0; i < numMessages; i++)
+            {
                 session.getRemote().sendString(msgText);
+            }
+            session.close(StatusCode.NORMAL, null);
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));

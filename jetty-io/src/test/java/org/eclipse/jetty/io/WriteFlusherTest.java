@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -43,9 +35,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteFlusherTest
 {
@@ -155,6 +155,43 @@ public class WriteFlusherTest
 
         assertTrue(callback.isDone());
         assertEquals("own cow!", endPoint.takeOutputString());
+        assertFalse(incompleteFlush.get());
+        assertTrue(flusher.isIdle());
+    }
+
+    @Test
+    public void testCallbackThrows() throws Exception
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 100);
+
+        AtomicBoolean incompleteFlush = new AtomicBoolean(false);
+        WriteFlusher flusher = new WriteFlusher(endPoint)
+        {
+            @Override
+            protected void onIncompleteFlush()
+            {
+                incompleteFlush.set(true);
+            }
+        };
+
+        FutureCallback callback = new FutureCallback()
+        {
+            @Override
+            public void succeeded()
+            {
+                super.succeeded();
+                throw new IllegalStateException();
+            }
+        };
+
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WriteFlusher.class))
+        {
+            flusher.write(callback, BufferUtil.toBuffer("How now brown cow!"));
+            callback.get(100, TimeUnit.MILLISECONDS);
+        }
+
+        assertEquals("How now brown cow!", endPoint.takeOutputString());
+        assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
         assertTrue(flusher.isIdle());
     }
