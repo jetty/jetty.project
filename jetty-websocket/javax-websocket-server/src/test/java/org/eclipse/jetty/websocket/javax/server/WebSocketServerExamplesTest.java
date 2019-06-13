@@ -103,7 +103,6 @@ public class WebSocketServerExamplesTest
     {
         _server = new Server();
         connector = new ServerConnector(_server);
-        connector.setPort(8080);
         _server.addConnector(connector);
 
         _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -117,6 +116,7 @@ public class WebSocketServerExamplesTest
         serverContainer.addEndpoint(GetHttpSessionSocket.class);
 
         _server.start();
+        System.setProperty("org.eclipse.jetty.websocket.port", Integer.toString(connector.getLocalPort()));
     }
 
     @AfterAll
