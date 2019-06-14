@@ -55,17 +55,22 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     public static final String ATTR_KEY = WebSocketUpgradeFilter.class.getName();
 
     /**
-     * Immediately initialize the default WebSocketUpgradeFilter.
+     * Configure the default WebSocketUpgradeFilter.
      *
      * <p>
-     *     Return default {@link WebSocketUpgradeFilter} if
+     *     This will return the default {@link WebSocketUpgradeFilter} on the
+     *     provided {@link ServletContextHandler}, creating the filter if necessary.
+     * </p>
+     * <p>
+     *     The default {@link WebSocketUpgradeFilter} is also available via
+     *     the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
      * </p>
      *
      * @param context the {@link ServletContextHandler} to use
      * @return the configured default {@link WebSocketUpgradeFilter} instance
      * @throws ServletException if the filer cannot be configured
      */
-    public static WebSocketUpgradeFilter initialize(ServletContextHandler context) throws ServletException
+    public static WebSocketUpgradeFilter configure(ServletContextHandler context) throws ServletException
     {
         // Prevent double configure
         WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) context.getAttribute(ATTR_KEY);
@@ -100,12 +105,12 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
      * @param context the {@link ServletContextHandler} to use
      * @return a configured {@link WebSocketUpgradeFilter} instance
      * @throws ServletException if the filer cannot be configured
-     * @deprecated use {@link #initialize(ServletContextHandler)} instead
+     * @deprecated use {@link #configure(ServletContextHandler)} instead
      */
     @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
-        return initialize(context);
+        return configure(context);
     }
     
     /**
@@ -122,7 +127,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         {
             throw new ServletException("Not running on Jetty, WebSocket support unavailable");
         }
-        return initialize(handler);
+        return configure(handler);
     }
     
     private NativeWebSocketConfiguration configuration;

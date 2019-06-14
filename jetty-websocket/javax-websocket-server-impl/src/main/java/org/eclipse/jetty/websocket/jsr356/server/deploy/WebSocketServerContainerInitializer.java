@@ -170,7 +170,15 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * Immediately initialize the {@link ServletContext} with the default (and empty) {@link ServerContainer}.
      *
      * <p>
-     *     This performs a subset of the behaviors that {@link #onStartup(Set, ServletContext)} does.
+     *     This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
+     *     another dependent {@link ServletContainerInitializer} that requires minimal setup to
+     *     be performed.
+     * </p>
+     * <p>
+     *     This method SHOULD NOT BE CALLED by users of Jetty.
+     *     Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
+     * </p>
+     * <p>
      *     There is no enablement check here, and no automatic deployment of endpoints at this point
      *     in time.  It merely sets up the {@link ServletContext} so with the basics needed to start
      *     configuring for `javax.websocket.server` based endpoints.
@@ -208,7 +216,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             // Create Filter
             if (isEnabledViaContext(context.getServletContext(), ADD_DYNAMIC_FILTER_KEY, true))
             {
-                WebSocketUpgradeFilter.initialize(context);
+                WebSocketUpgradeFilter.configure(context);
             }
         }
         return serverContainer;

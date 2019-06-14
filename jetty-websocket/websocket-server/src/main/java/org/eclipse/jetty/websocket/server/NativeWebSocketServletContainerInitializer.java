@@ -38,8 +38,17 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
      * Immediately initialize the {@link ServletContextHandler} with the default {@link NativeWebSocketConfiguration}.
      *
      * <p>
-     * This will return the default {@link NativeWebSocketConfiguration} if already initialized,
-     * and not create a new {@link NativeWebSocketConfiguration} each time it is called.
+     *     This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
+     *     another dependent {@link ServletContainerInitializer} that requires minimal setup to
+     *     be performed.
+     * </p>
+     * <p>
+     *     This method SHOULD NOT BE CALLED by users of Jetty.
+     *     Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
+     * </p>
+     * <p>
+     *     This will return the default {@link NativeWebSocketConfiguration} if already initialized,
+     *     and not create a new {@link NativeWebSocketConfiguration} each time it is called.
      * </p>
      *
      * @param context the context to work with
