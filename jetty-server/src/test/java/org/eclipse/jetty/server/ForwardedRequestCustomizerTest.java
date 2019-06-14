@@ -49,6 +49,7 @@ public class ForwardedRequestCustomizerTest
     final AtomicReference<Integer> _serverPort = new AtomicReference<>();
     final AtomicReference<String> _remoteAddr = new AtomicReference<>();
     final AtomicReference<Integer> _remotePort = new AtomicReference<>();
+    final AtomicReference<String> _requestURL = new AtomicReference<>();
 
     ForwardedRequestCustomizer _customizer;
 
@@ -77,6 +78,7 @@ public class ForwardedRequestCustomizerTest
             _serverPort.set(request.getServerPort());
             _remoteAddr.set(request.getRemoteAddr());
             _remotePort.set(request.getRemotePort());
+            _requestURL.set(request.getRequestURL().toString());
             return true;
         };
 
@@ -101,6 +103,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("scheme", _scheme.get(), is("http"));
         assertThat("serverName", _serverName.get(), is("1.2.3.4"));
         assertThat("serverPort", _serverPort.get(), is(2222));
+        assertThat("requestURL", _requestURL.get(), is("http://1.2.3.4:2222/"));
     }
 
     @Test
@@ -115,6 +118,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("scheme", _scheme.get(), is("http"));
         assertThat("serverName", _serverName.get(), is("[::1]"));
         assertThat("serverPort", _serverPort.get(), is(2222));
+        assertThat("requestURL", _requestURL.get(), is("http://[::1]:2222/"));
     }
 
     @Test
@@ -129,6 +133,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("scheme", _scheme.get(), is("http"));
         assertThat("serverName", _serverName.get(), is("1.2.3.4"));
         assertThat("serverPort", _serverPort.get(), is(2222));
+        assertThat("requestURL", _requestURL.get(), is("http://1.2.3.4:2222/"));
     }
 
     @Test
@@ -143,6 +148,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("scheme", _scheme.get(), is("http"));
         assertThat("serverName", _serverName.get(), is("[::1]"));
         assertThat("serverPort", _serverPort.get(), is(2222));
+        assertThat("requestURL", _requestURL.get(), is("http://[::1]:2222/"));
     }
 
     /**
@@ -168,6 +174,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("[2001:db8:cafe::17]"));
         assertThat("remotePort", _remotePort.get(), is(4711));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
     }
 
     /**
@@ -192,6 +199,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
 
         // With spaces
         HttpTester.Response response2 = HttpTester.parseResponse(
@@ -206,6 +214,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
 
         // As multiple headers
         HttpTester.Response response3 = HttpTester.parseResponse(
@@ -222,6 +231,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
     }
 
     /**
@@ -246,6 +256,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
 
         // New syntax
         HttpTester.Response response2 = HttpTester.parseResponse(
@@ -261,6 +272,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
     }
 
     /**
@@ -284,6 +296,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://example.com/"));
     }
 
     @Test
@@ -303,6 +316,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(443));
         assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
     }
 
     @Test
@@ -322,6 +336,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(443));
         assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
     }
 
     @Test
@@ -341,6 +356,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("10.9.8.7"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
     }
 
     @Test
@@ -359,6 +375,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("10.9.8.7"));
         assertThat("remotePort", _remotePort.get(), is(1111));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
     }
 
     @Test
@@ -377,6 +394,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("[2001:db8:cafe::17]"));
         assertThat("remotePort", _remotePort.get(), is(1111));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
     }
 
     @Test
@@ -393,9 +411,10 @@ public class ForwardedRequestCustomizerTest
         assertThat("status", response.getStatus(), is(200));
         assertThat("scheme", _scheme.get(), is("http"));
         assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
+        assertThat("serverPort", _serverPort.get(), is(2222));
         assertThat("remoteAddr", _remoteAddr.get(), is("[1:2:3:4:5:6:7:8]"));
-        assertThat("remotePort", _remotePort.get(), is(2222));
+        assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost:2222/"));
     }
 
     @Test
@@ -414,9 +433,10 @@ public class ForwardedRequestCustomizerTest
         assertThat("status", response.getStatus(), is(200));
         assertThat("scheme", _scheme.get(), is("http"));
         assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
+        assertThat("serverPort", _serverPort.get(), is(2222));
         assertThat("remoteAddr", _remoteAddr.get(), is("[1:2:3:4:5:6:7:8]"));
-        assertThat("remotePort", _remotePort.get(), is(2222));
+        assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost:2222/"));
     }
 
     @Test
@@ -435,6 +455,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(443));
         assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
     }
 
     @Test
@@ -456,6 +477,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
 
         _customizer.setSslIsSecure(true);
         response = HttpTester.parseResponse(
@@ -473,6 +495,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(443));
         assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
     }
 
     @Test
@@ -494,6 +517,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
 
         _customizer.setSslIsSecure(true);
         response = HttpTester.parseResponse(
@@ -511,6 +535,51 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(443));
         assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
+    }
+
+    /**
+     * Resetting the server port via a forwarding header
+     */
+    @Test
+    public void testPort_For() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _connector.getResponse(
+                "GET / HTTP/1.1\n" +
+                    "Host: myhost\n" +
+                    "X-Forwarded-Port: 4444\n" +
+                    "X-Forwarded-For: 192.168.1.200\n" +
+                    "\n"));
+        assertThat("status", response.getStatus(), is(200));
+        assertThat("scheme", _scheme.get(), is("http"));
+        assertThat("serverName", _serverName.get(), is("myhost"));
+        assertThat("serverPort", _serverPort.get(), is(4444));
+        assertThat("remoteAddr", _remoteAddr.get(), is("192.168.1.200"));
+        assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost:4444/"));
+    }
+
+    /**
+     * Test setting the server Port before the "Host" header has been seen.
+     */
+    @Test
+    public void testPort_For_LateHost() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _connector.getResponse(
+                "GET / HTTP/1.1\n" +
+                    "X-Forwarded-Port: 4444\n" + // this order is intentional
+                    "X-Forwarded-For: 192.168.1.200\n" +
+                    "Host: myhost\n" + // leave this as the last header
+                    "\n"));
+        assertThat("status", response.getStatus(), is(200));
+        assertThat("scheme", _scheme.get(), is("http"));
+        assertThat("serverName", _serverName.get(), is("myhost"));
+        assertThat("serverPort", _serverPort.get(), is(4444));
+        assertThat("remoteAddr", _remoteAddr.get(), is("192.168.1.200"));
+        assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost:4444/"));
     }
 
     @Test
@@ -532,6 +601,7 @@ public class ForwardedRequestCustomizerTest
         assertThat("serverPort", _serverPort.get(), is(80));
         assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
         assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://example.com/"));
     }
 
     interface RequestTester
