@@ -65,6 +65,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -204,7 +205,7 @@ public class ServletContextHandler extends ContextHandler
         else
             wrapper.setHandler(handler);
     }
-    
+
     /* ------------------------------------------------------------ */
     private void relinkHandlers()
     {
@@ -225,7 +226,7 @@ public class ServletContextHandler extends ContextHandler
                 doSetHandler(handler,_sessionHandler);
             handler=_sessionHandler;
         }
-        
+
         // link security handler
         if (getSecurityHandler()!=null)
         {
@@ -253,7 +254,6 @@ public class ServletContextHandler extends ContextHandler
             handler=_gzipHandler;
         }
 
-        
         // link servlet handler
         if (getServletHandler()!=null)
         {
@@ -265,7 +265,6 @@ public class ServletContextHandler extends ContextHandler
                 doSetHandler(handler,_servletHandler);
             handler=_servletHandler;
         }
-        
     }
     
     /* ------------------------------------------------------------ */
@@ -564,43 +563,42 @@ public class ServletContextHandler extends ContextHandler
         super.callContextDestroyed(l, e);
     }
 
-    private boolean replaceHandler(Handler handler,Handler replace)
+    private void replaceHandler(HandlerWrapper handler, HandlerWrapper replacement)
     {
-        HandlerWrapper wrapper=this;
-        while(true)
+        if (isStarted())
+            throw new IllegalStateException("STARTED");
+
+        Handler next=null;
+        if (handler!=null)
         {
-            if (wrapper.getHandler()==handler)
+            next=handler.getHandler();
+            handler.setHandler(null);
+
+            HandlerWrapper wrapper=this;
+            while(wrapper != null)
             {
-                doSetHandler(wrapper,replace);
-                return true;
+                if (wrapper.getHandler() == handler)
+                {
+                    doSetHandler(wrapper,replacement);
+                    break;
+                }
+
+                wrapper = (wrapper.getHandler() instanceof HandlerWrapper) ? (HandlerWrapper)wrapper.getHandler() : null;
             }
-            
-            if (!(wrapper.getHandler() instanceof HandlerWrapper))
-                return false;
-            wrapper = (HandlerWrapper)wrapper.getHandler();
         }
+
+        if (next!=null && replacement.getHandler()==null)
+            replacement.setHandler(next);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param sessionHandler The sessionHandler to set.
      */
     public void setSessionHandler(SessionHandler sessionHandler)
     {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_sessionHandler!=null)
-        {
-            next=_sessionHandler.getHandler();
-            _sessionHandler.setHandler(null);
-            replaceHandler(_sessionHandler,sessionHandler);
-        }
-
+        replaceHandler(_sessionHandler, sessionHandler);
         _sessionHandler = sessionHandler;
-        if (next!=null && _sessionHandler.getHandler()==null)
-            _sessionHandler.setHandler(next);
         relinkHandlers();
     }
 
@@ -610,23 +608,10 @@ public class ServletContextHandler extends ContextHandler
      */
     public void setSecurityHandler(SecurityHandler securityHandler)
     {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_securityHandler!=null)
-        {
-            next=_securityHandler.getHandler();
-            _securityHandler.setHandler(null);
-            replaceHandler(_securityHandler,securityHandler);
-        }
-        
+        replaceHandler(_sessionHandler, securityHandler);
         _securityHandler = securityHandler;
-        if (next!=null && _securityHandler.getHandler()==null)
-            _securityHandler.setHandler(next);
         relinkHandlers();
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -634,46 +619,22 @@ public class ServletContextHandler extends ContextHandler
      */
     public void setGzipHandler(GzipHandler gzipHandler)
     {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_gzipHandler!=null)
-        {
-            next=_gzipHandler.getHandler();
-            _gzipHandler.setHandler(null);
-            replaceHandler(_gzipHandler,gzipHandler);
-        }
-        
+        replaceHandler(_gzipHandler, gzipHandler);
         _gzipHandler = gzipHandler;
-        if (next!=null && _gzipHandler.getHandler()==null)
-            _gzipHandler.setHandler(next);
         relinkHandlers();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param servletHandler The servletHandler to set.
      */
     public void setServletHandler(ServletHandler servletHandler)
     {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_servletHandler!=null)
-        {
-            next=_servletHandler.getHandler();
-            _servletHandler.setHandler(null);
-            replaceHandler(_servletHandler,servletHandler);
-        }
+        replaceHandler(_servletHandler, servletHandler);
         _servletHandler = servletHandler;
-        if (next!=null && _servletHandler.getHandler()==null)
-            _servletHandler.setHandler(next);
         relinkHandlers();
     }
-    
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Insert a HandlerWrapper before the first Session,Security or ServletHandler
@@ -1110,6 +1071,18 @@ public class ServletContextHandler extends ContextHandler
             return new Dispatcher(context, name);
         }
 
+        private void checkDynamicName(String name)
+        {
+            if (isStarted())
+                throw new IllegalStateException();
+
+            if (StringUtil.isBlank(name))
+                throw new IllegalStateException("Missing name");
+
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+        }
+
         /* ------------------------------------------------------------ */
         /**
          * @since servlet-api-3.0
@@ -1117,14 +1090,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
-            if (isStarted())
-                throw new IllegalStateException();
-            
-            if (filterName == null || "".equals(filterName.trim()))
-                throw new IllegalStateException("Missing filter name");
-
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamicName(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1154,14 +1120,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, String className)
         {
-            if (isStarted())
-                throw new IllegalStateException();
-            
-            if (filterName == null || "".equals(filterName.trim()))
-                throw new IllegalStateException("Missing filter name");
-
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamicName(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1192,14 +1151,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
         {
-            if (isStarted())
-                throw new IllegalStateException();
-
-            if (filterName == null || "".equals(filterName.trim()))
-                throw new IllegalStateException("Missing filter name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamicName(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1230,14 +1182,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
-            if (!isStarting())
-                throw new IllegalStateException();
-
-            if (servletName == null || "".equals(servletName.trim()))
-                throw new IllegalStateException("Missing servlet name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamicName(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
@@ -1268,15 +1213,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
-            if (!isStarting())
-                throw new IllegalStateException();
-
-            if (servletName == null || "".equals(servletName.trim()))
-                throw new IllegalStateException("Missing servlet name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
+            checkDynamicName(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
@@ -1307,14 +1244,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
-            if (!isStarting())
-                throw new IllegalStateException();
-            
-            if (servletName == null || "".equals(servletName.trim()))
-                throw new IllegalStateException("Missing servlet name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamicName(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);

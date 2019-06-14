@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="warn" name="Jetty" >
 
-  <Appenders>
-  </Appenders>
-  <Loggers>
-    <Root level="error">
-      <AppenderRef ref="STDOUT"/>
-    </Root>
-  </Loggers>
+  <properties>
+    <property name="logging.dir">${sys:jetty.logging.dir:-logs}</property>
+  </properties>
 
   <Appenders>
     <Console name="console" target="SYSTEM_ERR">
@@ -16,24 +12,33 @@
       </PatternLayout>
     </Console>
 
-    <!--
-    <RollingFile name="file" 
-      fileName="${jetty.logging.dir}/jetty.log" 
-      filePattern="${jetty.logging.dir}/jetty-%d{MM-dd-yyyy}.log.gz" 
+
+    <RollingRandomAccessFile name="file"
+      fileName="${logging.dir}/jetty.log"
+      filePattern="${logging.dir}/jetty-%d{MM-dd-yyyy}.log.gz"
       ignoreExceptions="false">
       <PatternLayout>
-        <Pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n</Pattern>
+        <Pattern>%d [%t] %-5p %c %x - %m%n</Pattern>
       </PatternLayout>
-      <SizeBasedTriggeringPolicy size="10MB"/>
-      <DefaultRolloverStrategy max="10"/>
-    </RollingFile>
-    -->
+
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="10 MB"/>
+      </Policies>
+    </RollingRandomAccessFile>
+
   </Appenders>
 
   <Loggers>
     <Root level="info">
       <AppenderRef ref="console"/>
     </Root>
+    <!--
+    To have all logger async 
+    <AsyncRoot level="info">
+      <AppenderRef ref="file"/>
+    </AsyncRoot>
+    -->
   </Loggers>
 
 </Configuration>

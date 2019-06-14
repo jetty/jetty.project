@@ -32,7 +32,8 @@ ____
 
 This configuration is essentially the multiple logger configuration with added configuration to the deployers to force a `WebAppClassLoader` change to use the server classpath over the webapps classpath for the logger specific classes.
 
-The technique used by this configuration is to provide an link:{JDURL}org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[AppLifeCycle.Binding] against the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[`"deploying"`node] that modifies the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#addSystemClass(java.lang.String)[WebAppContext.addSystemClass(String)] for the common logging classes.
+The technique used by this configuration is to provide an link:{JDURL}org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[AppLifeCycle.Binding] against the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[`"deploying"`node] that modifies the
+link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#getSystemClasspathPattern()[WebAppContext.getSystemClasspathPattern().add(String)] for the common logging classes.
 See https://github.com/jetty-project/jetty-webapp-logging/blob/master/src/main/java/org/eclipse/jetty/webapp/logging/CentralizedWebAppLoggingBinding.java[org.eclipse.jetty.logging.CentralizedWebAppLoggingBinding] for actual implementation.
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by Logback.

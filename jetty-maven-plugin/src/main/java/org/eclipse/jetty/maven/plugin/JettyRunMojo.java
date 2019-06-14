@@ -43,6 +43,7 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -661,7 +662,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         int i = name.lastIndexOf('/');
         if (i>0)
             name = name.substring(i+1,name.length());
-        name = name.replace('.', '_');
+        name = StringUtil.replace(name, '.', '_');
         //name = name+(++COUNTER); //add some digits to ensure uniqueness
         File overlaysDir = new File (project.getBuild().getDirectory(), "jetty_overlays");
         File dir = new File(overlaysDir, name);

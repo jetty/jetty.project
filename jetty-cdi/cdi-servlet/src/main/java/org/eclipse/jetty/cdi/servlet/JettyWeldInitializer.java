@@ -23,6 +23,7 @@ import javax.naming.Reference;
 
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.webapp.ClasspathPattern;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -45,22 +46,22 @@ public class JettyWeldInitializer
         initContext(webapp);
 
         // webapp cannot change / replace weld classes
-        webapp.addSystemClass("org.jboss.weld.");
-        webapp.addSystemClass("org.jboss.classfilewriter.");
-        webapp.addSystemClass("org.jboss.logging.");
-        webapp.addSystemClass("com.google.common.");
-        webapp.addSystemClass("org.eclipse.jetty.cdi.websocket.annotation.");
-        
+        ClasspathPattern systemClasses = webapp.getSystemClasspathPattern();
+        systemClasses.add("org.jboss.weld.");
+        systemClasses.add("org.jboss.classfilewriter.");
+        systemClasses.add("org.jboss.logging.");
+        systemClasses.add("com.google.common.");
+        systemClasses.add("org.eclipse.jetty.cdi.websocket.annotation.");
 
         // don't hide weld classes from webapps (allow webapp to use ones from system classloader)
-        webapp.prependServerClass("-org.eclipse.jetty.cdi.websocket.annotation.");
-        webapp.prependServerClass("-org.eclipse.jetty.cdi.core.");
-        webapp.prependServerClass("-org.eclipse.jetty.cdi.servlet.");
-        webapp.addServerClass("-org.jboss.weld.");
-        webapp.addServerClass("-org.jboss.classfilewriter.");
-        webapp.addServerClass("-org.jboss.logging.");
-        webapp.addServerClass("-com.google.common.");
-    
+        ClasspathPattern serverClasses = webapp.getServerClasspathPattern();
+        serverClasses.add("-org.eclipse.jetty.cdi.websocket.annotation.");
+        serverClasses.add("-org.eclipse.jetty.cdi.core.");
+        serverClasses.add("-org.eclipse.jetty.cdi.servlet.");
+        serverClasses.add("-org.jboss.weld.");
+        serverClasses.add("-org.jboss.classfilewriter.");
+        serverClasses.add("-org.jboss.logging.");
+        serverClasses.add("-com.google.common.");
     }
 
     public static void initContext(ContextHandler handler) throws NamingException

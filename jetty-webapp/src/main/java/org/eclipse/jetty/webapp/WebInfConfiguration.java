@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.PatternMatcher;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -210,7 +211,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     }
                     catch (URISyntaxException e)
                     {
-                        containerUris.add(new URI(u.toString().replaceAll(" ", "%20")));
+                        containerUris.add(new URI(URIUtil.encodeSpaces(u.toString())));
                     }
                 }
             }
@@ -811,10 +812,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
 
         //Context name
-        String contextPath = context.getContextPath();
-        contextPath=contextPath.replace('/','_');
-        contextPath=contextPath.replace('\\','_');
-        canonicalName.append(contextPath);
+        canonicalName.append(context.getContextPath());
 
         //Virtual host (if there is one)
         canonicalName.append("-");
@@ -824,17 +822,9 @@ public class WebInfConfiguration extends AbstractConfiguration
         else
             canonicalName.append(vhosts[0]);
 
-        // sanitize
-        for (int i=0;i<canonicalName.length();i++)
-        {
-            char c=canonicalName.charAt(i);
-            if (!Character.isJavaIdentifierPart(c) && "-.".indexOf(c)<0)
-                canonicalName.setCharAt(i,'.');
-        }
-
         canonicalName.append("-");
 
-        return canonicalName.toString();
+        return StringUtil.sanitizeFileSystemName(canonicalName.toString());
     }
 
     

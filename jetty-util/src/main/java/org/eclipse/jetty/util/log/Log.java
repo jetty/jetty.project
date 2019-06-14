@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
@@ -102,7 +103,7 @@ public class Log
                 // NOTE: cannot use jetty-util's StringUtil as that initializes logging itself.
                 if (osName != null && osName.length() > 0)
                 {
-                    osName = osName.toLowerCase(Locale.ENGLISH).replace(' ','-');
+                    osName = StringUtil.replace(osName.toLowerCase(Locale.ENGLISH), ' ', '-');
                     loadProperties("jetty-logging-" + osName + ".properties",__props);
                 }
 

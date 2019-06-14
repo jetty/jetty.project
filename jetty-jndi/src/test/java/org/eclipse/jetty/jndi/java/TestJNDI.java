@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.jndi.java;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -49,6 +51,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 /**
  *
@@ -288,7 +291,7 @@ public class TestJNDI
         ClassLoader currentLoader = currentThread.getContextClassLoader();
         ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
         ClassLoader childLoader2 = new URLClassLoader(new URL[0], currentLoader);
-        
+        InitialContext initCtx = null;
         try
         {
 
@@ -325,7 +328,7 @@ public class TestJNDI
             
             //Set up the tccl before doing any jndi operations
             currentThread.setContextClassLoader(childLoader1);
-            InitialContext initCtx = new InitialContext();
+            initCtx = new InitialContext();
             
             //Test we can lookup the root java: naming tree
             Context sub0 = (Context)initCtx.lookup("java:");
@@ -439,30 +442,69 @@ public class TestJNDI
 
             //check locking the context
             Context ectx = (Context)initCtx.lookup("java:comp");
+            //make a deep structure lie ttt/ttt2 for later use
+            Context ttt = ectx.createSubcontext("ttt");
+            ttt.createSubcontext("ttt2");
+            //bind a value
             ectx.bind("crud", "xxx");
-            ectx.addToEnvironment("org.eclipse.jndi.immutable", "TRUE");
+            //lock
+            ectx.addToEnvironment("org.eclipse.jetty.jndi.lock", "TRUE");
+            //check we can't get the lock
+            assertFalse(ectx.getEnvironment().containsKey("org.eclipse.jetty.jndi.lock"));
+            //check once locked we can still do lookups
             assertEquals ("xxx", initCtx.lookup("java:comp/crud"));
+            assertNotNull(initCtx.lookup("java:comp/ttt/ttt2"));
+            
+            //test trying to bind into java:comp after lock
+            InitialContext zzz = null;
             try
             {
-                ectx.bind("crud2", "xxx2");
+                zzz = new InitialContext();
+
+                ((Context)zzz.lookup("java:comp")).bind("crud2", "xxx2");
+                fail("Should not be able to write to locked context");
+
             }
             catch (NamingException ne)
             {
-                //expected failure to modify immutable context
+                assertThat(ne.getMessage(), Matchers.containsString("immutable"));
             }
-            
+            finally
+            {
+                zzz.close();
+            }
 
-            initCtx.close();
+            //test trying to bind into a deep structure inside java:comp after lock
+            try
+            {
+                zzz = new InitialContext();
+
+                //TODO test deep locking
+                //  ((Context)zzz.lookup("java:comp/ttt/ttt2")).bind("zzz2", "zzz2");
+                // fail("Should not be able to write to locked context");
+                ((Context)zzz.lookup("java:comp")).bind("foo", "bar");
+                fail("Should not be able to write to locked context");
+            }
+            catch (NamingException ne)
+            {
+                assertThat(ne.getMessage(), Matchers.containsString("immutable"));
+            }
+            finally
+            {
+                zzz.close();
+            }
         }
         finally
         {
             //make some effort to clean up
+            initCtx.close();
             InitialContext ic = new InitialContext();
             Context java = (Context)ic.lookup("java:");
             java.destroySubcontext("zero");
             java.destroySubcontext("fee");
             currentThread.setContextClassLoader(childLoader1);
             Context comp = (Context)ic.lookup("java:comp");
+            comp.addToEnvironment("org.eclipse.jetty.jndi.unlock", "TRUE");
             comp.destroySubcontext("env");
             comp.unbind("crud");
             comp.unbind("crud2");

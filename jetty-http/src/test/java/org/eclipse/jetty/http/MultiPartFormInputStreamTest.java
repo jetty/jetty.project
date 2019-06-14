@@ -217,6 +217,7 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testNoBody()
+            throws Exception
     {
         String body = "";
 
@@ -277,6 +278,7 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testWhitespaceBodyWithCRLF()
+            throws Exception
     {
         String whitespace = "              \n\n\n\r\n\r\n\r\n\r\n";
 
@@ -292,6 +294,7 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testWhitespaceBody()
+            throws Exception
     {
         String whitespace = " ";
 
@@ -400,6 +403,7 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testRequestTooBig ()
+            throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -415,6 +419,7 @@ public class MultiPartFormInputStreamTest
     
     @Test
     public void testRequestTooBigThrowsErrorOnGetParts ()
+            throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -434,6 +439,7 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testFileTooBig()
+            throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -449,6 +455,7 @@ public class MultiPartFormInputStreamTest
     
     @Test
     public void testFileTooBigThrowsErrorOnGetParts()
+            throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -550,6 +557,7 @@ public class MultiPartFormInputStreamTest
     
     @Test
     public void testCROnlyRequest()
+            throws Exception
     {
         String str = "--AaB03x\r" +
                 "content-disposition: form-data; name=\"field1\"\r" +
@@ -576,6 +584,7 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testCRandLFMixRequest()
+            throws Exception
     {
         String str = "--AaB03x\r" +
                 "content-disposition: form-data; name=\"field1\"\r" +

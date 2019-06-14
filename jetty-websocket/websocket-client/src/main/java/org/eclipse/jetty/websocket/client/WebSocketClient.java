@@ -79,7 +79,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private final WebSocketExtensionFactory extensionRegistry;
     private final EventDriverFactory eventDriverFactory;
     private final SessionFactory sessionFactory;
-    private final SessionTracker sessionTracker;
+    private final SessionTracker sessionTracker = new SessionTracker();
     private final List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
 
     // defaults to true for backwards compatibility
@@ -266,10 +266,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             this.httpClient = httpClient;
         }
 
-        this.sessionTracker = new SessionTracker();
-        this.addBean(sessionTracker);
-
-        this.addSessionListener(this.sessionTracker);
+        addBean(sessionTracker);
+        addSessionListener(sessionTracker);
 
         // Ensure we get a Client version of the policy.
         this.policy = scope.getPolicy().delegateAs(WebSocketBehavior.CLIENT);

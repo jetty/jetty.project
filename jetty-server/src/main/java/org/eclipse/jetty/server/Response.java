@@ -29,7 +29,6 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -53,12 +52,10 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -238,7 +235,7 @@ public class Response implements HttpServletResponse
             if (i >= 0)
             {
                 httpOnly = true;
-                comment = comment.replace(HTTP_ONLY_COMMENT, "").trim();
+                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
                 if (comment.length() == 0)
                     comment = null;
             }
@@ -1045,37 +1042,27 @@ public class Response implements HttpServletResponse
         _reason = null;
         _contentLength = -1;
         
-        List<HttpField> cookies = preserveCookies
-            ?_fields.stream()
-            .filter(f->f.getHeader()==HttpHeader.SET_COOKIE)
-            .collect(Collectors.toList()):null;
-        
+        List<HttpField> cookies = preserveCookies ?_fields.getFields(HttpHeader.SET_COOKIE):null;
         _fields.clear();
 
-        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());  
-        if (connection != null)
+        for (String value: _channel.getRequest().getHttpFields().getCSV(HttpHeader.CONNECTION,false))
         {
-            for (String value: StringUtil.csvSplit(null,connection,0,connection.length()))
+            HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
+            if (cb != null)
             {
-                HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
-
-                if (cb != null)
+                switch (cb)
                 {
-                    switch (cb)
-                    {
-                        case CLOSE:
-                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
-                            break;
-
-                        case KEEP_ALIVE:
-                            if (HttpVersion.HTTP_1_0.is(_channel.getRequest().getProtocol()))
-                                _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
-                            break;
-                        case TE:
-                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
-                            break;
-                        default:
-                    }
+                    case CLOSE:
+                        _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
+                        break;
+                    case KEEP_ALIVE:
+                        if (HttpVersion.HTTP_1_0.is(_channel.getRequest().getProtocol()))
+                            _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
+                        break;
+                    case TE:
+                        _fields.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
+                        break;
+                    default:
                 }
             }
         }
@@ -1157,7 +1144,7 @@ public class Response implements HttpServletResponse
             return;
 
         _locale = locale;
-        _fields.put(HttpHeader.CONTENT_LANGUAGE, locale.toString().replace('_', '-'));
+        _fields.put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
 
         if (_outputType != OutputType.NONE)
             return;

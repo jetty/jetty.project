@@ -41,7 +41,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -196,6 +195,7 @@ public class Request implements HttpServletRequest
     private boolean _requestedSessionIdFromCookie = false;
     private Attributes _attributes;
     private Authentication _authentication;
+    private String _contentType;
     private String _characterEncoding;
     private ContextHandler.Context _context;
     private CookieCutter _cookies;
@@ -465,8 +465,8 @@ public class Request implements HttpServletRequest
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == __NONE)
             {
-                contentType = HttpFields.valueParameters(contentType, null);
-                if (MimeTypes.Type.FORM_ENCODED.is(contentType) &&
+                String baseType = HttpFields.valueParameters(contentType, null);
+                if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
                     if (_metaData!=null)
@@ -477,7 +477,7 @@ public class Request implements HttpServletRequest
                     }
                     extractFormParameters(_contentParameters);
                 }
-                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&
+                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
                         _multiParts == null)
                 {
@@ -487,7 +487,7 @@ public class Request implements HttpServletRequest
                             throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
                         getParts(_contentParameters);
                     }
-                    catch (IOException | ServletException e)
+                    catch (IOException e)
                     {
                         LOG.debug(e);
                         throw new RuntimeIOException(e);
@@ -665,7 +665,16 @@ public class Request implements HttpServletRequest
     public String getCharacterEncoding()
     {
         if (_characterEncoding==null)
-            getContentType();
+        {
+            String contentType = getContentType();
+            if (contentType!=null)
+            {
+                MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
+                String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
+                if (charset != null)
+                    _characterEncoding=charset;
+            }
+        }
         return _characterEncoding;
     }
 
@@ -721,16 +730,12 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        MetaData.Request metadata = _metaData;
-        String content_type = metadata==null?null:metadata.getFields().get(HttpHeader.CONTENT_TYPE);
-        if (_characterEncoding==null && content_type!=null)
+        if (_contentType==null)
         {
-            MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
-            String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(content_type) : mime.getCharset().toString();
-            if (charset != null)
-                _characterEncoding=charset;
+            MetaData.Request metadata = _metaData;
+            _contentType = metadata == null ? null : metadata.getFields().get(HttpHeader.CONTENT_TYPE);
         }
-        return content_type;
+        return _contentType;
     }
 
     /* ------------------------------------------------------------ */
@@ -1854,6 +1859,7 @@ public class Request implements HttpServletRequest
         _handled = false;
         if (_attributes != null)
             _attributes.clearAttributes();
+        _contentType = null;
         _characterEncoding = null;
         _contextPath = null;
         if (_cookies != null)
@@ -2012,10 +2018,8 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.ServletRequest#getContentType()
      */
     public void setContentType(String contentType)
-    {        
-        MetaData.Request metadata = _metaData;
-        if (metadata!=null)
-            metadata.getFields().put(HttpHeader.CONTENT_TYPE,contentType);
+    {
+        _contentType = contentType;
     }
 
     /* ------------------------------------------------------------ */
@@ -2316,7 +2320,6 @@ public class Request implements HttpServletRequest
     public Part getPart(String name) throws IOException, ServletException
     {
         getParts();
-
         return _multiParts.getPart(name);
     }
 
@@ -2324,13 +2327,13 @@ public class Request implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        if (getContentType() == null || 
-                !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(getContentType(),null)))
+        String contentType = getContentType();
+        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(contentType,null)))
             throw new ServletException("Content-Type != multipart/form-data");
         return getParts(null);
     }
 
-    private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
+    private Collection<Part> getParts(MultiMap<String> params) throws IOException
     {        
         if (_multiParts == null)
             _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
@@ -2341,12 +2344,9 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiParts = newMultiParts(getInputStream(),
-                                       getContentType(), config,
-                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
-
+            _multiParts = newMultiParts(config);
             setAttribute(__MULTIPARTS, _multiParts);
-            Collection<Part> parts = _multiParts.getParts(); //causes parsing
+            Collection<Part> parts = _multiParts.getParts();
                        
             String _charset_ = null;
             Part charsetPart = _multiParts.getPart("_charset_");
@@ -2408,7 +2408,7 @@ public class Request implements HttpServletRequest
     }
 
     
-    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException
+    private MultiParts newMultiParts(MultipartConfigElement config) throws IOException
     {
         MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
         if(LOG.isDebugEnabled())

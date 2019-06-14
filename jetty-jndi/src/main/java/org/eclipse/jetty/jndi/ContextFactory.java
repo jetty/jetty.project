@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.jndi;
 
-
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.WeakHashMap;
-
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
@@ -32,6 +31,8 @@ import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -59,12 +60,12 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ContextFactory implements ObjectFactory
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(ContextFactory.class);
 
     /**
      * Map of classloaders to contexts.
      */
-    private static final WeakHashMap __contextMap = new WeakHashMap();
+    private static final Map<ClassLoader, Context> __contextMap = Collections.synchronizedMap(new WeakHashMap<>());
 
     /**
      * Threadlocal for injecting a context to use
@@ -77,8 +78,6 @@ public class ContextFactory implements ObjectFactory
      * when finding the comp context.
      */
     private static final ThreadLocal<ClassLoader> __threadClassLoader = new ThreadLocal<ClassLoader>();
-    
-
 
     /**
      * Find or create a context which pertains to a classloader.
@@ -106,7 +105,8 @@ public class ContextFactory implements ObjectFactory
         Context ctx = (Context)__threadContext.get();
         if (ctx != null)
         {
-            if(__log.isDebugEnabled()) __log.debug("Using the Context that is bound on the thread");
+            if(LOG.isDebugEnabled())
+                LOG.debug("Using the Context that is bound on the thread");
             return ctx;
         }
 
@@ -115,37 +115,47 @@ public class ContextFactory implements ObjectFactory
         ClassLoader loader = (ClassLoader)__threadClassLoader.get();
         if (loader != null)
         {
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Using threadlocal classloader");
-            ctx = getContextForClassLoader(loader);
-            if (ctx == null)
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using threadlocal classloader");
+            synchronized(__contextMap)
             {
-                ctx = newNamingContext(obj, loader, env, name, nameCtx);
-                __contextMap.put (loader, ctx);
-                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
+                ctx = getContextForClassLoader(loader);
+                if (ctx == null)
+                {
+                    ctx = newNamingContext(obj, loader, env, name, nameCtx);
+                    __contextMap.put (loader, ctx);
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Made context {} for classloader {}",name.get(0),loader);
+                }
+                return ctx;
             }
-            return ctx;
         }
-       
+
         //If the thread context classloader is set, then try its hierarchy to find a matching context
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         loader = tccl;      
         if (loader != null)
         {
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Trying thread context classloader");
-            while (ctx == null && loader != null)
+            if (LOG.isDebugEnabled())
+                LOG.debug("Trying thread context classloader");
+            synchronized(__contextMap)
             {
-                ctx = getContextForClassLoader(loader);
-                if (ctx == null && loader != null)
-                    loader = loader.getParent();
-            }
+                while (ctx == null && loader != null)
+                {
+                    ctx = getContextForClassLoader(loader);
+                    if (ctx == null && loader != null)
+                        loader = loader.getParent();
+                }
 
-            if (ctx == null)
-            {
-                ctx = newNamingContext(obj, tccl, env, name, nameCtx);
-                __contextMap.put (tccl, ctx);
-                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+tccl);
+                if (ctx == null)
+                {
+                    ctx = newNamingContext(obj, tccl, env, name, nameCtx);
+                    __contextMap.put (tccl, ctx);
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Made context {} for classloader {}", name.get(0), tccl);
+                }
+                return ctx;
             }
-            return ctx;
         }
 
 
@@ -153,19 +163,23 @@ public class ContextFactory implements ObjectFactory
         //classloader associated with the current context
         if (ContextHandler.getCurrentContext() != null)
         {
-            
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
-            loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
-            ctx = (Context)__contextMap.get(loader);    
-
-            if (ctx == null && loader != null)
+            if (LOG.isDebugEnabled() && loader != null)
+                LOG.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
+            synchronized(__contextMap)
             {
-                ctx = newNamingContext(obj, loader, env, name, nameCtx);
-                __contextMap.put (loader, ctx);
-                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
-            }
+                loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
+                ctx = (Context)__contextMap.get(loader);    
 
-            return ctx;
+                if (ctx == null && loader != null)
+                {
+                    ctx = newNamingContext(obj, loader, env, name, nameCtx);
+                    __contextMap.put (loader, ctx);
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Made context {} for classloader {} ", name.get(0), loader);
+                }
+
+                return ctx;
+            }
         }
         return null;
     }
@@ -243,17 +257,9 @@ public class ContextFactory implements ObjectFactory
 
     public static void dump(Appendable out, String indent) throws IOException
     {
-        out.append("o.e.j.jndi.ContextFactory@").append(Long.toHexString(__contextMap.hashCode())).append("\n");
-        int size=__contextMap.size();
-        int i=0;
-        for (Map.Entry<ClassLoader,NamingContext> entry : ((Map<ClassLoader,NamingContext>)__contextMap).entrySet())
+        synchronized (__contextMap)
         {
-            boolean last=++i==size;
-            ClassLoader loader=entry.getKey();
-            out.append(indent).append(" +- ").append(loader.getClass().getSimpleName()).append("@").append(Long.toHexString(loader.hashCode())).append(": ");
-
-            NamingContext context = entry.getValue();
-            context.dump(out,indent+(last?"    ":" |  "));
+            Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@",__contextMap.hashCode()), __contextMap);
         }
     }
 }

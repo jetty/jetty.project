@@ -37,6 +37,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -454,13 +455,7 @@ public class AttributeNormalizer
         // leftover
         expanded.append(str.substring(offset));
 
-        // special case for "$$"
-        if (expanded.indexOf("$$") >= 0)
-        {
-            return expanded.toString().replaceAll("\\$\\$","\\$");
-        }
-
-        return expanded.toString();
+        return StringUtil.replace(expanded.toString(), "$$", "$");
     }
 
     private String getString(String property)

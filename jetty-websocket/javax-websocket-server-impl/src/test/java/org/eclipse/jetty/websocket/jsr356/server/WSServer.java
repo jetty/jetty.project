@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -38,9 +35,8 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -50,6 +46,9 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 
 /**
@@ -88,7 +87,7 @@ public class WSServer
     public void copyClass(Class<?> clazz) throws Exception
     {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        String endpointPath = clazz.getName().replace('.','/') + ".class";
+        String endpointPath = TypeUtil.toClassReference(clazz);
         URL classUrl = cl.getResource(endpointPath);
         assertThat("Class URL for: " + clazz,classUrl,notNullValue());
         File destFile = Paths.get( classesDir.toString(), FS.separators( endpointPath)).toFile();

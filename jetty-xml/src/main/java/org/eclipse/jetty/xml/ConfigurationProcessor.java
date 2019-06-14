@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.xml;
 
+import java.net.MalformedURLException;
 import java.net.URL;
+
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * A ConfigurationProcessor for non XmlConfiguration format files.
@@ -31,8 +34,33 @@ import java.net.URL;
  */
 public interface ConfigurationProcessor
 {
-    public void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
-    
-    public Object configure( Object obj) throws Exception;
-    public Object configure() throws Exception;
+    /**
+     * @deprecated use {@link #init(Resource, XmlParser.Node, XmlConfiguration)} instead
+     */
+    @Deprecated
+    void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
+
+    /**
+     * Initialize a ConfigurationProcessor from provided Resource and XML
+     *
+     * @param resource the resource being read
+     * @param root the parsed XML root node for the resource
+     * @param configuration the configuration being used (typically for ref IDs)
+     */
+    default void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration)
+    {
+        // Moving back and forth between URL and File/FileSystem/Path/Resource is known to cause escaping issues.
+        try
+        {
+            init(resource.getURI().toURL(), root, configuration);
+        }
+        catch (MalformedURLException e)
+        {
+            throw new IllegalStateException("Unable to convert Resource to URL", e);
+        }
+    }
+
+    Object configure(Object obj) throws Exception;
+
+    Object configure() throws Exception;
 }

@@ -94,9 +94,11 @@ From a context xml file, you reference the Server instance as a Ref:
 [source, xml, subs="{sub-order}"]
 ----
   <!-- Expose the jetty infinispan classes for session serialization -->
-  <Call name="prependServerClass">
-    <Arg>-org.eclipse.jetty.session.infinispan.</Arg>
-  </Call>
+  <Get name="serverClasspathPattern">
+    <Call name="add">
+      <Arg>-org.eclipse.jetty.session.infinispan.</Arg>
+    </Call>
+  </Get>
 
 
   <!-- Get a reference to the InfinispanSessionIdManager -->
@@ -132,10 +134,12 @@ From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance direc
 
 [source, xml, subs="{sub-order}"]
 ----
-  <!-- Expose the jetty infinispan classes for session serialization -->
-  <Call name="prependServerClass">
+<!-- Expose the jetty infinispan classes for session serialization -->
+<Get name="serverClasspathPattern">
+  <Call name="add">
     <Arg>-org.eclipse.jetty.session.infinispan.</Arg>
   </Call>
+</Get>
 
 <!-- Reference the server directly -->
 <Get name="server">
@@ -143,25 +147,25 @@ From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance direc
 </Get>
 
 <!-- Get a reference to the Cache via the InfinispanSessionIdManager -->
- <Ref id="idMgr">
-    <Get id="cache" name="cache"/>
-  </Ref>
+<Ref id="idMgr">
+  <Get id="cache" name="cache"/>
+</Ref>
 
 <!-- Apply the SessionIdManager and Cache to the InfinispanSessionManager -->
 <Set name="sessionHandler">
   <New class="org.eclipse.jetty.server.session.SessionHandler">
-     <Arg>
-        <New id="mgr" class="org.eclipse.jetty.session.infinispan.InfinispanSessionManager">
-          <Set name="sessionIdManager">
-            <Ref id="idMgr"/>
-          </Set>
-          <Set name="cache">
-            <Ref id="cache">
-            </Ref>
-          </Set>
-          <Set name="scavengeInterval">600</Set>
-        </New>
-      </Arg>
+    <Arg>
+      <New id="mgr" class="org.eclipse.jetty.session.infinispan.InfinispanSessionManager">
+        <Set name="sessionIdManager">
+          <Ref id="idMgr"/>
+        </Set>
+        <Set name="cache">
+          <Ref id="cache">
+          </Ref>
+        </Set>
+        <Set name="scavengeInterval">600</Set>
+      </New>
+    </Arg>
   </New>
 </Set>
 ----
@@ -178,7 +182,7 @@ staleIntervalSec::
 ===== Using HotRod
 
 If you're using the hotrod client - where serialization will be required - you will need to ensure that the hotrod marshalling software works with Jetty classloading.
-To do this, firstly ensure that you have included the lines containing the `prependServerClass` to your context xml file as shown above.
+To do this, firstly ensure that you have included the lines containing the `getServerClasspathPattern().add(...)` to your context xml file as shown above.
 
 Then, create the file `${jetty.base}/resources/hotrod-client.properties`.
 Add the following line to this file:

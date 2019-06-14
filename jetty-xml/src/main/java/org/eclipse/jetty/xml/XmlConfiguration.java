@@ -21,6 +21,7 @@ package org.eclipse.jetty.xml;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -44,16 +45,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -172,9 +176,29 @@ public class XmlConfiguration
 
     private final Map<String, Object> _idMap = new HashMap<>();
     private final Map<String, String> _propertyMap = new HashMap<>();
-    private final URL _url;
+    private final Resource _location;
     private final String _dtd;
     private ConfigurationProcessor _processor;
+
+    /**
+     * Reads and parses the XML configuration file.
+     *
+     * @param resource the Resource to the XML configuration
+     * @throws IOException if the configuration could not be read
+     * @throws SAXException if the configuration could not be parsed
+     */
+    public XmlConfiguration(Resource resource) throws SAXException, IOException
+    {
+        synchronized (__parser)
+        {
+            _location = resource;
+            try(InputStream inputStream = resource.getInputStream())
+            {
+                setConfig(__parser.parse(inputStream));
+            }
+            _dtd = __parser.getDTD();
+        }
+    }
 
     /**
      * Reads and parses the XML configuration file.
@@ -182,15 +206,12 @@ public class XmlConfiguration
      * @param configuration the URL of the XML configuration
      * @throws IOException if the configuration could not be read
      * @throws SAXException if the configuration could not be parsed
+     * @deprecated use {@link XmlConfiguration(Resource)} instead due to escaping issues
      */
+    @Deprecated
     public XmlConfiguration(URL configuration) throws SAXException, IOException
     {
-        synchronized (__parser)
-        {
-            _url = configuration;
-            setConfig(__parser.parse(configuration.toString()));
-            _dtd = __parser.getDTD();
-        }
+        this(Resource.newResource(configuration));
     }
 
     /**
@@ -200,17 +221,23 @@ public class XmlConfiguration
      * The String should start with a "&lt;Configure ....&gt;" element.
      * @throws IOException if the configuration could not be read
      * @throws SAXException if the configuration could not be parsed
+     * @deprecated use Constructor which has location information
      */
+    @Deprecated
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
-        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
+        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">"
                             + configuration;
-        InputSource source = new InputSource(new StringReader(configuration));
-        synchronized (__parser)
+        try (StringReader reader = new StringReader(configuration))
         {
-            _url = null;
-            setConfig(__parser.parse(source));
-            _dtd = __parser.getDTD();
+            InputSource source = new InputSource(reader);
+            synchronized (__parser)
+            {
+                _location = null;
+                setConfig(__parser.parse(source));
+                _dtd = __parser.getDTD();
+            }
         }
     }
 
@@ -220,16 +247,28 @@ public class XmlConfiguration
      * @param configuration An input stream containing a complete configuration file
      * @throws IOException if the configuration could not be read
      * @throws SAXException if the configuration could not be parsed
+     * @deprecated use Constructor which has location information
      */
+    @Deprecated
     public XmlConfiguration(InputStream configuration) throws SAXException, IOException
     {
         InputSource source = new InputSource(configuration);
         synchronized (__parser)
         {
-            _url = null;
+            _location = null;
             setConfig(__parser.parse(source));
             _dtd = __parser.getDTD();
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        if (_location == null)
+        {
+            return "UNKNOWN-LOCATION";
+        }
+        return _location.toString();
     }
 
     private void setConfig(XmlParser.Node config)
@@ -253,7 +292,7 @@ public class XmlConfiguration
         {
             throw new IllegalArgumentException("Unknown XML tag:" + config.getTag());
         }
-        _processor.init(_url, config, this);
+        _processor.init(_location, config, this);
     }
 
     /**
@@ -328,14 +367,18 @@ public class XmlConfiguration
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
     {
-        private String _url;
         XmlParser.Node _root;
         XmlConfiguration _configuration;
 
         @Override
         public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
         {
-            _url = url == null ? null : url.toString();
+            // nobody calls this.
+        }
+
+        @Override
+        public void init(Resource resource, XmlParser.Node root, XmlConfiguration configuration)
+        {
             _root = root;
             _configuration = configuration;
         }
@@ -348,7 +391,7 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader() == obj.getClass().getClassLoader()) ? "" : "Object Class and type Class are from different loaders.";
-                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders + " in " + _url);
+                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders + " in " + _configuration);
             }
             String id = _root.getAttribute("id");
             if (id != null)
@@ -396,14 +439,11 @@ public class XmlConfiguration
 
                 try
                 {
-                    if (namedArgMap.size() > 0)
-                        obj = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
-                    else
-                        obj = TypeUtil.construct(oClass, arguments.toArray());
+                    obj = construct(oClass, arguments.toArray(), namedArgMap);
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s", oClass, arguments, namedArgMap, _url));
+                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s", oClass, arguments, namedArgMap, _configuration));
                 }
             }
             if (id != null)
@@ -495,12 +535,12 @@ public class XmlConfiguration
                             envObj(node);
                             break;
                         default:
-                            throw new IllegalStateException("Unknown tag: " + tag + " in " + _url);
+                            throw new IllegalStateException("Unknown tag: " + tag + " in " + _configuration);
                     }
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Config error at " + node, e.toString() + " in " + _url);
+                    LOG.warn("Config error at " + node, e.toString() + " in " + _configuration);
                     throw e;
                 }
             }
@@ -546,7 +586,7 @@ public class XmlConfiguration
             try
             {
                 Method set = oClass.getMethod(name, vClass);
-                set.invoke(obj, arg);
+                invokeMethod(set, obj, arg);
                 return;
             }
             catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
@@ -561,7 +601,7 @@ public class XmlConfiguration
                 Field type = vClass[0].getField("TYPE");
                 vClass[0] = (Class<?>)type.get(null);
                 Method set = oClass.getMethod(name, vClass);
-                set.invoke(obj, arg);
+                invokeMethod(set, obj, arg);
                 return;
             }
             catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
@@ -576,7 +616,7 @@ public class XmlConfiguration
                 Field field = oClass.getField(attr);
                 if (Modifier.isPublic(field.getModifiers()))
                 {
-                    field.set(obj, value);
+                    setField(field, obj, value);
                     return;
                 }
             }
@@ -602,7 +642,7 @@ public class XmlConfiguration
                     try
                     {
                         set = setter;
-                        setter.invoke(obj, arg);
+                        invokeMethod(set, obj, arg);
                         return;
                     }
                     catch (IllegalArgumentException | IllegalAccessException e)
@@ -617,7 +657,7 @@ public class XmlConfiguration
                         {
                             if (paramTypes[0].isAssignableFrom(c))
                             {
-                                setter.invoke(obj, convertArrayToCollection(value, c));
+                                invokeMethod(setter, obj, convertArrayToCollection(value, c));
                                 return;
                             }
                         }
@@ -650,7 +690,7 @@ public class XmlConfiguration
                     Constructor<?> cons = sClass.getConstructor(vClass);
                     arg[0] = cons.newInstance(arg);
                     _configuration.initializeDefaults(arg[0]);
-                    set.invoke(obj, arg);
+                    invokeMethod(set, obj, arg);
                     return;
                 }
                 catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
@@ -670,6 +710,37 @@ public class XmlConfiguration
                 failure.addSuppressed(me.getThrowable(i));
             }
             throw failure;
+        }
+
+        private Object invokeConstructor(Constructor<?> constructor, Object... args) throws IllegalAccessException, InvocationTargetException, InstantiationException
+        {
+            Object result = constructor.newInstance(args);
+            if (constructor.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated constructor {} in {}", constructor, _configuration);
+            return result;
+        }
+
+        private Object invokeMethod(Method method, Object obj, Object... args) throws IllegalAccessException, InvocationTargetException
+        {
+            Object result = method.invoke(obj, args);
+            if (method.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated method {} in {}", method, _configuration);
+            return result;
+        }
+
+        private Object getField(Field field, Object object) throws IllegalAccessException
+        {
+            Object result = field.get(object);
+            if (field.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
+            return result;
+        }
+
+        private void setField(Field field, Object obj, Object arg) throws IllegalAccessException
+        {
+            field.set(obj, arg);
+            if (field.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
         }
 
         /**
@@ -758,7 +829,7 @@ public class XmlConfiguration
                 {
                     // Try calling a getXxx method.
                     Method method = oClass.getMethod("get" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1));
-                    obj = method.invoke(obj);
+                    obj = invokeMethod(method, obj);
                 }
                 if (id != null)
                     _configuration.getIdMap().put(id, obj);
@@ -770,7 +841,7 @@ public class XmlConfiguration
                 {
                     // Try the field.
                     Field field = oClass.getField(name);
-                    obj = field.get(obj);
+                    obj = getField(field, obj);
                     configure(obj, node, 0);
                 }
                 catch (NoSuchFieldException nsfe)
@@ -819,7 +890,7 @@ public class XmlConfiguration
 
             try
             {
-                Object nobj = TypeUtil.call(oClass, name, obj, args.toArray(new Object[0]));
+                Object nobj = call(oClass, name, obj, args.toArray(new Object[0]));
                 if (id != null)
                     _configuration.getIdMap().put(id, nobj);
                 configure(nobj, node, aoeNode.getNext());
@@ -829,6 +900,65 @@ public class XmlConfiguration
             {
                 throw new IllegalStateException("No Method: " + node + " on " + oClass, e);
             }
+        }
+
+        private Object call(Class<?> oClass, String methodName, Object obj, Object[] arg) throws InvocationTargetException, NoSuchMethodException
+        {
+            Objects.requireNonNull(oClass, "Class cannot be null");
+            Objects.requireNonNull(methodName, "Method name cannot be null");
+            if (StringUtil.isBlank(methodName))
+                throw new IllegalArgumentException("Method name cannot be blank");
+
+            // Lets just try all methods for now
+            for (Method method : oClass.getMethods())
+            {
+                if (!method.getName().equals(methodName))
+                    continue;
+                if (method.getParameterCount() != arg.length)
+                    continue;
+                if (Modifier.isStatic(method.getModifiers()) != (obj == null))
+                    continue;
+                if ((obj == null) && method.getDeclaringClass() != oClass)
+                    continue;
+
+                try
+                {
+                    return invokeMethod(method, obj, arg);
+                }
+                catch (IllegalAccessException | IllegalArgumentException e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+
+            // Lets look for a method with varargs arguments
+            Object[] argsWithVarargs = null;
+            for (Method method : oClass.getMethods())
+            {
+                if (!method.getName().equals(methodName))
+                    continue;
+                if (method.getParameterCount() != arg.length + 1)
+                    continue;
+                if (!method.getParameterTypes()[arg.length].isArray())
+                    continue;
+                if (Modifier.isStatic(method.getModifiers()) != (obj == null))
+                    continue;
+                if ((obj == null) && method.getDeclaringClass() != oClass)
+                    continue;
+
+                if (argsWithVarargs == null)
+                    argsWithVarargs = ArrayUtil.addToArray(arg, new Object[0], Object.class);
+                try
+                {
+                    return invokeMethod(method, obj, argsWithVarargs);
+                }
+                catch (IllegalAccessException | IllegalArgumentException e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+
+            throw new NoSuchMethodException(methodName);
         }
 
         /**
@@ -869,16 +999,7 @@ public class XmlConfiguration
             Object nobj;
             try
             {
-                if (namedArgMap.size() > 0)
-                {
-                    LOG.debug("using named mapping");
-                    nobj = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
-                }
-                else
-                {
-                    LOG.debug("using normal mapping");
-                    nobj = TypeUtil.construct(oClass, arguments.toArray());
-                }
+                nobj = construct(oClass, arguments.toArray(), namedArgMap);
             }
             catch (NoSuchMethodException e)
             {
@@ -891,6 +1012,89 @@ public class XmlConfiguration
             _configuration.initializeDefaults(nobj);
             configure(nobj, node, aoeNode.getNext());
             return nobj;
+        }
+
+        private Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
+        {
+            Objects.requireNonNull(klass, "Class cannot be null");
+            Objects.requireNonNull(namedArgMap, "Named Argument Map cannot be null");
+
+            for (Constructor<?> constructor : klass.getConstructors())
+            {
+                if (arguments == null)
+                {
+                    // null arguments in .newInstance() is allowed
+                    if (constructor.getParameterCount() != 0)
+                        continue;
+                }
+                else if (constructor.getParameterCount() != arguments.length)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (arguments == null || arguments.length == 0)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Invoking constructor, no arguments");
+                        return invokeConstructor(constructor);
+                    }
+
+                    if (namedArgMap.isEmpty())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Invoking constructor, no XML parameter mapping");
+                        return invokeConstructor(constructor, arguments);
+                    }
+
+                    Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
+                    if (parameterAnnotations == null || parameterAnnotations.length == 0)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Invoking constructor, no parameter annotations");
+                        return invokeConstructor(constructor, arguments);
+                    }
+
+                    int count = 0;
+                    Object[] swizzled = new Object[arguments.length];
+                    for (Annotation[] annotations : parameterAnnotations)
+                    {
+                        for (Annotation annotation : annotations)
+                        {
+                            if (annotation instanceof Name)
+                            {
+                                Name param = (Name)annotation;
+                                if (namedArgMap.containsKey(param.value()))
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Mapping named parameter {} in position {}", param.value(), count);
+                                    swizzled[count] = namedArgMap.get(param.value());
+                                }
+                                else
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Mapping argument {} in position {}", arguments[count], count);
+                                    swizzled[count] = arguments[count];
+                                }
+                                ++count;
+                            }
+                            else
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Skipping parameter annotated with {}", annotation);
+                            }
+                        }
+                    }
+
+                    return invokeConstructor(constructor, swizzled);
+                }
+                catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+            throw new NoSuchMethodException("<init>");
         }
 
         /**
@@ -1354,7 +1558,7 @@ public class XmlConfiguration
             if ("Env".equals(tag))
                 return envObj(node);
 
-            LOG.warn("Unknown value tag: " + node, new Throwable());
+            LOG.warn("Unknown value tag: " + node + " in " + _configuration, new Throwable());
             return null;
         }
 
