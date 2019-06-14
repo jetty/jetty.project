@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -448,6 +447,8 @@ public class ForwardedRequestCustomizer implements Customizer
                 size += 128;
                 _handles = new ArrayTrie<>(size);
 
+                _handles.put(HttpHeader.HOST.toString(), lookup.findVirtual(Forwarded.class, "handleHttpHost", type));
+
                 if (_forwardedCipherSuiteHeader != null && !_handles.put(_forwardedCipherSuiteHeader, lookup.findVirtual(Forwarded.class, "handleCipherSuite", type)))
                     continue;
                 if (_forwardedSslSessionIdHeader != null && !_handles.put(_forwardedSslSessionIdHeader, lookup.findVirtual(Forwarded.class, "handleSslSessionId", type)))
@@ -513,6 +514,7 @@ public class ForwardedRequestCustomizer implements Customizer
         String _proto;
         HostPort _for;
         HostPort _host;
+        HostPort _httpHost;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -521,6 +523,13 @@ public class ForwardedRequestCustomizer implements Customizer
             _config = config;
             if (_forcedHost!=null)
                 _host = _forcedHost.getHostPort();
+        }
+
+        public void handleHttpHost(HttpField field)
+        {
+            _httpHost = new HostPort(field.getValue());
+            if (_host != null && _host instanceof XHostPort && "unknown".equals(_host.getHost()))
+                _host = new XHostPort(_httpHost.getHost(), _host.getPort());
         }
 
         public void handleCipherSuite(HttpField field)
@@ -547,6 +556,8 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             if (_host==null)
                 _host = new XHostPort(getLeftMost(field.getValue()));
+            else if (_host instanceof XHostPort && "unknown".equals(_host.getHost()))
+                _host = new XHostPort(getLeftMost(field.getValue()), _host.getPort());
         }
 
         public void handleServer(HttpField field)
@@ -571,10 +582,13 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handlePort(HttpField field)
         {
-            if (_for == null)
-                _for = new XHostPort("unknown", field.getIntValue());
-            else if (_for instanceof XHostPort && _for.getPort()<=0)
-                _for = new XHostPort(HostPort.normalizeHost(_for.getHost()), field.getIntValue());
+            if (_host == null)
+            {
+                String hostname = _httpHost != null ? _httpHost.getHost() : "unknown";
+                _host = new XHostPort(hostname, field.getIntValue());
+            }
+            else if (_host instanceof XHostPort && _host.getPort()<=0)
+                _host = new XHostPort(HostPort.normalizeHost(_host.getHost()), field.getIntValue());
         }
 
         public void handleHttps(HttpField field)
