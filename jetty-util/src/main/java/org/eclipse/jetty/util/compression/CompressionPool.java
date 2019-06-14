@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class CompressionPool<T>
 {
+    public static final int INFINITE_CAPACITY = -1;
+
     private final Queue<T> _pool;
     private final AtomicInteger _numObjects = new AtomicInteger(0);
     private final int _capacity;
@@ -77,7 +79,7 @@ public abstract class CompressionPool<T>
     }
 
     /**
-     * @param object returns this Object to the pool or calls {@link #end(T)} if the pool is full.
+     * @param object returns this Object to the pool or calls {@link #end(Object)} if the pool is full.
      */
     public void release(T object)
     {

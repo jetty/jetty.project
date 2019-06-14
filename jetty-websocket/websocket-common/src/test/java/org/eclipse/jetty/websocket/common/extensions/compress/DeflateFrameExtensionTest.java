@@ -34,6 +34,9 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -68,6 +71,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     private static final Logger LOG = Log.getLogger(DeflateFrameExtensionTest.class);
 
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
+    public DeflaterPool deflaterPool = new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
+    public InflaterPool inflaterPool = new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
 
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
@@ -75,6 +80,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(policy);
 
         ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
@@ -119,6 +126,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(policy);
 
         ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
@@ -251,6 +260,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     {
         ext.setConfig(new ExtensionConfig(ext.getName()));
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
     }
 
     @Test
@@ -303,6 +314,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(policy);
         ext.setConfig(new ExtensionConfig(ext.getName()));
 
@@ -395,6 +408,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         clientExtension.setBufferPool(bufferPool);
+        clientExtension.setDeflaterPool(deflaterPool);
+        clientExtension.setInflaterPool(inflaterPool);
         clientExtension.setPolicy(WebSocketPolicy.newClientPolicy());
         clientExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
         clientExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);
@@ -402,6 +417,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         serverExtension.setBufferPool(bufferPool);
+        serverExtension.setDeflaterPool(deflaterPool);
+        serverExtension.setInflaterPool(inflaterPool);
         serverExtension.setPolicy(WebSocketPolicy.newServerPolicy());
         serverExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
         serverExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);

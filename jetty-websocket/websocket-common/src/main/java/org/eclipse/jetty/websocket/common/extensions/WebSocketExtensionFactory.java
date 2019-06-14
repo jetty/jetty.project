@@ -18,16 +18,24 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import java.util.zip.Deflater;
+
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.common.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public class WebSocketExtensionFactory extends ExtensionFactory
 {
     private WebSocketContainerScope container;
+    private final InflaterPool inflaterPool = new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
+    private final DeflaterPool deflaterPool = new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
 
     public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
@@ -64,6 +72,13 @@ public class WebSocketExtensionFactory extends ExtensionFactory
                 aext.init(container);
                 aext.setConfig(config);
             }
+            if (ext instanceof CompressExtension)
+            {
+                CompressExtension cext = (CompressExtension)ext;
+                cext.setInflaterPool(inflaterPool);
+                cext.setDeflaterPool(deflaterPool);
+            }
+
             return ext;
         }
         catch (Exception e)

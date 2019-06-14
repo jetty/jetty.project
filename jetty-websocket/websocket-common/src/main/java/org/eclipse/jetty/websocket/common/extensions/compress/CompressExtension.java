@@ -71,16 +71,10 @@ public abstract class CompressExtension extends AbstractExtension
 
     /** Inflater : Output Buffer Size */
     private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
-    
-    private final static boolean NOWRAP = true;
-    private final static int POOL_CAPACITY = -1;
-
-    private static final DeflaterPool deflaterPool = new DeflaterPool(POOL_CAPACITY,
-            Deflater.DEFAULT_COMPRESSION, NOWRAP);
-    private static final InflaterPool inflaterPool = new InflaterPool(POOL_CAPACITY, NOWRAP);
-
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
+    private DeflaterPool deflaterPool;
+    private InflaterPool inflaterPool;
     private Deflater deflaterImpl;
     private Inflater inflaterImpl;
     protected AtomicInteger decompressCount = new AtomicInteger(0);
@@ -91,6 +85,16 @@ public abstract class CompressExtension extends AbstractExtension
     {
         tailDrop = getTailDropMode();
         rsvUse = getRsvUseMode();
+    }
+
+    public void setInflaterPool(InflaterPool inflaterPool)
+    {
+        this.inflaterPool = inflaterPool;
+    }
+
+    public void setDeflaterPool(DeflaterPool deflaterPool)
+    {
+        this.deflaterPool = deflaterPool;
     }
 
     public Deflater getDeflater()
